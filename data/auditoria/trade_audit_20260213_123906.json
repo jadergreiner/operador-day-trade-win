@@ -1,0 +1,77 @@
+{
+  "report_date": "2026-02-13",
+  "generated_at": "2026-02-13T12:39:06.080805",
+  "counts": {
+    "mt5_orders": 8,
+    "mt5_deals": 8,
+    "mt5_positions": 4,
+    "sqlite_trades": 4,
+    "sqlite_closed": 4,
+    "sqlite_open": 0
+  },
+  "pnl": {
+    "mt5_realized": 380.0,
+    "sqlite_realized": 380.0,
+    "diff": 0.0
+  },
+  "reconciliation": {
+    "missing_in_sqlite": [],
+    "extra_in_sqlite": [],
+    "pnl_diffs_by_trade": []
+  },
+  "positions": [
+    {
+      "position_id": 2275760524,
+      "symbol": "WING26",
+      "side": "SELL",
+      "entry_time": "2026-02-13T06:18:52",
+      "exit_time": "2026-02-13T06:42:27",
+      "status": "CLOSED",
+      "volume": 1.0,
+      "entry_price": 185740.0,
+      "exit_price": 185555.0,
+      "realized_pnl": 37.0,
+      "deals_count": 2
+    },
+    {
+      "position_id": 2275762173,
+      "symbol": "WING26",
+      "side": "BUY",
+      "entry_time": "2026-02-13T06:41:37",
+      "exit_time": "2026-02-13T06:43:41",
+      "status": "CLOSED",
+      "volume": 1.0,
+      "entry_price": 185510.0,
+      "exit_price": 185595.0,
+      "realized_pnl": 17.0,
+      "deals_count": 2
+    },
+    {
+      "position_id": 2275774278,
+      "symbol": "WING26",
+      "side": "SELL",
+      "entry_time": "2026-02-13T08:27:07",
+      "exit_time": "2026-02-13T08:40:08",
+      "status": "CLOSED",
+      "volume": 1.0,
+      "entry_price": 185005.0,
+      "exit_price": 183875.0,
+      "realized_pnl": 226.0,
+      "deals_count": 2
+    },
+    {
+      "position_id": 2275777243,
+      "symbol": "WING26",
+      "side": "BUY",
+      "entry_time": "2026-02-13T08:41:48",
+      "exit_time": "2026-02-13T08:43:58",
+      "status": "CLOSED",
+      "volume": 1.0,
+      "entry_price": 183865.0,
+      "exit_price": 184365.0,
+      "realized_pnl": 100.0,
+      "deals_count": 2
+    }
+  ],
+  "status": "OK"
+}

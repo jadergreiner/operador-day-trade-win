@@ -1,0 +1,301 @@
+================================================================================
+TRADING AUTOMATIZADO - GUIA RAPIDO
+================================================================================
+
+*** AVISO CRITICO ***
+Este sistema executa ordens REAIS no MetaTrader 5 com dinheiro REAL.
+Voce pode GANHAR ou PERDER dinheiro.
+SEMPRE teste em conta DEMO primeiro!
+
+================================================================================
+RESUMO
+================================================================================
+
+Sistema completo de trading automatizado que:
+  - Analisa mercado continuamente (30 segundos)
+  - Decide automaticamente quando entrar/sair
+  - Executa ordens no MT5
+  - Gerencia stop loss e take profit
+  - Ajusta trailing stop dinamicamente
+  - Fecha posicoes automaticamente
+
+================================================================================
+CONFIGURACAO PADRAO
+================================================================================
+
+Max Posicoes:        1 (apenas 1 operacao por vez)
+Risco por Trade:     2% da conta
+Confianca Minima:    75%
+Alinhamento Minimo:  75%
+Contratos:           1 por operacao
+Trailing Stop:       0.5%
+
+Horario Operacao:    09:00 - 17:30
+
+================================================================================
+COMO FUNCIONA
+================================================================================
+
+1. ANALISE (a cada 30 segundos)
+   - Conecta ao MT5
+   - Obtem dados de mercado
+   - Executa Quantum Operator
+   - Analisa 4 dimensoes: Macro, Fundamental, Sentimento, Tecnica
+   - Calcula confianca e alinhamento
+
+2. DECISAO DE ENTRADA
+   Entra APENAS se:
+   - Sinal claro (BUY ou SELL, nao HOLD)
+   - Confianca >= 75%
+   - Alinhamento >= 75%
+   - Setup tecnico definido (entry, stop, target)
+   - Nenhuma posicao aberta
+
+3. EXECUCAO
+   - Calcula position size (1 contrato)
+   - Envia ordem MARKET ao MT5
+   - Define Stop Loss automatico
+   - Define Take Profit automatico
+   - Salva posicao para monitoramento
+
+4. GESTAO
+   - Monitora posicao aberta continuamente
+   - Atualiza PnL em tempo real
+   - Ajusta trailing stop dinamicamente
+   - Fecha se stop ou target atingido
+
+5. SAIDA
+   Fecha posicao quando:
+   - Stop Loss atingido (protege capital)
+   - Take Profit atingido (realiza lucro)
+   - Trailing Stop acionado (protege lucros parciais)
+   - Sistema interrompido (fecha tudo manualmente)
+
+================================================================================
+COMO INICIAR
+================================================================================
+
+1. CONFIGURE O .ENV
+   MT5_LOGIN=seu_login
+   MT5_PASSWORD=sua_senha
+   MT5_SERVER=seu_servidor
+   TRADING_SYMBOL=WING26
+
+2. TESTE EM DEMO PRIMEIRO!
+   - Use credenciais de conta DEMO
+   - Rode por pelo menos 1 semana
+   - Analise resultados
+   - Ajuste parametros se necessario
+
+3. INICIE O SISTEMA
+   Opcao 1 (Recomendado):
+     Duplo clique em: INICIAR_TRADING_AUTOMATICO.bat
+     Digite SIM quando solicitado
+
+   Opcao 2 (Python):
+     python scripts/run_automated_trading.py
+
+================================================================================
+MONITORAMENTO
+================================================================================
+
+ANALISE DE MERCADO:
+[10:15:30] ANALISE
+  Preco:       R$ 182,450.00
+  Sinal:       BUY
+  Confianca:   85%
+  Alinhamento: 100%
+  Razao:       Pullback to EMA21 in uptrend...
+
+ENTRADA EXECUTADA:
+[ENTRADA] ORDEM EXECUTADA COM SUCESSO
+  Ticket:       123456789
+  Direcao:      BUY
+  Entrada:      R$ 182,450.00
+  Stop Loss:    R$ 182,000.00
+  Take Profit:  R$ 183,350.00
+  Quantidade:   1 contrato
+  R/R Ratio:    2.0
+
+SAIDA EXECUTADA:
+[SAIDA] POSICAO FECHADA
+  Ticket:       123456789
+  PnL:          R$ +900.00 (+0.49%)
+  Duracao:      1847s
+  Razao:        TAKE_PROFIT
+
+ESTATISTICAS (A cada 5 minutos):
+ESTATISTICAS DO DIA
+  Total Trades:     15
+  Ganhos:           10
+  Perdas:           5
+  Win Rate:         66.7%
+  PnL Total:        R$ +4,350.00
+  Media Ganho:      R$ +750.00
+  Media Perda:      R$ -300.00
+  Posicoes Abertas: 0
+
+================================================================================
+GESTAO DE RISCO
+================================================================================
+
+RISCO POR TRADE: 2%
+
+Exemplo com conta de R$ 100.000:
+  - Risco maximo: R$ 2.000 por trade
+  - Se stop = R$ 450 por contrato
+  - Calculo: 2.000 / 450 = 4 contratos teoricos
+  - MAS sistema configurado para 1 contrato fixo
+  - Logo: Sempre 1 contrato por operacao
+
+STOP LOSS:
+  - SEMPRE definido automaticamente
+  - Baseado em suporte/resistencia
+  - Baseado em ATR (volatilidade)
+  - Protege capital
+
+TRAILING STOP:
+  - Ativa quando posicao em lucro
+  - Segue preco a 0.5% de distancia
+  - Protege lucros parciais
+  - Permite lucros correrem
+
+================================================================================
+COMO PARAR
+================================================================================
+
+PARADA NORMAL:
+  1. Pressione Ctrl+C no console
+  2. Sistema fecha todas posicoes abertas
+  3. Exibe estatisticas finais
+  4. Desconecta do MT5
+  5. Encerra gracefully
+
+PARADA DE EMERGENCIA:
+  1. Feche o console (X ou Ctrl+C)
+  2. Abra MT5 manualmente
+  3. Feche posicoes manualmente se necessario
+
+================================================================================
+ESTRATEGIA DE ALOCACAO (MILHARES DE CONTRATOS)
+================================================================================
+
+OPCAO 1: MULTIPLAS CONTAS (Atual)
+  - Sistema opera 1 contrato no MT5
+  - VOCEreplica manualmente em outras contas
+  - Total = 1 x (numero de contas)
+  - Vantagem: Controle total, diversificacao
+  - Desvantagem: Trabalho manual
+
+OPCAO 2: AUMENTAR CONTRATOS POR OPERACAO
+  - Editar parametro: quantity = Quantity(Decimal("10"))
+  - Sistema opera 10 contratos por vez
+  - Vantagem: Automatico
+  - Desvantagem: Risco concentrado
+
+OPCAO 3: MULTIPLAS POSICOES SIMULTANEAS
+  - Editar parametro: MAX_POSITIONS = 3
+  - Sistema gerencia ate 3 posicoes ao mesmo tempo
+  - Vantagem: Diversificacao, mais oportunidades
+  - Desvantagem: Mais complexo, mais risco
+
+OPCAO 4: PIRAMIDE (Futuro)
+  - Adiciona contratos em tendencia confirmada
+  - Exemplo: 1 contrato inicial, +2 se confirmado, +3 se forte
+  - Total: ate 6 contratos em tendencia clara
+  - Vantagem: Maximiza tendencias
+  - Desvantagem: Requer implementacao customizada
+
+================================================================================
+PERFORMANCE ESPERADA
+================================================================================
+
+Com configuracao conservadora (75% confianca/alinhamento):
+
+Expectativa Realista:
+  - Win Rate: 55-65%
+  - R/R Ratio medio: 1.5-2.0
+  - Trades por dia: 3-8
+  - Return diario alvo: 0.5-2%
+
+IMPORTANTE:
+  - Performance passada NAO garante resultado futuro
+  - Mercados mudam
+  - Volatilidade varia
+  - Drawdowns sao normais
+
+================================================================================
+AJUSTES E OTIMIZACAO
+================================================================================
+
+PARA SER MAIS AGRESSIVO:
+Edite scripts/run_automated_trading.py:
+
+MIN_CONFIDENCE = Decimal("0.65")  # 65% ao inves de 75%
+MIN_ALIGNMENT = Decimal("0.60")   # 60% ao inves de 75%
+MAX_POSITIONS = 3                 # Ate 3 posicoes simultaneas
+
+PARA SER MAIS CONSERVADOR:
+
+MIN_CONFIDENCE = Decimal("0.85")  # 85%
+MIN_ALIGNMENT = Decimal("0.85")   # 85%
+RISK_PER_TRADE = Decimal("0.01")  # 1% ao inves de 2%
+
+PARA OPERAR MAIS CONTRATOS:
+
+# Sempre X contratos fixos:
+quantity = Quantity(Decimal("5"))  # 5 contratos
+
+# Ou deixar sistema calcular sem limite:
+return max(1, contracts)  # Remove limite de 10
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+"Falha ao conectar MT5":
+  - Verifique que MT5 esta aberto
+  - Confira credenciais no .env
+  - MT5 permite API Python? (Ferramentas > Opcoes > Expert Advisors)
+
+"Falha ao executar ordem":
+  - Mercado pode estar fechado
+  - Margem insuficiente na conta
+  - Simbolo incorreto
+  - Problema de conexao com broker
+
+"Nao entra em nenhum trade":
+  - Confianca/Alinhamento abaixo do minimo (< 75%)
+  - Nenhum setup tecnico claro no momento
+  - Ja tem posicao aberta (max 1)
+  - Analise os logs: o que sistema esta decidindo?
+
+================================================================================
+CHECKLIST ANTES DE INICIAR
+================================================================================
+
+[ ] Configurei .env corretamente
+[ ] Testei em conta DEMO por pelo menos 1 semana
+[ ] Entendo os riscos de trading automatizado
+[ ] Tenho capital que posso arriscar
+[ ] Vou monitorar constantemente
+[ ] Sei como parar o sistema
+[ ] Sei como fechar posicoes manualmente no MT5
+[ ] Defini meu objetivo diario e loss maximo
+[ ] Tenho plano B se algo der errado
+
+================================================================================
+SUPORTE
+================================================================================
+
+Documentacao completa: docs/TRADING_AUTOMATIZADO.md
+README principal: README.md
+Codigo fonte: src/application/services/automated_trading.py
+
+================================================================================
+
+Desenvolvido para rentabilizacao consistente e gestao de risco rigorosa.
+
+Trading automatizado e ferramenta poderosa. USE COM RESPONSABILIDADE.
+
+================================================================================

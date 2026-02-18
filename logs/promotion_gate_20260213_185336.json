@@ -1,0 +1,45 @@
+{
+  "generated_at": "2026-02-13T18:53:36.696859",
+  "rule": {
+    "required_consecutive_days": 2,
+    "condition": "candidate_pnl > baseline_pnl AND candidate_drawdown <= baseline_drawdown"
+  },
+  "candidate": "novo_20260213",
+  "baseline": "baseline_20260212",
+  "decision": "MANTER_SHADOW",
+  "approved": false,
+  "consecutive_passes_from_latest": 1,
+  "day_results": [
+    {
+      "test_date": "2026-02-11",
+      "candidate_pnl": 2594.6,
+      "baseline_pnl": 2594.6,
+      "candidate_drawdown": 0.0,
+      "baseline_drawdown": 0.0,
+      "pnl_ok": false,
+      "drawdown_ok": true,
+      "passed": false
+    },
+    {
+      "test_date": "2026-02-12",
+      "candidate_pnl": 3204.6,
+      "baseline_pnl": 3204.6,
+      "candidate_drawdown": 3.799999999999997,
+      "baseline_drawdown": 3.799999999999997,
+      "pnl_ok": false,
+      "drawdown_ok": true,
+      "passed": false
+    },
+    {
+      "test_date": "2026-02-13",
+      "candidate_pnl": 1909.6000000000001,
+      "baseline_pnl": -762.6,
+      "candidate_drawdown": 0.0,
+      "baseline_drawdown": 378.8,
+      "pnl_ok": true,
+      "drawdown_ok": true,
+      "passed": true
+    }
+  ],
+  "report_used": "logs\\oot_rolling_3cuts_20260213_185128.json"
+}

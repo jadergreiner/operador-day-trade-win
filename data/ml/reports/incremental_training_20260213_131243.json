@@ -1,0 +1,21 @@
+{
+  "generated_at": "2026-02-13T13:12:43.933252",
+  "as_of_date": "2026-02-13",
+  "dataset_path": "C:\\repo\\operador-day-trade-win\\data\\ml\\trade_supervised_dataset.csv",
+  "rows_window": 4,
+  "rows_incremental": 4,
+  "feature_count": 34,
+  "classes": [
+    "WIN"
+  ],
+  "batch_metrics": {
+    "accuracy": 0.0,
+    "f1_macro": 0.0
+  },
+  "daily_metrics": {},
+  "classification_report_daily": {},
+  "trained_trade_keys_total": 0,
+  "state_latest": "C:\\repo\\operador-day-trade-win\\data\\models\\trade_incremental\\trade_incremental_state_latest.pkl",
+  "state_snapshot": "C:\\repo\\operador-day-trade-win\\data\\models\\trade_incremental\\trade_incremental_state_20260213_131243.pkl",
+  "mode": "bootstrap_single_class"
+}

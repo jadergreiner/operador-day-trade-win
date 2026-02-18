@@ -1,0 +1,251 @@
+================================================================================
+CONFIGURACAO: CONTRATOS E OPERACOES SIMULTANEAS
+================================================================================
+
+ONDE CONFIGURAR: scripts/run_automated_trading.py (linhas 158-179)
+
+================================================================================
+CONFIGURACOES PRINCIPAIS
+================================================================================
+
+# ========================================================================
+# CONFIGURACOES DE TRADING - AJUSTE AQUI
+# ========================================================================
+
+# POSICOES E CONTRATOS
+MAX_POSITIONS = 5        # Maximo de OPERACOES SIMULTANEAS (1 a 10)
+CONTRACTS_PER_TRADE = 1  # Numero de CONTRATOS por operacao (1+)
+
+# GESTAO DE RISCO
+RISK_PER_TRADE = Decimal("0.02")  # 2% de risco por trade
+
+# FILTROS DE QUALIDADE
+MIN_CONFIDENCE = Decimal("0.75")  # 75% confianca minima para entrar
+MIN_ALIGNMENT = Decimal("0.75")   # 75% alinhamento minimo para entrar
+
+# PERFORMANCE
+ANALYSIS_INTERVAL = 30  # Segundos entre cada analise (30s padrao)
+
+# TRAILING STOP
+USE_TRAILING_STOP = True
+TRAILING_DISTANCE_PERCENT = Decimal("0.5")  # 0.5% de distancia
+
+# ========================================================================
+
+================================================================================
+O QUE CADA PARAMETRO FAZ
+================================================================================
+
+MAX_POSITIONS
+-------------
+Define o NUMERO MAXIMO de OPERACOES SIMULTANEAS abertas.
+
+Exemplos:
+  MAX_POSITIONS = 1   -> Apenas 1 operacao por vez (conservador)
+  MAX_POSITIONS = 5   -> Ate 5 operacoes ao mesmo tempo (padrao)
+  MAX_POSITIONS = 10  -> Ate 10 operacoes simultaneas (agressivo)
+
+CONTRACTS_PER_TRADE
+-------------------
+Define QUANTOS CONTRATOS por operacao individual.
+
+Exemplos:
+  CONTRACTS_PER_TRADE = 1   -> 1 contrato por operacao (padrao)
+  CONTRACTS_PER_TRADE = 5   -> 5 contratos por operacao
+  CONTRACTS_PER_TRADE = 10  -> 10 contratos por operacao
+
+TOTAL DE CONTRATOS
+------------------
+Total potencial = MAX_POSITIONS × CONTRACTS_PER_TRADE
+
+Exemplos:
+  MAX_POSITIONS=5  × CONTRACTS_PER_TRADE=1  = 5 contratos max
+  MAX_POSITIONS=5  × CONTRACTS_PER_TRADE=10 = 50 contratos max
+  MAX_POSITIONS=10 × CONTRACTS_PER_TRADE=10 = 100 contratos max
+
+================================================================================
+EXEMPLOS DE CONFIGURACAO
+================================================================================
+
+CENARIO 1: CONSERVADOR (Sua configuracao atual)
+------------------------------------------------
+MAX_POSITIONS = 5
+CONTRACTS_PER_TRADE = 1
+
+Resultado:
+  - Ate 5 operacoes ao mesmo tempo
+  - 1 contrato cada
+  - Total maximo: 5 contratos
+  - Diversificacao: ALTA (5 operacoes diferentes)
+  - Risco: BAIXO
+
+Exemplo pratico:
+  09:15 -> Compra 1 contrato a R$ 182,000 (Operacao #1)
+  09:30 -> Compra 1 contrato a R$ 182,200 (Operacao #2)
+  09:45 -> Vende 1 contrato a R$ 182,400 (Operacao #3)
+  10:00 -> Compra 1 contrato a R$ 182,150 (Operacao #4)
+  10:15 -> Vende 1 contrato a R$ 182,350 (Operacao #5)
+  10:30 -> NAO ENTRA (ja tem 5 operacoes abertas)
+
+
+CENARIO 2: MODERADO
+-------------------
+MAX_POSITIONS = 5
+CONTRACTS_PER_TRADE = 5
+
+Resultado:
+  - Ate 5 operacoes ao mesmo tempo
+  - 5 contratos cada
+  - Total maximo: 25 contratos
+  - Diversificacao: MEDIA
+  - Risco: MEDIO
+
+Exemplo pratico:
+  09:15 -> Compra 5 contratos a R$ 182,000 (Operacao #1 = 5 contratos)
+  09:30 -> Compra 5 contratos a R$ 182,200 (Operacao #2 = 5 contratos)
+  Total: 10 contratos abertos em 2 operacoes
+
+
+CENARIO 3: AGRESSIVO
+--------------------
+MAX_POSITIONS = 10
+CONTRACTS_PER_TRADE = 10
+
+Resultado:
+  - Ate 10 operacoes ao mesmo tempo
+  - 10 contratos cada
+  - Total maximo: 100 contratos
+  - Diversificacao: MUITO ALTA
+  - Risco: ALTO
+
+Exemplo pratico:
+  Durante o dia, pode ter ate 100 contratos abertos
+  distribuidos em 10 operacoes diferentes
+
+
+CENARIO 4: FOCO EM TRADES DE QUALIDADE
+---------------------------------------
+MAX_POSITIONS = 3
+CONTRACTS_PER_TRADE = 20
+
+Resultado:
+  - Ate 3 operacoes ao mesmo tempo
+  - 20 contratos cada
+  - Total maximo: 60 contratos
+  - Diversificacao: BAIXA
+  - Concentracao: ALTA (poucos trades com alta conviccao)
+
+
+CENARIO 5: MEGA AGRESSIVO (Para replicacao em multiplas contas)
+----------------------------------------------------------------
+MAX_POSITIONS = 1
+CONTRACTS_PER_TRADE = 1
+
++ Replicacao manual em 50 contas
+
+Resultado:
+  - 1 operacao por vez no MT5 (referencia)
+  - 1 contrato no MT5
+  - Voce replica em 50 contas = 50 contratos reais
+  - Alta seguranca (1 sinal, voce controla quantidade)
+
+================================================================================
+COMO ALTERAR
+================================================================================
+
+1. Abra o arquivo:
+   scripts/run_automated_trading.py
+
+2. Encontre as linhas 162-164:
+   MAX_POSITIONS = 5
+   CONTRACTS_PER_TRADE = 1
+
+3. Altere para seus valores desejados:
+   MAX_POSITIONS = 10       # Ate 10 operacoes simultaneas
+   CONTRACTS_PER_TRADE = 5  # 5 contratos por operacao
+
+4. Salve o arquivo
+
+5. Reinicie o sistema:
+   INICIAR_TRADING_AUTOMATICO.bat
+
+================================================================================
+VISUALIZACAO DO IMPACTO
+================================================================================
+
+                     MAX_POSITIONS
+                ┌─────┬─────┬─────┬─────┬─────┐
+                │  1  │  3  │  5  │  7  │ 10  │
+┌───────────────┼─────┼─────┼─────┼─────┼─────┤
+│ CONTRACTS  1  │  1  │  3  │  5  │  7  │ 10  │ <- Sua config atual
+│ PER_TRADE  5  │  5  │ 15  │ 25  │ 35  │ 50  │
+│           10  │ 10  │ 30  │ 50  │ 70  │100  │
+│           20  │ 20  │ 60  │100  │140  │200  │
+└───────────────┴─────┴─────┴─────┴─────┴─────┘
+
+Numeros = Total de contratos potencialmente abertos
+
+================================================================================
+QUAL CONFIGURACAO USAR?
+================================================================================
+
+Para INICIANTE ou TESTE:
+  MAX_POSITIONS = 1
+  CONTRACTS_PER_TRADE = 1
+  (Maximo 1 contrato no mercado)
+
+Para CONSERVADOR:
+  MAX_POSITIONS = 3-5
+  CONTRACTS_PER_TRADE = 1-2
+  (Maximo 5-10 contratos)
+
+Para MODERADO:
+  MAX_POSITIONS = 5-7
+  CONTRACTS_PER_TRADE = 5-10
+  (Maximo 35-70 contratos)
+
+Para AGRESSIVO:
+  MAX_POSITIONS = 10
+  CONTRACTS_PER_TRADE = 10+
+  (Maximo 100+ contratos)
+
+Para REPLICACAO MANUAL:
+  MAX_POSITIONS = 1
+  CONTRACTS_PER_TRADE = 1
+  (Sistema opera 1, voce replica em N contas)
+
+================================================================================
+GESTAO DE RISCO
+================================================================================
+
+IMPORTANTE: Quanto maior o numero de contratos, maior o risco!
+
+Com RISK_PER_TRADE = 2%:
+
+Conta de R$ 100.000:
+  1 contrato  = Risco de ~R$ 2.000
+  5 contratos = Risco de ~R$ 10.000
+  10 contratos = Risco de ~R$ 20.000
+  50 contratos = Risco de ~R$ 100.000 (!)
+  100 contratos = Risco de ~R$ 200.000 (!!)
+
+DICA: Comece pequeno e escale gradualmente!
+
+================================================================================
+STATUS ATUAL (Ao iniciar o sistema)
+================================================================================
+
+O sistema mostra:
+
+CONFIGURACAO ATUAL:
+  Max Operacoes Simultaneas: 5
+  Contratos por Operacao:    1
+  Total Potencial:           5 contratos
+  Risco por Trade:           2.0%
+  Confianca Minima:          75%
+  Alinhamento Minimo:        75%
+  Trailing Stop:             SIM (0.5%)
+
+Confira sempre antes de confirmar!
+
+================================================================================

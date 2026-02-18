@@ -1,0 +1,63 @@
+{
+  "generated_at": "2026-02-13T14:48:19.212052",
+  "db_path": "data/db/trading.db",
+  "cycles": [
+    {
+      "cycle": 1,
+      "timestamp": "2026-02-13T14:48:10.807252",
+      "macro_score": -5.0,
+      "micro_score": 4.0,
+      "opportunities": 1,
+      "reasons": [
+        "COMPRA: macro_score -5 < threshold +3"
+      ],
+      "kpi": {
+        "session_date": "2026-02-13",
+        "total": 1,
+        "resolved": 0,
+        "wins": 0,
+        "losses": 0,
+        "false_positive_rate": 0.0
+      }
+    },
+    {
+      "cycle": 2,
+      "timestamp": "2026-02-13T14:48:15.079734",
+      "macro_score": -5.0,
+      "micro_score": 4.0,
+      "opportunities": 1,
+      "reasons": [
+        "COMPRA: macro_score -5 < threshold +3"
+      ],
+      "kpi": {
+        "session_date": "2026-02-13",
+        "total": 1,
+        "resolved": 0,
+        "wins": 0,
+        "losses": 0,
+        "false_positive_rate": 0.0
+      }
+    },
+    {
+      "cycle": 3,
+      "timestamp": "2026-02-13T14:48:19.212052",
+      "macro_score": -5.0,
+      "micro_score": 4.0,
+      "opportunities": 1,
+      "reasons": [
+        "COMPRA: macro_score -5 < threshold +3"
+      ],
+      "kpi": {
+        "session_date": "2026-02-13",
+        "total": 1,
+        "resolved": 0,
+        "wins": 0,
+        "losses": 0,
+        "false_positive_rate": 0.0
+      }
+    }
+  ],
+  "reason_frequency": {
+    "COMPRA: macro_score -5 < threshold +3": 3
+  }
+}

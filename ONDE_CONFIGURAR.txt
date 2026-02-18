@@ -1,0 +1,59 @@
+================================================================================
+GUIA RAPIDO: ONDE CONFIGURAR CONTRATOS
+================================================================================
+
+ARQUIVO: scripts/run_automated_trading.py
+
+LINHA 162-164:
+================================================================================
+
+    # POSICOES E CONTRATOS
+    MAX_POSITIONS = 5        # <-- MUDE AQUI: Operacoes simultaneas
+    CONTRACTS_PER_TRADE = 1  # <-- MUDE AQUI: Contratos por operacao
+
+================================================================================
+
+EXEMPLO: 1 contrato por vez, maximo 5 operacoes simultaneas
+-------------------------------------------------------------
+
+    MAX_POSITIONS = 5        # Ate 5 operacoes ao mesmo tempo
+    CONTRACTS_PER_TRADE = 1  # 1 contrato em cada operacao
+
+    TOTAL POTENCIAL = 5 × 1 = 5 contratos
+
+Como funciona na pratica:
+  [09:15] Compra 1 contrato - Operacao #1 aberta
+  [09:30] Compra 1 contrato - Operacao #2 aberta
+  [09:45] Compra 1 contrato - Operacao #3 aberta
+  [10:00] Vende 1 contrato - Operacao #4 aberta
+  [10:15] Compra 1 contrato - Operacao #5 aberta
+  [10:30] Sistema AGUARDA (ja tem 5 operacoes)
+  [10:45] Operacao #1 fecha -> Pode abrir nova
+
+EXEMPLO: 10 contratos por vez, maximo 3 operacoes simultaneas
+--------------------------------------------------------------
+
+    MAX_POSITIONS = 3        # Ate 3 operacoes ao mesmo tempo
+    CONTRACTS_PER_TRADE = 10 # 10 contratos em cada operacao
+
+    TOTAL POTENCIAL = 3 × 10 = 30 contratos
+
+Como funciona na pratica:
+  [09:15] Compra 10 contratos - Operacao #1 aberta (10 contratos)
+  [09:30] Compra 10 contratos - Operacao #2 aberta (20 contratos total)
+  [09:45] Vende 10 contratos - Operacao #3 aberta (30 contratos total)
+  [10:00] Sistema AGUARDA (ja tem 3 operacoes = 30 contratos)
+
+VERIFICACAO (Ao iniciar):
+========================================
+
+O sistema mostra suas configuracoes:
+
+CONFIGURACAO ATUAL:
+  Max Operacoes Simultaneas: 5      <- MAX_POSITIONS
+  Contratos por Operacao:    1      <- CONTRACTS_PER_TRADE
+  Total Potencial:           5 contratos
+
+Se estiver errado, digite Ctrl+C e ajuste!
+
+================================================================================

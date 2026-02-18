@@ -1,0 +1,662 @@
+{
+  "metadata": {
+    "project": "analista-financeiro-forex",
+    "version": "1.4.0",
+    "generated_at": "2026-02-10",
+    "total_external_apis": 15,
+    "total_internal_apis": 3
+  },
+
+  "external_apis_consumed": [
+    {
+      "id": "binance-futures",
+      "name": "Binance Futures API (USD-M)",
+      "category": "Trading Platform / Exchange",
+      "documentation_url": "https://binance-docs.github.io/apidocs/futures/en/",
+      "base_urls": {
+        "mainnet": "https://fapi.binance.com",
+        "testnet": "https://testnet.binancefuture.com"
+      },
+      "authentication": {
+        "method": "HMAC SHA256",
+        "env_vars": ["BINANCE_API_KEY", "BINANCE_API_SECRET"],
+        "header": "X-MBX-APIKEY",
+        "signature": "Query param 'signature' with HMAC-SHA256 of query string"
+      },
+      "rate_limits": "2400 req/min (weight 1200), 20 orders/sec, 300 orders/10sec",
+      "endpoints_used": [
+        {"method": "GET", "path": "/fapi/v1/ping", "purpose": "Test connectivity"},
+        {"method": "GET", "path": "/fapi/v1/time", "purpose": "Server time sync"},
+        {"method": "GET", "path": "/fapi/v1/exchangeInfo", "purpose": "Trading rules & symbols"},
+        {"method": "GET", "path": "/fapi/v1/klines", "purpose": "Candlestick / OHLCV data"},
+        {"method": "GET", "path": "/fapi/v1/ticker/24hr", "purpose": "24h statistics"},
+        {"method": "GET", "path": "/fapi/v1/ticker/price", "purpose": "Current price"},
+        {"method": "GET", "path": "/fapi/v1/depth", "purpose": "Order book (bids/asks)"},
+        {"method": "GET", "path": "/fapi/v1/fundingRate", "purpose": "Funding rate history"},
+        {"method": "GET", "path": "/fapi/v1/openInterest", "purpose": "Open interest"},
+        {"method": "GET", "path": "/fapi/v1/premiumIndex", "purpose": "Mark price / premium index"},
+        {"method": "GET", "path": "/fapi/v1/forceOrders", "purpose": "Liquidation orders"},
+        {"method": "GET", "path": "/fapi/v2/account", "purpose": "Account info (auth)"},
+        {"method": "GET", "path": "/fapi/v2/positionRisk", "purpose": "Position risk (auth)"},
+        {"method": "POST", "path": "/fapi/v1/order", "purpose": "Place order (auth)"},
+        {"method": "DELETE", "path": "/fapi/v1/order", "purpose": "Cancel order (auth)"},
+        {"method": "GET", "path": "/fapi/v1/allOrders", "purpose": "Order history (auth)"},
+        {"method": "GET", "path": "/futures/data/openInterestHist", "purpose": "OI history"}
+      ],
+      "adapter_files": [
+        "src/analista_forex/adapters/binance_connection.py",
+        "src/analista_forex/adapters/adapter_binance_futures.py",
+        "src/analista_forex/adapters/binance_adapter.py",
+        "src/analista_forex/adapters/binance.py",
+        "src/analista_forex/captura_binance_futures.py"
+      ],
+      "example_usage": "from analista_forex.adapters.binance_connection import create_binance_connection\nconn = create_binance_connection()\nklines = conn.get_klines('BTCUSDT', '1h', limit=500)"
+    },
+
+    {
+      "id": "binance-spot",
+      "name": "Binance Spot API (via python-binance SDK)",
+      "category": "Trading Platform / Exchange",
+      "documentation_url": "https://binance-docs.github.io/apidocs/spot/en/",
+      "base_url": "https://api.binance.com",
+      "authentication": {
+        "method": "HMAC SHA256 (via python-binance Client)",
+        "env_vars": ["BINANCE_API_KEY", "BINANCE_API_SECRET"]
+      },
+      "sdk": "python-binance (binance.client.Client)",
+      "endpoints_used": [
+        {"method": "SDK", "call": "Client.get_server_time()", "purpose": "Server time sync"},
+        {"method": "SDK", "call": "Client.get_account()", "purpose": "Account info / balances"},
+        {"method": "SDK", "call": "Client.futures_account()", "purpose": "Futures account info"},
+        {"method": "SDK", "call": "Client.futures_change_leverage()", "purpose": "Change leverage"}
+      ],
+      "adapter_files": [
+        "src/analista_forex/adapters/adapter_binance_futures.py",
+        "tools/debug/diagnostico_binance_api.py",
+        "tools/migration/sincronizar_carteira_spot.py"
+      ],
+      "example_usage": "from binance.client import Client\nclient = Client(api_key, api_secret)\naccount = client.futures_account(recvWindow=10000)"
+    },
+
+    {
+      "id": "binance-announcements",
+      "name": "Binance CMS / Announcements API",
+      "category": "News / Announcements",
+      "documentation_url": "https://binance-docs.github.io/apidocs/spot/en/ (undocumented internal)",
+      "base_url": "https://www.binance.com",
+      "authentication": {"method": "None (public)"},
+      "endpoints_used": [
+        {"method": "GET", "path": "/bapi/composite/v1/public/cms/article/list/query", "purpose": "Fetch Binance announcements"}
+      ],
+      "adapter_files": ["src/analista_forex/adapters/news.py"],
+      "example_usage": "requests.get('https://www.binance.com/bapi/composite/v1/public/cms/article/list/query', params={'type': 1, 'pageNo': 1, 'pageSize': 10})"
+    },
+
+    {
+      "id": "novadax",
+      "name": "NovaDAX Exchange API",
+      "category": "Trading Platform / Exchange (Brazilian)",
+      "documentation_url": "https://doc.novadax.com/pt-BR/",
+      "base_url": "https://api.novadax.com",
+      "authentication": {
+        "method": "HMAC SHA256 (GET) / HMAC SHA256 + MD5 body (POST)",
+        "env_vars": ["NOVADAX_API_KEY", "NOVADAX_API_SECRET"],
+        "headers": ["X-Nova-Access-Key", "X-Nova-Signature", "X-Nova-Timestamp"]
+      },
+      "rate_limits": "6000 weight/min (HTTP 429 when exceeded)",
+      "endpoints_used": [
+        {"method": "GET", "path": "/v1/common/timestamp", "purpose": "Server time", "weight": 1},
+        {"method": "GET", "path": "/v1/common/symbols", "purpose": "All trading pairs", "weight": 1},
+        {"method": "GET", "path": "/v1/common/symbol", "purpose": "Single pair info", "weight": 1},
+        {"method": "GET", "path": "/v1/market/ticker", "purpose": "24h ticker for one pair", "weight": 1},
+        {"method": "GET", "path": "/v1/market/tickers", "purpose": "24h ticker all pairs", "weight": 5},
+        {"method": "GET", "path": "/v1/market/depth", "purpose": "Order book", "weight": 1},
+        {"method": "GET", "path": "/v1/market/trades", "purpose": "Recent trades", "weight": 5},
+        {"method": "GET", "path": "/v1/market/kline/history", "purpose": "Candlestick OHLCV", "weight": 5},
+        {"method": "GET", "path": "/v1/account/getBalance", "purpose": "Account balance (auth)", "weight": 1},
+        {"method": "POST", "path": "/v1/orders/create", "purpose": "Create order (auth)"},
+        {"method": "GET", "path": "/v1/orders/get", "purpose": "Get order (auth)"},
+        {"method": "POST", "path": "/v1/orders/cancel", "purpose": "Cancel order (auth)"},
+        {"method": "GET", "path": "/v1/orders/list", "purpose": "List orders (auth)"}
+      ],
+      "adapter_files": [
+        "src/analista_forex/adapters/novadax_connection.py",
+        "src/analista_forex/monitor_novadx_v2.py",
+        "src/analista_forex/monitor_novadx.py"
+      ],
+      "example_usage": "from analista_forex.adapters.novadax_connection import create_novadax_connection\nconn = create_novadax_connection(api_key='...', api_secret='...')\nticker = conn.get_ticker('BTC_BRL')"
+    },
+
+    {
+      "id": "twelvedata",
+      "name": "Twelve Data API",
+      "category": "Market Data Provider",
+      "documentation_url": "https://twelvedata.com/docs",
+      "sdk_url": "https://github.com/twelvedata/twelvedata-python",
+      "mcp_server": "https://github.com/twelvedata/mcp",
+      "base_url": "https://api.twelvedata.com",
+      "authentication": {
+        "method": "API Key (query parameter 'apikey')",
+        "env_vars": ["TWELVEDATA_API_KEY"]
+      },
+      "rate_limits": {
+        "free": "800 req/day (8 req/min)",
+        "basic": "3000 req/day (30 req/min)",
+        "pro": "10000 req/day (100 req/min)",
+        "enterprise": "200 req/min"
+      },
+      "sdk": "twelvedata (TDClient)",
+      "endpoints_used": [
+        {"method": "GET", "path": "/quote", "purpose": "Real-time quote"},
+        {"method": "GET", "path": "/time_series", "purpose": "OHLCV candlestick data"},
+        {"method": "SDK", "call": "TDClient.quote(symbol=...)", "purpose": "Quote via SDK"},
+        {"method": "SDK", "call": "TDClient.time_series(symbol=..., interval=..., outputsize=...)", "purpose": "Time series via SDK"}
+      ],
+      "supported_intervals": ["1min", "5min", "15min", "30min", "45min", "1h", "2h", "4h", "8h", "1day", "1week", "1month"],
+      "adapter_files": [
+        "src/analista_forex/adapters/twelvedata_connection.py",
+        "src/analista_forex/captura_twelvedata.py"
+      ],
+      "example_usage": "from analista_forex.captura_twelvedata import CapturaTwelveData\ncaptura = CapturaTwelveData(api_key='...')\ncotacao = captura.obter_cotacao_atual('EURUSD=X')"
+    },
+
+    {
+      "id": "yahoo-finance",
+      "name": "Yahoo Finance (via yfinance)",
+      "category": "Market Data Provider",
+      "documentation_url": "https://github.com/ranaroussi/yfinance",
+      "base_url": "https://query2.finance.yahoo.com",
+      "authentication": {"method": "None (free, no API key)"},
+      "rate_limits": "~2000 req/hour (empirical, undocumented)",
+      "sdk": "yfinance (yf.Ticker, yf.download)",
+      "endpoints_used": [
+        {"method": "SDK", "call": "yf.Ticker(symbol).info", "purpose": "Asset info / quote"},
+        {"method": "SDK", "call": "yf.Ticker(symbol).history(period, interval)", "purpose": "Historical OHLCV"},
+        {"method": "SDK", "call": "yf.download(tickers, period, interval)", "purpose": "Batch historical data"}
+      ],
+      "supported_intervals": ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "5d", "1wk", "1mo", "3mo"],
+      "adapter_files": [
+        "src/analista_forex/adapters/yahoo_connection.py",
+        "src/analista_forex/adapters/adapter_yahoo_finance.py",
+        "src/analista_forex/captura.py"
+      ],
+      "example_usage": "from analista_forex.adapters.yahoo_connection import YahooFinanceConnection\nyahoo = YahooFinanceConnection()\ndf = yahoo.get_historical_data('EURUSD=X', interval='1h', period='1mo')"
+    },
+
+    {
+      "id": "awesomeapi",
+      "name": "AwesomeAPI (Economia)",
+      "category": "Market Data Provider (Brazilian)",
+      "documentation_url": "https://docs.awesomeapi.com.br/",
+      "base_url": "https://economia.awesomeapi.com.br",
+      "authentication": {"method": "None (free, no API key)"},
+      "rate_limits": "No aggressive rate limiting documented",
+      "endpoints_used": [
+        {"method": "GET", "path": "/last/{par}", "purpose": "Current quote for a pair (e.g., /last/USD-BRL)"},
+        {"method": "GET", "path": "/daily/{par}/{days}", "purpose": "Daily history for a pair"},
+        {"method": "GET", "path": "/{par}/{days}", "purpose": "Closing prices history"}
+      ],
+      "adapter_files": [
+        "src/analista_forex/captura_awesomeapi.py",
+        "src/analista_forex/features/captura_dados/infrastructure/repositories/awesomeapi_cotacoes_repository.py"
+      ],
+      "example_usage": "from analista_forex.captura_awesomeapi import CapturaAwesomeAPI\napi = CapturaAwesomeAPI()\ncotacao = api.obter_cotacao_atual('EURUSD=X')"
+    },
+
+    {
+      "id": "mercadobitcoin",
+      "name": "Mercado Bitcoin API v4",
+      "category": "Trading Platform / Exchange (Brazilian)",
+      "documentation_url": "https://api.mercadobitcoin.net/api/v4/docs",
+      "swagger_local": "configs/swagger_mercadobitcoin.yaml",
+      "base_url": "https://api.mercadobitcoin.net/api/v4",
+      "oauth_url": "https://api.mercadobitcoin.net/oauth2/token",
+      "authentication": {
+        "method": "OAuth2 client_credentials flow (Bearer token)",
+        "env_vars": ["MERCADO_BITCOIN_CLIENT_ID", "MERCADO_BITCOIN_CLIENT_SECRET"]
+      },
+      "rate_limits": "500 req/min",
+      "endpoints_used": [
+        {"method": "GET", "path": "/candles", "purpose": "Candlestick data (OHLCV)"},
+        {"method": "GET", "path": "/{symbol}/trades", "purpose": "Trade history"},
+        {"method": "GET", "path": "/tickers", "purpose": "Ticker data for symbols"},
+        {"method": "GET", "path": "/{symbol}/orderbook", "purpose": "Order book"},
+        {"method": "GET", "path": "/symbols", "purpose": "Available trading pairs"},
+        {"method": "POST", "path": "/oauth2/token", "purpose": "OAuth2 authentication"},
+        {"method": "GET", "path": "/accounts", "purpose": "User accounts (auth)"},
+        {"method": "GET", "path": "/accounts/{id}/balances", "purpose": "Account balances (auth)"}
+      ],
+      "adapter_files": [
+        "src/analista_forex/adapters/mercadobitcoin.py",
+        "src/analista_forex/adapters/mercadobitcoin_client.py"
+      ],
+      "example_usage": "from analista_forex.adapters.mercadobitcoin_client import MercadoBitcoinClient\nclient = MercadoBitcoinClient()\nticker = client.get_ticker('BTC-BRL')"
+    },
+
+    {
+      "id": "metatrader5",
+      "name": "MetaTrader 5 (MT5 Terminal API)",
+      "category": "Trading Platform (Desktop)",
+      "documentation_url": "https://www.mql5.com/en/docs/python_metatrader5",
+      "authentication": {
+        "method": "MT5 Desktop Login (account, password, server)",
+        "env_vars": ["MT5_WINFUT_PASSWORD"],
+        "config_file": "configs/monitors.yml (winfut section)"
+      },
+      "sdk": "MetaTrader5 (Python package)",
+      "functions_used": [
+        {"call": "mt5.initialize()", "purpose": "Initialize MT5 terminal"},
+        {"call": "mt5.login(account, password, server)", "purpose": "Login to broker"},
+        {"call": "mt5.copy_rates_from_pos(symbol, timeframe, 0, bars)", "purpose": "Get historical candles"},
+        {"call": "mt5.symbol_info(symbol)", "purpose": "Get symbol info"},
+        {"call": "mt5.account_info()", "purpose": "Account info"},
+        {"call": "mt5.symbols_get()", "purpose": "List available symbols"},
+        {"call": "mt5.shutdown()", "purpose": "Disconnect from MT5"}
+      ],
+      "adapter_files": [
+        "src/analista_forex/adapters/adapter_forex_mt5.py",
+        "src/analista_forex/adapters/mt5_instance_manager.py",
+        "backfill_winfut_weekly.py",
+        "monitor_winfut.py",
+        "explorar_simbolos_win.py"
+      ],
+      "example_usage": "adapter = AdaptadorMT5(config={'account': 1000346516, 'password': '...', 'server': 'Clear'})\nadapter.conectar()\ndf = adapter.obter_dados_historicos('WIN@N', 'W1', 1100)"
+    },
+
+    {
+      "id": "marketstack",
+      "name": "Marketstack API",
+      "category": "Market Data Provider (Stocks/Indices)",
+      "documentation_url": "https://marketstack.com/documentation",
+      "base_url": "http://api.marketstack.com/v1",
+      "authentication": {
+        "method": "API Key (query parameter 'access_key')",
+        "env_vars": ["MARKETSTACK_API_KEY"]
+      },
+      "endpoints_used": [
+        {"method": "GET", "path": "/eod/latest", "purpose": "Latest end-of-day quotes"},
+        {"method": "GET", "path": "/eod", "purpose": "Historical end-of-day data"},
+        {"method": "GET", "path": "/intraday", "purpose": "Intraday data"},
+        {"method": "GET", "path": "/tickers", "purpose": "Search tickers"}
+      ],
+      "adapter_files": ["src/analista_forex/captura_marketstack.py"],
+      "example_usage": "from analista_forex.captura_marketstack import CapturaMarketstack\nms = CapturaMarketstack(api_key='...')\ncotacao = ms.obter_cotacao_atual('AXJO')"
+    },
+
+    {
+      "id": "financeflow",
+      "name": "FinanceFlowAPI",
+      "category": "Market Data Provider (Global Indices)",
+      "documentation_url": "https://financeflowapi.com",
+      "base_url": "https://financeflowapi.com/api/v1",
+      "authentication": {
+        "method": "API Key (query parameter 'api_key')",
+        "env_vars": ["FINANCEFLOW_API_KEY"]
+      },
+      "endpoints_used": [
+        {"method": "GET", "path": "/index-catalog", "purpose": "List available indices"},
+        {"method": "GET", "path": "/index-spot", "purpose": "Current index quote"},
+        {"method": "GET", "path": "/index-history", "purpose": "Historical index data"},
+        {"method": "GET", "path": "/commodity-history", "purpose": "Commodity history"},
+        {"method": "GET", "path": "/bonds-history", "purpose": "Bonds history"},
+        {"method": "GET", "path": "/ticker-candles", "purpose": "Ticker candle data"}
+      ],
+      "adapter_files": ["src/analista_forex/captura_financeflow.py"],
+      "example_usage": "from analista_forex.captura_financeflow import CapturaFinanceFlow\nff = CapturaFinanceFlow(api_key='...')\ncotacao = ff.obter_cotacao_atual('ASX200')"
+    },
+
+    {
+      "id": "cryptocompare",
+      "name": "CryptoCompare News API",
+      "category": "News / Sentiment",
+      "documentation_url": "https://min-api.cryptocompare.com/documentation",
+      "base_url": "https://min-api.cryptocompare.com",
+      "authentication": {"method": "None (free tier, no key required)"},
+      "endpoints_used": [
+        {"method": "GET", "path": "/data/v2/news/", "purpose": "Crypto news (sorted by latest)"}
+      ],
+      "adapter_files": ["src/analista_forex/adapters/news.py"],
+      "example_usage": "requests.get('https://min-api.cryptocompare.com/data/v2/news/', params={'lang': 'EN', 'sortOrder': 'latest'})"
+    },
+
+    {
+      "id": "coingecko",
+      "name": "CoinGecko API",
+      "category": "Market Data / Sentiment",
+      "documentation_url": "https://www.coingecko.com/en/api/documentation",
+      "base_url": "https://api.coingecko.com/api/v3",
+      "authentication": {"method": "None (free tier, no key required)"},
+      "endpoints_used": [
+        {"method": "GET", "path": "/search/trending", "purpose": "Trending coins"},
+        {"method": "GET", "path": "/global", "purpose": "Global crypto market data"}
+      ],
+      "adapter_files": [
+        "src/analista_forex/adapters/news.py",
+        "scripts/analise/analisar_pippinusdt_macro.py"
+      ],
+      "example_usage": "requests.get('https://api.coingecko.com/api/v3/search/trending')"
+    },
+
+    {
+      "id": "fear-greed-index",
+      "name": "Alternative.me Fear & Greed Index",
+      "category": "Market Sentiment",
+      "documentation_url": "https://alternative.me/crypto/fear-and-greed-index/",
+      "base_url": "https://api.alternative.me",
+      "authentication": {"method": "None (free, no key required)"},
+      "endpoints_used": [
+        {"method": "GET", "path": "/fng/", "purpose": "Fear & Greed Index (current + historical)"}
+      ],
+      "adapter_files": [
+        "src/analista_forex/adapters/news.py",
+        "scripts/analise/analisar_pippinusdt_macro.py"
+      ],
+      "example_usage": "requests.get('https://api.alternative.me/fng/', params={'limit': 1})"
+    },
+
+    {
+      "id": "forexfactory-faireconomy",
+      "name": "ForexFactory Calendar (via Fair Economy proxy)",
+      "category": "Economic Calendar",
+      "documentation_url": "https://www.forexfactory.com/calendar (no official API docs)",
+      "base_url": "https://nfs.faireconomy.media",
+      "authentication": {"method": "None (public)"},
+      "endpoints_used": [
+        {"method": "GET", "path": "/ff_calendar_thisweek.json", "purpose": "This week's economic events"}
+      ],
+      "adapter_files": ["src/analista_forex/calendario_economico.py"],
+      "example_usage": "requests.get('https://nfs.faireconomy.media/ff_calendar_thisweek.json', timeout=15)"
+    },
+
+    {
+      "id": "finnhub",
+      "name": "Finnhub API",
+      "category": "Economic Calendar",
+      "documentation_url": "https://finnhub.io/docs/api",
+      "base_url": "https://finnhub.io/api/v1",
+      "authentication": {
+        "method": "API Key (query parameter 'token')",
+        "env_vars": ["FINNHUB_API_KEY"]
+      },
+      "endpoints_used": [
+        {"method": "GET", "path": "/calendar/economic", "purpose": "Economic calendar events"}
+      ],
+      "adapter_files": ["src/analista_forex/calendario_economico.py"],
+      "example_usage": "requests.get('https://finnhub.io/api/v1/calendar/economic', params={'token': api_key})"
+    },
+
+    {
+      "id": "alphavantage",
+      "name": "Alpha Vantage API",
+      "category": "Market Data / Economic Indicators",
+      "documentation_url": "https://www.alphavantage.co/documentation/",
+      "base_url": "https://www.alphavantage.co/query",
+      "authentication": {
+        "method": "API Key (query parameter 'apikey')",
+        "env_vars": ["ALPHAVANTAGE_API_KEY"]
+      },
+      "endpoints_used": [
+        {"method": "GET", "params": {"function": "GLOBAL_QUOTE"}, "purpose": "Real-time quote"},
+        {"method": "GET", "params": {"function": "TIME_SERIES_DAILY"}, "purpose": "Daily OHLCV"},
+        {"method": "GET", "params": {"function": "TIME_SERIES_DAILY_ADJUSTED"}, "purpose": "Adjusted daily OHLCV"},
+        {"method": "GET", "params": {"function": "SYMBOL_SEARCH"}, "purpose": "Search symbols"},
+        {"method": "GET", "params": {"function": "RSI"}, "purpose": "RSI indicator"},
+        {"method": "GET", "params": {"function": "*"}, "purpose": "Various economic indicators (via calendario_economico)"}
+      ],
+      "adapter_files": [
+        "src/analista_forex/calendario_economico.py",
+        "scripts/validacao/testar_alphavantage_completo.py",
+        "scripts/validacao/testar_alphavantage_dax.py"
+      ],
+      "example_usage": "requests.get('https://www.alphavantage.co/query', params={'function': 'GLOBAL_QUOTE', 'symbol': 'EURAUD', 'apikey': api_key})"
+    },
+
+    {
+      "id": "fmp",
+      "name": "Financial Modeling Prep (FMP) API",
+      "category": "Economic Calendar",
+      "documentation_url": "https://financialmodelingprep.com/developer/docs",
+      "base_url": "https://financialmodelingprep.com/stable",
+      "authentication": {
+        "method": "API Key (query parameter 'apikey')",
+        "env_vars": ["FMP_API_KEY"]
+      },
+      "endpoints_used": [
+        {"method": "GET", "path": "/economic-calendar", "purpose": "Economic calendar events"}
+      ],
+      "adapter_files": ["src/analista_forex/calendario_economico.py"],
+      "example_usage": "requests.get('https://financialmodelingprep.com/stable/economic-calendar', params={'apikey': api_key})"
+    },
+
+    {
+      "id": "abs-sdmx",
+      "name": "Australian Bureau of Statistics (ABS) SDMX API",
+      "category": "Government Statistics / Macro Data",
+      "documentation_url": "https://www.abs.gov.au/about/data-services/application-programming-interfaces-apis",
+      "base_url": "https://data.api.abs.gov.au/rest/data",
+      "authentication": {"method": "None (public government API)"},
+      "endpoints_used": [
+        {"method": "GET", "path": "/{dataflow}/{series_key}", "purpose": "SDMX statistical data"},
+        {"note": "Dataflows used: CPI (1.10001.10.50.Q), LF (employment/unemployment), ANA_AGG (GDP), RT (retail)"}
+      ],
+      "adapter_files": ["src/analista_forex/calendario_economico.py"],
+      "example_usage": "urllib.request.urlopen('https://data.api.abs.gov.au/rest/data/CPI/1.10001.10.50.Q?lastNObservations=2')"
+    },
+
+    {
+      "id": "telegram-bot",
+      "name": "Telegram Bot API",
+      "category": "Notification / Messaging",
+      "documentation_url": "https://core.telegram.org/bots/api",
+      "base_url": "https://api.telegram.org/bot{token}",
+      "authentication": {
+        "method": "Bot Token (URL path)",
+        "env_vars": ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "TELEGRAM_ATIVO"]
+      },
+      "endpoints_used": [
+        {"method": "POST", "path": "/sendMessage", "purpose": "Send text message to chat"},
+        {"method": "GET", "path": "/getMe", "purpose": "Test bot connection / get bot info"}
+      ],
+      "adapter_files": [
+        "src/analista_forex/features/relatorios/infrastructure/notificadores/telegram_notificador.py",
+        "src/analista_forex/monitor/notificador.py"
+      ],
+      "example_usage": "requests.post(f'https://api.telegram.org/bot{token}/sendMessage', json={'chat_id': chat_id, 'text': msg, 'parse_mode': 'Markdown'})"
+    },
+
+    {
+      "id": "openai",
+      "name": "OpenAI API (GPT-4)",
+      "category": "AI / LLM Analysis",
+      "documentation_url": "https://platform.openai.com/docs/api-reference",
+      "authentication": {
+        "method": "API Key (Bearer token via SDK)",
+        "env_vars": ["OPENAI_API_KEY", "OPENAI_MODEL", "OPENAI_MAX_TOKENS"]
+      },
+      "sdk": "openai (OpenAI client)",
+      "functions_used": [
+        {"call": "OpenAI(api_key=...).chat.completions.create(model, messages, max_tokens)", "purpose": "LLM-powered market analysis"}
+      ],
+      "adapter_files": ["src/analista_forex/services/llm_analysis.py"],
+      "example_usage": "from openai import OpenAI\nclient = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))\nresponse = client.chat.completions.create(model='gpt-4', messages=[{'role': 'user', 'content': prompt}])"
+    },
+
+    {
+      "id": "worldtimeapi",
+      "name": "WorldTimeAPI",
+      "category": "Utility / Time Sync",
+      "documentation_url": "http://worldtimeapi.org/",
+      "base_url": "http://worldtimeapi.org/api",
+      "authentication": {"method": "None (public)"},
+      "endpoints_used": [
+        {"method": "GET", "path": "/timezone/America/Sao_Paulo", "purpose": "Get current time for Brazil timezone"}
+      ],
+      "adapter_files": ["src/analista_forex/utils/timestamp_sync.py"],
+      "example_usage": "requests.get('http://worldtimeapi.org/api/timezone/America/Sao_Paulo', timeout=5)"
+    }
+  ],
+
+  "internal_apis_served": [
+    {
+      "id": "main-fastapi",
+      "name": "Analista Financeiro Forex - Main API",
+      "framework": "FastAPI",
+      "entry_point": "src/analista_forex/api/main.py",
+      "run_command": "uvicorn src.analista_forex.api.main:app --reload --port 8000",
+      "base_path": "/",
+      "authentication": {"method": "None (local use)"},
+      "routers": [
+        {
+          "prefix": "/",
+          "tag": "Root",
+          "endpoints": [
+            {"method": "GET", "path": "/", "purpose": "API root / welcome"}
+          ]
+        },
+        {
+          "prefix": "/health",
+          "tag": "Health",
+          "file": "src/analista_forex/api/routers/health.py",
+          "endpoints": [
+            {"method": "GET", "path": "/health/", "purpose": "Health check"},
+            {"method": "GET", "path": "/health/ready", "purpose": "Readiness probe"},
+            {"method": "GET", "path": "/health/live", "purpose": "Liveness probe"},
+            {"method": "GET", "path": "/health/services", "purpose": "Service status"},
+            {"method": "GET", "path": "/health/detailed", "purpose": "Detailed health status"}
+          ]
+        },
+        {
+          "prefix": "/cotacoes",
+          "tag": "Cotações",
+          "file": "src/analista_forex/api/routers/cotacoes.py",
+          "endpoints": [
+            {"method": "GET", "path": "/cotacoes/", "purpose": "List quotes (with filters)"},
+            {"method": "GET", "path": "/cotacoes/ultima", "purpose": "Latest quote for a symbol"}
+          ]
+        },
+        {
+          "prefix": "/analise",
+          "tag": "Análise",
+          "file": "src/analista_forex/api/routers/analise.py",
+          "endpoints": [
+            {"method": "POST", "path": "/analise/completa", "purpose": "Full technical analysis"},
+            {"method": "GET", "path": "/analise/indicadores", "purpose": "Technical indicators"},
+            {"method": "POST", "path": "/analise/smart-money", "purpose": "Smart Money Concepts analysis"}
+          ]
+        },
+        {
+          "prefix": "/derivativos",
+          "tag": "Derivativos",
+          "file": "src/analista_forex/api/routers/derivativos.py",
+          "endpoints": [
+            {"method": "GET", "path": "/derivativos/{simbolo}", "purpose": "Derivatives data for symbol"},
+            {"method": "GET", "path": "/derivativos/liquidacoes/{simbolo}", "purpose": "Liquidations for symbol"},
+            {"method": "GET", "path": "/derivativos/liquidacoes/resumo", "purpose": "Liquidations summary"}
+          ]
+        },
+        {
+          "prefix": "/metrics",
+          "tag": "Metrics",
+          "file": "src/analista_forex/api/routers/metrics.py",
+          "endpoints": [
+            {"method": "GET", "path": "/metrics/", "purpose": "Prometheus-format metrics"},
+            {"method": "GET", "path": "/metrics/json", "purpose": "JSON-format metrics"}
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": "dashboard-api",
+      "name": "Dashboard Binance Swing API",
+      "framework": "FastAPI",
+      "entry_points": [
+        "src/analista_forex/features/dashboard/infrastructure/api/dashboard_api.py",
+        "scripts/utils/dashboard_backend_simple.py"
+      ],
+      "base_path": "/api/v1/dashboard",
+      "authentication": {"method": "None (local use)"},
+      "endpoints": [
+        {"method": "GET", "path": "/api/v1/dashboard/posicoes/abertas", "purpose": "Open positions with P&L"},
+        {"method": "GET", "path": "/api/v1/dashboard/regras/ativas", "purpose": "Active graduated closing rules"},
+        {"method": "GET", "path": "/api/v1/dashboard/historico/fechamentos", "purpose": "Closing history"},
+        {"method": "GET", "path": "/api/v1/dashboard/metricas/performance", "purpose": "Performance metrics"},
+        {"method": "GET", "path": "/api/v1/dashboard/health", "purpose": "Dashboard health check"},
+        {"method": "WebSocket", "path": "/api/v1/dashboard/ws/dashboard", "purpose": "Real-time dashboard updates"},
+        {"method": "GET", "path": "/api/v1/dashboard/overview", "purpose": "Overview metrics (simple backend)"},
+        {"method": "GET", "path": "/api/v1/dashboard/regras-graduadas", "purpose": "Graduated rules (simple backend)"}
+      ],
+      "frontend": {
+        "technology": "React + TypeScript + Tailwind CSS",
+        "url": "http://localhost:3000",
+        "api_url": "http://localhost:8000"
+      }
+    },
+
+    {
+      "id": "servidor-investimentos",
+      "name": "Servidor de Gestão de Investimentos",
+      "framework": "FastAPI",
+      "entry_point": "scripts/utils/servidor_investimentos.py",
+      "base_path": "/",
+      "authentication": {"method": "None (local use)"},
+      "endpoints": [
+        {"method": "GET", "path": "/", "purpose": "Main HTML page"},
+        {"method": "GET", "path": "/carteira", "purpose": "Investment portfolio page"},
+        {"method": "GET", "path": "/analise-alocacao", "purpose": "Allocation analysis page"},
+        {"method": "GET", "path": "/balancete", "purpose": "Balance sheet page"},
+        {"method": "GET", "path": "/api/resumo-geral", "purpose": "Consolidated investment summary"},
+        {"method": "GET", "path": "/api/subcategorias/{categoria_id}", "purpose": "Subcategories by category"},
+        {"method": "GET", "path": "/api/resumo-subcategorias", "purpose": "Subcategories summary"},
+        {"method": "GET", "path": "/api/portfolio", "purpose": "Portfolio data"},
+        {"method": "GET", "path": "/api/ativos-multimoeda", "purpose": "Multi-currency assets"},
+        {"method": "GET", "path": "/api/alocacao", "purpose": "Allocation breakdown"},
+        {"method": "GET", "path": "/api/balancete", "purpose": "Balance verification"},
+        {"method": "GET", "path": "/api/cotacao-dolar", "purpose": "USD/BRL exchange rate"},
+        {"method": "POST", "path": "/api/atualizar-cotacao/{moeda}", "purpose": "Update currency quote"},
+        {"method": "GET", "path": "/api/binance", "purpose": "Binance account summary"},
+        {"method": "GET", "path": "/api/novadax", "purpose": "NovaDAX account summary"},
+        {"method": "GET", "path": "/api/alocacao-categorias", "purpose": "Category allocation"},
+        {"method": "GET", "path": "/api/historico-rentabilidade", "purpose": "Profitability history"}
+      ]
+    }
+  ],
+
+  "env_vars_summary": {
+    "required_for_trading": [
+      "BINANCE_API_KEY",
+      "BINANCE_API_SECRET"
+    ],
+    "required_for_data_sources": [
+      "TWELVEDATA_API_KEY"
+    ],
+    "optional_data_sources": [
+      "MARKETSTACK_API_KEY",
+      "FINANCEFLOW_API_KEY",
+      "ALPHAVANTAGE_API_KEY",
+      "FINNHUB_API_KEY",
+      "FMP_API_KEY"
+    ],
+    "optional_exchanges": [
+      "NOVADAX_API_KEY",
+      "NOVADAX_API_SECRET",
+      "MERCADO_BITCOIN_CLIENT_ID",
+      "MERCADO_BITCOIN_CLIENT_SECRET"
+    ],
+    "optional_services": [
+      "OPENAI_API_KEY",
+      "OPENAI_MODEL",
+      "OPENAI_MAX_TOKENS",
+      "TELEGRAM_BOT_TOKEN",
+      "TELEGRAM_CHAT_ID",
+      "TELEGRAM_ATIVO"
+    ],
+    "metatrader5": [
+      "MT5_WINFUT_PASSWORD"
+    ],
+    "abs_statistics": [
+      "ABS_GDP_SERIES_KEY",
+      "ABS_RETAIL_SERIES_KEY"
+    ]
+  }
+}

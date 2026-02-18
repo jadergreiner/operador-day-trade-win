@@ -1,0 +1,67 @@
+{
+  "generated_at": "2026-02-13T18:44:43.862089",
+  "d0": "2026-02-13",
+  "train_rows": 729,
+  "test_rows": 235,
+  "models": {
+    "oot_train_to_d_minus_1": {
+      "classification": {
+        "n_samples": 235,
+        "accuracy": 0.5106382978723404,
+        "balanced_accuracy": 0.5085144927536231,
+        "f1_macro": 0.5045738693651579
+      },
+      "trading_d0": {
+        "n_trades": 2,
+        "win_rate": 0.0,
+        "total_net_pnl_pts": -762.6,
+        "profit_factor": 0.0,
+        "max_drawdown_pts": 378.8,
+        "sharpe_ratio": 0.0,
+        "buy_trades": 2,
+        "sell_trades": 0
+      }
+    },
+    "baseline_20260212": {
+      "classification": {
+        "n_samples": 235,
+        "accuracy": 0.5106382978723404,
+        "balanced_accuracy": 0.5079710144927536,
+        "f1_macro": 0.5013929632294607
+      },
+      "trading_d0": {
+        "n_trades": 2,
+        "win_rate": 0.0,
+        "total_net_pnl_pts": -762.6,
+        "profit_factor": 0.0,
+        "max_drawdown_pts": 378.8,
+        "sharpe_ratio": 0.0,
+        "buy_trades": 2,
+        "sell_trades": 0
+      }
+    },
+    "novo_20260213": {
+      "classification": {
+        "n_samples": 235,
+        "accuracy": 1.0,
+        "balanced_accuracy": 1.0,
+        "f1_macro": 1.0
+      },
+      "trading_d0": {
+        "n_trades": 8,
+        "win_rate": 1.0,
+        "total_net_pnl_pts": 1909.6000000000001,
+        "profit_factor": Infinity,
+        "max_drawdown_pts": 0.0,
+        "sharpe_ratio": 0.0,
+        "buy_trades": 0,
+        "sell_trades": 8
+      }
+    }
+  },
+  "ranking": [
+    "novo_20260213",
+    "oot_train_to_d_minus_1",
+    "baseline_20260212"
+  ]
+}

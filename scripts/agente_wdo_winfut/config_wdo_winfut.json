@@ -1,0 +1,635 @@
+{
+  "agente": "wdo_winfut_macro_score",
+  "versao": "1.0.0",
+  "descricao": "Agente especializado em USDBRL (WDO) e Ibovespa Futuro (WINFUT) com pontuacao dupla independente",
+
+  "apis": {
+    "awesomeapi": {
+      "ativo": true,
+      "base_url": "https://economia.awesomeapi.com.br/json/last",
+      "pares_usados": ["USD-BRL", "EUR-USD", "MXN-USD", "ZAR-USD", "CLP-USD"],
+      "timeout": 10,
+      "descricao": "Cotacoes FX diretas brasileiras (gratis, sem chave)"
+    },
+    "twelvedata": {
+      "ativo": false,
+      "base_url": "https://api.twelvedata.com",
+      "env_var": "TWELVEDATA_API_KEY",
+      "timeout": 10,
+      "rate_limits": "800 req/dia (free), 8 req/min",
+      "descricao": "Dados de mercado e series temporais (requer API key)"
+    },
+    "alphavantage": {
+      "ativo": false,
+      "base_url": "https://www.alphavantage.co/query",
+      "env_var": "ALPHAVANTAGE_API_KEY",
+      "timeout": 15,
+      "descricao": "Indicadores economicos, RSI e cotacoes (requer API key)"
+    },
+    "finnhub": {
+      "ativo": false,
+      "base_url": "https://finnhub.io/api/v1",
+      "env_var": "FINNHUB_API_KEY",
+      "timeout": 10,
+      "descricao": "Calendario economico complementar (requer API key)"
+    },
+    "forexfactory": {
+      "ativo": true,
+      "base_url": "https://nfs.faireconomy.media",
+      "timeout": 15,
+      "descricao": "Calendario economico — deteccao automatica COPOM/FOMC (gratis)"
+    },
+    "fear_greed": {
+      "ativo": true,
+      "base_url": "https://api.alternative.me/fng",
+      "timeout": 10,
+      "descricao": "Indice Fear & Greed — sentimento global (gratis)"
+    },
+    "metatrader5": {
+      "ativo": false,
+      "env_vars": ["MT5_LOGIN", "MT5_PASSWORD", "MT5_SERVER"],
+      "symbols_wdo": ["USDBRL", "WDO$N"],
+      "symbols_winfut": ["WIN$N", "WINFUT"],
+      "descricao": "Terminal MT5 para dados H4/D1 — habilita SMC (Cap 8) + Momentum (Cap 12)"
+    },
+    "telegram": {
+      "ativo": false,
+      "base_url": "https://api.telegram.org",
+      "env_vars": ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"],
+      "descricao": "Alertas automaticos de score via Telegram Bot"
+    }
+  },
+
+  "simbolos_alvo": {
+    "wdo": {
+      "symbol": "USDBRL",
+      "mt5_symbols": ["USDBRL", "WDO$N", "WDOFUT", "WDO$"],
+      "descricao": "Dolar Futuro (WDO) — cotacao USDBRL"
+    },
+    "winfut": {
+      "symbol": "WINFUT",
+      "mt5_symbols": ["WIN$N", "WINFUT", "WIN$", "IND$"],
+      "descricao": "Indice Futuro Ibovespa (WINFUT)"
+    }
+  },
+
+  "capitulo_1_commodities": {
+    "peso": 1.0,
+    "analise_id": "wdo_winfut_commodities",
+    "descricao": "Commodities exportacoes brasileiras",
+    "pares": [
+      {
+        "simbolo": "XAUUSD",
+        "mt5": ["XAUUSD", "GOLD", "XAUUSD.c"],
+        "yahoo": ["GC=F"],
+        "tipo": "snapshot_pares",
+        "invert_wdo": true,
+        "invert_winfut": false,
+        "descricao": "Ouro — safe haven + commodity, impacto indireto"
+      },
+      {
+        "simbolo": "XTIUSD",
+        "mt5": ["XTIUSD", "WTICOUSD", "USOIL", "XTIUSD.c"],
+        "yahoo": ["CL=F"],
+        "tipo": "snapshot_pares",
+        "invert_wdo": true,
+        "invert_winfut": false,
+        "descricao": "Petroleo WTI — Petrobras = ~12% Ibovespa"
+      },
+      {
+        "simbolo": "SOYBEAN",
+        "mt5": ["SOYBEAN", "ZS", "SOYB", "SOYBEAN.c"],
+        "yahoo": ["ZS=F", "SOYB"],
+        "tipo": "snapshot_pares",
+        "invert_wdo": true,
+        "invert_winfut": false,
+        "descricao": "Soja — maior commodity de exportacao BR"
+      },
+      {
+        "simbolo": "IRON_ORE",
+        "mt5": ["IRON", "IRONORE", "XFEUSD", "FE62"],
+        "yahoo": ["BHP", "RIO", "VALE"],
+        "fred": ["PIORECRUSDM"],
+        "tipo": "tendencia_h4",
+        "invert_wdo": true,
+        "invert_winfut": false,
+        "descricao": "Minerio de ferro — Vale = ~13% Ibovespa"
+      },
+      {
+        "simbolo": "COFFEE",
+        "mt5": ["COFFEE", "KC", "XCOFFEE", "COFFEE.c"],
+        "yahoo": ["KC=F"],
+        "tipo": "snapshot_pares",
+        "invert_wdo": true,
+        "invert_winfut": false,
+        "descricao": "Cafe — Brasil e maior produtor mundial"
+      }
+    ]
+  },
+
+  "capitulo_2_risco_global": {
+    "peso": 1.0,
+    "analise_id": "wdo_winfut_risco_global",
+    "descricao": "Risk-on / Risk-off global",
+    "pares": [
+      {
+        "simbolo": "US500",
+        "mt5": ["US500", "SPX500", "US500Cash"],
+        "yahoo": ["^GSPC", "SPY"],
+        "tipo": "snapshot_pares",
+        "invert_wdo": true,
+        "invert_winfut": false,
+        "descricao": "S&P 500 — barometro risk-on/off"
+      },
+      {
+        "simbolo": "STOXX50",
+        "mt5": ["STOXX50", "SX5E", "STOXX50Cash"],
+        "yahoo": ["^STOXX50E"],
+        "tipo": "snapshot_pares",
+        "invert_wdo": true,
+        "invert_winfut": false,
+        "descricao": "Euro Stoxx 50 — sentimento europeu"
+      },
+      {
+        "simbolo": "CN50",
+        "mt5": ["CN50", "CHINA50", "CN50Cash"],
+        "yahoo": ["FXI", "ASHR"],
+        "tipo": "snapshot_pares",
+        "invert_wdo": true,
+        "invert_winfut": false,
+        "descricao": "China 50 — maior parceiro comercial BR"
+      },
+      {
+        "simbolo": "VIX",
+        "mt5": ["VIX", "USVIX"],
+        "yahoo": ["^VIX"],
+        "tipo": "threshold",
+        "threshold_risk_off": 20,
+        "threshold_risk_on": 15,
+        "descricao": "VIX — indice de medo. >20 risk-off, <15 risk-on"
+      },
+      {
+        "simbolo": "EEM",
+        "mt5": [],
+        "yahoo": ["EEM"],
+        "tipo": "snapshot_pares",
+        "invert_wdo": true,
+        "invert_winfut": false,
+        "descricao": "ETF iShares Emerging Markets — proxy EM"
+      },
+      {
+        "simbolo": "HYG",
+        "mt5": [],
+        "yahoo": ["HYG"],
+        "tipo": "snapshot_pares",
+        "invert_wdo": true,
+        "invert_winfut": false,
+        "descricao": "High Yield Bonds — apetite por risco credito"
+      },
+      {
+        "simbolo": "MOVE",
+        "mt5": ["MOVE", "MOVE.c"],
+        "yahoo": ["^MOVE"],
+        "tipo": "snapshot_pares",
+        "inverter": true,
+        "descricao": "MOVE Index — volatilidade bonds, invertido"
+      }
+    ]
+  },
+
+  "capitulo_3_carry_trade": {
+    "peso": 1.0,
+    "analise_id": "wdo_winfut_carry",
+    "descricao": "Diferencial de juros BR vs US — carry trade BRL",
+    "spreads": [
+      {
+        "id": "BR10Y_US10Y",
+        "longa": "BR10Y",
+        "curta": "US10Y",
+        "longa_mt5": [],
+        "longa_yahoo": ["BR10Y=RR"],
+        "curta_mt5": ["US10Y"],
+        "curta_yahoo": ["^TNX"],
+        "curta_fred": ["DGS10"],
+        "tipo": "spread_trend",
+        "descricao": "Spread 10Y BR-US, subindo = carry atrativo"
+      },
+      {
+        "id": "BR2Y_US2Y",
+        "longa": "BR2Y",
+        "curta": "US2Y",
+        "curta_fred": ["DGS2"],
+        "tipo": "spread_trend",
+        "descricao": "Spread 2Y BR-US, front-end da curva"
+      },
+      {
+        "id": "DI1F",
+        "simbolo": "DI1F",
+        "mt5": ["DI1F", "DI1!"],
+        "yahoo": [],
+        "tipo": "snapshot_par",
+        "descricao": "DI Futuro 1 ano — expectativa SELIC"
+      }
+    ]
+  },
+
+  "capitulo_4_bcb_policy": {
+    "peso": 1.0,
+    "analise_id": "wdo_winfut_bcb_policy",
+    "descricao": "Politica monetaria BCB (COPOM)",
+    "tipo_analise": "policy_tone_manual",
+    "campos": {
+      "copom_tone": "hawkish",
+      "copom_ata_tone": "hawkish",
+      "bcb_ri_tone": "neutral",
+      "focus_selic_direction": "up",
+      "bcb_intervencao_fx": false
+    },
+    "regras": {
+      "copom_tone": {"hawkish": {"wdo": -1, "winfut": -1}, "dovish": {"wdo": 1, "winfut": 1}, "neutral": {"wdo": 0, "winfut": 0}},
+      "copom_ata_tone": {"hawkish": {"wdo": -1, "winfut": -1}, "dovish": {"wdo": 1, "winfut": 1}, "neutral": {"wdo": 0, "winfut": 0}},
+      "bcb_ri_tone": {"hawkish": {"wdo": -1, "winfut": -1}, "dovish": {"wdo": 1, "winfut": 1}, "neutral": {"wdo": 0, "winfut": 0}},
+      "focus_selic_direction": {"up": {"wdo": -1, "winfut": -1}, "down": {"wdo": 1, "winfut": 1}, "stable": {"wdo": 0, "winfut": 0}},
+      "bcb_intervencao_fx": {"true": {"wdo": -1, "winfut": 0}, "false": {"wdo": 0, "winfut": 0}}
+    },
+    "calendario_copom_2026": [
+      "2026-01-28", "2026-03-18", "2026-05-06", "2026-06-17",
+      "2026-07-29", "2026-09-16", "2026-10-28", "2026-12-09"
+    ]
+  },
+
+  "capitulo_5_fed_policy": {
+    "peso": 1.0,
+    "analise_id": "wdo_winfut_fed_policy",
+    "descricao": "Politica monetaria Fed (FOMC)",
+    "tipo_analise": "policy_tone_manual",
+    "campos": {
+      "fed_tone": "neutral",
+      "fed_dots_direction": "stable",
+      "fed_minutes_tone": "neutral",
+      "fed_qt_status": "qt_active"
+    },
+    "regras": {
+      "fed_tone": {"hawkish": {"wdo": 1, "winfut": -1}, "dovish": {"wdo": -1, "winfut": 1}, "neutral": {"wdo": 0, "winfut": 0}},
+      "fed_dots_direction": {"up": {"wdo": 1, "winfut": -1}, "down": {"wdo": -1, "winfut": 1}, "stable": {"wdo": 0, "winfut": 0}},
+      "fed_minutes_tone": {"hawkish": {"wdo": 1, "winfut": -1}, "dovish": {"wdo": -1, "winfut": 1}, "neutral": {"wdo": 0, "winfut": 0}},
+      "fed_qt_status": {"qt_active": {"wdo": 1, "winfut": -1}, "qe_active": {"wdo": -1, "winfut": 1}, "neutral": {"wdo": 0, "winfut": 0}}
+    },
+    "calendario_fomc_2026": [
+      "2026-01-28", "2026-03-18", "2026-05-06", "2026-06-17",
+      "2026-07-29", "2026-09-16", "2026-10-28", "2026-12-16"
+    ]
+  },
+
+  "capitulo_6_risco_fiscal": {
+    "peso": 1.0,
+    "analise_id": "wdo_winfut_risco_fiscal",
+    "descricao": "Politica fiscal brasileira e risco soberano",
+    "tipo_analise": "hibrido",
+    "pares_automaticos": [
+      {
+        "simbolo": "EEM",
+        "yahoo": ["EMB"],
+        "tipo": "snapshot_pares",
+        "proxy": "EMBI+ Brasil",
+        "descricao": "ETF EMB como proxy de risco emergente/soberano"
+      }
+    ],
+    "campos_manuais": {
+      "cds_5y_br_bps": 180,
+      "cds_threshold_alto": 200,
+      "cds_threshold_baixo": 150,
+      "resultado_primario_tone": "deficit",
+      "arcabouco_fiscal": "cumprindo",
+      "rating_soberano": "stable"
+    },
+    "regras_manuais": {
+      "cds_5y": {"alto": {"wdo": 1, "winfut": -1}, "baixo": {"wdo": -1, "winfut": 1}, "medio": {"wdo": 0, "winfut": 0}},
+      "resultado_primario_tone": {"superavit": {"wdo": -1, "winfut": 1}, "deficit": {"wdo": 1, "winfut": -1}, "neutro": {"wdo": 0, "winfut": 0}},
+      "arcabouco_fiscal": {"cumprindo": {"wdo": -1, "winfut": 1}, "risco": {"wdo": 0, "winfut": 0}, "rompido": {"wdo": 2, "winfut": -2}},
+      "rating_soberano": {"upgrade": {"wdo": -1, "winfut": 1}, "stable": {"wdo": 0, "winfut": 0}, "downgrade": {"wdo": 1, "winfut": -1}}
+    }
+  },
+
+  "capitulo_7_forca_usd_global": {
+    "peso": 1.0,
+    "analise_id": "wdo_winfut_forca_usd",
+    "descricao": "Forca do dolar global e pares emergentes",
+    "pares": [
+      {
+        "simbolo": "DXY",
+        "mt5": ["UsDollar", "USDX", "USDIDX"],
+        "yahoo": ["DX-Y.NYB", "UUP"],
+        "tipo": "snapshot_pares",
+        "score_wdo_direcao": "direto",
+        "score_winfut_direcao": "invertido",
+        "descricao": "Dollar Index — DXY forte = WDO sobe, WINFUT cai"
+      },
+      {
+        "simbolo": "EURUSD",
+        "mt5": ["EURUSD"],
+        "yahoo": ["EURUSD=X"],
+        "exchangerate": ["EURUSD"],
+        "tipo": "snapshot_pares",
+        "score_wdo_direcao": "invertido",
+        "score_winfut_direcao": "direto",
+        "descricao": "EURUSD — EUR forte = DXY fraco = BRL forte"
+      },
+      {
+        "simbolo": "USDMXN",
+        "mt5": ["USDMXN"],
+        "yahoo": ["USDMXN=X"],
+        "exchangerate": ["USDMXN"],
+        "tipo": "snapshot_pares",
+        "score_wdo_direcao": "direto",
+        "score_winfut_direcao": "invertido",
+        "descricao": "MXN — peer EM LatAm"
+      },
+      {
+        "simbolo": "USDCLP",
+        "mt5": ["USDCLP"],
+        "yahoo": ["USDCLP=X"],
+        "exchangerate": ["USDCLP"],
+        "tipo": "snapshot_pares",
+        "score_wdo_direcao": "direto",
+        "score_winfut_direcao": "invertido",
+        "descricao": "CLP — peer EM commodities LatAm"
+      },
+      {
+        "simbolo": "USDZAR",
+        "mt5": ["USDZAR"],
+        "yahoo": ["USDZAR=X"],
+        "exchangerate": ["USDZAR"],
+        "tipo": "snapshot_pares",
+        "score_wdo_direcao": "direto",
+        "score_winfut_direcao": "invertido",
+        "descricao": "ZAR — peer EM commodities"
+      }
+    ]
+  },
+
+  "capitulo_8_smc": {
+    "peso": 1.0,
+    "descricao": "Smart Money Concepts — H4 context independente por ativo",
+    "wdo": {
+      "analise_id": "smc_context_wdo",
+      "symbol": "USDBRL",
+      "timeframe": "H4",
+      "barras": 600,
+      "lookback_zona": 120,
+      "swing_window": 3,
+      "poi_distancia_pct": 2.0,
+      "usar_liquidez": true
+    },
+    "winfut": {
+      "analise_id": "smc_context_winfut",
+      "symbol": "WIN$N",
+      "timeframe": "H4",
+      "barras": 600,
+      "lookback_zona": 120,
+      "swing_window": 3,
+      "poi_distancia_pct": 2.0,
+      "usar_liquidez": true
+    }
+  },
+
+  "capitulo_9_ajuste_horario": {
+    "peso": 1.0,
+    "descricao": "Filtro de sazonalidade intraday — horario B3",
+    "timezone": "UTC",
+    "nota": "BRT = UTC-3. Abertura B3 09:00 BRT = 12:00 UTC",
+    "sessoes": {
+      "pre_abertura":  {"inicio": "11:30", "fim": "12:00", "tipo": "multiplicador", "valor": 0.5},
+      "abertura_b3":   {"inicio": "12:00", "fim": "13:30", "tipo": "multiplicador", "valor": 1.5},
+      "manha":         {"inicio": "13:30", "fim": "15:00", "tipo": "multiplicador", "valor": 1.2},
+      "almoco":        {"inicio": "15:00", "fim": "16:30", "tipo": "multiplicador", "valor": 0.7},
+      "overlap_ny":    {"inicio": "16:30", "fim": "19:00", "tipo": "multiplicador", "valor": 1.3},
+      "final_pregao":  {"inicio": "19:00", "fim": "20:30", "tipo": "multiplicador", "valor": 1.0},
+      "after_market":  {"inicio": "20:30", "fim": "21:00", "tipo": "multiplicador", "valor": 0.5}
+    }
+  },
+
+  "capitulo_10_macro_brl": {
+    "peso": 1.0,
+    "analise_id": "wdo_winfut_macro_brl",
+    "tipo_analise": "macro_domesticos",
+    "params": {
+      "moeda": "BRL",
+      "impacto_minimo": "Low",
+      "variacao_threshold_pct": 0.001,
+      "janela_horas": 24,
+      "historico_dias": 180,
+      "usar_ultimo_evento": true,
+      "max_defasagem_dias": 3650,
+      "min_eventos": 1,
+      "indicadores": [
+        {"id": "BRL_IPCA",      "titulo_keywords": ["ipca", "consumer price br", "inflation br"],  "invert_wdo": true, "invert_winfut": true},
+        {"id": "BRL_PIB",       "titulo_keywords": ["pib", "gdp br", "gdp brazil"],                "invert_wdo": true, "invert_winfut": false},
+        {"id": "BRL_EMPREGO",   "titulo_keywords": ["caged", "pnad", "employment br", "emprego"],  "invert_wdo": true, "invert_winfut": false},
+        {"id": "BRL_PMI",       "titulo_keywords": ["pmi br", "pmi brazil", "purchasing br"],      "invert_wdo": true, "invert_winfut": false},
+        {"id": "BRL_VAREJO",    "titulo_keywords": ["retail br", "varejo", "vendas varejo"],       "invert_wdo": true, "invert_winfut": false},
+        {"id": "BRL_PROD_IND",  "titulo_keywords": ["producao industrial", "industrial br"],       "invert_wdo": true, "invert_winfut": false},
+        {"id": "BRL_TRADE",     "titulo_keywords": ["trade balance br", "balanca comercial"],      "invert_wdo": true, "invert_winfut": false},
+        {"id": "BRL_IBC",       "titulo_keywords": ["ibc-br", "ibc br", "economic activity br"],   "invert_wdo": true, "invert_winfut": false},
+        {"id": "BRL_CONF_CONS", "titulo_keywords": ["confianca consumidor", "consumer confidence br"], "invert_wdo": true, "invert_winfut": false},
+        {"id": "BRL_CONF_IND",  "titulo_keywords": ["confianca industria", "cni", "industry confidence br"], "invert_wdo": true, "invert_winfut": false}
+      ]
+    },
+    "fred_brl_series": [
+      {"serie": "BRCPIALLMINMEI", "titulo": "CPI BR", "descricao": "Consumer Price Index Brazil"},
+      {"serie": "BRAGDPNQDSMEI",  "titulo": "GDP BR", "descricao": "GDP Brazil Quarterly"},
+      {"serie": "LRUNTTTTBRM156S","titulo": "Unemployment BR", "descricao": "Unemployment Rate Brazil"},
+      {"serie": "XTNTVA01BRM664S","titulo": "Trade Balance BR", "descricao": "Brazil Trade Balance OECD"},
+      {"serie": "BRAPROINDMISMEI","titulo": "Industrial Production BR", "descricao": "Industrial Production Brazil"}
+    ]
+  },
+
+  "capitulo_11_macro_usd": {
+    "peso": 1.0,
+    "analise_id": "wdo_winfut_macro_usd",
+    "tipo_analise": "macro_domesticos",
+    "params": {
+      "moeda": "USD",
+      "impacto_minimo": "Low",
+      "variacao_threshold_pct": 0.001,
+      "janela_horas": 24,
+      "historico_dias": 180,
+      "usar_ultimo_evento": true,
+      "max_defasagem_dias": 3650,
+      "min_eventos": 1,
+      "indicadores": [
+        {"id": "USD_CPI",        "titulo_keywords": ["cpi us", "consumer price us", "inflation us"],  "invert_wdo": false, "invert_winfut": true},
+        {"id": "USD_NFP",        "titulo_keywords": ["non-farm", "nonfarm", "payrolls"],               "invert_wdo": false, "invert_winfut": true},
+        {"id": "USD_UNEMP",      "titulo_keywords": ["unemployment us", "unemployment rate us"],       "invert_wdo": true,  "invert_winfut": false},
+        {"id": "USD_GDP",        "titulo_keywords": ["gdp us", "gdp usa"],                             "invert_wdo": false, "invert_winfut": true},
+        {"id": "USD_RETAIL",     "titulo_keywords": ["retail sales us"],                               "invert_wdo": false, "invert_winfut": true},
+        {"id": "USD_ISM",        "titulo_keywords": ["ism manufacturing", "ism pmi"],                  "invert_wdo": false, "invert_winfut": true},
+        {"id": "USD_PCE",        "titulo_keywords": ["pce", "personal consumption"],                   "invert_wdo": false, "invert_winfut": true},
+        {"id": "USD_ADP",        "titulo_keywords": ["adp employment", "adp nonfarm"],                 "invert_wdo": false, "invert_winfut": true},
+        {"id": "USD_CONF",       "titulo_keywords": ["consumer confidence us", "michigan sentiment"],  "invert_wdo": false, "invert_winfut": true},
+        {"id": "USD_CLAIMS",     "titulo_keywords": ["jobless claims", "initial claims"],              "invert_wdo": true,  "invert_winfut": false}
+      ]
+    },
+    "fred_usd_series": [
+      {"serie": "CPIAUCSL",  "titulo": "CPI US",           "descricao": "Consumer Price Index USA"},
+      {"serie": "PAYEMS",    "titulo": "NFP US",           "descricao": "Non-Farm Payrolls"},
+      {"serie": "UNRATE",    "titulo": "Unemployment US",  "descricao": "Unemployment Rate USA"},
+      {"serie": "GDP",       "titulo": "GDP US",           "descricao": "GDP USA Quarterly"},
+      {"serie": "RSXFS",     "titulo": "Retail Sales US",  "descricao": "Retail Sales USA"},
+      {"serie": "PCEPI",     "titulo": "PCE US",           "descricao": "PCE Price Index"},
+      {"serie": "ICSA",      "titulo": "Jobless Claims US","descricao": "Initial Jobless Claims"}
+    ]
+  },
+
+  "capitulo_12_exaustao_momentum": {
+    "peso": 1.0,
+    "descricao": "Indicadores de exaustao e momentum — D1/H4 por ativo",
+    "wdo": {
+      "analise_id": "exaustao_momentum_wdo",
+      "symbol": "USDBRL",
+      "timeframes": ["D1", "H4"],
+      "barras": 240,
+      "obv_lookback": 20
+    },
+    "winfut": {
+      "analise_id": "exaustao_momentum_winfut",
+      "symbol": "WIN$N",
+      "timeframes": ["D1", "H4"],
+      "barras": 240,
+      "obv_lookback": 20
+    },
+    "limiares": {
+      "compra": 2,
+      "venda": -2
+    }
+  },
+
+  "capitulo_13_sentimento": {
+    "peso": 1.0,
+    "analise_id": "wdo_winfut_sentimento",
+    "descricao": "Sentimento e posicionamento — CFTC + B3",
+    "cot_contract": "BRAZILIAN REAL",
+    "cot_semanas": 4,
+    "extreme_threshold_pct": 20.0,
+    "retail_threshold_pct": 60.0,
+    "campos_manuais": {
+      "fluxo_estrangeiro_b3": "positivo",
+      "posicao_cambial_bancos": "comprada_usd"
+    },
+    "regras_manuais": {
+      "fluxo_estrangeiro_b3": {
+        "positivo": {"wdo": -1, "winfut": 1},
+        "negativo": {"wdo": 1, "winfut": -1},
+        "neutro": {"wdo": 0, "winfut": 0}
+      },
+      "posicao_cambial_bancos": {
+        "comprada_usd": {"wdo": 1, "winfut": -1},
+        "vendida_usd": {"wdo": -1, "winfut": 1},
+        "equilibrada": {"wdo": 0, "winfut": 0}
+      }
+    }
+  },
+
+  "capitulo_14_sazonalidade_macro": {
+    "peso": 1.0,
+    "analise_id": "wdo_winfut_sazonalidade",
+    "descricao": "Sazonalidade macro — calendario fiscal e fluxos BR",
+    "regras_mensais_wdo":    {"1": 1, "2": 1, "3": -1, "4": -1, "5": 1, "6": 1, "7": 0, "8": 0, "9": -1, "10": -1, "11": -1, "12": 1},
+    "regras_mensais_winfut": {"1": -1, "2": -1, "3": 1, "4": 1, "5": -1, "6": -1, "7": 0, "8": 0, "9": 1, "10": 1, "11": 1, "12": -1},
+    "carnaval": {
+      "mes": 2,
+      "dia_inicio": 14,
+      "dia_fim": 18,
+      "score_wdo": -1,
+      "score_winfut": -1,
+      "descricao": "Carnaval — liquidez reduzida"
+    },
+    "vencimento_winfut": {
+      "meses_vencimento": [2, 4, 6, 8, 10, 12],
+      "dia_vencimento": "quarta_proxima_15",
+      "score_wdo": 0,
+      "score_winfut": -1,
+      "descricao": "Vencimento WINFUT bimestral — volatilidade extra"
+    }
+  },
+
+  "capitulo_15_fluxos_capital": {
+    "peso": 1.0,
+    "analise_id": "wdo_winfut_fluxos",
+    "descricao": "Fluxos de capital e balanca de pagamentos",
+    "variacao_threshold_pct": 1.0,
+    "fred_br_trade": "XTNTVA01BRM664S",
+    "campos_manuais": {
+      "idp_trend": "estavel",
+      "reservas_trend": "estavel",
+      "swaps_bcb_trend": "estavel"
+    },
+    "regras_manuais": {
+      "idp_trend": {
+        "crescente": {"wdo": -1, "winfut": 1},
+        "declinante": {"wdo": 1, "winfut": -1},
+        "estavel": {"wdo": 0, "winfut": 0}
+      },
+      "reservas_trend": {
+        "crescente": {"wdo": -1, "winfut": 0},
+        "declinante": {"wdo": 1, "winfut": 0},
+        "estavel": {"wdo": 0, "winfut": 0}
+      },
+      "swaps_bcb_trend": {
+        "crescente": {"wdo": -1, "winfut": 0},
+        "declinante": {"wdo": 1, "winfut": 0},
+        "estavel": {"wdo": 0, "winfut": 0}
+      }
+    }
+  },
+
+  "capitulo_16_geopolitica": {
+    "peso": 1.0,
+    "analise_id": "wdo_winfut_geopolitica",
+    "descricao": "Geopolitica e riscos de cauda",
+    "eventos": {
+      "crise_politica": {"ativo": false, "score_wdo": 3, "score_winfut": -3, "descricao": "Crise politica domestica (impeachment/CPI)"},
+      "tensao_eua_china": {"ativo": false, "score_wdo": 2, "score_winfut": -2, "descricao": "Tensao comercial EUA-China"},
+      "crise_fiscal_aguda": {"ativo": false, "score_wdo": 3, "score_winfut": -3, "descricao": "Furo de teto/arcabouco fiscal"},
+      "intervencao_stf": {"ativo": false, "score_wdo": 1, "score_winfut": -1, "descricao": "Intervencao judicial STF"},
+      "escalada_belica": {"ativo": false, "score_wdo": 2, "score_winfut": -2, "descricao": "Escalada belica global"},
+      "crise_energetica": {"ativo": false, "score_wdo": 1, "score_winfut": -1, "descricao": "Crise energetica (secas/racionamento)"},
+      "greve_bloqueio": {"ativo": false, "score_wdo": 1, "score_winfut": -1, "descricao": "Greve/bloqueio de estradas"}
+    }
+  },
+
+  "veredito": {
+    "faixas_wdo": {
+      "strong_buy":  {"min": 10, "max": 999},
+      "buy":         {"min": 6,  "max": 10},
+      "neutral":     {"min": -5, "max": 5},
+      "sell":        {"min": -10,"max": -5},
+      "strong_sell": {"min": -999,"max": -10}
+    },
+    "faixas_winfut": {
+      "strong_buy":  {"min": 10, "max": 999},
+      "buy":         {"min": 6,  "max": 10},
+      "neutral":     {"min": -5, "max": 5},
+      "sell":        {"min": -10,"max": -5},
+      "strong_sell": {"min": -999,"max": -10}
+    },
+    "ajustes_confianca": {
+      "vix_max_30_buy_winfut": 0.5,
+      "crise_fiscal_reduz_buy_winfut": 0.3,
+      "dxy_acima_110_bias_wdo": -2,
+      "intervencao_bcb_suspende_buy_wdo_horas": 48
+    },
+    "veto": {
+      "vix_critico": 35,
+      "sp500_queda_critica_pct": -3.0,
+      "atr_multiplo_max": 2.0,
+      "copom_fomc_mesma_semana": true
+    },
+    "thresholds_confianca": {
+      "minimo_buy_sell_pct": 50,
+      "minimo_strong_pct": 70,
+      "cobertura_minima_pct": 30,
+      "comentario": "Sinais abaixo do threshold sao rebaixados para NEUTRAL com nota explicativa"
+    }
+  }
+}

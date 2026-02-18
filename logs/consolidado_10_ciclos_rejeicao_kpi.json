@@ -1,0 +1,283 @@
+{
+  "generated_at": "2026-02-13T14:52:07.680908",
+  "db_path": "data/db/trading.db",
+  "batch_size": 10,
+  "cycles": [
+    {
+      "cycle": 1,
+      "timestamp": "2026-02-13T14:51:31.142100",
+      "macro_score": -6.0,
+      "micro_score": 2.0,
+      "opportunities": 1,
+      "reasons": [
+        "COMPRA: macro_score -6 < threshold +3"
+      ],
+      "kpi": {
+        "session_date": "2026-02-13",
+        "total": 1,
+        "resolved": 0,
+        "wins": 0,
+        "losses": 0,
+        "false_positive_rate": 0.0
+      }
+    },
+    {
+      "cycle": 2,
+      "timestamp": "2026-02-13T14:51:34.779260",
+      "macro_score": -5.0,
+      "micro_score": 2.0,
+      "opportunities": 1,
+      "reasons": [
+        "COMPRA: macro_score -5 < threshold +3"
+      ],
+      "kpi": {
+        "session_date": "2026-02-13",
+        "total": 1,
+        "resolved": 0,
+        "wins": 0,
+        "losses": 0,
+        "false_positive_rate": 0.0
+      }
+    },
+    {
+      "cycle": 3,
+      "timestamp": "2026-02-13T14:51:38.587706",
+      "macro_score": -5.0,
+      "micro_score": 2.0,
+      "opportunities": 1,
+      "reasons": [
+        "COMPRA: macro_score -5 < threshold +3"
+      ],
+      "kpi": {
+        "session_date": "2026-02-13",
+        "total": 1,
+        "resolved": 0,
+        "wins": 0,
+        "losses": 0,
+        "false_positive_rate": 0.0
+      }
+    },
+    {
+      "cycle": 4,
+      "timestamp": "2026-02-13T14:51:42.457788",
+      "macro_score": -5.0,
+      "micro_score": 2.0,
+      "opportunities": 1,
+      "reasons": [
+        "COMPRA: macro_score -5 < threshold +3"
+      ],
+      "kpi": {
+        "session_date": "2026-02-13",
+        "total": 1,
+        "resolved": 0,
+        "wins": 0,
+        "losses": 0,
+        "false_positive_rate": 0.0
+      }
+    },
+    {
+      "cycle": 5,
+      "timestamp": "2026-02-13T14:51:46.421666",
+      "macro_score": -5.0,
+      "micro_score": 2.0,
+      "opportunities": 1,
+      "reasons": [
+        "COMPRA: macro_score -5 < threshold +3"
+      ],
+      "kpi": {
+        "session_date": "2026-02-13",
+        "total": 1,
+        "resolved": 0,
+        "wins": 0,
+        "losses": 0,
+        "false_positive_rate": 0.0
+      }
+    },
+    {
+      "cycle": 6,
+      "timestamp": "2026-02-13T14:51:50.223597",
+      "macro_score": -5.0,
+      "micro_score": 2.0,
+      "opportunities": 1,
+      "reasons": [
+        "COMPRA: macro_score -5 < threshold +3"
+      ],
+      "kpi": {
+        "session_date": "2026-02-13",
+        "total": 1,
+        "resolved": 0,
+        "wins": 0,
+        "losses": 0,
+        "false_positive_rate": 0.0
+      }
+    },
+    {
+      "cycle": 7,
+      "timestamp": "2026-02-13T14:51:54.133131",
+      "macro_score": -5.0,
+      "micro_score": 2.0,
+      "opportunities": 1,
+      "reasons": [
+        "COMPRA: macro_score -5 < threshold +3"
+      ],
+      "kpi": {
+        "session_date": "2026-02-13",
+        "total": 1,
+        "resolved": 0,
+        "wins": 0,
+        "losses": 0,
+        "false_positive_rate": 0.0
+      }
+    },
+    {
+      "cycle": 8,
+      "timestamp": "2026-02-13T14:51:58.768811",
+      "macro_score": -5.0,
+      "micro_score": 2.0,
+      "opportunities": 1,
+      "reasons": [
+        "COMPRA: macro_score -5 < threshold +3"
+      ],
+      "kpi": {
+        "session_date": "2026-02-13",
+        "total": 1,
+        "resolved": 0,
+        "wins": 0,
+        "losses": 0,
+        "false_positive_rate": 0.0
+      }
+    },
+    {
+      "cycle": 9,
+      "timestamp": "2026-02-13T14:52:03.502917",
+      "macro_score": -5.0,
+      "micro_score": 2.0,
+      "opportunities": 1,
+      "reasons": [
+        "COMPRA: macro_score -5 < threshold +3"
+      ],
+      "kpi": {
+        "session_date": "2026-02-13",
+        "total": 1,
+        "resolved": 0,
+        "wins": 0,
+        "losses": 0,
+        "false_positive_rate": 0.0
+      }
+    },
+    {
+      "cycle": 10,
+      "timestamp": "2026-02-13T14:52:07.680908",
+      "macro_score": -5.0,
+      "micro_score": 2.0,
+      "opportunities": 1,
+      "reasons": [
+        "COMPRA: macro_score -5 < threshold +3"
+      ],
+      "kpi": {
+        "session_date": "2026-02-13",
+        "total": 1,
+        "resolved": 0,
+        "wins": 0,
+        "losses": 0,
+        "false_positive_rate": 0.0
+      }
+    }
+  ],
+  "reason_frequency": {
+    "COMPRA: macro_score -5 < threshold +3": 9,
+    "COMPRA: macro_score -6 < threshold +3": 1
+  },
+  "kpi_series": [
+    {
+      "cycle": 1,
+      "timestamp": "2026-02-13T14:51:31.142100",
+      "kpi_total": 1,
+      "kpi_resolved": 0,
+      "kpi_wins": 0,
+      "kpi_losses": 0,
+      "kpi_fp": 0.0
+    },
+    {
+      "cycle": 2,
+      "timestamp": "2026-02-13T14:51:34.779260",
+      "kpi_total": 1,
+      "kpi_resolved": 0,
+      "kpi_wins": 0,
+      "kpi_losses": 0,
+      "kpi_fp": 0.0
+    },
+    {
+      "cycle": 3,
+      "timestamp": "2026-02-13T14:51:38.587706",
+      "kpi_total": 1,
+      "kpi_resolved": 0,
+      "kpi_wins": 0,
+      "kpi_losses": 0,
+      "kpi_fp": 0.0
+    },
+    {
+      "cycle": 4,
+      "timestamp": "2026-02-13T14:51:42.457788",
+      "kpi_total": 1,
+      "kpi_resolved": 0,
+      "kpi_wins": 0,
+      "kpi_losses": 0,
+      "kpi_fp": 0.0
+    },
+    {
+      "cycle": 5,
+      "timestamp": "2026-02-13T14:51:46.421666",
+      "kpi_total": 1,
+      "kpi_resolved": 0,
+      "kpi_wins": 0,
+      "kpi_losses": 0,
+      "kpi_fp": 0.0
+    },
+    {
+      "cycle": 6,
+      "timestamp": "2026-02-13T14:51:50.223597",
+      "kpi_total": 1,
+      "kpi_resolved": 0,
+      "kpi_wins": 0,
+      "kpi_losses": 0,
+      "kpi_fp": 0.0
+    },
+    {
+      "cycle": 7,
+      "timestamp": "2026-02-13T14:51:54.133131",
+      "kpi_total": 1,
+      "kpi_resolved": 0,
+      "kpi_wins": 0,
+      "kpi_losses": 0,
+      "kpi_fp": 0.0
+    },
+    {
+      "cycle": 8,
+      "timestamp": "2026-02-13T14:51:58.768811",
+      "kpi_total": 1,
+      "kpi_resolved": 0,
+      "kpi_wins": 0,
+      "kpi_losses": 0,
+      "kpi_fp": 0.0
+    },
+    {
+      "cycle": 9,
+      "timestamp": "2026-02-13T14:52:03.502917",
+      "kpi_total": 1,
+      "kpi_resolved": 0,
+      "kpi_wins": 0,
+      "kpi_losses": 0,
+      "kpi_fp": 0.0
+    },
+    {
+      "cycle": 10,
+      "timestamp": "2026-02-13T14:52:07.680908",
+      "kpi_total": 1,
+      "kpi_resolved": 0,
+      "kpi_wins": 0,
+      "kpi_losses": 0,
+      "kpi_fp": 0.0
+    }
+  ]
+}

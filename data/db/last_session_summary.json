@@ -1,0 +1,27 @@
+{
+    "timestamp": "2026-02-06T15:31:00.894252",
+    "daily_pnl": 0.0,
+    "daily_stats": {
+        "total_trades": 0,
+        "winners": 0,
+        "losers": 0,
+        "win_rate": 0,
+        "total_pnl": 0.0,
+        "avg_win": 0.0,
+        "avg_loss": 0.0,
+        "open_positions": 1
+    },
+    "decisions": [
+        {
+            "timestamp": "2026-02-06T15:30:49.100899",
+            "symbol": "WING26",
+            "action": "HOLD",
+            "confidence": 0.4,
+            "alignment": 0.175,
+            "reasoning": "Sinais conflitantes entre as an\u00e1lises. Aguardando alinhamento."
+        }
+    ],
+    "total_trades": 0,
+    "win_rate": 0.0,
+    "last_symbol": "WING26"
+}

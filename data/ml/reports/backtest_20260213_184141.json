@@ -1,0 +1,23 @@
+{
+  "n_trades": 32,
+  "n_wins": 32,
+  "n_losses": 0,
+  "win_rate": 1.0,
+  "total_gross_pnl_pts": 9840.0,
+  "total_net_pnl_pts": 8918.400000000001,
+  "avg_win_pts": 287.8129032258065,
+  "avg_loss_pts": 0,
+  "profit_factor": 2347.947368421053,
+  "sharpe_ratio": 47.438532224388425,
+  "max_drawdown_pts": 3.800000000000182,
+  "calmar_ratio": 147857.68421051922,
+  "opportunity_capture_rate": 0.9063414634146343,
+  "trades_per_day": 8.0,
+  "n_trading_days": 4,
+  "n_total_days": 4,
+  "total_cost_pts": 921.5999999999985,
+  "buy_trades": 14,
+  "sell_trades": 18,
+  "buy_win_rate": 1.0,
+  "sell_win_rate": 1.0
+}
