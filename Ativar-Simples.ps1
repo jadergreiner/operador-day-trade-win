@@ -161,7 +161,7 @@ switch ($opcao) {
         Start-Sleep -Seconds 3
         
         Write-Host "[T4] Detector..."
-        Start-Process cmd -ArgumentList "/k cd $ProjectRoot && python -m src.processador_bdi --config config/producao_20feb_v1.yaml"
+        Start-Process cmd -ArgumentList "/k cd $ProjectRoot && python -m src.application.services.processador_bdi --config config/producao_20feb_v1.yaml"
         Start-Sleep -Seconds 3
         
         Write-Host "[T5] Dashboard..."

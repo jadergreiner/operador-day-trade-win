@@ -240,7 +240,7 @@ function Iniciar-Producao {
     Start-Sleep -Seconds 3
     
     Write-Host "[Terminal 4] Iniciando Detector BDI..." -ForegroundColor Gray
-    Start-Process cmd -ArgumentList "/k cd /d $ProjectRoot && python -m src.processador_bdi --config config/producao_20feb_v1.yaml --detectors enabled" -WindowStyle Normal
+    Start-Process cmd -ArgumentList "/k cd /d $ProjectRoot && python -m src.application.services.processador_bdi --config config/producao_20feb_v1.yaml --detectors enabled" -WindowStyle Normal
     Start-Sleep -Seconds 3
     
     Write-Host "[Terminal 5] Iniciando Dashboard..." -ForegroundColor Gray

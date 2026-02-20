@@ -281,7 +281,7 @@ timeout /t 3 /nobreak
 
 REM Terminal 4: BDI Processor (Detector)
 echo [Terminal 4] Iniciando Detector BDI...
-start "Detector - Producao" cmd /k "cd /d c:\repo\operador-day-trade-win && python -m src.processador_bdi --config config/producao_20feb_v1.yaml --detectors enabled"
+start "Detector - Producao" cmd /k "cd /d c:\repo\operador-day-trade-win && python -m src.application.services.processador_bdi --config config/producao_20feb_v1.yaml --detectors enabled"
 
 timeout /t 3 /nobreak
 
