@@ -82,14 +82,33 @@
 **Capital Ramp-up:** 50k → 100k → 150k (3 fases de 2 semanas)
 
 **PHASE 7 SPRINTS (27/02 - 10/04, 27 dias):**
-- **Sprint 1 (27/02-05/03):** Design MT5 + Feature engineering
-  - Gate: Risk rules + ML features APPROVED
-- **Sprint 2 (06/03-12/03):** Risk Validator + ML training
-  - Gate: Classifier F1 > 0.65, ready for integration
-- **Sprint 3 (13/03-19/03):** MT5 integration + E2E testing
-  - Gate: Integration tests PASSED, performance validated
-- **Sprint 4 (20/03-10/04):** UAT + Launch
-  - Gate: Trader acceptance + CFO sign-off
+- **Sprint 0 (20/02) DAY 1 DELIVERY ✅**
+  - Eng Sr: MT5 Adapter (250 LOC) + Risk Validators 3-gate (400 LOC) + Orders Executor (380 LOC)
+  - ML Expert: Feature Engineer (420 LOC) + ML Classifier (450 LOC) + Grid Search (200 LOC)
+  - Total: **2,100 LOC** novo código | Clean Architecture | 100% type hints
+  - Documentation: SPRINT1_DAY1_KICKOFF.md
+  - Git: Commit 177ebd5 | Ready para integração
+  - Status: 🟢 SKELETON PRONTO PARA SPRINT 1
+
+- **Sprint 1 (27/02-05/03):** Integração + Testes
+  - Eng Sr: Integrar MT5Adapter + RiskValidators + OrdersExecutor
+  - ML Expert: Carregar backtest results + começar treino (3 configs)
+  - Gate: Features 100% pronto + Risk framework aprovado
+
+- **Sprint 2 (06/03-12/03):** ML Training Grid Search
+  - ML Expert: Grid search 8+ configs, target F1 > 0.65
+  - Eng Sr: Testes unitários + mocks MT5
+  - Gate: Classifier F1 > 0.65 + ready for integration
+
+- **Sprint 3 (13/03-19/03):** Integration & E2E
+  - Integração completa MT5 + RiskValidators + MLClassifier
+  - Backtest final (cross-validation)
+  - Gate: E2E tests PASSED + performance validated
+
+- **Sprint 4 (20/03-10/04):** UAT & Launch
+  - Trader acceptance test (21/03)
+  - Staging deployment
+  - GO LIVE Phase 1 (10/04) com 50k capital
 
 **Success Criteria:**
 - ✅ Win rate: 65-68% (vs 62% v1.1)
