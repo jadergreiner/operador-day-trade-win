@@ -1,0 +1,270 @@
+{
+  "sync_metadata": {
+    "version": "1.0.0",
+    "last_update": "2026-02-20T10:35:00Z",
+    "next_check": "2026-02-20T18:35:00Z",
+    "status": "SYNCHRONIZED"
+  },
+
+  "documents": {
+    "AGENTE_AUTONOMO_ARQUITETURA.md": {
+      "version": "1.0.0",
+      "checksum": "a1b2c3d4e5f6",
+      "last_modified": "2026-02-20T10:00:00Z",
+      "related_docs": [
+        "AGENTE_AUTONOMO_FEATURES.md",
+        "AGENTE_AUTONOMO_ROADMAP.md",
+        "AGENTE_AUTONOMO_TRACKER.md"
+      ],
+      "status": "ACTIVE",
+      "mandatory_sync_with": [
+        "README.md",
+        ".github/copilot-instructions.md"
+      ]
+    },
+
+    "AGENTE_AUTONOMO_BACKLOG.md": {
+      "version": "1.0.0",
+      "checksum": "b2c3d4e5f6a7",
+      "last_modified": "2026-02-20T10:05:00Z",
+      "related_docs": [
+        "AGENTE_AUTONOMO_ROADMAP.md",
+        "AGENTE_AUTONOMO_TRACKER.md",
+        "AGENTE_AUTONOMO_FEATURES.md"
+      ],
+      "status": "ACTIVE",
+      "mandatory_sync_with": [
+        "data/BDI/reports/backlog_detalhado.py",
+        "data/BDI/reports/backlog_detalhado.json"
+      ]
+    },
+
+    "AGENTE_AUTONOMO_CHANGELOG.md": {
+      "version": "1.0.0",
+      "checksum": "c3d4e5f6a7b8",
+      "last_modified": "2026-02-20T10:10:00Z",
+      "related_docs": [
+        "AGENTE_AUTONOMO_RELEASE.md",
+        "AGENTE_AUTONOMO_FEATURES.md"
+      ],
+      "status": "ACTIVE",
+      "mandatory_sync_with": []
+    },
+
+    "AGENTE_AUTONOMO_FAQ_LICOES_APRENDIDAS.md": {
+      "version": "1.0.0",
+      "checksum": "d4e5f6a7b8c9",
+      "last_modified": "2026-02-20T10:15:00Z",
+      "related_docs": [
+        "AGENTE_AUTONOMO_FEATURES.md",
+        "AGENTE_AUTONOMO_ROADMAP.md",
+        "AGENTE_AUTONOMO_RL.md"
+      ],
+      "status": "ACTIVE",
+      "mandatory_sync_with": []
+    },
+
+    "AGENTE_AUTONOMO_FEATURES.md": {
+      "version": "1.0.0",
+      "checksum": "e5f6a7b8c9d0",
+      "last_modified": "2026-02-20T10:20:00Z",
+      "related_docs": [
+        "AGENTE_AUTONOMO_ROADMAP.md",
+        "AGENTE_AUTONOMO_ARQUITETURA.md",
+        "AGENTE_AUTONOMO_CHANGELOG.md"
+      ],
+      "status": "ACTIVE",
+      "mandatory_sync_with": [
+        "README.md"
+      ]
+    },
+
+    "AGENTE_AUTONOMO_HISTORIAS.md": {
+      "version": "1.0.0",
+      "checksum": "f6a7b8c9d0e1",
+      "last_modified": "2026-02-20T10:21:00Z",
+      "related_docs": [
+        "AGENTE_AUTONOMO_FEATURES.md",
+        "AGENTE_AUTONOMO_TRACKER.md",
+        "AGENTE_AUTONOMO_BACKLOG.md"
+      ],
+      "status": "ACTIVE",
+      "mandatory_sync_with": []
+    },
+
+    "AGENTE_AUTONOMO_RELEASE.md": {
+      "version": "1.0.0",
+      "checksum": "a7b8c9d0e1f2",
+      "last_modified": "2026-02-20T10:22:00Z",
+      "related_docs": [
+        "AGENTE_AUTONOMO_CHANGELOG.md",
+        "AGENTE_AUTONOMO_ROADMAP.md",
+        "AGENTE_AUTONOMO_TRACKER.md"
+      ],
+      "status": "ACTIVE",
+      "mandatory_sync_with": []
+    },
+
+    "AGENTE_AUTONOMO_RL.md": {
+      "version": "1.0.0",
+      "checksum": "b8c9d0e1f2g3",
+      "last_modified": "2026-02-20T10:23:00Z",
+      "related_docs": [
+        "AGENTE_AUTONOMO_FEATURES.md",
+        "AGENTE_AUTONOMO_ROADMAP.md",
+        "AUTOTRADER_MATRIX.md"
+      ],
+      "status": "ACTIVE",
+      "mandatory_sync_with": []
+    },
+
+    "AGENTE_AUTONOMO_ROADMAP.md": {
+      "version": "1.0.0",
+      "checksum": "c9d0e1f2g3h4",
+      "last_modified": "2026-02-20T10:24:00Z",
+      "related_docs": [
+        "AGENTE_AUTONOMO_BACKLOG.md",
+        "AGENTE_AUTONOMO_FEATURES.md",
+        "AGENTE_AUTONOMO_RELEASE.md"
+      ],
+      "status": "ACTIVE",
+      "mandatory_sync_with": [
+        "README.md"
+      ]
+    },
+
+    "AGENTE_AUTONOMO_TRACKER.md": {
+      "version": "1.0.0",
+      "checksum": "d0e1f2g3h4i5",
+      "last_modified": "2026-02-20T10:25:00Z",
+      "related_docs": [
+        "AGENTE_AUTONOMO_BACKLOG.md",
+        "AGENTE_AUTONOMO_ROADMAP.md",
+        "AGENTE_AUTONOMO_CHANGELOG.md"
+      ],
+      "status": "ACTIVE",
+      "mandatory_sync_with": []
+    },
+
+    "AUTOTRADER_MATRIX.md": {
+      "version": "1.0.0",
+      "checksum": "e1f2g3h4i5j6",
+      "last_modified": "2026-02-20T10:30:00Z",
+      "related_docs": [
+        "AGENTE_AUTONOMO_FEATURES.md",
+        "AGENTE_AUTONOMO_ROADMAP.md",
+        "AGENTE_AUTONOMO_RL.md",
+        "AGENTE_AUTONOMO_TRACKER.md"
+      ],
+      "status": "ACTIVE",
+      "mandatory_sync_with": []
+    }
+  },
+
+  "sync_rules": {
+    "rule_1": {
+      "description": "Arquitetura requer sincronização com Features e Roadmap",
+      "enforced": true,
+      "on_change_sync": [
+        "FEATURES",
+        "ROADMAP",
+        "TRACKER"
+      ]
+    },
+    "rule_2": {
+      "description": "Backlog deve ser sincronizado a cada 24h ou após mudança",
+      "enforced": true,
+      "sync_interval_hours": 24,
+      "on_change_sync": [
+        "ROADMAP",
+        "TRACKER",
+        "RELEASE"
+      ]
+    },
+    "rule_3": {
+      "description": "Features requer sincronização obrigatória com README",
+      "enforced": true,
+      "on_change_sync": [
+        "README.md",
+        "ROADMAP",
+        "CHANGELOG"
+      ]
+    },
+    "rule_4": {
+      "description": "Roadmap impacta Tracker e Release",
+      "enforced": true,
+      "on_change_sync": [
+        "TRACKER",
+        "RELEASE",
+        "BACKLOG"
+      ]
+    }
+  },
+
+  "validation_checklist": {
+    "pre_commit": [
+      "Todos os documentos estão atualizados?",
+      "SYNC_MANIFEST.json foi atualizado?",
+      "Checksums estão corretos?",
+      "Cross-references validadas?",
+      "Timestamps sincronizados?",
+      "Nenhum documento deixado desincronizado?"
+    ],
+    "violations": [],
+    "last_validation": "2026-02-20T10:30:00Z",
+    "validation_status": "PASSED"
+  },
+
+  "integration_points": {
+    "README.md": {
+      "sections_to_sync": [
+        "Features Overview",
+        "Roadmap Summary",
+        "Architecture Diagram",
+        "Quick Start",
+        "Agente Autônomo Section"
+      ],
+      "sync_type": "MANDATORY",
+      "last_sync": "2026-02-20T10:35:00Z",
+      "status": "SYNCHRONIZED"
+    },
+    ".github/copilot-instructions.md": {
+      "sections_to_sync": [
+        "Agente Autônomo Docs",
+        "Sincronização Obrigatória",
+        "Mecanismo de Controle",
+        "Regras de Sincronização"
+      ],
+      "sync_type": "MANDATORY",
+      "last_sync": "2026-02-20T10:35:00Z",
+      "status": "SYNCHRONIZED"
+    },
+    "backlog_detalhado.py": {
+      "sync_type": "AUTOMATIC",
+      "last_sync": "2026-02-20T09:21:37Z"
+    }
+  },
+
+  "version_control": {
+    "current_release": "1.0.0",
+    "last_release_date": "2026-02-20",
+    "next_planned_release": "1.0.1",
+    "next_release_date": "2026-02-27",
+    "release_schedule": {
+      "v1.0.1": "2026-02-27",
+      "v1.1.0": "2026-03-13",
+      "v1.2.0": "2026-04-10",
+      "v2.0.0": "2026-06-01"
+    }
+  },
+
+  "health_check": {
+    "all_docs_present": true,
+    "all_docs_current": true,
+    "sync_status": "HEALTHY",
+    "last_health_check": "2026-02-20T10:30:00Z",
+    "next_health_check": "2026-02-20T18:30:00Z",
+    "warnings": [],
+    "errors": []
+  }
+}

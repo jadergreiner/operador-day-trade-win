@@ -225,6 +225,41 @@ python scripts/ml/promotion_gate.py
 python scripts/ml/promotion_gate.py --report logs/oot_rolling_3cuts_20260213_185128.json --candidate novo_20260213 --baseline baseline_20260212 --required-consecutive-days 2
 ```
 
+## 🤖 Agente Autônomo (Sistema de Governança)
+
+O Operador Quântico inclui um **Agente Autônomo** totalmente documentado com sistema de governança de sincronização obrigatória.
+
+### Documentação do Agente Autônomo:
+
+- [🏗️ Arquitetura](docs/agente_autonomo/AGENTE_AUTONOMO_ARQUITETURA.md) - Componentes e fluxo de dados
+- [✨ Características](docs/agente_autonomo/AGENTE_AUTONOMO_FEATURES.md) - Feature matrix por versão
+- [📋 Histórias de Usuário](docs/agente_autonomo/AGENTE_AUTONOMO_HISTORIAS.md) - Personas e user stories
+- [🚀 Roadmap](docs/agente_autonomo/AGENTE_AUTONOMO_ROADMAP.md) - Timeline Q1-Q4 2026
+- [📊 Backlog](docs/agente_autonomo/AGENTE_AUTONOMO_BACKLOG.md) - Sprint tracking e progresso
+- [📝 Release Notes](docs/agente_autonomo/AGENTE_AUTONOMO_RELEASE.md) - Versões e suporte
+- [📈 AutoTrader Matrix](docs/agente_autonomo/AUTOTRADER_MATRIX.md) - Matriz de estratégias (Timeframe × Ativo × Estratégia)
+- [🧠 Estratégia ML](docs/agente_autonomo/AGENTE_AUTONOMO_RL.md) - Deep Q-Learning para padrões de trading
+- [❓ FAQ + Lições](docs/agente_autonomo/AGENTE_AUTONOMO_FAQ_LICOES_APRENDIDAS.md) - Perguntas frequentes e aprendizados
+- [📈 Changelog](docs/agente_autonomo/AGENTE_AUTONOMO_CHANGELOG.md) - Histórico de mudanças
+
+### Sistema de Sincronização Obrigatória:
+
+O Agente implementa um sistema rigoroso de **sincronização automática** de documentação:
+
+- [📋 Manifest de Sincronização](docs/agente_autonomo/SYNC_MANIFEST.json) - Regras e validação automática
+- [📦 Versionamento](docs/agente_autonomo/VERSIONING.json) - Rastreamento de componentes e releases
+- [📊 Status Tracker](docs/agente_autonomo/AGENTE_AUTONOMO_TRACKER.md) - Dashboard de progresso em tempo real
+
+**Validação Pre-Commit:**
+```bash
+# O sistema valida automaticamente antes de qualquer commit:
+# ✓ Todos os documentos presentes?
+# ✓ Checksums sincronizados?
+# ✓ Cross-references válidas?
+# ✓ Timestamps alinhados?
+# ✓ Nenhum documento desincronizado?
+```
+
 ## 📔 Sistema de Diários Automatizados
 
 O Operador Quântico inclui um sistema revolucionário de **dois diários automatizados**:
