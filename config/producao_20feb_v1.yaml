@@ -1,0 +1,25 @@
+environment: production
+logging_level: INFO
+
+capital:
+  inicial: 5000
+  max_contracts: 1
+  max_loss_daily: -100
+  circuit_breaker: -150
+
+asset:
+  symbol: WIN$N
+  timeframe: 5m
+
+risk_validation:
+  enabled: true
+
+ml_classifier:
+  confidence_threshold: 0.90
+
+execution:
+  auto_trade: true
+
+monitoring:
+  trader_required: true
+  dashboard_port: 8765
