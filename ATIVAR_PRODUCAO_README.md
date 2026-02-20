@@ -72,7 +72,7 @@ ATIVAR_PRODUCAO_AGORA.bat
    ```powershell
    powershell -ExecutionPolicy Bypass -File .\Ativar-Producao.ps1 -TestOnly
    ```
-   
+
    Output esperado:
    ```
    [OK] Python
@@ -92,11 +92,11 @@ ATIVAR_PRODUCAO_AGORA.bat
    ```powershell
    powershell -ExecutionPolicy Bypass -File .\Ativar-Producao.ps1
    ```
-   
+
    Menu aparecerá:
    ```
    OPCOES DE ATIVACAO:
-   
+
       [1] INICIAR AGORA (Producao - 1 contrato ao vivo)
       [2] Rodar testes antes
       [3] Apenas mostrar status

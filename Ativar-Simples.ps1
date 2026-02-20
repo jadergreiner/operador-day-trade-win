@@ -129,7 +129,7 @@ if ($Force) {
 }
 
 switch ($opcao) {
-    "1" { 
+    "1" {
         Write-Host ""
         Write-Host "INICIANDO PRODUCAO..."
         Write-Host ""
@@ -138,7 +138,7 @@ switch ($opcao) {
         Write-Host "   Max perda: R$ 100"
         Write-Host "   Trader DEVE monitorar!"
         Write-Host ""
-        
+
         if (!$Force) {
             $confirm = Read-Host "Confirmar? (S/N)"
             if ($confirm -ne "S" -and $confirm -ne "s") {
@@ -146,28 +146,28 @@ switch ($opcao) {
                 exit 0
             }
         }
-        
+
         Write-Host ""
         Write-Host "[T1] MT5Adapter..."
         Start-Process cmd -ArgumentList "/k cd $ProjectRoot && python -m src.infrastructure.providers.mt5_adapter --config config/producao_20feb_v1.yaml"
         Start-Sleep -Seconds 3
-        
+
         Write-Host "[T2] RiskValidator..."
         Start-Process cmd -ArgumentList "/k cd $ProjectRoot && python -m src.application.risk_validator --config config/producao_20feb_v1.yaml"
         Start-Sleep -Seconds 3
-        
+
         Write-Host "[T3] OrdersExecutor..."
         Start-Process cmd -ArgumentList "/k cd $ProjectRoot && python -m src.application.orders_executor --config config/producao_20feb_v1.yaml"
         Start-Sleep -Seconds 3
-        
+
         Write-Host "[T4] Detector..."
         Start-Process cmd -ArgumentList "/k cd $ProjectRoot && python -m src.application.services.processador_bdi --config config/producao_20feb_v1.yaml"
         Start-Sleep -Seconds 3
-        
+
         Write-Host "[T5] Dashboard..."
         Start-Process cmd -ArgumentList "/k cd $ProjectRoot && python -m src.interfaces.websocket_server --port 8765"
         Start-Sleep -Seconds 3
-        
+
         Write-Host ""
         Write-Host "TODOS OS COMPONENTES INICIADOS!"
         Write-Host ""
@@ -175,7 +175,7 @@ switch ($opcao) {
         Write-Host "KILL: Ctrl+C em qualquer terminal"
         Write-Host ""
         Write-Host "[OK] PRODUCAO ATIVADA"
-        
+
         Start-Sleep -Seconds 5
         Start-Process "http://localhost:8765/dashboard"
     }

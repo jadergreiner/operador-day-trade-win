@@ -189,9 +189,9 @@ switch ($opcao) {
     "2" { Rodar-Testes; Iniciar-Producao }
     "3" { Mostrar-Status }
     "4" { Write-Host "❌ Cancelado" -ForegroundColor Red; exit 0 }
-    default { 
+    default {
         Write-Host "❌ Opção inválida!" -ForegroundColor Red
-        exit 1 
+        exit 1
     }
 }
 
@@ -201,20 +201,20 @@ switch ($opcao) {
 
 function Iniciar-Producao {
     Clear-Host
-    
+
     Write-Host ""
     Write-Host "╔════════════════════════════════════════════════════════════════════════════╗" -ForegroundColor Green
     Write-Host "║                       🚀 INICIANDO PRODUÇÃO...                            ║" -ForegroundColor Green
     Write-Host "╚════════════════════════════════════════════════════════════════════════════╝" -ForegroundColor Green
     Write-Host ""
-    
+
     Write-Host "⚠️  AVISO CRÍTICO:" -ForegroundColor Yellow
     Write-Host "   - Capital REAL: R$ 5.000" -ForegroundColor Yellow
     Write-Host "   - Max perda: R$ 100 (-2% = HALT automático)" -ForegroundColor Yellow
     Write-Host "   - Trader DEVE monitorar 24h" -ForegroundColor Yellow
     Write-Host "   - Kill switch: Ctrl+C em qualquer terminal" -ForegroundColor Yellow
     Write-Host ""
-    
+
     if (!$Force) {
         $confirm = Read-Host "Confirmar ativação? (S/N)"
         if ($confirm -ne "S" -and $confirm -ne "s") {
@@ -222,31 +222,31 @@ function Iniciar-Producao {
             return
         }
     }
-    
+
     Write-Host ""
     Write-Host "✅ Ativação confirmada. Iniciando componentes..." -ForegroundColor Green
     Write-Host ""
-    
+
     Write-Host "[Terminal 1] Iniciando MT5Adapter..." -ForegroundColor Gray
     Start-Process cmd -ArgumentList "/k cd /d $ProjectRoot && python -m src.infrastructure.providers.mt5_adapter --config config/producao_20feb_v1.yaml --mode production" -WindowStyle Normal
     Start-Sleep -Seconds 3
-    
+
     Write-Host "[Terminal 2] Iniciando RiskValidator..." -ForegroundColor Gray
     Start-Process cmd -ArgumentList "/k cd /d $ProjectRoot && python -m src.application.risk_validator --config config/producao_20feb_v1.yaml --mode production" -WindowStyle Normal
     Start-Sleep -Seconds 3
-    
+
     Write-Host "[Terminal 3] Iniciando OrdersExecutor..." -ForegroundColor Gray
     Start-Process cmd -ArgumentList "/k cd /d $ProjectRoot && python -m src.application.orders_executor --config config/producao_20feb_v1.yaml" -WindowStyle Normal
     Start-Sleep -Seconds 3
-    
+
     Write-Host "[Terminal 4] Iniciando Detector BDI..." -ForegroundColor Gray
     Start-Process cmd -ArgumentList "/k cd /d $ProjectRoot && python -m src.application.services.processador_bdi --config config/producao_20feb_v1.yaml --detectors enabled" -WindowStyle Normal
     Start-Sleep -Seconds 3
-    
+
     Write-Host "[Terminal 5] Iniciando Dashboard..." -ForegroundColor Gray
     Start-Process cmd -ArgumentList "/k cd /d $ProjectRoot && python -m src.interfaces.websocket_server --port 8765 --config config/producao_20feb_v1.yaml" -WindowStyle Normal
     Start-Sleep -Seconds 3
-    
+
     Write-Host ""
     Write-Host "═══════════════════════════════════════════════════════════════════════════════" -ForegroundColor Green
     Write-Host "✅ TODOS OS COMPONENTES INICIADOS!" -ForegroundColor Green
@@ -257,13 +257,13 @@ function Iniciar-Producao {
     Write-Host "🔴 KILL SWITCH: Ctrl+C em qualquer terminal" -ForegroundColor Cyan
     Write-Host "📋 LOGS: logs\producao\" -ForegroundColor Cyan
     Write-Host ""
-    
+
     Start-Sleep -Seconds 3
     Write-Host "Abrindo dashboard em 5s..." -ForegroundColor Gray
     Start-Sleep -Seconds 5
-    
+
     Start-Process "http://localhost:8765/dashboard"
-    
+
     Write-Host ""
     Write-Host "✅ PRODUÇÃO ATIVADA - AGORA: $(Get-Date)" -ForegroundColor Green
     Write-Host ""
@@ -283,7 +283,7 @@ function Rodar-Testes {
     Write-Host ""
     Write-Host "🧪 RODANDO TESTES DE INTEGRAÇÃO..." -ForegroundColor Yellow
     Write-Host ""
-    
+
     $tests = @(
         @{ nome = "MT5Adapter"; file = "tests\test_mt5_adapter.py" },
         @{ nome = "RiskValidator"; file = "tests\test_risk_validator.py" },
@@ -291,7 +291,7 @@ function Rodar-Testes {
         @{ nome = "FeatureEngineer"; file = "tests\test_ml_feature_engineer.py" },
         @{ nome = "MLClassifier"; file = "tests\test_ml_classifier.py" }
     )
-    
+
     $i = 1
     foreach ($test in $tests) {
         Write-Host "[$i/5] Testando $($test.nome)..." -ForegroundColor Gray
@@ -306,7 +306,7 @@ function Rodar-Testes {
         Write-Host ""
         $i++
     }
-    
+
     Write-Host "✅ TESTES COMPLETOS" -ForegroundColor Green
     Write-Host ""
 }
@@ -320,16 +320,16 @@ function Mostrar-Status {
     Write-Host ""
     Write-Host "📊 STATUS DO SISTEMA" -ForegroundColor Cyan
     Write-Host ""
-    
+
     Write-Host "Verificando estrutura..." -ForegroundColor Gray
-    
+
     $files = @(
         "config\producao_20feb_v1.yaml",
         "src\infrastructure\providers\mt5_adapter.py",
         "src\application\risk_validator.py",
         "src\application\orders_executor.py"
     )
-    
+
     foreach ($file in $files) {
         if (Test-Path $file) {
             Write-Host "✅ $file" -ForegroundColor Green
@@ -337,7 +337,7 @@ function Mostrar-Status {
             Write-Host "❌ $file" -ForegroundColor Red
         }
     }
-    
+
     Write-Host ""
     Write-Host "Verificando pasta logs..." -ForegroundColor Gray
     if (Test-Path "logs\producao") {
@@ -345,7 +345,7 @@ function Mostrar-Status {
     } else {
         Write-Host "❌ logs\producao: não criada" -ForegroundColor Red
     }
-    
+
     Write-Host ""
     Write-Host "Verificando MT5 Gateway..." -ForegroundColor Gray
     try {
@@ -355,6 +355,6 @@ function Mostrar-Status {
         Write-Host "❌ MT5 Gateway: NÃO está rodando" -ForegroundColor Red
         Write-Host "   Verifique a instalação ou inicie separadamente" -ForegroundColor Yellow
     }
-    
+
     Write-Host ""
 }
