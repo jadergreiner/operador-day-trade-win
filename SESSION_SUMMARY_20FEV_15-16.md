@@ -1,7 +1,7 @@
 # 📊 RESUMO EXECUTIVO - SESSÃO 20/02/2026 (Finalizado)
 
-**Duração Total:** 15:00 - 16:00 BRT (1 hora focused)  
-**Personas Ativas:** Product Owner + Head de Finanças + Agentes Autônomos (Eng Sr + ML Expert)  
+**Duração Total:** 15:00 - 16:00 BRT (1 hora focused)
+**Personas Ativas:** Product Owner + Head de Finanças + Agentes Autônomos (Eng Sr + ML Expert)
 **Status:** ✅ TODAS AS TAREFAS COMPLETAS
 
 ---

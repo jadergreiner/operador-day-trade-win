@@ -1,15 +1,15 @@
 # 🛡️ RISK FRAMEWORK v1.2 - Política de Risco Automático
 
-**Versão:** 1.2.0  
-**Data:** 20/02/2026  
-**Responsável:** Head de Finanças  
-**Status:** ✅ APROVADO  
+**Versão:** 1.2.0
+**Data:** 20/02/2026
+**Responsável:** Head de Finanças
+**Status:** ✅ APROVADO
 
 ---
 
 ## 📋 Visão Geral
 
-Framework de risco automático para v1.2 (Execução Automática).  
+Framework de risco automático para v1.2 (Execução Automática).
 Objetivo: **Controlar máxima exposição e drawdown enquanto preserva oportunidades.**
 
 ```
@@ -37,7 +37,7 @@ Exemplo:
     Account Balance: R$ 50,000
     Posição aberta 1: Stop loss = R$ 1,500
     Posição aberta 2: Stop loss = R$ 1,000
-    
+
     Nova oportunidade:
     ├─ Position size proposto: R$ 1,500 (3% capital)
     ├─ Stop loss novo: R$ 1,500 (stop 30 pips @ 50/pip)
@@ -68,10 +68,10 @@ def validate_capital_available(
         sum(p.stop_loss_amount for p in open_positions) +
         new_stop_loss
     )
-    
+
     available = account_balance - total_required
     required = new_position_size + new_stop_loss
-    
+
     if available >= required:
         return True, f"Capital available: R$ {available:,.0f}"
     else:
@@ -99,7 +99,7 @@ CASO 1: Padrões DIFERENTES
     Padrão novo: Mean reversion
     Correlação: 15% (independentes) ✅ APPROVE
 
-CASO 2: Padrões SIMILARES  
+CASO 2: Padrões SIMILARES
     Posição 1: Volatilidade >3σ
     Padrão novo: Volatilidade >2.5σ (mesmo evento)
     Correlação: 85% (muito similares) ❌ REJECT
@@ -137,16 +137,16 @@ def validate_correlation_check(
     """
     if not open_positions:
         return True, "No open positions"
-    
+
     max_correlation = 0
     most_correlated = None
-    
+
     for position in open_positions:
         corr = correlation_matrix[new_pattern][position.pattern_type]
         if abs(corr) > max_correlation:
             max_correlation = abs(corr)
             most_correlated = position
-    
+
     if max_correlation <= 0.70:
         return True, f"Correlation OK: {max_correlation:.1%}"
     else:
@@ -172,16 +172,16 @@ Validação PRÉ-ORDEM:
     NÃO: Rejeitar ❌ (sinal de anomalia)
 
 Exemplo (WINFUT):
-    
+
     Volatilidade histórica (30 dias):
     ├─ Mínimo: 8 pips (tranquilo)
     ├─ Q25: 15 pips
     ├─ Média: 22 pips
     ├─ Q75: 35 pips
     └─ Máximo: 45 pips (volatile)
-    
+
     BANDA OPERACIONAL: [15, 35] pips
-    
+
     Momento da decisão:
     ├─ Volatilidade atual: 18 pips → ✅ DENTRO banda
     ├─ Volatilidade atual: 40 pips → ❌ FORA banda (gap?)
@@ -200,7 +200,7 @@ def validate_volatility_anomaly(
     """
     lower = volatility_percentiles['q25']
     upper = volatility_percentiles['q75']
-    
+
     if lower <= current_volatility <= upper:
         return True, f"Volatility normal: {current_volatility:.1f} pips"
     else:
@@ -266,22 +266,22 @@ AÇÃO AUTOMÁTICA:
        ├─ Normal: 1.5% do capital por trade
        ├─ Slow Mode: 0.75% do capital por trade
        └─ Efeito: Metade da exposição
-    
+
     2️⃣ Aumenta ML CONFIDENCE requirement
        ├─ Normal: score >= 80%
        ├─ Slow Mode: score >= 90%
        └─ Efeito: Só melhores padrões são executados
-    
+
     3️⃣ Pausa POSIÇÕES CORRELACIONADAS
        ├─ Normal: até 3 posições paralelas
        ├─ Slow Mode: máx 1 posição aberta
        └─ Efeito: Concentra risco em 1 bet por vez
-    
+
     4️⃣ Notifica CIO para revisão
        ├─ Email com status completo
        ├─ Request de aprovação para continuar
        └─ SLA: 1-2 horas para resposta
-    
+
     5️⃣ TTL: até fim do day trading (16:00 BRT)
 
 EFEITO GERAL:
@@ -312,23 +312,23 @@ Sem Slow Mode (normal):
 ```python
 def apply_slow_mode():
     """Ativa restrições em caso de perda > -5%"""
-    
+
     # 1. Reduz ticket size
     global_ticket_size = 0.0075  # 0.75% vs normal 1.5%
-    
+
     # 2. Aumenta ML confidence
     ml_confidence_threshold = 0.90  # 90% vs normal 80%
-    
+
     # 3. Pausa correlações
     max_parallel_positions = 1  # vs normal 3
-    
+
     # 4. Notifica CIO
     send_email_cio(
         "SLOW MODE ATIVADO: Recovery protocol iniciado",
         f"Daily loss: {daily_pnl_pct:.1%}, "
         f"Ticket reduzido: 0.75%, Correlação: 1 pos"
     )
-    
+
     # 5. Inicia timer
     slow_mode_active_until = parse_time("16:00")  # fim do day
 ```
@@ -348,24 +348,24 @@ AÇÃO AUTOMÁTICA (IMEDIATA):
        ├─ Ordem: MARKET CLOSE (sem delay)
        ├─ Execução: ~50ms (MT5 market order)
        └─ P&L final registrado
-    
+
     2️⃣ DESATIVA AUTOMAÇÃO COMPLETAMENTE
        ├─ Sistema entra em READ-ONLY mode
        ├─ Nenhuma nova ordem pode ser enviada
        └─ Trader pode operar manualmente apenas
-    
+
     3️⃣ ESCALA URGENTE
        ├─ Email crítico ao Trader + CIO + CFO
        ├─ Slack/Teams notification
        ├─ Phone call (se disponível)
        └─ SLA: <5 minutos de resposta
-    
+
     4️⃣ INICIA POST-MORTEM OBRIGATÓRIO
        ├─ "Por que -8% aconteceu?"
-       ├─ "Qual foi o gatilho?" 
+       ├─ "Qual foi o gatilho?"
        ├─ "É problema de modelo ou mercado?"
        └─ Conclusão: <4 horas (MESMO DIA)
-    
+
     5️⃣ AUDIT LOG COMPLETO (CVM-ready)
        ├─ Timestamps de cada evento
        ├─ Padrões que causaram losses
@@ -404,18 +404,18 @@ def check_daily_circuit_breakers(daily_pnl: float, capital: float):
     Monitora P&L diário e aplica circuit breakers
     """
     pnl_pct = (daily_pnl / capital) * 100
-    
+
     # NÍVEL 1: Alerta
     if pnl_pct <= -3.0:
         alert_trader(f"🟡 Loss -3%: {daily_pnl:,.0f}")
         # Trader pode continuar
-    
+
     # NÍVEL 2: Slow Mode
     if pnl_pct <= -5.0:
         alert_cio(f"🟠 Loss -5%: SLOW MODE ativado")
         apply_slow_mode()
         # Automação com restrições
-    
+
     # NÍVEL 3: Halt
     if pnl_pct <= -8.0:
         escalate_critical(f"🔴 Loss -8%: HALT AUTOMÁTICO")
@@ -505,6 +505,6 @@ ml_confidence_min: 0.85       # Mais restritivo (reduz noise)
 
 ## ✍️ Assinatura
 
-**Head de Finanças:** ✅ APROVADO (20/02/2026)  
+**Head de Finanças:** ✅ APROVADO (20/02/2026)
 **Status:** Implementação em Sprint 2
 

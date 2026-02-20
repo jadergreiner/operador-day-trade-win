@@ -420,12 +420,12 @@ Os diários fornecem dados ricos para **aprendizagem por reforço** no final do 
 
 **Status:** Phase 7 Planning (27/02-10/04/2026) | **Timeline:** 27 dias
 
-O Operador Quântico está evoluindo para **execução 100% automática com validação 
+O Operador Quântico está evoluindo para **execução 100% automática com validação
 ML**.
 
 ### US-001: Execução Automática com Validação ML
-**Prioridade:** P0 (Blocker para monetização)  
-**ROI Projetado:** +R$ 150-300k/mês (vs 50-80k v1.1)  
+**Prioridade:** P0 (Blocker para monetização)
+**ROI Projetado:** +R$ 150-300k/mês (vs 50-80k v1.1)
 **Capital Ramp-up:** 50k → 100k → 150k
 
 #### Características Planejadas (v1.2.0 - 10/04/2026):
@@ -472,8 +472,8 @@ SPRINT 4 (20/03-10/04): UAT & Launch
 | **Fase 2 (100k)** | 100k | +80-140k | 80-140% |
 | **Fase 3 (150k)** | 150k | +150-250k | 13-20% |
 
-[📖 User Story](docs/agente_autonomo/US-001-EXECUTION_AUTOMATION_v1.2.md)  
-[📖 Risk Framework](docs/agente_autonomo/RISK_FRAMEWORK_v1.2.md)  
+[📖 User Story](docs/agente_autonomo/US-001-EXECUTION_AUTOMATION_v1.2.md)
+[📖 Risk Framework](docs/agente_autonomo/RISK_FRAMEWORK_v1.2.md)
 [📖 Roadmap](docs/agente_autonomo/AGENTE_AUTONOMO_ROADMAP.md)
 
 **Status:** Decisões financeiras ✅ | Agentes designados ✅

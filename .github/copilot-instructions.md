@@ -259,12 +259,12 @@ Sempre validar antes de commit seguindo as regras acima.
 
 ### 📋 Feature Prioritization & Financial Approval
 
-**Sessão:** 20/02/2026 17:00-18:00  
+**Sessão:** 20/02/2026 17:00-18:00
 **Output:** Completo | **Status:** ✅ APROVADO PARA SPRINT 1
 
 #### 📊 v1.2 Feature Selection: Execução Automática (P0)
 
-**Contexto:** v1.1 (Alertas) já está completo e será lançado 13/03.  
+**Contexto:** v1.1 (Alertas) já está completo e será lançado 13/03.
 **Necessidade:** Monetizar detectando 100% das oportunidades automaticamente.
 
 **Decisões Aprovadas:**
@@ -289,7 +289,7 @@ Sempre validar antes de commit seguindo as regras acima.
    - 🟠 -5%: Slow mode (50% ticket, 90% ML)
    - 🔴 -8%: Halt (tudo para)
 
-**ROI Projetado (90 dias):** +R$ 255-430k  
+**ROI Projetado (90 dias):** +R$ 255-430k
 **Payback Dev:** 1.3 meses
 
 #### 📚 Documentação Formalizada (3 artefatos):
