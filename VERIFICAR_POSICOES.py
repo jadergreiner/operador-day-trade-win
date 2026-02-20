@@ -74,10 +74,10 @@ deals = mt5.history_deals_get(from_date, datetime.now())
 
 if deals:
     print(f"Total de operações: {len(deals)}\n")
-    
+
     # Ordenar por tempo (mais recentes primeiro)
     deals_sorted = sorted(deals, key=lambda x: x.time, reverse=True)
-    
+
     for deal in deals_sorted[:10]:  # Mostrar últimas 10
         deal_type = "BUY" if deal.type == mt5.DEAL_TYPE_BUY else "SELL"
         print(f"Ticket: {deal.ticket}")
@@ -110,7 +110,7 @@ if target_positions:
 else:
     # Procurar no histórico
     winj_deals = [d for d in deals if d.symbol == "WINJ26" and 2275949935 in str(d.ticket)]
-    
+
     if winj_deals:
         print(f"❌ POSIÇÃO FOI FECHADA")
         deal = winj_deals[0]
