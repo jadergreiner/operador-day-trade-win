@@ -19,7 +19,7 @@ Todas as ações devem seguir estas diretrizes sem exceção:
 - **Solução:** Usar UTF-8 explicitamente em todas as mensagens
 - **Verificação:** Antes de fazer commit, validar que não há caracteres `├` ou `┌` nos logs
 - **Formato Correto:**
-  
+
   ```bash
   git commit -m "docs: Sumário de atualização de arquitetura"
   git commit -m "feat: Novo sistema de trading automatizado"
@@ -41,14 +41,14 @@ git commit -m "fix: Correção de bug no cálculo de volatilidade"
   - MD022: Cabeçalhos devem ter espaço em branco acima
   - MD023: Cabeçalhos devem começar no início da linha
 - **Aplicar Lint:**
-  
+
   ```bash
   # Verificar um arquivo
 python -m pymarkdown scan docs/arquivo.md
-  
+
   # Verificar toda documentação
   python -m pymarkdown scan docs/
-  
+
   # Corrigir automaticamente (quando possível)
   python -m pymarkdown fix docs/arquivo.md
   ```

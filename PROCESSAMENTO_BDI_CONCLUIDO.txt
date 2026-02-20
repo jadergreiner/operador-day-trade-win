@@ -84,7 +84,7 @@ OPORTUNIDADES IDENTIFICADAS: 3 (todas PRIORIDADE MÉDIA)
   ├─ Risco: Médio
   └─ Potencial: Spread > custo de carrego
 
-  OPP-002: Alto Liquidez em Ações  
+  OPP-002: Alto Liquidez em Ações
   ├─ Data: 12/02/2026
   ├─ Ação: Setup em top 50 volumes
   ├─ Risco: Baixo (alta liquidez)
@@ -128,10 +128,10 @@ OPORTUNIDADES IDENTIFICADAS: 3 (todas PRIORIDADE MÉDIA)
 
   ☐ TASK-001: Análise de Posições a Termo (2h)
      └─ Operador | Deadline 21/02
-     
+
   ☐ TASK-002: Mapeamento de Ações Mais Negociadas (1.5h)
      └─ Operador | Deadline 21/02
-     
+
   ☐ TASK-003: Setup para Scalping em WIN (1h)
      └─ Operador | Deadline: ANTES de 06:00 no pregão
 
@@ -139,13 +139,13 @@ OPORTUNIDADES IDENTIFICADAS: 3 (todas PRIORIDADE MÉDIA)
 
   ☐ TASK-004: Integração de Dados de Opções (4h)
      └─ Técnico | Deadline 28/02
-     
+
   ☐ TASK-005: Integração de Dados Intradiários (8h)
      └─ Técnico | Deadline 05/03
-     
+
   ☐ TASK-006: Monitoramento Fluxo de Capital (Contínuo)
      └─ Analista | 20min/dia
-     
+
   ☐ TASK-007: Módulo de Correlações (6h)
      └─ Técnico | Deadline 10/03
 

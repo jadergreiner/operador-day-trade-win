@@ -1,0 +1,50 @@
+{
+  "data_geracao": "2026-02-20T09:19:59.065522",
+  "total_oportunidades": 3,
+  "oportunidades": [
+    {
+      "tipo": "Operações a Termo",
+      "data": "20260212",
+      "metrica": "Posições em aberto",
+      "acao": "Analisar maiores posições abertas para identificar tendências institucionais",
+      "prioridade": "MÉDIA"
+    },
+    {
+      "tipo": "Operações a Termo",
+      "data": "20260210",
+      "metrica": "Posições em aberto",
+      "acao": "Analisar maiores posições abertas para identificar tendências institucionais",
+      "prioridade": "MÉDIA"
+    },
+    {
+      "tipo": "Maior liquidez em ações",
+      "data": "20260212",
+      "metrica": "Top ações por volume",
+      "acao": "Focar em ações com maior volume e spreads menores para entrada/saída",
+      "prioridade": "MÉDIA"
+    }
+  ],
+  "gaps": [
+    {
+      "area": "Dados de Opções",
+      "descricao": "Arquivo BDI não contém detalhe individual de cada opção negociada",
+      "recomendacao": "Buscar relatórios específicos de opções da B3 para análise de IV e open interest"
+    },
+    {
+      "area": "Dados Intradiários",
+      "descricao": "BDI apresenta apenas dados diários consolidados",
+      "recomendacao": "Integrar dados de pregão em tempo real ou históricos de 1min/5min para scalping"
+    },
+    {
+      "area": "Análise de Investidores",
+      "descricao": "Faltam detalhes de participação por tipo de investidor",
+      "recomendacao": "Consultar relatórios específicos de fluxo de capitais e participação institucional"
+    },
+    {
+      "area": "Correlações de Pares",
+      "descricao": "Sem dados diretos de correlação entre pares relacionados",
+      "recomendacao": "Calcular correlações entre ações do mesmo setor e índices"
+    }
+  ],
+  "insights": []
+}

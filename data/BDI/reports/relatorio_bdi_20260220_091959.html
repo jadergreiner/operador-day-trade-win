@@ -1,0 +1,449 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Executivo BDI - 20/02/2026 09:19</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-left: 5px solid #667eea;
+            border-radius: 5px;
+        }
+        
+        .section h2 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .icon {
+            font-size: 1.5em;
+        }
+        
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .metric {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .metric-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        
+        .metric-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .metric.positive .metric-value {
+            color: #28a745;
+        }
+        
+        .metric.negative .metric-value {
+            color: #dc3545;
+        }
+        
+        .insight-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #ffc107;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .opportunity-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #28a745;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .opportunity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .opp-type {
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .priority {
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .priority.high {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .priority.medium {
+            background: #ffc107;
+            color: black;
+        }
+        
+        .priority.low {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .gap-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #dc3545;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .gap-area {
+            font-weight: bold;
+            color: #dc3545;
+            margin-bottom: 8px;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .table th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+        }
+        
+        .table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        footer {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .highlight {
+            background: #fffacd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .metadata {
+            color: #999;
+            font-size: 0.9em;
+            margin-top: 15px;
+        }
+        
+        .backlog-section {
+            background: #fff3cd;
+            padding: 20px;
+            border-left: 5px solid #ffc107;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        
+        .action-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 RELATÓRIO EXECUTIVO - BDI B3</h1>
+            <p>Análise de Dados do Mercado Brasileiro</p>
+            <p style="margin-top: 10px; font-size: 0.95em;">Gerado em: 20/02/2026 09:19</p>
+        </header>
+        
+        <div class="content">
+            
+            <!-- RESUMO EXECUTIVO -->
+            <section class="section">
+                <h2><span class="icon">📈</span>RESUMO EXECUTIVO</h2>
+                <p>Análise consolidada dos últimos boletins diários da B3 com foco em identificação de oportunidades operacionais e gaps de dados para operadores de day trading e swing trading.</p>
+                
+                <h3 style="margin-top: 20px; color: #667eea;">Principais Métricas</h3>
+                <div class="metric-grid">
+
+                    <div class="metric">
+                        <div class="metric-label">Derivativos (com minis)</div>
+                        <div class="metric-value">milhões</div>
+                        <div style="color: #667eea; font-weight: bold;">Muito Líquido</div>
+                    </div>
+
+                </div>
+            </section>
+            
+            <!-- INSIGHTS E ANÁLISES -->
+            <section class="section">
+                <h2><span class="icon">💡</span>INSIGHTS E PONTOS DE ATENÇÃO</h2>
+<div class="insight-item">● Volatilidade moderada observada no período analisado</div>
+            </section>
+            
+            <!-- OPORTUNIDADES IDENTIFICADAS -->
+            <section class="section">
+                <h2><span class="icon">🎯</span>OPORTUNIDADES IDENTIFICADAS</h2>
+                <div class="highlight">
+                    <strong>Total:</strong> 3 oportunidades mapeadas para execução
+                </div>
+<h3 style="color: #ffc107; margin-top: 20px;">🟡 Prioridade MÉDIA</h3>
+                <div class="opportunity-item">
+                    <div class="opportunity-header">
+                        <div class="opp-type">Operações a Termo</div>
+                        <span class="priority medium">MÉDIA</span>
+                    </div>
+                    <div><strong>Data:</strong> 20260212</div>
+                    <div><strong>Métrica:</strong> Posições em aberto</div>
+                    <div><strong>Ação Recomendada:</strong> Analisar maiores posições abertas para identificar tendências institucionais</div>
+                </div>
+
+                <div class="opportunity-item">
+                    <div class="opportunity-header">
+                        <div class="opp-type">Operações a Termo</div>
+                        <span class="priority medium">MÉDIA</span>
+                    </div>
+                    <div><strong>Data:</strong> 20260210</div>
+                    <div><strong>Métrica:</strong> Posições em aberto</div>
+                    <div><strong>Ação Recomendada:</strong> Analisar maiores posições abertas para identificar tendências institucionais</div>
+                </div>
+
+                <div class="opportunity-item">
+                    <div class="opportunity-header">
+                        <div class="opp-type">Maior liquidez em ações</div>
+                        <span class="priority medium">MÉDIA</span>
+                    </div>
+                    <div><strong>Data:</strong> 20260212</div>
+                    <div><strong>Métrica:</strong> Top ações por volume</div>
+                    <div><strong>Ação Recomendada:</strong> Focar em ações com maior volume e spreads menores para entrada/saída</div>
+                </div>
+
+            </section>
+            
+            <!-- GAPS IDENTIFICADOS -->
+            <section class="section">
+                <h2><span class="icon">⚠️</span>GAPS E RECOMENDAÇÕES</h2>
+
+            <div class="gap-item">
+                <div class="gap-area">❌ Dados de Opções</div>
+                <div><strong>Descrição:</strong> Arquivo BDI não contém detalhe individual de cada opção negociada</div>
+                <div style="margin-top: 10px; color: #28a745;"><strong>✓ Recomendação:</strong> Buscar relatórios específicos de opções da B3 para análise de IV e open interest</div>
+            </div>
+
+            <div class="gap-item">
+                <div class="gap-area">❌ Dados Intradiários</div>
+                <div><strong>Descrição:</strong> BDI apresenta apenas dados diários consolidados</div>
+                <div style="margin-top: 10px; color: #28a745;"><strong>✓ Recomendação:</strong> Integrar dados de pregão em tempo real ou históricos de 1min/5min para scalping</div>
+            </div>
+
+            <div class="gap-item">
+                <div class="gap-area">❌ Análise de Investidores</div>
+                <div><strong>Descrição:</strong> Faltam detalhes de participação por tipo de investidor</div>
+                <div style="margin-top: 10px; color: #28a745;"><strong>✓ Recomendação:</strong> Consultar relatórios específicos de fluxo de capitais e participação institucional</div>
+            </div>
+
+            <div class="gap-item">
+                <div class="gap-area">❌ Correlações de Pares</div>
+                <div><strong>Descrição:</strong> Sem dados diretos de correlação entre pares relacionados</div>
+                <div style="margin-top: 10px; color: #28a745;"><strong>✓ Recomendação:</strong> Calcular correlações entre ações do mesmo setor e índices</div>
+            </div>
+
+            </section>
+            
+            <!-- BACKLOG DE OPORTUNIDADES -->
+            <section class="section backlog-section">
+                <h2 style="color: #ff9800;"><span class="icon">📋</span>BACKLOG PARA EXECUÇÃO</h2>
+                <p>Tarefas priorizadas para o operador executar:</p>
+                
+                <div style="margin-top: 20px;">
+
+                    <div class="action-item">
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold; color: #667eea; margin-bottom: 5px;">
+                                [MÉDIA] Operações a Termo - 20260212
+                            </div>
+                            <div style="color: #666; font-size: 0.9em;">Analisar maiores posições abertas para identificar tendências institucionais</div>
+                        </div>
+                        <input type="checkbox" class="checkbox" />
+                    </div>
+
+                    <div class="action-item">
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold; color: #667eea; margin-bottom: 5px;">
+                                [MÉDIA] Operações a Termo - 20260210
+                            </div>
+                            <div style="color: #666; font-size: 0.9em;">Analisar maiores posições abertas para identificar tendências institucionais</div>
+                        </div>
+                        <input type="checkbox" class="checkbox" />
+                    </div>
+
+                    <div class="action-item">
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold; color: #667eea; margin-bottom: 5px;">
+                                [MÉDIA] Maior liquidez em ações - 20260212
+                            </div>
+                            <div style="color: #666; font-size: 0.9em;">Focar em ações com maior volume e spreads menores para entrada/saída</div>
+                        </div>
+                        <input type="checkbox" class="checkbox" />
+                    </div>
+
+                </div>
+                <div style="margin-top: 20px; padding: 15px; background: white; border-radius: 5px; border-left: 3px solid #28a745;">
+                    <strong style="color: #28a745;">💾 Dica:</strong> Salve este arquivo e atualize o status das tarefas conforme as executa.
+                </div>
+            </section>
+            
+            <!-- ANÁLISE TÉCNICA RECOMENDADA -->
+            <section class="section">
+                <h2><span class="icon">🔧</span>RECOMENDAÇÕES TÉCNICAS PARA O OPERADOR</h2>
+                
+                <h3 style="color: #667eea; margin-top: 15px;">Para Day Trading (Mini Índice):</h3>
+                <ul style="margin-left: 20px; color: #333;">
+                    <li style="margin: 10px 0;">✓ Foco em breakouts acima da maior alta do dia anterior</li>
+                    <li style="margin: 10px 0;">✓ Use Stop Loss em suportes locais (últimas 4-5 velas)</li>
+                    <li style="margin: 10px 0;">✓ Monitore volume para confirmação de movimento</li>
+                    <li style="margin: 10px 0;">✓ Ótimas oportunidades de scalping em alta liquidez de minis</li>
+                </ul>
+                
+                <h3 style="color: #667eea; margin-top: 15px;">Para Swing Trading (Ações):</h3>
+                <ul style="margin-left: 20px; color: #333;">
+                    <li style="margin: 10px 0;">✓ Foque nas ações com maior volume do período</li>
+                    <li style="margin: 10px 0;">✓ Analise padrões gráficos em timeframes diários</li>
+                    <li style="margin: 10px 0;">✓ Use Fibonacci para projetar alvos de expansão</li>
+                    <li style="margin: 10px 0;">✓ Verifique correlação com índices (IBOV, IBrX)</li>
+                </ul>
+                
+                <h3 style="color: #667eea; margin-top: 15px;">Para Operações a Termo:</h3>
+                <ul style="margin-left: 20px; color: #333;">
+                    <li style="margin: 10px 0;">✓ Identifique as ações com maior open interest</li>
+                    <li style="margin: 10px 0;">✓ Calcule o custo de carrego (taxa + taxa de juros)</li>
+                    <li style="margin: 10px 0;">✓ Monitore diferença entre spot e termo</li>
+                    <li style="margin: 10px 0;">✓ Aproveite ineficiências de precificação</li>
+                </ul>
+            </section>
+            
+            <!-- CONCLUSÃO -->
+            <section class="section">
+                <h2><span class="icon">✅</span>CONCLUSÃO</h2>
+                <p>O mercado apresenta líquida em instrumentos de derivativos, especialmente em futuros de índice (mini), oferecendo excelentes oportunidades para day traders. A volatilidade moderada a alta observada cria ambiente propício para swing trades em ações selecionadas com maior volume.</p>
+                
+                <div class="highlight">
+                    <strong>Recomendação Principal:</strong> Execuar as oportunidades priorizadas no backlog, começando pelas de prioridade ALTA. Monitore continuamente os volumes e ajuste a estratégia conforme a dinâmica do mercado evolui.
+                </div>
+            </section>
+            
+        </div>
+        
+        <footer>
+            <p>Relatório gerado automaticamente pelo Sistema de Análise BDI</p>
+            <p style="margin-top: 10px; font-size: 0.85em;">Operador Day Trade | Especialista em Mercado Brasileiro</p>
+            <p style="margin-top: 10px; color: #999;">© 2026 - Todos os direitos reservados</p>
+        </footer>
+    </div>
+</body>
+</html>
