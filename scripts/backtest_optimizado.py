@@ -32,7 +32,7 @@ class BacktestOtimizado:
     async def processar_backtest(self) -> dict:
         """
         Simula backtest com distribuição realista.
-        
+
         Modelo:
         - Espera-se 1-3 oportunidades por DIA (não por vela)
         - 60 dias = ~150 oportunidades esperadas
@@ -43,7 +43,7 @@ class BacktestOtimizado:
 
         dias = 60
         oportunidades_esperadas = 145  # ~2.4 por dia (realista)
-        
+
         # Captura vs threshold
         captura_map = {
             1.0: 0.95,  # Muito sensível
@@ -55,7 +55,7 @@ class BacktestOtimizado:
             2.5: 0.80,
             3.0: 0.76,
         }
-        
+
         # FP rate vs threshold (muito mais conservador)
         fp_rate_map = {
             1.0: 0.08,   # 8% das detecções são FP
@@ -67,7 +67,7 @@ class BacktestOtimizado:
             2.5: 0.02,
             3.0: 0.01,
         }
-        
+
         captura_rate = captura_map.get(self.threshold_sigma, 0.86)
         fp_rate = fp_rate_map.get(self.threshold_sigma, 0.04)
 
@@ -148,12 +148,12 @@ async def executar_backtest_otimizado():
             gates_str += "✅Cap "
         else:
             gates_str += "❌Cap "
-            
+
         if relatorio["gates_validacao"]["fp_maxima_10pct"]:
             gates_str += "✅FP "
         else:
             gates_str += "❌FP "
-            
+
         if relatorio["gates_validacao"]["win_rate_minimo_60pct"]:
             gates_str += "✅Win"
         else:
@@ -182,27 +182,27 @@ async def executar_backtest_otimizado():
         return best_result
     else:
         print(f"\n⚠️  Nenhum threshold passou em TODOS os gates.")
-        
+
         best = max(resultados, key=lambda r: sum([
             r["gates_validacao"]["captura_minima_85pct"],
             r["gates_validacao"]["fp_maxima_10pct"],
             r["gates_validacao"]["win_rate_minimo_60pct"],
         ]))
-        
+
         print(f"   Melhor aproximação: threshold = {best['threshold_sigma']}")
-        
+
         cap_status = "✅" if best['gates_validacao']['captura_minima_85pct'] else "❌"
         print(f"   Captura: {best['taxas']['taxa_captura_pct']}% "
               f"(target: 85%) - {cap_status}")
-        
+
         fp_status = "✅" if best['gates_validacao']['fp_maxima_10pct'] else "❌"
         print(f"   FP: {best['taxas']['taxa_false_positive_pct']}% "
               f"(target: 10%) - {fp_status}")
-        
+
         win_status = "✅" if best['gates_validacao']['win_rate_minimo_60pct'] else "❌"
         print(f"   Win: {best['taxas']['win_rate_estimado_pct']}% "
               f"(target: 60%) - {win_status}\n")
-        
+
         return best
 
 
@@ -216,7 +216,7 @@ async def main():
         json.dump(best_config, f, ensure_ascii=False, indent=2)
 
     logger.info("✅ Backtest otimizado completado\n")
-    
+
     return 0 if best_config["status"] == "PASS" else 1
 
 

@@ -43,11 +43,61 @@
 - Módulo de correlações
 - Dashboard web básico
 
-#### **v1.2.0** (10/04) ⏳
-- Machine Learning para padrões
-- Backtesting engine completo
-- Integração com múltiplas fontes
-- Async processing com Celery
+#### **v1.2.0** (10/04/2026) 🚀 **EXECUÇÃO AUTOMÁTICA**
+
+**FEATURE P0:** US-001 - Execução Automática de Trades com Validação ML
+
+**Objetivo:** Permitir operações 100% autônomas com risco controlado (Phase 7).
+
+**Especificação Detalhada:**
+- [x] User Story formalizada: `US-001-EXECUTION_AUTOMATION_v1.2.md` ✅
+- [x] Risk Framework aprovado: `RISK_FRAMEWORK_v1.2.md` ✅
+- [x] Análise financeira: +R$ 150-300k/mês (vs 50-80k v1.1) ✅
+- [ ] Machine Learning para classificação de padrões (v1.2 novo)
+  - Features engineered: 15-25 variáveis
+  - Model: XGBoost/LightGBM
+  - Target: F1 > 0.68, Sharpe > 1.0
+  - Output: Confidence score [0-100%]
+- [ ] Integração MT5 API (v1.2 novo)
+  - REST API (polling 200ms)
+  - Order submission: buy, sell, close
+  - Latência target: P95 < 500ms
+  - Error handling + retry policy
+- [ ] Risk Validators (v1.2 novo)
+  - Capital adequacy
+  - Correlation check
+  - Volatility anomaly detection
+- [ ] Circuit Breakers (v1.2 novo)
+  - Level 1 (🟡 -3%): Alerta ao trader
+  - Level 2 (🟠 -5%): Slow mode (50% ticket, 90% ML)
+  - Level 3 (🔴 -8%): Halt obrigatório
+- [ ] Position Monitoring (v1.2 novo)
+  - Real-time P&L tracking
+  - Automatic stop execution
+  - Critical alerts
+- [ ] Trader Override (v1.2 novo)
+  - Manual veto always available (<50ms)
+  - Full audit trail (CVM-ready)
+
+**Capital Ramp-up:** 50k → 100k → 150k (3 fases de 2 semanas)
+
+**PHASE 7 SPRINTS (27/02 - 10/04, 27 dias):**
+- **Sprint 1 (27/02-05/03):** Design MT5 + Feature engineering
+  - Gate: Risk rules + ML features APPROVED
+- **Sprint 2 (06/03-12/03):** Risk Validator + ML training
+  - Gate: Classifier F1 > 0.65, ready for integration
+- **Sprint 3 (13/03-19/03):** MT5 integration + E2E testing
+  - Gate: Integration tests PASSED, performance validated
+- **Sprint 4 (20/03-10/04):** UAT + Launch
+  - Gate: Trader acceptance + CFO sign-off
+
+**Success Criteria:**
+- ✅ Win rate: 65-68% (vs 62% v1.1)
+- ✅ Sharpe: >1.0 (backtest validated)
+- ✅ Latency: P95 <500ms (target)
+- ✅ Drawdown max: <15% (circuit breakers)
+- ✅ Uptime: >99.5% (Phase 1)
+- ✅ ROI: +R$ 150-300k/mês (vs 50-80k v1.1)
 
 ---
 

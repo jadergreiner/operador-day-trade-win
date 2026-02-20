@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 class BacktestSimplificado:
     """
     Versão simplificada do backtest para demonstração e validação.
-    
+
     Não depende de imports complexos.
     """
 
@@ -55,7 +55,7 @@ class BacktestSimplificado:
     async def carregar_dados_historicos(self, dias: int = 60) -> tuple:
         """
         Simula carregamento de dados históricos.
-        
+
         Retorna: (dados, spike_indices)
         """
         logger.info(f"📥 Carregando {dias} dias de dados históricos (simulado)...")
@@ -101,7 +101,7 @@ class BacktestSimplificado:
     async def processar_velas(self, dados: List[dict], spike_indices: List[int]):
         """
         Processa velas e simula detecção.
-        
+
         Simula o comportamento do detector:
         - Detecta ~87% dos spikes (matches)
         - ~5% de false positives
@@ -118,7 +118,7 @@ class BacktestSimplificado:
                 deteccoes.add(spike_idx)
                 self.matches += 1
 
-        # False positives: 5% de alertas errados  
+        # False positives: 5% de alertas errados
         for i in range(len(dados)):
             if i not in spike_indices and random.random() < 0.05:
                 deteccoes.add(i)
@@ -138,12 +138,12 @@ class BacktestSimplificado:
 
     def gerar_relatorio(self) -> dict:
         """Gera relatório com métricas de validação."""
-        
+
         # Calcular taxas
         taxa_captura = (
             (self.matches / max(self.oportunidades_esperadas, 1)) * 100
         )
-        
+
         taxa_fp = (
             (self.false_positives / max(self.alertas_gerados, 1)) * 100
             if self.alertas_gerados > 0 else 0
@@ -186,7 +186,7 @@ class BacktestSimplificado:
 
     def imprimir_relatorio(self, relatorio: dict):
         """Imprime relatório formatado (melhorado para markdown lint)."""
-        
+
         print(f"\n{'='*70}")
         print(f"📊 RELATÓRIO DE BACKTEST - INTEGRAÇÃO ML")
         print(f"{'='*70}\n")
