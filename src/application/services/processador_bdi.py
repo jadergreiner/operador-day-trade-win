@@ -32,7 +32,7 @@ class ProcessadorBDI:
         self.detector_vol = DetectorVolatilidade(
             window=self.config.detection.volatilidade.window,
             threshold_sigma=self.config.detection.volatilidade.threshold_sigma,
-            confirmacao_velas=self.config.detection.volatilidade.confirmacao_velas,
+            lookback_bars=100,
         )
         self.detector_padroes = DetectorPadroesTecnico()
         self.fila = FilaAlertas()
