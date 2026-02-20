@@ -1,7 +1,7 @@
 # 🗺️ Roadmap - Agente Autônomo de Trading
 
-**Versão:** 1.0.0  
-**Data:** 20/02/2026  
+**Versão:** 1.0.0
+**Data:** 20/02/2026
 **Horizonte:** 12 meses
 
 ---
@@ -10,7 +10,7 @@
 
 ### Q1 2026 (Fevereiro - Abril)
 
-#### **v1.0.0** (20/02) ✅ 
+#### **v1.0.0** (20/02) ✅
 - Sistema de processamento BDI
 - Análise de tendências
 - Backlog estruturado
@@ -23,9 +23,9 @@
 
 #### **v1.1.0** (13/03) ⏳
 - Dados intradiários (1min, 5min)
+- **Alertas automáticos (email/SMS/WebSocket)** ← NEW
 - Análise de opções
 - Módulo de correlações
-- Alertas automáticos (email/SMS)
 - Dashboard web básico
 
 #### **v1.2.0** (10/04) ⏳

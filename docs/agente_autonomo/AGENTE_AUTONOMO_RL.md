@@ -1,7 +1,7 @@
 # 🧠 Reinforcement Learning Strategy - Agente Autônomo
 
-**Versão:** 1.0.0 (Planejado)  
-**Data:** 20/02/2026  
+**Versão:** 1.0.0 (Planejado)
+**Data:** 20/02/2026
 **Status:** 📋 Em Especificação
 
 ---
@@ -70,6 +70,6 @@ Reinjetar no Agente
 
 ---
 
-**Status Atual:** Especificação em Progresso  
-**Timeline:** v1.2 (Abril 2026)  
+**Status Atual:** Especificação em Progresso
+**Timeline:** v1.2 (Abril 2026)
 **Documentos Relacionados:** FEATURES, ROADMAP

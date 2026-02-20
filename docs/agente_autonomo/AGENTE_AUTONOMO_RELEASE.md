@@ -1,14 +1,14 @@
 # 🎯 Release Plan - Agente Autônomo
 
-**Versão:** 1.0.0  
-**Data de Release:** 20/02/2026  
+**Versão:** 1.0.0
+**Data de Release:** 20/02/2026
 **Status:** ✅ Em Produção
 
 ---
 
 ## 📦 v1.0.0 - Foundation Release
 
-**Data:** 20/02/2026  
+**Data:** 20/02/2026
 **Lead:** Agente Autônomo de IA
 
 ### Incluído

@@ -1,7 +1,7 @@
 # 📋 Backlog do Agente Autônomo
 
-**Versão:** 1.0.0  
-**Última Atualização:** 20/02/2026  
+**Versão:** 1.0.0
+**Última Atualização:** 20/02/2026
 **Status:** Em Execução
 
 ---
@@ -26,7 +26,7 @@
 - [ ] Análise de opções e IV
 - [ ] Módulo de correlações entre pares
 - [ ] Dashboard de monitoramento
-- [ ] Alertas automáticos
+- [ ] Alertas automáticos (v1.1 - US-004)
 - [x] Prompt de fechamento diário (`prompts/fechamento_diario.py`)
 - [x] Schema de validação (`prompts/schema_fechamento_diario.json`)
 

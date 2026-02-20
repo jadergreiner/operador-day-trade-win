@@ -1,6 +1,6 @@
 # ⭐ Features - Agente Autônomo
 
-**Versão:** 1.0.0  
+**Versão:** 1.0.0
 **Data:** 20/02/2026
 
 ---
@@ -25,6 +25,13 @@
 - [x] Sincronização obrigatória
 - [x] Checksums para integridade
 - [x] Histórico de alterações
+
+### ⏳ Gerenciamento de Alertas (v1.1)
+- [ ] Detection Engine para padrões de volatilidade
+- [ ] Entrega multicanal (Email, SMS, WebSocket)
+- [ ] Implementação de Queue com deduplicação
+- [ ] Sistema de Audit Log com rastreabilidade
+- [ ] Rate limiting e controle de fluxo
 
 ### ⏳ Análise Técnica (v1.1)
 - [ ] Indicadores técnicos (MA, RSI, MACD, ATR)
