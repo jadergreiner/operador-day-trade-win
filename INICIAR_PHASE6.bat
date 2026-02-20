@@ -164,35 +164,8 @@ echo.
 echo [07/08] Preparando BDI Processor...
 
 if not exist "src\application\services\processador_bdi.py" (
-    echo        Criando processador_bdi.py (template)...
-    (
-        echo """BDI Processor com Integration de Detectors (Phase 6)"""
-        echo.
-        echo import asyncio
-        echo import logging
-        echo from typing import Dict
-        echo.
-        echo from application.services.detector_volatilidade import DetectorVolatilidade
-        echo from application.services.detector_padroes_tecnico import DetectorPadroesTecnico
-        echo from infrastructure.providers.fila_alertas import FilaAlertas
-        echo from infrastructure.config.alerta_config import get_config
-        echo.
-        echo logger = logging.getLogger(__name__^)
-        echo.
-        echo class ProcessadorBDI:
-        echo     """BDI Processor com detectors hookados."""
-        echo.
-        echo     def __init__(self^):
-        echo         self.config = get_config(^)
-        echo         self.detector_vol = DetectorVolatilidade(^)
-        echo         self.detector_padroes = DetectorPadroesTecnico(^)
-        echo         self.fila = FilaAlertas(^)
-        echo.
-        echo     async def processar_vela(self, ativo: str, vela: Dict^):
-        echo         """Processa vela e dispara detectors."""
-        echo         pass
-    ) > "src\application\services\processador_bdi.py"
-    echo [OK] processador_bdi.py criado
+    echo [AVISO] processador_bdi.py nao encontrado
+    echo         Execute: RODAR_TASK_PHASE6.bat para criar manualmente
 ) else (
     echo [OK] processador_bdi.py ja existe
 )
