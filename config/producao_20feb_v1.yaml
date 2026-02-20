@@ -1,6 +1,11 @@
 environment: production
 logging_level: INFO
 
+account:
+  number: 1000346516
+  broker_gateway: localhost:8000
+  real_account: true
+
 capital:
   inicial: 5000
   max_contracts: 1
@@ -9,10 +14,7 @@ capital:
 
 asset:
   symbol: WIN$N
-  contract: WinJ26              # Contrato Futuro (Fevereiro/Junho 2026)
   timeframe: 5m
-  lot_size: 1
-  broker_gateway: localhost:8000
 
 risk_validation:
   enabled: true
