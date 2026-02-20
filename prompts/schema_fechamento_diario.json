@@ -1,0 +1,278 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Schema do Fechamento Diário — Operador Quântico",
+  "description": "Valida a saída YAML/JSON gerada pelo script fechamento_diario.py",
+  "type": "object",
+  "required": ["captura_dia", "aprendizados", "melhorias", "resumo"],
+  "properties": {
+    "foco": {
+      "type": "string",
+      "enum": ["abertura", "meio_dia", "fechamento"],
+      "description": "Momento do dia de execução"
+    },
+    "captura_dia": {
+      "type": "object",
+      "description": "Dados operacionais capturados no período",
+      "required": ["timestamp", "foco", "data_pregao"],
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+          "description": "Timestamp ISO 8601 em UTC"
+        },
+        "foco": {
+          "type": "string",
+          "enum": ["abertura", "meio_dia", "fechamento"]
+        },
+        "data_pregao": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Data do pregão no formato YYYY-MM-DD"
+        },
+        "analises_rodadas": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "trades_executados": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "trades_encerrados": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "posicoes_abertas": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "resultado_dia_pts": {
+          "type": "number",
+          "description": "Resultado em pontos (positivo ou negativo)"
+        },
+        "resultado_dia_pct": {
+          "type": "string",
+          "description": "Resultado percentual, ex: '+2.5%' ou '-1.3%'"
+        },
+        "win_rate_dia_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "simbolo": {
+          "type": "string",
+          "description": "Símbolo negociado, ex: WINFUT"
+        },
+        "preco_abertura": {
+          "type": "number",
+          "minimum": 0
+        },
+        "preco_atual": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maxima_dia": {
+          "type": "number",
+          "minimum": 0
+        },
+        "minima_dia": {
+          "type": "number",
+          "minimum": 0
+        },
+        "variacao_dia_pct": {
+          "type": "string"
+        },
+        "volume_relativo_pct": {
+          "type": "string"
+        },
+        "eventos_macro": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["descricao", "impacto"],
+            "properties": {
+              "descricao": { "type": "string" },
+              "impacto": {
+                "type": "string",
+                "enum": ["alto", "medio", "baixo"]
+              },
+              "hora": { "type": "string" }
+            }
+          }
+        },
+        "eventos_locais": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["descricao", "impacto"],
+            "properties": {
+              "descricao": { "type": "string" },
+              "impacto": {
+                "type": "string",
+                "enum": ["alto", "medio", "baixo"]
+              },
+              "hora": { "type": "string" }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "aprendizados": {
+      "type": "object",
+      "description": "Aprendizados operacionais do período",
+      "properties": {
+        "dimensao_macro_sinal": {
+          "type": "string",
+          "enum": ["BULLISH", "BEARISH", "NEUTRAL"]
+        },
+        "dimensao_macro_funcionou": { "type": "boolean" },
+        "dimensao_fundamentos_sinal": {
+          "type": "string",
+          "enum": ["BULLISH", "BEARISH", "NEUTRAL"]
+        },
+        "dimensao_fundamentos_funcionou": { "type": "boolean" },
+        "dimensao_sentimento_sinal": {
+          "type": "string",
+          "enum": ["BULLISH", "BEARISH", "NEUTRAL"]
+        },
+        "dimensao_sentimento_funcionou": { "type": "boolean" },
+        "dimensao_tecnica_sinal": {
+          "type": "string",
+          "enum": ["BULLISH", "BEARISH", "NEUTRAL"]
+        },
+        "dimensao_tecnica_funcionou": { "type": "boolean" },
+        "setups_sucesso": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["nome", "descricao"],
+            "properties": {
+              "nome": { "type": "string" },
+              "descricao": { "type": "string" },
+              "condicoes": { "type": "string" },
+              "resultado_pts": { "type": "number" },
+              "confianca_pct": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "frequencia_no_dia": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "dimensoes_alinhadas": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "setups_falha": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["nome", "descricao"],
+            "properties": {
+              "nome": { "type": "string" },
+              "descricao": { "type": "string" },
+              "motivo_falha": { "type": "string" },
+              "resultado_pts": { "type": "number" },
+              "licao": { "type": "string" }
+            }
+          }
+        },
+        "decisoes_corretas": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "decisoes_incorretas": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "algoritmo_alinhado": { "type": "boolean" },
+        "observacoes_algoritmo": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "divergencias_algoritmo": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "sugestoes_ajuste": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "melhorias": {
+      "type": "array",
+      "description": "Lista de melhorias identificadas no período",
+      "items": {
+        "type": "object",
+        "required": ["id", "titulo", "descricao", "categoria", "prioridade", "esforco"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^(TECH|FEAT|GOV|ML)-\\d{3}$",
+            "description": "Identificador único, ex: FEAT-001, TECH-002"
+          },
+          "titulo": { "type": "string", "minLength": 5 },
+          "descricao": { "type": "string", "minLength": 10 },
+          "categoria": {
+            "type": "string",
+            "enum": ["tecnico", "funcional", "governanca", "ml_rl"]
+          },
+          "prioridade": {
+            "type": "string",
+            "enum": ["alta", "media", "baixa"]
+          },
+          "esforco": {
+            "type": "string",
+            "enum": ["pequeno", "medio", "grande"]
+          },
+          "sync_com": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "arquivo_afetado": { "type": "string" },
+          "estrategia_relacionada": { "type": "string" },
+          "documento_afetado": { "type": "string" },
+          "tipo_aprendizado": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "resumo": {
+      "type": "object",
+      "description": "Resumo consolidado da execução",
+      "required": ["total_melhorias", "por_categoria"],
+      "properties": {
+        "total_melhorias": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "por_categoria": {
+          "type": "object",
+          "properties": {
+            "tecnico": { "type": "integer", "minimum": 0 },
+            "funcional": { "type": "integer", "minimum": 0 },
+            "governanca": { "type": "integer", "minimum": 0 },
+            "ml_rl": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "itens_criticos": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "sincronizacao": {
+          "type": "object",
+          "properties": {
+            "backlog_atualizado": { "type": "boolean" },
+            "sync_manifest_atualizado": { "type": "boolean" },
+            "timestamp": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}
