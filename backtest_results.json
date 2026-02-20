@@ -1,0 +1,25 @@
+{
+  "periodo": "60 dias históricos",
+  "ativo": "WIN$N",
+  "timeframe": "M5",
+  "metricas": {
+    "velas_processadas": 17280,
+    "alertas_gerados": 501,
+    "oportunidades_esperadas": 0,
+    "matches": 0,
+    "false_positives": 0,
+    "false_negatives": 0
+  },
+  "taxas": {
+    "taxa_captura_pct": 0,
+    "taxa_false_positive_pct": 0.0,
+    "win_rate_estimado_pct": 60.0
+  },
+  "gates_validacao": {
+    "captura_minima_85pct": false,
+    "fp_maxima_10pct": true,
+    "win_rate_minimo_60pct": true
+  },
+  "status": "FAIL",
+  "timestamp": "2026-02-20T13:18:50.288415"
+}
