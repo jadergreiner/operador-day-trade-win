@@ -1,0 +1,186 @@
+# Configuração de Alertas - Agente Autônomo v1.1.0
+# Data: 20/02/2026
+# Status: TEMPLATE para customização
+
+alertas:
+  # Ativação global
+  habilitado: true
+  
+  # Janela de análise (segundos)
+  janela_deteccao: 60
+
+  # ========== DETECTION ENGINE ==========
+  detection:
+    # Volatilidade extrema
+    volatilidade:
+      habilitado: true
+      window_periodos: 20  # 100 minutos com velas 5min
+      threshold_sigma: 2.0  # 2 desvios padrão
+      confirmacao_velas: 2  # Requer 2 velas consecutivas >2σ
+      nivel_alerta: CRÍTICO
+      confianca_minima: 0.85
+    
+    # Padrões técnicos
+    padroes:
+      habilitado: true
+      engulfing:
+        habilitado: true
+        confianca: 0.65
+      divergencia_rsi:
+        habilitado: true
+        confianca: 0.60
+        rsi_window: 14
+      break_suporte_resistencia:
+        habilitado: true
+        confianca: 0.70
+        window: 5
+
+  # ========== ENTREGA (DELIVERY) ==========
+  delivery:
+    # WebSocket (PRIMARY)
+    websocket:
+      habilitado: true
+      url: "ws://localhost:8765/alertas"
+      timeout_segundos: 0.5
+      retry_max: 3
+      autenticacao: "bearer"
+      token_env: "WEBSOCKET_TOKEN"
+    
+    # Email SMTP (SECONDARY)
+    email:
+      habilitado: true
+      provider: "smtp"
+      smtp_host: "smtp.sendgrid.net"  # ou "localhost" para dev
+      smtp_port: 587
+      from_email: "bot@trading.local"
+      to_email: "operador@trading.local"
+      usuario_env: "SMTP_USER"
+      senha_env: "SMTP_PASSWORD"
+      timeout_segundos: 8
+      retry_max: 3
+      retry_delay_exponencial: true  # 1s, 2s, 4s, ...
+    
+    # SMS Twilio (v1.2 - DESATIVADO)
+    sms:
+      habilitado: false  # Ativar apenas em v1.2
+      provider: "twilio"
+      account_sid_env: "TWILIO_ACCOUNT_SID"
+      auth_token_env: "TWILIO_AUTH_TOKEN"
+      from_number: "+5511999999999"
+      to_number: "+5511888888888"
+      timeout_segundos: 5
+      retry_max: 2
+
+  # ========== FILA & RATE LIMITING ==========
+  fila:
+    tamanho_maximo: 100  # Máximo de alertas na fila
+    rate_limit_segundos: 60  # 1 alerta/padrão/minuto
+    dedup_ttl_segundos: 120  # Cache de dedup válido por 2 min
+    max_simultaneos: 3  # Máximo de alertas sendo entregues
+
+  # ========== AUDITORIA (CVM COMPLIANT) ==========
+  auditoria:
+    habilitado: true
+    database_path: "data/alertas_audit.db"
+    retencao_dias: 2555  # 7 anos
+    backup_automatico: true
+    backup_caminho: "data/backups/alertas"
+    backup_frequencia_dias: 7
+    compressao: true
+
+  # ========== LOGGING ==========
+  logging:
+    nivel: "INFO"  # DEBUG, INFO, WARNING, ERROR
+    formato: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    arquivo: "logs/alertas.log"
+    rotacao_mb: 100  # Rodar log a cada 100MB
+    backup_count: 10  # Manter últimos 10 logs
+
+  # ========== MÉTRICAS & MONITORING ==========
+  metricas:
+    habilitado: true
+    coleta_intervalo_segundos: 60
+    arquivo_saida: "logs/metricas_alertas.csv"
+    prometheus_habilitado: false
+    prometheus_porta: 8000
+
+  # ========== VALIDAÇÃO & ALERTAS INTERNOS ==========
+  alertas_internos:
+    # Notificar se taxa de entrega cai
+    taxa_entrega_minima: 0.95  # 95%
+    # Notificar se latência sobe
+    latencia_p95_maxima_ms: 30000  # 30 segundos
+    # Notificar se fila cresce
+    fila_size_alerta: 50  # Avisar se >50
+    # Notificar email failures
+    taxa_falha_email_alerta: 0.02  # Se >2% falham
+
+# ========== PERMISSÕES & ACESSO ==========
+permissoes:
+  operadores_autorizados:
+    - "operador1"
+    - "operador2"
+  
+  grupos:
+    - nome: "admins"
+      operadores:
+        - "admin1"
+        - "admin2"
+      permissoes:
+        - "visualizar_alertas"
+        - "executar_alertas"
+        - "gerenciar_configuracao"
+    
+    - nome: "traders"
+      operadores:
+        - "trader1"
+        - "trader2"
+      permissoes:
+        - "visualizar_alertas"
+        - "executar_alertas"
+
+# ========== FILTROS & REGRAS DE NEGÓCIO ==========
+regras:
+  # Apenas gerar alertas em horários comerciais
+  horario_comercial:
+    habilitado: true
+    horario_inicio: "09:00"  # 09:00 AM
+    horario_fim: "17:30"     # 17:30 PM
+    timezone: "America/Sao_Paulo"
+    dias_semana:
+      - "segunda"
+      - "terca"
+      - "quarta"
+      - "quinta"
+      - "sexta"
+  
+  # Limitar por volatilidade de mercado
+  volatilidade_mercado:
+    habilitado: true
+    vix_maxima: 35  # Pausar se VIX > 35
+  
+  # Capital management
+  capital:
+    capital_por_trade: 50000  # R$ (fase BETA)
+    capital_maximo_diario: 400000  # R$ (8 trades)
+    drawdown_maximo: -40000  # R$ (pausar se atinge)
+    win_rate_minimo_fase1: 0.60  # 60% para avançar
+    win_rate_minimo_fase2: 0.65  # 65% para produção
+
+# ========== DESENVOLVIMENTO & DEBUG ==========
+desenvolvimento:
+  modo_simulacao: false  # Se true, não envia alertas reais
+  modo_verbose: false  # Se true, logs mais detalhados
+  backtesting_mode: false  # Se true, processa dados históricos
+  resposta_mock_emails: false  # Se true, simula entrega de emails
+
+# ========== VERSÃO & VERSIONAMENTO ==========
+versao: "1.1.0"
+data_versao: "2026-02-13"
+compatibilidade_minima: "1.0.0"
+
+# ========== TEMPLATE DE CUSTOMIZAÇÃO ==========
+# Copie este arquivo para config/alertas.yaml (local)
+# Customize conforme sua infra
+# Não commit este arquivo com valores reais (senhas, tokens)
+# Use variáveis de ambiente para dados sensíveis

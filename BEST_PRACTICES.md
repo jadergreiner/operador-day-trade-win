@@ -1,7 +1,7 @@
 # Boas Práticas - Operador Quântico
 
-**Versão:** 1.0.0  
-**Data:** 2026-02-20  
+**Versão:** 1.0.0
+**Data:** 2026-02-20
 **Escopo:** Desenvolvimento, documentação e operação contínua
 
 ---
@@ -422,7 +422,7 @@ pytest --cov=src --cov-report=html
 pytest tests/unit/domain/
 ```
 
-**Cobertura mínima:** 60%  
+**Cobertura mínima:** 60%
 **Target:** 80%
 
 ---
@@ -534,5 +534,5 @@ Antes de `git push`:
 
 ---
 
-**Última atualização:** 2026-02-20  
+**Última atualização:** 2026-02-20
 **Versão:** 1.0.0

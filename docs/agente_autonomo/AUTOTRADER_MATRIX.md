@@ -1,7 +1,7 @@
 # 🎯 AutoTrader Matrix - Matriz de Estratégias Multicanal
 
-**Versão:** 1.0.0  
-**Data:** 20/02/2026  
+**Versão:** 1.0.0
+**Data:** 20/02/2026
 **Status:** ✅ Ativo em Produção
 
 ---

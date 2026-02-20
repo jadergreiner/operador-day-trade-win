@@ -190,7 +190,7 @@ c:\repo\operador-day-trade-win\
    ```bash
    # Use padrão conventional commits
    git commit -m "tipo(escopo): descrição em português"
-   
+
    # Exemplos corretos:
    git commit -m "feat: Adicionar calculadora volatilidade"
    git commit -m "fix: Corrigir bug em Sharpe ratio"
