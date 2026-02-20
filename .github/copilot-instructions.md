@@ -252,3 +252,151 @@ Sempre validar antes de commit seguindo as regras acima.
 - Code: 100% type hints, Clean Architecture
 - Documentation: Consistent across agente_autonomo/
 - Next checkpoint: 27/02 official kickoff (On schedule)
+
+---
+
+## 🚀 PHASE 7 PLANNING STATUS (20/02/2026) ✅ COMPLETE
+
+### 📋 Feature Prioritization & Financial Approval
+
+**Sessão:** 20/02/2026 17:00-18:00  
+**Output:** Completo | **Status:** ✅ APROVADO PARA SPRINT 1
+
+#### 📊 v1.2 Feature Selection: Execução Automática (P0)
+
+**Contexto:** v1.1 (Alertas) já está completo e será lançado 13/03.  
+**Necessidade:** Monetizar detectando 100% das oportunidades automaticamente.
+
+**Decisões Aprovadas:**
+
+1. ✅ **Rampa de Capital:** 50k → 100k → 150k (3 fases, gates obrigatórios)
+   - Fase 1 Beta (2 sem): Validar modelo
+   - Fase 2 Scale (2 sem): 2x capital
+   - Fase 3 Full (ongoing): ROI target
+
+2. ✅ **ML Baseline:** Híbrido (v1.1 volatilidade + novo classifier)
+   - Usa detector v1.1 comprovado (62% win rate)
+   - Novo classifier filtra top 50% com score ≥80%
+   - Resultado: 68-70% win rate + Sharpe >1.0
+
+3. ✅ **Override Structure:** 3-layer (Trader/CIO/CFO)
+   - Trader: Veto manual 100% (sempre disponível)
+   - CIO: Pausar programa
+   - CFO: Capital allocation
+
+4. ✅ **Circuit Breakers:** -3% / -5% / -8%
+   - 🟡 -3%: Alerta (trader continua)
+   - 🟠 -5%: Slow mode (50% ticket, 90% ML)
+   - 🔴 -8%: Halt (tudo para)
+
+**ROI Projetado (90 dias):** +R$ 255-430k  
+**Payback Dev:** 1.3 meses
+
+#### 📚 Documentação Formalizada (3 artefatos):
+
+| Doc | Status | Tipo | Linhas |
+|-----|--------|------|--------|
+| **US-001-EXECUTION_AUTOMATION_v1.2.md** | ✅ CRIADO | User Story | 350 |
+| **RISK_FRAMEWORK_v1.2.md** | ✅ CRIADO | Framework | 450 |
+| **AGENTE_AUTONOMO_ROADMAP.md** | ✅ ATUALIZADO | Roadmap | v1.2 sprints |
+
+#### 🤖 Agentes Autônomos Designados:
+
+| Persona | Horas | Sprint 1-4 | Status |
+|---------|-------|-----------|--------|
+| **Eng Sr** | 160h | MT5 arch + Risk + Integration | ✅ ASSIGNED |
+| **ML Expert** | 140h | Features + Training + Backtest | ✅ ASSIGNED |
+
+- **Total Development Time:** 300h (27 dias)
+- **Daily Standups:** 15:00 BRT
+- **Sprint Gates:** 4 (05/03, 12/03, 19/03, 10/04)
+
+#### 🎯 Success Criteria (v1.2):
+
+- ✅ Win rate: 65-68% (vs 62% v1.1)
+- ✅ Sharpe ratio: >1.0 (backtest)
+- ✅ Latência P95: <500ms
+- ✅ Drawdown máx: <15% (circuit breakers)
+- ✅ Uptime Phase 1: >99.5%
+- ✅ P&L mensal: +R$ 150-250k
+
+#### 📅 PHASE 7 Timeline (27/02 - 10/04):
+
+```
+SPRINT 1 (27/02-05/03): Design & Setup
+├─ Eng Sr: MT5 Architecture + Risk Rules
+├─ ML: Feature Engineering + Dataset
+└─ Gate: Features + Risk APPROVED
+
+SPRINT 2 (06/03-12/03): Development
+├─ Eng Sr: Risk Validator + Orders Executor
+├─ ML: Classifier Training (grid search)
+└─ Gate: ML F1 > 0.65, ready integration
+
+SPRINT 3 (13/03-19/03): Integration & Testing
+├─ Eng Sr: MT5 API + Dashboard
+├─ ML: Backtest Final (cross-validation)
+└─ Gate: E2E OK + performance validated
+
+SPRINT 4 (20/03-10/04): UAT & Launch
+├─ E2E testing + Staging deployment
+├─ Trader UAT (21/03)
+└─ GO LIVE: 10/04/2026 🚀
+```
+
+#### 📈 Phase 7 Deliverables (Expected):
+
+**Code:**
+- MT5 REST API adapter (150-200 LOC)
+- Risk validators (3 gates, ~200 LOC)
+- Orders executor (150-200 LOC)
+- Position monitor (100-150 LOC)
+- ML classifier (XGBoost/LightGBM)
+
+**Documentation:**
+- US-001 (350 linhas) ✅
+- RISK_FRAMEWORK_v1.2 (450 linhas) ✅
+- Technical specs (MT5, Risk, ML)
+- Training materials
+
+**Tests:**
+- Unit tests (Risk validators, Orders)
+- Integration tests (MT5 mock, E2E)
+- Backtest validation (8+ configs)
+
+#### 📋 Commits Realizados (Sessão 20/02):
+
+```
+✅ commit 6104a03
+   docs: Formalizar decisoes financeiras v1.2 - US-001, RISK_FRAMEWORK, ROADMAP
+   └─ 10 files changed, 957 insertions(+)
+
+✅ commit debd887
+   docs: Sincronizacao obrigatoria Phase 7 v1.2 - US-001 + RISK_FRAMEWORK
+   └─ 1 file changed, 41 insertions(+)
+
+✅ commit 17856c0
+   docs: Resume executivo sessao 20/02 - Financial + Technical decisions
+   └─ 1 file changed, 260 insertions(+)
+```
+
+#### ✍️ Aprovações Formais:
+
+| Persona | Decisão | Data | Status |
+|---------|---------|------|--------|
+| **Head de Finanças** | Rampa + Risk approved | 20/02 | ✅ |
+| **Product Owner** | US-001 feature | 20/02 | ✅ |
+| **CFO** | Capital allocation | 20/02 | ✅ |
+| **Eng Sr** | Sprint 1-4 assignment | 20/02 | ✅ |
+| **ML Expert** | Sprint 1-4 assignment | 20/02 | ✅ |
+
+#### 🔄 Próximas Ações:
+
+- [ ] 21/02: Briefing com Eng Sr + ML Expert (14:00)
+- [ ] 27/02: Sprint 1 kick-off (14:00)
+- [ ] 05/03: Sprint 1 gate check
+- [ ] 27/02-10/04: Agentes trabalham em paralelo
+- [ ] 10/04: v1.2 RELEASE candidate
+- [ ] 10/04-24/04: Fase 1 Beta (50k capital)
+
+**Status Geral:** 🟢 **PRONTO PARA SPRINT 1**

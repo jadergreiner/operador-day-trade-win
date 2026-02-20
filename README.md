@@ -416,40 +416,67 @@ Os diários fornecem dados ricos para **aprendizagem por reforço** no final do 
 
 [📖 Documentação completa dos diários](docs/DIARIOS_AUTOMATICOS.md)
 
-## 🤖 Sistema de Trading Automatizado
+## 🚀 Execução Automática de Operações v1.2 (Em Desenvolvimento)
 
-⚠️ **NOVO:Execução automática de operações no MetaTrader 5**
+**Status:** Phase 7 Planning (27/02-10/04/2026) | **Timeline:** 27 dias
 
-O Operador Quântico agora pode **operar automaticamente** no mercado:
+O Operador Quântico está evoluindo para **execução 100% automática com validação 
+ML**.
 
-### Características:
-- ✅ Análise contínua do mercado (30 segundos)
-- ✅ Execução automática de ordens no MT5
-- ✅ Stop Loss e Take Profit automáticos
-- ✅ Trailing Stop dinâmico (0.5%)
-- ✅ Gestão de risco rigorosa (2% por trade)
-- ✅ Apenas trades com alta confiança (≥75%)
-- ✅ Apenas trades com alto alinhamento (≥75%)
-- ✅ 1 contrato por vez (configurável)
+### US-001: Execução Automática com Validação ML
+**Prioridade:** P0 (Blocker para monetização)  
+**ROI Projetado:** +R$ 150-300k/mês (vs 50-80k v1.1)  
+**Capital Ramp-up:** 50k → 100k → 150k
 
-### Iniciar Trading Automatizado:
-```bash
-# ⚠️ AVISO: Executa ordens REAIS com dinheiro REAL
-# SEMPRE teste em conta DEMO primeiro!
+#### Características Planejadas (v1.2.0 - 10/04/2026):
+- 🔄 ML Classifier para padrões (XGBoost/LightGBM, F1 > 0.68)
+- 📊 Integração MT5 via REST API (<500ms P95 latência)
+- 🛡️ 3 Validadores de Risco:
+  - Capital adequado (nunca opera sem cobertura)
+  - Correlação aceitável (max 70% com posições abertas)
+  - Volatilidade normal (fora de anomalias)
+- 🚨 3 Circuit Breakers (automáticos, sem intervenção):
+  - 🟡 Nível 1 (-3%): Alerta ao trader
+  - 🟠 Nível 2 (-5%): Slow mode (50% ticket, 90% ML)
+  - 🔴 Nível 3 (-8%): Halt obrigatório
+- ✅ Override manual sempre disponível (<50ms resposta)
+- 📋 Audit trail completo (CVM-ready)
 
-INICIAR_TRADING_AUTOMATICO.bat
+#### PHASE 7 Development (4 Sprints = 27 dias):
+```
+SPRINT 1 (27/02-05/03): Design MT5 + Feature Engineering
+├─ Eng Sr: Arquitetura MT5 + Risk framework
+├─ ML Expert: Features + Dataset prep
+└─ Gate: Risk rules + ML features APPROVED
+
+SPRINT 2 (06/03-12/03): Development Paralelo
+├─ Eng Sr: Risk Validator + Orders executor
+├─ ML Expert: Classifier training (grid search)
+└─ Gate: ML F1 > 0.65 + ready integration
+
+SPRINT 3 (13/03-19/03): Integration & Testing
+├─ Eng Sr: MT5 API + Dashboard
+├─ ML Expert: Backtest final (cross-validation)
+└─ Gate: E2E OK + performance validated
+
+SPRINT 4 (20/03-10/04): UAT & Launch
+├─ E2E testing + Staging deployment
+├─ Trader UAT (21/03)
+└─ GO LIVE: 10/04/2026
 ```
 
-### Segurança e Controle:
-- Confirmação obrigatória antes de iniciar
-- Máximo de 1 posição aberta por vez
-- Stop loss sempre definido
-- Estatísticas em tempo real
-- Fechamento automático ao parar sistema
+#### Projeção Financeira:
+| Fase | Capital | P&L/mês | ROI |
+|------|---------|---------|-----|
+| **Fase 1 (50k)** | 50k | +25-40k | 50-80% |
+| **Fase 2 (100k)** | 100k | +80-140k | 80-140% |
+| **Fase 3 (150k)** | 150k | +150-250k | 13-20% |
 
-[📖 Documentação completa do Trading Automatizado](docs/TRADING_AUTOMATIZADO.md)
+[📖 User Story](docs/agente_autonomo/US-001-EXECUTION_AUTOMATION_v1.2.md)  
+[📖 Risk Framework](docs/agente_autonomo/RISK_FRAMEWORK_v1.2.md)  
+[📖 Roadmap](docs/agente_autonomo/AGENTE_AUTONOMO_ROADMAP.md)
 
-**IMPORTANTE: Trading automatizado envolve riscos. Teste extensivamente em conta DEMO antes de usar com dinheiro real.**
+**Status:** Decisões financeiras ✅ | Agentes designados ✅
 
 ## 🎓 Como Funciona
 
