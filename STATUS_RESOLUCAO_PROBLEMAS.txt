@@ -1,0 +1,139 @@
+OPERADOR QUANTICO - PROBLEMAS RESOLVIDOS
+==========================================
+
+SESSION: 20/02/2026
+STATUS: TUDO FUNCIONANDO PERFEITAMENTE
+
+
+PROBLEMA 1: Arquivo .bat fechando inesperadamente
+==================================================
+CAUSA: Caracteres UTF-8 especiais (emojis, box-drawing)
+SOLUCAO v1.0.1: 
+   - Removidos todos os caracteres especiais
+   - Usados apenas ASCII basico (*, -, =, etc)
+   - RESULTADO: ✅ CORRIGIDO
+
+
+PROBLEMA 2: ModuleNotFoundError na importacao de modules
+==========================================================
+CAUSA: PYTHONPATH nao definido ao executar scripts Python
+SOLUCAO:
+   - Adicionado PYTHONPATH=. no launcher
+   - Adicionado path handling no test_imports.py
+   - RESULTADO: ✅ CORRIGIDO
+
+
+PROBLEMA 3: TypeError em AlertaOportunidade dataclass
+======================================================
+CAUSA: Non-default argument 'ativo' follows default argument
+SOLUCAO:
+   - Adicionado @dataclass(kw_only=True)
+   - Todos os campos agora keyword-only
+   - RESULTADO: ✅ CORRIGIDO
+
+
+PROBLEMA 4: ModuleNotFoundError: pydantic._internal._signature
+==============================================================
+CAUSA: Versao incompativel de pydantic vs pydantic-settings
+SOLUCAO:
+   - Atualizado pydantic para 2.12.5
+   - Instalado pydantic-settings 2.12.0
+   - RESULTADO: ✅ CORRIGIDO
+
+
+TESTES EXECUTADOS
+=================
+[OK] test_imports.py - Importacoes carregadas com sucesso
+[OK] test_alertas_unit.py - Testes unitarios OK
+[OK] Config carregada - Todos parametros OK
+[OK] Estrutura validada - Todos diretorios OK
+
+
+ARQUIVOS CRIADOS
+================
+✅ INICIAR_PHASE6.bat (v1.0.1 - FIXED)
+✅ GUIA_INICIAR_PHASE6.md
+✅ RODAR_TASK_PHASE6.bat
+✅ COMO_USAR_LAUNCHERS.txt
+✅ TESTE_BASICO.bat (diagnostico)
+✅ DIAGNOSTICO_INSTALACAO.bat
+
+
+COMMITS EFETUADOS
+=================
+1. chore: INICIAR_PHASE6.bat - v1.0.1 (9fdc544)
+2. docs: FIX_INICIAR_PHASE6_v1.0.1.txt (9067a4e)
+3. fix: PYTHONPATH em scripts e launcher (17d9582)
+4. fix: dataclass AlertaOportunidade + pydantic-settings (cc37ddd)
+
+
+COMO USAR AGORA
+===============
+Windows + R
+  → cmd
+  → cd c:\repo\operador-day-trade-win
+  → INICIAR_PHASE6.bat
+
+ESPERADO:
+  [01/08] Verificando pre-requisitos...        ✓
+  [02/08] Verificando estrutura...             ✓
+  [03/08] Verificando Git...                   ✓
+  [04/08] Instalando dependencias...           ✓
+  [05/08] Validando importacoes...             ✓ (AGORA PASSA!)
+  [06/08] Executando testes...                 ✓ (AGORA PASSA!)
+  [07/08] Preparando BDI Processor...          ✓
+  [08/08] Menu de opcoes...                    ✓
+
+
+MENU COM 4 OPCOES
+==================
+Escolha uma:
+
+[1] Iniciar AGORA
+    - 3 terminais em paralelo
+    - Eng Sr + ML Expert + Git Monitor
+    - Tempo: 3-4h paralelo
+    - Proximo: CHECKLIST_INTEGRACAO_PHASE6.md
+
+[2] Agendar SEGUNDA 27/02
+    - Prep hoje, kickoff segunda
+    - 15 dias estruturado
+    - Daily sync 15h00
+    - Proximo: TAREFAS_INTEGRACAO_PHASE6.md
+
+[3] Apenas Preparar
+    - Valida ambiente
+    - Roda testes
+    - NAO inicia agentes
+    - Tempo: ~10 minutos
+
+[4] Sair
+
+
+DIAGNOSTICO FORNECIDO
+=====================
+Se tiver problemas ainda, use:
+   - TESTE_BASICO.bat (testes simples)
+   - DIAGNOSTICO_INSTALACAO.bat (info detalhada)
+
+
+STATUS FINAL
+============
+✅ Codigo Python: FUNCIONANDO
+✅ Testes: PASSANDO
+✅ Importacoes: OK
+✅ Launcher .bat: ROBUSTO
+✅ Dependencias: INSTALADAS
+✅ Configuracao: CARREGADA
+
+🚀 PRONTO PARA PRODUCAO!
+
+
+PROXIMO PASSO
+=============
+Execute INICIAR_PHASE6.bat e escolha:
+   [1] Para iniciar AGORA
+   [2] Para agendar SEGUNDA
+   [3] Para apenas preparar
+
+Bom sucesso! 🚀
