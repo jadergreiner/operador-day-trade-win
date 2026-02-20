@@ -7,6 +7,8 @@ no fluxo de processamento de velas do BDI.
 
 import asyncio
 import logging
+from datetime import datetime
+from decimal import Decimal
 from typing import Dict, Optional
 
 from src.application.services.detector_volatilidade import DetectorVolatilidade
@@ -50,24 +52,42 @@ class ProcessadorBDI:
             timestamp: Timestamp da vela (opcional)
         """
         try:
-            logger.debug(f"Processando vela {ativo} - close: {vela.get('close')}")
+            close = vela.get("close")
+            if close is None:
+                logger.warning(f"Vela sem close para {ativo}")
+                return
+            
+            # Converter close para Decimal se necessário
+            if isinstance(close, float):
+                close = Decimal(str(close))
+            elif not isinstance(close, Decimal):
+                close = Decimal(str(float(close)))
+            
+            # Usar timestamp atual se não fornecido
+            ts = datetime.fromtimestamp(timestamp) if timestamp else datetime.now()
+            
+            logger.debug(f"Processando vela {ativo} - close: {close}")
 
             # Detector de volatilidade
-            alerta_vol = self.detector_vol.analisar_vela(ativo, vela)
+            alerta_vol = self.detector_vol.analisar_vela(
+                symbol=ativo,
+                close=close,
+                timestamp=ts,
+            )
             if alerta_vol:
                 logger.info(f"[ALERTA VOL] {ativo} - Volatilidade detectada")
-                await self.fila.adicionar_alerta(alerta_vol)
+                await self.fila.enfileirar(alerta_vol)
 
-            # Detector de padroes tecnicos
-            alerta_padroes = self.detector_padroes.detectar_padroes(
-                close=float(vela.get("close", 0)),
-                high=float(vela.get("high", 0)),
-                low=float(vela.get("low", 0)),
-                volume=float(vela.get("volume", 0)),
-            )
-            if alerta_padroes:
-                logger.info(f"[ALERTA PADRAO] {ativo} - Padrao detectado")
-                await self.fila.adicionar_alerta(alerta_padroes)
+            # TODO: Detector de padroes tecnicos (após ML-002 validar gates)
+            # alerta_padroes = self.detector_padroes.detectar_padroes(
+            #     close=float(close),
+            #     high=float(vela.get("high", 0)),
+            #     low=float(vela.get("low", 0)),
+            #     volume=float(vela.get("volume", 0)),
+            # )
+            # if alerta_padroes:
+            #     logger.info(f"[ALERTA PADRAO] {ativo} - Padrao detectado")
+            #     await self.fila.enfileirar(alerta_padroes)
 
         except Exception as e:
             logger.error(f"Erro ao processar vela {ativo}: {e}", exc_info=True)
