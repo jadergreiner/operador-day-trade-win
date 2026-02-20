@@ -134,17 +134,22 @@ endlocal
 echo.
 echo [05/08] Validando importacoes...
 
+setlocal
+set PYTHONPATH=.
 python scripts/test_imports.py >nul 2>&1
 if errorlevel 1 (
     echo [AVISO] Problema ao importar modulos
-    echo         Execute: python scripts/test_imports.py para detalhes
+    echo         Execute: PYTHONPATH=. python scripts/test_imports.py para detalhes
 ) else (
     echo [OK] Importacoes validadas
 )
+endlocal
 
 echo.
 echo [06/08] Executando testes...
 
+setlocal
+set PYTHONPATH=.
 python -m pytest tests/ -q --tb=no >nul 2>&1
 if errorlevel 1 (
     echo [AVISO] Alguns testes falharam
@@ -153,7 +158,7 @@ if errorlevel 1 (
 ) else (
     echo [OK] Todos os testes passaram
 )
-
+endlocal
 
 echo.
 echo [07/08] Preparando BDI Processor...
