@@ -45,7 +45,7 @@ class OrderAuditLog:
 class ExecutionOrder:
     """
     Ordem de execução automática.
-    
+
     Fluxo:
     1. Criada com dados do detector + ML classifier
     2. Passa por Risk Validators
@@ -59,24 +59,24 @@ class ExecutionOrder:
     entry_price: float
     stop_loss: float
     take_profit: float
-    
+
     # Metadata do detector
     detector_spike: float  # σ (desvios padrão)
     ml_classifier_score: float  # 0.0 - 1.0
-    
+
     # Trader override
     trader_approval: bool = False
     trader_comment: str = ""
-    
+
     # Estado
     state: OrderState = OrderState.ENQUEUED
     audit_log: list = field(default_factory=list)
-    
+
     # Execução MT5
     mt5_ticket: Optional[str] = None
     execution_time: Optional[datetime] = None
     pnl_close: Optional[float] = None
-    
+
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
 
@@ -121,7 +121,7 @@ class OrderExecutionCommand(ABC):
 class ValidateOrderCommand(OrderExecutionCommand):
     """
     Valida ordem antes de envio (passa pelos Risk Validators).
-    
+
     Dependência: RiskValidationProcessor
     """
 
@@ -146,7 +146,7 @@ class ValidateOrderCommand(OrderExecutionCommand):
 class SendToMT5Command(OrderExecutionCommand):
     """
     Envia ordem ao MT5 via MT5Adapter.
-    
+
     Dependência: MT5Adapter
     """
 
@@ -172,7 +172,7 @@ class SendToMT5Command(OrderExecutionCommand):
 class MonitorExecutionCommand(OrderExecutionCommand):
     """
     Monitora execução em tempo real e atualiza status.
-    
+
     Responsabilidades:
     - Confirmar execução
     - Controlar P&L
@@ -206,10 +206,10 @@ class MonitorExecutionCommand(OrderExecutionCommand):
 class OrderStateMachine:
     """
     State machine para controlar transições válidas.
-    
+
     Estados válidos:
     ENQUEUED → VALIDATED → SENT_TO_MT5 → ACCEPTED_BY_MT5 → EXECUTED → [CLOSED|REJECTED]
-    
+
     Sempre pode → REJECTED (em qualquer estado)
     Sempre pode → CANCELLED (com restrições)
     """
@@ -259,14 +259,14 @@ class OrderStateMachine:
 class OrdersExecutionOrchestrator:
     """
     Orquestra execução de ordens do início ao fim.
-    
+
     Fluxo:
     1. Ordem enfileirada (detector + ML score)
     2. Validação de risco (3 gates)
     3. Se aprovado: envio a MT5
     4. Monitoramento até fechamento
     5. Auditoria e P&L cálculo
-    
+
     Integração:
     - RiskValidationProcessor
     - MT5Adapter
@@ -303,7 +303,7 @@ class OrdersExecutionOrchestrator:
     ) -> ExecutionOrder:
         """
         Enfileira nova ordem para execução.
-        
+
         Returns:
             ExecutionOrder criada
         """
@@ -339,7 +339,7 @@ class OrdersExecutionOrchestrator:
     async def process_order(self, order_id: str) -> bool:
         """
         Processa ordem enfileirada (full pipeline).
-        
+
         Returns:
             bool: True se aprovada e enviada
         """

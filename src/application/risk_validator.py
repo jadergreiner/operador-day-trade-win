@@ -89,9 +89,9 @@ class RiskValidator(ABC):
 class CapitalAdequacyValidator(RiskValidator):
     """
     Gate 1: Validar que existe capital suficiente.
-    
+
     Regra: account_balance >= sum(posições_abertas_loss) + novo_stop_loss
-    
+
     Margin requirement = Position Size + Stop Loss protection
     """
 
@@ -102,7 +102,7 @@ class CapitalAdequacyValidator(RiskValidator):
     def validate(self, context: ValidationContext) -> GateResult:
         """
         Valida suficiência de capital.
-        
+
         Returns:
             GateResult com status PASS/FAIL
         """
@@ -160,7 +160,7 @@ class CapitalAdequacyValidator(RiskValidator):
     def _calculate_total_open_risk(positions: List) -> float:
         """
         Calcula risco total das posições abertas.
-        
+
         Risco = max(abs(SL - entry_price)) para cada posição
         """
         total_risk = 0.0
@@ -178,9 +178,9 @@ class CapitalAdequacyValidator(RiskValidator):
 class CorrelationValidator(RiskValidator):
     """
     Gate 2: Validar correlação com posições abertas.
-    
+
     Regra: Correlação com posições abertas <= 70%
-    
+
     Objetivo: Não abrir 2 trades em pares altamente correlacionados
     ao mesmo tempo (aumenta risco sistemático).
     """
@@ -197,7 +197,7 @@ class CorrelationValidator(RiskValidator):
     def validate(self, context: ValidationContext) -> GateResult:
         """
         Valida correlação com posições abertas.
-        
+
         Returns:
             GateResult com status PASS/WARN/FAIL
         """
@@ -255,7 +255,7 @@ class CorrelationValidator(RiskValidator):
     def _build_correlation_matrix(self) -> Dict:
         """
         Monta matriz de correlação entre pares.
-        
+
         Valores exemplo (serão calibrados com histórico real):
         - WINFUT ↔ WIN$N: 0.95 (altamente correlacionado)
         - WINFUT ↔ PETR4: 0.30 (baixa correlação)
@@ -279,9 +279,9 @@ class CorrelationValidator(RiskValidator):
 class VolatilityValidator(RiskValidator):
     """
     Gate 3: Validar volatilidade histórica.
-    
+
     Regra: Volatilidade atual dentro de banda histórica
-    
+
     Objetivo: Não operar em períodos de volatilidade extrema
     sem aprovação especial.
     """
@@ -301,7 +301,7 @@ class VolatilityValidator(RiskValidator):
     def validate(self, context: ValidationContext) -> GateResult:
         """
         Valida volatilidade atual.
-        
+
         Returns:
             GateResult com status PASS/WARN/FAIL
         """
@@ -358,12 +358,12 @@ class VolatilityValidator(RiskValidator):
 class RiskValidationProcessor:
     """
     Orquestra a execução das 3 gates em sequence.
-    
+
     Lógica:
     1. Capital → FAIL: PARAR
     2. Correlation → WARN: continua mas loga
     3. Volatility → FAIL: PARAR
-    
+
     Apenas se todos passarem → aprovado para envio a MT5
     """
 
@@ -380,10 +380,10 @@ class RiskValidationProcessor:
     def validate_order(self, context: ValidationContext) -> Tuple[bool, List[GateResult]]:
         """
         Valida ordem completa através de todas as gates.
-        
+
         Args:
             context: ValidationContext com dados da conta
-            
+
         Returns:
             Tuple[bool, List[GateResult]]: (aprovado, resultados_detalhados)
         """

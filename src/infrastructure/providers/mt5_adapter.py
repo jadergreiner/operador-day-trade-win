@@ -68,7 +68,7 @@ class MTPosition:
 class MT5Adapter:
     """
     Adapter para integração com MT5 via REST Gateway.
-    
+
     Arquitetura:
     ┌────────────────────────────────┐
     │  Risk Validators (próxima)     │
@@ -106,7 +106,7 @@ class MT5Adapter:
     async def health_check(self) -> bool:
         """
         Verifica se REST Gateway está disponível.
-        
+
         Returns:
             bool: True se gateway está ok
         """
@@ -123,7 +123,7 @@ class MT5Adapter:
     async def get_account_info(self) -> Dict:
         """
         Obtém informações da conta (saldo, margem, etc).
-        
+
         Returns:
             Dict com: {
                 'balance': float,
@@ -147,10 +147,10 @@ class MT5Adapter:
     async def get_positions(self, symbol: Optional[str] = None) -> List[MTPosition]:
         """
         Obtém posições abertas.
-        
+
         Args:
             symbol: Símbolo específico ou None para todas
-            
+
         Returns:
             Lista de MTPosition
         """
@@ -162,7 +162,7 @@ class MT5Adapter:
                 headers=self._get_headers()
             )
             response.raise_for_status()
-            
+
             positions_data = response.json()
             return [
                 MTPosition(
@@ -185,13 +185,13 @@ class MT5Adapter:
     async def send_order(self, order: MTOrder) -> Tuple[bool, str]:
         """
         Envia ordem para MT5.
-        
+
         Args:
             order: MTOrder a ser enviada
-            
+
         Returns:
             Tuple[bool, str]: (sucesso, ticket_ou_erro)
-            
+
         Exemplo de falha:
             (False, "Insufficient margin for BUY 1 WINFUT @ 128500")
         """
@@ -213,7 +213,7 @@ class MT5Adapter:
                 headers=self._get_headers()
             )
             response.raise_for_status()
-            
+
             result = response.json()
             if result.get("status") == "accepted":
                 ticket = result.get("ticket")
@@ -242,11 +242,11 @@ class MT5Adapter:
     ) -> Tuple[bool, str]:
         """
         Fecha posição aberta.
-        
+
         Args:
             ticket: ID da posição
             volume: Volume a fechar (default: 100%)
-            
+
         Returns:
             Tuple[bool, str]: (sucesso, mensagem)
         """
@@ -262,7 +262,7 @@ class MT5Adapter:
                 headers=self._get_headers()
             )
             response.raise_for_status()
-            
+
             result = response.json()
             if result.get("status") == "closed":
                 logger.info(f"Position {ticket} closed successfully")
@@ -283,12 +283,12 @@ class MT5Adapter:
     ) -> Tuple[bool, str]:
         """
         Modifica stop loss ou take profit de posição.
-        
+
         Args:
             ticket: ID da posição
             stop_loss: Novo SL (opcional)
             take_profit: Novo TP (opcional)
-            
+
         Returns:
             Tuple[bool, str]: (sucesso, mensagem)
         """
@@ -307,7 +307,7 @@ class MT5Adapter:
                 headers=self._get_headers()
             )
             response.raise_for_status()
-            
+
             result = response.json()
             if result.get("status") == "modified":
                 logger.info(f"Position {ticket} modified")
@@ -370,7 +370,7 @@ async def example_order_flow():
         comment="Spike detect: σ=2.1, ML score: 0.91"
     )
     success, ticket = await adapter.send_order(order)
-    
+
     if success:
         logger.info(f"Order sent successfully: {ticket}")
     else:

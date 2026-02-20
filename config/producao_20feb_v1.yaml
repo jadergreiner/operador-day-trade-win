@@ -1,12 +1,6 @@
 environment: production
 logging_level: INFO
 
-account:
-  number: 1000346516
-  broker: ClearInvestimentos
-  broker_gateway: ClearInvestimentos-CLEAR
-  real_account: true
-
 capital:
   inicial: 5000
   max_contracts: 1

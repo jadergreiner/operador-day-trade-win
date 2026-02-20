@@ -173,7 +173,7 @@ async def get_dashboard():
         <title>Alertas - Dashboard</title>
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { 
+            body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
                 color: #fff;
@@ -181,8 +181,8 @@ async def get_dashboard():
                 min-height: 100vh;
             }
             .container { max-width: 1200px; margin: 0 auto; }
-            .header { 
-                text-align: center; 
+            .header {
+                text-align: center;
                 margin-bottom: 30px;
                 padding: 20px;
                 background: rgba(0,0,0,0.2);
@@ -204,15 +204,15 @@ async def get_dashboard():
                 backdrop-filter: blur(10px);
             }
             .status-card h3 { font-size: 0.9em; color: #aaa; margin-bottom: 5px; }
-            .status-card .value { 
-                font-size: 2.5em; 
+            .status-card .value {
+                font-size: 2.5em;
                 font-weight: bold;
                 color: #4CAF50;
             }
             .status-ok { color: #4CAF50; }
             .status-warn { color: #FF9800; }
             .status-error { color: #f44336; }
-            
+
             .alerts-section {
                 background: rgba(0,0,0,0.3);
                 padding: 20px;
@@ -221,7 +221,7 @@ async def get_dashboard():
                 margin-bottom: 20px;
             }
             .alerts-section h2 { margin-bottom: 15px; font-size: 1.5em; }
-            
+
             #alertsList {
                 max-height: 500px;
                 overflow-y: auto;
@@ -236,7 +236,7 @@ async def get_dashboard():
             }
             .alert-item.critical { border-left-color: #f44336; }
             .alert-item.warning { border-left-color: #FF9800; }
-            
+
             .endpoints {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -268,7 +268,7 @@ async def get_dashboard():
                 <p>Monitoramento em Tempo Real</p>
                 <div class="timestamp" id="timestamp"></div>
             </div>
-            
+
             <div class="status-bar">
                 <div class="status-card">
                     <h3>Status</h3>
@@ -283,7 +283,7 @@ async def get_dashboard():
                     <div class="value" id="totalAlerts">0</div>
                 </div>
             </div>
-            
+
             <div class="alerts-section">
                 <h2>🚨 Alertas em Tempo Real</h2>
                 <div id="alertsList">
@@ -292,7 +292,7 @@ async def get_dashboard():
                     </div>
                 </div>
             </div>
-            
+
             <div class="alerts-section">
                 <h2>🔗 API Endpoints</h2>
                 <div class="endpoints">
@@ -303,71 +303,71 @@ async def get_dashboard():
                 </div>
             </div>
         </div>
-        
+
         <script>
             let alertCount = 0;
             const alertsListEl = document.getElementById('alertsList');
             const connectionsEl = document.getElementById('connections');
             const totalAlertsEl = document.getElementById('totalAlerts');
             const timestampEl = document.getElementById('timestamp');
-            
+
             function updateTimestamp() {
                 const now = new Date().toLocaleString('pt-BR');
                 timestampEl.textContent = now;
             }
             updateTimestamp();
             setInterval(updateTimestamp, 1000);
-            
+
             function connectWebSocket() {
                 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
                 const ws = new WebSocket(protocol + '//' + window.location.host + '/alertas');
-                
+
                 ws.onopen = function(event) {
                     console.log('✅ Conectado ao WebSocket');
                     connectionsEl.textContent = '1';
                 };
-                
+
                 ws.onmessage = function(event) {
                     const alert = JSON.parse(event.data);
                     alertCount++;
                     totalAlertsEl.textContent = alertCount;
-                    
+
                     const alertDiv = document.createElement('div');
                     alertDiv.className = 'alert-item';
-                    
+
                     const nivel = alert.nivel || 'INFO';
                     if (nivel === 'CRITICO') alertDiv.classList.add('critical');
                     if (nivel === 'AVISO') alertDiv.classList.add('warning');
-                    
+
                     const timestamp = new Date(alert.timestamp).toLocaleTimeString('pt-BR');
                     alertDiv.innerHTML = `
                         <strong>${alert.ativo}</strong> - ${alert.padrao}<br>
                         <small>Preco: ${alert.preco_atual} | Entrada: ${alert.entrada_minima} | Confianca: ${(alert.confianca*100).toFixed(0)}%</small><br>
                         <small style="color: #999;">${timestamp}</small>
                     `;
-                    
+
                     alertsListEl.insertBefore(alertDiv, alertsListEl.firstChild);
-                    
+
                     // Manter apenas os ultimos 20 alertas
                     while (alertsListEl.children.length > 20) {
                         alertsListEl.removeChild(alertsListEl.lastChild);
                     }
                 };
-                
+
                 ws.onerror = function(event) {
                     console.error('❌ Erro WebSocket:', event);
                 };
-                
+
                 ws.onclose = function(event) {
                     console.log('Desconectado. Reconectando em 3s...');
                     connectionsEl.textContent = '0';
                     setTimeout(connectWebSocket, 3000);
                 };
             }
-            
+
             // Iniciar conexão WebSocket
             connectWebSocket();
-            
+
             // Atualizar metricas a cada 5s
             setInterval(async function() {
                 try {

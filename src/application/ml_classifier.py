@@ -53,20 +53,20 @@ class TrainingResult:
     model_type: str
     features_selected: int
     training_date: datetime
-    
+
     # Métricas
     train_accuracy: float
     val_accuracy: float
     test_accuracy: float
-    
+
     f1_score: float
     precision: float
     recall: float
     roc_auc: float
-    
+
     # Hyperparameters
     hyperparameters: Dict[str, Any]
-    
+
     # Assessment
     is_production_ready: bool  # F1 > 0.65
     notes: str = ""
@@ -75,7 +75,7 @@ class TrainingResult:
 class MLClassifier:
     """
     Classifier para detecção de oportunidades.
-    
+
     Pipeline:
     1. Raw features (24 features)
     2. Feature selection (drop low-variance)
@@ -84,7 +84,7 @@ class MLClassifier:
     5. Hyperparameter tuning (grid search)
     6. Validation (cross-validation + test set)
     7. Export (pickle + ONNX para produção)
-    
+
     Success metrics (SPRINT 1):
     - F1-score > 0.65 (target: 0.70+)
     - Precision > 0.65 (minimizar false positives)
@@ -108,12 +108,12 @@ class MLClassifier:
     ) -> Tuple[np.ndarray, np.ndarray, List[str]]:
         """
         Prepara dataset para treinamento.
-        
+
         Args:
             df: DataFrame com features + label
             target_column: Nome da coluna de label
             drop_columns: Colunas a descartar (timestamp, etc)
-            
+
         Returns:
             Tuple[X, y, feature_names]
         """
@@ -148,12 +148,12 @@ class MLClassifier:
     ) -> TrainingResult:
         """
         Traina modelo e avalia performance.
-        
+
         Args:
             X: Features (n_samples, n_features)
             y: Labels (n_samples,)
             hyperparams: Hyperparameters do modelo
-            
+
         Returns:
             TrainingResult com métricas
         """
@@ -234,10 +234,10 @@ class MLClassifier:
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """
         Prediz probabilidade de ganho para features.
-        
+
         Args:
             X: Features (pode ser 1 amostra ou batch)
-            
+
         Returns:
             Probabilidades [prob_loss, prob_ganho]
         """
@@ -256,14 +256,14 @@ class MLClassifier:
     ) -> float:
         """
         Encontra threshold ótimo de score para classificação.
-        
+
         Objetivo: Encontrar ponto onde precision >= target_precision
-        
+
         Args:
             X_test: Features de teste
             y_test: Labels de teste
             target_precision: Precision mínima desejada (ex: 80%)
-            
+
         Returns:
             Threshold ótimo (ex: 0.80)
         """
@@ -274,7 +274,7 @@ class MLClassifier:
         valid_idx = np.where(precision >= target_precision)[0]
         if len(valid_idx) == 0:
             return 0.99  # Muito conservador
-        
+
         best_idx = valid_idx[np.argmax(recall[valid_idx])]
         best_threshold = thresholds[best_idx]
 
@@ -414,15 +414,15 @@ class GridSearchConfig:
 class GridSearchOrchestrator:
     """
     Orquestra busca em grid de hyperparameters.
-    
+
     Vai treinar 8+ modelos com diferentes configs e retornar melhores.
-    
+
     Configs a testar:
     1. Learning rate: [0.05, 0.1, 0.2]
     2. Max depth: [3, 5, 7]
     3. Subsample: [0.6, 0.8, 1.0]
     4. Colsample: [0.6, 0.8, 1.0]
-    
+
     Total: 3*3*3*3 = 81 configurações (será reduzido para 8-16 melhores)
     """
 
@@ -438,12 +438,12 @@ class GridSearchOrchestrator:
     ) -> Tuple[TrainingResult, List[TrainingResult]]:
         """
         Executa grid search.
-        
+
         Args:
             X: Features de treino
             y: Labels de treino
             max_configs: Número máximo de configs a testar
-            
+
         Returns:
             Tuple[best_result, all_results]
         """

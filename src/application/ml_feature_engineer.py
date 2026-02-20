@@ -40,12 +40,12 @@ class Candle:
     low: float
     close: float
     volume: int
-    
+
     @property
     def hl_range(self) -> float:
         """High-Low range"""
         return self.high - self.low
-    
+
     @property
     def oc_range(self) -> float:
         """Open-Close range (body)"""
@@ -57,51 +57,51 @@ class FeatureVector:
     """Vector de features para uma vela"""
     candle_index: int
     timestamp: datetime
-    
+
     # Price action (raw)
     close: float
     high: float
     low: float
     volume: int
-    
+
     # Returns
     ret_1: float  # Retorno 1 vela anterior
     ret_5: float  # Retorno 5 velas anterior
-    
+
     # Volatilidade
     volatility_5: float  # DP dos retornos 5 velas
     volatility_20: float  # DP dos retornos 20 velas
     volatility_ratio: float  # vol_5 / vol_20
-    
+
     # Volume
     volume_sma_5: float
     volume_ratio: float  # vol / vol_sma_5
-    
+
     # Momentum
     rsi_14: float  # Relative Strength Index
     macd: float  # MACD signal
     macd_histogram: float
-    
+
     # Bandas
     bb_upper: float  # Bollinger Bands upper
     bb_lower: float
     bb_middle: float
     bb_position: float  # posição relativa na banda
-    
+
     # Pattern recognition (sujo para agora, refinado depois)
     is_spike: bool  # Detectado spike (v1.1 detector)
     spike_magnitude: float  # σ (desvios padrão)
-    
+
     # Correlação (com outros ativos - delayed)
     correlation_win_n: float  # Correlação com WIN$N
     correlation_petr4: float  # Correlação com PETR4
-    
+
     # Context (mercado)
     hour_of_day: int
     day_of_week: int
     is_market_open: bool  # Horário de abertura
     is_lunch_time: bool  # 11:30-13:00
-    
+
     # Label (apenas para dados históricos com resultado conhecido)
     label: Optional[float] = None  # 1.0 (ganho), 0.0 (perda), None (unknown)
     label_pnl: Optional[float] = None  # P&L real da operação
@@ -110,7 +110,7 @@ class FeatureVector:
 class FeatureEngineer:
     """
     Pipeline de feature engineering.
-    
+
     Fluxo:
     1. Load candles (raw OHLCV)
     2. Validação (sem gaps, timeframe correto)
@@ -138,13 +138,13 @@ class FeatureEngineer:
     ) -> Optional[FeatureVector]:
         """
         Cria feature vector para uma vela específica.
-        
+
         Args:
             candles: Lista de candles (índice 0 = mais antiga)
             candle_index: Índice da vela para a qual criar features
             spike_detector_output: Output do ProcessadorBDI (spike info)
             correlation_data: Correlações calculadas externamente
-            
+
         Returns:
             FeatureVector ou None (se dados insuficientes)
         """
@@ -152,7 +152,7 @@ class FeatureEngineer:
             return None
 
         candle = candles[candle_index]
-        
+
         # 1. Returns
         ret_1 = self._calculate_return(
             candles[candle_index - 1].close,
@@ -175,7 +175,7 @@ class FeatureEngineer:
         # 4. Indicators técnicos
         rsi_14 = self._calculate_rsi(candles, candle_index, period=14)
         macd, macd_hist = self._calculate_macd(candles, candle_index)
-        
+
         # 5. Bollinger Bands
         bb_upper, bb_middle, bb_lower = self._calculate_bollinger_bands(
             candles, candle_index, period=20
@@ -233,7 +233,7 @@ class FeatureEngineer:
     def dataframe_from_features(self, features: List[FeatureVector]) -> pd.DataFrame:
         """
         Converte lista de FeatureVector em DataFrame (pronto para treino).
-        
+
         Returns:
             pd.DataFrame com todas as features como colunas
         """
@@ -293,10 +293,10 @@ class FeatureEngineer:
         """Volatilidade (desvio padrão dos retornos)"""
         start = max(0, index - window + 1)
         closes = [c.close for c in candles[start:index + 1]]
-        
+
         if len(closes) < 2:
             return 0.0
-        
+
         returns = [np.log(closes[i] / closes[i-1]) for i in range(1, len(closes))]
         return np.std(returns) if returns else 0.0
 
@@ -309,20 +309,20 @@ class FeatureEngineer:
         """Relative Strength Index (RSI)"""
         start = max(0, index - period)
         closes = [c.close for c in candles[start:index + 1]]
-        
+
         if len(closes) < 2:
             return 50.0  # Neutro
-        
+
         deltas = np.diff(closes)
         gains = np.where(deltas > 0, deltas, 0)
         losses = np.where(deltas < 0, -deltas, 0)
-        
+
         avg_gain = np.mean(gains) if len(gains) > 0 else 0
         avg_loss = np.mean(losses) if len(losses) > 0 else 0
-        
+
         if avg_loss == 0:
             return 100.0 if avg_gain > 0 else 50.0
-        
+
         rs = avg_gain / avg_loss
         rsi = 100 - (100 / (1 + rs))
         return float(rsi)
@@ -338,14 +338,14 @@ class FeatureEngineer:
         """MACD"""
         start = max(0, index - slow - signal)
         closes = [c.close for c in candles[start:index + 1]]
-        
+
         if len(closes) < slow:
             return 0.0, 0.0
-        
+
         ema_fast = FeatureEngineer._calculate_ema(closes, fast)
         ema_slow = FeatureEngineer._calculate_ema(closes, slow)
         macd_line = ema_fast - ema_slow
-        
+
         return float(macd_line), 0.0  # Signal não calculado aqui por simplicidade
 
     @staticmethod
@@ -358,17 +358,17 @@ class FeatureEngineer:
         """Bollinger Bands"""
         start = max(0, index - period + 1)
         closes = [c.close for c in candles[start:index + 1]]
-        
+
         if len(closes) < period:
             mid = closes[-1] if closes else 0
             return mid, mid, mid
-        
+
         sma = np.mean(closes)
         std = np.std(closes)
-        
+
         upper = sma + (std_dev * std)
         lower = sma - (std_dev * std)
-        
+
         return float(upper), float(sma), float(lower)
 
     @staticmethod
@@ -376,13 +376,13 @@ class FeatureEngineer:
         """Exponential Moving Average"""
         if len(closes) < period:
             return np.mean(closes) if closes else 0.0
-        
+
         multiplier = 2 / (period + 1)
         ema = np.mean(closes[:period])
-        
+
         for i in range(period, len(closes)):
             ema = (closes[i] - ema) * multiplier + ema
-        
+
         return float(ema)
 
     @staticmethod
@@ -409,9 +409,9 @@ class FeatureEngineer:
 class DatasetLoader:
     """
     Carrega dados históricos com labels para treinamento.
-    
+
     Fonte: backtest_results.json / backtest_optimized_results.json
-    
+
     Estrutura esperada:
     {
         "trades": [
@@ -436,11 +436,11 @@ class DatasetLoader:
     ) -> List[FeatureVector]:
         """
         Carrega backtest results e associa labels às features.
-        
+
         Args:
             feature_vectors: Features extraídas
             win_threshold: Ganho mínimo para considerar "ganho"
-            
+
         Returns:
             Features com labels preenchidos
         """
