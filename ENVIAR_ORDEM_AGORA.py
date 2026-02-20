@@ -83,13 +83,13 @@ print(f"         Preço: {result.price}\n")
 
 if result.retcode == mt5.TRADE_RETCODE_DONE or result.retcode == mt5.TRADE_RETCODE_PLACED:
     print(f"      ✅ ORDEM ENVIADA COM SUCESSO!\n")
-    
+
     print("[5/5] Confirmando posição aberta...\n")
-    
+
     time.sleep(1)
-    
+
     positions = mt5.positions_get(symbol=symbol)
-    
+
     if positions:
         pos = positions[-1]  # Última posição aberta
         print(f"      ✅ POSIÇÃO ABERTA NA CORRETORA:\n")
@@ -101,18 +101,18 @@ if result.retcode == mt5.TRADE_RETCODE_DONE or result.retcode == mt5.TRADE_RETCO
         print(f"         SL: {pos.sl}")
         print(f"         TP: {pos.tp}")
         print(f"         P&L: R$ {pos.profit:.2f}\n")
-        
+
         print("="*80)
         print("✅ ORDEM NA CORRETORA - OPERAÇÃO COM SUCESSO")
         print("="*80 + "\n")
-        
+
         print("Detalhes da operação:")
         print(f"  Contrato: {pos.symbol}")
         print(f"  Ticket: {pos.ticket}")
         print(f"  Entrada: {pos.price_open}")
         print(f"  Volume: {pos.volume} contrato(s)")
         print(f"  Status: ABERTA\n")
-        
+
         print("Próximos passos:")
         print(f"  1. Monitor dashboard: http://localhost:8765/dashboard")
         print(f"  2. Acompanhe em tempo real no MT5")

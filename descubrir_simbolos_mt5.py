@@ -28,12 +28,12 @@ win_symbols = [s for s in symbols if 'WIN' in s.name.upper()]
 
 if win_symbols:
     print(f"Encontrados {len(win_symbols)} símbolos:\n")
-    
+
     for i, symbol in enumerate(win_symbols[:20], 1):
         # Selecionar simbolo
         mt5.symbol_select(symbol.name)
         time.sleep(0.1)
-        
+
         # Obter info
         info = mt5.symbol_info(symbol.name)
         if info:
@@ -47,7 +47,7 @@ if win_symbols:
 else:
     print("❌ Nenhum símbolo WIN encontrado\n")
     print("Procurando símbolos iniciais com 'W':\n")
-    
+
     w_symbols = [s for s in symbols if s.name.upper().startswith('W')][:10]
     for i, symbol in enumerate(w_symbols, 1):
         print(f"{i}. {symbol.name}")
