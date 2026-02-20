@@ -168,13 +168,18 @@ class DetectorVolatilidade:
         # ATR = σ * 1.5 (aproximação empírica)
         atr_value = Decimal(str(sigma * 1.5))
 
-        # Banda de entrada (±0.5σ ao redor da média)
-        entrada_min = Decimal(str(media - sigma * 0.5))
-        entrada_max = Decimal(str(media + sigma * 0.5))
+        # Converter preco_atual para Decimal se necessário
+        if isinstance(preco_atual, float):
+            preco_atual = Decimal(str(preco_atual))
+
+        # Banda de entrada (±0.25σ ao redor do preco atual)
+        # O preco atual já está >2σ da média, então esta é uma zona de entrada
+        entrada_min = preco_atual - Decimal(str(sigma * 0.25))
+        entrada_max = preco_atual + Decimal(str(sigma * 0.25))
 
         # Setup: entra entre entrada_min e entrada_max
-        # Stop loss: uma σ abaixo
-        stop_loss = preco_atual - atr_value
+        # Stop loss: 1.5σ abaixo do preço de entrada (risco)
+        stop_loss = entrada_min - atr_value
 
         # Take profit: 2.5x o risco (para ratio 1:2.5)
         take_profit = preco_atual + atr_value * Decimal("2.5")

@@ -47,6 +47,36 @@ class Price:
             raise ValueError("Cannot divide by zero")
         return Price(self.value / divisor)
 
+    def __lt__(self, other: "Price") -> bool:
+        """Menor que."""
+        if not isinstance(other, Price):
+            return NotImplemented
+        return self.value < other.value
+
+    def __le__(self, other: "Price") -> bool:
+        """Menor que ou igual."""
+        if not isinstance(other, Price):
+            return NotImplemented
+        return self.value <= other.value
+
+    def __gt__(self, other: "Price") -> bool:
+        """Maior que."""
+        if not isinstance(other, Price):
+            return NotImplemented
+        return self.value > other.value
+
+    def __ge__(self, other: "Price") -> bool:
+        """Maior que ou igual."""
+        if not isinstance(other, Price):
+            return NotImplemented
+        return self.value >= other.value
+
+    def __eq__(self, other: object) -> bool:
+        """Igual."""
+        if not isinstance(other, Price):
+            return NotImplemented
+        return self.value == other.value
+
     def __str__(self) -> str:
         return f"R$ {self.value:.2f}"
 
