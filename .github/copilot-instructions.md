@@ -483,23 +483,73 @@ SPRINT 4 (20/03-10/04): UAT & Launch
    └─ 1 file changed, 260 insertions(+)
 ```
 
-#### ✍️ Aprovações Formais:
+#### ✍️ Refinement Final (20/02 14:00-18:00) - 4 Personas ✅ COMPLETE
 
-| Persona | Decisão | Data | Status |
-|---------|---------|------|--------|
-| **Head de Finanças** | Rampa + Risk approved | 20/02 | ✅ |
-| **Product Owner** | US-001 feature | 20/02 | ✅ |
-| **CFO** | Capital allocation | 20/02 | ✅ |
-| **Eng Sr** | Sprint 1-4 assignment | 20/02 | ✅ |
-| **ML Expert** | Sprint 1-4 assignment | 20/02 | ✅ |
+**Sessão consolidada:** Product Owner + Head Finanças + CTO/Eng Sr + ML Expert
 
-#### 🔄 Próximas Ações:
+**PRODUCT OWNER (PO) - Validação de Escopo:**
+- ✅ Scope: Execução automática ONLY (defer dashboard/analytics)
+- ✅ AC: 8 critérios (Win Rate, Sharpe, Override, Circuit Breakers, etc)
+- ✅ Timeline: 10/04/2026 é viável com disciplina técnica
+- ✅ Sign-off: APPROVE GO para Sprint 1
 
-- [ ] 21/02: Briefing com Eng Sr + ML Expert (14:00)
-- [ ] 27/02: Sprint 1 kick-off (14:00)
-- [ ] 05/03: Sprint 1 gate check
-- [ ] 27/02-10/04: Agentes trabalham em paralelo
-- [ ] 10/04: v1.2 RELEASE candidate
-- [ ] 10/04-24/04: Fase 1 Beta (50k capital)
+**HEAD DE FINANÇAS (CFO) - Validação Financeira:**
+- ✅ Win Rate Target: 65-68% backtest, 60-65% Phase 1 live
+- ✅ Circuit Breakers: -3% alerta | -5% slow | -8% halt
+- ✅ Capital Ramp: 50k → 100k → 150k com gates obrigatórios
+- ✅ Financial Case: +R$ 255-430k/90-dias (336% ROI)
+- ✅ Sign-off: APPROVE financial + risk framework
 
-**Status Geral:** 🟢 **PRONTO PARA SPRINT 1**
+**CTO/ENG SR (Arquitetura) - Validação Técnica:**
+- ✅ Viability: 160h é SUFICIENTE para 4 sprints (1.430 LOC)
+- ✅ Components: MT5 API + Risk + Orders + Dashboard (doable)
+- ✅ Gates: 4 checkpoints (GATE 1-4 obrigatórios, 2 BLOCKERs)
+- ✅ Risks: 3 identificados + 2 externos (ALL MITIGATED)
+- ✅ Sign-off: APPROVE technical + 160h allocation
+
+**ML EXPERT - Validação Estratégia ML:**
+- ✅ Strategy: Hybrid (v1.1 + novo classifier) is OPTIMAL
+- ✅ Timeline: 140h é SUFICIENTE (25+50+40+25h breakdown)
+- ✅ Backtest: F1 > 0.65 (GATE 2) | Sharpe > 1.0 (GATE 3)
+- ✅ Risks: Class imbalance, overfitting, leakage → MITIGATED
+- ✅ Sign-off: APPROVE ML strategy + 140h allocation
+
+#### 📋 Documentação Consolidada (v1.2):
+
+**Core Documents (Criados & Validados 20/02):**
+- ✅ [US-001-EXECUTION_AUTOMATION_v1.2.md](docs/agente_autonomo/US-001-EXECUTION_AUTOMATION_v1.2.md)
+  - 8 AC testáveis | Descrição híbrida v1.1+novo
+- ✅ [RISK_FRAMEWORK_v1.2.md](docs/agente_autonomo/RISK_FRAMEWORK_v1.2.md)
+  - 3 validators + 3 circuit breakers + override manual
+- ✅ [ARQUITETURA_MT5_v1.2.md](docs/agente_autonomo/ARQUITETURA_MT5_v1.2.md)
+  - MT5 REST API design (250 LOC) + integration points
+- ✅ [ML_FEATURE_ENGINEERING_v1.2.md](docs/agente_autonomo/ML_FEATURE_ENGINEERING_v1.2.md)
+  - 24 features (6 grupos) + grid search (8 configs) + backtest
+- ✅ [SPRINT1_MASTERPLAN.md](docs/agente_autonomo/SPRINT1_MASTERPLAN.md)
+  - Sprint-by-sprint breakdown (27/02-10/04) + quality gates
+
+**Sincronização (NEW - 20/02 18:00):**
+- ✅ [SYNC_MANIFEST_v1.2.md](docs/agente_autonomo/SYNC_MANIFEST_v1.2.md)
+  - 14 documentos rastreados | Mapa de dependências
+  - Validação automática + audit trail + health checks
+
+#### 📋 Formalizações de Aprovação (20/02 18:00):
+
+| Persona | Componente | Aprovação | Data | Assinatura |
+|---------|-----------|-----------|------|-----------|
+| **PO** | Feature Scope v1.2 | ✅ APPROVE | 20/02 | PO |
+| **Head Finanças** | Financial + Risk | ✅ APPROVE | 20/02 | CFO |
+| **CTO/Eng Sr** | Technical Arch | ✅ APPROVE | 20/02 | CTO |
+| **ML Expert** | ML Strategy | ✅ APPROVE | 20/02 | ML_LEAD |
+
+#### 🔄 Próximas Ações (21/02):
+
+- [ ] 09:00: Team sync (confirmação final de Go/No-Go)
+- [ ] 14:00: Refinement Session (ajustes finais pós-validação)
+- [ ] 18:00: SYNC_MANIFEST atualizado com resultados
+- [ ] 27/02: 🚀 SPRINT 1 KICK-OFF (14:00 BRT)
+  - Daily Standups: 15:00 BRT
+  - Gate 1 Check: 05/03 17:00
+  - Deliverables: Design completo + tests
+
+**Status Geral:** 🟢 **APROVADO POR 4 PERSONAS - PRONTO PARA SPRINT 1 KICK-OFF**
