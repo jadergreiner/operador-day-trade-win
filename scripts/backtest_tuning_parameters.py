@@ -75,7 +75,7 @@ class BacktestComTunagem:
 
         Quanto maior o threshold_sigma:
         - Menos sensível (menos FP, mas menos captura)
-        
+
         Quanto menor o threshold_sigma:
         - Mais sensível (mais captura, mas mais FP)
         """
@@ -95,7 +95,7 @@ class BacktestComTunagem:
             2.5: 0.82,
             3.0: 0.78,
         }
-        
+
         # FP rate piora com sigma mais baixo
         # threshold_sigma = 3.0 → 2% FP
         # threshold_sigma = 2.5 → 5% FP
@@ -114,7 +114,7 @@ class BacktestComTunagem:
         }
 
         # Buscar valores mais próximos
-        captura_rate = min(captura_base.values(), 
+        captura_rate = min(captura_base.values(),
                           key=lambda x: abs(x - captura_base.get(
                               self.threshold_sigma,
                               captura_base[2.0])))
@@ -184,7 +184,7 @@ class BacktestComTunagem:
 async def executar_grid_search() -> Dict:
     """
     Grid search sobre valores de threshold_sigma.
-    
+
     Encontra o melhor parâmetro que PASSA todos os gates.
     """
     print("\n" + "="*80)
@@ -237,29 +237,29 @@ async def executar_grid_search() -> Dict:
     else:
         print(f"\n⚠️  Nenhum resultado passou em TODOS os gates.")
         print(f"   Procurando melhor aproximação...\n")
-        
+
         # Retornar o que chegou mais perto dos gates
         best = max(resultados, key=lambda r: (
             r["gates_validacao"]["captura_minima_85pct"] * 1000 +
             r["gates_validacao"]["fp_maxima_10pct"] * 1000 +
             r["gates_validacao"]["win_rate_minimo_60pct"] * 1000
         ))
-        
+
         print(f"⚠️  MELHOR APROXIMAÇÃO:")
         print(f"   Threshold: {best['threshold_sigma']}")
-        
+
         captura_status = "✅" if best['gates_validacao']['captura_minima_85pct'] else "❌"
         print(f"   Captura: {best['taxas']['taxa_captura_pct']}% "
               f"(target: 85%) - {captura_status}")
-        
+
         fp_status = "✅" if best['gates_validacao']['fp_maxima_10pct'] else "❌"
         print(f"   FP: {best['taxas']['taxa_false_positive_pct']}% "
               f"(target: 10%) - {fp_status}")
-        
+
         win_status = "✅" if best['gates_validacao']['win_rate_minimo_60pct'] else "❌"
         print(f"   Win: {best['taxas']['win_rate_estimado_pct']}% "
               f"(target: 60%) - {win_status}\n")
-        
+
         return best
 
 
@@ -270,7 +270,7 @@ async def main():
     # Salvar melhor resultado
     print("\n[SALVANDO] Resultados em backtest_tuning_results.json")
     print("-" * 80)
-    
+
     with open("backtest_tuning_results.json", "w",
               encoding="utf-8") as f:
         json.dump(best_config, f, ensure_ascii=False, indent=2)

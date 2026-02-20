@@ -100,14 +100,14 @@ Veja [QUICKSTART.md](docs/QUICKSTART.md) para mais detalhes.
 - ✅ **INTEGRATION-ENG-001: BDI Integration** - COMPLETE
   - ProcessadorBDI carregado, integrado com detectors
   - test_bdi_integration.py validado (10 velas sem erros)
-  
-- ✅ **INTEGRATION-ENG-002: WebSocket Server** - COMPLETE  
+
+- ✅ **INTEGRATION-ENG-002: WebSocket Server** - COMPLETE
   - FastAPI server with ConnectionManager (270 LOC)
   - 6/6 tests PASSED (100%)
   - Performance: 72.33ms for 50 simultaneous clients (vs 500ms target)
   - Broadcast failure handling + auto-reconnect
   - Health check + metrics endpoints operational
-  
+
 - ✅ **INTEGRATION-ML-002: Backtest Validation** - COMPLETE
   - Grid search over 8 threshold configurations
   - **Optimal threshold_sigma = 2.0 SELECTED**
@@ -127,7 +127,7 @@ Veja [QUICKSTART.md](docs/QUICKSTART.md) para mais detalhes.
 
 **Timeline for Beta:**
 - ✅ 20/02: Integration work COMPLETE
-- ⏳ 21/02: Staging deployment  
+- ⏳ 21/02: Staging deployment
 - ⏳ 22/02: UAT with stakeholders
 - ⏳ 23/02-12/03: Final adjustments
 - 🚀 **13/03: BETA LAUNCH** (on track)
