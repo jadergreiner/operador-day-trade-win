@@ -11,7 +11,7 @@ class AlertaFormatter:
     """
     Formata AlertaOportunidade para diferentes canais.
 
-    Responsabilidade: 
+    Responsabilidade:
     - HTML para email SMTP
     - JSON para WebSocket
     - SMS de texto (v1.1)
@@ -33,23 +33,23 @@ class AlertaFormatter:
                 .nivel-alto {{ background-color: #FF6347; }}
                 .nivel-medio {{ background-color: #FFA500; }}
                 .content {{ margin: 20px 0; }}
-                .info-box {{ 
-                    background-color: #f4f4f4; 
-                    border-left: 4px solid #333; 
-                    padding: 15px; 
+                .info-box {{
+                    background-color: #f4f4f4;
+                    border-left: 4px solid #333;
+                    padding: 15px;
                     margin: 10px 0;
                 }}
                 .metric {{ display: flex; justify-content: space-between; margin: 8px 0; }}
                 .metric-label {{ font-weight: bold; }}
                 .metric-value {{ color: #0066cc; }}
                 .footer {{ margin-top: 20px; font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 15px; }}
-                .button {{ 
-                    display: inline-block; 
-                    background-color: #0066cc; 
-                    color: white; 
-                    padding: 10px 20px; 
-                    text-decoration: none; 
-                    border-radius: 5px; 
+                .button {{
+                    display: inline-block;
+                    background-color: #0066cc;
+                    color: white;
+                    padding: 10px 20px;
+                    text-decoration: none;
+                    border-radius: 5px;
                     margin: 10px 0;
                 }}
             </style>
@@ -59,7 +59,7 @@ class AlertaFormatter:
                 <div class="header nivel-{nivel_class}">
                     <h1>🚨 [{nivel}] OPORTUNIDADE {ativo}</h1>
                 </div>
-                
+
                 <div class="content">
                     <div class="info-box">
                         <h3>📊 Padrão Detectado</h3>
@@ -76,7 +76,7 @@ class AlertaFormatter:
                             <span class="metric-value">{confianca}%</span>
                         </div>
                     </div>
-                    
+
                     <div class="info-box">
                         <h3>💰 Dados de Mercado</h3>
                         <div class="metric">
@@ -96,7 +96,7 @@ class AlertaFormatter:
                             <span class="metric-value">{take_profit}</span>
                         </div>
                     </div>
-                    
+
                     <div class="info-box">
                         <h3>📈 Risk:Reward</h3>
                         <div class="metric">
@@ -104,18 +104,18 @@ class AlertaFormatter:
                             <span class="metric-value">1:{risk_reward}</span>
                         </div>
                     </div>
-                    
+
                     <div class="metric">
                         <span class="metric-label">⏰ Timestamp:</span>
                         <span class="metric-value">{timestamp}</span>
                     </div>
-                    
+
                     <div class="metric">
                         <span class="metric-label">📋 ID Alerta:</span>
                         <span class="metric-value">{alerta_id}</span>
                     </div>
                 </div>
-                
+
                 <div class="footer">
                     <p>✅ Gerenciado por: Agente Autônomo v1.1</p>
                     <p>❓ Dúvidas? Consulte a análise completa na dashboard</p>

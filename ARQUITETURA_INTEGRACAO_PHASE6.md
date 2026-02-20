@@ -146,15 +146,15 @@ class ProcessadorBDI:
         )
         self.detector_padroes = DetectorPadroesTecnico()
         self.fila = FilaAlertas()
-    
+
     async def processar_vela(self, ativo, vela):
         # BDI logic here...
-        
+
         # HOOK DETECTORS
         alerta_vol = self.detector_vol.analisar_vela(ativo, vela)
         if alerta_vol:
             await self.fila.adicionar_alerta(alerta_vol)
-        
+
         alerta_padroes = self.detector_padroes.detectar_padroes(
             close=vela["close"],
             high=vela["high"],
@@ -184,13 +184,13 @@ from interfaces.websocket_fila_integrador import (
 async def startup():
     # Load config
     config = get_config()
-    
+
     # Criar fila
     fila = FilaAlertas()
-    
+
     # Iniciar integrador (Fila → WebSocket)
     integrador = await iniciar_websocket_integrador(fila)
-    
+
     logger.info("✅ WebSocket + Fila integrador iniciado")
 
 @app.on_event("shutdown")
@@ -219,7 +219,7 @@ class BacktestValidator:
             # Run detectors on historical data
             alerta = self.detector_vol.analisar_vela(...)
             # Compare vs expected opportunities
-    
+
     def gerar_relatorio(self):
         return {
             "taxa_captura_pct": 87.5,  # GATE: ≥85%

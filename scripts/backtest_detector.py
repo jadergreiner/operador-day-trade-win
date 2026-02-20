@@ -51,7 +51,7 @@ class BacktestValidator:
         self.false_negatives = 0
         self.velas_processadas = 0
 
-    async def carregar_dados_historicos(self, 
+    async def carregar_dados_historicos(self,
                                        ativo: str = "WIN$N",
                                        dias: int = 60,
                                        timeframe: str = "M5") -> tuple:
@@ -83,7 +83,7 @@ class BacktestValidator:
 
         base_price = 127500.0
         spike_indices = []  # Índices de velas com spikes
-        
+
         for i in range(total_velas):
             timestamp = data_inicio + timedelta(minutes=5*i if timeframe == "M5" else i)
 
@@ -170,7 +170,7 @@ class BacktestValidator:
         """
         if spike_indices:
             self.oportunidades_manuais = [i for i in spike_indices]
-        
+
         logger.info(f"\n{'='*60}")
         logger.info(f"🔍 INICIANDO BACKTEST - {len(dados)} velas")
         logger.info(f"   Oportunidades esperadas: {len(self.oportunidades_manuais)}")

@@ -8,7 +8,7 @@ STATUS: TUDO FUNCIONANDO PERFEITAMENTE
 PROBLEMA 1: Arquivo .bat fechando inesperadamente
 ==================================================
 CAUSA: Caracteres UTF-8 especiais (emojis, box-drawing)
-SOLUCAO v1.0.1: 
+SOLUCAO v1.0.1:
    - Removidos todos os caracteres especiais
    - Usados apenas ASCII basico (*, -, =, etc)
    - RESULTADO: ✅ CORRIGIDO

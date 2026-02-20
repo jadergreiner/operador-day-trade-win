@@ -27,7 +27,7 @@ try:
     from infrastructure.config.alerta_config import get_config, load_config
     print("[OK] Importacoes carregadas com sucesso!")
     print()
-    
+
     config = get_config()
     print(f"[OK] Configuracao carregada: {config}")
     print(f"   - Window: {config.detection.volatilidade.window}")

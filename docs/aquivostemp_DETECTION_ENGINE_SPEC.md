@@ -1,7 +1,7 @@
 # 📊 Detection Engine - Especificação Técnica
 
-**Data:** 20/02/2026  
-**Versão:** 1.0.0 (v1.1.0)  
+**Data:** 20/02/2026
+**Versão:** 1.0.0 (v1.1.0)
 **Revisor:** ML Expert
 
 ---
@@ -35,7 +35,7 @@ Cálculo:
   μ_móvel = mean(close[-20:])
   σ_móvel = stdev(close[-20:])
   z_score = (close_atual - μ_móvel) / σ_móvel
-  
+
 Sinal:
   IF z_score > 2.0 AND z_score_anterior > 2.0:
     ALERTA = VOLATILIDADE_EXTREMA
@@ -79,7 +79,7 @@ Tipo: BULLISH ENGULFING
     close_hoje > open_ontem AND
     open_hoje < close_ontem AND
     body_hoje > body_ontem
-  
+
   Implicação: Possível reversão ALTA
   Confiança: 65%
 
@@ -88,7 +88,7 @@ Tipo: BEARISH ENGULFING
     close_hoje < open_ontem AND
     open_hoje > close_ontem AND
     body_hoje > body_ontem
-  
+
   Implicação: Possível reversão BAIXA
   Confiança: 65%
 ```
@@ -106,7 +106,7 @@ Tipo: BEARISH (Topo)
   Condição:
     close_hoje > max(close[-5:]) AND
     rsi_hoje < max(rsi[-5:])
-  
+
   Implicação: Esgotamento de compradores
   Confiança: 60%
 
@@ -114,7 +114,7 @@ Tipo: BULLISH (Fundo)
   Condição:
     close_hoje < min(close[-5:]) AND
     rsi_hoje > min(rsi[-5:])
-  
+
   Implicação: Esgotamento de vendedores
   Confiança: 60%
 ```
@@ -211,15 +211,15 @@ Lógica: "Entra na reação, não no extremo"
 ```python
 class DetectorVolatilidade:
     """Detecção de volatilidade >2σ com confirmação."""
-    
-    def analisar_vela(self, symbol: str, close: Decimal, 
+
+    def analisar_vela(self, symbol: str, close: Decimal,
                      timestamp: datetime) -> Optional[AlertaOportunidade]:
         """Retorna AlertaOportunidade se >2σ confirmado."""
         pass
 
 class DetectorPadroesTecnico:
     """Detecção de padrões gráficos (engulfing, divergência, breaks)."""
-    
+
     def detectar_engulfing(self, vela_atual: dict, vela_anterior: dict) -> bool:
         """Retorna True se padrão engulfing detectado."""
         pass
@@ -280,5 +280,5 @@ test_taxa_captura_85_percent_backtest()
 
 ---
 
-**Status:** ✅ Aprovado para implementação  
+**Status:** ✅ Aprovado para implementação
 **Próximo:** Implementação em código + backtesting

@@ -39,7 +39,7 @@ Opções:
   3 - Apenas preparar (sem iniciar)
   4 - Sair
 
-Escolha uma opção [1-4]: 
+Escolha uma opção [1-4]:
 ```
 
 ---

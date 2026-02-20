@@ -28,29 +28,29 @@ class AuditoriaAlertas:
     SCHEMA_ALERTAS = """
     CREATE TABLE IF NOT EXISTS alertas_audit (
         id TEXT PRIMARY KEY,
-        
+
         -- Identificação
         ativo TEXT NOT NULL,
         padr ao TEXT NOT NULL,
         nivel TEXT NOT NULL,
-        
+
         -- Detecção
         timestamp_deteccao DATETIME NOT NULL,
         preco_atual REAL NOT NULL,
-        
+
         -- Setup recomendado
         entrada_min REAL,
         entrada_max REAL,
         stop_loss REAL,
         take_profit REAL,
-        
+
         -- Métricas
         confianca REAL,
         risk_reward REAL,
-        
+
         -- Registro
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        
+
         CONSTRAINT alertas_audit_pk PRIMARY KEY (id)
     )
     """
@@ -64,8 +64,8 @@ class AuditoriaAlertas:
         latencia_ms INTEGER,
         timestamp_tentativa DATETIME DEFAULT CURRENT_TIMESTAMP,
         erro_descricao TEXT,
-        
-        CONSTRAINT entrega_audit_fk FOREIGN KEY (alerta_id) 
+
+        CONSTRAINT entrega_audit_fk FOREIGN KEY (alerta_id)
             REFERENCES alertas_audit(id),
         CONSTRAINT entrega_audit_pk PRIMARY KEY (id)
     )
@@ -83,7 +83,7 @@ class AuditoriaAlertas:
         pnl REAL,
         timestamp_fechamento DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        
+
         CONSTRAINT acao_operador_fk FOREIGN KEY (alerta_id)
             REFERENCES alertas_audit(id),
         CONSTRAINT acao_operador_pk PRIMARY KEY (id)

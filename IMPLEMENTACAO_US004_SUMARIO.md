@@ -1,8 +1,8 @@
 # ✅ SUMÁRIO DE IMPLEMENTAÇÃO - US-004 ALERTAS AUTOMÁTICOS
 
-**Data:** 20/02/2026  
-**Status:** 🟢 IMPLEMENTAÇÃO COMPLETA  
-**Personas:** Engenheiro Sr + ML Expert (trabalho paralelo)  
+**Data:** 20/02/2026
+**Status:** 🟢 IMPLEMENTAÇÃO COMPLETA
+**Personas:** Engenheiro Sr + ML Expert (trabalho paralelo)
 **Timeline:** Sprint v1.1.0 (13/03/2026)
 
 ---
@@ -46,7 +46,7 @@
   - Setup automático de entrada com bands
   - **KPIs:** Confiança 60-70%, integrado com ATR
 
-#### Formatadores  
+#### Formatadores
 - ✅ `src/application/services/alerta_formatter.py` - **290 linhas**
   - `AlertaFormatter.formatar_email_html()` - Template Bootstrap responsivo
   - `AlertaFormatter.formatar_json()` - Payload estruturado para WebSocket
@@ -106,7 +106,7 @@
   6. `test_engulfing_bullish_detectado` ✅
   7. `test_alertformatter_gera_html_valido` ✅
   8. `test_alertformatter_sms_respeita_limite` ✅
-  
+
   **Cobertura esperada: >80%**
 
 #### Integration Tests (3 obrigatórios)
@@ -275,7 +275,7 @@
 - [ ] Lint Python: pyright/mypy 0 warnings
 - [ ] Documentação: 100% com exemplos
 
-### Semana 2 (06 - 13 MAR)  
+### Semana 2 (06 - 13 MAR)
 - [ ] Integração com BDI processor existente
 - [ ] Config YAML validado
 - [ ] Teste manual com dados reais (simulado)
