@@ -15,7 +15,7 @@ from src.domain.enums.alerta_enums import (
 from src.domain.value_objects import Price, Symbol
 
 
-@dataclass
+@dataclass(kw_only=True)
 class AlertaOportunidade:
     """
     Entidade representando uma oportunidade de trading alertada.
