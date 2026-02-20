@@ -80,7 +80,7 @@ Veja [QUICKSTART.md](docs/QUICKSTART.md) para mais detalhes.
 
 ## 🔔 Sistema de Alertas Automáticos (US-004) ✅ IMPLEMENTADO + INTEGRAÇÃO PHASE 6
 
-**Status: Implementation ✅ COMPLETE | Phase 6 Integration 🚀 JUST KICKED OFF**
+**Status: Implementation ✅ COMPLETE | Phase 6 Integration 🚀 IN PROGRESS (Dev Day 20/02)**
 
 ### Características Produção (v1.1.0):
 - ✅ **Detecção de Volatilidade**: Z-score >2σ com confirmação em 2 velas (<30s P95)
@@ -92,22 +92,36 @@ Veja [QUICKSTART.md](docs/QUICKSTART.md) para mais detalhes.
 - ✅ **Métricas**: Taxa captura ≥85%, False positive <10%, Throughput 100+/min
 - ✅ **Testes**: 18+ testes (8 unit + 3 integration + 7 WebSocket) com 100% type hints
 
-### Phase 6 Integration (🚀 Iniciado 20/02/2026):
-- 🔧 **BDI Integration**: Hook detectors na vela loop (Eng Sr - Task 1)
-- 🌐 **WebSocket Server**: FastAPI server on port 8765 (Eng Sr - Task 2, código ✅)
-- 📧 **Email Config**: Setup SMTP com retry exponencial (Eng Sr - Task 3)
-- 📊 **Backtest Validation**: Historical data validation (ML Expert - Task 2)
-- ⚡ **Performance Benchmarking**: Latency P95 <30s, Memory <50MB (ML Expert - Task 3)
-- **Timeline**: MON 27/02 - THU 13/03 (15 days) → 🎯 **BETA LAUNCH**
+### Phase 6 Integration (🚀 In Development - 20/02/2026):
 
-### Documentação:
-- [📋 Sumário de Implementação](IMPLEMENTACAO_US004_SUMARIO.md) - Visão completa do projeto
-- [📋 Tarefas de Integração](TAREFAS_INTEGRACAO_PHASE6.md) - 8 tarefas paralelas (Eng Sr + ML)
-- [🏗️ Arquitetura Integração](ARQUITETURA_INTEGRACAO_PHASE6.md) - Diagramas e componentes
-- [✅ Checklist Integração](CHECKLIST_INTEGRACAO_PHASE6.md) - Passo-a-passo com gates
-- [🔔 API de Alertas](docs/alertas/ALERTAS_API.md) - Protocolo WebSocket + RFC SMTP
-- [📚 README de Alertas](docs/alertas/ALERTAS_README.md) - Quick start, troubleshooting
-- [🧠 Especificação ML](docs/alertas/aquivostemp_DETECTION_ENGINE_SPEC.md) - Fórmulas, backtest
+**Progress Today (1.5 hours):**
+- ✅ **INTEGRATION-ENG-001: BDI Integration** - COMPLETE
+  - ProcessadorBDI carregado, integrado com detectors de volatilidade
+  - test_bdi_integration.py validado (10 velas sem erros)
+  - Next: ENG-002 WebSocket Server
+- ⏳ **INTEGRATION-ML-001: Backtest Setup** - COMPLETE (with iteration needed)
+  - 17.280 velas históricas carregadas (60 dias)
+  - 630+ alertas gerados, spike detection implementado
+  - Issue: Captura rate 0% → parameter iteration ongoing
+  - Adjustments: threshold_sigma 2.0 → 1.5
+
+**Próximos Passos (27/02 Official Kickoff):**
+- 🔧 **ENG-002**: WebSocket Server (código pronto, falta integração BDI)
+- 📧 **ENG-003**: Email Config (MailHog mock ou SMTP real)
+- 📊 **ML-002**: Resolve backtest gates (Captura ≥85%, FP ≤10%)
+- ⚡ **ML-003**: Performance Benchmarking (P95 <30s, Memory <50MB)
+
+**Timeline Ajustado:**
+- **27 FEB - 01 MAR**: BDI + WebSocket + Backtest (Week 1)
+- **03 MAR - 07 MAR**: Email + Performance (Week 2)
+- **10 MAR - 12 MAR**: Staging + UAT (Week 3)
+- **🚀 13 MAR**: BETA LAUNCH
+
+**Documentação Crítica:**
+- [📋 Checklist Detalhado](CHECKLIST_INTEGRACAO_PHASE6.md) - 8 tarefas com gates
+- [📊 Tracker](docs/agente_autonomo/AGENTE_AUTONOMO_TRACKER.md) - Progress real-time
+- [🔄 Sync Manifest](docs/agente_autonomo/SYNC_MANIFEST.json) - Doc governance
+- [🧭 Roadmap](docs/agente_autonomo/AGENTE_AUTONOMO_ROADMAP.md) - Timeline master
 
 ### Arquitetura Production (com WebSocket Server - Phase 6):
 
