@@ -15,8 +15,8 @@ alertas:
     volatilidade:
       habilitado: true
       window_periodos: 20  # 100 minutos com velas 5min
-      threshold_sigma: 2.0  # 2 desvios padrão
-      confirmacao_velas: 2  # Requer 2 velas consecutivas >2σ
+      threshold_sigma: 1.5  # 1.5 desvios padrão (ajustado para ML-001)
+      confirmacao_velas: 2  # Requer 2 velas consecutivas >1.5σ
       nivel_alerta: CRÍTICO
       confianca_minima: 0.85
     

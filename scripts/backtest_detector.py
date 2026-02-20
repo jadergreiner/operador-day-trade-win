@@ -54,7 +54,7 @@ class BacktestValidator:
     async def carregar_dados_historicos(self, 
                                        ativo: str = "WIN$N",
                                        dias: int = 60,
-                                       timeframe: str = "M5") -> List[dict]:
+                                       timeframe: str = "M5") -> tuple:
         """
         Carrega dados históricos do MT5.
 
@@ -64,7 +64,7 @@ class BacktestValidator:
             timeframe: M1, M5, H1, D1, etc
 
         Returns:
-            Lista de velas com [open, high, low, close, volume, time]
+            Tupla (velas, indices_spikes) onde spikes são oportunidades reais
 
         NOTA: Esta é uma versão MOCK para testes. Em produção,
               usaria MT5 API via MetaTrader5 package.
@@ -82,6 +82,8 @@ class BacktestValidator:
         total_velas = dias * velas_por_dia
 
         base_price = 127500.0
+        spike_indices = []  # Índices de velas com spikes
+        
         for i in range(total_velas):
             timestamp = data_inicio + timedelta(minutes=5*i if timeframe == "M5" else i)
 
@@ -100,6 +102,7 @@ class BacktestValidator:
                 high_price = close_price + abs(random.gauss(0, 200))
                 low_price = close_price - abs(random.gauss(0, 200))
                 volume = random.randint(5000, 20000)
+                spike_indices.append(i)  # Marcar como oportunidade real
 
             dados.append({
                 "time": timestamp.isoformat(),
@@ -113,8 +116,8 @@ class BacktestValidator:
 
             base_price = close_price  # Price para próxima vela
 
-        logger.info(f"✅ Carregados {len(dados)} velas")
-        return dados
+        logger.info(f"✅ Carregados {len(dados)} velas, {len(spike_indices)} spikes esperados")
+        return dados, spike_indices
 
     async def processar_vela(self, vela: dict) -> List[AlertaOportunidade]:
         """
@@ -157,26 +160,41 @@ class BacktestValidator:
 
         return alertas
 
-    async def executar_backtest(self, dados: List[dict]):
+    async def executar_backtest(self, dados: List[dict], spike_indices: List[int] = None):
         """
         Executa backtest completo.
 
         Args:
             dados: Lista de velas históricas
+            spike_indices: Índices das velas com spikes (oportunidades reais)
         """
+        if spike_indices:
+            self.oportunidades_manuais = [i for i in spike_indices]
+        
         logger.info(f"\n{'='*60}")
         logger.info(f"🔍 INICIANDO BACKTEST - {len(dados)} velas")
+        logger.info(f"   Oportunidades esperadas: {len(self.oportunidades_manuais)}")
         logger.info(f"{'='*60}\n")
 
         for i, vela in enumerate(dados):
             alertas = await self.processar_vela(vela)
 
+            # Verificar se há match com oportunidade esperada
+            if alertas and i in self.oportunidades_manuais:
+                self.matches += 1
+            elif alertas and i not in self.oportunidades_manuais:
+                self.false_positives += len(alertas)
+            elif not alertas and i in self.oportunidades_manuais:
+                self.false_negatives += 1
+
             # Log a cada 100 velas
             if (i + 1) % 100 == 0:
-                logger.debug(f"Processadas {i+1}/{len(dados)} velas ({alertas} alertas)")
+                logger.debug(f"Processadas {i+1}/{len(dados)} velas ({len(alertas)} alertas)")
 
         logger.info(f"\n{'='*60}")
         logger.info(f"✅ BACKTEST COMPLETO")
+        logger.info(f"   Matches: {self.matches}/{len(self.oportunidades_manuais)}")
+        logger.info(f"   False Positives: {self.false_positives}")
         logger.info(f"{'='*60}\n")
 
     def gerar_relatorio(self) -> dict:
@@ -275,14 +293,14 @@ async def main():
     validator = BacktestValidator()
 
     # Carregar dados
-    dados = await validator.carregar_dados_historicos(
+    dados, spike_indices = await validator.carregar_dados_historicos(
         ativo="WIN$N",
         dias=60,
         timeframe="M5"
     )
 
     # Executar backtest
-    await validator.executar_backtest(dados)
+    await validator.executar_backtest(dados, spike_indices)
 
     # Gerar relatório
     relatorio = validator.gerar_relatorio()
