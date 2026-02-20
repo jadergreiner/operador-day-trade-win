@@ -2,7 +2,7 @@
   "project": "Operador Day Trade WIN",
   "project_version": "1.0.0",
   "release_date": "2026-02-20",
-  "last_updated": "2026-02-20T13:10:10Z",
+  "last_updated": "2026-02-20T13:29:11Z",
   "components": {
     "BDI_Processor": {
       "version": "1.0.0",
@@ -102,7 +102,7 @@
     "Fechamento_Diario": {
       "version": "1.0.0",
       "status": "PRODUCTION",
-      "last_change": "2026-02-20T13:10:10Z",
+      "last_change": "2026-02-20T13:29:11Z",
       "changelog": [
         {
           "version": "1.0.0",
