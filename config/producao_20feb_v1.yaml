@@ -9,7 +9,10 @@ capital:
 
 asset:
   symbol: WIN$N
+  contract: WinJ26              # Contrato Futuro (Fevereiro/Junho 2026)
   timeframe: 5m
+  lot_size: 1
+  broker_gateway: localhost:8000
 
 risk_validation:
   enabled: true
