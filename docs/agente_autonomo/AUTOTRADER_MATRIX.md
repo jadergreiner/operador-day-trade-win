@@ -1,8 +1,13 @@
 # 🎯 AutoTrader Matrix - Matriz de Estratégias Multicanal
 
-**Versão:** 1.0.0
+**Versão:** 1.1.0
 **Data:** 20/02/2026
-**Status:** ✅ Ativo em Produção
+**Status:** 🚀 **PHASE 6: INTEGRATION KICKOFF**
+
+**Phase 6 Timeline:** 27 FEB - 13 MAR 2026
+- **Eng Sr:** BDI Integration + WebSocket Server + Email + Staging
+- **ML Expert:** Backtest Setup + Validation + Performance + Final Tests
+- **Target:** BETA LAUNCH Thursday 13/03/2026
 
 ---
 

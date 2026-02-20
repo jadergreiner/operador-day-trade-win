@@ -137,3 +137,42 @@ git commit -m "Update AGENTE_AUTONOMO_*: sync with ARQUITETURA + FEATURES + ROAD
 
 **IMPORTANTE:** A integridade do Agente Autônomo depende da sincronia perfeita da documentação.
 Sempre validar antes de commit seguindo as regras acima.
+---
+
+## 🚀 PHASE 6 INTEGRATION STATUS (20/02/2026 - Kickoff)
+
+### 📋 Agentes Autônomos Ativos
+
+**Two Autonomous Agents Starting MON 27/02:**
+
+1. **👨‍💻 Senior Software Engineer (Eng Sr)**
+   - Task INTEGRATION-ENG-001: BDI Integration (3-4h)
+   - Task INTEGRATION-ENG-002: WebSocket Server (2-3h, código ✅)
+   - Task INTEGRATION-ENG-003: Email Configuration (1-2h)
+   - Task INTEGRATION-ENG-004: Staging Deployment (2-3h)
+
+2. **🧠 Machine Learning Expert (ML Expert)**
+   - Task INTEGRATION-ML-001: Backtest Setup (2-3h)
+   - Task INTEGRATION-ML-002: Backtest Validation (2-3h, script ✅)
+   - Task INTEGRATION-ML-003: Performance Benchmarking (2-3h)
+   - Task INTEGRATION-ML-004: Final Validation (1-2h)
+
+### 📊 Phase 6 Timeline
+- **Week 1 (27 FEB - 01 MAR):** BDI + WebSocket + Backtest setup
+- **Week 2 (03 MAR - 07 MAR):** Email + Performance + Staging deploy
+- **Week 3 (10 MAR - 13 MAR):** UAT + Final validation + BETA Launch
+
+### 🎯 Success Criteria
+- [ ] All 8 parallel tasks completed on time
+- [ ] All 18+ tests passing (100%)
+- [ ] Backtest gates PASS (Capture ≥85%, FP ≤10%, Win ≥60%)
+- [ ] Performance targets MET (P95 <30s, Memory <50MB)
+- [ ] CFO + PO sign-off
+- [ ] 🚀 **BETA LAUNCH: Thursday 13/03/2026**
+
+### 📚 Phase 6 Documentation (Referência Obrigatória)
+
+- [📋 Tarefas de Integração](TAREFAS_INTEGRACAO_PHASE6.md)
+- [🏗️ Arquitetura](ARQUITETURA_INTEGRACAO_PHASE6.md)
+- [✅ Checklist](CHECKLIST_INTEGRACAO_PHASE6.md)
+- [📊 Resumo Executivo](RESUMO_PHASE6_KICKOFF.md)
