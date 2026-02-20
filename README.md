@@ -76,6 +76,7 @@ Veja [QUICKSTART.md](docs/QUICKSTART.md) para mais detalhes.
 - **Type Safety**: Type hints em 100% do código
 - **MetaTrader 5**: Integração completa para dados em tempo real
 - **Gestão de Risco**: Position sizing, stop loss dinâmico, drawdown control
+- **🔔 Alertas Automáticos (v1.1)**: Detecção de padrões, entrega multicanal (Push/Email), deduplicação >95%, auditoria CVM
 
 ## Estrutura do Projeto
 

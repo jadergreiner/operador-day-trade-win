@@ -1,11 +1,13 @@
 # 📬 História de Usuário - US-004: Alertas Automáticos em Tempo Real
 
-**ID:** US-004  
-**Versão:** 1.0.0  
-**Data de Criação:** 20/02/2026  
-**Prioridade:** 🔴 CRÍTICA  
-**Sprint de Entrega:** v1.1.0 (13/03/2026)  
+**ID:** US-004
+**Versão:** 1.0.0
+**Data de Criação:** 20/02/2026
+**Prioridade:** 🔴 CRÍTICA
+**Sprint de Entrega:** v1.1.0 (13/03/2026)
 **Esforço Estimado:** 13 pontos (1 sprint)
+**Status:** ✅ REFINADA e APROVADA (20/02/2026)
+**Aprovação:** Head de Finanças + PO + Dev Lead
 
 ---
 
@@ -32,16 +34,17 @@ Quando o padrão é detectado no fluxo de análise
 Então um alerta é gerado em <30 segundos
 ```
 
-### AC-002: Entrega Multicanal
+### AC-002: Entrega Multicanal (v1.1)
 
 ```gherkin
 Dado um alerta gerado
 Quando está configurado para envio
 Então recebo notificação em:
-  ✅ Email (SMTP)
-  ✅ SMS (Twilio)
-  ✅ Push (WebSocket local)
-  E dentro do SLA: <5 segundos
+  ✅ Push (WebSocket local) - PRIMARY <500ms
+  ✅ Email (SMTP) - BACKUP <8s (async)
+
+  ⚠️ SMS (Twilio): DESATIVADO em v1.1
+  📅 Habilitação: v1.2 (se email falhar > 2%)
 ```
 
 ### AC-003: Conteúdo do Alerta
@@ -59,15 +62,21 @@ Então a mensagem contém:
   • Link para análise completa
 ```
 
-### AC-004: Controle de Taxa
+### AC-004: Controle de Taxa (Deduplicação Strict)
 
 ```gherkin
 Dado um fluxo de alertas
 Quando múltiplos alertas do mesmo padrão ocorrem
 Então sistema implementa:
-  • Rate limiting: máx 1 alerta por padrão/minuto
-  • Deduplicação: consolidar sinais similares
+  • Rate limiting: máx 1 alerta/padrão/minuto (STRICT)
+  • Deduplicação: consolidar sinais >90% similares
+  • Consolidação: máx 3 alertas simultâneos
   • Backpressure: não descartar dados, fila ordenada
+
+Performance SLA:
+  • P50 (mediana): <15 segundos
+  • P95 (nosso alvo): <30 segundos ✅
+  • P99 (contingência): <50 segundos
 ```
 
 ### AC-005: Logging e Auditoria
@@ -111,28 +120,36 @@ Data IN → [Detection] → [Format] → [Queue] → [Delivery] → OUT
 - Nova classe: `AlertaOportunidade` (dataclass)
 - Estende `AGENTE_AUTONOMO_BACKLOG.md` com regras de alerta
 
-### RQ-003: Canais de Entrega
+### RQ-003: Canais de Entrega (v1.1 MVP)
 
-#### Email (SMTP)
-
-- Provider: Configurável (Gmail, SendGrid, Postmark)
-- Template: HTML com styling Bootstrap
-- Retry: exponencial (1s, 2s, 4s, até 60s)
-- Timeout: 10s max
-
-#### SMS (Twilio)
-
-- Account SID: variável de ambiente
-- Message: máximo 160 caracteres (condensado)
-- Retry: 3 tentativas
-- Timeout: 5s max
-
-#### Push (WebSocket local)
+#### Push (WebSocket local) - PRIMARY ⭐
 
 - Endpoint: `ws://localhost:8765/alertas`
+- Latência: <500ms (sub-segundo, tempo real)
 - Autenticação: token Bearer
-- Formato: JSON
-- Reconexão automática
+- Formato: JSON estruturado
+- Reconexão automática com exponential backoff
+- Fallback automático se falhar
+
+#### Email (SMTP) - BACKUP Redundante ✅
+
+- Provider: SendGrid (recomendado) ou Postmark
+- Template: HTML com styling Bootstrap
+- Latência: 2-8 segundos (async paralelo)
+- Retry: exponencial (1s, 2s, 4s, até 60s)
+- Timeout: 10s máximo
+- Evidência permanente (compliance CVM)
+- Sempre tenta (nunca ignora falhas)
+
+#### SMS (Twilio) - v1.2 OPCIONAL 📅
+
+- Status: DESATIVADO em v1.1
+- Habilitação: v1.2 (condicional)
+- Critério: se email falha > 2% em 30 dias
+- Account SID: variável de ambiente
+- Message: máximo 160 caracteres
+- Timeout: 5s
+- Custo: ~R$ 0.35/SMS (revisar em v1.2)
 
 ### RQ-004: Configuração
 
@@ -290,6 +307,113 @@ estar em 100% GREEN:
 - [ ] **Commits:** Mensagens em português e UTF-8 válido
 - [ ] **Code Review:** Aprovado por 2 reviewers
 - [ ] **Release Notes:** Entrada em CHANGELOG incluída
+
+---
+
+## 💰 Refinamento Head de Finanças (20/02/2026)
+
+### Aprovações de Negócio
+
+| Aspecto | Status | Decisão |
+|---------|--------|---------|
+| **SLA 30s viável?** | ✅ APROVADO | Não menos que 30s (ROI -R$ 720k/mês) |
+| **Canal primário?** | ✅ APROVADO | Push PRIMARY + Email BACKUP (SMS v1.2) |
+| **Capital inicial?** | ✅ APROVADO | Ramp-up 50k → 80k → 150k (condicional) |
+| **Manual ou Auto?** | ✅ APROVADO | Manual v1.1 (Automático v1.2 + Board) |
+| **Timeline?** | ✅ APROVADO | 4 Fases: Beta → Prod → Normal → Auto |
+
+### Capital Ramp-Up (Obrigatório)
+
+```yaml
+FASE 1: BETA (Semana 1-2, 13-27 mar)
+  Capital/Trade: R$ 50.000 (10% AUM)
+  Capital diário máx: R$ 400k (8 trades)
+  Drawdown máx: -R$ 40k (-10%)
+  Saída: Win rate ≥ 60%?
+  └─ ✅ SIM → avança FASE 2
+
+FASE 2: PRODUÇÃO RESTRITA (Semana 3-4, 27 mar-13 abr)
+  Capital/Trade: R$ 80.000 (16% AUM)
+  Capital diário máx: R$ 640k (8 trades)
+  Drawdown máx: -R$ 64k (-10%)
+  Saída: Win rate ≥ 65%?
+  └─ ✅ SIM → avança FASE 3
+
+FASE 3: PRODUÇÃO NORMAL (Mês 2+, 13 abr+)
+  Capital/Trade: R$ 150.000 (30% AUM)
+  Capital diário máx: R$ 1.5M (10 trades)
+  Drawdown máx: -R$ 150k (-10%)
+  Saída: 30 dias estável + compliance OK?
+  └─ ✅ SIM → FASE 4 (v1.2)
+
+FASE 4: AUTOMÁTICO OPCIONAL (v1.2, 13 mai+)
+  Status: FUTURO (fora v1.1)
+  Requisito: Board approval + Legal sign-off
+```
+
+### Gatilhos de Redução (Automático)
+
+```
+If win_rate_7d < 60% → volta R$ 50k
+If drawdown_atual < -8% → FREEZE (nenhum trade)
+If volatilidade > 3σ → reduz capital -20%
+```
+
+### Operação: Manual v1.1
+
+```
+v1.1 GO-LIVE (13 MARÇO 2026):
+  ✅ Execução: MANUAL 100%
+     └─ Operador decide se clica ou não
+  ✅ Responsabilidade: Claro (operador está no controle)
+  ✅ Auditoria: Rastreada cada ação (CVM compliant)
+
+v1.2 (13 MAIO 2026) - FUTURO:
+  📅 Automático: Opcional
+  📅 Escopo: Apenas WIN$N + micro capital (R$ 50k)
+  📅 Aprovação: CEO + CFO + CRO
+  📅 Compliance: Novo review cycle
+```
+
+### KPIs de Aprovação
+
+```yaml
+FASE 1 (BETA):
+  target_win_rate: ≥ 60%
+  target_latency_p95: < 40s
+  target_system_crashes: 0
+  target_audit_recovery: 100%
+
+FASE 2 (PROD_RESTRITA):
+  target_win_rate: ≥ 65%
+  target_capital_ramp: 50k → 80k → 150k
+  target_deduplication: > 95%
+  target_email_delivery: > 98%
+
+FASE 3 (PROD_NORMAL):
+  target_win_rate: ≥ 65% (sustentável)
+  target_monthly_pnl: +R$ 50-80k
+  target_drawdown: < -10%
+  target_uptime: 99.5%
+
+POST-DEPLOY (30 dias):
+  target_roi_vs_dev_cost: > 2.0x
+  target_compliance_violations: 0
+```
+
+---
+
+## 🔄 Sincronização de Documentação (OBRIGATÓRIA)
+
+Ao finalizar esta história, os seguintes documentos DEVEM ser atualizados:
+
+- [ ] AGENTE_AUTONOMO_FEATURES.md (adicionar ✅ Alertas v1.1)
+- [ ] AGENTE_AUTONOMO_ROADMAP.md (confirmar v1.1 timeline 13/03)
+- [ ] AGENTE_AUTONOMO_RELEASE.md (detalhar v1.1 incluído)
+- [ ] AGENTE_AUTONOMO_BACKLOG.md (mover para "Em Andamento")
+- [ ] SYNC_MANIFEST.json (atualizar checksums)
+- [ ] VERSIONING.json (registrar v1.1 features)
+- [ ] README.md (mencionar alertas como feature v1.1)
 
 ---
 

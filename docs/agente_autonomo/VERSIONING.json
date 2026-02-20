@@ -1,8 +1,9 @@
 {
   "project": "Operador Day Trade WIN",
-  "project_version": "1.0.0",
+  "project_version": "1.0.0 (v1.1 Approved)",
   "release_date": "2026-02-20",
-  "last_updated": "2026-02-20T13:29:11Z",
+  "last_updated": "2026-02-20T14:30:00Z",
+  "sync_notes": "US-004 refinement approved by Head Finance, PO, and Compliance"
   "components": {
     "BDI_Processor": {
       "version": "1.0.0",
@@ -115,6 +116,42 @@
           ]
         }
       ]
+    },
+    "Alert_Manager": {
+      "version": "1.1.0",
+      "status": "APPROVED",
+      "last_change": "2026-02-20T14:30:00Z",
+      "estimated_release": "2026-03-13",
+      "changelog": [
+        {
+          "version": "1.1.0",
+          "date": "2026-03-13",
+          "estimated": true,
+          "changes": [
+            "Detection Engine for volatility patterns (>2σ)",
+            "Multi-channel delivery (Push WebSocket + Email SMTP)",
+            "Queue system with >95% deduplication",
+            "Audit log (CVM compliant)",
+            "Rate limiting (1 alert/pattern/min)",
+            "Manual operation v1.1 (automatic in v1.2)",
+            "Capital ramp-up: 50k → 80k → 150k",
+            "4-phase rollout: Beta → Restricted → Normal → Auto"
+          ]
+        }
+      ],
+      "approval": {
+        "head_finance": "APPROVED (2026-02-20)",
+        "product_owner": "APPROVED (2026-02-20)",
+        "dev_lead": "PENDING (Sprint v1.1)",
+        "compliance": "APPROVED (2026-02-20)"
+      },
+      "kpi_targets": {
+        "latency_p95_ms": 30000,
+        "deduplication_rate": 0.95,
+        "win_rate_phase1": 0.60,
+        "win_rate_phase3": 0.65,
+        "monthly_roi_min": 50000
+      }
     }
   },
   "feature_matrix": {
@@ -145,15 +182,39 @@
     },
     "v1.1.0": {
       "planned_date": "2026-03-13",
-      "status": "PLANNED",
+      "status": "APPROVED",
+      "approval_date": "2026-02-20",
       "features": [
-        "Intraday data integration",
-        "Options analysis",
+        "Intraday data integration (1m, 5m)",
+        "Automated alerts (PRIMARY FEATURE) - US-004",
+        "Multi-channel delivery (Push + Email)",
+        "Options analysis (basic greeks)",
         "Correlation module",
-        "Automated alerts",
-        "Web dashboard"
+        "Web dashboard (React/FastAPI)",
+        "CVM-compliant audit logging"
       ],
-      "readiness": "0%"
+      "readiness": "85%",
+      "estimated_effort": 13,
+      "rollout_phases": [
+        {
+          "phase": "BETA",
+          "dates": "2026-03-13 to 2026-03-27",
+          "capital_per_trade": 50000,
+          "kpi": "win_rate >= 60%"
+        },
+        {
+          "phase": "RESTRICTED",
+          "dates": "2026-03-27 to 2026-04-13",
+          "capital_per_trade": "50k → 150k (ramp)",
+          "kpi": "win_rate >= 65%"
+        },
+        {
+          "phase": "NORMAL",
+          "dates": "2026-04-13 onwards",
+          "capital_per_trade": 150000,
+          "kpi": "30 days stable + compliance OK"
+        }
+      ]
     },
     "v1.2.0": {
       "planned_date": "2026-04-10",
