@@ -21,16 +21,24 @@
 - Melhorias de performance
 - Validação de dados
 
-#### **v1.1.0** (13/03) ⏳
+#### **v1.1.0** (13/03/2026) 🚀 **PHASE 6: INTEGRATION IN PROGRESS**
 - Dados intradiários (1min, 5min)
-- **Alertas automáticos (Push WebSocket + Email)** ← CONFIRMADO 🎯
-  - Detection Engine (volatilidade >2σ)
-  - Delivery multicanal (latência <30s P95)
-  - Rate limiting + deduplicação (>95%)
-  - Audit log completo (CVM compliant)
+- **Alertas automáticos (Push WebSocket + Email)** ✅ **CODE COMPLETE**
+  - Detection Engine (volatilidade >2σ + padrões técnicos) ✅ 3,900 LOC
+  - Delivery multicanal (latência <30s P95) ✅ WebSocket server ready
+  - Rate limiting + deduplicação (>95%) ✅ Queue system ready
+  - Audit log completo (CVM compliant) ✅ SQLite append-only
+  - **PHASE 6 INTEGRATION (27 FEB - 13 MAR):** ⏳
+    - BDI Integration (Eng Sr) - Hook detectors
+    - WebSocket Server (Eng Sr) - FastAPI on 8765
+    - Email Config (Eng Sr) - SMTP fallback
+    - Backtesting Validation (ML Expert) - Gates ≥85% capture
+    - Performance Benchmarking (ML Expert) - P95 <30s, Memory <50MB
+    - Staging Deployment (Eng Sr) - E2E validation
+    - Final Validation (ML Expert) - All tests passing
   - Operação MANUAL v1.1 (automático em v1.2)
-  - Capital ramp-up: 50k → 80k → 150k
-  - 4 Fases: Beta → Prod Restrita → Prod Normal
+  - Capital ramp-up: 50k → 80k → 150k → 200k+ (pós-Beta)
+  - 4 Fases: Beta (13/03) → Prod Restrita → Prod Normal → Scale
 - Análise de opções
 - Módulo de correlações
 - Dashboard web básico

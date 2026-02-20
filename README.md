@@ -78,11 +78,11 @@ Veja [QUICKSTART.md](docs/QUICKSTART.md) para mais detalhes.
 - **Gestão de Risco**: Position sizing, stop loss dinâmico, drawdown control
 - **🔔 Alertas Automáticos (v1.1)**: Detecção de padrões, entrega multicanal (Push/Email), deduplicação >95%, auditoria CVM
 
-## 🔔 Sistema de Alertas Automáticos (US-004) ✅ IMPLEMENTADO
+## 🔔 Sistema de Alertas Automáticos (US-004) ✅ IMPLEMENTADO + INTEGRAÇÃO PHASE 6
 
-**Status: Implementação Completa - Pronto para Beta (13/03/2026)**
+**Status: Implementation ✅ COMPLETE | Phase 6 Integration 🚀 JUST KICKED OFF**
 
-### Características:
+### Características Produção (v1.1.0):
 - ✅ **Detecção de Volatilidade**: Z-score >2σ com confirmação em 2 velas (<30s P95)
 - ✅ **Detecção de Padrões**: Engulfing, Divergência RSI, Breaks de Suporte/Resistência
 - ✅ **Entrega Multicanal**: WebSocket PRIMARY (<500ms) + Email SMTP SECONDARY (2-8s com retry 3x)
@@ -90,53 +90,88 @@ Veja [QUICKSTART.md](docs/QUICKSTART.md) para mais detalhes.
 - ✅ **Rate Limiting**: STRICT 1 alerta/padrão/minuto
 - ✅ **Auditoria CVM**: SQLite append-only, 7 anos retenção, 3 tabelas normalizadas
 - ✅ **Métricas**: Taxa captura ≥85%, False positive <10%, Throughput 100+/min
-- ✅ **Testes**: 11 testes (8 unit + 3 integration) com >80% cobertura
+- ✅ **Testes**: 18+ testes (8 unit + 3 integration + 7 WebSocket) com 100% type hints
+
+### Phase 6 Integration (🚀 Iniciado 20/02/2026):
+- 🔧 **BDI Integration**: Hook detectors na vela loop (Eng Sr - Task 1)
+- 🌐 **WebSocket Server**: FastAPI server on port 8765 (Eng Sr - Task 2, código ✅)
+- 📧 **Email Config**: Setup SMTP com retry exponencial (Eng Sr - Task 3)
+- 📊 **Backtest Validation**: Historical data validation (ML Expert - Task 2)
+- ⚡ **Performance Benchmarking**: Latency P95 <30s, Memory <50MB (ML Expert - Task 3)
+- **Timeline**: MON 27/02 - THU 13/03 (15 days) → 🎯 **BETA LAUNCH**
 
 ### Documentação:
 - [📋 Sumário de Implementação](IMPLEMENTACAO_US004_SUMARIO.md) - Visão completa do projeto
-- [🔔 API de Alertas](docs/alertas/ALERTAS_API.md) - Protocolo WebSocket + RFC SMTP + exemplos Python/JS
-- [📚 README de Alertas](docs/alertas/ALERTAS_README.md) - Quick start, troubleshooting, métricas
-- [🧠 Especificação ML](docs/alertas/aquivostemp_DETECTION_ENGINE_SPEC.md) - Fórmulas, backtest (88% captura, 12% FP)
+- [📋 Tarefas de Integração](TAREFAS_INTEGRACAO_PHASE6.md) - 8 tarefas paralelas (Eng Sr + ML)
+- [🏗️ Arquitetura Integração](ARQUITETURA_INTEGRACAO_PHASE6.md) - Diagramas e componentes
+- [✅ Checklist Integração](CHECKLIST_INTEGRACAO_PHASE6.md) - Passo-a-passo com gates
+- [🔔 API de Alertas](docs/alertas/ALERTAS_API.md) - Protocolo WebSocket + RFC SMTP
+- [📚 README de Alertas](docs/alertas/ALERTAS_README.md) - Quick start, troubleshooting
+- [🧠 Especificação ML](docs/alertas/aquivostemp_DETECTION_ENGINE_SPEC.md) - Fórmulas, backtest
 
-### Arquitetura:
+### Arquitetura Production (com WebSocket Server - Phase 6):
+
 ```
-MetaTrader 5 (candles)
+MetaTrader 5 (candles M5)
        ↓
 ┌─────────────────────────────────────────┐
-│ Detection Engine (asyncio)              │
-│ • DetectorVolatilidade (z-score)        │
+│ BDI Processor                           │
+│ (Integration Point - Phase 6)           │
+└────────────────┬────────────────────────┘
+                 ↓
+┌─────────────────────────────────────────┐
+│ Detection Engine (asyncio, no-blocking) │
+│ • DetectorVolatilidade (z-score >2σ)    │
 │ • DetectorPadroesTecnico (patterns)     │
+│ • Resultado: AlertaOportunidade entities│
 └────────────────┬────────────────────────┘
                  ↓
 ┌─────────────────────────────────────────┐
 │ FilaAlertas (Queue + Dedup + Rate Limit)│
-│ • asyncio.Queue, SHA256 hash, TTL Cache │
-│ • >95% deduplication                    │
-│ • STRICT rate limiting (1/min/padrão)   │
+│ • asyncio.Queue maxsize 100             │
+│ • Dedup: SHA256 hash + 120s TTL (>95%)  │
+│ • Rate limit: 1 alerta/min/padrão STRICT│
 └────────────────┬────────────────────────┘
                  ↓
 ┌─────────────────────────────────────────┐
-│ AlertaDeliveryManager (Multi-Channel)   │
-│ • WebSocket (PRIMARY <500ms)            │
-│ • Email SMTP (SECONDARY 2-8s + retry)   │
-│ • SMS (TERTIARY v1.2)                   │
+│ WebSocketFilaIntegrador (NEW - Phase 6) │
+│ • Worker loop: Fila → Formatter → WS   │
+│ • Async broadcast para múltiplos clientes│
 └────────────────┬────────────────────────┘
                  ↓
-┌─────────────────────────────────────────┐
-│ AuditoriaAlertas (CVM Compliant)        │
-│ • SQLite append-only                    │
-│ • 3 tabelas: alertas, entrega, ações    │
-│ • 7 anos retenção                       │
-└─────────────────────────────────────────┘
+        ┌────────┴────────┐
+        ↓                 ↓
+  WebSocket Server   AlertaDeliveryManager
+  (FastAPI)         (Fallback)
+  Port 8765         Email SMTP
+  /alertas          (2-8s + retry 3x)
+  broadcast         [v1.2: SMS]
+  <500ms P95        Async non-blocking
+
+
+  Clientes              Audit Log
+  ↓ (Real-time)        ↓
+Operadores        AuditoriaAlertas
+  websocket         (SQLite)
+  receive()         • alertas_audit
+  <500ms            • entrega_audit
+                    • acao_operador_audit
+                    • 7 anos retenção
+                    • Append-only CVM
 ```
 
-### Gateway de Beta:
-- [ ] Code review aprovado (2 reviewers)
-- [ ] 11/11 testes passando
-- [ ] Backtesting ≥85% captura, ≥60% win rate
-- [ ] Latência P95 <30s confirmada
-- [ ] Lint 0 erros (Python + Markdown)
-- [ ] Documentação 100% com exemplos
+### Gateway de Beta (Phase 6):
+- [x] Phase 4: Code implementado (3,900 LOC, 11 testes)
+- [x] Phase 5: Documentation completa (5,000+ LOC docs)
+- [ ] Phase 6: Integration em progresso (MON 27/02 - THU 13/03)
+  - [ ] BDI Integration (Eng Sr - TASK 1)
+  - [ ] WebSocket Server running (Eng Sr - TASK 2, código pronto)
+  - [ ] Backtesting validation (ML - TASK 2, script pronto)
+  - [ ] All 18+ tests passing
+  - [ ] Performance targets met (P95 <30s, Mem <50MB)
+  - [ ] Staging E2E flow OK
+  - [ ] CFO + PO sign-off
+- [ ] BETA LAUNCH: Thursday 13/03/2026 🚀
 - [ ] Integração com BDI processor completa
 - [ ] Ambiente preparado (WebSocket + Email)
 
