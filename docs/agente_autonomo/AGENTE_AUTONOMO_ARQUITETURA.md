@@ -1,8 +1,8 @@
 # 🤖 Arquitetura do Agente Autônomo de Trading
 
-**Versão:** 1.0.0  
-**Data de Atualização:** 20/02/2026  
-**Responsável:** Agente de IA | Especialista em Arquitetura  
+**Versão:** 1.0.0
+**Data de Atualização:** 20/02/2026
+**Responsável:** Agente de IA | Especialista em Arquitetura
 **Status:** ✅ Ativo e em Produção
 
 ---
@@ -128,13 +128,13 @@ docs/agente_autonomo/
 if document_modified(file_path):
     sync_manifest = load_sync_manifest()
     affected_docs = sync_manifest.get_related_docs(file_path)
-    
+
     for doc in affected_docs:
         trigger_review(doc)
         update_version(doc)
         if not sync_check_passed(doc):
             raise SyncError(f"Documento {doc} desincronizado!")
-    
+
     update_sync_timestamp()
     trigger_commit_validation()
 ```

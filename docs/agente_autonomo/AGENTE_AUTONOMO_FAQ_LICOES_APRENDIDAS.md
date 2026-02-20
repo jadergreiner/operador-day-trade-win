@@ -1,6 +1,6 @@
 # ❓ FAQ e Lições Aprendidas
 
-**Versão:** 1.0.0  
+**Versão:** 1.0.0
 **Data:** 20/02/2026
 
 ---

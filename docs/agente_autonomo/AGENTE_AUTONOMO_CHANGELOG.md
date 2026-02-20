@@ -1,7 +1,26 @@
 # 📝 Changelog - Agente Autônomo
 
-**Versão:** 1.0.0  
+**Versão:** 1.0.0
 **Data:** 20/02/2026
+
+---
+
+## [1.1.0] - 2026-03-13 (Planning)
+
+### ✨ Planejado
+- Alertas automáticos em tempo real (Email, SMS, WebSocket)
+- Detection Engine para padrões de volatilidade
+- Queue com deduplicação automática
+- Audit Log completo para rastreabilidade
+- Integração com BDI Processor
+- Dados intradiários (1min, 5min)
+- Análise de opções e IV
+- Módulo de correlações entre pares
+
+### 📝 Documentação
+- História detalhada: `HISTORIA_US-004_ALERTAS.md`
+- Sumário executivo para Product Owner
+- Especificação técnica de arquitetura
 
 ---
 

@@ -1,6 +1,6 @@
 # 📖 Histórias de Usuário - Agente Autônomo
 
-**Versão:** 1.0.0  
+**Versão:** 1.0.0
 **Data:** 20/02/2026
 
 ---
@@ -27,40 +27,50 @@
 ## 📚 User Stories
 
 ### US-001: Como Operador, preciso processar um BDI rapidamente
+
 ```
 Dado que recebi um novo BDI
 Quando executo o script de processamento
 Então obtenho relatório com oportunidades em <5 segundos
 ```
-**Status:** ✅ Concluído  
+
+**Status:** ✅ Concluído
 **Critério de Aceitação:**
 - Relatório gerado em formato HTML
 - Oportunidades priorizadas por ROI/Risco
 - Backlog criado automáticamente
 
 ### US-002: Como Head, preciso validar ROI vs Risco
+
 ```
 Dado um conjunto de oportunidades
 Quando analiso o relatório executivo
 Então vejo expectativa de ROI e alocação de capital
 ```
+
 **Status:** ✅ Concluído
 
 ### US-003: Como Desenvolvedor, preciso sincronizar documentação
+
 ```
 Dado que alterei um documento
 Quando faço commit
 Então sistema valida sincronização de todos os arquivos
 ```
+
 **Status:** 🔄 Em Progresso
 
 ### US-004: Como Operador, preciso receber alertas em tempo real
+
 ```
 Dado um padrão de alta volatilidade
 Quando o padrão é detectado
 Então recebo alerta imediato (email/SMS/push)
 ```
-**Status:** ⏳ Roadmap v1.1
+
+**Status:** 🔄 Refinada para v1.1
+**Documento Detalhado:** `HISTORIA_US-004_ALERTAS.md`
+**ETA:** 13/03/2026 (Sprint v1.1)
 
 ---
 
