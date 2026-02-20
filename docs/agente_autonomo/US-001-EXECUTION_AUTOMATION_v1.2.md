@@ -1,9 +1,9 @@
 # 📋 US-001: Execução Automática de Trades com Validação ML
 
-**Versão:** 1.2.0  
-**Data:** 20/02/2026  
-**Status:** ⏳ IN DEVELOPMENT (Sprint 1-4: 27/02 - 10/04)  
-**Prioridade:** P0 (Blocker para monetização)  
+**Versão:** 1.2.0
+**Data:** 20/02/2026
+**Status:** ⏳ IN DEVELOPMENT (Sprint 1-4: 27/02 - 10/04)
+**Prioridade:** P0 (Blocker para monetização)
 **Estimativa:** 160h Eng Sr + 140h ML Expert
 
 ---
@@ -338,6 +338,6 @@ SPRINT 4 (20/03 - 10/04): UAT & Launch
 
 ---
 
-**Próximo Checkpoint:** 05/03/2026 EOD  
+**Próximo Checkpoint:** 05/03/2026 EOD
 **Gate Critério:** Features + Risk rules + Baseline ML F1 > 0.65
 
