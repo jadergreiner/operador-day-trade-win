@@ -75,3 +75,4 @@ htmlcov/
 data/db/*.db
 data/raw/
 data/processed/
+data/fechamento_diario/

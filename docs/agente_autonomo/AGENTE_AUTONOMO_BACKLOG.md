@@ -27,6 +27,8 @@
 - [ ] Módulo de correlações entre pares
 - [ ] Dashboard de monitoramento
 - [ ] Alertas automáticos
+- [x] Prompt de fechamento diário (`prompts/fechamento_diario.py`)
+- [x] Schema de validação (`prompts/schema_fechamento_diario.json`)
 
 #### ⏳ Próximas (Março 2026)
 
@@ -34,6 +36,28 @@
 - [ ] Machine Learning para padrões
 - [ ] Processamento distribuído
 - [ ] WebSocket em tempo real
+- [ ] Integração com GitHub Issues (tags automáticas)
+- [ ] Dashboard de progresso do Agente Autônomo
+
+---
+
+## 🗂️ Fechamento Diário — Itens de Melhoria
+
+### Sprint Atual — Fevereiro 2026 (capturados via `fechamento_diario.py`)
+
+#### 🔴 Alta Prioridade
+
+- [ ] **[FEAT-001]** Integrar `fechamento_diario.py` com dados reais do
+  MT5 _(categoria: funcional, esforço: medio)_
+- [ ] **[TECH-001]** Adicionar suporte a `--modo interativo` no script
+  de fechamento _(categoria: tecnico, esforço: medio)_
+
+#### 🟡 Média Prioridade
+
+- [ ] **[GOV-001]** Automatizar atualização de checksums no
+  `SYNC_MANIFEST.json` via CI/CD _(categoria: governanca, esforço: medio)_
+- [ ] **[ML-001]** Capturar padrões de setup em aprendizagem por reforço
+  via `fechamento_diario.py` _(categoria: ml_rl, esforço: grande)_
 
 ---
 
