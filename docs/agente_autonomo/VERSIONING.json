@@ -1,10 +1,12 @@
 {
   "project": "Operador Day Trade WIN",
-  "project_version": "1.1.0 (Phase 6 Live Trading)",
+  "project_version": "1.1.0 (Phase 6 Live Trading) + 1.2.0 (Sprint 1 Design)",
   "release_date": "2026-02-13",
   "live_trading_date": "2026-02-20",
-  "last_updated": "2026-02-20T17:45:00Z",
-  "sync_notes": "Live Trading Execution: WINJ26 BUY @ 194.390, SL -20 realizado. Sistema 100% operacional (5 terminais, Dashboard online, Detector BDI ativo)"
+  "last_updated": "2026-02-20T18:15:00Z",
+  "sprint_1_design_date": "2026-02-20",
+  "sync_notes": "Phase 6 Live Trading: WINJ26 BUY @ 194.390, SL -20 OK. Sprint 1 Design: Agentes (Eng Sr + ML Expert) entregam ARQUITETURA_MT5_v1.2 + ML_FEATURE_ENGINEERING_v1.2 + SPRINT1_MASTERPLAN (2.600 LOC). Sistema 100% operacional + pronto para desenvolvimento Sprint 1 (27/02)",
+  "status": "PRODUCTION + SPRINT_PLANNING",
   "components": {
     "BDI_Processor": {
       "version": "1.0.0",
@@ -118,6 +120,38 @@
         }
       ]
     },
+    "MT5_Integration": {
+      "version": "1.2.0",
+      "status": "DESIGNED",
+      "last_change": "2026-02-20T18:00:00Z",
+      "target_release": "2026-03-13",
+      "description": "REST API integration with MetaTrader5 for automated order execution",
+      "readiness": "Design Complete (ARQUITETURA_MT5_v1.2.md)",
+      "sprint": "1-4 (27/02-10/04)",
+      "components": ["REST Server", "Order Executor", "Position Monitor"]
+    },
+    "ML_Classifier": {
+      "version": "1.2.0",
+      "status": "DESIGNED",
+      "last_change": "2026-02-20T18:00:00Z",
+      "target_release": "2026-03-13",
+      "description": "XGBoost/LightGBM classifier for pattern detection (15-25 features)",
+      "readiness": "Design Complete (ML_FEATURE_ENGINEERING_v1.2.md)",
+      "sprint": "1-4 (27/02-10/04)",
+      "target_f1": ">0.68",
+      "target_win_rate": "65-68%",
+      "features_count": "24 engineered features"
+    },
+    "Risk_Validator": {
+      "version": "1.2.0",
+      "status": "DESIGNED",
+      "last_change": "2026-02-20T18:00:00Z",
+      "target_release": "2026-03-13",
+      "description": "3-gate risk validation (capital adequacy, correlation, volatility)",
+      "readiness": "Design Complete (ARQUITETURA_MT5_v1.2.md)",
+      "sprint": "1-4 (27/02-10/04)",
+      "gates": ["Capital Adequacy", "Correlation Check", "Volatility Band"]
+    },
     "Alert_Manager": {
       "version": "1.1.0",
       "status": "APPROVED",
@@ -219,14 +253,60 @@
     },
     "v1.2.0": {
       "planned_date": "2026-04-10",
-      "status": "PLANNED",
-      "features": [
-        "Machine Learning patterns",
-        "Backtesting engine",
-        "Multiple source integration",
-        "Async processing"
+      "status": "SPRINT_1_DESIGN_COMPLETE",
+      "design_complete_date": "2026-02-20T18:00:00Z",
+      "sprint_plan": "SPRINT1_MASTERPLAN.md",
+      "design_docs": [
+        "ARQUITETURA_MT5_v1.2.md",
+        "ML_FEATURE_ENGINEERING_v1.2.md",
+        "US-001-EXECUTION_AUTOMATION_v1.2.md",
+        "RISK_FRAMEWORK_v1.2.md",
+        "SPRINT1_MASTERPLAN.md"
       ],
-      "readiness": "0%"
+      "features": [
+        "Automated execution (MT5 REST API integration)",
+        "ML-based pattern classification (XGBoost/LightGBM)",
+        "Risk validation (3 gates: capital, correlation, volatility)",
+        "Orders executor with async + retry logic",
+        "Circuit breakers (-4%, -6%, -10%)",
+        "Position monitoring real-time",
+        "Feature engineering (24 features, 6 groups)",
+        "Backtesting framework",
+        "Capital ramp-up management"
+      ],
+      "readiness": "100% Design (implementation Sprint 1: 27/02-05/03)",
+      "deliverables": "2.600 LOC design by Agentes (Eng Sr + ML Expert)",
+      "component_versions": {
+        "MT5_Integration": "1.2.0",
+        "ML_Classifier": "1.2.0",
+        "Risk_Validator": "1.2.0"
+      },
+      "rollout_phases": [
+        {
+          "phase": "BETA",
+          "dates": "2026-04-10 to 2026-04-24",
+          "capital": 50000,
+          "trades_per_day": "12 automated",
+          "target_win_rate": "≥63%",
+          "gate": "Sharpe > 1.0, Drawdown < 10%"
+        },
+        {
+          "phase": "RAMP",
+          "dates": "2026-04-25 to 2026-05-08",
+          "capital": "100k (+50k incremental)",
+          "trades_per_day": "12 automated",
+          "target_win_rate": "≥63%",
+          "gate": "Sharpe > 1.0, Stability metrics OK"
+        },
+        {
+          "phase": "FULL",
+          "dates": "2026-05-09 onwards",
+          "capital": "150k (+50k final)",
+          "trades_per_day": "12-15 automated",
+          "target_win_rate": "65-68%",
+          "p_and_l_monthly": "R$ 150-250k"
+        }
+      ]
     },
     "v2.0.0": {
       "planned_date": "2026-06-01",

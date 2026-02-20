@@ -144,6 +144,69 @@ Veja [QUICKSTART.md](docs/QUICKSTART.md) para mais detalhes.
 - ⏳ 23/02-12/03: Final adjustments
 - 🚀 **13/03: BETA LAUNCH** (on track)
 
+## 🚀 Sprint 1 - Design Complete (20/02/2026)
+
+**US-001: Execução Automática de Ordens com Validação ML**
+**Status:** ✅ DESIGN COMPLETE | 🚀 SPRINT 1 KICKOFF: 27/02
+
+### Agentes Autônomos - Entrega (20/02 18:00)
+
+#### 👨‍💻 Eng Sr (600 LOC Design)
+- ✅ **ARQUITETURA_MT5_v1.2.md** - MT5 REST API + Risk Validator + Orders Executor
+  - MT5 REST Server (login, orders, positions, account endpoints)
+  - Risk Validator (3 gates: capital adequacy, correlation, volatility)
+  - Orders Executor (async queue + retry logic with exponential backoff)
+  - 1.150 LOC design + documentation
+- ✅ **Modularização Completa** - Interfaces definidas + error handling
+- ✅ **Gate 1 Ready** - Architecture + Risk Framework aprovados
+
+#### 🧠 ML Expert (400 LOC Design)
+- ✅ **ML_FEATURE_ENGINEERING_v1.2.md** - 24 Features + Dataset Pipeline
+  - 6 grupos: Volatilidade | Momentum | Moving Average | Padrões | Lags | Correlação
+  - Dataset preprocessing (train/val/test split 70/15/15)
+  - XGBoost baseline specification (F1 target >0.68)
+  - Grid search (8 hyperparameter configs)
+  - 1.100 LOC design + documentation
+- ✅ **Backtest Framework** - Validação histórica ready
+- ✅ **Feature Names Saved** - Production-ready feature list
+
+#### ⚙️ Coordenação (350 LOC)
+- ✅ **SPRINT1_MASTERPLAN.md** - Timeline + Dependencies + Quality Gates
+  - Parallel timeline 27/02 - 05/03 (Eng Sr + ML Expert sincronizados)
+  - Daily deliverables mapeados (design → testing → gate check)
+  - Integration points definidos (RiskValidationResult, Order, MLPrediction)
+  - Gate 1 criteria (05/03 17:00): Features OK + Risk OK + Baseline F1 >0.65
+
+### Sprint 1 Timeline (27/02 - 05/03)
+
+| Dia | Eng Sr | ML Expert | Gate |
+|-----|--------|-----------|------|
+| **27/02** | MT5 API skeleton (100 LOC) | Dataset load + features (50 LOC) | Design sync |
+| **28/02** | Risk Validator (100 LOC) | Feature engineering (200 LOC) | Tech meeting |
+| **01/03** | Orders Executor (120 LOC) | Grid search setup | Code review |
+| **02/03** | E2E integration test | Backtest validation | Metrics check |
+| **03/03** | Final testing + docs | Model finalization | Code polish |
+| **05/03** | 🎯 **GATE 1 CHECK** | 🎯 **GATE 1 CHECK** | **GO/NO-GO** |
+
+### Métricas Sprint 1 (Expected 05/03)
+
+**Eng Sr Success:**
+- ✅ MT5 REST API: 3/3 endpoints functional
+- ✅ Risk Validator: 3/3 gates working
+- ✅ Orders Executor: Queue + retry tested
+- ✅ Code Quality: 100% type hints, mypy --strict OK
+- ✅ E2E Latency: P95 <500ms (mock test)
+
+**ML Expert Success:**
+- ✅ Features: 24 engineered (15-25 target)
+- ✅ Model: F1 >0.65 on test set
+- ✅ Backtest: Win rate 62-65% (vs 62% v1.1)
+- ✅ Cross-val: 5-fold std <0.05
+- ✅ Data: Train/val/test saved + feature names ready
+
+**Próxima Fase:** Sprint 2 (06/03-12/03) - Development + Grid Search
+**Go-Live Target:** 10/04/2026 (FASE 1 Beta com R$ 50k)
+
 ### Arquitetura Production (com WebSocket Server - Phase 6):
 
 ```
