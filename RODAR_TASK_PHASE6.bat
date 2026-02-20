@@ -1,37 +1,36 @@
 @echo off
 REM ============================================================================
-REM Operador Quântico - Phase 6 Task Runner (Executar Tasks Específicas)
+REM Operador Quantum - Phase 6 Task Runner (Executar Tasks Especificas)
 REM ============================================================================
 REM Arquivo: RODAR_TASK_PHASE6.bat
-REM Propósito: Menu para rodar tasks individuais
+REM Proposito: Menu para rodar tasks individuais
 REM Data: 20/02/2026
 REM ============================================================================
 
 setlocal enabledelayedexpansion
-chcp 65001 > nul
 color 0A
 
 cls
 echo.
-echo ╔════════════════════════════════════════════════════════════════════════╗
-echo ║                                                                        ║
-echo ║       🎯 OPERADOR QUÂNTICO - PHASE 6 TASK RUNNER 🎯                   ║
-echo ║                                                                        ║
-echo ║   Executar tasks individuais de Eng Sr ou ML Expert                    ║
-echo ║                                                                        ║
-echo ╚════════════════════════════════════════════════════════════════════════╝
+echo ================================================================================
+echo                                                                              
+echo          OPERADOR QUANTUM - PHASE 6 TASK RUNNER                           
+echo                                                                              
+echo    Executar tasks individuais de Eng Sr ou ML Expert                        
+echo                                                                              
+echo ================================================================================
 echo.
 
-echo ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-echo TAREFAS DISPONÍVEIS
-echo ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo ================================================================================
+echo TAREFAS DISPONIVEIS
+echo ================================================================================
 echo.
 
-echo [VALIDAÇÃO]
-echo  0 - Validar Código (mypy + pytest)
+echo [VALIDACAO]
+echo  0 - Validar Codigo (mypy + pytest)
 echo  1 - Rodar Testes (pytest)
 echo  2 - Type Hints Check (mypy)
-echo  3 - Importações Check (test_imports.py)
+echo  3 - Importacoes Check (test_imports.py)
 echo.
 
 echo [ENG SR - TAREFAS]
@@ -48,11 +47,11 @@ echo  22 - INTEGRATION-ML-003: Performance Benchmarking (2-3h)
 echo  23 - INTEGRATION-ML-004: Final Validation (1-2h)
 echo.
 
-echo [UTILITÁRIOS]
+echo [UTILITARIOS]
 echo  30 - Iniciar WebSocket Server (uvicorn)
 echo  31 - Rodar Backtest (scripts/backtest_detector.py)
 echo  32 - Ver Git Status
-echo  33 - Ver Git Log (últimos 10 commits)
+echo  33 - Ver Git Log (ultimos 10 commits)
 echo.
 
 echo [SAIR]
@@ -86,18 +85,21 @@ if "%TASK%"=="99" goto EXIT
 goto INVALID
 
 REM ============================================================================
-REM TAREFAS DE VALIDAÇÃO
+REM TAREFAS DE VALIDACAO
 REM ============================================================================
 
 :VALIDATE_ALL
 echo.
 echo [01/03] Rodando testes...
+set PYTHONPATH=.
 python -m pytest tests/ -q
 echo.
 echo [02/03] Validando type hints...
+set PYTHONPATH=.
 python -m mypy src/application/services/ --ignore-missing-imports --no-error-summary
 echo.
-echo [03/03] Verificando importações...
+echo [03/03] Verificando importacoes...
+set PYTHONPATH=.
 python scripts/test_imports.py
 echo.
 echo ✅ Validação concluída!
@@ -107,27 +109,30 @@ goto END
 :RUN_TESTS
 echo.
 echo Rodando testes com pytest...
+set PYTHONPATH=.
 python -m pytest tests/ -v --tb=short
 echo.
-echo ✅ Testes concluídos!
+echo [OK] Testes concluidos!
 pause
 goto END
 
 :RUN_MYPY
 echo.
 echo Validando type hints com mypy...
+set PYTHONPATH=.
 python -m mypy src/ --ignore-missing-imports
 echo.
-echo ✅ Type hints check concluído!
+echo [OK] Type hints check concluido!
 pause
 goto END
 
 :CHECK_IMPORTS
 echo.
-echo Verificando importações...
+echo Verificando importacoes...
+set PYTHONPATH=.
 python scripts/test_imports.py
 echo.
-echo ✅ Importações check concluído!
+echo [OK] Importacoes check concluido!
 pause
 goto END
 
@@ -137,19 +142,20 @@ REM ============================================================================
 
 :ENG_001
 echo.
-echo 🔧 INTEGRATION-ENG-001: BDI Integration (3-4h)
+echo [ENG-001] INTEGRATION-ENG-001: BDI Integration (3-4h)
 echo.
 echo Checklist:
 echo  1. Encontre processador_bdi.py em src/application/services/
 echo  2. Importe detectors (DetectorVolatilidade, DetectorPadroesTecnico)
 echo  3. Chame detectors no loop de processamento de velas
-echo  4. Adicione alertas à FilaAlertas
+echo  4. Adicione alertas a FilaAlertas
 echo  5. Teste com dados de vela
 echo.
-echo Documentação:
-echo  CHECKLIST_INTEGRACAO_PHASE6.md (seção Eng Sr, Task 1)
+echo Documentacao:
+echo  CHECKLIST_INTEGRACAO_PHASE6.md (secao Eng Sr, Task 1)
 echo.
 echo Comando para validar:
+set PYTHONPATH=.
 python scripts/test_imports.py
 echo.
 pause
@@ -157,22 +163,23 @@ goto END
 
 :ENG_002
 echo.
-echo 🌐 INTEGRATION-ENG-002: WebSocket Server (2-3h)
+echo [ENG-002] INTEGRATION-ENG-002: WebSocket Server (2-3h)
 echo.
-echo Código pronto em: src/interfaces/websocket_server.py
+echo Codigo pronto em: src/interfaces/websocket_server.py
 echo.
 echo Iniciando servidor WebSocket na porta 8765...
 echo.
+set PYTHONPATH=.
 python -m uvicorn src.interfaces.websocket_server:app --host 0.0.0.0 --port 8765 --reload
 goto END
 
 :ENG_003
 echo.
-echo 📧 INTEGRATION-ENG-003: Email Configuration (1-2h)
+echo [ENG-003] INTEGRATION-ENG-003: Email Configuration (1-2h)
 echo.
 echo Checklist:
 echo  1. Configure credenciais SMTP em config/alertas.yaml
-echo  2. Use variáveis de ambiente (EMAIL_USER, EMAIL_PASS, SMTP_SERVER)
+echo  2. Use variaveis de ambiente (EMAIL_USER, EMAIL_PASS, SMTP_SERVER)
 echo  3. Teste com test_alerta_delivery.py
 echo  4. Verifique fallback (WebSocket nao deve bloquear)
 echo.
@@ -181,14 +188,14 @@ goto END
 
 :ENG_004
 echo.
-echo 🚀 INTEGRATION-ENG-004: Staging Deployment (2-3h)
+echo [ENG-004] INTEGRATION-ENG-004: Staging Deployment (2-3h)
 echo.
 echo Checklist:
-echo  1. Faça commit do código: git commit -am "feat: ..."
+echo  1. Faca commit do codigo: git commit -am "feat: ..."
 echo  2. Push para branch testing: git push origin testing
-echo  3. Deploy em staging (instruções no README)
+echo  3. Deploy em staging (instrucoes no README)
 echo  4. Execute testes E2E
-echo  5. Obtém aprovação CFO/PO
+echo  5. Obtem aprovacao CFO/PO
 echo.
 pause
 goto END
@@ -199,10 +206,11 @@ REM ============================================================================
 
 :ML_001
 echo.
-echo 📊 INTEGRATION-ML-001: Backtest Setup (2-3h)
+echo [ML-001] INTEGRATION-ML-001: Backtest Setup (2-3h)
 echo.
 echo Iniciando backtest detector...
 echo.
+set PYTHONPATH=.
 python scripts/backtest_detector.py
 echo.
 echo Resultado salvo em: backtest_results.json
@@ -212,7 +220,7 @@ goto END
 
 :ML_002
 echo.
-echo ✅ INTEGRATION-ML-002: Backtest Validation (2-3h)
+echo [ML-002] INTEGRATION-ML-002: Backtest Validation (2-3h)
 echo.
 echo Checklist:
 echo  1. Verifique resultados em backtest_results.json
@@ -228,21 +236,21 @@ goto END
 
 :ML_003
 echo.
-echo ⚡ INTEGRATION-ML-003: Performance Benchmarking (2-3h)
+echo [ML-003] INTEGRATION-ML-003: Performance Benchmarking (2-3h)
 echo.
 echo Checklist:
 echo  1. Instale ferramentas: pip install memory_profiler line_profiler
 echo  2. Profile com cProfile: python -m cProfile -s cumulative src/main.py
-echo  3. Profile memória: python -m memory_profiler src/main.py
-echo  4. Alvo: P95 latency ^< 30s, Memory ^< 50MB
-echo  5. Otimize se necessário
+echo  3. Profile memoria: python -m memory_profiler src/main.py
+echo  4. Alvo: P95 latency less than 30s, Memory less than 50MB
+echo  5. Otimize se necessario
 echo.
 pause
 goto END
 
 :ML_004
 echo.
-echo 🎯 INTEGRATION-ML-004: Final Validation (1-2h)
+echo [ML-004] INTEGRATION-ML-004: Final Validation (1-2h)
 echo.
 echo Checklist:
 echo  1. Rode suite completa de testes: pytest tests/ -v
@@ -256,28 +264,30 @@ pause
 goto END
 
 REM ============================================================================
-REM UTILITÁRIOS
+REM UTILIDADES
 REM ============================================================================
 
 :WEBSOCKET
 echo.
-echo 🌐 Iniciando WebSocket Server...
+echo Iniciando WebSocket Server...
 echo     Porta: 8765
 echo     URL: ws://localhost:8765/alertas
 echo     Health: http://localhost:8765/health
 echo     Metrics: http://localhost:8765/metrics
 echo.
 echo Parando servidor (CTRL+C)...
+set PYTHONPATH=.
 python -m uvicorn src.interfaces.websocket_server:app --host 0.0.0.0 --port 8765 --reload
 goto END
 
 :BACKTEST
 echo.
-echo 📊 Executando Backtest Detector...
+echo Executando Backtest Detector...
 echo.
+set PYTHONPATH=.
 python scripts/backtest_detector.py
 echo.
-echo ✅ Backtest concluído!
+echo [OK] Backtest concluido!
 echo    Resultado: backtest_results.json
 echo.
 pause
@@ -285,7 +295,7 @@ goto END
 
 :GIT_STATUS
 echo.
-echo 📋 Git Status:
+echo Git Status:
 echo.
 git status
 echo.
@@ -294,7 +304,7 @@ goto END
 
 :GIT_LOG
 echo.
-echo 📜 Últimos 10 commits:
+echo Ultimos 10 commits:
 echo.
 git log --oneline -10
 echo.
@@ -307,7 +317,7 @@ REM ============================================================================
 
 :INVALID
 echo.
-echo ❌ Opção inválida. Tente novamente.
+echo [ERRO] Opcao invalida. Tente novamente.
 echo.
 pause
 cls
@@ -315,7 +325,7 @@ goto :0
 
 :EXIT
 echo.
-echo 👋 Saindo...
+echo Saindo...
 exit /b 0
 
 :END
