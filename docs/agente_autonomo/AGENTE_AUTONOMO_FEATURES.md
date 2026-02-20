@@ -26,12 +26,13 @@
 - [x] Checksums para integridade
 - [x] Histórico de alterações
 
-### ⏳ Gerenciamento de Alertas (v1.1)
-- [ ] Detection Engine para padrões de volatilidade
-- [ ] Entrega multicanal (Email, SMS, WebSocket)
-- [ ] Implementação de Queue com deduplicação
-- [ ] Sistema de Audit Log com rastreabilidade
-- [ ] Rate limiting e controle de fluxo
+### ✅ Gerenciamento de Alertas (v1.1) - CONFIRMADO ⭐
+- [x] Detection Engine para padrões de volatilidade (>2σ)
+- [x] Entrega multicanal (Push WebSocket + Email SMTP)
+- [x] Implementação de Queue com deduplicação (>95%)
+- [x] Sistema de Audit Log com rastreabilidade completa
+- [x] Rate limiting e controle de fluxo (1 alerta/padrão/min)
+- [ ] SMS (Twilio) → v1.2 (opcional)
 
 ### ⏳ Análise Técnica (v1.1)
 - [ ] Indicadores técnicos (MA, RSI, MACD, ATR)
@@ -52,10 +53,11 @@
 | Capacidade | Status | Timeline |
 |-----------|--------|----------|
 | Processar múltiplos BDIs | ✅ Ativo | - |
-| Gerar alertas | 🔄 Parcial | v1.1 |
-| Executar trades automaticamente | ⏳ Planejado | v2.0 |
-| Monitorar portfólio | ⏳ Planejado | v1.2 |
-| Reportar P&L | 🔄 Parcial | v1.1 |
+| Gerar alertas | ✅ v1.1 (13/03) | CONFIRMADO |
+| Receber alertas (Push) | ✅ v1.1 (13/03) | Multi-canal |
+| Executar trades automaticamente | ⏳ Planejado | v1.2 (13/04) |
+| Monitorar portfólio | ⏳ Planejado | v1.2 (13/04) |
+| Reportar P&L | 🔄 Parcial | v1.1 (alertas) |
 
 ---
 

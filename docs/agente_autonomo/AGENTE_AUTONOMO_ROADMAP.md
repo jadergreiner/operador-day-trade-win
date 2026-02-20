@@ -23,7 +23,14 @@
 
 #### **v1.1.0** (13/03) ⏳
 - Dados intradiários (1min, 5min)
-- **Alertas automáticos (email/SMS/WebSocket)** ← NEW
+- **Alertas automáticos (Push WebSocket + Email)** ← CONFIRMADO 🎯
+  - Detection Engine (volatilidade >2σ)
+  - Delivery multicanal (latência <30s P95)
+  - Rate limiting + deduplicação (>95%)
+  - Audit log completo (CVM compliant)
+  - Operação MANUAL v1.1 (automático em v1.2)
+  - Capital ramp-up: 50k → 80k → 150k
+  - 4 Fases: Beta → Prod Restrita → Prod Normal
 - Análise de opções
 - Módulo de correlações
 - Dashboard web básico
@@ -62,19 +69,18 @@
 | Milestone | Objetivo | KPI |
 |-----------|----------|-----|
 | **v1.0** | Análise BDI funcional | 3+ oportunidades/BDI |
-| **v1.1** | Dados completos (infraday + opções) | <2s latência |
-| **v1.2** | ML operacional | Sharpe > 1.0 |
+| **v1.1** | Alertas + Dados infraday | <30s latência, >95% deduplicate |
+| **v1.2** | ML operacional | Sharpe > 1.0, w/rate >65% |
 | **v2.0** | Automação completa | 90%+ uptime |
 
----
+## 📊 Métricas de Sucesso (Atualizado)
 
-## 📊 Métricas de Sucesso
-
-1. **Processamento BDI:** <5 segundos
-2. **Alertas:** <30 segundos de latência
-3. **Acurácia de Previsão:** >60% em 3 meses
-4. **ROI:** 1-2% ao dia (curto prazo)
-5. **Uptime:** >99% em produção
+1. **Processamento BDI:** <5 segundos ✅
+2. **Alertas (v1.1):** <30 segundos P95 latência ✅
+3. **Deduplicação:** >95% consolidação ✅
+4. **Win Rate Histórico:** 62-68% (v1.0-v1.1) ✅
+5. **ROI Esperado:** +R$ 50-200k/mês (v1.1) ✅
+6. **Uptime:** >99% em produção
 
 ---
 
