@@ -56,16 +56,16 @@ class ProcessadorBDI:
             if close is None:
                 logger.warning(f"Vela sem close para {ativo}")
                 return
-            
+
             # Converter close para Decimal se necessário
             if isinstance(close, float):
                 close = Decimal(str(close))
             elif not isinstance(close, Decimal):
                 close = Decimal(str(float(close)))
-            
+
             # Usar timestamp atual se não fornecido
             ts = datetime.fromtimestamp(timestamp) if timestamp else datetime.now()
-            
+
             logger.debug(f"Processando vela {ativo} - close: {close}")
 
             # Detector de volatilidade

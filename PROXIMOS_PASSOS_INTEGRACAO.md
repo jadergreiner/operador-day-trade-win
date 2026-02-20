@@ -1,8 +1,8 @@
 # 🎯 PRÓXIMOS PASSOS - INTEGRAÇÃO US-004 (Semana 27/02)
 
-**Responsável:** Engenheiro Sr (Integration Lead)  
-**Deadline:** 13/03/2026 (15 dias)  
-**Status:** Código 100% Pronto para Integração  
+**Responsável:** Engenheiro Sr (Integration Lead)
+**Deadline:** 13/03/2026 (15 dias)
+**Status:** Código 100% Pronto para Integração
 
 ---
 
@@ -37,7 +37,7 @@
   ```python
   async def processar_vela(self, candle):
       # ... BDI analysis ...
-      
+
       # Novo: Detecção de alertas
       alerta_vol = self.detector_vol.analisar_vela(
           symbol=candle.symbol,
@@ -46,11 +46,11 @@
       )
       if alerta_vol:
           await self.fila.enfileirar(alerta_vol)
-      
+
       alerta_padroes = self.detector_padroes.detectar_engulfing(candle)
       if alerta_padroes:
           await self.fila.enfileirar(alerta_padroes)
-      
+
       # Background: processar fila
       asyncio.create_task(self.fila.processar_fila(self.delivery))
   ```
@@ -64,13 +64,13 @@
   # src/infrastructure/config/alerta_config.py
   from pydantic import BaseModel, validator
   import yaml
-  
+
   class AlertaConfig(BaseModel):
       habilitado: bool
       detection: DetectionConfig
       delivery: DeliveryConfig
       # ... rest of config schema
-  
+
   def load_config(path="config/alertas.yaml"):
       with open(path) as f:
           data = yaml.safe_load(f)
@@ -93,9 +93,9 @@
   from fastapi import FastAPI, WebSocket, WebSocketDisconnect
   from fastapi.security import HTTPBearer
   import uvicorn
-  
+
   app = FastAPI()
-  
+
   @app.websocket("/alertas")
   async def websocket_endpoint(websocket: WebSocket):
       await websocket.accept()
@@ -107,11 +107,11 @@
               await websocket.send_json(alerta_json)
       except WebSocketDisconnect:
           print(f"Client disconnected")
-  
+
   @app.get("/health")
   async def health_check():
       return {"status": "ok"}
-  
+
   if __name__ == "__main__":
       uvicorn.run(app, host="0.0.0.0", port=8765)
   ```
@@ -153,7 +153,7 @@
 - [ ] Initialize SQLite:
   ```python
   from src.infrastructure.database.auditoria_alertas import AuditoriaAlertas
-  
+
   auditoria = AuditoriaAlertas(db_path="data/db/alertas_audit.db")
   auditoria.criar_tabelas()  # Creates alertas_audit, entrega_audit, acao_operador_audit
   ```
@@ -218,16 +218,16 @@ Apenas se profiling indicar bottleneck:
 - [ ] Create `RUNBOOK.md` (how to start/stop services)
   ```markdown
   # Runbook US-004 Alertas
-  
+
   ## Start
   1. Start BDI: `python -m src.interfaces.cli.bdi_cli`
   2. Start WebSocket: `python -m src.interfaces.websocket_server`
   3. Verify health: `curl http://localhost:8765/health`
-  
+
   ## Stop
   1. Ctrl+C BDI process
   2. Ctrl+C WebSocket server
-  
+
   ## Troubleshoot
   - Alertas not appearing: Check `config/alertas.yaml` (habilitado: true)
   - Email not sending: Check SMTP credentials
@@ -237,19 +237,19 @@ Apenas se profiling indicar bottleneck:
 - [ ] Create `TROUBLESHOOT.md` (common issues)
   ```markdown
   # Troubleshooting US-004
-  
+
   Q: Alertas não aparecem?
   A: Verifique:
      1. `config/alertas.yaml` - habilitado: true
      2. BDI processor está rodando? `ps aux | grep bdi`
      3. Logs: `tail -f logs/alertas.log`
-  
+
   Q: Email não chega?
   A: Verifique:
      1. SMTP credenciais em .env
      2. MailHog UI: http://localhost:8025
      3. Firewall: 0.0.0.0:1025 abierto?
-  
+
   Q: WebSocket desconecta?
   A: Verifique:
      1. Servidor rodando? `curl -i http://localhost:8765/health`
@@ -383,11 +383,11 @@ TOTAL: 18 files, 4,850+ linhas de código + documentação
 Semana 1 (27 FEV - 06 MAR):
   Mon-Tue:  Code review + validation
   Wed-Fri:  BDI integration
-  
+
 Semana 2 (06 - 13 MAR):
   Mon-Wed:  Config + servers setup
   Thu-Fri:  Final testing + documentation
-  
+
 Semana 3 (13 MAR):
   🚀 GO-LIVE BETA (13/03)
   📊 Daily monitoring (13-27/03)
@@ -396,16 +396,16 @@ Semana 3 (13 MAR):
 
 ---
 
-**Status:** ✅ **PRONTO PARA INTEGRAÇÃO**  
-**Timeline:** 13 dias até BETA launch  
-**Risk:** BAIXO (código 100% testado, arquitetura validada)  
+**Status:** ✅ **PRONTO PARA INTEGRAÇÃO**
+**Timeline:** 13 dias até BETA launch
+**Risk:** BAIXO (código 100% testado, arquitetura validada)
 **Sucesso:** ALTO (métricas excedem expectativas)
 
 *Comece integração imediatamente para não perder o timeline!*
 
 ---
 
-**Próximas ações:**  
+**Próximas ações:**
 1. ✅ Ler este documento
 2. ✅ Clonar arquivos necessários para estrutura de projeto
 3. ✅ Setup ambiente dev (Python 3.11+, dependências)

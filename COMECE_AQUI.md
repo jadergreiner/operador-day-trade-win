@@ -149,6 +149,6 @@ Comece por aqui:
 
 **Próxima ação:** Clique no documento recomendado para seu papel ↑
 
-*20 de Fevereiro de 2026*  
-*Projeto completo, pronto para integração*  
+*20 de Fevereiro de 2026*
+*Projeto completo, pronto para integração*
 *Vamos lá! 🚀*

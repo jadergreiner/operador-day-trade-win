@@ -1,0 +1,23 @@
+{
+  "threshold_sigma": 1.0,
+  "metricas": {
+    "velas_processadas": 17280,
+    "alertas_gerados": 148,
+    "oportunidades_esperadas": 145,
+    "matches": 137,
+    "false_positives": 11,
+    "false_negatives": 8
+  },
+  "taxas": {
+    "taxa_captura_pct": 94.48,
+    "taxa_false_positive_pct": 7.43,
+    "win_rate_estimado_pct": 62.0
+  },
+  "gates_validacao": {
+    "captura_minima_85pct": true,
+    "fp_maxima_10pct": true,
+    "win_rate_minimo_60pct": true
+  },
+  "status": "PASS",
+  "timestamp": "2026-02-20T14:31:00.328569"
+}

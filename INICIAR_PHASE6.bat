@@ -186,7 +186,7 @@ echo.
 echo  1 - Iniciar AGORA (Recomendado para DESENVOLVIMENTO)
 echo       Abre 3 terminais automaticamente e inicia agentes agora
 echo       Eng Sr: BDI Integration
-echo       ML Expert: Backtest Setup  
+echo       ML Expert: Backtest Setup
 echo       Tempo: 3-4h paralelo
 echo.
 echo  2 - Agendar para SEGUNDA 27/02 (Recomendado para PRODUCAO)

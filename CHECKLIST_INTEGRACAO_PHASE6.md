@@ -249,7 +249,7 @@ Success: Email delivers <8s with retry logic
     [ ] Check relative imports
 
 [ ] Git commit
-    [ ] git add -A  
+    [ ] git add -A
     [ ] git commit -m "feat: Backtest setup com dados históricos"
     [ ] git push
 

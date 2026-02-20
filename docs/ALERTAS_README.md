@@ -47,11 +47,11 @@ for vela in dados_mt5:
         close=vela.close,
         timestamp=vela.timestamp
     )
-    
+
     # Enfileira com dedup
     if alerta:
         await fila.enfileirar(alerta)
-    
+
     # Processa fila em paralelo
     asyncio.create_task(fila.processar_fila(delivery))
 ```

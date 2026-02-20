@@ -13,11 +13,11 @@ color 0A
 cls
 echo.
 echo ================================================================================
-echo                                                                              
-echo          OPERADOR QUANTUM - PHASE 6 TASK RUNNER                           
-echo                                                                              
-echo    Executar tasks individuais de Eng Sr ou ML Expert                        
-echo                                                                              
+echo
+echo          OPERADOR QUANTUM - PHASE 6 TASK RUNNER
+echo
+echo    Executar tasks individuais de Eng Sr ou ML Expert
+echo
 echo ================================================================================
 echo.
 

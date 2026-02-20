@@ -1,7 +1,7 @@
 # 📡 API de Alertas - Documentação Técnica
 
-**Versão:** 1.1.0  
-**Data:** 20/02/2026  
+**Versão:** 1.1.0
+**Data:** 20/02/2026
 **Status:** ✅ PRONTO PARA DESENVOLVIMENTO
 
 ---
@@ -65,22 +65,22 @@ import websockets
 async def receber_alertas():
     uri = "ws://localhost:8765/alertas"
     headers = {"Authorization": "Bearer seu_token_aqui"}
-    
+
     async with websockets.connect(uri, extra_headers=headers) as websocket:
         print("✅ Conectado ao servidor de alertas")
-        
+
         while True:
             try:
                 msg = await websocket.recv()
                 alerta = json.loads(msg)
-                
+
                 print(f"🚨 ALERTA: {alerta['alerta']['ativo']}")
                 print(f"   Padrão: {alerta['alerta']['padrão']}")
                 print(f"   Entrada: {alerta['alerta']['dados_mercado']['entrada_minima']}")
                 print(f"   Risk:Reward: {alerta['alerta']['métricas']['risk_reward']}")
-                
+
                 # TODO: Sua lógica aqui
-                
+
             except websockets.exceptions.ConnectionClosed:
                 print("❌ Desconectado. Tentando reconectar em 5s...")
                 await asyncio.sleep(5)
@@ -105,11 +105,11 @@ alertasWs.onopen = () => {
 alertasWs.onmessage = (event) => {
   const msg = JSON.parse(event.data);
   const alerta = msg.alerta;
-  
+
   console.log(`🚨 ALERTA: ${alerta.ativo}`);
   console.log(`   Nível: ${alerta.nivel}`);
   console.log(`   Entrada: ${alerta.dados_mercado.entrada_minima}`);
-  
+
   // Sua lógica aqui
   processarAlerta(alerta);
 };
@@ -129,7 +129,7 @@ function processarAlerta(alerta) {
     console.error('Alerta inválido:', alerta);
     return;
   }
-  
+
   // Executa comércio (exemplo)
   if (alerta.nivel === 'CRÍTICO') {
     console.log(`📈 Executando entrada: ${alerta.dados_mercado.entrada_minima}`);
@@ -155,10 +155,10 @@ Se WebSocket falhar, alerta é entregue por email.
 <head><style>...css...</style></head>
 <body>
   <h1>🚨 ALERTA DE OPORTUNIDADE</h1>
-  
+
   <h3>📊 Padrão Detectado</h3>
   <p>Volatilidade Extrema (2.3σ)</p>
-  
+
   <h3>💰 Dados de Mercado</h3>
   <table>
     <tr><td>Preço Atual:</td><td>89.250</td></tr>
@@ -166,10 +166,10 @@ Se WebSocket falhar, alerta é entregue por email.
     <tr><td>Stop Loss:</td><td>88.800</td></tr>
     <tr><td>Take Profit:</td><td>91.000</td></tr>
   </table>
-  
+
   <h3>📈 Risk:Reward</h3>
   <p>1:2.5</p>
-  
+
   <p><small>ID: 550e8400... | ⏰ 2026-02-20 14:23:45</small></p>
 </body>
 </html>
@@ -277,7 +277,7 @@ async def executar_alerta(alerta):
     # Conecta MT5
     if not mt5.initialize():
         return False
-    
+
     # Cria ordem
     ordem_req = {
         "action": mt5.TRADE_ACTION_BUY,
@@ -291,14 +291,14 @@ async def executar_alerta(alerta):
         'type_filling': mt5.ORDER_FILLING_IOC,
         'type_time': mt5.ORDER_TIME_GTC,
     }
-    
+
     # Envia ordem
     result = mt5.order_send(order_req)
-    
+
     if not result or result.retcode != mt5.TRADE_RETCODE_DONE:
         print(f"❌ Erro: {result.comment if result else 'Desconhecido'}")
         return False
-    
+
     print(f"✅ Ordem enviada: {result.order}")
     return True
 ```

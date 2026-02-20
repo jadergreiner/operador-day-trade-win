@@ -207,15 +207,15 @@ if isinstance(preco_atual, float):
 
 ## 🔐 Compliance
 
-✅ Todos os arquivos em Português do Brasil  
-✅ Nenhum UTF-8 corrupto no git  
-✅ Commits com mensagens claras  
-✅ Documentacao completa  
-✅ Codigo testado e validado  
+✅ Todos os arquivos em Português do Brasil
+✅ Nenhum UTF-8 corrupto no git
+✅ Commits com mensagens claras
+✅ Documentacao completa
+✅ Codigo testado e validado
 
 ---
 
-**Status**: 🟢 PRONTO PARA PHASE 6  
-**Data**: 20 de Fevereiro de 2026, 13:50  
-**Desenvolvedor**: GitHub Copilot  
+**Status**: 🟢 PRONTO PARA PHASE 6
+**Data**: 20 de Fevereiro de 2026, 13:50
+**Desenvolvedor**: GitHub Copilot
 **Projeto**: Operador Quantum - Day Trade Win

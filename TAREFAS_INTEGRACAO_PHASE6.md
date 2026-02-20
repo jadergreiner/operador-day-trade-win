@@ -121,7 +121,7 @@ SEMANA 2 (03 MAR - 06 MAR)
 │  │           └─ Multi-client broadcast tests
 │  │           └─ Connection manager tests
 │  └─ ML:      ⚙️ Backtest Analysis (cont'd)
-│  
+│
 ├─ WED 05/03:
 │  ├─ Eng Sr:  ✅ WebSocket DONE
 │  │           🎯 EMAIL CONFIG START

@@ -25,7 +25,7 @@
 
   👨‍💻 ENG SR (Engineer Sr)              🧠 ML EXPERT (ML Specialist)
   ────────────────────────────────────  ────────────────────────────────
-  
+
   TASK 1: BDI Integration              TASK 1: Backtest Setup
   • Hook detectors to BDI loop          • Load 60-day WIN$N data
   • Load config (ready ✅)              • Validate imports
@@ -61,20 +61,20 @@
   WEEK 1                 WEEK 2                 WEEK 3
   (27 FEB - 01 MAR)      (03 MAR - 07 MAR)      (10 MAR - 13 MAR)
   ─────────────────      ─────────────────      ─────────────────
-  
+
   MON  BDI Int.Start     MON  Email (cont)      MON  UAT Start
        Backtest Setup          Perf Bench
-  
+
   TUE  BDI Complete      TUE  Email Complete    TUE  Final Tests
        WebSocket Start         Perf Complete         Validation
-  
+
   WED  WS Complete       WED  Staging Deploy 🎯  WED  Go-live Prep
        Email Start            Eng Sr DONE
-  
+
   THU  Email (cont)      THU  Staging E2E   🎯  THU  🚀 BETA LAUNCH
        Backtest Running       ML Final Begin       PRODUCTION LIVE
-  
-  FRI  Backtest DONE ✅  FRI  All Final ✅        
+
+  FRI  Backtest DONE ✅  FRI  All Final ✅
        All Validation ✅      Ready for BETA
 
 
@@ -115,7 +115,7 @@
   ✓ WebSocket Server Running          ✓ PO Approval
   ✓ Backtest PASS (gates met)         ✓ Compliance Review
   ✓ Performance Targets Met           ✓ Security Check
-  ✓ All Tests Passing (18+)           
+  ✓ All Tests Passing (18+)
   ✓ Staging E2E Flow OK               OPERATIONAL GATES:
   ✓ Type Safety 100%                  ✓ Rollback Plan
   ✓ Configuration Validated           ✓ Monitoring Ready
@@ -130,13 +130,13 @@
   2. Locate processador_bdi.py
   3. START: BDI Integration (task 1)
   4. Follow: CHECKLIST_INTEGRACAO_PHASE6.md
-  
+
   🧠 ML EXPERT:
   1. Review backtest_detector.py (code ready)
   2. Test imports: python scripts/test_imports.py
   3. START: Backtest Setup (task 1)
   4. Follow: CHECKLIST_INTEGRACAO_PHASE6.md
-  
+
   BOTH:
   1. Read: ARQUITETURA_INTEGRACAO_PHASE6.md
   2. Daily sync: 15-min check-in
@@ -174,13 +174,13 @@ PRÓXIMOS DOCUMENTOS PARA CONSULTAR:
 
 1. 📋 TAREFAS_INTEGRACAO_PHASE6.md
    → Detailed task assignments per agent
-   
+
 2. 🏗️ ARQUITETURA_INTEGRACAO_PHASE6.md
    → Component diagrams and integration flows
-   
+
 3. ✅ CHECKLIST_INTEGRACAO_PHASE6.md
    → Step-by-step checklist for each task
-   
+
 4. 📊 RESUMO_PHASE6_KICKOFF.md
    → Executive summary with metrics
 

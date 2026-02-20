@@ -4,22 +4,22 @@
   "timeframe": "M5",
   "metricas": {
     "velas_processadas": 17280,
-    "alertas_gerados": 433,
-    "oportunidades_esperadas": 0,
-    "matches": 0,
-    "false_positives": 0,
-    "false_negatives": 0
+    "alertas_gerados": 836,
+    "oportunidades_esperadas": 29,
+    "matches": 23,
+    "false_positives": 813,
+    "false_negatives": 6
   },
   "taxas": {
-    "taxa_captura_pct": 0,
-    "taxa_false_positive_pct": 0.0,
-    "win_rate_estimado_pct": 60.0
+    "taxa_captura_pct": 79.31,
+    "taxa_false_positive_pct": 97.25,
+    "win_rate_estimado_pct": 62.0
   },
   "gates_validacao": {
     "captura_minima_85pct": false,
-    "fp_maxima_10pct": true,
-    "win_rate_minimo_60pct": true
+    "fp_maxima_10pct": false,
+    "win_rate_minimo_60pct": false
   },
   "status": "FAIL",
-  "timestamp": "2026-02-20T13:55:25.501034"
+  "timestamp": "2026-02-20T14:29:15.909286"
 }

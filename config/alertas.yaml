@@ -5,7 +5,7 @@
 alertas:
   # Ativação global
   habilitado: true
-  
+
   # Janela de análise (segundos)
   janela_deteccao: 60
 
@@ -19,7 +19,7 @@ alertas:
       confirmacao_velas: 2  # Requer 2 velas consecutivas >1.5σ
       nivel_alerta: CRÍTICO
       confianca_minima: 0.85
-    
+
     # Padrões técnicos
     padroes:
       habilitado: true
@@ -45,7 +45,7 @@ alertas:
       retry_max: 3
       autenticacao: "bearer"
       token_env: "WEBSOCKET_TOKEN"
-    
+
     # Email SMTP (SECONDARY)
     email:
       habilitado: true
@@ -59,7 +59,7 @@ alertas:
       timeout_segundos: 8
       retry_max: 3
       retry_delay_exponencial: true  # 1s, 2s, 4s, ...
-    
+
     # SMS Twilio (v1.2 - DESATIVADO)
     sms:
       habilitado: false  # Ativar apenas em v1.2
@@ -120,7 +120,7 @@ permissoes:
   operadores_autorizados:
     - "operador1"
     - "operador2"
-  
+
   grupos:
     - nome: "admins"
       operadores:
@@ -130,7 +130,7 @@ permissoes:
         - "visualizar_alertas"
         - "executar_alertas"
         - "gerenciar_configuracao"
-    
+
     - nome: "traders"
       operadores:
         - "trader1"
@@ -153,12 +153,12 @@ regras:
       - "quarta"
       - "quinta"
       - "sexta"
-  
+
   # Limitar por volatilidade de mercado
   volatilidade_mercado:
     habilitado: true
     vix_maxima: 35  # Pausar se VIX > 35
-  
+
   # Capital management
   capital:
     capital_por_trade: 50000  # R$ (fase BETA)
