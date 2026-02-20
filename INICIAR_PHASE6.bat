@@ -226,15 +226,15 @@ echo.
 echo Abrindo 3 terminais em paralelo...
 echo.
 
-start "ENG_SR" cmd /k "cd /d %cd% && echo. && echo Eng Sr: BDI Integration && echo Siga: CHECKLIST_INTEGRACAO_PHASE6.md - Task INTEGRATION-ENG-001 && echo. && python scripts/test_imports.py && pause"
+start "ENG_SR" cmd /k "eng_sr_wrapper.bat"
 
 timeout /t 2 /nobreak
 
-start "ML_EXPERT" cmd /k "cd /d %cd% && echo. && echo ML Expert: Backtest Setup && echo Siga: CHECKLIST_INTEGRACAO_PHASE6.md - Task INTEGRATION-ML-001 && echo. && python scripts/backtest_detector.py && pause"
+start "ML_EXPERT" cmd /k "ml_expert_wrapper.bat"
 
 timeout /t 2 /nobreak
 
-start "GIT_MONITOR" cmd /k "cd /d %cd% && echo. && echo Git Monitor - Status Real-time && echo. && git log --oneline -5 && echo. && pause"
+start "GIT_MONITOR" cmd /k "git_monitor_wrapper.bat"
 
 echo.
 echo ******************************************************************************
