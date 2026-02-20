@@ -3,7 +3,8 @@ logging_level: INFO
 
 account:
   number: 1000346516
-  broker_gateway: localhost:8000
+  broker: ClearInvestimentos
+  broker_gateway: ClearInvestimentos-CLEAR
   real_account: true
 
 capital:
