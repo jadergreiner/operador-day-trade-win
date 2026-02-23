@@ -3,8 +3,8 @@
 ## 📋 CONTEXTO & OBJETIVO
 
 **Tipo de Reunião:** Strategic Alignment Review (SAR)
-**Persona Ativa:** Head de Finanças especializado em Day Trade & Mercado Brasileiro  
-**Objetivo Principal:** Validar gaps entre STATUS ATUAL (v1.1 92%) e MVP PRODUCTION (v1.2)  
+**Persona Ativa:** Head de Finanças especializado em Day Trade & Mercado Brasileiro
+**Objetivo Principal:** Validar gaps entre STATUS ATUAL (v1.1 92%) e MVP PRODUCTION (v1.2)
 **Output:** 5-7 itens priorizados para sprint planning + validação cross-funcional
 
 **Contexto do Projeto:**
@@ -24,7 +24,7 @@
 
 **Head de Finanças apresenta:**
 ```
-"Pessoal, estamos em um ponto crítico. v1.1 é 92% funcional, mas v1.2 é critical 
+"Pessoal, estamos em um ponto crítico. v1.1 é 92% funcional, mas v1.2 é critical
 path para produção (10/04). O que NOS FALTA para um MVP REAL em production?
 
 Nós vamos:
@@ -49,20 +49,20 @@ Não é voto, é DIAGNÓSTICO. Vamos encontrar os real bloqueadores."
 ```
 [CUSTOMIZADA POR PERSONA - Exemplos abaixo]
 
-Eng Sr: "Do seu ponto de vista, qual é o maior risco técnico 
-        para ter v1.2 em produção até 10/04? E quanto tempo 
+Eng Sr: "Do seu ponto de vista, qual é o maior risco técnico
+        para ter v1.2 em produção até 10/04? E quanto tempo
         legítimo você precisa?"
 
-ML Expert: "O backtest com F1 > 0.65 (Gate 1) é viável com 
+ML Expert: "O backtest com F1 > 0.65 (Gate 1) é viável com
            os dados que temos? Quali riscos vê no modelo?"
 
-QA/Tester: "Temos cobertura de testes suficiente? Qual é o 
+QA/Tester: "Temos cobertura de testes suficiente? Qual é o
            risco que vamos para produção com gaps de testes?"
 
-Trader: "Do ponto de vista operacional, o que falta para você 
+Trader: "Do ponto de vista operacional, o que falta para você
         estar confortável sinalizando trades em alpha mode?"
 
-Arquiteto: "A arquitetura aguenta os gates de performance 
+Arquiteto: "A arquitetura aguenta os gates de performance
            e scaling? Qual é o ponto de break esperar?"
 ```
 
@@ -73,10 +73,10 @@ Arquiteto: "A arquitetura aguenta os gates de performance
 
 **Tréplica (Follow-up):**
 ```
-[Se Bloqueadora] "Quanto tempo leva para resolver? Quem 
+[Se Bloqueadora] "Quanto tempo leva para resolver? Quem
                   é responsável? Qual é o caminho crítico?"
 
-[Se Critical Path] "Quanto risk isso traz para produção? 
+[Se Critical Path] "Quanto risk isso traz para produção?
                    Qual é o padrão mínimo aceitável?"
 
 [Se Nice-to-have] "OK, deferimos. Mas qdo? Phase 1? Phase 2?"
@@ -90,8 +90,8 @@ Arquiteto: "A arquitetura aguenta os gates de performance
 
 **Head (Pergunta 1):**
 ```
-"Eng Sr, assumindo que ML teve F1 > 0.68 (passou Gate 1), 
-qual é o risco técnico mais alto para termos v1.2 em 
+"Eng Sr, assumindo que ML teve F1 > 0.68 (passou Gate 1),
+qual é o risco técnico mais alto para termos v1.2 em
 produção até 10/04? Seja honesto - timeline vs quality."
 ```
 
@@ -104,10 +104,10 @@ produção até 10/04? Seja honesto - timeline vs quality."
    ├─ Risk Validator integrado + testado (que é meu)
    ├─ MT5Adapter mock funcional (que é de infra)
    └─ E2E tests com simulação (que é de QA)
-   
+
    Cascata: se ninguém começa até 24/02, vazou o Gate 1 check.
 
-2. MAJOR: WebSocket + Email reliability. Temos WebSocket 100%, 
+2. MAJOR: WebSocket + Email reliability. Temos WebSocket 100%,
    mas Email ainda é 0%. Se Email não funciona, alertas não saem.
    Isso é 2h fix, mas SLA crítico."
 ```
@@ -119,18 +119,18 @@ produção até 10/04? Seja honesto - timeline vs quality."
 1. OrdersExecutor é blockante se não sairmos hoje/amanhã (24/02)?
 2. Email é fix rápido, mas se falha, platform falha?
 
-A pergunta: você consegue ter AMBAS 100% até 025/02 EOD? 
+A pergunta: você consegue ter AMBAS 100% até 025/02 EOD?
 Se sim, Gate 1 é só fazer validação ML. Se não, qu é o delta?"
 ```
 
 **Eng Sr (Tréplica 1):**
 ```
-"Sim. Se Risk Validator está pronto (ele tá, fiz ontem), 
-e QA tem mock MT5Adapter pronto amanhã (Persona 12 confirmou), 
-e Infra provê Email client tonight... 
+"Sim. Se Risk Validator está pronto (ele tá, fiz ontem),
+e QA tem mock MT5Adapter pronto amanhã (Persona 12 confirmou),
+e Infra provê Email client tonight...
 
-EU CONSIGO 95% até 25/02 EOD. Os 5% são edge cases que 
-vamos descobrir em produção. Risco? Moderado, se temos 
+EU CONSIGO 95% até 25/02 EOD. Os 5% são edge cases que
+vamos descobrir em produção. Risco? Moderado, se temos
 circuit breaker."
 ```
 
@@ -140,8 +140,8 @@ circuit breaker."
 
 **Head (Pergunta 2):**
 ```
-"OK, 95% até 25/02. Significando que 05/03 Gate 1 você 
-consegue passar MESMO SE ML demorar? Qual é sua dependência 
+"OK, 95% até 25/02. Significando que 05/03 Gate 1 você
+consegue passar MESMO SE ML demorar? Qual é sua dependência
 crítica de ML Expert que você NÃO pode esperar?"
 ```
 
@@ -150,12 +150,12 @@ crítica de ML Expert que você NÃO pode esperar?"
 "Crítico:
 ├─ Não preciso do modelo final (isso é Sprint 2)
 ├─ Preciso do dataset com labels (para teste E2E)
-├─ Preciso que ML valide que OrdersExecutor pode processar 
+├─ Preciso que ML valide que OrdersExecutor pode processar
 │  20+ orders/segundo sem lag (performance requirement)
-└─ Preciso de feedback que risk gates 1-3 estão bons 
+└─ Preciso de feedback que risk gates 1-3 estão bons
    (ML pode testar? ou é depois?)
 
-Se tudo isso for até 02/03, EU GARANTO que Gate 1 é super, 
+Se tudo isso for até 02/03, EU GARANTO que Gate 1 é super,
 mesmo que F1 saia 0.68 em vez de 0.70."
 ```
 
@@ -166,13 +166,13 @@ mesmo que F1 saia 0.68 em vez de 0.70."
 ├─ E2E integration test: até 02/03
 └─ Performance validation: até 02/03
 
-Você que EU comunique isso como DEPENDENCY para ML Expert? 
+Você que EU comunique isso como DEPENDENCY para ML Expert?
 (resposta óbvia sim, mas confirmando você quer isso public)"
 ```
 
 **Eng Sr (Tréplica 2):**
 ```
-"Sim. E eu vou fazer um pq de STATUS UPDATES diária às 15:00 BRT. 
+"Sim. E eu vou fazer um pq de STATUS UPDATES diária às 15:00 BRT.
 Se vencer algo, aviso antes de virar bloqueador. Tá?"
 ```
 
@@ -256,7 +256,7 @@ Task: OrdersExecutor (TODO-1-4)
       "risk_if_miss": "Gate 1 vai vaza, atraso 7 dias em Sprint 2",
       "mitigation": "Daily standup 15:00 BRT, status updates"
     },
-    
+
     {
       "rank": 2,
       "title": "TODO-1: Label backtest_optimized_results.json",
@@ -278,7 +278,7 @@ Task: OrdersExecutor (TODO-1-4)
       "risk_if_miss": "Grid search não consegue treinar (cascata em Sprint 2)",
       "mitigation": "Paralelizar com OrdersExecutor (eng sr task)"
     },
-    
+
     {
       "rank": 3,
       "title": "Email Configuration & Reliability Setup",
@@ -298,7 +298,7 @@ Task: OrdersExecutor (TODO-1-4)
       "risk_if_miss": "Beta phase (13/03) falta communication channel (email fallback)",
       "mitigation": "Pode ser último standup (não bloqueia nada se rápido)"
     },
-    
+
     {
       "rank": 4,
       "title": "XGBoost Grid Search & Backtest Validation (Sprint 2 prep)",
@@ -322,7 +322,7 @@ Task: OrdersExecutor (TODO-1-4)
       "risk_if_miss": "NO-GO Gate 1 (05/03), atraso 7 dias",
       "mitigation": "Target F1=0.68 (1pp buffer), grid search parallelizado"
     },
-    
+
     {
       "rank": 5,
       "title": "E2E Tests & Circuit Breaker Integration (Sprint 1-2 overlap)",
@@ -347,7 +347,7 @@ Task: OrdersExecutor (TODO-1-4)
       "risk_if_miss": "Production bugs no trading loop descobertos ao vivo (!)",
       "mitigation": "Paralelizar com sprint 1, mock fixtures reutilizáveis"
     },
-    
+
     {
       "rank": 6,
       "title": "Performance Benchmarking & Scaling Validation",
@@ -372,7 +372,7 @@ Task: OrdersExecutor (TODO-1-4)
       "risk_if_miss": "Production falha sob carga beta (muitos sinais simultâneos)",
       "mitigation": "Load test com synthetic data, monitor real-time metrics"
     },
-    
+
     {
       "rank": 7,
       "title": "Risk Framework Validation & CVM Compliance Audit (Sprint 3 pre-req)",
@@ -398,7 +398,7 @@ Task: OrdersExecutor (TODO-1-4)
       "mitigation": "Auditoria interna agora (12/03), ajustes antes Go-Live"
     }
   ],
-  
+
   "summary": {
     "critical_items": 4,
     "total_effort_sprint1": "8-10 horas (paralelizado)",

@@ -1,7 +1,7 @@
 # ⏰ PADRONIZAÇÃO DE HORÁRIOS - BRASÍLIA TIME (BRT)
 
-**Data Vigência:** 23 de Fevereiro de 2026  
-**Fuso Horário Oficial:** BRT (Brasília Time) = UTC-3  
+**Data Vigência:** 23 de Fevereiro de 2026
+**Fuso Horário Oficial:** BRT (Brasília Time) = UTC-3
 **Padrão Aplicado:** Todos os horários em BRT, com UTC como referência secundária
 
 ---
@@ -137,7 +137,7 @@ PRÓXIMO DIA (26 FEV):
 17:00 BRT        → 🟢 GATE 1 DECISION MOMENT
                   ├─ Se F1 > 0.65: GO ✅ (Go-Live 10/04 viável)
                   └─ Se F1 ≤ 0.65: NO-GO ❌ (Atraso 7 dias)
-                  
+
 STATUS: CRÍTICO - This is the go/no-go for entire project
 ```
 
@@ -163,7 +163,7 @@ Horário: 15:00 BRT (segunda a sexta)
 Duração: 15-30 minutos
 Pessoas: Eng Sr, ML Expert, QA, Architect, Risk
 Local: Conforme configurado
-Agenda: 
+Agenda:
   ├─ Status último 24h
   ├─ Plano próximas 24h
   ├─ Bloqueadores identificados
@@ -344,7 +344,7 @@ Após esta padronização, verificar:
 
 ---
 
-**Documento criado:** 23 de Fevereiro de 2026  
-**Vigência:** Até fim do projeto (10/04/2026)  
-**Última revisão:** 23/02 20:00 BRT  
+**Documento criado:** 23 de Fevereiro de 2026
+**Vigência:** Até fim do projeto (10/04/2026)
+**Última revisão:** 23/02 20:00 BRT
 **Status:** ✅ PADRÃO OFICIAL
