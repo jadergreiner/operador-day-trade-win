@@ -143,7 +143,11 @@ def monitor_operador():
                     print('[AGUARDANDO DATASET]')
             
             # Análise Técnica Avançada
-            if gerar_analise_completa:
+            # ⚠️ TEMPORARIAMENTE DESATIVADO: Valores de SMC estão errados (dados ficticios)
+            # Status: Aguardando validação com dados reais do MT5
+            # Reativar após correção em ALERT_URGENTE_BOARD_ERRO_CRITICO_SMC_23FEV.md
+            
+            if gerar_analise_completa and False:  # Desativado temporariamente
                 print('\n' + '-' * 75)
                 print('ANALISE TECNICA AVANCADA:')
                 print('-' * 75)
@@ -167,26 +171,15 @@ def monitor_operador():
                     print(f'  Neutro: {prob.get("neutral_probability", 0)}%')
                     print(f'  Sinal: {prob.get("primary_signal", "?")} ({prob.get("strength", "?")})')
                     
-                    # SMC Levels
-                    smc = analise.get('smc_levels', {})
-                    print(f'\n[ANALISE SMC]')
-                    print(f'  Preco: {smc.get("preco_atual", 0):.2f}')
-                    print(f'  S1: {smc.get("support_1", 0):.2f}  |  R1: {smc.get("resistance_1", 0):.2f}')
-                    print(f'  S2: {smc.get("support_2", 0):.2f}  |  R2: {smc.get("resistance_2", 0):.2f}')
-                    supply = smc.get('supply_zone', {})
-                    demand = smc.get('demand_zone', {})
-                    print(f'  Supply: {supply.get("low", 0):.2f}-{supply.get("high", 0):.2f}')
-                    print(f'  Demand: {demand.get("low", 0):.2f}-{demand.get("high", 0):.2f}')
+                    # SMC DESATIVADO TEMPORARIAMENTE
+                    print(f'\n[ANALISE SMC - DESATIVADA]')
+                    print(f'  ⚠️  Valores em validação (dados reais do MT5)')
+                    print(f'  📋 Ver: ALERT_URGENTE_BOARD_ERRO_CRITICO_SMC_23FEV.md')
                     
-                    # Recomendação
+                    # Recomendação (sem SMC)
                     rec = analise.get('recomendacao', {})
-                    print(f'\n[RECOMENDACAO]')
+                    print(f'\n[RECOMENDACAO (SEM SMC)]')
                     print(f'  Setup: {rec.get("setup", "?")}')
-                    if rec.get('entrada'):
-                        print(f'  Entrada: {rec.get("entrada", "?"):.2f}')
-                        print(f'  Alvo: {rec.get("alvo", "?"):.2f}')
-                        print(f'  Stop: {rec.get("stop", "?"):.2f}')
-                        print(f'  R:R: 1:{rec.get("risco_recompensa", "?")}')
                     print(f'  Confiança: {rec.get("confianca", "?")}')
                     
                 except Exception as e:
