@@ -1,24 +1,33 @@
 # Priorizar Tasks
 
-## 1. Identifique suas tarefas
-Liste todas as tarefas que você precisa realizar. Não deixe nenhuma de fora.
+## 1. **Identificação de tarefas**  
+   Liste todas as tarefas que precisam ser realizadas.  
+   - Exemplo de tarefa 1  
+   - Exemplo de tarefa 2  
 
-## 2. Avalie a importância
-Para cada tarefa, considere o impacto que ela terá nos seus objetivos maiores. Pergunte-se:
-- Esta tarefa é realmente importante para o meu objetivo final?
-- Quais tarefas têm repercussões maiores?
+## 2. **Classificação das tarefas**  
+   Classifique as tarefas com base nos critérios abaixo:  
+   - **Urgência**: Quão rapidamente a tarefa precisa ser concluída?  
+   - **Importância**: Qual é o impacto da tarefa?  
+   
+## 3. **Matriz de Priorização**  
+   Use uma matriz para mapear tarefas:  
+   | Urgência/Importância | Alta Urgente  | Alta Importância  | Baixa Urgência  | Baixa Importância  |
+   |----------------------|----------------|--------------------|-----------------|-------------------|
+   | **Alta**             | Tarefa 1       | Tarefa 2          | Tarefa 3        | Tarefa 4         |
+   | **Baixa**            | Tarefa 5       | Tarefa 6          | Tarefa 7        | Tarefa 8         |
 
-## 3. Avalie a urgência
-Depois de identificar a importância, agora considere a urgência:
-- Esta tarefa precisa ser feita agora?
-- Há um prazo próximo que eu preciso considerar?
+## 4. **Execução**  
+   Foque nas tarefas na seguinte ordem de prioridade:  
+   1. Tarefa mais urgente e importante  
+   2. Tarefa menos urgente mas importante  
+   3. Tarefa urgente mas menos importante  
+   4. Tarefa menos urgente e menos importante  
 
-## 4. Classifique suas tarefas
-Utilize a Matriz de Eisenhower ou uma abordagem semelhante:
-- **Importante e Urgente:** Faça agora!
-- **Importante mas Não Urgente:** Agende um tempo para fazê-las.
-- **Urgente mas Não Importante:** Tente delegar essas tarefas.
-- **Nem Urgente Nem Importante:** Considere eliminar ou atrasar essas tarefas.
+## 5. **Revisão e Ajustes**  
+   Revise suas prioridades regularmente e ajuste conforme necessário.  
 
-## 5. Revise e ajuste regularmente
-Reserve um tempo semanalmente para revisar suas tarefas. As prioridades podem mudar, e sua lista deve refletir isso.
+## 6. **Dicas**  
+   - Não hesite em revisar a prioridade de uma tarefa.  
+   - Considere as interrupções e outras demandas que podem surgir.  
+   - Coloque um tempo fixo para completar cada tarefa.
