@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-02-23T15:02:17.252803",
+  "status": "STAGE 1 LIVE & MONITORING",
+  "components": {
+    "websocket": {
+      "status": "LIVE",
+      "port": 8765
+    },
+    "risk_validator": {
+      "status": "ACTIVE",
+      "gates": 3
+    },
+    "bdi_detector": {
+      "status": "MONITORING"
+    },
+    "feature_pipeline": {
+      "status": "READY",
+      "candles": 17280
+    }
+  }
+}
