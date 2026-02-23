@@ -8,10 +8,28 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+def format_clock_display():
+    """Formata relógio visual para o display"""
+    now = datetime.now()
+    hora = now.strftime('%H:%M:%S')
+    
+    # ASCII art do relógio
+    clock_art = f"""
+    ╔═══════════════════════════════════╗
+    ║  ⏰  {hora}  BRT  ⏰  ║
+    ║     OPERADOR EM MONITORAMENTO     ║
+    ╚═══════════════════════════════════╝"""
+    
+    return clock_art, hora
+
 def monitor_operador():
     while True:
         try:
             os.system('cls')
+            
+            # Relógio em tempo real
+            clock_display, current_time = format_clock_display()
+            print(clock_display)
             
             # Header
             print('=' * 75)
@@ -29,8 +47,7 @@ def monitor_operador():
                 # Status geral
                 print(f'\n[SISTEMA] {system_status}')
                 print(f'[ULTIMA ATUALIZACAO] {timestamp}')
-                hora = datetime.now().strftime('%H:%M:%S BRT')
-                print(f'[HORARIO ATUAL] {hora}')
+                print(f'[HORARIO ATUAL] {current_time} BRT')
                 
                 # Componentes
                 print('\n' + '-' * 75)
@@ -67,9 +84,27 @@ def monitor_operador():
                 with open('logs/deployment_stage1.log', 'r') as f:
                     lines = f.readlines()
                     for line in lines[-10:]:  # Ultimas 10 linhas
-                        print(line.rstrip())
+                        print(f'  {line.rstrip()}')
             else:
                 print('[AGUARDANDO EVENTOS]')
+            
+            # Tempo decorrido desde último evento
+            print('\n' + '-' * 75)
+            print('STATUS DE TEMPO:')
+            print('-' * 75)
+            if Path('logs/deployment_stage1.log').exists():
+                try:
+                    mtime = os.path.getmtime('logs/deployment_stage1.log')
+                    last_event = datetime.fromtimestamp(mtime)
+                    elapsed = datetime.now() - last_event
+                    minutes = int(elapsed.total_seconds() / 60)
+                    
+                    status_text = "🟢 Monitorando" if minutes < 30 else "🟡 Aguardando eventos"
+                    print(f'[ULTIMO EVENTO] {last_event.strftime("%H:%M:%S BRT")}')
+                    print(f'[TEMPO DECORRIDO] {minutes} minutos')
+                    print(f'[STATUS] {status_text}')
+                except Exception as e:
+                    print(f'[INFO] {e}')
             
             # Dataset Status
             print('\n' + '-' * 75)
