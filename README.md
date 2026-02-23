@@ -530,7 +530,7 @@ CTO/Eng Sr + ML Expert, todas as decisões foram consolidadas e aprovadas:
 - ✅ **Scope:** Execução automática ONLY (defer dashboard/analytics)
 - ✅ **AC (Acceptance Criteria):** 8 critérios definidos e testáveis
 - ✅ **Timeline:** 10/04/2026 é viável com disciplina técnica
-- ✅ **Decision:** GO para refinement de "historias de usuário"  
+- ✅ **Decision:** GO para refinement de "historias de usuário"
   [→ User Story Completa](docs/agente_autonomo/US-001-EXECUTION_AUTOMATION_v1.2.md)
 
 **2️⃣ Head de Finanças Validation:**
@@ -538,7 +538,7 @@ CTO/Eng Sr + ML Expert, todas as decisões foram consolidadas e aprovadas:
 - ✅ **Circuit Breakers:** -3% alerta | -5% slow mode | -8% halt
 - ✅ **Capital Ramp:** 50k → 100k → 150k com gates obrigatórios
 - ✅ **ROI:** +R$ 150-250k/mês (336% ROI em 90 dias)
-- ✅ **Decision:** FINANCIAL APPROVED + Risk framework signed  
+- ✅ **Decision:** FINANCIAL APPROVED + Risk framework signed
   [→ Risk Framework v1.2](docs/agente_autonomo/RISK_FRAMEWORK_v1.2.md)
 
 **3️⃣ CTO/Eng Sr Validation:**
@@ -546,7 +546,7 @@ CTO/Eng Sr + ML Expert, todas as decisões foram consolidadas e aprovadas:
 - ✅ **Components:** MT5 API (250 LOC) + Risk Validators (200 LOC) +
   Orders Executor (180 LOC)
 - ✅ **Gates:** 4 checkpoints obrigatórios (GATE 1-4 non-negotiable)
-- ✅ **Decision:** TECHNICAL APPROVED - Risks mitigated  
+- ✅ **Decision:** TECHNICAL APPROVED - Risks mitigated
   [→ Arquitetura MT5 v1.2](docs/agente_autonomo/ARQUITETURA_MT5_v1.2.md)
 
 **4️⃣ ML Expert Validation:**
@@ -554,7 +554,7 @@ CTO/Eng Sr + ML Expert, todas as decisões foram consolidadas e aprovadas:
 - ✅ **Backtest Target:** F1 > 0.65 | Sharpe > 1.0 | Max DD < 15%
 - ✅ **Features:** 24 engineered (6 grupos) + walk-forward validation
 - ✅ **Risks:** Class imbalance, overfitting, leakage → MITIGATED
-- ✅ **Decision:** ML STRATEGY APPROVED - Timeline feasible  
+- ✅ **Decision:** ML STRATEGY APPROVED - Timeline feasible
   [→ ML Feature Engineering v1.2](docs/agente_autonomo/ML_FEATURE_ENGINEERING_v1.2.md)
 
 **📊 PHASE 7 Development Timeline (4 Sprints = 27 dias):**
@@ -618,7 +618,7 @@ SPRINT 4 (20/03-10/04): UAT & Production Launch 🏁
    Signature: ML_LEAD | Date: 20/02 18:00
 ```
 
-**[→ Ver Documentação Completa de v1.2](docs/agente_autonomo/)**  
+**[→ Ver Documentação Completa de v1.2](docs/agente_autonomo/)**
 **[→ Ver Sprint 1 Masterplan](docs/agente_autonomo/SPRINT1_MASTERPLAN.md)**
 
 **Status:** 🟢 PRONTO PARA SPRINT 1 KICK-OFF (27/02 09:00)

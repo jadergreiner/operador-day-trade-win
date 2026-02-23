@@ -1,7 +1,7 @@
 # 🔄 SYNC_MANIFEST v1.2 - Sistema de Sincronização Obrigatória
 
-**Última Sincronização:** 20/02/2026 18:00 BRT  
-**Status:** ✅ SINCRONIZADO  
+**Última Sincronização:** 20/02/2026 18:00 BRT
+**Status:** ✅ SINCRONIZADO
 **Próxima Validação:** 21/02/2026 09:00 BRT
 
 ---
@@ -184,8 +184,8 @@ Toda mudança deve passar por este checklist ANTES de commit:
 
 ## 🔄 Próxima Sincronização Planejada
 
-**Data:** 21/02/2026 14:00 BRT (após Refinement Session)  
-**Tipo:** UPDATE (não breaking change esperado)  
-**Executores:** PO + Head Finanças + CTO + ML Expert  
+**Data:** 21/02/2026 14:00 BRT (após Refinement Session)
+**Tipo:** UPDATE (não breaking change esperado)
+**Executores:** PO + Head Finanças + CTO + ML Expert
 **Documentos Impactados:** copilot-instructions.md, SPRINT1_MASTERPLAN.md (possível)
 

@@ -1,0 +1,108 @@
+{
+  "scheduler": {
+    "daily_training": {
+      "enabled": true,
+      "time": "22:00",
+      "days": "mon-fri",
+      "description": "Treinamento diário após fechamento do mercado"
+    },
+    "weekly_deep_training": {
+      "enabled": true,
+      "day": "friday",
+      "time": "20:00",
+      "description": "Treinamento profundo com 100% dos dados"
+    }
+  },
+  "market_watch": {
+    "enabled": true,
+    "market_close_time": "17:00",
+    "training_delay_seconds": 120,
+    "check_interval_seconds": 300,
+    "description": "Monitora fechamento do mercado e treina automaticamente"
+  },
+  "model": {
+    "daily": {
+      "n_estimators": 100,
+      "max_depth": 8,
+      "random_state": 42,
+      "n_jobs": -1,
+      "description": "Hiperparâmetros do RandomForest diário"
+    },
+    "deep": {
+      "n_estimators": 200,
+      "max_depth": 10,
+      "random_state": 42,
+      "n_jobs": -1,
+      "description": "Hiperparâmetros do RandomForest semanal (deep)"
+    }
+  },
+  "training_data": {
+    "daily_limit": 2000,
+    "deep_limit": null,
+    "test_size": 0.20,
+    "validation_size": 0.15,
+    "description": "Configuração de dados de treinamento"
+  },
+  "monitoring": {
+    "degradation_threshold": 0.10,
+    "degradation_warning": 0.05,
+    "save_history": true,
+    "history_days": 30,
+    "description": "Monitoramento de degradação do modelo"
+  },
+  "logging": {
+    "level": "INFO",
+    "log_file": "logs/rl_scheduler.log",
+    "degradation_alerts_file": "logs/degradation_alerts.jsonl",
+    "keep_days": 90,
+    "description": "Configuração de logging"
+  },
+  "database": {
+    "path": "data/db/trading.db",
+    "table_episodes": "rl_episodes",
+    "table_rewards": "rl_rewards",
+    "table_metrics": "rl_training_metrics",
+    "description": "Configuração do banco de dados"
+  },
+  "features": {
+    "n_rewards": {
+      "enabled": true,
+      "description": "Número Total de recompensas no episódio"
+    },
+    "win_rate": {
+      "enabled": true,
+      "description": "Taxa de wins (% de recompensas positivas)"
+    },
+    "avg_reward": {
+      "enabled": true,
+      "description": "Recompensa média do episódio"
+    },
+    "reward_range": {
+      "enabled": true,
+      "description": "Diferença entre max e min reward"
+    }
+  },
+  "alerts": {
+    "degradation": {
+      "enabled": true,
+      "send_email": false,
+      "email_to": "admin@example.com",
+      "description": "Alerta quando modelo degrada >10%"
+    },
+    "no_training": {
+      "enabled": true,
+      "days_no_training": 3,
+      "send_alert": true,
+      "description": "Alerta se não treinou em 3 dias"
+    }
+  },
+  "advanced": {
+    "use_gpu": false,
+    "batch_size": 256,
+    "early_stopping": false,
+    "patience": 5,
+    "description": "Configurações avançadas"
+  },
+  "version": "1.0.0",
+  "last_updated": "2026-02-23"
+}

@@ -1,5 +1,10 @@
+# PRODUCAO - TESTE 1 CONTRATO
+# Ativado: 20/02/2026
+# Status: Skeleton com Treino Paralelo
+
 environment: production
 logging_level: INFO
+start_time: '20/02/2026 20:00'
 
 capital:
   inicial: 5000
@@ -10,16 +15,33 @@ capital:
 asset:
   symbol: WIN$N
   timeframe: 5m
+  volume_min: 100
 
 risk_validation:
   enabled: true
+  gates:
+    capital_adequacy: true
+    correlation: true
+    volatility: true
+  margin_buffer: 0.20
 
 ml_classifier:
+  enabled: true
   confidence_threshold: 0.90
+  model_version: 'skeleton'
+  fallback_to_detector: true
 
 execution:
   auto_trade: true
+  order_timeout: 60
+  slippage_tolerance: 0.05
+
+delivery:
+  websocket: true
+  email: true
+  log_file: 'data/db/audit_producao_20feb.jsonl'
 
 monitoring:
   trader_required: true
   dashboard_port: 8765
+  health_check_interval: 30
