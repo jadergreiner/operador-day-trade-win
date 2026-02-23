@@ -120,7 +120,7 @@ Antes de tudo, execute estas buscas para DESCOBRIR o contexto real:
    # Se encontrado → USE COMO backlog reference
    ```
 
-**Resultado Esperado:** 
+**Resultado Esperado:**
 ```
 Fonte de Verdade: [CAMINHO REAL ENCONTRADO]
 Last update: [TIMESTAMP REAL]
@@ -428,7 +428,7 @@ from datetime import datetime
 
 def discover_context():
     """Auto-descobrir contexto do projeto"""
-    
+
     context = {
         'docs_found': {},
         'sprint_active': None,
@@ -437,12 +437,12 @@ def discover_context():
         'sync_status': None,
         'validation': []
     }
-    
+
     # 1. Discover docs
     for doc in Path('docs').glob('*.md'):
         if 'STATUS' in doc.name or 'ANÁLISE' in doc.name:
             context['docs_found']['source_of_truth'] = str(doc)
-    
+
     # 2. Detect sprint
     with open(context['docs_found'].get('source_of_truth')) as f:
         content = f.read()
@@ -452,19 +452,19 @@ def discover_context():
                 'id': int(match.group(1)),
                 'period': match.group(2)
             }
-    
+
     # 3. Load personas
     with open('prompts/board_16_members_data.json') as f:
         board = json.load(f)
         context['personas_pool'] = board.get('teamBoard', {}).get('members', [])
-    
+
     # 4. Sync validation
     sync_file = Path('docs/agente_autonomo/SYNC_MANIFEST.json')
     if sync_file.exists():
         with open(sync_file) as f:
             sync = json.load(f)
             context['sync_status'] = sync.get('sync_status', 'UNKNOWN')
-    
+
     return context
 
 # Usage:

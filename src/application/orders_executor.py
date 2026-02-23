@@ -420,6 +420,108 @@ class OrdersExecutionOrchestrator:
         }
         return json.dumps(audit_data, indent=2, ensure_ascii=False)
 
+    # ==================== TODO-2: EXECUTE_ORDER START (Line 133, GitHub Issue #7) ====================
+    async def execute_order(self, order: ExecutionOrder) -> Dict:
+        """
+        Valida ordem contra Risk Framework e envia para MT5.
+        
+        Acceptance Criteria (Issue #7 - ENG-201):
+        ☐ AC-1: Validate order against Risk Framework
+        ☐ AC-2: Integrate with MT5Adapter
+        ☐ AC-3: Implement retry logic (3x exponential backoff)
+        ☐ AC-4: Logging + audit trail
+        
+        Related: GitHub Issue #7 - ENG-201
+        """
+        # TODO-2 IMPLEMENTATION
+        # AC-1: Validate order against Risk Framework
+        # TODO: Call risk_validator.validate(order)
+        # TODO: Check margin, position limits, circuit breakers
+        
+        # AC-2: Integrate with MT5Adapter
+        # TODO: Check adapter is connected
+        # TODO: Send order to MT5
+        # TODO: Wait for response (timeout 5s)
+        
+        # AC-3: Retry logic (exponential backoff)
+        # TODO: Implement 3 attempts with delays: 100ms, 500ms, 2000ms
+        # TODO: Stop on validation reject
+        
+        # AC-4: Logging + audit trail
+        # TODO: Log submission, response, retries
+        # TODO: Store in execution history
+        
+        logger.warning("TODO-2: Implement execute_order() - See comments for details")
+        raise NotImplementedError("TODO-2: execute_order() not implemented yet")
+    # ==================== TODO-2: EXECUTE_ORDER END ====================
+
+    # ==================== TODO-3: MONITOR_POSITIONS START (Line 158, GitHub Issue #7) ====================
+    async def monitor_positions(self) -> Optional[Dict]:
+        """
+        Faz polling de posições abertas a cada 30 segundos.
+        
+        Acceptance Criteria (Issue #7 - ENG-201):
+        ☐ AC-5: Poll every 30 seconds
+        ☐ AC-6: Detect stop-loss scenarios
+        ☐ AC-7: Maintain execution history log
+        ☐ AC-8: Performance < 500ms per cycle
+        
+        Related: GitHub Issue #7 - ENG-201
+        """
+        # TODO-3 IMPLEMENTATION
+        # AC-5: Poll every 30 seconds
+        # TODO: While loop with asyncio.sleep(30)
+        # TODO: Get positions from MT5Adapter
+        # TODO: Update open_positions
+        
+        # AC-6: Detect stop-loss
+        # TODO: For each position check if SL triggered
+        # TODO: Call handle_stop_loss() if triggered
+        
+        # AC-7: Execution history
+        # TODO: Log each polling cycle
+        # TODO: Record position status changes
+        
+        # AC-8: Performance < 500ms
+        # TODO: Add timing decorator
+        # TODO: Assert execution < 500ms
+        
+        logger.warning("TODO-3: Implement monitor_positions() - See comments for details")
+        raise NotImplementedError("TODO-3: monitor_positions() not implemented yet")
+    # ==================== TODO-3: MONITOR_POSITIONS END ====================
+
+    # ==================== TODO-4: HANDLE_STOP_LOSS START (Line 188, GitHub Issue #7) ====================
+    async def handle_stop_loss(self, order_id: str) -> Dict:
+        """
+        Fecha posição a preço de mercado quando stop-loss é acionado.
+        
+        Acceptance Criteria (Issue #7 - ENG-201):
+        ☐ AC-9: Close position at market price
+        ☐ AC-10: Log event for audit trail
+        ☐ AC-11: Atomically update account state
+        
+        Related: GitHub Issue #7 - ENG-201
+        """
+        # TODO-4 IMPLEMENTATION
+        # AC-9: Close at market price
+        # TODO: Get current market price
+        # TODO: Create opposite direction order
+        # TODO: Send to MT5Adapter
+        
+        # AC-10: Audit log
+        # TODO: Log entry/close prices
+        # TODO: Calculate and log PnL
+        # TODO: Store in execution history
+        
+        # AC-11: Atomic update
+        # TODO: Remove from open positions
+        # TODO: Update account atomically
+        # TODO: No partial updates
+        
+        logger.warning("TODO-4: Implement handle_stop_loss() - See comments for details")
+        raise NotImplementedError("TODO-4: handle_stop_loss() not implemented yet")
+    # ==================== TODO-4: HANDLE_STOP_LOSS END ====================
+
 
 if __name__ == "__main__":
     print("OrdersExecutor module loaded")
