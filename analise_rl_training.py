@@ -16,28 +16,28 @@ def analyze_rl_data():
     """Analisar dados RL e sugerir treinamento."""
     conn = sqlite3.connect(str(DB_PATH))
     cursor = conn.cursor()
-    
+
     print("\n" + "="*70)
     print("ANÁLISE DE DADOS RL E RECOMENDACÕES DE TREINAMENTO")
     print("="*70)
-    
+
     # 1. Quantidade de dados
     cursor.execute("SELECT COUNT(*) FROM rl_episodes")
     episode_count = cursor.fetchone()[0]
-    
+
     cursor.execute("SELECT COUNT(*) FROM rl_rewards")
     reward_count = cursor.fetchone()[0]
-    
+
     print(f"\n📊 VOLUME DE DADOS RL:")
     print(f"   Episódios: {episode_count:,} (MIN para treino: 100)")
     print(f"   Recompensas: {reward_count:,} (MIN para treino: 500)")
-    
+
     readiness = "✅ PRONTO" if episode_count >= 100 and reward_count >= 500 else "⚠️ INSUFICIENTE"
     print(f"   Status: {readiness}")
-    
+
     # 2. Distribuição de recompensas
     cursor.execute("""
-        SELECT 
+        SELECT
             COUNT(CASE WHEN reward_value > 0 THEN 1 END) as wins,
             COUNT(CASE WHEN reward_value < 0 THEN 1 END) as losses,
             COUNT(CASE WHEN reward_value = 0 THEN 1 END) as neutral
@@ -45,28 +45,28 @@ def analyze_rl_data():
     """)
     wins, losses, neutral = cursor.fetchone()
     total = wins + losses + neutral
-    
+
     print(f"\n📈 DISTRIBUIÇÃO DE RECOMPENSAS:")
     print(f"   Positivas (Win): {wins:,} ({100*wins/total:.1f}%)")
     print(f"   Negativas (Loss): {losses:,} ({100*losses/total:.1f}%)")
     print(f"   Neutras: {neutral:,} ({100*neutral/total:.1f}%)")
-    
+
     # 3. Últimas recompensas
     cursor.execute("""
-        SELECT created_at, reward_value 
-        FROM rl_rewards 
-        ORDER BY created_at DESC 
+        SELECT created_at, reward_value
+        FROM rl_rewards
+        ORDER BY created_at DESC
         LIMIT 5
     """)
-    
+
     print(f"\n🔄 ÚLTIMAS 5 RECOMPENSAS:")
     for created_at, reward_value in cursor.fetchall():
         symbol = "✅" if reward_value > 0 else "❌" if reward_value < 0 else "⚪"
         print(f"   {symbol} {created_at}: {reward_value:+.2f}")
-    
+
     # 4. Recomendações
     print(f"\n💡 RECOMENDAÇÕES PARA ATIVAR TREINAMENTO RL:")
-    
+
     recommendations = [
         {
             "title": "1. Implementar Training Loop",
@@ -101,12 +101,12 @@ def analyze_rl_data():
             ]
         }
     ]
-    
+
     for rec in recommendations:
         print(f"\n   {rec['title']}")
         for detail in rec['details']:
             print(detail)
-    
+
     # 5. Sugestão de comando
     print(f"\n⚡ PRÓXIMO PASSO (ATIVAR TREINAMENTO):")
     print(f"""
@@ -118,9 +118,9 @@ def analyze_rl_data():
        --validation-split 0.2 \\
        --retrain-interval 24h
     """)
-    
+
     conn.close()
-    
+
     print("\n" + "="*70)
     print("CONCLUSÃO:")
     print("="*70)
@@ -128,7 +128,7 @@ def analyze_rl_data():
 Os dados de RL existem e estão sendo coletados CORRETAMENTE.
 
 PORÉM: Não há um loop de treinamento transformando esses dados
-em aprendizado do modelo. 
+em aprendizado do modelo.
 
 Para ativar treinamento real você precisa de:
 1. ✅ Dados RL (JÁ EXISTE)

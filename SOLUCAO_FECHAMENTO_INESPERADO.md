@@ -18,7 +18,7 @@ O arquivo `ATIVAR_PRODUCAO_AGORA.bat` estava fechando inesperadamente porque con
    - Comando PowerShell podia falhar
    - Sem tratamento de erro → comportamento imprevisível
 
-4. **Falta de mensagens de erro** 
+4. **Falta de mensagens de erro**
    - Usuário não conseguia ver qual etapa falhou
    - Não havia loops para retry
 
@@ -91,7 +91,7 @@ Se o script continuar fechando, adicione ao final de seu `.bat`:
 ```batch
 echo [DEBUG] Script terminou
 echo Diretório: %cd%
-echo Python: 
+echo Python:
 python --version
 pause
 ```

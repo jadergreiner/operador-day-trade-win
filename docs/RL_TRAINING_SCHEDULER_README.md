@@ -64,19 +64,19 @@ Edite `scripts/rl_training_scheduler.py` na função `main()`:
 ```python
 def main():
     scheduler = RLTrainingScheduler()
-    
+
     # DIÁRIO (customizar hora)
     scheduler.schedule_training(
         time_of_day='22:00',      # Mudar para '18:00', '20:00', etc
         days_of_week='mon-fri'    # 'tue-sat', 'mon-fri', etc
     )
-    
+
     # SEMANAL (customizar dia)
     scheduler.schedule_weekly_deep_training(
         day_of_week=4,            # 0=segunda, 4=sexta, 6=domingo
         time_of_day='20:00'       # Mudar hora
     )
-    
+
     scheduler.start()
 ```
 

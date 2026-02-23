@@ -1,1 +1,61 @@
-{\n  "teamBoard": {\n    "phase": 7,\n    "members": [\n      {\n        "role": "Engineer",\n        "name": "Alice Smith",\n        "skills": ["Python", "Machine Learning", "Data Analysis"]\n      },\n      {\n        "role": "Engineer",\n        "name": "John Doe",\n        "skills": ["Java", "Cloud Computing", "Microservices"]\n      },\n      {\n        "role": "Architect",\n        "name": "Mary Johnson",\n        "skills": ["System Architecture", "API Design", "Security"]\n      },\n      {\n        "role": "Developer",\n        "name": "Chris Lee",\n        "skills": ["JavaScript", "React", "Node.js"]\n      },\n      {\n        "role": "Specialist",\n        "name": "Tina Brown",\n        "skills": ["UX/UI Design", "User Research", "Prototyping"]\n      },\n      {\n        "role": "Engineer",\n        "name": "David Wilson",\n        "skills": ["C++", "Embedded Systems", "IoT"]\n      }\n    ]\n  }\n}
+{
+  "teamBoard": {
+    "phase": 7,
+    "members": [
+      {
+        "role": "Engineer",
+        "name": "Alice Smith",
+        "skills": [
+          "Python",
+          "Machine Learning",
+          "Data Analysis"
+        ]
+      },
+      {
+        "role": "Engineer",
+        "name": "John Doe",
+        "skills": [
+          "Java",
+          "Cloud Computing",
+          "Microservices"
+        ]
+      },
+      {
+        "role": "Architect",
+        "name": "Mary Johnson",
+        "skills": [
+          "System Architecture",
+          "API Design",
+          "Security"
+        ]
+      },
+      {
+        "role": "Developer",
+        "name": "Chris Lee",
+        "skills": [
+          "JavaScript",
+          "React",
+          "Node.js"
+        ]
+      },
+      {
+        "role": "Specialist",
+        "name": "Tina Brown",
+        "skills": [
+          "UX/UI Design",
+          "User Research",
+          "Prototyping"
+        ]
+      },
+      {
+        "role": "Engineer",
+        "name": "David Wilson",
+        "skills": [
+          "C++",
+          "Embedded Systems",
+          "IoT"
+        ]
+      }
+    ]
+  }
+}

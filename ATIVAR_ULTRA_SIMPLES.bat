@@ -142,7 +142,7 @@ cls
 echo Status do Sistema:
 echo.
 echo Diretorio: %cd%
-echo Python: 
+echo Python:
 python --version
 echo.
 echo Estrutura:

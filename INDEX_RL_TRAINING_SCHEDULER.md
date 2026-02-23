@@ -1,7 +1,7 @@
 # 🎯 RL Training Scheduler - Índice de Recursos
 
-**Criado:** 23 de Fevereiro de 2026  
-**Status:** ✅ Pronto para uso  
+**Criado:** 23 de Fevereiro de 2026
+**Status:** ✅ Pronto para uso
 **Versão:** 1.0.0
 
 ---
@@ -13,7 +13,7 @@
 2. **Iniciar:** Execute `INICIAR_RL_SCHEDULER.ps1`
 3. **Ler:** [RL_TRAINING_QUICK_START.md](docs/RL_TRAINING_QUICK_START.md) (10 min)
 
-### Para Desenvolvedores 
+### Para Desenvolvedores
 1. **Entender:** [RL_TRAINING_SCHEDULER_SUMMARY.md](RL_TRAINING_SCHEDULER_SUMMARY.md) (30 min)
 2. **Estudar:** `scripts/rl_training_scheduler.py` (código)
 3. **Customizar:** `config/rl_scheduler_config.json` (config)
@@ -28,8 +28,8 @@
 ## 📚 DOCUMENTAÇÃO COMPLETA
 
 ### Quick Start (Para Começar Rápido)
-**Arquivo:** [docs/RL_TRAINING_QUICK_START.md](docs/RL_TRAINING_QUICK_START.md)  
-**Tempo:** 10 minutos  
+**Arquivo:** [docs/RL_TRAINING_QUICK_START.md](docs/RL_TRAINING_QUICK_START.md)
+**Tempo:** 10 minutos
 **Conteúdo:**
 - ⚡ Installation (30 seconds)
 - 🚀 Iniciar (3 opções)
@@ -43,8 +43,8 @@
 ---
 
 ### Documentação Completa (Produção)
-**Arquivo:** [docs/RL_TRAINING_SCHEDULER_README.md](docs/RL_TRAINING_SCHEDULER_README.md)  
-**Tempo:** 20 minutos  
+**Arquivo:** [docs/RL_TRAINING_SCHEDULER_README.md](docs/RL_TRAINING_SCHEDULER_README.md)
+**Tempo:** 20 minutos
 **Conteúdo:**
 - 📋 Visão geral completa
 - 🚀 3 formas de iniciar
@@ -61,8 +61,8 @@
 ---
 
 ### Sumário Técnico (Arquitetura)
-**Arquivo:** [RL_TRAINING_SCHEDULER_SUMMARY.md](RL_TRAINING_SCHEDULER_SUMMARY.md)  
-**Tempo:** 30 minutos  
+**Arquivo:** [RL_TRAINING_SCHEDULER_SUMMARY.md](RL_TRAINING_SCHEDULER_SUMMARY.md)
+**Tempo:** 30 minutos
 **Conteúdo:**
 - 📊 O que foi criado (6 seções)
 - 📦 990 linhas de código Python
@@ -77,8 +77,8 @@
 ---
 
 ### Entrega Executiva (Overview)
-**Arquivo:** [USANDO_RL_TRAINING_SCHEDULER.md](USANDO_RL_TRAINING_SCHEDULER.md)  
-**Tempo:** 15 minutos  
+**Arquivo:** [USANDO_RL_TRAINING_SCHEDULER.md](USANDO_RL_TRAINING_SCHEDULER.md)
+**Tempo:** 15 minutos
 **Conteúdo:**
 - 🎉 Resumo executivo
 - 📦 3 formas de usar
@@ -94,8 +94,8 @@
 ---
 
 ### Checklist Completo (Referência)
-**Arquivo:** [CHECKLIST_RL_TRAINING_SCHEDULER.md](CHECKLIST_RL_TRAINING_SCHEDULER.md)  
-**Tempo:** 10 minutos (para consulta)  
+**Arquivo:** [CHECKLIST_RL_TRAINING_SCHEDULER.md](CHECKLIST_RL_TRAINING_SCHEDULER.md)
+**Tempo:** 10 minutos (para consulta)
 **Conteúdo:**
 - 📦 Todos os arquivos criados
 - 🎯 Status por componente
@@ -111,10 +111,10 @@
 ## 🐍 SCRIPTS PYTHON
 
 ### rl_training_loop_v3.py
-**Localização:** `scripts/rl_training_loop_v3.py`  
-**Linhas:** 210  
-**Finalidade:** Executa UM ciclo de treinamento  
-**Chamado por:** Scheduler, Health Monitor  
+**Localização:** `scripts/rl_training_loop_v3.py`
+**Linhas:** 210
+**Finalidade:** Executa UM ciclo de treinamento
+**Chamado por:** Scheduler, Health Monitor
 **Uso direto:**
 ```bash
 python scripts/rl_training_loop_v3.py
@@ -123,9 +123,9 @@ python scripts/rl_training_loop_v3.py
 ---
 
 ### rl_training_scheduler.py
-**Localização:** `scripts/rl_training_scheduler.py`  
-**Linhas:** 370  
-**Finalidade:** Scheduler automático com APScheduler  
+**Localização:** `scripts/rl_training_scheduler.py`
+**Linhas:** 370
+**Finalidade:** Scheduler automático com APScheduler
 **Funcionalidades:**
 - Daily training (22:00, seg-sex)
 - Weekly deep training (sexta 20:00)
@@ -143,9 +143,9 @@ scheduler.start()
 ---
 
 ### rl_health_monitor.py
-**Localização:** `scripts/rl_health_monitor.py`  
-**Linhas:** 130  
-**Finalidade:** Monitora saúde do modelo  
+**Localização:** `scripts/rl_health_monitor.py`
+**Linhas:** 130
+**Finalidade:** Monitora saúde do modelo
 **Funcionalidades:**
 - Histórico de métricas
 - Detecção de degradação
@@ -159,9 +159,9 @@ python scripts/rl_health_monitor.py
 ---
 
 ### rl_training_integration.py
-**Localização:** `scripts/rl_training_integration.py`  
-**Linhas:** 280  
-**Finalidade:** Integra scheduler com sistema de trading  
+**Localização:** `scripts/rl_training_integration.py`
+**Linhas:** 280
+**Finalidade:** Integra scheduler com sistema de trading
 **3 Modos:**
 1. `--mode watch` (auto após fechamento 17:00)
 2. `--mode scheduler` (hora fixa, ex: 22:00)
@@ -184,8 +184,8 @@ python scripts/rl_training_integration.py --mode hybrid
 ## 🪟 WINDOWS LAUNCHERS
 
 ### INICIAR_RL_SCHEDULER.ps1 (Recomendado)
-**Tipo:** PowerShell  
-**Compatibilidade:** Windows 10+  
+**Tipo:** PowerShell
+**Compatibilidade:** Windows 10+
 **Uso:**
 ```powershell
 .\INICIAR_RL_SCHEDULER.ps1
@@ -201,8 +201,8 @@ python scripts/rl_training_integration.py --mode hybrid
 ---
 
 ### INICIAR_RL_SCHEDULER.bat (Compatibilidade)
-**Tipo:** Batch (CMD)  
-**Compatibilidade:** Todas versões Windows  
+**Tipo:** Batch (CMD)
+**Compatibilidade:** Todas versões Windows
 **Uso:**
 ```cmd
 INICIAR_RL_SCHEDULER.bat
@@ -213,8 +213,8 @@ INICIAR_RL_SCHEDULER.bat
 ---
 
 ### SETUP_RL_QUICK.bat (Setup)
-**Tipo:** Batch  
-**Finalidade:** Setup automático  
+**Tipo:** Batch
+**Finalidade:** Setup automático
 **Faz:**
 - Verifica Python
 - Instala APScheduler
@@ -231,8 +231,8 @@ SETUP_RL_QUICK.bat
 ## ⚙️ CONFIGURAÇÃO
 
 ### config/rl_scheduler_config.json
-**Tipo:** Configuração JSON  
-**Finalidade:** Customizar behavior do scheduler  
+**Tipo:** Configuração JSON
+**Finalidade:** Customizar behavior do scheduler
 **Seções:**
 - `scheduler` (daily + weekly timing)
 - `market_watch` (fechamento 17:00)
@@ -285,26 +285,26 @@ project/
 ## 🎯 MAPA DE NAVEGAÇÃO
 
 ### "Quero começar rápido"
-→ [SETUP_RL_QUICK.bat](SETUP_RL_QUICK.bat)  
-→ [INICIAR_RL_SCHEDULER.ps1](INICIAR_RL_SCHEDULER.ps1)  
+→ [SETUP_RL_QUICK.bat](SETUP_RL_QUICK.bat)
+→ [INICIAR_RL_SCHEDULER.ps1](INICIAR_RL_SCHEDULER.ps1)
 → [docs/RL_TRAINING_QUICK_START.md](docs/RL_TRAINING_QUICK_START.md)
 
 ### "Você é desenvolvedor Python e quer entender o código"
-→ [RL_TRAINING_SCHEDULER_SUMMARY.md](RL_TRAINING_SCHEDULER_SUMMARY.md)  
-→ `scripts/rl_training_scheduler.py` (ler código)  
+→ [RL_TRAINING_SCHEDULER_SUMMARY.md](RL_TRAINING_SCHEDULER_SUMMARY.md)
+→ `scripts/rl_training_scheduler.py` (ler código)
 → `config/rl_scheduler_config.json` (customizar)
 
 ### "Você é DevOps e precisa fazer deploy"
-→ [docs/RL_TRAINING_SCHEDULER_README.md](docs/RL_TRAINING_SCHEDULER_README.md)  
-→ [SETUP_RL_QUICK.bat](SETUP_RL_QUICK.bat) (deploy)  
+→ [docs/RL_TRAINING_SCHEDULER_README.md](docs/RL_TRAINING_SCHEDULER_README.md)
+→ [SETUP_RL_QUICK.bat](SETUP_RL_QUICK.bat) (deploy)
 → `logs/rl_scheduler.log` (monitorar)
 
 ### "Você é gerente e quer overview"
-→ [USANDO_RL_TRAINING_SCHEDULER.md](USANDO_RL_TRAINING_SCHEDULER.md)  
+→ [USANDO_RL_TRAINING_SCHEDULER.md](USANDO_RL_TRAINING_SCHEDULER.md)
 → [CHECKLIST_RL_TRAINING_SCHEDULER.md](CHECKLIST_RL_TRAINING_SCHEDULER.md)
 
 ### "Você quer troubleshooting"
-→ [docs/RL_TRAINING_QUICK_START.md#troubleshooting](docs/RL_TRAINING_QUICK_START.md)  
+→ [docs/RL_TRAINING_QUICK_START.md#troubleshooting](docs/RL_TRAINING_QUICK_START.md)
 → [docs/RL_TRAINING_SCHEDULER_README.md#troubleshooting](docs/RL_TRAINING_SCHEDULER_README.md)
 
 ### "Você quer ver exemplo de uso"
@@ -331,7 +331,7 @@ project/
 
 - [x] Todos os scripts criados
 - [x] Todos os documentos completos
-- [x] Todos os launchers testados  
+- [x] Todos os launchers testados
 - [x] APScheduler instalado
 - [x] Primeira execução com sucesso
 - [x] Métricas salvas no banco
@@ -361,18 +361,18 @@ project/
 
 ## 📞 SUPORTE RÁPIDO
 
-**Erro:** "APScheduler não instalado"  
+**Erro:** "APScheduler não instalado"
 **Fix:** `pip install apscheduler`
 
-**Erro:** "database is locked"  
+**Erro:** "database is locked"
 **Fix:** Aguarde 10s (retry automático)
 
-**Como ver logs:**  
+**Como ver logs:**
 ```bash
 Get-Content logs/rl_scheduler.log -Tail 50 -Wait
 ```
 
-**Como parar scheduler:**  
+**Como parar scheduler:**
 ```bash
 Get-Job | Stop-Job
 ```
@@ -401,8 +401,8 @@ Aperte 1 para iniciar scheduler       # ✅ Pronto!
 
 ---
 
-**Data:** 2026-02-23  
-**Versão:** 1.0.0  
+**Data:** 2026-02-23
+**Versão:** 1.0.0
 **Status:** 🟢 Production Ready
 
 🚀 **Pronto para começar?** Execute `SETUP_RL_QUICK.bat`!
