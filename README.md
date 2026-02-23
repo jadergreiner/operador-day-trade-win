@@ -144,10 +144,10 @@ Veja [QUICKSTART.md](docs/QUICKSTART.md) para mais detalhes.
 - ⏳ 23/02-12/03: Final adjustments
 - 🚀 **13/03: BETA LAUNCH** (on track)
 
-## 🚀 Sprint 1 - Design Complete (20/02/2026)
+## 🚀 Sprint 1 - Task Specification Complete (23/02/2026)
 
 **US-001: Execução Automática de Ordens com Validação ML**
-**Status:** ✅ DESIGN COMPLETE | 🚀 SPRINT 1 KICKOFF: 27/02
+**Status:** ✅ DESIGN COMPLETE + TASK SPECS | 🚀 SPRINT 1 KICKOFF: 27/02 09:00 BRT
 
 ### Agentes Autônomos - Entrega (20/02 18:00)
 
@@ -206,6 +206,52 @@ Veja [QUICKSTART.md](docs/QUICKSTART.md) para mais detalhes.
 
 **Próxima Fase:** Sprint 2 (06/03-12/03) - Development + Grid Search
 **Go-Live Target:** 10/04/2026 (FASE 1 Beta com R$ 50k)
+
+### Sprint 1 - Tarefas Priorizadas (23/02/2026 - DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md)
+
+**BLOCKER TASKS (Críticas para Sprint 1):**
+
+#### TODO-1: Load Dataset + ML-Based Labeling (Eng Sr + ML Expert)
+- **Acceptance Criteria:** 7 AC (dataset loaded, labels validated, features extracted, splits created, statistics computed, names saved, quality gates passed)
+- **Unit Tests:** 7 testes with fixtures (data loading, label validation, feature engineering, data splitting, statistics validation, feature persistence, quality assertions)
+- **Team Lead:** ML Expert (140h allocation)
+- **Timeline:** 24/02-26/02 (parallel execution)
+- **Deliverables:** 1.000 labeled samples, train/val/test splits, feature names persisted
+- **Implementation Guide:** 5-step process (setup → load → label → extract → validate)
+
+#### TODO-2,3,4: Orders Executor Framework (Eng Sr focused)
+- **Acceptance Criteria:** 10 AC (connection establish, order send, position track, retry mechanism, error recovery, audit logging, risk gates, message queue, performance metrics, circuit breakers)
+- **Unit Tests:** 10 testes with mocks (MT5 API interaction, queue processing, retry logic, error handling, logging, performance, concurrency, state management)
+- **Team Lead:** Eng Sr (160h allocation)
+- **Timeline:** 27/02-03/03 (parallel with TODO-1 execution)
+- **Deliverables:**
+  - TODO-2: Risk Validator + 3 gates (capital adequacy, correlation check, volatility band)
+  - TODO-3: Orders Executor (async queue processor, MT5 adapter)
+  - TODO-4: Position Monitor (real-time tracking, P&L calculation)
+- **Implementation Guide:** 4-step process (design → implement → integrate → test)
+
+**Squad Allocation (8 Personas):**
+
+| Persona | Role | Allocation | Task Focus |
+|---------|------|-----------|-----------|
+| **Eng Sr** | Technical Lead | 160h | TODO-2,3,4 (Orders Framework) |
+| **ML Expert** | ML Lead | 140h | TODO-1 (Dataset + Labeling) |
+| **QA Lead** | Quality Assurance | 40h | Test suite + validation |
+| **DevOps** | Infrastructure | 20h | Environment + CI/CD |
+| **Tech Writer** | Documentation | 15h | Implementation guide |
+| **Product Owner** | Requirements | 20h | AC validation + gates |
+| **Data Analyst** | Data Quality | 25h | Label validation + audit |
+| **Integration Eng** | E2E Testing | 30h | End-to-end flow validation |
+
+**Total Effort:** 350h (24/02-03/03 parallel execution model)
+**Code Expected:** ~400 LOC novo (clean architecture, 100% type hints)
+**Success Criteria:** 17/17 AC passing + 17/17 tests green + Gate 1 approved (05/03 17:00)
+
+#### Documentação Completa:
+- 📄 [DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md](DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md) - 1.732 linhas | Full task specs + implementation guides
+- 📋 [prompts/executa_task.md](prompts/executa_task.md) - Framework de execução (4-etapa methodology)
+- 📊 [prompts/solicita_task.md](prompts/solicita_task.md) - Task prioritization template (4-section analysis)
+- 🔄 [prompts/adaptive_framework.md](prompts/adaptive_framework.md) - Adaptive context discovery framework
 
 ### Arquitetura Production (com WebSocket Server - Phase 6):
 
@@ -451,6 +497,7 @@ O Agente implementa um sistema rigoroso de **sincronização automática** de do
 - [📊 Status Tracker](docs/agente_autonomo/AGENTE_AUTONOMO_TRACKER.md) - Dashboard de progresso em tempo real
 
 **Validação Pre-Commit:**
+
 ```bash
 # O sistema valida automaticamente antes de qualquer commit:
 # ✓ Todos os documentos presentes?
@@ -479,6 +526,7 @@ Narrativa jornalística do mercado:
 - Sugestões do que funcionaria melhor
 
 **Iniciar diários automaticamente:**
+
 ```bash
 # Opção 1: Duplo clique
 INICIAR_DIARIOS.bat

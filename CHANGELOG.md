@@ -1,5 +1,29 @@
 # CHANGELOG - Operador Quântico
 
+## [v1.0.1] - 23/02/2026 (Sprint 1 Task Development)
+
+### ✨ Novo - Sprint 1 Tarefas Priorizadas
+
+**Status: Task Specification Complete (23/02/2026)**
+
+#### Documentação Criada:
+- ✅ **DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md** (1.732 linhas)
+  - TODO-1: load_and_label() specification (7 AC + 7 unit tests)
+  - TODO-2,3,4: OrdersExecutor specification (10 AC + 10 unit tests)
+  - Squad allocation: 8 personas designated
+  - Timeline: 24/02-03/03 parallel execution
+  - Deliverables: 17 AC + 17 unit tests + 400+ LOC novo
+
+#### Sync Manifest Atualizado:
+- ✅ DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md registered
+- ✅ prompts/executa_task.md registered
+- ✅ prompts/solicita_task.md registered
+- ✅ prompts/adaptive_framework.md registered
+- Version bump: 1.2.2 → 1.2.3
+- Timestamp: 2026-02-23T23:20:00Z
+
+---
+
 ## [v1.1.0] - 13/03/2026 (Planned BETA)
 
 ### ✨ Novo - US-004 Alertas Automáticos (🎯 IMPLEMENTADO)
