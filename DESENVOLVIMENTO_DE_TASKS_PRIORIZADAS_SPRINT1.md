@@ -1,400 +1,288 @@
 # 🚀 DESENVOLVIMENTO DE TASKS PRIORIZADAS - Sprint 1
-## Executa task.md - Plano Acionável 24/02-25/02 2026
 
-**Documento de Execução:** Detalhado, pronto para implementação  
-**Data:** 23/02-25/02 2026  
-**Status:** 📋 PLANEJADO | ⏳ PRONTO PARA IMPLEMENTAR  
-**Squad:** 8 personas (Eng Sr, ML Expert, QA, Arch, Infra, Doc, Audit, Suporte)  
+**Executor:** {{prompts\executa_task.md}} - 4-Etapa Implementation Framework  
+**Data Criação:** 23/02/2026 23:15 BRT  
+**Status:** ✅ READY FOR SPRINT 1 KICKOFF (27/02/2026)  
+**Squad:** 8 personas + 5 on-call backup  
+**Deliverables:** 17 AC + 17 unit tests + 400+ LOC implementação  
 
 ---
 
-# TASK 1: TODO-1 - LABEL BACKTEST_OPTIMIZED_RESULTS
+## 🎯 EXECUTIVE SUMMARY
+
+Este documento especifica as **2 tarefas bloqueadoras de Sprint 1**:
+
+1. **TODO-1: load_and_label()** - Persona 2 (The Brain)
+   - Carrega backtest_optimized_results.json e gera training dataset (1.000 amostras × 26 features)
+   - **AC:** 7 critérios de aceitação
+   - **Tests:** 7 unit tests (coverage > 90%)
+   - **Timeline:** 24/02 10:00-12:30 (2.5h)
+   - **Output:** training_dataset.csv pronto para grid search
+
+2. **TODO-2,3,4: OrdersExecutor** - Persona 1 (Eng Sr)
+   - implementa 3 funções: execute_order() + monitor_positions() + position_monitoring_loop()
+   - **AC:** 10 critérios de aceitação
+   - **Tests:** 10 unit tests (coverage > 90%)
+   - **Timeline:** 02/03 10:00-14:00 (4h)
+   - **Output:** OrdersExecutor class com risk double-gate validation
+
+**🚀 BLOCKERS:** Zero técnicos  
+**🟢 STATUS:** GO para Sprint 1 Official Kickoff (27/02 09:00 BRT)
+
+---
+
+# TASK 1: TODO-1 - LOAD_AND_LABEL() - DATASET LABELING
 
 **Persona Lead:** Persona 2 - "The Brain" (ML Expert)  
-**Suporte:** Persona 12 (QA), Persona 8 (Audit)  
-**Duração:** 2-3 horas  
-**Deadline:** 24/02 EOD (implementar) | 25/02 12:00 (validar)  
-**Status:** ⏳ NÃO-INICIADA - PRONTA  
+**Suporte:** Persona 12 (Quality QA), Persona 8 (Audit Docs)  
+**Duração Estimada:** 2-3 horas  
+**Deadline:** 25/02 12:00 (pronto para grid search)  
+**Status:** ⏳ PRONTO PARA COMEÇAR 24/02  
+**GitHub Issue:** #66  
 
 ---
 
-## 1.1 CONTEXTO & PROBLEMA
+## 1️⃣ ESPECIFICAÇÃO COMPLETA
 
-### O que é TODO-1?
-
-```
-Location: src/application/ml_feature_engineer.py:447-448
-
-Código atual (TODO):
-    # TODO: Implementar após ter backtest_optimized_results.json
-    logger.info("TODO: Implementar load_and_label com backtest results")
-```
-
-### Por que é crítico?
+### Contexto: Por que TODO-1 é crítico?
 
 ```
-┌─────────────────────────────────────────────┐
-│ BLOCKER ABSOLUTO para Grid Search (Sprint 2)│
-│                                             │
-│ Sem labels → Não pode treinar modelo        │
-│ Sem treinamento → Não pode fazer backtest   │
-│ Sem backtest → Gate 1 (05/03) é NO-GO       │
-│ Gate 1 NO-GO → Atrasa Go-Live 7 dias        │
-│                                             │
-│ IMPACTO: 140h de trabalho Grid Search       │
-└─────────────────────────────────────────────┘
+BLOCKER ABSOLUTO para Grid Search (Sprint 2)
+
+Dependência Linear:
+  sem labels → não treina modelo
+  → não faz backtest  
+  → Gate 1 (05/03) = FAIL
+  → atrasa Go-Live 7 dias
+  → impacto: 140h de trabalho grid search bloqueado
+
+Este task desbloqueia Sprint 2 inteiro.
 ```
 
-### Pré-requisitos
+### O Que Fazer Exatamente?
 
 ```
-✅ backtest_optimized_results.json [EXISTS]
-   └─ 1.000 records com window_id + features
-   └─ Validado: zero NaN, structure OK
-   └─ Path: /backtest_optimized_results.json
+Entrada:  backtest_optimized_results.json (1.000 registros)
+          └─ Contém: window_id + 24 engineered features
 
-✅ Feature engineering 100% [DONE Phase 6]
-   └─ 24 features identificadas + documentadas
-   └─ Specs: volatility, momentum, MA, patterns, lags, correlation
+Processo: Load → Extract → Label → Validate → Save
 
-✅ Dataset schema [DEFINED]
-   └─ Input: backtest_optimized_results.json (windows)
-   └─ Output: training_dataset.parquet or .csv (1.000 rows × 26 cols)
-   └─ Columns: 24 features + window_id + label (BUY/SKIP)
+Saída:    training_dataset.csv (1.000 rows × 26 cols)
+          ├─ Cols 1-24: engineered features (volatility, momentum, MA, patterns, lags, correlation)
+          └─ Col 25: label (0=SKIP ou 1=BUY)
+          └─ Col 26: window_id (for tracing)
+
+QA Gates:
+  ├─ No NaN values (all 25.000 cells filled)
+  ├─ Label distribution: balanced (30-70% BUY ideally 50-62%)
+  ├─ Performance: load+label+save < 500ms
+  └─ Unit tests: 7/7 passing with >90% coverage
 ```
 
----
-
-## 1.2 ESPECIFICAÇÃO TÉCNICA
-
-### Função a Implementar
+### Função Exata a Implementar
 
 ```python
-# File: src/application/ml_feature_engineer.py
+# FILE: src/application/ml_feature_engineer.py, lines 447-448
 
-def load_and_label(results_path: str, output_path: str = None) -> pd.DataFrame:
-    """
-    Carrega backtest_optimized_results.json e gera labels (BUY/SKIP).
+def load_and_label(
+    results_path: str = "backtest_optimized_results.json",
+    output_path: str = "training_dataset.csv"
+) -> pd.DataFrame:
+    '''
+    Carrega backtest_optimized_results.json e cria dataset com labels.
     
-    Args:
-        results_path: Caminho para backtest_optimized_results.json
-        output_path: Opcional - salvar resultado em parquet/csv
+    ENTRADA:
+    --------
+    results_path: string - caminho para JSON (deve ter 1.000 records)
+    output_path: string - onde salvar CSV
     
-    Returns:
-        pd.DataFrame com 1.000 rows × 26 colunas:
-            - 24 engineered features (volatility, momentum, MA, patterns, lags)
-            - window_id (original index from backtest)
-            - label (1=BUY ou 0=SKIP)
+    SAÍDA:
+    ------
+    pd.DataFrame com:
+      - Linhas: 1.000 (samples do backtest)
+      - Colunas: 26 (24 features + window_id + label)
+      - Labels: 0 (SKIP) ou 1 (BUY)
+      - Encoding: UTF-8, sem NaN
     
-    Raises:
-        FileNotFoundError: Se arquivo não encontrado
-        ValueError: Se data validation falhar
-        
-    Performance:
-        - Load + Label: < 500ms
-        - Validação: < 100ms
-        - Total: < 600ms (target SLA)
-    """
+    PERFORMANCE:
+    - Load JSON: < 100ms
+    - Extract features: < 200ms  
+    - Generate labels: < 100ms
+    - Total: < 500ms SLA
     
-    # FASE 1: Load + Validate
-    df = pd.read_json(results_path)  # 1.000 records
+    EXCEÇÕES:
+    - FileNotFoundError se arquivo não existe
+    - ValueError se data validation falha
+    '''
     
-    # Validar estrutura
-    assert df.shape[0] == 1000, f"Expected 1.000 rows, got {df.shape[0]}"
-    assert 'window_id' in df.columns, "Missing window_id column"
-    assert df.isnull().sum().sum() == 0, "Encontrado NaN values"
+    # FASE 1: Load & Validate
+    df = pd.read_json(results_path)
+    assert df.shape[0] == 1000, f"Expected 1000 rows, got {df.shape[0]}"
+    assert df.isnull().sum().sum() == 0, "NaN values encontrados"
     
-    # FASE 2: Extract 24 features + window_id
-    features_24 = [col for col in df.columns if col not in ['window_id', 'label']]
-    df_features = df[['window_id'] + features_24].copy()
-    
+    # FASE 2: Extract 24 features
+    features_24 = [col for col in df.columns if col not in ['window_id']]
     assert len(features_24) == 24, f"Expected 24 features, got {len(features_24)}"
     
-    # FASE 3: Generate labels (BUY vs SKIP)
-    # Critério: observar padrão no backtest
-    # BUY: setup atende critérios (trigger dentro das 5 velas)
-    # SKIP: setup não atende ou late entry
+    # FASE 3: Generate labels
+    # Lógica: BUY se volume > threshold E volatility in range
+    labels = df.apply(
+        lambda row: 1 if (row.get('volume', 0) > 1000 and 
+                         1.0 <= row.get('sigma', 0) <= 3.0) else 0,
+        axis=1
+    )
     
-    labels = []
-    for idx, row in df.iterrows():
-        # Lógica simples para v1: basear em volume + volatilidade
-        volume_trigger = row.get('volume', 0) > threshold_volume
-        volatility_ok = threshold_min < row.get('volatility', 0) < threshold_max
-        
-        if volume_trigger and volatility_ok:
-            labels.append(1)  # BUY
-        else:
-            labels.append(0)  # SKIP
+    # FASE 4: Validate imbalance
+    buy_pct = (labels == 1).sum() / len(labels) * 100
+    assert 20 <= buy_pct <= 80, f"Imbalance {buy_pct}% outside acceptable range"
     
-    df_features['label'] = labels
+    # FASE 5: Save
+    output_df = df[['window_id'] + features_24].copy()
+    output_df['label'] = labels
+    output_df.to_csv(output_path, index=False) if output_path else None
     
-    # FASE 4: Validar imbalance
-    buy_pct = (df_features['label'] == 1).sum() / len(df_features) * 100
-    skip_pct = (df_features['label'] == 0).sum() / len(df_features) * 100
-    
-    print(f"Label distribution: BUY={buy_pct:.1f}%, SKIP={skip_pct:.1f}%")
-    assert buy_pct < 70, f"Imbalance warning: BUY {buy_pct}% > 70% threshold"
-    
-    # FASE 5: Save output
-    if output_path:
-        if output_path.endswith('.parquet'):
-            df_features.to_parquet(output_path, index=False)
-        elif output_path.endswith('.csv'):
-            df_features.to_csv(output_path, index=False)
-        else:
-            raise ValueError(f"Unsupported format: {output_path}")
-        
-        logger.info(f"Dataset salvo em {output_path}: shape={df_features.shape}")
-    
-    return df_features
-
-
-def validate_dataset(dataset: pd.DataFrame) -> dict:
-    """
-    Valida dataset antes de usar em Grid Search.
-    
-    Returns:
-        dict com métricas de validação
-    """
-    
-    metrics = {
-        'shape': dataset.shape,
-        'has_nan': dataset.isnull().sum().sum(),
-        'label_distribution': dataset['label'].value_counts().to_dict(),
-        'feature_count': len([c for c in dataset.columns if c not in ['window_id', 'label']]),
-        'timestamp': pd.Timestamp.now(),
-    }
-    
-    logger.info(f"Dataset validation: {metrics}")
-    
-    return metrics
+    return output_df
 ```
 
 ---
 
-## 1.3 ACCEPTANCE CRITERIA (7 AC)
+## ✅ ACCEPTANCE CRITERIA (7 - TODO-1)
 
-```
-AC-1: Load JSON Successfully
-  □ Load backtest_optimized_results.json
-  □ Parse 1.000 records without error
-  □ Schema validated (columns match spec)
-  ✓ IMPLEMENTATION: pd.read_json() + assertions
-
-AC-2: Extract 24 Features
-  □ Identify all 24 engineered features
-  □ Extract from backtest results
-  □ Maintain column order
-  □ Validate no missing values
-  ✓ IMPLEMENTATION: [col for col in df.columns if col not in ['window_id', 'label']]
-
-AC-3: Generate Labels (BUY/SKIP)
-  □ BUY (1): Setup meets trigger criteria + volume OK + volatility in range
-  □ SKIP (0): Setup doesn't meet + low volume OR volatility out of range
-  □ All 1.000 records labeled
-  □ No NaN labels
-  ✓ IMPLEMENTATION: Conditional logic based on features
-
-AC-4: Validate Imbalance < 70%
-  □ Calculate BUY % vs SKIP %
-  □ Ensure no class > 70%
-  □ Log distribution to console + log file
-  □ Raise ValueError if imbalance violated
-  ✓ IMPLEMENTATION: (df['label'] == 1).sum() / len(df) * 100 < 70
-
-AC-5: Zero NaN Values
-  □ No NaN in features
-  □ No NaN in labels
-  □ No NaN in window_id
-  □ Assert df.isnull().sum().sum() == 0
-  ✓ IMPLEMENTATION: assert statement
-
-AC-6: Performance < 500ms
-  □ Load + Label + Validate: < 500ms total
-  □ Memory usage acceptable (< 100MB)
-  □ Benchmark and log timing
-  ✓ IMPLEMENTATION: time.perf_counter() + memory_profiler
-
-AC-7: Unit Test Coverage > 90%
-  □ test_load_and_label_success() - happy path
-  □ test_label_distribution_validation() - imbalance check
-  □ test_zero_nan_validation() - no NaN values
-  □ test_performance_benchmark() - < 500ms
-  □ test_feature_count_validation() - 24 features
-  □ test_invalid_file_path() - FileNotFoundError
-  □ test_corrupted_data() - ValueError handling
-  ✓ IMPLEMENTATION: pytest tests/test_ml_feature_engineer.py
-```
+| AC # | Critério | Descrição Técnica | Test |
+|------|----------|-------------------|------|
+| **1** | Load JSON | Carregar backtest_optimized_results.json com validação | `test_load_json_success()` |
+| **2** | Extract 24 Features | Extrair exatamente 24 engineered features sem perda | `test_extract_24_features()` |
+| **3** | Generate Labels | Mapear BUY/SKIP baseado em critério de volume+volatility | `test_generate_labels_mapping()` |
+| **4** | Validate Imbalance | Assert 20-80% BUY (nunca 0-100% uma classe), raise ValueError | `test_validate_imbalance()` |
+| **5** | Zero NaN Check | Assert output sem NaN em features + labels + window_id | `test_zero_nan_values()` |
+| **6** | Performance < 500ms |load+label+save < 500ms total, benchmark e log tempo | `test_performance_benchmark()` |
+| **7** | Unit Tests > 90% | 7 testes passing, coverage > 90%, pytest --cov validado | `pytest tests/test_load_and_label.py -v --cov` |
 
 ---
 
-## 1.4 UNIT TESTS (Persona 12 - QA)
+## 🧪 UNIT TEST TEMPLATES (7 - TODO-1)
 
 ```python
-# File: tests/test_ml_feature_engineer.py
+# File: tests/unit/test_load_and_label.py
 
 import pytest
 import pandas as pd
-import json
-import tempfile
 import time
+import tempfile
 from pathlib import Path
-from src.application.ml_feature_engineer import load_and_label, validate_dataset
+from src.application.ml_feature_engineer import load_and_label
 
-class TestLoadAndLabel:
-    
-    @pytest.fixture
-    def sample_backtest_json(self):
-        """Cria fixture com dados de teste válidos."""
-        data = {
-            'window_id': list(range(1000)),
-            'volatility': [0.5 + i*0.001 for i in range(1000)],
-            'momentum': [0.2 + i*0.001 for i in range(1000)],
-            # ... mais 21 features ...
-            'volume': [100000 + i*100 for i in range(1000)],
-        }
-        
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            json.dump(data, f)
-        
-        yield f.name
-        
-        # Cleanup
-        Path(f.name).unlink()
-    
-    def test_load_and_label_success(self, sample_backtest_json):
-        """AC-1, AC-2, AC-3: Load + extract + label successfully."""
-        df = load_and_label(sample_backtest_json)
-        
-        assert df.shape[0] == 1000, f"Expected 1000 rows, got {df.shape[0]}"
-        assert 'window_id' in df.columns
-        assert 'label' in df.columns
-        assert len([c for c in df.columns if c not in ['window_id', 'label']]) == 24
-    
-    def test_label_distribution_validation(self, sample_backtest_json):
-        """AC-4: Validate imbalance < 70%."""
-        df = load_and_label(sample_backtest_json)
-        
-        buy_pct = (df['label'] == 1).sum() / len(df) * 100
-        
-        assert buy_pct < 70, f"Imbalance: BUY {buy_pct}% > 70%"
-        assert buy_pct > 30, f"Imbalance: BUY {buy_pct}% < 30%"  # sanity check
-    
-    def test_zero_nan_validation(self, sample_backtest_json):
-        """AC-5: No NaN values."""
-        df = load_and_label(sample_backtest_json)
-        
-        assert df.isnull().sum().sum() == 0, f"Found {df.isnull().sum().sum()} NaN values"
-    
-    def test_performance_benchmark(self, sample_backtest_json):
-        """AC-6: Performance < 500ms."""
-        start = time.perf_counter()
-        df = load_and_label(sample_backtest_json)
-        elapsed = (time.perf_counter() - start) * 1000  # convert to ms
-        
-        assert elapsed < 500, f"Performance: {elapsed}ms > 500ms target"
-        print(f"PERFORMANCE: Load + Label: {elapsed:.1f}ms")
-    
-    def test_feature_count_validation(self, sample_backtest_json):
-        """AC-2: Validate 24 features."""
-        df = load_and_label(sample_backtest_json)
-        
-        feature_count = len([c for c in df.columns if c not in ['window_id', 'label']])
-        assert feature_count == 24, f"Expected 24 features, got {feature_count}"
-    
-    def test_invalid_file_path(self):
-        """AC-6 (Error handling): FileNotFoundError."""
-        with pytest.raises(FileNotFoundError):
-            load_and_label('/invalid/path/file.json')
-    
-    def test_corrupted_data(self):
-        """AC-6 (Error handling): ValueError on corrupted data."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            json.dump({'window_id': list(range(500))}, f)  # Only 500 rows, not 1000
-        
-        with pytest.raises(AssertionError):
-            load_and_label(f.name)
-        
-        Path(f.name).unlink()
+@pytest.fixture
+def sample_backtest_data():
+    """Fixture com dados de teste válidos 1.000 records."""
+    data = {
+        'window_id': list(range(1000)),
+        'volatility': [1.5 + (i % 100) * 0.01 for i in range(1000)],
+        'volume': [50000 + i * 50 for i in range(1000)],
+        # ... adicionar 21 mais features aqui ...
+    }
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        import json
+        json.dump(data, f)
+    yield f.name
+    Path(f.name).unlink()
+
+# TEST 1: AC1 - Load JSON Success
+def test_load_json_success(sample_backtest_data):
+    """Deve carregar JSON sem erros, validar structure."""
+    df = load_and_label(sample_backtest_data)
+    assert df.shape[0] == 1000
+    assert 'window_id' in df.columns
+    assert 'label' in df.columns
+
+# TEST 2: AC2 - Extract 24 Features
+def test_extract_24_features(sample_backtest_data):
+    """Deve extrair exatamente 24 features, nenhum a mais/menos."""
+    df = load_and_label(sample_backtest_data)
+    feature_count = len([c for c in df.columns if c not in ['window_id', 'label']])
+    assert feature_count == 24
+
+# TEST 3: AC3 - Generate Labels Correctly
+def test_generate_labels_mapping(sample_backtest_data):
+    """Labels deve ser 0 ou 1 apenas, nunca NaN."""
+    df = load_and_label(sample_backtest_data)
+    assert set(df['label'].unique()) <= {0, 1}
+    assert df['label'].isnull().sum() == 0
+
+# TEST 4: AC4 - Validate Imbalance
+def test_validate_imbalance(sample_backtest_data):
+    """Deve manter imbalance entre 20-80% BUY (nuncaunbalanced)."""
+    df = load_and_label(sample_backtest_data)
+    buy_pct = (df['label'] == 1).sum() / len(df) * 100
+    assert 20 <= buy_pct <= 80
+
+# TEST 5: AC5 - Zero NaN Values
+def test_zero_nan_values(sample_backtest_data):
+    """Output não deve ter NaN em nenhuma célula."""
+    df = load_and_label(sample_backtest_data)
+    assert df.isnull().sum().sum() == 0
+
+# TEST 6: AC6 - Performance < 500ms
+def test_performance_benchmark(sample_backtest_data):
+    """Load+label total latency < 500ms."""
+    start = time.perf_counter()
+    df = load_and_label(sample_backtest_data)
+    elapsed = (time.perf_counter() - start) * 1000
+    assert elapsed < 500, f"Performance {elapsed}ms > 500ms target"
+
+# TEST 7: AC7 - File Not Found Error
+def test_file_not_found():
+    """Deve raise FileNotFoundError com menagem clara."""
+    with pytest.raises(FileNotFoundError):
+        load_and_label('/invalid/path.json')
 ```
 
 ---
 
-## 1.5 IMPLEMENTAÇÃO PASSO-A-PASSO
+## 📋 IMPLEMENTATION STEPS (Passo-a-Passo) - TODO-1
 
-**Timeline:** 24/02 10:00-12:00 BRT (2 horas)
+**Timeline Total: 24/02 10:00-12:30 (2.5 horas)**
 
-### Passo 1: Análise de Dados (15 min)
+### Step 1: Data Exploration (15 min)
 
-```bash
-# Persona 2 (The Brain) - Análise exploratória
-
-# 1a. Examinar estrutura backtest_optimized_results.json
-python
+```python
+# Explorar dados antes de implementar
 import json
 import pandas as pd
 
-with open('backtest_optimized_results.json', 'r') as f:
-    data = json.load(f)
+with open('backtest_optimized_results.json') as f:
+    data = json.load(f)  # Ou pd.read_json()
 
 df = pd.read_json('backtest_optimized_results.json')
-print(f"Shape: {df.shape}")
+print(f"Shape: {df.shape}")  # Esperado: (1000, XX)
 print(f"Columns: {list(df.columns)}")
 print(f"Data types:\n{df.dtypes}")
-print(f"NaN values:\n{df.isnull().sum()}")
-print(f"Description:\n{df.describe()}")
+print(f"NaN count: {df.isnull().sum().sum()}")  # Esperado: 0
 
-# 1b. Identificar as 24 features
-print(f"Feature count: {len([c for c in df.columns if c not in ['window_id', 'label']])}")
-
-# 1c. Analisar padrões para labeling logic
-print(f"Volume stats: {df['volume'].describe()}")
-print(f"Volatility range: {df['volatility'].min()}-{df['volatility'].max()}")
+# Identificar 24 features (excluindo window_id, label se tiver)
+feature_cols = [c for c in df.columns if c not in ['window_id', 'label']]
+print(f"Features count: {len(feature_cols)}")  # Esperado: 24
 ```
 
-### Passo 2: Implementar load_and_label() (45 min)
+### Step 2: Implement load_and_label() (60 min)
 
-```bash
-# Persona 2 - Coding
+```python
+# Criar função conforme spec acima
+vim src/application/ml_feature_engineer.py  # linha 447-448
 
-# 2a. Criar função principal
-vim src/application/ml_feature_engineer.py
-# → Adicionar load_and_label() conforme spec acima
-
-# 2b. Implementar validações
-# → assert statements para NaN, shape, columns
-
-# 2c. Implementar labeling logic
-# → Condicionais baseadas em features
-
-# 2d. Implementar output save
-# → Salvar em parquet/csv conforme parâmetro
+# Copiar código da função acima com:
+# - Phase 1: Load & validate shape
+# - Phase 2: Extract 24 features
+# - Phase 3: Generate labels (BUY=1 si volume > 1000 and 1.0 <= sigma <= 3.0 else SKIP=0)
+# - Phase 4: Validate imbalance 20-80%
+# - Phase 5: Validate no NaN
+# - Phase 6: Save output CSV
 ```
 
-### Passo 3: Escrever Unit Tests (30 min)
+### Step 3: Run & Benchmark (20 min)
 
 ```bash
-# Persona 12 (QA) - Testing
-
-# 3a. Criar arquivo de testes
-vim tests/test_ml_feature_engineer.py
-# → Copiar test cases conforme spec acima
-
-# 3b. Run testes
-pytest tests/test_ml_feature_engineer.py -v
-
-# 3c. Validar coverage
-pytest tests/test_ml_feature_engineer.py --cov=src/application/ml_feature_engineer
-
-# Expected: > 90% coverage
-```
-
-### Passo 4: Performance Benchmark (15 min)
-
-```bash
-# Persona 2 (The Brain) + Persona 12 (QA)
-
-# 4a. Benchmark real
+# Test real execution
 python -c "
 import time
 from src.application.ml_feature_engineer import load_and_label
@@ -403,85 +291,433 @@ start = time.perf_counter()
 df = load_and_label('backtest_optimized_results.json', 'training_dataset.csv')
 elapsed = (time.perf_counter() - start) * 1000
 
-print(f'Load + Label: {elapsed:.1f}ms')
+print(f'✅ Load+Label+Save: {elapsed:.1f}ms')
 print(f'Shape: {df.shape}')
-print(f'Memory: {df.memory_usage().sum() / 1024 / 1024:.1f}MB')
+print(f'Label distribution: BUY={df[df.label==1].shape[0]}, SKIP={df[df.label==0].shape[0]}')
+print(f'No NaN: {df.isnull().sum().sum()==0}')
 "
 
 # Expected output:
-#   Load + Label: 250-450ms
+#   ✅ Load+Label+Save: 250-450ms
 #   Shape: (1000, 26)
-#   Memory: 5-15MB
+#   Label distribution: BUY=600, SKIP=400
+#   No NaN: True
 ```
 
-### Passo 5: Documentação (15 min)
+### Step 4: Write Unit Tests (30 min)
 
 ```bash
-# Persona 8 (Audit) - Documentação
+# Criar tests/unit/test_load_and_label.py
+vim tests/unit/test_load_and_label.py
+# Copy todos 7 test templates acima
 
-# 5a. Adicionar docstring
-# → Já incluído na função acima
+# Run tests
+pytest tests/unit/test_load_and_label.py -v
+# Expected: 7/7 PASSED
 
-# 5b. Atualizar ANALISE_PRIORIZACAO_23FEV.md
-vim ANALISE_PRIORIZACAO_23FEV.md
-# → TODO-1 marcar como "IN-PROGRESS" → "COMPLETE" 25/02 12:00
+# Validar coverage
+pytest tests/unit/test_load_and_label.py --cov=src/application/ml_feature_engineer
+# Expected: coverage >= 90%
+```
 
-# 5c. Criar entrada em changelog
-echo "- ✅ TODO-1: Implement load_and_label() with 1.000 labeled samples" >> CHANGELOG.md
+### Step 5: Documentation & Commit (15 min)
+
+```bash
+# Update CHANGELOG
+echo "- ✅ TODO-1: load_and_label() - 1.000 labeled samples with 24 features" >> CHANGELOG.md
+
+# Commit
+git add src/application/ml_feature_engineer.py tests/unit/test_load_and_label.py CHANGELOG.md
+git commit -m "feat: TODO-1 - load_and_label() com 1.000 amostras etiquetadas"
+git push origin main
+
+# Atualizar GitHub issue #66
+# Comment: "✅ TODO-1 COMPLETE - 7/7 AC passed, coverage 92%, output: training_dataset.csv"
 ```
 
 ---
 
-## 1.6 CHECKLIST DE CONCLUSÃO
+## ✓ CHECKLIST - TODO-1 COMPLETION
 
 ```
-TODO-1 Completion Checklist:
-
 IMPLEMENTAÇÃO:
-  ☑️ load_and_label() function implemented
-  ☑️ Output: training_dataset.csv or .parquet (1.000 rows × 26 cols)
-  ☑️ Load + Label + Save: < 500ms
-  ☑️ No NaN values in output
-  ☑️ Label distribution: BUY 60-62%, SKIP 38-40% (balanced)
+  ☑️ load_and_label() function created (80 LOC)
+  ☑️ BackupData JSON loading OK
+  ☑️ 24 features extracted
+  ☑️ Labels generated (BUY/SKIP logic)
+  ☑️ Imbalance validated (20-80%)
+  ☑️ Zero NaN assured
+  ☑️ Performance < 500ms confirmed
 
 TESTES:
-  ☑️ test_load_and_label_success() PASS
-  ☑️ test_label_distribution_validation() PASS
-  ☑️ test_zero_nan_validation() PASS
-  ☑️ test_performance_benchmark() PASS (< 500ms)
-  ☑️ test_feature_count_validation() PASS (24 features)
-  ☑️ test_invalid_file_path() PASS
-  ☑️ test_corrupted_data() PASS
-  ☑️ Coverage > 90% achieved
+  ☑️ test_load_json_success PASS
+  ☑️ test_extract_24_features PASS
+  ☑️ test_generate_labels_mapping PASS
+  ☑️ test_validate_imbalance PASS
+  ☑️ test_zero_nan_values PASS
+  ☑️ test_performance_benchmark PASS
+  ☑️ test_file_not_found PASS
+  ☑️ Coverage > 90%
 
-DOCUMENTAÇÃO:
-  ☑️ Docstring completo com todos os parâmetros
-  ☑️ AC list validado (7/7 complete)
-  ☑️ ANALISE_PRIORIZACAO_23FEV.md atualizado
-  ☑️ CHANGELOG.md com entrada
+DELIVERABLE:
+  ☑️ training_dataset.csv (1.000 × 26)
+  ☑️ All AC satisfied (7/7)
+  ☑️ Ready for Sprint 2 grid search
 
-GIT:
-  ☑️ Code committed: "feat: TODO-1 - load_and_label() implementado"
-  ☑️ Tests committed: "test: TODO-1 - unit tests com coverage 90%+"
-  ☑️ Message em português, UTF-8 encoding
-  ☑️ All files pushed to main
-
-VALIDAÇÃO FINAL:
-  ☑️ Produto gerado: training_dataset.csv (1.000 rows)
-  ☑️ Grid Search pode usar esse dataset
-  ☑️ Desbloqueia: Sprint 2 Grid Search (140h work)
-  ☑️ Status: ✅ READY FOR GRID SEARCH
+STATUS: ✅ COMPLETE
 ```
 
 ---
 
-# TASK 2: TODO-2,3,4 - ORDERSEXECUTOR
+# TASK 2: TODO-2,3,4 - ORDERSEXECUTOR (Risk-Gated Order Execution)
 
 **Persona Lead:** Persona 1 - Eng Sr (CTO)  
-**Suporte:** Persona 6 (Arch), Persona 12 (QA), Persona 8 (Audit)  
-**Duração:** 3-4 horas  
-**Deadline:** 02/03 EOD (implementar) | 03/03 12:00 (validar)  
-**Status:** ⏳ NÃO-INICIADA - PRONTA  
+**Suporte:** Persona 6 (Arch), Persona 12 (QA), Persona 8 (Docs)  
+**Duração Estimada:** 3-4 horas  
+**Deadline:** 03/03 12:00 (pronto para E2E tests)  
+**Status:** ⏳ PRONTO PARA COMEÇAR 02/03  
+**GitHub Issue:** #67
+
+---
+
+## 2️⃣ ESPECIFICAÇÃO COMPLETA
+
+### Contexto: Por que TODO-2,3,4 é crítico?
+
+```
+BLOCKER de Stage 2 Deployment (30h E2E tests)
+
+Dependência:
+  sem OrdersExecutor → não envia ordens ao MT5
+  → não executa trades
+  → não valida risk framework
+  → não pode fazer E2E tests
+  → Stage 2 deployment fica bloqueado
+
+Impacto: 3-4 tasks paralelos de E2E dependem disso
+```
+
+### O Que São os 3 TODOs?
+
+```
+TODO-2 (line 133): execute_order()
+  └─ Valida 3 risk gates + envia ordem ao MT5
+  └─ Entrada: Order {symbol, volume, entry_price, stop_loss, take_profit}
+  └─ Saída: {success, order_id, gates_passed, rejection_reason}
+
+TODO-3 (line 158): monitor_positions()
+  └─ Query MT5 para posições abertas
+  └─ Monitora PnL não realizado
+  └─ Latência target: < 100ms
+
+TODO-4 (line 188): position_monitoring_loop()
+  └─ Background thread que monitora a cada 100ms
+  └─ Fecha posição se SL/TP atingido
+  └─ Funciona enquanto _monitoring_active == True
+```
+
+### Funções Exatas a Implementar
+
+```python
+# FILE: src/application/orders_executor.py
+
+class OrdersExecutor:
+    """Executa ordens com 3-gate risk validation."""
+    
+    def __init__(self, risk_validator, mt5_adapter):
+        self.risk_validator = risk_validator  # Check capital, correlation, volatility
+        self.mt5_adapter = mt5_adapter        # Send to MT5, query positions
+        self._monitoring_active = False
+    
+    # TODO-2 (Line 133): execute_order()
+    def execute_order(self, order: Order) -> dict:
+        """
+        Valida 3 gates de risco (capital, correlation, volatility).
+        Se TODOS passam: envia ordem ao MT5.
+        Se QUALQUER falha: rejeita com motivo.
+        
+        Returns:
+          {
+              'success': bool,
+              'order_id': 'ORD-12345' (if success),
+              'rejection_reason': 'GATE1_CAPITAL_INSUFFICIENT' (if fail),
+              'gates_passed': [bool, bool, bool],  # [capital, correlation, volatility]
+              'execution_time_ms': float,
+          }
+        """
+        # Logica: 
+        # 1. Check capital adequacy
+        # 2. Check correlation with open positions <= 70%
+        # 3. Check volatility 1.0-3.0 sigma
+        # 4. If pass all: call mt5_adapter.send_order()
+        # 5. If any fail: return rejection
+    
+    # TODO-3 (Line 158): monitor_positions()
+    def monitor_positions(self) -> dict:
+        """
+        Query MT5 para posições abertas.
+        Calcula PnL não realizado para cada.
+        Latência target: < 100ms.
+        
+        Returns:
+          {
+              'total_positions': int,
+              'positions': [
+                  {
+                      'order_id': 'ORD-X',
+                      'symbol': 'WINFUT',
+                      'entry_price': 122.5,
+                      'current_price': 123.0,
+                      'pnl_unrealized': 500.0,
+                      'duration_minutes': 5,
+                  }
+              ],
+              'total_pnl_unrealized': float,
+              'monitoring_time_ms': float,
+          }
+        """
+        # Logica:
+        # 1. Call mt5_adapter.get_positions()
+        # 2. For each position: calc current_price + PnL
+        # 3. Aggregate metrics
+        # 4. Return dict con all metrics + timing
+    
+    # TODO-4 (Line 188): position_monitoring_loop()
+    def position_monitoring_loop(self) -> asyncio.Task or threading.Thread:
+        """
+        Background loop que executa a cada 100ms.
+        Chama monitor_positions().
+        Se PnL <= -1000: close_position(reason='STOP_LOSS').
+        Se PnL >= +5000: close_position(reason='TAKE_PROFIT').
+        
+        Returns:
+          Background task/thread que roda conforme _monitoring_active
+        """
+        # Logica:
+        # 1. While self._monitoring_active:
+        # 2.   monitor_positions()
+        # 3.   For each position:
+        # 4.     if PnL <= -1000: close with SL
+        # 5.     elif PnL >= +5000: close with TP
+        # 6.   sleep 100ms
+```
+
+---
+
+## ✅ ACCEPTANCE CRITERIA (10 - TODO-2,3,4)
+
+| AC # | Critério | Descrição | Test |
+|------|----------|-----------|------|
+| **1** | Capital Gate | Validar capital suficiente, rejeitar se não | `test_capital_gate_fail()` |
+| **2** | Correlation Gate | Max correlation 70% com posições abertas, rejeitar > 70% | `test_correlation_gate_fail()` |
+| **3** | Volatility Gate | Range 1.0-3.0 sigma, rejeitar fora range | `test_volatility_gate_fail()` |
+| **4** | All Gates Pass → Send MT5 | Se PASS: enviar ordem + return order_id | `test_all_gates_pass()` |
+| **5** | Monitor Latency | monitor_positions() < 100ms latência | `test_monitor_latency()` |
+| **6** | Monitor Metrics | Return all metrics (positions, PnL, duration) | `test_monitor_metrics()` |
+| **7** | Monitoring Loop Active | Loop roda a cada 100ms, pode parar com stop() | `test_loop_execution()` |
+| **8** | Close on SL | Fecha se PnL <= -1000 (Stop Loss) | `test_close_on_sl()` |
+| **9** | Close on TP | Fecha se PnL >= +5000 (Take Profit) | `test_close_on_tp()` |
+| **10** | Error Handling | Retry logic + graceful degradation, não crash | `test_error_handling()` |
+
+---
+
+## 🧪 UNIT TEST TEMPLATES (10 - TODO-2,3,4)
+
+```python
+# File: tests/unit/test_orders_executor.py
+
+import pytest
+from unittest.mock import Mock, patch
+from src.application.orders_executor import OrdersExecutor, Order
+import time
+
+@pytest.fixture
+def mock_risk_validator():
+    validator = Mock()
+    validator.validate_capital = Mock(return_value=True)
+    validator.validate_correlation = Mock(return_value=True)
+    validator.validate_volatility = Mock(return_value=True)
+    return validator
+
+@pytest.fixture
+def mock_mt5_adapter():
+    adapter = Mock()
+    adapter.send_order = Mock(return_value={'order_id': 'ORD-001'})
+    adapter.get_positions = Mock(return_value=[
+        {'order_id': 'ORD-001', 'symbol': 'WINFUT', 'entry_price': 122.5, 'quantity': 1}
+    ])
+    adapter.get_current_price = Mock(return_value=123.0)
+    adapter.close_position = Mock(return_value=True)
+    return adapter
+
+@pytest.fixture
+def executor(mock_risk_validator, mock_mt5_adapter):
+    return OrdersExecutor(mock_risk_validator, mock_mt5_adapter)
+
+@pytest.fixture
+def sample_order():
+    return Order(symbol='WINFUT', volume=1, entry_price=122.5,
+                 stop_loss=121.5, take_profit=124.0, source='BDI')
+
+# TEST 1: AC1 - Capital Gate Fail
+def test_capital_gate_fail(executor, mock_risk_validator, sample_order):
+    mock_risk_validator.validate_capital = Mock(return_value=False)
+    result = executor.execute_order(sample_order)
+    assert result['success'] is False
+    assert result['gates_passed'][0] is False
+
+# TEST 2: AC2 - Correlation Gate Fail
+def test_correlation_gate_fail(executor, mock_risk_validator, sample_order):
+    mock_risk_validator.validate_correlation = Mock(return_value=False)
+    result = executor.execute_order(sample_order)
+    assert result['success'] is False
+    assert result['gates_passed'][1] is False
+
+# TEST 3: AC3 - Volatility Gate Fail
+def test_volatility_gate_fail(executor, mock_risk_validator, sample_order):
+    mock_risk_validator.validate_volatility = Mock(return_value=False)
+    result = executor.execute_order(sample_order)
+    assert result['success'] is False
+    assert result['gates_passed'][2] is False
+
+# TEST 4: AC4 - All Gates Pass
+def test_all_gates_pass(executor, sample_order):
+    result = executor.execute_order(sample_order)
+    assert result['success'] is True
+    assert result['order_id'] == 'ORD-001'
+
+# TEST 5: AC5 - Monitor Latency < 100ms
+def test_monitor_latency(executor):
+    start = time.perf_counter()
+    result = executor.monitor_positions()
+    elapsed = (time.perf_counter() - start) * 1000
+    assert elapsed < 100
+
+# TEST 6: AC6 - Monitor Metrics Complete
+def test_monitor_metrics(executor):
+    result = executor.monitor_positions()
+    assert 'total_positions' in result
+    assert 'positions' in result
+    assert 'total_pnl_unrealized' in result
+
+# TEST 7: AC7 - Monitoring Loop Execution
+def test_loop_execution(executor):
+    executor.start_monitoring_loop()
+    assert executor._monitoring_active is True
+    executor.stop_monitoring_loop()
+    assert executor._monitoring_active is False
+
+# TEST 8: AC8 - Close on Stop Loss
+def test_close_on_sl(executor):
+    result = executor.close_position('ORD-001', reason='STOP_LOSS')
+    assert result is True
+
+# TEST 9: AC9 - Close on Take Profit
+def test_close_on_tp(executor):
+    result = executor.close_position('ORD-001', reason='TAKE_PROFIT')
+    assert result is True
+
+# TEST 10: AC10 - Error Handling
+def test_error_handling(executor, mock_mt5_adapter):
+    mock_mt5_adapter.send_order = Mock(side_effect=ConnectionError("MT5 unreachable"))
+    with pytest.raises(ConnectionError):
+        Order_def = Order(symbol='WINFUT', volume=1, entry_price=122.5, 
+                         stop_loss=121.5, take_profit=124.0, source='BDI')
+        executor.execute_order(order_def)
+```
+
+---
+
+## 📋 IMPLEMENTATION STEPS (Passo-a-Passo) - TODO-2,3,4
+
+**Timeline Total: 02/03 10:00-14:00 (4 horas)**
+
+### Step 1: Architecture Review (30 min)
+
+- Review Risk Validator interface + RiskValidator methods
+- Review MT5 Adapter interface + available methods
+- Review OK Event Log + audit trail requirements
+
+### Step 2: implement execute_order() (60 min)
+
+- Create OrdersExecutor class
+- Implement 3-gate validation logic (capital, correlation, volatility)
+- Call mt5_adapter.send_order() if all pass
+- Return proper dict format with rejection reason if any fail
+- Add comprehensive error handling + logging
+
+### Step 3: Implement monitor_positions() (45 min)
+
+- Query mt5_adapter.get_positions()
+- Calculate current price + PnL for each position
+- Aggregate metrics (total_positions, total_pnl)
+- Measure latency + ensure < 100ms
+- Return proper dict format
+
+### Step 4: Implement position_monitoring_loop() (45 min)
+
+- Create background thread/async task
+- Loop at 100ms interval
+- Call monitor_positions() each cycle
+- Check SL trigger (PnL <= -1000)
+- Check TP trigger (PnL >= +5000)
+-Close positions on triggers
+- Graceful shutdown with _monitoring_active flag
+
+### Step 5: Write 10 Unit Tests (45 min)
+
+- Create tests/unit/test_orders_executor.py
+- Copy 10 test templates above
+- Run pytest for coverage > 90%
+
+### Step 6: Code Review + Integration (15 min)
+
+- Persona 6 (Arch) reviews code
+- mypy validation
+- Integration test with Risk Validator
+
+---
+
+## ✓ CHECKLIST - TODO-2,3,4 COMPLETION
+
+```
+IMPLEMENTAÇÃO:
+  ☑️ OrdersExecutor class created (250+ LOC)
+  ☑️ execute_order() with 3-gate logic
+  ☑️ monitor_positions() with latency < 100ms
+  ☑️ position_monitoring_loop() background thread
+  ☑️ close_position() with SL/TP triggers
+  ☑️ Error handling + retry logic
+
+TESTES:
+  ☑️ test_capital_gate_fail PASS
+  ☑️ test_correlation_gate_fail PASS
+  ☑️ test_volatility_gate_fail PASS
+  ☑️ test_all_gates_pass PASS
+  ☑️ test_monitor_latency PASS
+  ☑️ test_monitor_metrics PASS
+  ☑️ test_loop_execution PASS
+  ☑️ test_close_on_sl PASS
+  ☑️ test_close_on_tp PASS
+  ☑️ test_error_handling PASS
+  ☑️ Coverage > 90%
+
+DELIVERABLE:
+  ☑️ OrdersExecutor pronto para E2E tests
+  ☑️ All AC satisfied (10/10)
+  ☑️ Ready for Stage 2 integration
+
+STATUS: ✅ COMPLETE
+```
+
+---
+
+# PARALELO: SYNC & DOCUMENTATION
+
+**Personas:** Persona 17 (Doc), Persona 8 (Audit)  
+**Tempo:** 1h paralelo com development  
+
+### Arquivos a Sincronizar (Contínuo)  
 
 ---
 
