@@ -54,19 +54,26 @@ A comunicacao entre Agente e Humano deve ser sempre em Portugues.
 ```bash
 # 1. Configure o ambiente
 cp .env.example .env
-# Edite .env com suas credenciais MT5
+# Edite .env com MT5 + Gmail (ver guias abaixo)
 
-# 2. Instale dependências
+# 2. Configure Email (Gmail SMTP)
+# Ver: GMAIL_CONFIGURATION_GUIDE.md
+# - Gere App Password no Google
+# - Preencha .env com credenciais
+# - Execute: python test_gmail_config.py
+
+# 3. Instale dependências
 pip install -r requirements.txt
 
-# 3. Execute o Operador Quântico
+# 4. Execute o Operador Quântico
 python -m src.interfaces.cli.quantum_operator_cli
 
-# 4. Analise o mercado
+# 5. Analise o mercado
 > analyze WIN$N
 ```
 
-Veja [QUICKSTART.md](docs/QUICKSTART.md) para mais detalhes.
+**Email Setup:** [GMAIL_CONFIGURATION_GUIDE.md](GMAIL_CONFIGURATION_GUIDE.md)  
+**Mais detalhes:** [QUICKSTART.md](docs/QUICKSTART.md)
 
 ## 📊 Características Técnicas
 
