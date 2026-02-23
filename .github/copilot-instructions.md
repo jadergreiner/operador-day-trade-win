@@ -320,7 +320,7 @@ Sempre validar antes de commit seguindo as regras acima.
   - Code quality: 100% type hints, mypy --strict OK
   - ML metrics: F1 >0.65, Backtest win rate 62-65%
   - Performance: P95 latency <500ms, Memory <100MB
-  
+
 - ✅ Gate 1 Checkpoint (05/03 17:00):
   - Architecture: Complete ✅
   - Risk Framework: Validated ✅

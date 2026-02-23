@@ -176,7 +176,7 @@ async def login_mt5(request: MT5LoginRequest) -> Dict:
 async def send_order(request: OrderRequest) -> OrderResponse:
     """
     Enviar ordem para MT5
-    
+
     POST /api/v1/orders
     {
         "symbol": "WINFUT_1min",
