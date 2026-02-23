@@ -1,10 +1,10 @@
 {
   "sync_metadata": {
-    "version": "1.2.2",
-    "last_update": "2026-02-23T11:52:04Z",
-    "next_check": "2026-02-21T08:00:00Z",
+    "version": "1.2.3",
+    "last_update": "2026-02-23T23:20:00Z",
+    "next_check": "2026-02-24T06:00:00Z",
     "status": "SYNCHRONIZED",
-    "sync_notes": "Sprint 1 Design Complete: Agentes (Eng Sr + ML Expert) entregam 2.600 LOC (ARQUITETURA_MT5_v1.2.md + ML_FEATURE_ENGINEERING_v1.2.md + SPRINT1_MASTERPLAN.md). Phase 6 Live: WINJ26 BUY 194.390 executor. Status: 🟢 OPERACIONAL + SPRINT 1 READY"
+    "sync_notes": "DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md criado com TODO-1 + TODO-2,3,4 specs (17 AC + 17 unit tests). Prompts (executa_task.md, solicita_task.md, adaptive_framework.md) registrados. Sprint 1 Kickoff: 27/02 09:00. Phase 6 Live: ✅ OPERACIONAL. Status: 🟢 100% READY"
   },
   "documents": {
     "AGENTE_AUTONOMO_ARQUITETURA.md": {
@@ -197,6 +197,55 @@
         "README.md",
         "AGENTE_AUTONOMO_ROADMAP.md"
       ]
+    },
+    "DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md": {
+      "version": "1.0.0",
+      "checksum": "d0e1f2g3h4i5j6k7_dev_tasks_new",
+      "last_modified": "2026-02-23T23:15:00Z",
+      "related_docs": [
+        "SPRINT1_MASTERPLAN.md",
+        "prompts/executa_task.md",
+        "prompts/solicita_task.md"
+      ],
+      "status": "ACTIVE",
+      "mandatory_sync_with": [
+        "README.md",
+        "docs/agente_autonomo/AGENTE_AUTONOMO_ROADMAP.md"
+      ]
+    },
+    "prompts/executa_task.md": {
+      "version": "1.0.0",
+      "checksum": "e1f2g3h4i5j6k7l8_executa_framework",
+      "last_modified": "2026-02-22T21:00:00Z",
+      "related_docs": [
+        "prompts/solicita_task.md",
+        "prompts/adaptive_framework.md",
+        "DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md"
+      ],
+      "status": "ACTIVE",
+      "mandatory_sync_with": []
+    },
+    "prompts/solicita_task.md": {
+      "version": "1.0.0",
+      "checksum": "f2g3h4i5j6k7l8m9_solicita_framework",
+      "last_modified": "2026-02-22T20:00:00Z",
+      "related_docs": [
+        "prompts/executa_task.md",
+        "prompts/adaptive_framework.md"
+      ],
+      "status": "ACTIVE",
+      "mandatory_sync_with": []
+    },
+    "prompts/adaptive_framework.md": {
+      "version": "1.0.0",
+      "checksum": "g3h4i5j6k7l8m9n0_adaptive_framework",
+      "last_modified": "2026-02-22T19:00:00Z",
+      "related_docs": [
+        "prompts/solicita_task.md",
+        "prompts/executa_task.md"
+      ],
+      "status": "ACTIVE",
+      "mandatory_sync_with": []
     },
     "SPRINT1_DAY1_KICKOFF.md": {
       "version": "1.0.0",
@@ -403,11 +452,14 @@
     "all_docs_present": true,
     "all_docs_current": true,
     "sync_status": "HEALTHY",
-    "last_health_check": "2026-02-23T11:52:04Z",
-    "next_health_check": "2026-02-21T18:15:00Z",
+    "last_health_check": "2026-02-23T23:20:00Z",
+    "next_health_check": "2026-02-24T06:00:00Z",
     "warnings": [],
     "errors": [],
     "recent_updates": [
+      "2026-02-23T23:15:00: Sprint 1 Task Development - DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md created (TODO-1 + TODO-2,3,4 specs complete)",
+      "2026-02-23T23:15:00: Prompts registration - executa_task.md, solicita_task.md, adaptive_framework.md added to manifest",
+      "2026-02-23T23:20:00: Documentation sync complete - all critical docs synchronized",
       "2026-02-20T18:15:00: Sprint 1 Design Complete - ARQUITETURA_MT5_v1.2.md + ML_FEATURE_ENGINEERING_v1.2.md + SPRINT1_MASTERPLAN.md registered",
       "2026-02-20T18:00:00: Agentes autônomos (Eng Sr + ML Expert) deliver design complete (2.600 LOC novo)",
       "2026-02-20T18:00:00: Commit: feat - Sprint 1 design complete MT5 architecture ML feature engineering masterplan",

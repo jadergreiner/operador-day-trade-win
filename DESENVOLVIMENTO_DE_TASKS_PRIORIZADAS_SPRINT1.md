@@ -90,12 +90,12 @@ def load_and_label(
 ) -> pd.DataFrame:
     '''
     Carrega backtest_optimized_results.json e cria dataset com labels.
-    
+  
     ENTRADA:
     --------
     results_path: string - caminho para JSON (deve ter 1.000 records)
     output_path: string - onde salvar CSV
-    
+  
     SAÍDA:
     ------
     pd.DataFrame com:
@@ -103,44 +103,44 @@ def load_and_label(
       - Colunas: 26 (24 features + window_id + label)
       - Labels: 0 (SKIP) ou 1 (BUY)
       - Encoding: UTF-8, sem NaN
-    
+  
     PERFORMANCE:
     - Load JSON: < 100ms
     - Extract features: < 200ms  
     - Generate labels: < 100ms
     - Total: < 500ms SLA
-    
+  
     EXCEÇÕES:
     - FileNotFoundError se arquivo não existe
     - ValueError se data validation falha
     '''
-    
+  
     # FASE 1: Load & Validate
     df = pd.read_json(results_path)
     assert df.shape[0] == 1000, f"Expected 1000 rows, got {df.shape[0]}"
     assert df.isnull().sum().sum() == 0, "NaN values encontrados"
-    
+  
     # FASE 2: Extract 24 features
     features_24 = [col for col in df.columns if col not in ['window_id']]
     assert len(features_24) == 24, f"Expected 24 features, got {len(features_24)}"
-    
+  
     # FASE 3: Generate labels
     # Lógica: BUY se volume > threshold E volatility in range
     labels = df.apply(
-        lambda row: 1 if (row.get('volume', 0) > 1000 and 
+        lambda row: 1 if (row.get('volume', 0) > 1000 and
                          1.0 <= row.get('sigma', 0) <= 3.0) else 0,
         axis=1
     )
-    
+  
     # FASE 4: Validate imbalance
     buy_pct = (labels == 1).sum() / len(labels) * 100
     assert 20 <= buy_pct <= 80, f"Imbalance {buy_pct}% outside acceptable range"
-    
+  
     # FASE 5: Save
     output_df = df[['window_id'] + features_24].copy()
     output_df['label'] = labels
     output_df.to_csv(output_path, index=False) if output_path else None
-    
+  
     return output_df
 ```
 
@@ -423,19 +423,19 @@ TODO-4 (line 188): position_monitoring_loop()
 
 class OrdersExecutor:
     """Executa ordens com 3-gate risk validation."""
-    
+  
     def __init__(self, risk_validator, mt5_adapter):
         self.risk_validator = risk_validator  # Check capital, correlation, volatility
         self.mt5_adapter = mt5_adapter        # Send to MT5, query positions
         self._monitoring_active = False
-    
+  
     # TODO-2 (Line 133): execute_order()
     def execute_order(self, order: Order) -> dict:
         """
         Valida 3 gates de risco (capital, correlation, volatility).
         Se TODOS passam: envia ordem ao MT5.
         Se QUALQUER falha: rejeita com motivo.
-        
+  
         Returns:
           {
               'success': bool,
@@ -445,20 +445,20 @@ class OrdersExecutor:
               'execution_time_ms': float,
           }
         """
-        # Logica: 
+        # Logica:
         # 1. Check capital adequacy
         # 2. Check correlation with open positions <= 70%
         # 3. Check volatility 1.0-3.0 sigma
         # 4. If pass all: call mt5_adapter.send_order()
         # 5. If any fail: return rejection
-    
+  
     # TODO-3 (Line 158): monitor_positions()
     def monitor_positions(self) -> dict:
         """
         Query MT5 para posições abertas.
         Calcula PnL não realizado para cada.
         Latência target: < 100ms.
-        
+  
         Returns:
           {
               'total_positions': int,
@@ -481,7 +481,7 @@ class OrdersExecutor:
         # 2. For each position: calc current_price + PnL
         # 3. Aggregate metrics
         # 4. Return dict con all metrics + timing
-    
+  
     # TODO-4 (Line 188): position_monitoring_loop()
     def position_monitoring_loop(self) -> asyncio.Task or threading.Thread:
         """
@@ -489,7 +489,7 @@ class OrdersExecutor:
         Chama monitor_positions().
         Se PnL <= -1000: close_position(reason='STOP_LOSS').
         Se PnL >= +5000: close_position(reason='TAKE_PROFIT').
-        
+  
         Returns:
           Background task/thread que roda conforme _monitoring_active
         """
@@ -621,7 +621,7 @@ def test_close_on_tp(executor):
 def test_error_handling(executor, mock_mt5_adapter):
     mock_mt5_adapter.send_order = Mock(side_effect=ConnectionError("MT5 unreachable"))
     with pytest.raises(ConnectionError):
-        Order_def = Order(symbol='WINFUT', volume=1, entry_price=122.5, 
+        Order_def = Order(symbol='WINFUT', volume=1, entry_price=122.5,
                          stop_loss=121.5, take_profit=124.0, source='BDI')
         executor.execute_order(order_def)
 ```
@@ -717,7 +717,7 @@ STATUS: ✅ COMPLETE
 **Personas:** Persona 17 (Doc), Persona 8 (Audit)  
 **Tempo:** 1h paralelo com development  
 
-### Arquivos a Sincronizar (Contínuo)  
+## Arquivos a Sincronizar (Contínuo)  
 
 ---
 
@@ -804,7 +804,7 @@ class Order:
     take_profit: float
     source: str  # BDI, ML_CLASSIFIER
     timestamp: datetime = None
-    
+  
     def __post_init__(self):
         if self.timestamp is None:
             self.timestamp = datetime.now(timezone.utc)
@@ -812,7 +812,7 @@ class Order:
 
 class OrdersExecutor:
     """Executa ordens no MT5 com validação de risco."""
-    
+  
     def __init__(self, risk_validator, mt5_adapter, logger=None):
         """
         Args:
@@ -824,21 +824,21 @@ class OrdersExecutor:
         self.mt5_adapter = mt5_adapter
         self.logger = logger or logging.getLogger(__name__)
         self.execution_history = []  # Audit trail
-    
+  
     def execute_order(self, order: Order) -> Dict:
         """
         TODO-2: Executa ordem se passar validação de risco.
-        
+  
         Fluxo:
         1. Receber ordem (BDI signal)
         2. Rodar 3 risk gates
         3. Se PASS: enviar ao MT5 via API
         4. Se FAIL: log rejection
         5. Retornar resultado com audit trail
-        
+  
         Args:
             order: Order object com entry, stop_loss, take_profit
-        
+  
         Returns:
             {
                 'success': bool,
@@ -848,21 +848,21 @@ class OrdersExecutor:
                 'execution_time_ms': float,
                 'timestamp': datetime,
             }
-        
+  
         Raises:
             ValueError: Se order inválida
             ConnectionError: Se MT5 API falhar
         """
-        
+  
         start_time = time.perf_counter()
-        
+  
         try:
             # Validar ordem
             if not order or not isinstance(order, Order):
                 raise ValueError("Invalid order format")
-            
+  
             logger.info(f"Executing order: {order.symbol} {order.type} qty={order.quantity}")
-            
+  
             # GATE 1: Capital Adequacy
             # Verificar se capital suficiente para ordem
             gate1_pass = self.risk_validator.validate_capital(
@@ -870,7 +870,7 @@ class OrdersExecutor:
                 quantity=order.quantity,
                 entry_price=order.entry_price
             )
-            
+  
             if not gate1_pass:
                 result = {
                     'success': False,
@@ -882,14 +882,14 @@ class OrdersExecutor:
                 logger.warning(f"Order REJECTED by Gate 1: {result}")
                 self.execution_history.append(result)
                 return result
-            
+  
             # GATE 2: Correlation Check
             # Verificar correlação com posições abertas
             gate2_pass = self.risk_validator.validate_correlation(
                 symbol=order.symbol,
                 max_correlation=0.70
             )
-            
+  
             if not gate2_pass:
                 result = {
                     'success': False,
@@ -901,7 +901,7 @@ class OrdersExecutor:
                 logger.warning(f"Order REJECTED by Gate 2: {result}")
                 self.execution_history.append(result)
                 return result
-            
+  
             # GATE 3: Volatility Band Check
             # Verificar se volatilidade dentro do range
             gate3_pass = self.risk_validator.validate_volatility(
@@ -909,7 +909,7 @@ class OrdersExecutor:
                 min_vol=1.0,
                 max_vol=3.0
             )
-            
+  
             if not gate3_pass:
                 result = {
                     'success': False,
@@ -921,10 +921,10 @@ class OrdersExecutor:
                 logger.warning(f"Order REJECTED by Gate 3: {result}")
                 self.execution_history.append(result)
                 return result
-            
+  
             # ALL GATES PASSED → Send to MT5
             logger.info(f"All 3 gates PASSED ✅ for {order.symbol}. Sending to MT5...")
-            
+  
             mt5_result = self.mt5_adapter.send_order(
                 symbol=order.symbol,
                 order_type=order.type,
@@ -933,11 +933,11 @@ class OrdersExecutor:
                 stop_loss=order.stop_loss,
                 take_profit=order.take_profit,
             )
-            
+  
             # Validar resposta MT5
             if not mt5_result or 'order_id' not in mt5_result:
                 raise ConnectionError(f"MT5 API returned invalid response: {mt5_result}")
-            
+  
             result = {
                 'success': True,
                 'order_id': mt5_result['order_id'],
@@ -947,12 +947,12 @@ class OrdersExecutor:
                 'timestamp': datetime.now(timezone.utc),
                 'mt5_response': mt5_result,
             }
-            
+  
             logger.info(f"Order EXECUTED ✅ {order.symbol}: order_id={result['order_id']}")
             self.execution_history.append(result)
-            
+  
             return result
-            
+  
         except Exception as e:
             logger.error(f"Order execution FAILED: {str(e)}", exc_info=True)
             result = {
@@ -973,7 +973,7 @@ class OrdersExecutor:
 def monitor_positions(self) -> Dict:
     """
     TODO-3: Query MT5 para posições abertas e atualizar estado.
-    
+  
     Fluxo:
     1. Query MT5 API: get_open_positions()
     2. Para cada posição:
@@ -981,7 +981,7 @@ def monitor_positions(self) -> Dict:
        - Trigger: exit signals if price hits SL/TP
     3. Update portfolio state
     4. Retornar posições atualizadas
-    
+  
     Returns:
         {
             'total_positions': int,
@@ -1003,15 +1003,15 @@ def monitor_positions(self) -> Dict:
             'timestamp': datetime,
         }
     """
-    
+  
     start_time = time.perf_counter()
-    
+  
     try:
         logger.info("Starting position monitoring loop...")
-        
+  
         # Query MT5 para posições abertas
         positions_mt5 = self.mt5_adapter.get_positions()
-        
+  
         if not positions_mt5:
             logger.info("No open positions")
             return {
@@ -1021,23 +1021,23 @@ def monitor_positions(self) -> Dict:
                 'monitoring_time_ms': (time.perf_counter() - start_time) * 1000,
                 'timestamp': datetime.now(timezone.utc),
             }
-        
+  
         # Process cada posição
         positions_processed = []
         total_pnl = 0.0
-        
+  
         for pos in positions_mt5:
             # Calcular PnL não realizado
             current_price = self.mt5_adapter.get_current_price(pos['symbol'])
             pnl_unrealized = (current_price - pos['entry_price']) * pos['quantity']
-            
+  
             if pos['type'] == 'SELL':
                 # Inverted for short
                 pnl_unrealized *= -1
-            
+  
             entry_time = pos['entry_time']
             duration = (datetime.now(timezone.utc) - entry_time).total_seconds() / 60
-            
+  
             position_data = {
                 'order_id': pos['order_id'],
                 'symbol': pos['symbol'],
@@ -1050,13 +1050,13 @@ def monitor_positions(self) -> Dict:
                 'duration_minutes': duration,
                 'signal_type': pos.get('signal_type', 'UNKNOWN'),
             }
-            
+  
             positions_processed.append(position_data)
             total_pnl += pnl_unrealized
-            
+  
             # Log atualização
             logger.info(f"Position update: {pos['symbol']} PnL={pnl_unrealized:.2f} BRT")
-        
+  
         result = {
             'total_positions': len(positions_processed),
             'positions': positions_processed,
@@ -1064,12 +1064,12 @@ def monitor_positions(self) -> Dict:
             'monitoring_time_ms': (time.perf_counter() - start_time) * 1000,
             'timestamp': datetime.now(timezone.utc),
         }
-        
+  
         logger.info(f"Position monitoring complete: {len(positions_processed)} positions, "
                    f"Total PnL={total_pnl:.2f}")
-        
+  
         return result
-        
+  
     except Exception as e:
         logger.error(f"Position monitoring FAILED: {str(e)}", exc_info=True)
         return {
@@ -1087,7 +1087,7 @@ def monitor_positions(self) -> Dict:
 def start_monitoring_loop(self, interval_ms: int = 100) -> None:
     """
     TODO-4: Inicia loop contínuo de monitoramento de posições.
-    
+  
     Fluxo:
     1. Loop a cada interval_ms (default 100ms)
     2. Chamar monitor_positions()
@@ -1095,43 +1095,43 @@ def start_monitoring_loop(self, interval_ms: int = 100) -> None:
     4. Se trigger: close_position()
     5. Log todas as ações
     6. Parar se signal SHUTDOWN
-    
+  
     Args:
         interval_ms: Intervalo entre checks (ms)
-    
+  
     Performance:
         - Loop cycle: < 100ms
         - P95 latency: < 200ms
         - CPU: < 5%
     """
-    
+  
     import asyncio
     import threading
-    
+  
     self._monitoring_active = True
     logger.info(f"Starting monitoring loop: interval={interval_ms}ms")
-    
+  
     def monitoring_thread():
         while self._monitoring_active:
             try:
                 # Monitor posições abertas
                 positions_update = self.monitor_positions()
-                
+  
                 # Verificar exit signals
                 for pos in positions_update.get('positions', []):
                     should_close = False
                     close_reason = None
-                    
+  
                     # Check Stop-Loss
                     if pos['pnl_unrealized'] <= pos.get('stop_loss_pnl', -1000):
                         should_close = True
                         close_reason = 'STOP_LOSS_HIT'
-                    
+  
                     # Check Take-Profit
                     elif pos['pnl_unrealized'] >= pos.get('take_profit_pnl', 5000):
                         should_close = True
                         close_reason = 'TAKE_PROFIT_HIT'
-                    
+  
                     # Execute close if needed
                     if should_close:
                         logger.info(f"Closing position {pos['order_id']}: {close_reason}")
@@ -1140,19 +1140,19 @@ def start_monitoring_loop(self, interval_ms: int = 100) -> None:
                             reason=close_reason
                         )
                         logger.info(f"Position closed: {close_result}")
-                
+  
                 # Sleep until next interval
                 time.sleep(interval_ms / 1000.0)
-                
+  
             except Exception as e:
                 logger.error(f"Monitoring loop error: {str(e)}", exc_info=True)
                 time.sleep(interval_ms / 1000.0)  # Retry após erro
-    
+  
     # Start monitoring in background thread
     thread = threading.Thread(target=monitoring_thread, daemon=True)
     thread.start()
     logger.info("Monitoring loop started in background")
-    
+  
     return thread
 
 def stop_monitoring_loop(self) -> None:
@@ -1165,11 +1165,11 @@ def stop_monitoring_loop(self) -> None:
 def close_position(self, order_id: str, reason: str = None) -> Dict:
     """
     Fecha uma posição aberta.
-    
+  
     Args:
         order_id: ID da ordem MT5
         reason: Motivo de fechamento (SL, TP, MANUAL)
-    
+  
     Returns:
         {
             'success': bool,
@@ -1180,12 +1180,12 @@ def close_position(self, order_id: str, reason: str = None) -> Dict:
             'timestamp': datetime,
         }
     """
-    
+  
     try:
         logger.info(f"Closing position {order_id}: reason={reason}")
-        
+  
         close_result = self.mt5_adapter.close_position(order_id)
-        
+  
         result = {
             'success': True,
             'order_id': order_id,
@@ -1194,12 +1194,12 @@ def close_position(self, order_id: str, reason: str = None) -> Dict:
             'reason': reason,
             'timestamp': datetime.now(timezone.utc),
         }
-        
+  
         logger.info(f"Position {order_id} closed: PnL={result['pnl_realized']:.2f}")
         self.execution_history.append(result)
-        
+  
         return result
-        
+  
     except Exception as e:
         logger.error(f"Failed to close position {order_id}: {str(e)}", exc_info=True)
         return {
@@ -1298,7 +1298,7 @@ from unittest.mock import Mock, MagicMock, patch
 from src.application.orders_executor import OrdersExecutor, Order
 
 class TestOrdersExecutor:
-    
+  
     @pytest.fixture
     def mock_risk_validator(self):
         """Mock RiskValidator com todos os gates."""
@@ -1307,7 +1307,7 @@ class TestOrdersExecutor:
         validator.validate_correlation = Mock(return_value=True)
         validator.validate_volatility = Mock(return_value=True)
         return validator
-    
+  
     @pytest.fixture
     def mock_mt5_adapter(self):
         """Mock MT5 REST API adapter."""
@@ -1326,7 +1326,7 @@ class TestOrdersExecutor:
         adapter.get_current_price = Mock(return_value=123.00)
         adapter.close_position = Mock(return_value={'closing_price': 123.00, 'pnl': 500})
         return adapter
-    
+  
     @pytest.fixture
     def executor(self, mock_risk_validator, mock_mt5_adapter):
         """Cria OrdersExecutor com mocks."""
@@ -1334,7 +1334,7 @@ class TestOrdersExecutor:
             risk_validator=mock_risk_validator,
             mt5_adapter=mock_mt5_adapter,
         )
-    
+  
     @pytest.fixture
     def sample_order(self):
         """Ordem válida para testes."""
@@ -1347,97 +1347,97 @@ class TestOrdersExecutor:
             take_profit=124.00,
             source='BDI',
         )
-    
+  
     def test_execute_order_capital_gate(self, executor, mock_risk_validator, sample_order):
         """AC-1: Capital gate validation."""
         mock_risk_validator.validate_capital = Mock(return_value=False)
-        
+  
         result = executor.execute_order(sample_order)
-        
+  
         assert result['success'] is False
         assert result['rejection_reason'] == 'GATE1_CAPITAL_INSUFFICIENT'
         assert result['gates_passed'] == [False, None, None]
-    
+  
     def test_execute_order_correlation_gate(self, executor, mock_risk_validator, sample_order):
         """AC-2: Correlation gate validation."""
         mock_risk_validator.validate_capital = Mock(return_value=True)
         mock_risk_validator.validate_correlation = Mock(return_value=False)
-        
+  
         result = executor.execute_order(sample_order)
-        
+  
         assert result['success'] is False
         assert result['rejection_reason'] == 'GATE2_CORRELATION_TOO_HIGH'
         assert result['gates_passed'] == [True, False, None]
-    
+  
     def test_execute_order_volatility_gate(self, executor, mock_risk_validator, sample_order):
         """AC-3: Volatility gate validation."""
         mock_risk_validator.validate_capital = Mock(return_value=True)
         mock_risk_validator.validate_correlation = Mock(return_value=True)
         mock_risk_validator.validate_volatility = Mock(return_value=False)
-        
+  
         result = executor.execute_order(sample_order)
-        
+  
         assert result['success'] is False
         assert result['rejection_reason'] == 'GATE3_VOLATILITY_OUT_OF_RANGE'
         assert result['gates_passed'] == [True, True, False]
-    
+  
     def test_execute_order_all_gates_pass(self, executor, sample_order):
         """AC-4: All 3 gates pass, send to MT5."""
         result = executor.execute_order(sample_order)
-        
+  
         assert result['success'] is True
         assert result['order_id'] == 'ORD-001'
         assert result['gates_passed'] == [True, True, True]
-    
+  
     def test_monitor_positions_latency(self, executor):
         """AC-5: Monitor positions latency < 100ms."""
         start = time.perf_counter()
         result = executor.monitor_positions()
         elapsed = (time.perf_counter() - start) * 1000
-        
+  
         assert elapsed < 100, f"Monitor latency: {elapsed}ms > 100ms"
         assert result['total_positions'] == 1
-    
+  
     def test_monitor_positions_metrics(self, executor):
         """AC-6: Track position metrics."""
         result = executor.monitor_positions()
-        
+  
         assert result['total_positions'] == 1
         pos = result['positions'][0]
-        
+  
         assert 'order_id' in pos
         assert 'entry_price' in pos
         assert 'current_price' in pos
         assert 'pnl_unrealized' in pos
         assert pos['pnl_unrealized'] == 500  # (123 - 122.5) * 1
-    
+  
     def test_close_position_stop_loss(self, executor):
         """AC-8: Close position on stop loss hit."""
         result = executor.close_position(
             order_id='ORD-001',
             reason='STOP_LOSS_HIT'
         )
-        
+  
         assert result['success'] is True
         assert result['closing_price'] == 123.00
         assert result['pnl_realized'] == 500
         assert result['reason'] == 'STOP_LOSS_HIT'
-    
+  
     def test_execute_order_connection_error(self, executor, mock_mt5_adapter, sample_order):
         """AC-9: Handle connection errors gracefully."""
         mock_mt5_adapter.send_order = Mock(return_value=None)
-        
+  
         result = executor.execute_order(sample_order)
-        
+  
         assert result['success'] is False
         assert 'ConnectionError' in result['rejection_reason']
-    
+  
     def test_performance_benchmark(self, executor, sample_order):
         """AC-10: Performance < 1s for execute_order."""
         start = time.perf_counter()
         result = executor.execute_order(sample_order)
         elapsed = (time.perf_counter() - start) * 1000
-        
+  
         assert elapsed < 1000, f"Execute order latency: {elapsed}ms > 1000ms"
         assert result['execution_time_ms'] < 1000
 ```
@@ -1705,7 +1705,7 @@ SQUAD:    8 personas allocated
   ├─ Persona 17 (Doc) - sync + README
   └─ Personas 3-5,9-11 (Suporte) - escalation on demand
 
-TIMELINE: 
+TIMELINE:
   24/02: TODO-1 implementation + tests + docs (2.5h paralelo)
   24/02: OrdersExecutor setup + design (2h paralelo)
   25/02: TODO-1 validation + final docs

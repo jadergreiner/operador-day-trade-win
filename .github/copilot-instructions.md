@@ -24,6 +24,7 @@ Todas as ações devem seguir estas diretrizes sem exceção:
   git commit -m "docs: Sumário de atualização de arquitetura"
   git commit -m "feat: Novo sistema de trading automatizado"
 git commit -m "fix: Correção de bug no cálculo de volatilidade"
+
   ```
 
 - **Exemplo Errado:** `docs: Sum├írio de atualiza├º├úo` ❌ → Refazer com UTF-8
@@ -200,13 +201,13 @@ Sempre validar antes de commit seguindo as regras acima.
 - ✅ CHANGELOG.md - Phase 6 delivery section updated
 - ✅ README.md - Phase 6 Integration status updated
 - ✅ copilot-instructions.md - Phase 6 section updated
-     - test_bdi_integration.py: 10 velas processadas sem erros
-     - Commit: `feat: BDI integration com detectors validado`
-   - ⏳ INTEGRATION-ENG-002: WebSocket Server - **NEXT** (Ready, código ✅)
-   - ⏳ INTEGRATION-ENG-003: Email Configuration - **PENDING**
-   - ⏳ INTEGRATION-ENG-004: Staging Deployment - **PENDING**
+  - test_bdi_integration.py: 10 velas processadas sem erros
+  - Commit: `feat: BDI integration com detectors validado`
+  - ⏳ INTEGRATION-ENG-002: WebSocket Server - **NEXT** (Ready, código ✅)
+  - ⏳ INTEGRATION-ENG-003: Email Configuration - **PENDING**
+  - ⏳ INTEGRATION-ENG-004: Staging Deployment - **PENDING**
 
-2. **🧠 Machine Learning Expert (ML Expert)**
+1. **🧠 Machine Learning Expert (ML Expert)**
    - ✅ INTEGRATION-ML-001: Backtest Setup - **NEAR COMPLETE**
      - 17.280 velas loaded, 29 spikes detected ✅
      - Alert generation: 630+ alerts generated ✅
@@ -553,3 +554,139 @@ SPRINT 4 (20/03-10/04): UAT & Launch
   - Deliverables: Design completo + tests
 
 **Status Geral:** 🟢 **APROVADO POR 4 PERSONAS - PRONTO PARA SPRINT 1 KICK-OFF**
+
+---
+
+## 🚀 PHASE 7 TASK DEVELOPMENT STATUS (23/02/2026) ✅ TASK SPECS COMPLETE
+
+**Timestamp:** 2026-02-23T23:20:00Z
+**Session:** Task Execution Framework (executa_task.md) | **Duration:** 6+ hours
+**Status:** ✅ DEVELOPMENT SPECIFICATION COMPLETE | ✅ READY FOR SPRINT 1
+
+### 📋 Sprint 1 Task Development - Complete Specification
+
+**Document:** [DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md](DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md)
+**Size:** 1.732 linhas | **State:** ✅ CREATED + COMMITTED (git 7008a6e)
+**Framework:** {{prompts\executa_task.md}} (4-etapa implementation methodology)
+
+#### BLOCKER TASKS (2 Critical Tasks for Sprint 1):
+
+**TODO-1: Load Dataset + ML-Based Labeling**
+- **Team Lead:** ML Expert (140h allocation)
+- **Acceptance Criteria:** 7 AC
+  1. Dataset loaded (1.000 samples minimum)
+  2. Labels validated (consistency checks passed)
+  3. Features extracted (24 engineered features ready)
+  4. Train/val/test splits created (70/15/15 distribution)
+  5. Statistics computed (mean, std, skewness documented)
+  6. Feature names saved (production-ready list)
+  7. Quality gates passed (all 7 tests green)
+- **Unit Tests:** 7 test cases with fixtures
+  - test_dataset_loading (file I/O + format validation)
+  - test_label_validation (consistency + outlier checks)
+  - test_feature_engineering (24 features computed)
+  - test_data_splitting (70/15/15 verification)
+  - test_statistics_computation (numerical validation)
+  - test_feature_names_persistence (serialization)
+  - test_quality_gates (all assertions)
+- **Implementation Guide:** 5-step process
+  1. Setup environment + dependencies
+  2. Load dataset from source
+  3. Apply ML-based labeling algorithm
+  4. Extract 24 engineered features
+  5. Validate splits + save feature names
+
+**TODO-2,3,4: Orders Executor Framework (Risk Validator + Executor + Monitor)**
+- **Team Lead:** Eng Sr (160h allocation)
+- **Acceptance Criteria:** 10 AC
+  1. MT5 connection established + authenticated
+  2. Orders sent successfully (async queue)
+  3. Positions tracked in real-time
+  4. Retry mechanism (3x exponential backoff)
+  5. Error recovery + circuit breakers
+  6. Audit logging complete
+  7. Risk gates validated (3 validators)
+  8. Message queue stable (no loss)
+  9. Performance metrics <500ms P95
+  10. All integration tests passing
+- **Unit Tests:** 10 test cases with mocks
+  - test_mt5_connection (auth + heartbeat)
+  - test_order_execution (queue processing)
+  - test_position_tracking (state management)
+  - test_retry_mechanism (exponential backoff)
+  - test_error_recovery (circuit breaker logic)
+  - test_audit_logging (message format)
+  - test_risk_validator_gates (all 3 gates)
+  - test_message_queue (throughput + loss)
+  - test_performance_metrics (latency validation)
+  - test_e2e_integration (full flow)
+- **Implementation Guide:** 4-step process
+  1. Design risk validator (3 gates)
+  2. Implement orders executor (async queue)
+  3. Build position monitor (real-time tracking)
+  4. Integrate + test E2E flow
+
+#### 🎯 Squad Allocation (8 Personas - 350h Total):
+
+| Persona | Role | Hours | Sprint Allocation | Focus |
+|---------|------|-------|------------------|-------|
+| **Eng Sr** | Technical Lead | 160h | 27/02-03/03 | TODO-2,3,4 (Orders Framework) |
+| **ML Expert** | ML Lead | 140h | 24/02-26/02 | TODO-1 (Dataset + Labeling) |
+| **QA Lead** | Quality Assurance | 40h | Parallel | Comprehensive testing |
+| **DevOps** | Infrastructure | 20h | 27/02-03/03 | Environment + CI/CD setup |
+| **Tech Writer** | Documentation | 15h | 27/02-03/03 | Implementation guides |
+| **Product Owner** | Requirements | 20h | Asynchronous | AC validation + gates |
+| **Data Analyst** | Data Quality | 25h | 24/02-26/02 | Label validation + audit |
+| **Integration Eng** | E2E Testing | 30h | 02/03-03/03 | End-to-end flow validation |
+
+#### 📊 Execution Timeline (24/02 - 03/03):
+
+**Phase 1 (24/02-26/02) - TODO-1 Dataset Development:**
+- ML Expert + Data Analyst: Load dataset + labeling
+- Expected: 1.000 labeled samples + 24 features extracted
+- Gate: Statistical validation + quality checks passed
+
+**Phase 2 (27/02-28/02) - TODO-2 Risk Validator Design:**
+- Eng Sr + QA Lead: Implement 3-gate risk validation
+- Expected: Risk validator component (3 validation gates)
+- Gate: Unit tests 7/7 passing + code review approved
+
+**Phase 3 (01/03-02/03) - TODO-3,4 Orders Executor + Integration:**
+- Eng Sr + Integration Eng: Async queue + position monitor
+- Expected: Full orders execution framework + E2E tested
+- Gate: Performance P95 <500ms + integration tests 10/10 passing
+
+**Phase 4 (03/03) - Finalization + Documentation:**
+- All personas: Final testing + documentation completion
+- Expected: Code committed + docs complete + ready for Gate 1
+- Gate: Gate 1 readiness validated (05/03 17:00)
+
+#### ✅ Success Criteria:
+
+- ✅ 17/17 Acceptance Criteria specified and testable
+- ✅ 17/17 Unit tests designed with fixtures/mocks
+- ✅ ~400 LOC nuevo code (clean architecture)
+- ✅ 100% type hints on all new code
+- ✅ All 8 personas roles assigned
+- ✅ Implementation code ready for execution
+- ✅ Documentation synchronized (SYNC_MANIFEST v1.2.3)
+- ✅ Ready for Sprint 1 kickoff (27/02 09:00)
+- ✅ Gate 1 immovable checkpoint prepared (05/03 17:00)
+
+#### 📚 Related Documentation:
+
+- 📄 [DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md](DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md) - Full task specifications
+- 📋 [prompts/executa_task.md](prompts/executa_task.md) - Task execution framework
+- 📊 [prompts/solicita_task.md](prompts/solicita_task.md) - Task prioritization template
+- 🔄 [prompts/adaptive_framework.md](prompts/adaptive_framework.md) - Adaptive context discovery
+- ✅ [README.md](README.md) - Sprint 1 updated with task specs
+
+#### 🔄 Next Actions (24/02):
+
+- [ ] 09:00: Team standup + task allocation confirmation
+- [ ] 10:00: TODO-1 implementation begins (ML Expert + Data Analyst)
+- [ ] 27/02: 🚀 SPRINT 1 OFFICIAL KICK-OFF
+- [ ] 05/03: 🎯 GATE 1 CHECKPOINT (immovable decision point)
+- [ ] 10/04: 🚀 GO LIVE (FASE 1 Beta)
+
+**Status Geral:** 🟢 **SPRINT 1 TASK SPECIFICATIONS COMPLETE - READY FOR EXECUTION**
