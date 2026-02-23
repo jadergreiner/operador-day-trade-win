@@ -1,0 +1,652 @@
+{
+  "board_config": {
+    "total_members": 17,
+    "quorum_required": 12,
+    "critical_members": 4,
+    "voting_weight": "majority_simple"
+  },
+  "members": [
+    {
+      "id": 1,
+      "nome": "Presidente Operacional",
+      "especialidade": "Direção Executiva",
+      "prioridade": "⭐⭐⭐ CRÍTICA",
+      "bloco": 1,
+      "responsabilidades": [
+        "Aprovar o go-live e ramp-up de capital",
+        "Garantir ROI do Operador Day Trade WIN",
+        "Aprovar escalonamentos críticos",
+        "Revisar alocação de recursos estratégicos"
+      ],
+      "perfil": "Executive Sponsor | Capital Authority",
+      "email": "presidente@operador-day-trade-win.local",
+      "voto": null
+    },
+    {
+      "id": 2,
+      "nome": "Coordenadora de Governança",
+      "especialidade": "Governança & Processos",
+      "prioridade": "⭐⭐⭐ CRÍTICA",
+      "bloco": 1,
+      "responsabilidades": [
+        "Facilitar decisões semanais",
+        "Registrar deliberações em STATUS_ENTREGAS",
+        "Garantir quorum e seguimento da política",
+        "Mapear dependências e riscos"
+      ],
+      "perfil": "Governance Lead | Facilitator",
+      "email": "governanca@operador-day-trade-win.local",
+      "voto": null
+    },
+    {
+      "id": 3,
+      "nome": "Eng Sr",
+      "especialidade": "Arquitetura MT5 + Risk",
+      "prioridade": "⭐⭐⭐ CRÍTICA",
+      "bloco": 2,
+      "responsabilidades": [
+        "Garantir arquitetura de execução e ordens",
+        "Autorizar deploys críticos",
+        "Validar dashboards e monitoramentos",
+        "Revisar operações do OrdersExecutor"
+      ],
+      "perfil": "Lead Engineer | Delivery Owner",
+      "email": "engsr@operador-day-trade-win.local",
+      "voto": null
+    },
+    {
+      "id": 4,
+      "nome": "ML Expert",
+      "especialidade": "Modelagem & Backtest",
+      "prioridade": "⭐⭐⭐ CRÍTICA",
+      "bloco": 2,
+      "responsabilidades": [
+        "Garantir F1 ≥ 0,65 e thresholds estabilizados",
+        "Supervisionar grid search paralelo",
+        "Validar detector de padrões técnicos",
+        "Entregar labels a partir do backtest"
+      ],
+      "perfil": "ML Research Lead",
+      "email": "ml.expert@operador-day-trade-win.local",
+      "voto": null
+    },
+    {
+      "id": 5,
+      "nome": "Risk Officer",
+      "especialidade": "Risk Framework",
+      "prioridade": "⭐⭐ ALTA",
+      "bloco": 2,
+      "responsabilidades": [
+        "Auditar circuit breakers (-3/-5/-8%)",
+        "Validar limites de drawdown e correlações",
+        "Assinar stress tests e simulações",
+        "Autorizar stop loss automáticos"
+      ],
+      "perfil": "Risk Ops Lead",
+      "email": "risco@operador-day-trade-win.local",
+      "voto": null
+    },
+    {
+      "id": 6,
+      "nome": "Arquiteto de Sistemas",
+      "especialidade": "Plataforma e Performance",
+      "prioridade": "⭐⭐ ALTA",
+      "bloco": 3,
+      "responsabilidades": [
+        "Garantir latência <500ms P95",
+        "Revisar technical debt e escala",
+        "Auditar WebSocket e APIs",
+        "Validar telemetria e logs" 
+      ],
+      "perfil": "Systems Architect",
+      "email": "arquitetura@operador-day-trade-win.local",
+      "voto": null
+    },
+    {
+      "id": 7,
+      "nome": "Infra DevOps",
+      "especialidade": "Infra 24/7",
+      "prioridade": "⭐⭐ ALTA",
+      "bloco": 3,
+      "responsabilidades": [
+        "Operar dashboards e alertas",
+        "Garantir backups e restore",
+        "Monitorar pipelines de alertas",
+        "Responder incidentes críticos"
+      ],
+      "perfil": "Infrastructure Lead",
+      "email": "infra@operador-day-trade-win.local",
+      "voto": null
+    },
+    {
+      "id": 8,
+      "nome": "Doc Advocate",
+      "especialidade": "Documentação & QA",
+      "prioridade": "⭐⭐ ALTA",
+      "bloco": 3,
+      "responsabilidades": [
+        "Sincronizar os docs oficiais",
+        "Auditar lint Markdown e encoding",
+        "Atualizar BEST_PRACTICES.md",
+        "Registrar syncs em SYNCHRONIZATION.md"
+      ],
+      "perfil": "Documentation & QA Lead",
+      "email": "doc@operador-day-trade-win.local",
+      "voto": null,
+      "doc_guidelines": {
+        "fonte_verdade": "docs/ROADMAP.md, docs/STATUS_ENTREGAS.md, docs/PLANO_DE_SPRINTS_MVP_NOW.md, docs/CRITERIOS_DE_ACEITE_MVP.md, docs/FEATURES.md, docs/CHANGELOG.md",
+        "protocolo_sync": "[SYNC] obrigatório + registro em SYNCHRONIZATION.md",
+        "markdown_lint": "Linhas <= 80 chars, UTF-8",
+        "nao_fazer": "Não criar docs fora dos core; não duplicar"
+      }
+    },
+    {
+      "id": 9,
+      "nome": "Operações",
+      "especialidade": "Timeline & Canary",
+      "prioridade": "⭐⭐ ALTA",
+      "bloco": 4,
+      "responsabilidades": [
+        "Validar cronograma Sprint 1-4",
+        "Coordenar pre-flight checks",
+        "Gerenciar canários de deploy",
+        "Distribuir recursos de plantão"
+      ],
+      "perfil": "Operations Manager",
+      "email": "operacoes@operador-day-trade-win.local",
+      "voto": null
+    },
+    {
+      "id": 10,
+      "nome": "Executor Técnico",
+      "especialidade": "Deploy & Rollback",
+      "prioridade": "⭐⭐ ALTA",
+      "bloco": 4,
+      "responsabilidades": [
+        "Testar deploys e rollbacks",
+        "Rodar OrdersExecutor em canário",
+        "Responder incidentes em tempo real",
+        "Documentar runbooks sociais"
+      ],
+      "perfil": "Lead Developer",
+      "email": "executor@operador-day-trade-win.local",
+      "voto": null
+    },
+    {
+      "id": 11,
+      "nome": "Data Engineer",
+      "especialidade": "Dados & Monitoramento",
+      "prioridade": "⭐ MÉDIA",
+      "bloco": 4,
+      "responsabilidades": [
+        "Monitorar detector BDI e data quality",
+        "Garantir dataset do backtest",
+        "Auditar conectividade MT5",
+        "Registrar métricas de trade"
+      ],
+      "perfil": "Data & Monitoring Lead",
+      "email": "data@operador-day-trade-win.local",
+      "voto": null
+    },
+    {
+      "id": 12,
+      "nome": "QA Automation",
+      "especialidade": "Testes Automatizados",
+      "prioridade": "⭐ MÉDIA",
+      "bloco": 3,
+      "responsabilidades": [
+        "Automação de E2E e integração",
+        "Testes de regressão",
+        "Perfil de performance",
+        "Cobertura mínima 80%"
+      ],
+      "perfil": "QA Engineer",
+      "email": "quality@operador-day-trade-win.local",
+      "voto": null
+    },
+    {
+      "id": 13,
+      "nome": "Trader Líder",
+      "especialidade": "Trading & UX",
+      "prioridade": "⭐ MÉDIA",
+      "bloco": 5,
+      "responsabilidades": [
+        "Validar sinais e P&L",
+        "Avaliar dashboards do operador",
+        "Aprovar procedimentos de trading",
+        "Conduzir sessões de UAT"
+      ],
+      "perfil": "Senior Trader",
+      "email": "trader@operador-day-trade-win.local",
+      "voto": null
+    },
+    {
+      "id": 14,
+      "nome": "Product Owner",
+      "especialidade": "Roadmap & MVP",
+      "prioridade": "⭐⭐ ALTA",
+      "bloco": 5,
+      "responsabilidades": [
+        "Priorização estratégica",
+        "Sincronização com FEATURES.md",
+        "Alinhar negócios e backlog",
+        "Criar artefatos doc relevantes"
+      ],
+      "perfil": "Product Strategist",
+      "email": "product@operador-day-trade-win.local",
+      "voto": null
+    },
+    {
+      "id": 15,
+      "nome": "Compliance Officer",
+      "especialidade": "Compliance & Legal",
+      "prioridade": "⭐ MÉDIA",
+      "bloco": 5,
+      "responsabilidades": [
+        "Garantir audit trail completo",
+        "Validar requisitos legais",
+        "Sincronizar DECISIONS.md",
+        "Revisar políticas internas"
+      ],
+      "perfil": "Compliance",
+      "email": "compliance@operador-day-trade-win.local",
+      "voto": null
+    },
+    {
+      "id": 16,
+      "nome": "Conselheiro Estratégico",
+      "especialidade": "Estratégia de Longo Prazo",
+      "prioridade": "⭐ MÉDIA",
+      "bloco": 6,
+      "responsabilidades": [
+        "Arbitragem de prioridades",
+        "Revisar roadmap de longo prazo",
+        "Planejar contingência",
+        "Aprovar diretrizes estratégicas"
+      ],
+      "perfil": "Board Representative",
+      "email": "board@operador-day-trade-win.local",
+      "voto": null
+    },
+    {
+      "id": 17,
+      "nome": "Doc Advocate",
+      "especialidade": "Documentação & Sincronização",
+      "prioridade": "⭐⭐ ALTA",
+      "bloco": 3,
+      "responsabilidades": [
+        "Manter docs oficiais sincronizados",
+        "Aplicar padrões Markdown",
+        "Auditar BEST_PRACTICES.md",
+        "Operar SYNCHRONIZATION.md"
+      ],
+      "perfil": "Documentation Advocate",
+      "email": "docadvocate@operador-day-trade-win.local",
+      "voto": null,
+      "doc_guidelines": {
+        "CRITICAL": "docs/ROADMAP.md, docs/STATUS_ENTREGAS.md, docs/PLANO_DE_SPRINTS_MVP_NOW.md, docs/FEATURES.md, docs/CRITERIOS_DE_ACEITE_MVP.md, docs/SYNCHRONIZATION.md, docs/CHANGELOG.md",
+        "protocolo_SYNC": "[SYNC] obrigatório + registro em SYNCHRONIZATION.md",
+        "tarefas_imediatas": [
+          "Atualizar links entre docs oficiais",
+          "Sincronizar STATUS_ENTREGAS com Sprint 1",
+          "Manter TRACKER e ROADMAP alinhados",
+          "Garantir encoding UTF-8"
+        ],
+        "nao_fazer": "Não criar docs fora dos core"
+      }
+    }
+  ],
+  "blocos": [
+    {
+      "id": 1,
+      "nome": "Executiva & Governança",
+      "duracao_min": 5,
+      "membros": [
+        "Presidente Operacional",
+        "Coordenadora de Governança"
+      ],
+      "topicos": [
+        "ROI dentro do plano?",
+        "Risco de capital aceitável?",
+        "Gates foram seguidos?",
+        "Time alinhado?"
+      ]
+    },
+    {
+      "id": 2,
+      "nome": "Modelo & Risco",
+      "duracao_min": 10,
+      "membros": [
+        "Eng Sr",
+        "ML Expert",
+        "Risk Officer"
+      ],
+      "topicos": [
+        "Confiança no modelo heurístico?",
+        "Generalização para live trading?",
+        "Risco financeiro aceitável?",
+        "Circuit breakers armados?",
+        "Proteções acionadas?"
+      ]
+    },
+    {
+      "id": 3,
+      "nome": "Infra & QA",
+      "duracao_min": 10,
+      "membros": [
+        "Arquiteto de Sistemas",
+        "Infra DevOps",
+        "Doc Advocate",
+        "QA Automation"
+      ],
+      "topicos": [
+        "Arquitetura pronta para produção?",
+        "Performance abaixo de 500ms?",
+        "Infra 24/7 monitorada?",
+        "Testes cobertura OK?",
+        "Documentação sincronizada?"
+      ]
+    },
+    {
+      "id": 4,
+      "nome": "Operações & Implementação",
+      "duracao_min": 10,
+      "membros": [
+        "Operações",
+        "Executor Técnico",
+        "Data Engineer"
+      ],
+      "topicos": [
+        "Timeline executável?",
+        "Deploy scripts prontos?",
+        "Rollback testado?",
+        "Conectividade MT5 estável?",
+        "Rate limits OK?"
+      ]
+    },
+    {
+      "id": 5,
+      "nome": "Trading & Produto",
+      "duracao_min": 10,
+      "membros": [
+        "Trader Líder",
+        "Product Owner",
+        "Compliance Officer"
+      ],
+      "topicos": [
+        "Sinais fazem sentido?",
+        "P&L realista?",
+        "UX para live OK?",
+        "Dashboards prontos?",
+        "Audit trail OK?"
+      ]
+    },
+    {
+      "id": 6,
+      "nome": "Síntese & Votação",
+      "duracao_min": 5,
+      "membros": [
+        "Conselheiro Estratégico",
+        "Presidente Operacional"
+      ],
+      "topicos": [
+        "Estratégia geral OK?",
+        "Aprovação final?"
+      ]
+    }
+  ],
+  "voting_options": [
+    {
+      "key": "A",
+      "label": "SIM — Liberar go-live 13/03",
+      "emoji": "✅",
+      "action": "APROVADO"
+    },
+    {
+      "key": "B",
+      "label": "CAUTELA — Sim, com condições",
+      "emoji": "⚠️",
+      "action": "APROVADO_COM_CONDICOES"
+    },
+    {
+      "key": "C",
+      "label": "NÃO — Adiar por riscos críticos",
+      "emoji": "🔴",
+      "action": "BLOQUEADO"
+    }
+  ],
+  "success_criteria": {
+    "code_quality": {
+      "metric": "unit tests",
+      "target": "18+",
+      "status": "✅ PASSED"
+    },
+    "qa_validation": {
+      "metric": "tests totais",
+      "target": "40/40",
+      "status": "✅ PASSED"
+    },
+    "trader_approval": {
+      "metric": "SMC alignment",
+      "target": ">=80%",
+      "status": "✅ PASSED"
+    },
+    "architecture_ready": {
+      "metric": "production readiness",
+      "target": "Go-Live gates",
+      "status": "✅ PASSED"
+    },
+    "infrastructure_ready": {
+      "metric": "monitoramento 24/7",
+      "target": "Dashboards up",
+      "status": "✅ PASSED"
+    },
+    "risk_gates_armed": {
+      "metric": "Circuit breakers",
+      "target": "-3/-5/-8 armados",
+      "status": "✅ PASSED"
+    },
+    "operations_ready": {
+      "metric": "pre-flight + fases",
+      "target": "Procedimentos testados",
+      "status": "✅ PASSED"
+    },
+    "docs_complete": {
+      "metric": "audit trail",
+      "target": "Complete",
+      "status": "✅ PASSED"
+    }
+  },
+  "docs_sync_policy": {
+    "version": "1.0.1",
+    "source_of_truth": "docs/STATUS_ENTREGAS.md",
+    "official_docs": [
+      "docs/ROADMAP.md",
+      "docs/STATUS_ENTREGAS.md",
+      "docs/PLANO_DE_SPRINTS_MVP_NOW.md",
+      "docs/CRITERIOS_DE_ACEITE_MVP.md",
+      "docs/FEATURES.md",
+      "docs/CHANGELOG.md"
+    ],
+    "cross_links": {
+      "docs/ROADMAP.md": [
+        "docs/STATUS_ENTREGAS.md",
+        "docs/PLANO_DE_SPRINTS_MVP_NOW.md",
+        "docs/FEATURES.md"
+      ],
+      "docs/STATUS_ENTREGAS.md": [
+        "docs/ROADMAP.md",
+        "docs/PLANO_DE_SPRINTS_MVP_NOW.md",
+        "docs/CRITERIOS_DE_ACEITE_MVP.md",
+        "docs/CHANGELOG.md"
+      ],
+      "docs/PLANO_DE_SPRINTS_MVP_NOW.md": [
+        "docs/ROADMAP.md",
+        "docs/STATUS_ENTREGAS.md",
+        "docs/CRITERIOS_DE_ACEITE_MVP.md"
+      ]
+    },
+    "roadmap_awareness": {
+      "descricao": "Adicionar bloco Execução / Visibilidade em docs/ROADMAP.md detalhando sprint ativo, data da última atualização e progresso NOW (itens MUST concluídos/total)",
+      "campo_sprint_atual": "Sprint atual: Sprint 1",
+      "campo_data_atualizacao": "Última atualização: 2026-02-23",
+      "campo_progresso_now": "Progresso NOW: 0 de 4 MUST"
+    },
+    "sync_trigger_prompt": "Sincronize os docs oficiais do projeto seguindo cruzamentos: (1) links rápidos completos; (2) atualize STATUS_ENTREGAS com itens NOW (Sprint, Issue, PR, status); (3) registre Execução / Visibilidade no ROADMAP; (4) documente o sync em SYNCHRONIZATION.md com tag [SYNC] e timestamp."
+  },
+  "gates_s2_0": {
+    "version": "1.0.0",
+    "descricao": "QA Gates S2-0 (Data Strategy 60 símbolos)",
+    "referencia_documento": "docs/DATA_STRATEGY_QA_GATES_S2_0.md",
+    "status": "🟡 PLANEJANDO → 🟢 VALIDAÇÃO pronta",
+    "gates": {
+      "gate_1": {
+        "nome": "Dados & Integridade",
+        "complexidade": "🟢 Simples",
+        "duracao_min": 5,
+        "duracao_setup_min": 15,
+        "validador_principal": {
+          "id": 11,
+          "nome": "Data Engineer",
+          "papel": "Data Engineer"
+        },
+        "validador_secundario": {
+          "id": 6,
+          "nome": "Arquiteto de Sistemas",
+          "papel": "Architect"
+        },
+        "escalation": {
+          "id": 5,
+          "nome": "Risk Officer",
+          "condicao": "Se > 2 rejeições"
+        },
+        "sign_off": {
+          "id": 1,
+          "nome": "Presidente Operacional",
+          "condicao": "Aprovação final do gate"
+        },
+        "criterios": [
+          "60 símbolos carregados",
+          "Sem gaps",
+          "Dados válidos",
+          "Cache <100ms",
+          "1 ano de dados",
+          "SQLite ~650 KB"
+        ],
+        "automacao": "✅ 100% CLI"
+      },
+      "gate_2": {
+        "nome": "Qualidade & Testes",
+        "complexidade": "🟠 Moderado",
+        "duracao_min": 10,
+        "duracao_review_min": 15,
+        "validador_principal": {
+          "id": 8,
+          "nome": "Doc Advocate",
+          "papel": "Documentation & QA Lead"
+        },
+        "validador_secundario": {
+          "id": 6,
+          "nome": "Arquiteto de Sistemas",
+          "papel": "Architect"
+        },
+        "escalation": {
+          "id": 5,
+          "nome": "Risk Officer",
+          "condicao": "Se > 1 rejeição"
+        },
+        "sign_off": {
+          "id": 1,
+          "nome": "Presidente Operacional",
+          "condicao": "Aprovação final"
+        },
+        "criterios": [
+          "5 testes PASS",
+          "Cobertura >=80%",
+          "Sem regressões",
+          "Docstrings PT",
+          "README data válido",
+          "Sem warnings"
+        ],
+        "automacao": "✅ 80% pytest + coverage"
+      },
+      "documentacao": {
+        "nome": "Checklist Documentação",
+        "duracao": 10,
+        "owner": {
+          "id": 8,
+          "nome": "Doc Advocate",
+          "papel": "Documentation Officer"
+        },
+        "items": [
+          {
+            "id": "D1",
+            "descricao": "Docstrings em PT",
+            "arquivo": "src/domain",
+            "criterio": "100% coverage"
+          },
+          {
+            "id": "D2",
+            "descricao": "README data atualizado",
+            "arquivo": "docs/FEATURES.md",
+            "criterio": "≥ 300 palavras"
+          },
+          {
+            "id": "D3",
+            "descricao": "CRITÉRIOS atualizados",
+            "arquivo": "docs/CRITERIOS_DE_ACEITE_MVP.md",
+            "criterio": "Seção S2-0 com gates"
+          },
+          {
+            "id": "D4",
+            "descricao": "Decisions documentadas",
+            "arquivo": "docs/DECISIONS.md",
+            "criterio": "Cache strategy + Risk"
+          },
+          {
+            "id": "D5",
+            "descricao": "Sync registrado",
+            "arquivo": "docs/SYNCHRONIZATION.md",
+            "criterio": "Entry [SYNC] S2-0"
+          },
+          {
+            "id": "D6",
+            "descricao": "Status atualizado",
+            "arquivo": "docs/STATUS_ENTREGAS.md",
+            "criterio": "Item S2-0 marcado 🟢"
+          }
+        ]
+      },
+      "aprovacao_final": {
+        "nome": "Sign-Off Final",
+        "owner": {
+          "id": 1,
+          "nome": "Presidente Operacional",
+          "papel": "Executive Leader"
+        },
+        "condicoes": [
+          "Gate 1 assinado por Data Engineer",
+          "Gate 2 assinado por Doc Advocate",
+          "Documentação 6/6 completa",
+          "Nenhum risco aberto"
+        ],
+        "resultado": "🟢 GO → Desbloqueia S2-3"
+      }
+    },
+    "fluxo_aprovacao": [
+      "S2-0 pronto",
+      "Gate 1: Dados",
+      "Gate 2: Qualidade",
+      "Documentação",
+      "Sign-Off Final"
+    ],
+    "timeline": {
+      "setup_inicial": 20,
+      "gate_1": 10,
+      "gate_2": 15,
+      "documentacao": 15,
+      "sign_off": 5,
+      "total": 65
+    }
+  }
+}
