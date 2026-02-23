@@ -2,8 +2,8 @@
 
 **Status:** ✅ Projeto pronto para deploy local/pessoal  
 **Data:** 23 de Fevereiro de 2026  
-**Tempo agora:** 23:00 UTC (20:00 BRT)  
-**Duração deploy:** ~2 horas
+**Tempo agora:** 20:00 BRT (23:00 UTC)  
+**Duração deploy:** ~2 horas (20:00 BRT - 03:00 BRT do dia 24)
 
 ---
 
@@ -35,7 +35,7 @@ ls -d src/ tests/ config/ scripts/     # Todos existem
 ### 3. Start TODO-1 Labels (Terminal 2)
 
 ```bash
-# Terminal 2: Inicia logo (AGORA 23:00 UTC)
+# Terminal 2: Inicia logo (AGORA 20:00 BRT)
 python scripts/TODO1_LABEL_BACKTEST.py
 
 # Esperado output:
@@ -52,11 +52,11 @@ python scripts/TODO1_LABEL_BACKTEST.py
 ```
 
 **Duração:** 2-3 horas (rodar em background)  
-**Deadline:** 24/02 06:00 UTC (amanhã café da manhã)
+**Deadline:** 24/02 03:00 BRT (amanhã cedo, logo após sunrise)
 
 ---
 
-## 🚀 FASE DEPLOYMENT - Terminal 1 (23:30 UTC)
+## 🚀 FASE DEPLOYMENT - Terminal 1 (20:30 BRT)
 
 ### Setup Rápido (5 min)
 
@@ -164,7 +164,7 @@ Após ~30 min de deployment:
 
 ## 🎯 PRÓXIMAS AÇÕES APÓS DEPLOY
 
-### Hoje à Noite (23:30-02:00 UTC)
+### Hoje à Noite (20:30-23:00 BRT de 23/02)
 
 ```
 ✓ Stage 1 LIVE
@@ -172,10 +172,17 @@ Após ~30 min de deployment:
 ✓ TODO-1 Labels RUNNING (paralelo)
 ```
 
-### Amanhã 09:00 BRT (12:00 UTC)
+### Madrugada para Amanhã (00:00-03:00 BRT de 24/02)
 
 ```
-✓ TODO-1 Labels COMPLETO (já done desde 06:00 UTC)
+✓ Deployment finalizando (Stage 1 100% estável)
+✓ TODO-1 Labels completando (até 03:00 BRT)
+```
+
+### Amanhã (09:00 BRT)
+
+```
+✓ TODO-1 Labels COMPLETO (já done desde 03:00 BRT)
 ✓ Eng Sr: OrdersExecutor START (implementação)
 ✓ ML Expert: Grid Search START (com labels novos)
 ✓ Daily Standup: 15:00 BRT
@@ -213,7 +220,7 @@ git log --oneline | head -1  # Ver commit hash
 
 ## 🎯 DECISION POINT
 
-**Você quer começar AGORA (23:30 UTC)?**
+**Você quer começar AGORA (20:30 BRT)?**
 
 Se SIM:
 ```bash

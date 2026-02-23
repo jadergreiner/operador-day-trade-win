@@ -1,8 +1,8 @@
 # ✅ CHECKLIST DEPLOYMENT ESTÁGIO 1 - 23/02/2026
 
 **Data:** 23 de Fevereiro de 2026  
-**Hora Início:** 23:00 UTC (20:00 BRT)  
-**Hora Deploy:** 23:30 UTC (20:30 BRT)  
+**Hora Início:** 20:00 BRT (23:00 UTC)  
+**Hora Deploy:** 20:30 BRT (23:30 UTC)  
 **Duração Estimada:** 2 horas  
 **Owner:** Eng Sr + QA Lead  
 **Status:** 🟢 **PRONTO PARA COMEÇAR AGORA**
@@ -321,41 +321,41 @@ TESTE 4: Health URLs
 ## ⏱️ TIMELINE DETALHADA
 
 ```
-23:00 UTC (20:00 BRT) - COMEÇA
+20:00 BRT (23:00 UTC) - COMEÇA
 └─ Eng Sr + QA synchronize
 └─ ML Expert começa TODO-1 labels (paralelo)
 
-23:05 UTC - PRÉ-DEPLOYMENT VALIDATION
+20:05 BRT - PRÉ-DEPLOYMENT VALIDATION
 └─ [ ] Todas validações acima completadas
 
-23:15 UTC - PREPARAÇÃO DEPLOYMENT
+20:15 BRT - PREPARAÇÃO DEPLOYMENT
 └─ [ ] Scripts preparados
 └─ [ ] Configurações aplicadas
 └─ [ ] Ambientes prontos
 
-23:30 UTC - DEPLOYMENT INFRASTRUCTURE COMÇA
+20:30 BRT (23:30 UTC) - DEPLOYMENT INFRASTRUCTURE COMÇA
 └─ [ ] WebSocket server inicia
 └─ [ ] Risk validator ativa
 └─ [ ] BDI detector ativa
 └─ [ ] Features pipeline carrega
 
-00:00 UTC (21:00 BRT) - SMOKE TESTS
+21:00 BRT (00:00 UTC do dia 24) - SMOKE TESTS
 └─ [ ] Health checks passando
 └─ [ ] Imports validados
 └─ [ ] Logging ativo
 
-00:30 UTC (21:30 BRT) - STAGE 1 LIVE
+21:30 BRT (00:30 UTC do dia 24) - STAGE 1 LIVE
 └─ [ ] Todos 4 componentes LIVE
 └─ [ ] Monitoramento 24/7 ativo
 └─ [ ] Status dashboard updated
 └─ ✅ ESTÁGIO 1 DEPLOYMENT COMPLETO
 
-06:00 UTC (03:00 BRT) - TODO-1 LABELS COMPLETO
+03:00 BRT (06:00 UTC do dia 24) - TODO-1 LABELS COMPLETO
 └─ [ ] ML Expert termina TODO-1
 └─ [ ] Labels validados (zero NaN, imbalance OK)
 └─ [ ] Dataset pronto para Grid Search
 
-09:00 BRT (12:00 UTC) - NOVO DIA COMÇA
+09:00 BRT (12:00 UTC do dia 24) - NOVO DIA COMÇA
 └─ [ ] OrdersExecutor START (Eng Sr)
 └─ [ ] Grid Search START (ML Expert)
 └─ [ ] Daily Standup 15:00
@@ -426,7 +426,7 @@ Stage 1 Deployment é SUCESSO se:
 ✅ TODO-1 Labels pronto antes Grid Search  
 ✅ Board approval confirmado (7/7 personas)
 ✅ Documentação atualizada
-✅ Status enviado em 24:30 UTC (após 1h live)
+✅ Status enviado em 21:30 BRT (após 1h live)
 ```
 
 ---
@@ -486,7 +486,7 @@ Após completion de todos itens acima:
 
 Status: ✅ STAGE 1 DEPLOYMENT APPROVED & LIVE
 
-Hora: _____________ UTC
+Hora: _____________ BRT (UTC: _____________)
 
 Próxima ação: TODO-1 Labels (paralelo já em andamento)
               + Monitoramento 24h contínuo
