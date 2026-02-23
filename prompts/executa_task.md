@@ -2,9 +2,9 @@
 
 ## 📌 Contexto do Projeto
 
-**Projeto:** Operador Day Trade WIN  
-**Sprint:** Sprint 1 (27/02 - 05/03 2026)  
-**Data Execução:** 23/02/2026  
+**Projeto:** Operador Day Trade WIN
+**Sprint:** Sprint 1 (27/02 - 05/03 2026)
+**Data Execução:** 23/02/2026
 **Status:** ✅ Todos pré-requisitos atendidos
 
 - ✅ Análise de Priorização: [prompts/solicita_task.md](solicita_task.md) (completa)
@@ -312,7 +312,7 @@ CHECKLIST:
     python -m pymarkdown scan docs/PLANO_DE_SPRINTS_MVP_NOW.md
     python -m pymarkdown scan docs/agente_autonomo/SYNC_MANIFEST.json
     python -m pymarkdown fix docs/  # Se erros encontrados
-    
+
 ```
 
 ### ETAPA 2: Preparar Commit 💾
@@ -432,8 +432,8 @@ CHECKLIST:
 
 ---
 
-**Commit:** `feat: Iniciar Sprint 1 - 4 issues + 8 personas squad`  
-**Date:** 23/02/2026 21:35 UTC  
+**Commit:** `feat: Iniciar Sprint 1 - 4 issues + 8 personas squad`
+**Date:** 23/02/2026 21:35 UTC
 **Status:** ✅ COMPLETE - Pronto para Sprint 1
 ```
 
@@ -522,6 +522,6 @@ git push origin main
 
 ---
 
-**Status:** ✅ Pronto para Executar  
-**Próximo Passo:** Executar `prompts/executa_task.md` para iniciar Sprint 1  
+**Status:** ✅ Pronto para Executar
+**Próximo Passo:** Executar `prompts/executa_task.md` para iniciar Sprint 1
 **Timeline:** 23/02 Hoje → 27/02 Kickoff Oficial → 05/03 Gate 1 Check

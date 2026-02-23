@@ -1,8 +1,8 @@
 # 📋 SPRINT 1 - DAY 1 REVIEW (23/02/2026)
 
-**Data:** 23/02/2026 (Pré-kickoff oficial)  
-**Sprint:** Sprint 1 (27/02-05/03)  
-**Duração:** 5 dias úteis  
+**Data:** 23/02/2026 (Pré-kickoff oficial)
+**Sprint:** Sprint 1 (27/02-05/03)
+**Duração:** 5 dias úteis
 **Time:** Eng Sr (Persona 1) + ML Expert (Persona 2) + 6 suportes
 
 ---
@@ -18,7 +18,7 @@
 | #4 | Parallelize grid search | The Brain (2) | 🟡 MÉDIA | 1-2h | 2 |
 | #5 | P&L unrealized calculation | Eng Sr (1) | 🟡 MÉDIA | 2-3h | 2+ |
 
-**Total Sprint 1:** 5-7 horas  
+**Total Sprint 1:** 5-7 horas
 **Total Sprint 2+:** 3-5 horas
 
 ### Squad Multidisciplinar Alocado (8/8) ✅
@@ -44,11 +44,11 @@
 
 ### Pré-requisitos Validados (5/5) ✅
 
-- ✅ Design 100% pronto  
+- ✅ Design 100% pronto
 - ✅ Risk framework aprovado (CFO)
-- ✅ Decisões financeiras approved  
-- ✅ Squad confirmado  
-- ✅ Bloqueadores: NENHUM  
+- ✅ Decisões financeiras approved
+- ✅ Squad confirmado
+- ✅ Bloqueadores: NENHUM
 
 ---
 
@@ -210,6 +210,6 @@ Falhando (NO-GO):
 
 ---
 
-**Status:** ✅ READY FOR SPRINT 1  
-**Decision:** GO (27/02 kickoff confirmado)  
+**Status:** ✅ READY FOR SPRINT 1
+**Decision:** GO (27/02 kickoff confirmado)
 **Next Review:** 05/03 17:00 (Gate 1 checkpoint post-mortem)

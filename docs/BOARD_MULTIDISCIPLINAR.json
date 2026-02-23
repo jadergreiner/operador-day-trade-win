@@ -96,7 +96,7 @@
         "Garantir latência <500ms P95",
         "Revisar technical debt e escala",
         "Auditar WebSocket e APIs",
-        "Validar telemetria e logs" 
+        "Validar telemetria e logs"
       ],
       "perfil": "Systems Architect",
       "email": "arquitetura@operador-day-trade-win.local",

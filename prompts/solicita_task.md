@@ -221,6 +221,6 @@ grep -i "BLOCKED\|bloqueado" ANALISE_PRIORIZACAO_23FEV.md
 
 ---
 
-**Última Atualização:** 23/02/2026  
-**Responsável por Manutenção:** GitHub Copilot / Agentes Autônomos  
+**Última Atualização:** 23/02/2026
+**Responsável por Manutenção:** GitHub Copilot / Agentes Autônomos
 **Status:** ✅ Pronto para usar

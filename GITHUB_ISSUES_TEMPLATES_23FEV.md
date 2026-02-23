@@ -1,18 +1,18 @@
 # 🐙 GitHub Issues - Criar com gh cli
 
-**Status:** 4 issues prontas para criar HOJE (23/02)  
-**Comando:** Use `gh issue create` com os templates abaixo  
-**Documentação:** https://cli.github.com/manual/gh_issue_create  
+**Status:** 4 issues prontas para criar HOJE (23/02)
+**Comando:** Use `gh issue create` com os templates abaixo
+**Documentação:** https://cli.github.com/manual/gh_issue_create
 
 ---
 
 ## ISSUE-1: [SPRINT-1] Label backtest_optimized_results ⚠️ BLOCKER
 
-**Tipo:** Bug + Task (código quebrado)  
-**Prioridade:** 🔴 CRÍTICO (bloqueia ML training)  
-**Sprint:** Sprint 1 (27/02-05/03)  
-**Persona:** ML Expert  
-**Esforço:** 2-3 horas  
+**Tipo:** Bug + Task (código quebrado)
+**Prioridade:** 🔴 CRÍTICO (bloqueia ML training)
+**Sprint:** Sprint 1 (27/02-05/03)
+**Persona:** ML Expert
+**Esforço:** 2-3 horas
 
 ### Comando gh cli
 
@@ -32,7 +32,7 @@ logger.info('TODO: Implementar load_and_label com backtest results')
 
 Grid search do modelo XGBoost depende de **labeled dataset** (win/loss por opportunity).
 
-Artifact já existe: \`backtest_optimized_results.json\` 
+Artifact já existe: \`backtest_optimized_results.json\`
 
 A função \`load_and_label()\` precisa:
 1. Carregar \`backtest_optimized_results.json\`
@@ -75,11 +75,11 @@ Desbloqueia:
 
 ## ISSUE-2: [SPRINT-1] OrdersExecutor implementation (3 TODOs)
 
-**Tipo:** Feature task  
-**Prioridade:** 🔴 CRÍTICO (bloqueia Sprint 1)  
-**Sprint:** Sprint 1 (28/02-02/03)  
-**Persona:** Eng Sr  
-**Esforço:** 3-4 horas  
+**Tipo:** Feature task
+**Prioridade:** 🔴 CRÍTICO (bloqueia Sprint 1)
+**Sprint:** Sprint 1 (28/02-02/03)
+**Persona:** Eng Sr
+**Esforço:** 3-4 horas
 
 ### Comando gh cli
 
@@ -151,11 +151,11 @@ Desbloqueia:
 
 ## ISSUE-3: [SPRINT-2] Parallelize grid search (ml_classifier.py)
 
-**Tipo:** Optimization task  
-**Prioridade:** 🟡 MÉDIO  
-**Sprint:** Sprint 2 (6/03-12/03)  
-**Persona:** ML Expert  
-**Esforço:** 1-2 horas  
+**Tipo:** Optimization task
+**Prioridade:** 🟡 MÉDIO
+**Sprint:** Sprint 2 (6/03-12/03)
+**Persona:** ML Expert
+**Esforço:** 1-2 horas
 
 ### Comando gh cli
 
@@ -212,11 +212,11 @@ Expected speedup: **3-5x** (30min → 7-10min)
 
 ## ISSUE-4: [POST-LAUNCH] P&L unrealized calculation
 
-**Tipo:** Feature task  
-**Prioridade:** 🟡 MÉDIO  
-**Sprint:** Post Go-Live (~Sprint 2+)  
-**Persona:** Eng Sr  
-**Esforço:** 2-3 horas  
+**Tipo:** Feature task
+**Prioridade:** 🟡 MÉDIO
+**Sprint:** Post Go-Live (~Sprint 2+)
+**Persona:** Eng Sr
+**Esforço:** 2-3 horas
 
 ### Comando gh cli
 
@@ -228,7 +228,7 @@ gh issue create \
 Arquivo TODO: \`src/domain/entities/portfolio.py:110\`
 
 \`\`\`python
-# TODO: Adicionar calculo de lucro/prejuizo nao realizado 
+# TODO: Adicionar calculo de lucro/prejuizo nao realizado
 # quando dados de mercado estiverem disponiveis
 \`\`\`
 
@@ -345,12 +345,12 @@ Se preferir interface visual:
 | #TBD-3 | Grid search parallel | 2 | 🟡 MED | 1-2h |
 | #TBD-4 | P&L unrealized | Post | 🟡 MED | 2-3h |
 
-Total esforço: **8-12 horas** de desenvolvimento  
+Total esforço: **8-12 horas** de desenvolvimento
 Distribuição: Sprint 1 (5-7h) + Sprint 2 (1-2h) + Post-Launch (2-3h)
 
 ---
 
-**Criado:** 23/02/2026 16:47 BRT  
-**Próxima ação:** Execute `gh issue create` commands acima HOJE  
+**Criado:** 23/02/2026 16:47 BRT
+**Próxima ação:** Execute `gh issue create` commands acima HOJE
 **Checklist:** [x] Sprint 1  [ ] Sprint 2  [ ] Post-Launch
 
