@@ -8,6 +8,13 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+# Import da análise técnica
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    from analise_tecnica_avancada import gerar_analise_completa
+except ImportError:
+    gerar_analise_completa = None
+
 def format_clock_display():
     """Formata relógio visual para o display"""
     now = datetime.now()
@@ -134,6 +141,56 @@ def monitor_operador():
                     print(f'[STATUS] Pronto para Grid Search')
                 else:
                     print('[AGUARDANDO DATASET]')
+            
+            # Análise Técnica Avançada
+            if gerar_analise_completa:
+                print('\n' + '-' * 75)
+                print('ANALISE TECNICA AVANCADA:')
+                print('-' * 75)
+                
+                try:
+                    analise = gerar_analise_completa()
+                    
+                    # Market Strength
+                    market = analise.get('market_strength', {})
+                    print(f'\n[FORCA DO MERCADO]')
+                    print(f'  Trend: {market.get("trend_strength", 0)}/100')
+                    print(f'  Volume: {market.get("volume_strength", 0)}/100')
+                    print(f'  Volatility: {market.get("volatility_index", 0)}/100')
+                    print(f'  Overall: {market.get("emoji", "🟡")} {market.get("overall", 0)}/100 ({market.get("classificacao", "?")})')
+                    
+                    # Probability
+                    prob = analise.get('probability', {})
+                    print(f'\n[PROBABILIDADE BUYER/SELLER]')
+                    print(f'  BUY: {prob.get("buy_probability", 0)}%')
+                    print(f'  SELL: {prob.get("sell_probability", 0)}%')
+                    print(f'  Neutro: {prob.get("neutral_probability", 0)}%')
+                    print(f'  Sinal: {prob.get("primary_signal", "?")} ({prob.get("strength", "?")})')
+                    
+                    # SMC Levels
+                    smc = analise.get('smc_levels', {})
+                    print(f'\n[ANALISE SMC]')
+                    print(f'  Preco: {smc.get("preco_atual", 0):.2f}')
+                    print(f'  S1: {smc.get("support_1", 0):.2f}  |  R1: {smc.get("resistance_1", 0):.2f}')
+                    print(f'  S2: {smc.get("support_2", 0):.2f}  |  R2: {smc.get("resistance_2", 0):.2f}')
+                    supply = smc.get('supply_zone', {})
+                    demand = smc.get('demand_zone', {})
+                    print(f'  Supply: {supply.get("low", 0):.2f}-{supply.get("high", 0):.2f}')
+                    print(f'  Demand: {demand.get("low", 0):.2f}-{demand.get("high", 0):.2f}')
+                    
+                    # Recomendação
+                    rec = analise.get('recomendacao', {})
+                    print(f'\n[RECOMENDACAO]')
+                    print(f'  Setup: {rec.get("setup", "?")}')
+                    if rec.get('entrada'):
+                        print(f'  Entrada: {rec.get("entrada", "?"):.2f}')
+                        print(f'  Alvo: {rec.get("alvo", "?"):.2f}')
+                        print(f'  Stop: {rec.get("stop", "?"):.2f}')
+                        print(f'  R:R: 1:{rec.get("risco_recompensa", "?")}')
+                    print(f'  Confiança: {rec.get("confianca", "?")}')
+                    
+                except Exception as e:
+                    print(f'  [ERRO na análise] {e}')
             
             # Footer
             print('\n' + '=' * 75)
