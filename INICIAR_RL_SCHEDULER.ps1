@@ -47,21 +47,21 @@ while ($menuRunning) {
     Write-Host "  4) Ver jobs agendados"
     Write-Host "  5) Sair"
     Write-Host ""
-    
+
     $choice = Read-Host "Escolha uma opção [1-5]"
-    
+
     switch ($choice) {
         1 {
             Write-Host ""
             Write-Host "🚀 Iniciando scheduler em background..."
             Write-Host ""
-            
+
             # Iniciar em background
             $job = Start-Job -ScriptBlock {
                 cd $args[0]
                 python scripts/rl_training_scheduler.py
             } -ArgumentList $PWD
-            
+
             Write-Host "   Job ID: $($job.Id)"
             Write-Host "   Status: $($job.State)"
             Write-Host "   Logs: logs/rl_scheduler.log"
@@ -74,9 +74,9 @@ while ($menuRunning) {
             Write-Host ""
             Write-Host "🔄 Executando treinamento uma vez..."
             Write-Host ""
-            
+
             python -c "from scripts.rl_training_scheduler import RLTrainingScheduler; s = RLTrainingScheduler(); s.run_once()"
-            
+
             Write-Host ""
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "✅ Treinamento completado!"
@@ -90,9 +90,9 @@ while ($menuRunning) {
             Write-Host ""
             Write-Host "📊 Verificando saúde do modelo..."
             Write-Host ""
-            
+
             python scripts/rl_health_monitor.py
-            
+
             Write-Host ""
             Read-Host "Pressione Enter para continuar"
         }
@@ -100,9 +100,9 @@ while ($menuRunning) {
             Write-Host ""
             Write-Host "📋 Jobs Agendados:"
             Write-Host ""
-            
+
             python -c "from scripts.rl_training_scheduler import RLTrainingScheduler; s = RLTrainingScheduler(); s.show_jobs()"
-            
+
             Write-Host ""
             Read-Host "Pressione Enter para continuar"
         }

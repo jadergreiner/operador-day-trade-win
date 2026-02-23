@@ -7,7 +7,7 @@ cursor = conn.cursor()
 
 # Simular o que faz o script v3
 cursor.execute("""
-    SELECT DISTINCT e.id, e.episode_id 
+    SELECT DISTINCT e.id, e.episode_id
     FROM rl_episodes e
     INNER JOIN rl_rewards r ON e.episode_id = r.episode_id
     WHERE r.is_evaluated = 1
@@ -18,7 +18,7 @@ print(f"Episodes loaded: {len(episodes)}")
 print(f"First episode: {episodes[0] if episodes else 'NONE'}")
 
 cursor.execute("""
-    SELECT episode_id, reward_normalized, was_correct 
+    SELECT episode_id, reward_normalized, was_correct
     FROM rl_rewards
     WHERE is_evaluated = 1
 """)

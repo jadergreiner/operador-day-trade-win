@@ -203,7 +203,7 @@ set TESTE_OK=0
 
 REM Test 1
 if exist tests\test_mt5_adapter.py (
-    echo [Test 1/5] MT5Adapter... 
+    echo [Test 1/5] MT5Adapter...
     python -m pytest tests\test_mt5_adapter.py -q 2>nul
     set /a TESTE_COUNT+=1
     if !errorlevel! EQU 0 set /a TESTE_OK+=1

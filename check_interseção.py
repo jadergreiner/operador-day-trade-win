@@ -18,7 +18,7 @@ print(f"Rewards únicos em RL_REWARDS (evaluated): {rewards_count}")
 
 # Rewards que casam com episodes
 cursor.execute("""
-    SELECT COUNT(DISTINCT r.episode_id) 
+    SELECT COUNT(DISTINCT r.episode_id)
     FROM rl_rewards r
     INNER JOIN rl_episodes e ON r.episode_id = e.episode_id
     WHERE r.is_evaluated = 1
@@ -28,7 +28,7 @@ print(f"Rewards com episode correspondente: {matches}")
 
 # Se há problema, verificar diferenças
 cursor.execute("""
-    SELECT DISTINCT r.episode_id 
+    SELECT DISTINCT r.episode_id
     FROM rl_rewards r
     LEFT JOIN rl_episodes e ON r.episode_id = e.episode_id
     WHERE r.is_evaluated = 1 AND e.episode_id IS NULL

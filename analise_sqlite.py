@@ -26,25 +26,25 @@ print(f"Total de tabelas: {len(tables)}\n")
 
 for table_tuple in tables:
     table_name = table_tuple[0]
-    
+
     # Contar registros
     cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
     count = cursor.fetchone()[0]
-    
+
     # Listar colunas
     cursor.execute(f"PRAGMA table_info({table_name})")
     columns = cursor.fetchall()
-    
+
     print(f"📊 {table_name.upper()}")
     print(f"   Registros: {count}")
     print(f"   Colunas: {len(columns)}")
-    
+
     if count > 0:
         # Mostrar amostra de dados
         cursor.execute(f"SELECT * FROM {table_name} LIMIT 1")
         row = cursor.fetchone()
         print(f"   Exemplo: {row[:3]}..." if len(str(row)) > 50 else f"   Exemplo: {row}")
-    
+
     print()
 
 # Procurar por tabelas RL

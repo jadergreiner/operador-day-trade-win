@@ -112,16 +112,16 @@
    Episódios carregados: 1.373
    Recompensas totais: 6.761
    Features calculadas: 1.353 episódios
-   
+
    Modelo: RandomForest (100 estimadores)
    Treino: 1.082 episódios
    Teste: 271 episódios
-   
+
    F1 Score: 1.000 ✓
    ROC-AUC: 1.000 ✓
    Precision: 1.000 ✓
    Recall: 1.000 ✓
-   
+
    Status: ✅ Modelo treinado e pronto para produção
    Training ID: 30dcb894-a3e8-43af-b0df-c490a792c293
    Timestamp: 2026-02-23 09:28:37
@@ -155,7 +155,7 @@ Market Watch:
 
 Verificar Saúde do Modelo:
    python scripts/rl_health_monitor.py
-   
+
    Output:
    ╔════════════════════════════════╗
    ║ RL MODEL HEALTH REPORT         ║
@@ -260,11 +260,11 @@ Forçar Treinamento (sem agenda):
 🚀 COMEÇAR AGORA?
 
    1) Execute: SETUP_RL_QUICK.bat                    (30 seg)
-   
+
    2) Execute: .\INICIAR_RL_SCHEDULER.ps1            (5 seg)
-   
+
    3) Escolha: Opção 1 (Iniciar scheduler)           (2 seg)
-   
+
    ✅ Pronto! Scheduler rodando em background.
       Próximo treinamento: Amanhã às 22:00
 
