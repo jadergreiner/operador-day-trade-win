@@ -143,13 +143,13 @@ def monitor_operador():
                     print('[AGUARDANDO DATASET]')
             
             # Análise Técnica Avançada
-            # ⚠️ TEMPORARIAMENTE DESATIVADO: Valores de SMC estão errados (dados ficticios)
-            # Status: Aguardando validação com dados reais do MT5
-            # Reativar após correção em ALERT_URGENTE_BOARD_ERRO_CRITICO_SMC_23FEV.md
+            # ✅ CORRIGIDO: SMC agora usa dados reais do backtest (não mais fictícios)
+            # Status: Re-ativado com validação de dados
+            # Referência: ACAO_URGENTE_SMC_CRITICO_ANALISE_IMPACTO.md
             
-            if gerar_analise_completa and False:  # Desativado temporariamente
+            if gerar_analise_completa and True:  # ✅ Re-ativado (dados corrigidos)
                 print('\n' + '-' * 75)
-                print('ANALISE TECNICA AVANCADA:')
+                print('ANALISE TECNICA AVANÇADA (SMC CORRIGIDO):')
                 print('-' * 75)
                 
                 try:
@@ -171,15 +171,24 @@ def monitor_operador():
                     print(f'  Neutro: {prob.get("neutral_probability", 0)}%')
                     print(f'  Sinal: {prob.get("primary_signal", "?")} ({prob.get("strength", "?")})')
                     
-                    # SMC DESATIVADO TEMPORARIAMENTE
-                    print(f'\n[ANALISE SMC - DESATIVADA]')
-                    print(f'  ⚠️  Valores em validação (dados reais do MT5)')
-                    print(f'  📋 Ver: ALERT_URGENTE_BOARD_ERRO_CRITICO_SMC_23FEV.md')
+                    # SMC (Agora com dados REAIS)
+                    smc = analise.get('smc_levels', {})
+                    print(f'\n[ANALISE SMC - ✅ VALIDADA COM DADOS REAIS]')
+                    print(f'  Preço Atual: {smc.get("preco_atual", "?")}')
+                    print(f'  Support 1: {smc.get("support_1", "?")} | Resistance 1: {smc.get("resistance_1", "?")}')
+                    print(f'  Support 2: {smc.get("support_2", "?")} | Resistance 2: {smc.get("resistance_2", "?")}')
+                    print(f'  Fase: {smc.get("market_phase", "?")} - {smc.get("setup_recomendado", "?")}')
+                    if smc.get('validado'):
+                        print(f'  ✅ Validado: {smc.get("fonte_dados", "dados reais")}')
                     
-                    # Recomendação (sem SMC)
+                    # Recomendação (com SMC)
                     rec = analise.get('recomendacao', {})
-                    print(f'\n[RECOMENDACAO (SEM SMC)]')
+                    print(f'\n[RECOMENDACAO (COM SMC VALIDADO)]')
                     print(f'  Setup: {rec.get("setup", "?")}')
+                    print(f'  Entrada: {rec.get("entrada", "?")}')
+                    print(f'  Alvo: {rec.get("alvo", "?")}')
+                    print(f'  Stop: {rec.get("stop", "?")}')
+                    print(f'  R:R: {rec.get("risco_recompensa", "?")}')
                     print(f'  Confiança: {rec.get("confianca", "?")}')
                     
                 except Exception as e:
