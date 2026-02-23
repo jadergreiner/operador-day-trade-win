@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerta Quantico</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .header h1 { font-size: 1.8em; margin-bottom: 5px; }
+        .header p { font-size: 0.9em; opacity: 0.9; }
+        .content { padding: 20px; }
+        .alert-box { 
+            border-left: 5px solid #ff6b6b; 
+            padding: 15px; 
+            background: #fff5f5; 
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .alert-box.success { border-left-color: #51cf66; background: #f1fdf4; }
+        .alert-box.info { border-left-color: #4c6ef5; background: #f0f4ff; }
+        .alert-box h2 { font-size: 1.4em; margin-bottom: 10px; }
+        .alert-box p { margin: 8px 0; line-height: 1.6; }
+        .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
+        .metric { padding: 12px; background: #fafafa; border-radius: 4px; }
+        .metric .label { font-weight: bold; color: #666; font-size: 0.9em; }
+        .metric .value { font-size: 1.3em; color: #1a1a1a; font-weight: 600; margin-top: 5px; }
+        hr { border: none; border-top: 1px solid #eee; margin: 20px 0; }
+        .recommendation { background: #f9f9f9; padding: 15px; border-radius: 4px; border-left: 4px solid #4c6ef5; }
+        .recommendation strong { color: #1a1a1a; }
+        .footer { text-align: center; color: #999; font-size: 0.85em; padding-top: 20px; border-top: 1px solid #eee; }
+        .timestamp { color: #666; font-size: 0.9em; margin-top: 10px; }
+        @media (max-width: 600px) {
+            .container { padding: 10px; }
+            .metrics { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Alerta Quantico</h1>
+            <p>Sistema Autônomo de Operações</p>
+        </div>
+        
+        <div class="content">
+            <div class="alert-box {{ alert_class }}">
+                <h2>{{ action }} - {{ symbol }}</h2>
+                <p><strong>Preço:</strong> R$ {{ price }}</p>
+                <p><strong>Data/Hora:</strong> {{ timestamp }}</p>
+                <p><strong>Padrão Detectado:</strong> {{ pattern_type }}</p>
+                <p><strong>Confiança:</strong> {{ confidence }}%</p>
+            </div>
+            
+            <div>
+                <h3>Métricas Técnicas:</h3>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="label">Volatilidade (σ)</div>
+                        <div class="value">{{ volatility }}</div>
+                    </div>
+                    <div class="metric">
+                        <div class="label">RSI (14)</div>
+                        <div class="value">{{ rsi }}</div>
+                    </div>
+                    <div class="metric">
+                        <div class="label">Volume (M)</div>
+                        <div class="value">{{ volume }}</div>
+                    </div>
+                    <div class="metric">
+                        <div class="label">Força Sinal</div>
+                        <div class="value">{{ signal_strength }}%</div>
+                    </div>
+                </div>
+            </div>
+            
+            <hr>
+            
+            <div class="recommendation">
+                <p><strong>📊 Recomendação:</strong> {{ recommendation }}</p>
+              <p class="timestamp"><strong>Gerado:</strong> {{ timestamp_iso }}</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>⚠️ Este é um alerta automático. Sempre valide antes de executar operações.</p>
+            <p>Operador Quântico | Agente Autônomo</p>
+        </div>
+    </div>
+</body>
+</html>
