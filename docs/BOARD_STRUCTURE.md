@@ -1,71 +1,42 @@
-# 🎭 Estrutura de Board - Operador Day Trade WIN
+# Estrutura do Board
 
-**Versão:** 1.0.0  
-**Data de criação:** 2026-02-23  
-**Status:** Ativo
+## Membros do Board (12)
+1. Presidente
+2. Vice-Presidente
+3. Diretor Financeiro
+4. Diretor de Operações
+5. Diretor de Marketing
+6. Diretor de Tecnologia
+7. Diretor de Recursos Humanos
+8. Coordenador de Compliance
+9. Coordenador de Vendas
+10. Coordenador de Atendimento ao Cliente
+11. Coordenador de Projetos
+12. Secretário
 
----
+## Matriz RACI
+| Atividade         | Responsável       | Aprovador        | Consultado       | Informado       |
+|--------------------|-------------------|-------------------|-------------------|------------------|
+| Aprovação de Estratégia | Presidente       | Todo o Board      | Diretor Financeiro | Todos os Membros |
+| Executar Vendas      | Coordenador de Vendas | Diretor de Marketing | Diretor Financeiro | Todo o Board      |
+| Implementação de Projetos | Coordenador de Projetos | Diretor de Operações | Diretor de Tecnologia | Todo o Board      |
 
-## 📋 Board de 12 Membros (Governance)
+## Protocolo de Votação
+1. Cada membro pode apresentar propostas a serem votadas.
+2. As votações devem ser documentadas.
+3. O quorum mínimo para deliberações é de 50% dos membros.
+4. As decisões são tomadas pela maioria.
 
-Este arquivo define as 12 personas principais que compõem o board de decisão estratégica do projeto.
-
-### Membros e Responsabilidades
-
-| # | Nome | Especialidade | Responsabilidades | Voto |
-|----|------|---------------|-------------------|------|
-| **1** | **Angel** | Estratégia & ROI | Decisões de go-live, alocação de capital, priorização | 🔴 Veto |
-| **2** | **The Brain** | ML & Algoritmos | Convergência de modelos, qualidade de sinais, overfitting | ✅ Crítico |
-| **3** | **Dr. Risk** | Risco Financeiro | Drawdown máximo, circuit breakers, posições underwater | ✅ Crítico |
-| **4** | **Arch** | Arquitetura & Infra | Latência API, estabilidade WebSocket, scaling | ✅ Crítico |
-| **5** | **Data** | Dados & Features | Pipeline de dados, qualidade, features engineering | ✅ Crítico |
-| **6** | **Quality** | QA & Testes | Cobertura de testes, validação de criterios, regressão | ✅ Crítico |
-| **7** | **Compliance** | Conformidade | Segurança jurídica, CVM, auditoria | ✅ Crítico |
-| **8** | **DevOps** | Operações 24/7 | Deployment, monitoring, disaster recovery | ✅ Crítico |
-| **9** | **Planner** | Product Management | Roadmap, priorização, cronograma | ✅ Crítico |
-| **10** | **Blueprint** | Technical Lead | Design decisions, code reviews | ✅ Crítico |
-| **11** | **Auditor** | Auditoria Interna | Rastreamento decisões, compliance, riscos | ✅ Crítico |
-| **12** | **Doc Advocate** | Documentação | Sincronização de docs, audit trail | ✅ Crítico |
-
----
-
-## 🗳️ Protocolo de Decisão
-
-### Votação e Quórum
-
-- **Quórum mínimo:** 8 membros (66%)
-- **Aprovação:** Maioria simples (7/12 votos)
-- **Veto:** Angel pode vetar decisões financeiras críticas
-- **Críticos:** Rejeição unânime de Dr. Risk ou Arch bloqueia decisão
-
-### Processo de Decisão (4 Etapas)
-
-1. PROPOSIÇÃO (1h) — Autor apresenta proposta
-2. DISCUSSÃO (2h) — Advogado do Diabo questiona
-3. VOTAÇÃO (15min) — Contagem de votos
-4. EXECUÇÃO — Proprietário executa decisão
-
----
-
-## 📊 Matriz de Responsabilidades (RACI)
-
-| Decisão | Responsável | Consultado | Informado | Aprova |
-|---------|-------------|-----------|-----------|--------|
-| Go-Live | Planner | All | All | Angel |
-| Aumento de Risco | Dr. Risk | Arch, The Brain | All | Angel |
-| Mudança de Arquitetura | Arch | Blueprint, DevOps | All | Angel |
-| Feature prioritária | Planner | The Brain, Quality | All | Angel |
-| Critério de Aceite | Quality | Planner, Arch | All | Angel |
-| Conformidade CVM | Compliance | Auditor, Dr. Risk | All | Angel |
-
----
-
-## 📅 Cadência de Reuniões
-
-| Reunião | Frequência | Duração | Participantes |
-|---------|-----------|---------|---------------|
-| Standup Diário | Diário 09:00 UTC | 15min | All |
-| Sprint Planning | Sprint | 2h | All |
-| Decisão Crítica | Ad-hoc | 3h | All |
-| Retrospectiva | Sprint | 1h | All |
-| Audit Review | Semanal | 1h | Auditor, Compliance |
+## Responsabilidades
+- **Presidente:** Liderar reuniões, definir a agenda e representar a empresa.
+- **Vice-Presidente:** Assistir o Presidente e assumir suas funções na ausência dele.
+- **Diretor Financeiro:** Gerenciar recursos financeiros e relatórios.
+- **Diretor de Operações:** Supervisionar as operações diárias.
+- **Diretor de Marketing:** Desenvolver e implementar estratégias de marketing.
+- **Diretor de Tecnologia:** Liderar projetos tecnológicos e inovações.
+- **Diretor de Recursos Humanos:** Gerenciar equipe e cultura organizacional.
+- **Coordenador de Compliance:** Garantir conformidade com regulamentos.
+- **Coordenador de Vendas:** Aumentar as vendas e atender clientes.
+- **Coordenador de Atendimento ao Cliente:** Garantir satisfação do cliente.
+- **Coordenador de Projetos:** Supervisionar iniciativas de projetos.
+- **Secretário:** Registrar atas e gerenciar documentação.
