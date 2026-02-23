@@ -1,8 +1,8 @@
 # 🚀 COMEÇAR DEPLOYMENT AGORA - INSTRUÇÕES RÁPIDAS
 
-**Status:** ✅ Projeto pronto para deploy local/pessoal  
-**Data:** 23 de Fevereiro de 2026  
-**Tempo agora:** 20:00 BRT (23:00 UTC)  
+**Status:** ✅ Projeto pronto para deploy local/pessoal
+**Data:** 23 de Fevereiro de 2026
+**Tempo agora:** 20:00 BRT (23:00 UTC)
 **Duração deploy:** ~2 horas (20:00 BRT - 03:00 BRT do dia 24)
 
 ---
@@ -51,7 +51,7 @@ python scripts/TODO1_LABEL_BACKTEST.py
 # ========== TODO-1: COMPLETO ==========
 ```
 
-**Duração:** 2-3 horas (rodar em background)  
+**Duração:** 2-3 horas (rodar em background)
 **Deadline:** 24/02 03:00 BRT (amanhã cedo, logo após sunrise)
 
 ---
@@ -237,6 +237,6 @@ Se ainda precisa revisar ou ajustar algo:
 
 ---
 
-**Status:** ✅ **TUDO PRONTO PARA COMEÇAR**  
-**Próxima ação:** Execute os comandos acima  
+**Status:** ✅ **TUDO PRONTO PARA COMEÇAR**
+**Próxima ação:** Execute os comandos acima
 **Duração:** Corra 2h (overnight), amanhã acorda com Stage 1 LIVE + TODO-1 COMPLETO

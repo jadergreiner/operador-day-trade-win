@@ -201,7 +201,7 @@ Task: OrdersExecutor (TODO-1-4)
 
 ### v2.0 (Otimizado)
 ```markdown
-**Persona Ativa:** Head de Finanças especializado em Day Trade & 
+**Persona Ativa:** Head de Finanças especializado em Day Trade &
                    Mercado Brasileiro
 **POV:** Diagnóstico honesto (não é voto, é descoberta de bloqueadores)
 **Objetivo:** Validar gaps entre STATUS ATUAL vs MVP PRODUCTION
@@ -340,7 +340,7 @@ Se quiser ainda mais:
 
 ---
 
-**Arquivo Original:** `prompts\head_reune_board.md`  
+**Arquivo Original:** `prompts\head_reune_board.md`
 **Arquivo Otimizado:** `prompts\head_reune_board_v2_otimizado.md`
 
 Pronto para usar!

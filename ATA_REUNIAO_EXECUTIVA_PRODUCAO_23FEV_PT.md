@@ -1,9 +1,9 @@
 # 🚀 REUNIÃO EXECUTIVA - PRODUÇÃO IMEDIATA & ADAPTAÇÃO DE BACKLOG
 
-**Data:** 23/02/2026 23:00 UTC  
-**Objetivo:** Identificar o que está PRONTO para produção AGORA + adaptar backlog com feedback  
-**Facilitador:** Head de Finanças  
-**Foco:** Ação imediata (24-48h) vs. itens adiados  
+**Data:** 23/02/2026 23:00 UTC
+**Objetivo:** Identificar o que está PRONTO para produção AGORA + adaptar backlog com feedback
+**Facilitador:** Head de Finanças
+**Foco:** Ação imediata (24-48h) vs. itens adiados
 **Duração:** ~45 minutos (4 fases - executiva)
 
 ---
@@ -13,13 +13,13 @@
 **Head de Finanças:**
 
 > "Pessoal, mudança de tom. A reunião anterior foi sobre gaps.
-> 
+>
 > **ESTA reunião é sobre AÇÃO IMEDIATA.**
 >
 > Pergunta simples: o que está 100% PRONTO hoje para ir para produção?
 >
 > Não quero "quase pronto". Quero "deployável AGORA".
-> 
+>
 > Vamos fazer rápido:
 >
 > **1. O que PODE sair hoje/amanhã (24-48h)?**
@@ -37,8 +37,8 @@
 **Head faz a mesma pergunta para todos (simples, direto):**
 
 ```
-"Você tem ALGO que está 100% pronto e pode ir para 
-produção nas próximas 48h? 
+"Você tem ALGO que está 100% pronto e pode ir para
+produção nas próximas 48h?
 
 Se sim: o quê, quantas linhas de código, quando deploy?
 Se não: por quê? O que falta?"
@@ -85,7 +85,7 @@ Se não: por quê? O que falta?"
 
 **Head:**
 
-> "Perfeito. Então você tá dizendo que 3 componentes críticos 
+> "Perfeito. Então você tá dizendo que 3 componentes críticos
 > podem ir ao vivo HOJE SEM E2E COMPLETO?"
 
 ---
@@ -96,11 +96,11 @@ Se não: por quê? O que falta?"
 >
 > 1. **WebSocket:** É infraestrutura só. Não toca em lógica de trading.
 >    Não tem risco se der problema - rollback simples.
->    
+>
 > 2. **Validador de Risco:** É somente leitura, não altera dados.
 >    Se falha, sistema simplesmente não executa ordem.
 >    Seguro para deployar.
->    
+>
 > 3. **Integração BDI:** Já tá em produção desde PHASE 6.
 >    Estamos só finalizando testes.
 >    0 risco.
@@ -150,7 +150,7 @@ Se não: por quê? O que falta?"
 > - Modelo XGBoost: Precisa de Grid Search
 > - Validação F1: Precisa tudo acima
 >
-> **Recomendação:** 
+> **Recomendação:**
 > Deployar detector + features para staging (seguro).
 > Começar TODO-1 labels HOJE (23 UTC) para cascata ficar pronta amanhã."
 
@@ -165,11 +165,11 @@ Se não: por quê? O que falta?"
 
 **ML Expert:**
 
-> "Isso. Se eu começar TODO-1 labels nas próximas 2 horas (23 UTC), 
-> consigo ter 100% pronto no café da manhã (6 UTC amanhã). 
-> 
+> "Isso. Se eu começar TODO-1 labels nas próximas 2 horas (23 UTC),
+> consigo ter 100% pronto no café da manhã (6 UTC amanhã).
+>
 > Aí grid search começa 07:00 BRT (trabalho normal).
-> 
+>
 > Se eu atrasar TODO-1, cascata fica para 02/03 em vez de 01/03.
 > 7 horas não parece muito, mas compõe."
 
@@ -206,7 +206,7 @@ Se não: por quê? O que falta?"
 
 **Head:**
 
-> "Boa pergunta. Deixa eu perguntar: se WebSocket + Risco são SOMENTE LEITURA 
+> "Boa pergunta. Deixa eu perguntar: se WebSocket + Risco são SOMENTE LEITURA
 > (sem modificação), e testes passam, e temos plano de rollback...
 >
 > Podem ser production-safe como release SOMENTE MONITORAMENTO?
@@ -242,7 +242,7 @@ Se não: por quê? O que falta?"
 >    - Deployment de integração BDI
 >    - Pipeline de features para staging
 >    - Infraestrutura de logging + monitoramento
->    
+>
 >    Perfil de risco: BAIXO (infraestrutura só, sem lógica de trading)
 >    Rollback: Fácil (stateless)
 >    Impacto se falha: Zero impacto em trading
@@ -253,7 +253,7 @@ Se não: por quê? O que falta?"
 >    - MT5 ordens reais
 >    - Circuit breakers
 >    - Integração E2E completa
->    
+>
 >    Perfil de risco: ALTO (lógica real de trading)
 >    Rollback: Manual (stateful)
 >    Impacto se falha: Ordens podem não executar
@@ -276,25 +276,25 @@ Se não: por quê? O que falta?"
 📊 ESTÁGIO 1: INFRAESTRUTURA-ONLY (DEPLOY HOJE 23/02)
    Tag: v1.0-INFRA-STAGE
    Risco: 🟢 BAIXO (somente leitura, sem trading)
-   
+
    ✅ Servidor WebSocket (270 linhas)
       ├─ Status: 6/6 testes ✓, latência 72ms ✓
       ├─ Deploy: HOJE 23:30 UTC (1h)
       ├─ Rollback: Simples (stateless)
       └─ Owner: Eng Sr + QA Lead
-   
+
    ✅ Validadores de Risco Gates 1-3 (180 linhas)
       ├─ Status: 5/5 testes ✓, todos cenários ✓
       ├─ Deploy: HOJE 23:30 UTC (com WebSocket)
       ├─ Rollback: Simples (somente leitura)
       └─ Owner: Eng Sr + QA Lead
-   
+
    ✅ Detector de Padrões BDI (210 linhas)
       ├─ Status: Detecção de spike ✓, 300+ testes ✓
       ├─ Deploy: HOJE 23:30 UTC (ou próxima 1h)
       ├─ Rollback: Simples (logging apenas)
       └─ Owner: ML Expert
-   
+
    ✅ Pipeline Dataset de Features (staging)
       ├─ Status: 24 features ✓, sem NaNs ✓
       ├─ Deploy: HOJE para STAGING (seguro)
@@ -308,28 +308,28 @@ Se não: por quê? O que falta?"
 📊 ESTÁGIO 2: EXECUÇÃO-READY (DEPLOY 02/03 após validação)
    Tag: v1.1-EXECUTION
    Risco: 🟠 MÉDIO-ALTO (lógica real de trading)
-   
+
    ⏳ OrdersExecutor (3-4h implementação necessária)
       ├─ Status: Não iniciada
       ├─ Começa: 24/02 09:00 BRT
       ├─ Deploy: 02/03 (após validação)
       ├─ Rollback: Manual (precisa pausa trading)
       └─ Owner: Eng Sr + QA Lead
-   
+
    ⏳ Email Configuration (2h implementação)
       ├─ Status: Não iniciada
       ├─ Começa: 24/02 09:00 BRT
       ├─ Deploy: 02/03 (com OrdersExecutor)
       ├─ Rollback: Degradação graciosa (WebSocket continua)
       └─ Owner: Eng Sr
-   
+
    ⏳ Implementação Audit Log (3h implementação)
       ├─ Status: Design pronta
       ├─ Começa: 01/03
       ├─ Deploy: 02/03 (antes E2E)
       ├─ Rollback: Append-only (irreversível)
       └─ Owner: Eng Sr + Oficial de Risco
-   
+
    ⏳ Triggers de Circuit Breaker (2h implementação)
       ├─ Status: Design pronta
       ├─ Começa: 02/03
@@ -347,8 +347,8 @@ Se não: por quê? O que falta?"
    ├─ Queda do servidor WebSocket → Rollback em 5min, sem impacto
    ├─ Falso alarme validador risco → Somente leitura, sem ordens executadas
    └─ Spike detector → Logging apenas, pode desligar
-   
-   Mitigação: 
+
+   Mitigação:
    ├─ Deployment canário (5% tráfego primeiros 30min)
    ├─ Health checks a cada 30seg
    └─ On-call 24h primeira semana
@@ -357,7 +357,7 @@ Se não: por quê? O que falta?"
    ├─ Bugs OrdersExecutor → Ordens reais podem falhar/multi-executar
    ├─ Email mal configurado → Trader não recebe alertas
    └─ Circuit breaker com malfunction → Sistema não para em crise
-   
+
    Mitigação:
    ├─ Cobertura 100% testes E2E requerida
    ├─ UAT Trader em staging (pré-produção 02/03)
@@ -396,7 +396,7 @@ Se não: por quê? O que falta?"
 > 🟣 **Pergunta 1: OrdersExecutor - começa HOJE (23 UTC) ou AMANHÃ (09 BRT)?**
 >
 > ML Expert tá começando TODO-1 labels hoje à noite.
-> Eng Sr deveria começar OrdersExecutor hoje à noite em paralelo, 
+> Eng Sr deveria começar OrdersExecutor hoje à noite em paralelo,
 > ou amanhã fresh?"
 
 ---
@@ -422,7 +422,7 @@ Se não: por quê? O que falta?"
 >    - Se trabalho 23 UTC, qualidade do commit sofre
 >    - Melhor estar fresh.
 >
-> Então: TODO-1 labels (ML começando 23 UTC hoje), 
+> Então: TODO-1 labels (ML começando 23 UTC hoje),
 >       OrdersExecutor (eu começando 09 BRT amanhã)"
 
 ---
@@ -432,7 +432,7 @@ Se não: por quê? O que falta?"
 **ML Expert:**
 
 > "Concordo. Eu começo TODO-1 hoje à noite sozinho (2-3h, trabalho solitário).
-> Você dorme. Amanhã 09 BRT ambos fresh, 
+> Você dorme. Amanhã 09 BRT ambos fresh,
 > em paralelo: eu em grid search, você em Orders.
 >
 > Só me dá 06 UTC manhã para validar que labels estão OK.
@@ -491,7 +491,7 @@ Se não: por quê? O que falta?"
 
 **Trader (implícito):**
 
-> "Sim. Se eu tiver ambiente staging 02/03 manhã, 
+> "Sim. Se eu tiver ambiente staging 02/03 manhã,
 > consigo fazer 2h UAT até 14:00 BRT.
 >
 > O que eu preciso:
@@ -533,7 +533,7 @@ Se não: por quê? O que falta?"
 > - Audit log OBRIGATÓRIO
 > - Deploy 02/03: Depois de audit log (02/03 02:00 UTC / 25/02 23 BRT)
 >
-> Então: Estágio 1 deploy clean HOJE. 
+> Então: Estágio 1 deploy clean HOJE.
 >       Estágio 2 espera por audit log.
 >
 > Timing funciona perfeitamente."
@@ -553,25 +553,25 @@ Se não: por quê? O que falta?"
 
    TAG: v1.0-INFRA-STAGE-READY
    ITEMS: 4
-   
+
    1. Servidor WebSocket (Eng Sr + QA)
       Tempo deploy: 23:30 UTC (1h)
       Esforço: Deployment + testes smoke
       Aprovador: Arquiteto ✓
       Plano: Rollback preparado ✓
-   
+
    2. Validador de Risco (Eng Sr + QA)
       Tempo deploy: 23:30 UTC (1h - paralelo)
       Esforço: Deployment + validação
       Aprovador: Arquiteto ✓
       Plano: Somente leitura, sem trading ✓
-   
+
    3. Detector BDI (ML Expert)
       Tempo deploy: 23:45 UTC (15min)
       Esforço: Deployment + testes smoke
       Aprovador: Arquiteto ✓
       Plano: Logging apenas ✓
-   
+
    4. Pipeline Features → STAGING
       Tempo deploy: 00:00 UTC (30min)
       Esforço: Deployment para dev/staging
@@ -592,7 +592,7 @@ Se não: por quê? O que falta?"
       Termina: 24/02 06:00 UTC (hora de café)
       Entregável: Dataset rotulado pronto para grid search
       Aprovador: Eng Sr (validação QA)
-      
+
    2. Preparação (background durante deploy):
       - Eng Sr: preparar branches OrdersExecutor
       - QA: preparar fixtures testes MT5Mock
@@ -604,24 +604,24 @@ Se não: por quê? O que falta?"
    TAG: v1.1-EXECUTION-READY
    AGENDADO: 02/03 final do dia
    ITEMS: 4
-   
+
    1. OrdersExecutor (Eng Sr + QA)
       Começa: 24/02 09:00 BRT
       Duração: 3-4h implementação + 4h E2E
       Deploy: 02/03 após UAT ✓
       Aprovador: UAT Trader (02/02 09-14:00 BRT)
-   
+
    2. Email Configuration (Eng Sr)
       Começa: 24/02 09:00 BRT + 2h
       Duração: 2h implementação
       Deploy: 02/03 (mesma janela Orders)
-   
+
    3. Implementação Audit Log (Eng Sr + Risco)
       Começa: 01/03 à noite
       Duração: 3-4h
       Deploy: 02/03 (antes início trading)
       Aprovador: Oficial de Risco
-   
+
    4. Logging Circuit Breaker (Eng Sr + Risco)
       Começa: 02/03 manhã
       Duração: 2h
@@ -714,7 +714,7 @@ DECISÃO: ✅ PROSSEGUIR ADIANTE
 > - Go-Live 13/03 ainda no caminho ✓
 >
 > **PERGUNTA FINAL: Toda a board tá alinhada e confortável?**
-> 
+>
 > Quero 100% sim ou 'espera, temos um problema'."
 
 ---
@@ -737,17 +737,17 @@ DECISÃO: ✅ PROSSEGUIR ADIANTE
 
 > "🚀 **PROSSEGUIR ADIANTE.**
 >
-> Hoje à noite fazemos Estágio 1 deploy. 
+> Hoje à noite fazemos Estágio 1 deploy.
 > Amanhã codificamos como loucos.
 > 02/03 fazemos validação.
 > 13/03 vamos ao vivo.
 >
 > Tá? Todos concordam?
-> 
+>
 > Então vamos para o MODO EXECUÇÃO.
-> 
+>
 > **Primeira ação: commit + deploy Estágio 1 em 1 hora.**
-> 
+>
 > Alguém tem pergunta de última hora antes de começar?"
 
 ---
@@ -834,10 +834,10 @@ DECISÃO: ✅ PROSSEGUIR ADIANTE
 
 ## ✨ SESSÃO COMPLETA
 
-**Duração Reunião:** 45 minutos  
-**Alinhamento Board:** 100% (7/7 personas SIM)  
-**Ações Imediatas:** 2 (deploy + TODO-1 labels)  
-**Perfil Risco:** 🟢 BAIXO (hoje), 🟠 MÉDIO-ALTO (02/03)  
+**Duração Reunião:** 45 minutos
+**Alinhamento Board:** 100% (7/7 personas SIM)
+**Ações Imediatas:** 2 (deploy + TODO-1 labels)
+**Perfil Risco:** 🟢 BAIXO (hoje), 🟠 MÉDIO-ALTO (02/03)
 **Status:** ✅ **MODO EXECUÇÃO ATIVADO**
 
 ---
