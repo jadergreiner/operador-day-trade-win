@@ -30,26 +30,26 @@
 
 ## ✅ ENTREGAS CONCLUÍDAS (Sprint 1 — Operacionalização)
 
-| ID | Task | Owner | Data | Resultado |
-|:---|:---|:---|:---:|:---|
-| **S1-1** | Configuração MT5 Production | Eng Sr | 23/02 | `real_account=True` ✅ |
-| **S1-2** | Health Checks 24/7 | Infra | 23/02 | `MONITOR_LOGS.bat` ✅ |
-| **S1-4** | Testes E2E Automação | QA | 24/02 | Suíte Integrada ✅ |
-| **S1-5** | Performance Tuning | Eng Sr | 24/02 | Latência P95 ~71ms ✅ |
-| **S1-6** | Documentation Updates | Doc | 24/02 | Fonte de Verdade Sincro ✅ |
+| ID | Task | Owner | Resultado |
+|:---|:---|:---|:---|
+| **S1-1** | Configuração MT5 Production | Eng Sr | `real_account=True` ✅ |
+| **S1-2** | Health Checks 24/7 | Infra | `MONITOR_LOGS.bat` ✅ |
+| **S1-4** | Testes E2E Automação | QA | Suíte Integrada ✅ |
+| **S1-5** | Performance Tuning | Eng Sr | Latência P95 ~71ms ✅ |
+| **S1-6** | Documentation Updates | Doc | Fonte de Verdade Sincro ✅ |
 
 ---
 
 ## ✅ ENTREGAS HISTÓRICAS (Sprint 0 — Foundation)
 
-| ID | Task | Owner | Data | Resultado |
-|:---|:---|:---|:---:|:---|
-| **S0-1** | Dataset Builder (XGBoost) | ML Expert | 15/02 | `winfut_dataset.py` |
-| **S0-2** | Feature Engineer (Tiers) | ML Expert | 18/02 | `winfut_feature_engineer.py` |
-| **S0-3** | Alertas Automáticos v1.1 | Eng Sr | 20/02 | WebSocket Server ✅ |
-| **SMC-01** | Correção Crítica SMC | Eng Sr | 23/02 | Remoção de preços fictícios ✅ |
-| **RL-AUDIT** | Auditoria Real-Time RL | ML Expert | 23/02 | 200 episódios capturados ✅ |
-| **GAP-02** | Timezone Sync Histórico | Eng Sr | 23/02 | MT5 Adapter dinâmico ✅ |
+| ID | Task | Owner | Resultado |
+|:---|:---|:---|:---|
+| **S0-1** | Dataset Builder (XGBoost) | ML Expert | `winfut_dataset.py` |
+| **S0-2** | Feature Engineer (Tiers) | ML Expert | `winfut_feature_engineer.py` |
+| **S0-3** | Alertas Automáticos v1.1 | Eng Sr | WebSocket Server ✅ |
+| **SMC-01** | Correção Crítica SMC | Eng Sr | Remoção de preços fictícios ✅ |
+| **RL-AUDIT** | Auditoria Real-Time RL | ML Expert | 200 episódios capturados ✅ |
+| **GAP-02** | Timezone Sync Histórico | Eng Sr | MT5 Adapter dinâmico ✅ |
 
 ---
 
