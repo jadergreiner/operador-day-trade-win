@@ -126,7 +126,7 @@ def test_infer_latencia_case_inferencia_simples_then_tempo_medido_when_menos_50m
     QUANDO: Latência < 50ms
 
     Objetivo: Garantir que inferência é rápida para streaming real-time
-    
+
     Nota: Threshold pode ser maior em CI environment
     """
     # AÇÃO: Cronometrar

@@ -1,10 +1,10 @@
 # S2-4: Relatório de Conclusão — Tasks 1-2
 
-**Data:** 24/02/2026  
-**Status:** ✅ **T1 & T2 COMPLETAS** | 🟡 T3-T8 (próximo: 26/02)  
-**Líder:** ML Expert  
-**Squad Size:** 13 membros (8 core)  
-**Commit:** `ed51881` (main branch)  
+**Data:** 24/02/2026
+**Status:** ✅ **T1 & T2 COMPLETAS** | 🟡 T3-T8 (próximo: 26/02)
+**Líder:** ML Expert
+**Squad Size:** 13 membros (8 core)
+**Commit:** `ed51881` (main branch)
 
 ---
 
@@ -40,17 +40,17 @@
 - ✅ **AC1.1:** Classe PhiCubeCalculator com 7 Mimas
   - M8, M17, M34, M72, M144, M305, M610 (períodos Fibonacci)
   - Cada Mima: SimpleMovingAverage + slope detection
-  
+
 - ✅ **AC1.2:** Fan score normalizado [0, 1]
   - Bruto: [-6, +6] (6 comparações)
   - Normalizado: (fan_score + 6) / 12
   - Validação: todos [-6 a +6] → [0.0 a 1.0]
-  
+
 - ✅ **AC1.3:** Alinhamento ALTA/BAIXA/MISTO
   - ALTA: fan_score > 2 (preço crescente)
   - BAIXA: fan_score < -2 (preço decrescente)
   - MISTO: |fan_score| ≤ 2 (sem tendência clara)
-  
+
 - ✅ **AC1.4:** Weight ao micro_score
   - Padrão: weight=0.15 (15% contribuição máxima)
   - Opcional: weights 0.10, 0.20 (grid search T6)
@@ -73,17 +73,17 @@
   - 1 factory function test
   - 3 edge cases tests
   - **Total:** 39 ✅
-  
+
 - ✅ **AC2.2:** CASE-THEN-WHEN pattern em português
   - Cada teste com `CASE:` descritivo
   - Cada asserção com `THEN:` em português
   - Logging verboso para diagnóstico
-  
+
 - ✅ **AC2.3:** Cobertura 98%+
   - Validação de cobertura via assertions
   - Edge cases: preço constante, gaps, spikes
   - Multi-threading safe (Decimal usage)
-  
+
 - ✅ **AC2.4:** 100% docstrings + type hints
   - Todas as funções: docstring de 3 linhas mínimo
   - Todos parâmetros: type hints (List, Decimal, str, int, float)
@@ -100,7 +100,7 @@
   - Testsliste dos 39 cases
   - Edge cases + limitações
   - **Total:** 380 linhas, 100% lint-safe ✅
-  
+
 - ✅ **AC2.1.2:** S2-4_SQUAD_PLANO.md
   - Visão geral (3 linhas)
   - 8 objetivos de AC listados
