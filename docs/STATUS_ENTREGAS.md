@@ -1,8 +1,8 @@
-# 🟢 STATUS DAS ENTREGAS — Fonte de Verdade (v1.0.1)
+# 🟢 STATUS DAS ENTREGAS — Fonte de Verdade (v1.0.2)
 
-**Última Sincronização:** 2026-02-24T12:30:00Z (Consolidado)
+**Última Sincronização:** 2026-02-24T13:45:00Z (Task 4 COMPLETA)
 **Responsável pela Sincronia:** [Doc Advocate](BOARD_MULTIDISCIPLINAR.json)
-**Status Geral:** 🟡 Sprint 2 - S2-5 50% (Tasks 1-3 COMPLETAS) + S2-4 EM ANDAMENTO
+**Status Geral:** 🟡 Sprint 2 - S2-5 67% (Tasks 1-4 COMPLETAS) + S2-4 EM ANDAMENTO
 **Protocolo:** [SYNC] Obrigatório
 
 ---
@@ -16,7 +16,7 @@
 | **S2-2** | Calibrador ATR Dinâmico | [ML Lead](BOARD_MULTIDISCIPLINAR.json) | ✅ COMPLETO | [S2-2] | Trailing Stop Adaptive |
 | **S2-3** | Confluência SMC (M1/M5) | [Eng Sr](BOARD_MULTIDISCIPLINAR.json) | ✅ COMPLETO | [S2-3] | 98% coverage, SMC alinhado |
 | **S2-5-ISO** | **✅ MT5 Terminal Isolation** | [Arq. Sistemas](BOARD_MULTIDISCIPLINAR.json) | ✅ **COMPLETO** | [S2-5-ISO] | Isolamento Terminal/Conta + Retry automático (15 testes) |
-| **S2-5** | **✅ Probabilidade T+60** | [ML Expert](BOARD_MULTIDISCIPLINAR.json) | 🟢 **TASK 3 COMPLETA** | [score_t60_train_parallel.py](https://github.com/jadergreiner/operador-day-trade-win/blob/main/scripts/score_t60_train_parallel.py) | **TASK 1 ✅:** Dataset Builder (25 features, d20a5c7). **TASK 2 ✅:** XGBoost Grid Search (F1=0.612, 6f6048e). **TASK 3 ✅:** Parallelization with n_jobs=-1 (1.4x speedup, 45.6s, F1=0.620 best config). Next: Task 4 Real-time Inference |
+| **S2-5** | **✅ Probabilidade T+60** | [ML Expert](BOARD_MULTIDISCIPLINAR.json) | 🟢 **TASK 4 COMPLETA** | [score_t60_inference.py](https://github.com/jadergreiner/operador-day-trade-win/blob/main/scripts/score_t60_inference.py) | **TASK 1 ✅:** Dataset Builder (25 features, d20a5c7). **TASK 2 ✅:** XGBoost Grid Search (F1=0.612, 6f6048e). **TASK 3 ✅:** Parallelization (1.4x speedup, F1=0.620, c1d4419). **TASK 4 ✅:** Real-time Inference (<50ms P95, 12/12 tests, lazy loading). Next: Task 5 (SMC Confluência) |
 | **S2-4** | Integração Phicube (Mimas) | [ML Expert](BOARD_MULTIDISCIPLINAR.json) | 🟡 **EM ANDAMENTO** | [S2-4] | **T1 ✅ COMPLETA:** PhiCubeCalculator (350 LOC) + 39 testes (98% coverage). **T2 ✅ COMPLETA:** Testes + docs README. **T3-T8:** Integração ao agente (próximo) |
 
 ### 📈 Entregas Táticas (NEXT - SHOULD)
