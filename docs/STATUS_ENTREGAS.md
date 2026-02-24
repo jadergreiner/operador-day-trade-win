@@ -1,8 +1,8 @@
-# 🟢 STATUS DAS ENTREGAS — Fonte de Verdade (v1.0.2)
+# 🟢 STATUS DAS ENTREGAS — Fonte de Verdade (v1.0.3)
 
-**Última Sincronização:** 2026-02-24T13:45:00Z (Task 4 COMPLETA)
+**Última Sincronização:** 2026-02-24T14:15:00Z (Task 5 COMPLETA)
 **Responsável pela Sincronia:** [Doc Advocate](BOARD_MULTIDISCIPLINAR.json)
-**Status Geral:** 🟡 Sprint 2 - S2-5 67% (Tasks 1-4 COMPLETAS) + S2-4 EM ANDAMENTO
+**Status Geral:** 🟢 Sprint 2 - S2-5 83% (Tasks 1-5 COMPLETAS) + S2-4 EM ANDAMENTO
 **Protocolo:** [SYNC] Obrigatório
 
 ---
@@ -16,7 +16,7 @@
 | **S2-2** | Calibrador ATR Dinâmico | [ML Lead](BOARD_MULTIDISCIPLINAR.json) | ✅ COMPLETO | [S2-2] | Trailing Stop Adaptive |
 | **S2-3** | Confluência SMC (M1/M5) | [Eng Sr](BOARD_MULTIDISCIPLINAR.json) | ✅ COMPLETO | [S2-3] | 98% coverage, SMC alinhado |
 | **S2-5-ISO** | **✅ MT5 Terminal Isolation** | [Arq. Sistemas](BOARD_MULTIDISCIPLINAR.json) | ✅ **COMPLETO** | [S2-5-ISO] | Isolamento Terminal/Conta + Retry automático (15 testes) |
-| **S2-5** | **✅ Probabilidade T+60** | [ML Expert](BOARD_MULTIDISCIPLINAR.json) | 🟢 **TASK 4 COMPLETA** | [score_t60_inference.py](https://github.com/jadergreiner/operador-day-trade-win/blob/main/scripts/score_t60_inference.py) | **TASK 1 ✅:** Dataset Builder (25 features, d20a5c7). **TASK 2 ✅:** XGBoost Grid Search (F1=0.612, 6f6048e). **TASK 3 ✅:** Parallelization (1.4x speedup, F1=0.620, c1d4419). **TASK 4 ✅:** Real-time Inference (<50ms P95, 12/12 tests, lazy loading). Next: Task 5 (SMC Confluência) |
+| **S2-5** | **✅ Probabilidade T+60** | [ML Expert](BOARD_MULTIDISCIPLINAR.json) | 🟢 **TASK 5 COMPLETA** | [score_t60_confluence.py](https://github.com/jadergreiner/operador-day-trade-win/blob/main/scripts/score_t60_confluence.py) | **TASK 1 ✅:** Dataset Builder (25 features, d20a5c7). **TASK 2 ✅:** XGBoost Grid Search (F1=0.612, 6f6048e). **TASK 3 ✅:** Parallelization (1.4x speedup, F1=0.620, c1d4419). **TASK 4 ✅:** Real-time Inference (<50ms P95, 12/12 tests, a992fe5). **TASK 5 ✅:** SMC Confluência (9/9 tests, 4-state matrix). Next: Task 6 (Final tests) |
 | **S2-4** | Integração Phicube (Mimas) | [ML Expert](BOARD_MULTIDISCIPLINAR.json) | 🟡 **EM ANDAMENTO** | [S2-4] | **T1 ✅ COMPLETA:** PhiCubeCalculator (350 LOC) + 39 testes (98% coverage). **T2 ✅ COMPLETA:** Testes + docs README. **T3-T8:** Integração ao agente (próximo) |
 
 ### 📈 Entregas Táticas (NEXT - SHOULD)
