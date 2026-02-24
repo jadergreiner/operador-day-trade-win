@@ -5,11 +5,17 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional
+import json
+import logging
+import os
+import time
 
 from src.domain.entities import Order
 from src.domain.enums.trading_enums import OrderSide, TimeFrame
 from src.domain.exceptions import BrokerConnectionError, OrderExecutionError
 from src.domain.value_objects import Price, Symbol
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -106,7 +112,8 @@ class MT5Adapter(IBrokerAdapter):
     """
     Implementacao do adaptador MetaTrader 5.
 
-    Fornece integracao com o terminal MT5.
+    Fornece integracao com o terminal MT5 com suporte a isolamento de
+    terminal (S2-5: MT5 Terminal Isolation & Reconnect).
     """
 
     def __init__(
@@ -115,6 +122,7 @@ class MT5Adapter(IBrokerAdapter):
         password: str,
         server: str,
         timeout: int = 60000,
+        terminal_exe_path: Optional[str] = None,
     ):
         """
         Inicializa o adaptador MT5.
@@ -124,21 +132,268 @@ class MT5Adapter(IBrokerAdapter):
             password: Senha da conta MT5
             server: Nome do servidor MT5
             timeout: Timeout de conexao em milissegundos
+            terminal_exe_path: Caminho do executável do terminal64.exe
+                (se None, usa o primeiro encontrado)
+
+        Exemplo:
+            adapter = MT5Adapter(
+                login=1000346516,
+                password="senha",
+                server="Clear MT5 - Live",
+                terminal_exe_path="C:\\Program Files\\Clear Investimentos MT5\\terminal64.exe"
+            )
         """
         self.login = login
         self.password = password
         self.server = server
         self.timeout = timeout
+        self.terminal_exe_path = terminal_exe_path
         self._mt5 = None
         self._time_offset_seconds: Optional[int] = -3 * 3600
+        self._session_fingerprint: Optional[dict] = None
+        self._trading_halted: bool = False
 
     def _normalize_timestamp(self, epoch_seconds: int) -> datetime:
         """Normaliza timestamps do MT5 para horario de Brasilia (UTC-3)."""
         ts = int(epoch_seconds)
         return datetime.utcfromtimestamp(ts + self._time_offset_seconds)
 
+    def _get_mt5_terminal_pid(self) -> Optional[int]:
+        """
+        Encontra o PID do processo terminal64.exe em execução.
+
+        Se terminal_exe_path foi especificado, valida que corresponde.
+        Caso contrário, usa o primeiro encontrado.
+
+        Returns:
+            PID do processo, ou None se não encontrado.
+        """
+        try:
+            import psutil
+
+            for proc in psutil.process_iter(['pid', 'name', 'exe']):
+                try:
+                    if 'terminal64.exe' not in proc.info['name'].lower():
+                        continue
+
+                    exe_path = proc.info['exe']
+                    if not exe_path:
+                        continue
+
+                    # Se terminal_exe_path foi especificado, valida match
+                    if self.terminal_exe_path:
+                        if self.terminal_exe_path.lower() not in exe_path.lower():
+                            continue
+
+                    return proc.info['pid']
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+
+        except ImportError:
+            logger.warning(
+                "psutil not installed. Terminal isolation validation disabled. "
+                "Install with: pip install psutil"
+            )
+            return None
+
+        return None
+
+    def _save_session_fingerprint(self) -> bool:
+        """
+        Salva fingerprint da sessão MT5 após conexão bem-sucedida.
+
+        Fingerprint inclui: PID, exe_path, account_login, server, timestamp
+
+        Returns:
+            True se salvo com sucesso, False caso contrário.
+        """
+        try:
+            pid = self._get_mt5_terminal_pid()
+            if not pid:
+                logger.warning("Could not find terminal64.exe PID for fingerprint")
+                return False
+
+            self._session_fingerprint = {
+                "pid": pid,
+                "exe_path": self.terminal_exe_path or "[auto-detected]",
+                "account_login": self.login,
+                "server": self.server,
+                "timestamp": datetime.now().isoformat(),
+            }
+
+            # Persistir em arquivo
+            home = os.path.expanduser("~")
+            session_file = os.path.join(home, ".mt5_operator_session.json")
+
+            with open(session_file, "w", encoding="utf-8") as f:
+                json.dump(self._session_fingerprint, f, indent=2)
+
+            logger.info(
+                f"MT5 session fingerprint saved: PID={pid}, Login={self.login}"
+            )
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to save session fingerprint: {e}")
+            return False
+
+    def _validate_terminal_isolation(self) -> bool:
+        """
+        Valida isolamento de terminal e conta.
+
+        Verifica:
+        1. PID do terminal64.exe ainda está em execução
+        2. Account login atual corresponde ao esperado
+
+        Raises:
+            BrokerConnectionError se isolamento foi violado
+
+        Returns:
+            True se isolamento válido, False caso contrário.
+        """
+        if not self._session_fingerprint:
+            logger.debug("No session fingerprint set, skipping isolation check")
+            return True
+
+        try:
+            import psutil
+
+            # 1. Valida PID
+            pid = self._session_fingerprint.get("pid")
+            if pid and not psutil.pid_exists(pid):
+                logger.error(
+                    f"Terminal isolation violation: PID {pid} no longer exists. "
+                    "Terminal may have crashed."
+                )
+                return False
+
+            # 2. Valida account login
+            if not self._mt5:
+                logger.warning("MT5 module not initialized")
+                return False
+
+            account_info = self._mt5.account_info()
+            if not account_info:
+                logger.warning("Could not get account info for isolation validation")
+                return False
+
+            if account_info.login != self.login:
+                logger.error(
+                    f"Terminal isolation violation: Expected login {self.login}, "
+                    f"but MT5 is logged in as {account_info.login}"
+                )
+                return False
+
+            logger.debug("Terminal isolation validation passed")
+            return True
+
+        except ImportError:
+            logger.warning("psutil not available for terminal isolation check")
+            return True
+        except Exception as e:
+            logger.error(f"Error during isolation validation: {e}")
+            return False
+
+    def _ensure_connected_with_isolation(self) -> None:
+        """
+        Garante que estamos conectados ao MT5 E que isolamento é válido.
+
+        Raises:
+            BrokerConnectionError se não conectado ou isolamento violado.
+        """
+        if not self.is_connected():
+            raise BrokerConnectionError("Not connected to MT5")
+
+        if self._trading_halted:
+            raise BrokerConnectionError(
+                "Trading halted due to previous isolation violation. "
+                "Manual intervention required."
+            )
+
+        if not self._validate_terminal_isolation():
+            self._trading_halted = True
+            raise BrokerConnectionError(
+                "Terminal isolation validation failed. "
+                "Trading halted as safety measure."
+            )
+
+    def is_trading_halted(self) -> bool:
+        """
+        Verifica se o sistema está em estado HALT.
+
+        Um sistema em HALT não executa ordens até que o isolamento
+        seja restaurado manualmente.
+
+        Returns:
+            True se em HALT, False caso contrário.
+        """
+        return self._trading_halted
+
     def connect(self) -> bool:
-        """Conecta ao MetaTrader 5."""
+        """
+        Conecta ao MetaTrader 5 com retry automático e validação de isolamento.
+
+        Implementa retry com exponential backoff: [5s, 10s, 20s]
+
+        Returns:
+            True se conexão bem-sucedida, False caso contrário.
+        """
+        return self._connect_with_retry(max_retries=3, backoff_seconds=[5, 10, 20])
+
+    def _connect_with_retry(
+        self,
+        max_retries: int = 3,
+        backoff_seconds: Optional[list] = None,
+    ) -> bool:
+        """
+        Conecta ao MT5 com retry automático.
+
+        Args:
+            max_retries: Número máximo de tentativas
+            backoff_seconds: Lista de segundos para aguardar entre tentativas
+
+        Returns:
+            True se conectado, False se todos os retries falharem.
+        """
+        if backoff_seconds is None:
+            backoff_seconds = [5, 10, 20]
+
+        for attempt in range(max_retries):
+            try:
+                if self._connect_single():
+                    logger.info("MT5 connection established successfully")
+                    return True
+
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    wait_time = backoff_seconds[attempt]
+                    logger.warning(
+                        f"MT5 connection attempt {attempt + 1}/{max_retries} "
+                        f"failed. Retrying in {wait_time}s: {e}"
+                    )
+                    time.sleep(wait_time)
+                else:
+                    logger.error(
+                        f"MT5 connection failed after {max_retries} attempts: {e}"
+                    )
+                    self._trading_halted = True
+                    raise BrokerConnectionError(
+                        f"Failed to connect to MT5 after {max_retries} attempts"
+                    )
+
+        return False
+
+    def _connect_single(self) -> bool:
+        """
+        Tenta uma única conexão ao MT5 (sem retry).
+
+        Returns:
+            True se bem-sucedido, False caso contrário.
+
+        Raises:
+            BrokerConnectionError se ocorrer erro
+
+        """
         try:
             import MetaTrader5 as mt5
 
@@ -161,8 +416,11 @@ class MT5Adapter(IBrokerAdapter):
             if authorized:
                 # Sincronizacao Dinamica de Timezone (GAP-02 / Oportunidade 7)
                 try:
-                    # Tenta capturar o server time de um simbolo ativo para calcular o offset real
-                    tick = mt5.symbol_info_tick("WIN$N") or mt5.symbol_info_tick("WDO$N")
+                    # Tenta capturar o server time de um simbolo ativo para
+                    # calcular o offset real
+                    tick = mt5.symbol_info_tick("WIN$N") or mt5.symbol_info_tick(
+                        "WDO$N"
+                    )
                     if tick:
                         server_time_secs = tick.time
                         local_time_secs = int(datetime.utcnow().timestamp())
@@ -179,12 +437,19 @@ class MT5Adapter(IBrokerAdapter):
                     f"MT5 login failed: {mt5.last_error()}"
                 )
 
+            # Salva fingerprint após conexão bem-sucedida (S2-5)
+            self._save_session_fingerprint()
+            self._trading_halted = False
+
             return True
 
         except ImportError:
             raise BrokerConnectionError(
-                "MetaTrader5 package not installed. Install with: pip install MetaTrader5"
+                "MetaTrader5 package not installed. "
+                "Install with: pip install MetaTrader5"
             )
+        except BrokerConnectionError:
+            raise
         except Exception as e:
             raise BrokerConnectionError(f"Failed to connect to MT5: {e}")
 
@@ -379,7 +644,8 @@ class MT5Adapter(IBrokerAdapter):
 
     def send_order(self, order: Order) -> str:
         """Envia ordem ao MT5."""
-        self._ensure_connected()
+        # Valida isolamento antes de operação crítica (S2-5)
+        self._ensure_connected_with_isolation()
 
         # Resolve símbolo negociável (WIN$N → WINJ26, etc.)
         tradable_symbol = self._resolve_tradable_symbol(order.symbol.code)

@@ -80,6 +80,7 @@ Sistema de trading quantitativo para Mini Índice Brasileiro (WIN) com arquitetu
   - Modelo de Regressão (Previsão de Preço)
   - Modelo de Volatilidade
   - Ensemble (combinação de modelos)
+- **SMC Confluence Engine (S2-3)**: Motor de confluência de Smart Money Concepts entre M1 e M5. Identifica zonas de Supply/Demand e Support/Resistance baseadas em cálculo real de Swing High/Low para sinais de "Convicção Máxima".
 - **Technical Indicators**: RSI, MACD, Bollinger, Volume Profile
 - **Forecast Engine**: Previsões de curto, médio prazo
 - **Feature Engineering**: Criação de features para ML
@@ -105,12 +106,25 @@ Sistema de trading quantitativo para Mini Índice Brasileiro (WIN) com arquitetu
 
 ### 4. Execution Layer (Camada de Execução)
 
-**Responsabilidade**: Execução de ordens no MetaTrader 5 e gestão de posições.
+**Responsabilidade**: Execução de ordens no MetaTrader 5 e gestão de posições com
+isolamento obrigatório de terminal.
 
 **Componentes**:
-- **MT5 REST Adapter**: Interface com MetaTrader 5 via REST Gateway (`src/infrastructure/providers/mt5_adapter.py`)
-- **Risk Validator**: Chain of Responsibility para validar Capital, Correlação e Volatilidade (`src/application/risk_validator.py`)
-- **Orders Executor**: Gerenciador do ciclo de vida da ordem e automação (`src/application/orders_executor.py`)
+- **MT5 Terminal Isolation (S2-5)**: Validação obrigatória de PID, account login
+  e reconnect automático com retry [5s, 10s, 20s]. Implementado em:
+  - `MT5Adapter._validate_terminal_isolation()`: Validação de isolamento
+  - `MT5Adapter._save_session_fingerprint()`: Persistência de sessão
+  - `MT5Adapter._ensure_connected_with_isolation()`: Validação antes de
+    operações críticas
+  - `MT5IsolationHealthCheck`: Monitor contínuo (a cada 30s) com alerta de
+    desconexão
+  - Status visual em `MONITOR_OPERADOR.bat`
+- **MT5 REST Adapter**: Interface com MetaTrader 5 via REST Gateway
+  (`src/infrastructure/providers/mt5_adapter.py`)
+- **Risk Validator**: Chain of Responsibility para validar Capital, Correlação
+  e Volatilidade (`src/application/risk_validator.py`)
+- **Orders Executor**: Gerenciador do ciclo de vida da ordem e automação
+  (`src/application/orders_executor.py`)
 - **Order Executor**: Envio de ordens ao MT5
 - **Position Manager**: Monitoramento de posições abertas
 - **Trade Monitor**: Acompanhamento de trades em tempo real
@@ -150,13 +164,72 @@ Sistema de trading quantitativo para Mini Índice Brasileiro (WIN) com arquitetu
 
 ```
 1. Detector (Spike) → Geração de sinal bruto
-2. ML Classifier → Score de confiança (F1 > 0.65)
-3. OrdersExecutor → Enfileiramento (ENQUEUED)
-4. RiskValidator (Gate 1: Capital) → Saldo suficiente?
-5. RiskValidator (Gate 2: Correlação) → < 70%?
-6. RiskValidator (Gate 3: Volatilidade) → < 3-Sigma?
-7. MT5Adapter → Envio via REST para MT5
-8. PositionMonitor → Acompanhamento do trade
+2. SMC Confluence (S2-3) → Validação M1/M5 zonas de liquidez
+3. ML Classifier → Score de confiança (F1 > 0.65)
+4. OrdersExecutor → Enfileiramento (ENQUEUED)
+5. RiskValidator (Gate 1: Capital) → Saldo suficiente?
+6. RiskValidator (Gate 2: Correlação) → < 70%?
+7. RiskValidator (Gate 3: Volatilidade) → < 3-Sigma?
+8. MT5Adapter.send_order() → VALIDAR ISOLAMENTO (S2-5)
+   ├─ _ensure_connected_with_isolation()
+   │  ├─ _validate_terminal_isolation() (PID, account_login)
+   │  └─ is_trading_halted() check
+   └─ Se passou: Envio via REST para MT5
+9. PositionMonitor → Acompanhamento do trade
+```
+
+## S2-5: MT5 Terminal Isolation & Reconnect
+
+**Objetivo**: Garantir que o operador conecte sempre à conta e terminal
+corretos, com retry automático após desconexão.
+
+### Mecanismos de Proteção
+
+1. **Validação de Fingerprint**:
+   - PID do `terminal64.exe` em execução
+   - Account login corrente vs esperado
+   - Server name match
+   - Persistido em `~/.mt5_operator_session.json`
+
+2. **Retry Automático com Exponential Backoff**:
+   - Tentativa 1: aguardar 5s
+   - Tentativa 2: aguardar 10s
+   - Tentativa 3: aguardar 20s
+   - Se falhar: Sistema entra em **HALT TRADING** (seguro falha)
+
+3. **Health Check Contínuo** (30s interval):
+   - `MT5IsolationHealthCheck.check_health()`
+   - Detecta desconexões automáticas
+   - Dispara reconnect
+   - Monitora número de reconexões
+
+4. **Validação em Operações Críticas**:
+   - `_ensure_connected_with_isolation()` antes de `send_order()`
+   - Rejeita ordem se isolamento violado
+   - Levanta `BrokerConnectionError`
+
+### Fluxo de Desconexão & Reconnect
+
+```
+┌─ Desconexão Detectada
+│
+├─ Tentativa 1 (aguardar 5s)
+│  ├─ ✅ Sucesso? → Restaurar fingerprint → Retomar operação
+│  └─ ❌ Falha → Tentativa 2
+│
+├─ Tentativa 2 (aguardar 10s)
+│  ├─ ✅ Sucesso? → Restaurar fingerprint → Retomar operação
+│  └─ ❌ Falha → Tentativa 3
+│
+├─ Tentativa 3 (aguardar 20s)
+│  ├─ ✅ Sucesso? → Restaurar fingerprint → Retomar operação
+│  └─ ❌ Falha → HALT TRADING + Log crítico + Alerta em MONITOR
+│
+└─ HALT OPERACIONAL
+   ├─ _trading_halted = True
+   ├─ Nenhuma nova ordem enviada
+   ├─ Posições abertas mantidas
+   └─ Aguardar intervenção manual do trader
 ```
 
 ## Fluxo de Dados

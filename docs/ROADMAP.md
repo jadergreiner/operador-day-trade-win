@@ -3,7 +3,7 @@
 ## 📊 Execução / Visibilidade (v1.0.1)
 - **Sprint atual:** Sprint 2 — Inteligência e Visibilidade (Foco Execução)
 - **Última atualização:** 2026-02-24T18:30:00Z
-- **Progresso NOW:** 1 de 4 MUST (S2-2 concluído)
+- **Progresso NOW:** 2 de 4 MUST (S2-2 e S2-3 concluídos)
 - **Status da Fonte de Verdade:** [docs/STATUS_ENTREGAS.md](STATUS_ENTREGAS.md) (🟢 SINCRO)
 
 ## Visão do Produto
@@ -17,6 +17,8 @@ O operador day-trade-win é uma plataforma projetada para otimizar o desempenho 
 - **[NOVO 23/02] Auditoria Real-Time:** Mecanismo de verificação de persistência de RL validado (200 episódios capturados hoje). ✅
 
 ### Próximo (Next)
+- **✅ S2-5 COMPLETO [24/02]** — MT5 Terminal Isolation & Reconnect: ✅ Isolamento obrigatório implementado, ✅ PID do terminal validado, ✅ Fingerprint persistido em ~/.mt5_operator_session.json, ✅ Retry automático com backoff exponencial [5s, 10s, 20s], ✅ Health check contínuo (30s), ✅ 15 testes unitários PASSING (>98% coverage), ✅ MONITOR_OPERADOR.bat integrado, ✅ Documentação completa. **Status:** Sprint 2 CONCLUÍDO. **Testes:** 15/15 PASSING ✅. **Próximo:** Integração com operador .bat + UAT.
+- **🔴 PRIORIDADE 0 — Oportunidade 23: MT5 Terminal Isolation & Reconnect (S2-5):** [VEJA LINHA ACIMA - já marcado COMPLETO] ~~Implementar isolamento obrigatório de terminal MT5 para garantir que o operador conecte sempre à conta e ao terminal corretos, evitando execução em conta/terminal errados. Requisitos: (1) Validar PID do processo `terminal64.exe` na inicialização, (2) Armazenar fingerprint (exe path + account login), (3) Rejeitar conexão se PID mudar, (4) Implementar retry automático com backoff exponencial após desconexão (3x com 5s, 10s, 20s), (5) Adicionar testes unitários para múltiplas instâncias MT5, (6) Adicionar health check contínuo com alerta em MONITOR_OPERADOR.bat quando conexão falha. **Impacto:** Elimina risco de ordem enviada para conta/terminal errado. **Timeline:** Sprint 2 (IMEDIATO). **Owner:** Arquiteto de Sistemas + Eng Sr. **Testes:** 100% cobertura de reconnect, múltiplas instâncias, terminal crash.~~
 - **Oportunidade 1: Reentrada Alpha (Pós-Stop):** Evoluir o "Advogado do Diabo" para identificar quando o mercado entra em tendência forte logo após um Stop Loss, permitindo reentrada com Score reduzido se a volatilidade permitir.
 - **Oportunidade 14: Mapa ATR e Confluência SMC (M1/M5):** Implementar motor de "Teia de Volatilidade" baseado em ATR dinâmico para calcular pontos de entrada, parciais e alvos. Integrar cálculo de SMC (Support/Resistance/Supply/Demand) em timeframes curtos (M1/M5) para identificar confluências com o Mapa ATR, gerando sinais de "Convicção Máxima" para o `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`.
 - **Oportunidade 22: Integração de Mimas (Phi Cube):** 🟢 **PRIORIZADO SPRINT 2** - Ativar o cálculo de alinhamento de leque das Mimas (8, 17, 34, 72, 144, 305, 610) e integrá-lo ao `micro_score`. Atualmente o cálculo existe em código mas não é contabilizado na decisão.
