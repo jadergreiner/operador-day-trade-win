@@ -244,6 +244,22 @@ class ScoreT60Inference:
             (df["close"].rolling(30).std().iloc[-1] + 1e-8)
         )
 
+        # ADX(14) — 24ª feature
+        high_low = df["high"] - df["low"]
+        high_close = abs(df["high"] - df["close"].shift())
+        low_close = abs(df["low"] - df["close"].shift())
+        ranges = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+        atr_14 = ranges.rolling(14).mean().iloc[-1]
+        
+        plus_dm = df["high"].diff().where(df["high"].diff() > df["low"].diff().abs(), 0)
+        minus_dm = df["low"].diff().mul(-1).where(df["low"].diff().abs() > df["high"].diff(), 0)
+        plus_di = 100 * (plus_dm.rolling(14).mean().iloc[-1] / atr_14) if atr_14 > 0 else 50
+        minus_di = 100 * (minus_dm.rolling(14).mean().iloc[-1] / atr_14) if atr_14 > 0 else 50
+        adx_raw = abs(plus_di - minus_di) / (plus_di + minus_di) if (plus_di + minus_di) > 0 else 0
+
+        # 25ª feature: High/Low correlation
+        high_low_corr = df[["high", "low"]].corr().iloc[0, 1] if len(df) > 10 else 0.95
+
         features = np.array([
             close_norm, high_norm, low_norm, open_norm,
             volume_norm, vwap,
@@ -256,7 +272,7 @@ class ScoreT60Inference:
             slope_5, slope_10, slope_20,
             volatility_20,
             volume_profile, price_momentum, trend_strength, mean_reversion,
-            0  # placeholder para 25º feature
+            adx_raw, high_low_corr  # 24 + 25
         ])
 
         return features
