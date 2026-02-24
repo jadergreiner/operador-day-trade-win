@@ -1,0 +1,120 @@
+"""
+Grid Search Parallelization Configuration for S2-5 Task 3
+
+This configuration defines optimal multiprocessing parameters for 
+XGBoost grid search parallelization.
+"""
+
+# Multiprocessing Configuration
+multiprocessing:
+  # Number of worker processes
+  # -1: Use all available CPU cores (recommended for grid search)
+  # 1: Serial execution (for debugging)
+  # N: Use N specific cores
+  n_jobs: -1
+  
+  # Process pool configuration
+  pool_type: "multiprocessing"  # Options: multiprocessing, threading
+  processes: null  # null = auto-detect (n_jobs)
+  
+  # Worker timeout for single config (seconds)
+  worker_timeout: 300  # 5 minutes per config
+
+# Grid Search Parameters
+grid_search:
+  # Total number of hyperparameter configurations to test
+  n_configs: 32
+  
+  # Cross-validation strategy
+  cv_folds: 5
+  cv_type: "time-series"  # Prevents data leakage
+  
+  # XGBoost hyperparameter space (sampled randomly)
+  param_space:
+    max_depth:
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+    learning_rate:
+      - 0.05
+      - 0.1
+      - 0.15
+      - 0.2
+    n_estimators:
+      - 50
+      - 100
+      - 150
+      - 200
+    subsample:
+      - 0.7
+      - 0.8
+      - 0.9
+    colsample_bytree:
+      - 0.7
+      - 0.8
+      - 0.9
+    # Fixed parameters
+    base_score: 0.5
+    random_state: 42
+    verbose: 0
+
+# Performance & Monitoring
+performance:
+  # Collect system statistics
+  collect_stats: true
+  
+  # Memory limits per worker (GB)
+  worker_memory_limit: null  # null = no limit
+  
+  # CPU core affinity (pin workers to specific cores)
+  enable_affinity: false
+  
+  # Progress monitoring
+  verbose: 1  # 0: silent, 1: basic, 2: detailed
+
+# Output & Results
+output:
+  # Directory for saving results
+  results_directory: "models"
+  
+  # File names
+  results_json: "grid_search_parallel_results.json"
+  best_model_pkl: "score_t60_v1.0_BEST.pkl"
+  
+  # Save detailed logs per config
+  save_config_logs: false
+  log_directory: "logs/grid_search"
+
+# Optimization Targets
+optimization:
+  # Primary metric to maximize
+  primary_metric: "val_f1"  # Options: val_f1, val_auc, val_precision
+  
+  # Secondary metrics to track
+  secondary_metrics:
+    - "val_precision"
+    - "val_recall"
+    - "val_auc"
+  
+  # Success thresholds
+  thresholds:
+    f1_minimum: 0.62
+    precision_minimum: 0.60
+    recall_minimum: 0.62
+    auc_minimum: 0.70
+
+# Environment
+environment:
+  # Python version (for compatibility)
+  python_version: "3.11"
+  
+  # XGBoost version
+  xgboost_version: "2.0+"
+  
+  # Reproducibility
+  seed: 42
+  
+  # Suppress warnings
+  suppress_warnings: false
