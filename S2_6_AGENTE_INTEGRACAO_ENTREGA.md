@@ -87,15 +87,15 @@ AGENTE MICRO TENDÊNCIA
     → Log em S2-6: { symbol, action="EXECUTE", decision }
     ↓ (Returns: intervention_id)
     → Armazena ticket ↔ intervention_id
-    
+
     ↓ [manage_positions()]
     → Monitora PnL
     → Atualiza S2-6: { intervention_id, result="WIN/LOSS", p_and_l }
-    
+
     ↓ [_close_position()]
     → Fecha posição
     → Final update em S2-6
-    
+
     → SINCRONIZA AUTOMATICAMENTE COM MONITOR OPERADOR (< 1s)
 ```
 
@@ -124,7 +124,7 @@ AGENTE MICRO TENDÊNCIA
   ```
 
 - ✅ **Syntax Check:** Todos os .py criados
-  
+
 - ✅ **Adapter Connectivity:** Fallback mode se offline
 
 - ✅ **Type Hints:** 100% type hints no wrapper
@@ -181,7 +181,7 @@ trading_mgr = MicroTradingManagerS2_6(mt5, "WINFUT", adapter)
 ticket = trading_mgr.execute_entry(opportunity)  # Logs em S2-6 automaticamente
 ```
 
-### Opção 2: Launcher  
+### Opção 2: Launcher
 ```bash
 python launch_agent_with_s2_6.py --auto-trade
 ```
@@ -278,7 +278,7 @@ Para mais detalhes sobre integração:
 # Terminal 1: Monitor
 cd scripts && MONITOR_OPERADOR.bat  # [1] Integrated
 
-# Terminal 2: Agente  
+# Terminal 2: Agente
 cd scripts && python exemplo_agente_s2_6.py --simulate
 # ou
 python launch_agent_with_s2_6.py --auto-trade
