@@ -27,13 +27,50 @@ from agente_micro_tendencia_winfut import (
 # ─ Importa S2-6 Analytics Adapter ─
 try:
     from src.adapters.s2_6_analytics_adapter import (
-        AnalyticsAdapter,
+        AnalyticsAdapter as RealAnalyticsAdapter,
         TradeEvent,
     )
     ADAPTER_AVAILABLE = True
+    
+    # Wrapper para tornar RealAnalyticsAdapter mais robusto
+    class AnalyticsAdapter:
+        """Wrapper robusto do adapter real com fallback gracioso."""
+        def __init__(self, api_url=None):
+            self.api_url = api_url or "http://localhost:8000"
+            try:
+                self.real_adapter = RealAnalyticsAdapter(api_url=self.api_url)
+            except Exception as e:
+                self.real_adapter = None
+            self.connected = False
+        
+        def log_intervention(self, event):
+            try:
+                if self.real_adapter:
+                    return self.real_adapter.log_intervention(event)
+            except Exception:
+                pass
+            return f"fallback_{datetime.now().timestamp()}"
+        
+        def update_result(self, intervention_id, result, p_and_l):
+            try:
+                if self.real_adapter:
+                    return self.real_adapter.update_result(intervention_id, result, p_and_l)
+            except Exception:
+                pass
+        
+        def get_stats(self):
+            try:
+                if self.real_adapter:
+                    stats = self.real_adapter.get_stats()
+                    return stats if stats else {"status": "offline"}
+            except Exception:
+                pass
+            return {"status": "offline", "mode": "fallback"}
+
 except ImportError:
     print("  ⚠️  S2-6 Analytics Adapter não encontrado. Modo fallback ativo.")
     ADAPTER_AVAILABLE = False
+    
     # Fallback: criar dummy adapter
     class TradeEvent:
         def __init__(self, symbol, action, trader_decision, p_and_l):
@@ -43,6 +80,7 @@ except ImportError:
             self.p_and_l = p_and_l
 
     class AnalyticsAdapter:
+        """Dummy adapter quando real não disponível."""
         def __init__(self, api_url=None):
             self.api_url = api_url or "http://localhost:8000"
             self.connected = False
@@ -54,7 +92,7 @@ except ImportError:
             pass
 
         def get_stats(self):
-            return {"status": "offline"}
+            return {"status": "offline", "mode": "no_adapter"}
 
 
 # ─ Trade com tracking de S2-6 ─
@@ -92,6 +130,7 @@ class MicroTradingManagerS2_6(OriginalMicroTradingManager):
     def execute_entry(self, opportunity) -> Optional[int]:
         """
         Executa entrada E loga em S2-6 Analytics.
+        Tolerante a falhas: agente continua mesmo se S2-6 offline.
 
         Returns:
             ticket: ID da ordem MT5, ou None se falha
@@ -99,36 +138,37 @@ class MicroTradingManagerS2_6(OriginalMicroTradingManager):
         # ─ 1) Executa ordem original ─
         ticket = super().execute_entry(opportunity)
 
-        # ─ 2) Loga em S2-6 se sucesso ─
+        # ─ 2) Loga em S2-6 se sucesso (não bloqueia se falhar) ─
         if ticket:
             try:
-                event = TradeEvent(
-                    symbol=self.symbol,
-                    action="EXECUTE",
-                    trader_decision=f"{opportunity.direction} @ {opportunity.entry}",
-                    p_and_l=0.0  # Ainda não tem PnL
-                )
-                intervention_id = self.analytics_adapter.log_intervention(event)
-
-                # ─ 3) Rastreia trade com S2-6 ─
-                if ticket in self.open_trades:
-                    trade = self.open_trades[ticket]
-                    self.trades_with_s2_6[ticket] = TradeWithS2_6(
-                        original_trade=trade,
-                        intervention_id=intervention_id,
-                        logged_at=datetime.now().isoformat()
+                if self.analytics_adapter:
+                    event = TradeEvent(
+                        symbol=self.symbol,
+                        action="EXECUTE",
+                        trader_decision=f"{opportunity.direction} @ {opportunity.entry}",
+                        p_and_l=0.0  # Ainda não tem PnL
                     )
-                    self._log(f"✅ Entrada logada em S2-6: {intervention_id[:8]}... "
-                             f"(Ticket: {ticket}, {opportunity.direction})")
+                    intervention_id = self.analytics_adapter.log_intervention(event)
 
+                    # ─ 3) Rastreia trade com S2-6 ─
+                    if ticket in self.open_trades:
+                        trade = self.open_trades[ticket]
+                        self.trades_with_s2_6[ticket] = TradeWithS2_6(
+                            original_trade=trade,
+                            intervention_id=intervention_id,
+                            logged_at=datetime.now().isoformat()
+                        )
+                        self._log(f"✅ Entrada logada em S2-6: {intervention_id[:8]}... "
+                                 f"(Ticket: {ticket}, {opportunity.direction})")
             except Exception as e:
-                self._log(f"⚠️  Erro ao logar em S2-6: {e}")
-
+                self._log(f"⚠️  Erro ao logar em S2-6: {str(e)[:40]}... (ignorado)")
+        
         return ticket
 
     def manage_positions(self, current_price: float) -> None:
         """
         Gerencia posições abertas E atualiza resultados em S2-6.
+        Tolerante a falhas: continua mesmo se S2-6 offline.
 
         Monitora PnL, trailing stops, SL/TP e fecha conforme necessário.
         """
@@ -140,7 +180,7 @@ class MicroTradingManagerS2_6(OriginalMicroTradingManager):
             if close_reason:
                 trades_to_close.append((ticket, trade, close_reason))
 
-        # ─ 2) Atualiza S2-6 antes de fechar ─
+        # ─ 2) Atualiza S2-6 antes de fechar (não bloqueia se falhar) ─
         for ticket, trade, reason in trades_to_close:
             try:
                 unrealized_pnl = self._calculate_pnl(trade, current_price)
@@ -152,7 +192,7 @@ class MicroTradingManagerS2_6(OriginalMicroTradingManager):
                     result = "WIN" if unrealized_pnl > 0 else "LOSS"
 
                 # Atualiza S2-6
-                if ticket in self.trades_with_s2_6:
+                if self.analytics_adapter and ticket in self.trades_with_s2_6:
                     tracked = self.trades_with_s2_6[ticket]
                     self.analytics_adapter.update_result(
                         intervention_id=tracked.intervention_id,
@@ -164,7 +204,7 @@ class MicroTradingManagerS2_6(OriginalMicroTradingManager):
                              f"({tracked.intervention_id[:8]}...)")
 
             except Exception as e:
-                self._log(f"⚠️  Erro ao atualizar S2-6 (ticket {ticket}): {e}")
+                self._log(f"⚠️  Erro ao atualizar S2-6 (ticket {ticket}): {str(e)[:40]}...")
 
         # ─ 3) Executa fechamento (chama original) ─
         for ticket, trade, reason in trades_to_close:
@@ -223,15 +263,22 @@ class MicroTradingManagerS2_6(OriginalMicroTradingManager):
 
 
 def initialize_s2_6_adapter(api_url: str = "http://localhost:8000") -> AnalyticsAdapter:
-    """Inicializa adapter S2-6 com URL customizável."""
+    """Inicializa adapter S2-6 com URL customizável (tolerante a falhas)."""
     adapter = AnalyticsAdapter(api_url=api_url)
-    stats = adapter.get_stats()
-
-    if stats.get("status") == "online":
-        print(f"  ✅ S2-6 Analytics CONECTADO ({api_url})")
-    else:
-        print(f"  ⚠️  S2-6 Analytics OFFLINE ({api_url}) - Modo fallback")
-
+    
+    try:
+        stats = adapter.get_stats()
+        
+        # Verifica se stats é None ou não tem status
+        if stats and isinstance(stats, dict) and stats.get("status") == "online":
+            print(f"  ✅ S2-6 Analytics CONECTADO ({api_url})")
+        else:
+            print(f"  ⚠️  S2-6 Analytics OFFLINE ({api_url}) - Modo fallback ativo")
+    except Exception as e:
+        print(f"  ⚠️  S2-6 Analytics indisponível ({api_url})")
+        print(f"     Erro: {str(e)[:60]}...")
+        print(f"     Operando em modo fallback (sem logging em S2-6)")
+    
     return adapter
 
 

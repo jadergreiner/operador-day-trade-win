@@ -34,52 +34,55 @@ import agente_micro_tendencia_winfut as agente_module
 def setup_s2_6_integration():
     """
     Monkey-patch: substitui MicroTradingManager por versão com S2-6.
-    Isso permite usar o agente original sem modificações.
+    Tolerante a falhas - funciona mesmo se S2-6 estiver offline.
     """
     print("\n  🔗 MONKEY-PATCH: Integração S2-6 Analytics")
     print("  " + "=" * 58)
+    
+    try:
+        # ─ Guarda referência original ─
+        OriginalMicroTradingManager = agente_module.MicroTradingManager
 
-    # ─ Guarda referência original ─
-    OriginalMicroTradingManager = agente_module.MicroTradingManager
+        # ─ Cria nova classe que herda da original + S2-6 ─
+        class MicroTradingManagerPatched(MicroTradingManagerS2_6):
+            """Versão patched com S2-6 que mantém compatibilidade."""
+            pass
 
-    # ─ Cria nova classe que herda da original + S2-6 ─
-    class MicroTradingManagerPatched(MicroTradingManagerS2_6):
-        """Versão patched com S2-6 que mantém compatibilidade."""
-        pass
+        # ─ Substitui classe original ─
+        agente_module.MicroTradingManager = MicroTradingManagerPatched
 
-    # ─ Substitui classe original ─
-    agente_module.MicroTradingManager = MicroTradingManagerPatched
+        # ─ Inicializa adapter global ─
+        api_url = os.getenv("S2_6_API_URL", "http://localhost:8000")
+        adapter = initialize_s2_6_adapter(api_url)
 
-    # ─ Inicializa adapter global ─
-    api_url = os.getenv("S2_6_API_URL", "http://localhost:8000")
-    adapter = initialize_s2_6_adapter(api_url)
-
-    # ─ Injeta adapter como default ─
-    for attr_name in dir(agente_module):
-        if "MicroTradingManager" in attr_name:
-            try:
-                cls = getattr(agente_module, attr_name)
-                if hasattr(cls, '__init__'):
-                    # Preserva __init__ original mas com adapter injetado
-                    pass
-            except:
-                pass
-
-    print(f"  ✅ MicroTradingManager patched")
-    print(f"  ✅ S2-6 Analytics: {'ONLINE' if ADAPTER_AVAILABLE else 'FALLBACK'}")
-    print("  " + "=" * 58)
-    return adapter
+        print(f"  ✅ MicroTradingManager patched")
+        print(f"  ✅ S2-6 Analytics: {'ONLINE' if ADAPTER_AVAILABLE else 'FALLBACK'}")
+        print("  " + "=" * 58)
+        return adapter
+    
+    except Exception as e:
+        print(f"  ⚠️  Erro ao patchear S2-6: {e}")
+        print(f"     Sistema operará sem S2-6 (fallback mode)")
+        print("  " + "=" * 58)
+        # Retorna adapter dummy mesmo em caso de erro
+        from agente_micro_tendencia_s2_6_integrated import AnalyticsAdapter
+        return AnalyticsAdapter()
 
 
 def main():
-    """Executa agente original com S2-6 integrado."""
+    """Executa agente original com S2-6 integrado (tolerante a falhas)."""
     print("\n  🚀 AGENTE MICRO TENDÊNCIA + S2-6 ANALYTICS v2.0")
     print("  " + "=" * 60)
 
-    # ─ Setup patching ─
-    adapter = setup_s2_6_integration()
+    # ─ Setup patching (tolera falhas) ─
+    try:
+        adapter = setup_s2_6_integration()
+    except Exception as e:
+        print(f"\n  ⚠️  Erro ao setup S2-6: {e}")
+        print(f"     Continuando com agente original (sem S2-6)...\n")
+        adapter = None
 
-    # ─ Executa main do agente (com MicroTradingManager patched) ─
+    # ─ Executa main do agente ─
     try:
         agente_module.main()
     except KeyboardInterrupt:
