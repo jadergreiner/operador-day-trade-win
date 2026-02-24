@@ -80,7 +80,13 @@ Sistema de trading quantitativo para Mini Índice Brasileiro (WIN) com arquitetu
   - Modelo de Regressão (Previsão de Preço)
   - Modelo de Volatilidade
   - Ensemble (combinação de modelos)
-- **SMC Confluence Engine (S2-3)**: Motor de confluência de Smart Money Concepts entre M1 e M5. Identifica zonas de Supply/Demand e Support/Resistance baseadas em cálculo real de Swing High/Low para sinais de "Convicção Máxima".
+- **SMC Confluence Engine (S2-3)**: Motor de confluência de Smart Money Concepts
+  entre M1 e M5. Identifica zonas de Supply/Demand e Support/Resistance baseadas
+  em cálculo real de Swing High/Low para sinais de "Convicção Máxima".
+- **Score T+60 (S2-5)**: Modelo de previsão direcional para 1h (T+60) usando
+  XGBoost com 25 features M1. Adiciona confluência de curto prazo aos sinais SMC.
+  Implementado em: `scripts/score_t60_builder.py`, `score_t60_train.py`,
+  `score_t60_inference.py`, `score_t60_backtest.py`. Output: `~/.operador_score_t60.json`.
 - **Technical Indicators**: RSI, MACD, Bollinger, Volume Profile
 - **Forecast Engine**: Previsões de curto, médio prazo
 - **Feature Engineering**: Criação de features para ML

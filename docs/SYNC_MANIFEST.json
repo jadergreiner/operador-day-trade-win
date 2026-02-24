@@ -1,0 +1,190 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "last_update": "2026-02-24T23:15:00Z",
+    "protocol": "[SYNC] Mandatory synchronization",
+    "maintainer": "Doc Advocate (id 17)",
+    "description": "Manifest de sincronização de documentos críticos do projeto"
+  },
+  "documents_tracked": [
+    {
+      "id": "DOC-001",
+      "name": "docs/STATUS_ENTREGAS.md",
+      "type": "source_of_truth",
+      "criticality": "🔴 CRÍTICA",
+      "last_update": "2026-02-24T23:00:00Z",
+      "sync_status": "✅ SINCRONIZADO",
+      "checksum": "tbd",
+      "mandatory_sync_with": [
+        "docs/ROADMAP.md",
+        "docs/CHANGELOG.md",
+        "docs/BOARD_MULTIDISCIPLINAR.json"
+      ],
+      "content_tags": ["Sprint 1-2", "Status de tarefas", "Gates"]
+    },
+    {
+      "id": "DOC-002",
+      "name": "docs/ROADMAP.md",
+      "type": "strategy",
+      "criticality": "🔴 CRÍTICA",
+      "last_update": "2026-02-24T22:00:00Z",
+      "sync_status": "✅ SINCRONIZADO",
+      "checksum": "tbd",
+      "mandatory_sync_with": [
+        "docs/STATUS_ENTREGAS.md",
+        "docs/PLANO_DE_SPRINTS_MVP_NOW.md"
+      ],
+      "content_tags": ["Timeline", "Oportunidades", "Sprint current"]
+    },
+    {
+      "id": "DOC-003",
+      "name": "docs/ARCHITECTURE.md",
+      "type": "technical",
+      "criticality": "🔴 CRÍTICA",
+      "last_update": "2026-02-24T23:15:00Z",
+      "sync_status": "✅ SINCRONIZADO",
+      "checksum": "tbd",
+      "mandatory_sync_with": [
+        "docs/S2-3_*.md",
+        "docs/S2-5_*.md"
+      ],
+      "content_tags": ["Layers", "Componentes", "S2-3 SMC", "S2-5 Score T60"]
+    },
+    {
+      "id": "DOC-004",
+      "name": "docs/BOARD_MULTIDISCIPLINAR.json",
+      "type": "governance",
+      "criticality": "🔴 CRÍTICA",
+      "last_update": "2026-02-24T23:00:00Z",
+      "sync_status": "✅ SINCRONIZADO",
+      "checksum": "tbd",
+      "mandatory_sync_with": [
+        "docs/STATUS_ENTREGAS.md",
+        "docs/PLANO_DE_SPRINTS_MVP_NOW.md"
+      ],
+      "content_tags": ["Personas", "Squads", "Gates", "Votação"]
+    },
+    {
+      "id": "DOC-005",
+      "name": "docs/S2-5_PROBABILIDADE_T60_ESPECIFICACAO.md",
+      "type": "specification",
+      "criticality": "🟠 ALTA",
+      "last_update": "2026-02-24T20:30:00Z",
+      "sync_status": "✅ SINCRONIZADO",
+      "checksum": "tbd",
+      "mandatory_sync_with": [
+        "docs/S2-5_PROBABILIDADE_T60_SQUAD.md",
+        "docs/S2-5_EQUIPE_EXECUTIVO_PLANO.md"
+      ],
+      "content_tags": ["RF-1 a RF-4", "Features", "Labels", "Backtest"]
+    },
+    {
+      "id": "DOC-006",
+      "name": "docs/S2-5_PROBABILIDADE_T60_SQUAD.md",
+      "type": "execution_plan",
+      "criticality": "🟠 ALTA",
+      "last_update": "2026-02-24T20:30:00Z",
+      "sync_status": "✅ SINCRONIZADO",
+      "checksum": "tbd",
+      "mandatory_sync_with": [
+        "docs/S2-5_EQUIPE_EXECUTIVO_PLANO.md",
+        "docs/BOARD_MULTIDISCIPLINAR.json"
+      ],
+      "content_tags": ["Timeline paralela", "Tarefas", "Gates 1-5", "Squad 8p"]
+    },
+    {
+      "id": "DOC-007",
+      "name": "docs/S2-5_EQUIPE_EXECUTIVO_PLANO.md",
+      "type": "executive_summary",
+      "criticality": "🟠 ALTA",
+      "last_update": "2026-02-24T23:15:00Z",
+      "sync_status": "✅ SINCRONIZADO",
+      "checksum": "tbd",
+      "mandatory_sync_with": [
+        "docs/S2-5_PROBABILIDADE_T60_SQUAD.md",
+        "docs/STATUS_ENTREGAS.md"
+      ],
+      "content_tags": ["10 AC", "Timeline 5d", "Deliverables", "Commit plan"]
+    },
+    {
+      "id": "DOC-008",
+      "name": "docs/CHANGELOG.md",
+      "type": "audit_trail",
+      "criticality": "🟠 ALTA",
+      "last_update": "2026-02-24T22:00:00Z",
+      "sync_status": "✅ SINCRONIZADO",
+      "checksum": "tbd",
+      "mandatory_sync_with": [
+        "docs/STATUS_ENTREGAS.md"
+      ],
+      "content_tags": ["Versioning", "Releases", "Features", "Fixes"]
+    }
+  ],
+  "governance_gates": {
+    "daily_sync": {
+      "frequency": "Once per day",
+      "time": "18:00 BRT",
+      "owner": "Doc Advocate",
+      "action": "Verify all mandatory_sync_with relationships"
+    },
+    "sprint_sync": {
+      "frequency": "End of sprint",
+      "time": "Friday 17:00 BRT",
+      "owner": "Doc Advocate + Head Docs",
+      "action": "Full sync validation + version bump"
+    },
+    "enforce_utf8": {
+      "requirement": "All markdown must be UTF-8 encoded",
+      "validation": "pymarkdown scan",
+      "enforcement": "Commit hook (future)"
+    },
+    "enforce_md_lint": {
+      "requirement": "Lines <= 80 chars",
+      "validation": "pymarkdown scan docs/",
+      "enforcement": "Manual before commit"
+    }
+  },
+  "s2_5_section": {
+    "task_id": "S2-5",
+    "task_name": "Probabilidade T+60",
+    "sprint": "Sprint 2",
+    "timeline": "27/02 - 03/03",
+    "status": "🟡 EM ANDAMENTO",
+    "squad_size": 8,
+    "documents": [
+      "docs/S2-5_PROBABILIDADE_T60_ESPECIFICACAO.md",
+      "docs/S2-5_PROBABILIDADE_T60_SQUAD.md",
+      "docs/S2-5_EQUIPE_EXECUTIVO_PLANO.md"
+    ],
+    "acceptance_criteria": 10,
+    "gates": 5,
+    "deliverables": {
+      "python_scripts": 1741,
+      "test_suite": 300,
+      "models": "score_t60_v1.0.pkl + metadata",
+      "documentation": "Specs + Squad + Executive plan"
+    }
+  },
+  "next_actions": [
+    {
+      "action": "Register all new S2-5 documents in SYNC_MANIFEST",
+      "owner": "Doc Advocate",
+      "deadline": "2026-02-24 23:59"
+    },
+    {
+      "action": "Verify file checksums (once code complete)",
+      "owner": "Doc Advocate",
+      "deadline": "2026-03-03 18:00"
+    },
+    {
+      "action": "Daily sync verification during sprint",
+      "owner": "Doc Advocate",
+      "deadline": "2026-03-03 18:00 (daily 18:00 BRT)"
+    },
+    {
+      "action": "Final version bump + CHANGELOG entry",
+      "owner": "Doc Advocate",
+      "deadline": "2026-03-03 18:15"
+    }
+  ]
+}

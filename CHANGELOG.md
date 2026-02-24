@@ -2,6 +2,85 @@
 
 ## [v1.2.0] - 2026-02-24 (Sprint 2 Milestone)
 
+### 🚀 S2-5: Probabilidade T+60 (INICIADO - Kickoff 27/02/2026)
+
+**Status: 🟡 EM ANDAMENTO**
+
+#### Planejamento
+
+- 📋 **Especificação Técnica:** 267 LOC (S2-5_PROBABILIDADE_T60_ESPECIFICACAO.md)
+- 📋 **Plano Squad Paralela:** 529 LOC (S2-5_PROBABILIDADE_T60_SQUAD.md)
+- 📋 **Plano Executivo:** 400+ LOC (S2-5_EQUIPE_EXECUTIVO_PLANO.md)
+
+#### Arquitetura Definida
+
+- **Feature Engineering:** 25 features M1 (preço, volume, indicadores, momentum)
+- **Modelo:** XGBoost + 5-fold CV + Grid Search 32 configs
+- **Target:** F1 ≥ 0.62 em CV, ≥60% acertos em backtest
+- **Output:** ~/.operador_score_t60.json (score + confiança)
+- **Integração:** Confluência SMC (M1/M5) + T+60 (1h)
+
+#### Scripts em Desenvolvimento
+
+- 📜 scripts/score_t60_builder.py (447 LOC)
+- 📜 scripts/score_t60_train.py (553 LOC)
+- 📜 scripts/score_t60_backtest.py (349 LOC)
+- 📜 scripts/score_t60_inference.py (392 LOC)
+- 🧪 tests/test_score_t60_dataset.py
+- 🧪 tests/test_score_t60_train.py
+- 🧪 tests/test_score_t60_backtest.py
+- 🧪 tests/test_score_t60_e2e.py
+
+#### Squad Multidisciplinar Alocada
+
+- **ML Expert (4):** Feature engineering, treinamento, backtest (8h)
+- **Eng Sr (3):** Integração, inference, agente (4h)
+- **Arq. Sistemas (6):** Performance, design review (2h)
+- **Data Engineer (11):** Dataset validation (2h)
+- **QA Automation (12):** Test suite, coverage (4h)
+- **Head Docs (8):** Documentação, lint (2h)
+- **Product Owner (14):** AC validation (1h)
+- **Doc Advocate (17):** Sync tracking (1h)
+
+**Total:** 24h paralelas (8h caminho crítico)
+
+#### Timeline
+
+- **27/02:** Dia 1 - Análise + Design (GATE 1)
+- **28/02:** Dia 2 - Feature Engineering + Dataset (GATE 2)
+- **01/03:** Dia 3 - Treinamento + Grid Search (GATE 3)
+- **02/03:** Dia 4 - Backtest + Validation (GATE 4)
+- **03/03:** Dia 5 - Integração E2E + Finalização (GATE 5)
+
+#### Acceptance Criteria (10 AC)
+
+1. ✅ AC-1: F1-score CV ≥ 0.62
+2. ✅ AC-2: Backtest ≥ 60% acertos
+3. ✅ AC-3: Latência <100ms
+4. ✅ AC-4: File persistence JSON OK
+5. ✅ AC-5: Confluência SMC+T+60 verificada
+6. ✅ AC-6: Coverage > 98%
+7. ✅ AC-7: Documentação 100%
+8. ✅ AC-8: Lint markdown PASS
+9. ✅ AC-9: SYNC_MANIFEST OK
+10. ✅ AC-10: PO Sign-off
+
+#### Documentação Sincronizada
+
+- ✅ STATUS_ENTREGAS.md: S2-5-PROB 🟡 EM ANDAMENTO
+- ✅ ROADMAP.md: Oportunidade 24 - T+60
+- ✅ ARCHITECTURE.md: Analysis Layer (Score T+60)
+- ✅ BOARD_MULTIDISCIPLINAR.json: Squad S2-5 registrada
+- ✅ SYNC_MANIFEST.json: Rastreamento S2-5
+
+#### Expected Impact
+
+- +2-3% em win rate (confluência SMC+T+60)
+- -10% em false positives via curto prazo
+- Menor drawdown em consolidação
+
+---
+
 ### ✨ S2-6: Analytics de Intervenção Manual - COMPLETA
 
 **Status: 🟢 ENTREGA COMPLETA**
