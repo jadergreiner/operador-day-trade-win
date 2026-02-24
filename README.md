@@ -2,6 +2,14 @@
 
 **Head Financeiro do Maior Fundo de Investimentos da América Latina**
 
+### 🏛️ Governança Arquitetural (Mandato do Board)
+1.  **Unidade de Execução:** Toda inteligência é centralizada no motor `scripts/agente_micro_tendencia_winfut.py`.
+2.  **Entrega Única:** As evoluções de execução automática (v1.2) serão entregues via atualização do operador atual (`INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`).
+3.  **Sincronia Total (Operador x Monitor):** O Monitor (`MONITOR_OPERADOR.bat`) deve refletir as métricas reais do agente. É proibida a exibição de dados "simulados" ou desincronizados.
+4.  **Limpeza Contínua (Doc Advocate):** O repositório é mantido organizado, com histórico em `docs/historico/` e apenas recursos ativos na raiz.
+
+---
+
 Sistema de trading quantitativo com análise multidimensional que sintetiza e relaciona Macro, Fundamentos, Sentimento e Análise Técnica para tomar decisões de classe mundial.
 
 ## 🎯 O Operador Quântico
@@ -72,7 +80,7 @@ python -m src.interfaces.cli.quantum_operator_cli
 > analyze WIN$N
 ```
 
-**Email Setup:** [GMAIL_CONFIGURATION_GUIDE.md](GMAIL_CONFIGURATION_GUIDE.md)  
+**Email Setup:** [GMAIL_CONFIGURATION_GUIDE.md](GMAIL_CONFIGURATION_GUIDE.md)
 **Mais detalhes:** [QUICKSTART.md](docs/QUICKSTART.md)
 
 ## 📊 Características Técnicas
@@ -122,7 +130,7 @@ python -m src.interfaces.cli.quantum_operator_cli
 
 **Implementation Timeline**: 14:00-16:00 BRT (1h ahead of 17:00 deadline ⏭️)
 
-**Git Commits**: c52383e (main impl) + a346005 + 180955f + a507166  
+**Git Commits**: c52383e (main impl) + a346005 + 180955f + a507166
 **Blocker Status**: ✅ **UNBLOCKED** → Beta 13/03 launch ON TRACK
 
 ### Quick Start - Gmail Alert Service
@@ -312,10 +320,10 @@ python -m src.interfaces.cli.quantum_operator_cli
 - ✅ Cross-val: 5-fold std <0.05
 - ✅ Data: Train/val/test saved + feature names ready
 
-**Próxima Fase:** Sprint 2 (06/03-12/03) - Development + Grid Search
-**Go-Live Target:** 10/04/2026 (FASE 1 Beta com R$ 50k)
+**Próxima Fase:** Sprint 2 - Development + Grid Search
+**Go-Live Target:** FASE 1 Beta com R$ 50k
 
-### Sprint 1 - Análise de Priorização + Desenvolvimento (23/02/2026)
+### Sprint 1 - Análise de Priorização + Desenvolvimento (Fevereiro 2026)
 
 **Status Geral:** ✅ 97% Ready | 🟢 ALL SYSTEMS GO
 
@@ -444,7 +452,7 @@ Operadores        AuditoriaAlertas
 ### Gateway de Beta (Phase 6):
 - [x] Phase 4: Code implementado (3,900 LOC, 11 testes)
 - [x] Phase 5: Documentation completa (5,000+ LOC docs)
-- [ ] Phase 6: Integration em progresso (MON 27/02 - THU 13/03)
+- [ ] Phase 6: Integration em progresso (Sprint Integration)
   - [ ] BDI Integration (Eng Sr - TASK 1)
   - [ ] WebSocket Server running (Eng Sr - TASK 2, código pronto)
   - [ ] Backtesting validation (ML - TASK 2, script pronto)
@@ -452,11 +460,11 @@ Operadores        AuditoriaAlertas
   - [ ] Performance targets met (P95 <30s, Mem <50MB)
   - [ ] Staging E2E flow OK
   - [ ] CFO + PO sign-off
-- [ ] BETA LAUNCH: Thursday 13/03/2026 🚀
+- [ ] **BETA LAUNCH** 🚀
 - [ ] Integração com BDI processor completa
 - [ ] Ambiente preparado (WebSocket + Email)
 
-**Timeline:** 13/03/2026 GO-LIVE com capital R$ 50k (Phase 1 BETA)
+**Timeline:** GO-LIVE com capital R$ 50k (Phase 1 BETA)
 
 [📖 Veja o sumário completo de implementação →](IMPLEMENTACAO_US004_SUMARIO.md)
 
@@ -678,7 +686,7 @@ Os diários fornecem dados ricos para **aprendizagem por reforço** no final do 
 
 ## 🚀 Execução Automática de Operações v1.2 (Em Desenvolvimento)
 
-**Status:** Phase 7 Planning (27/02-10/04/2026) | **Timeline:** 27 dias
+**Status:** Phase 7 Planning | **Timeline:** 4 Sprints
 
 O Operador Quântico está evoluindo para **execução 100% automática com validação
 ML**.
@@ -688,7 +696,7 @@ ML**.
 **ROI Projetado:** +R$ 150-300k/mês (vs 50-80k v1.1)
 **Capital Ramp-up:** 50k → 100k → 150k
 
-#### Características Planejadas (v1.2.0 - 10/04/2026):
+#### Características Planejadas (v1.2.0):
 - 🔄 ML Classifier para padrões (XGBoost/LightGBM, F1 > 0.68)
 - 📊 Integração MT5 via REST API (<500ms P95 latência)
 - 🛡️ 3 Validadores de Risco:
@@ -704,7 +712,7 @@ ML**.
 
 #### PHASE 7: Execução Automática v1.2 é "READY FOR SPRINT 1"
 
-**📅 Release Timeline:** 27/02 - 10/04/2026 (27 dias, 4 Sprints)
+**📅 Release Timeline: Phase 7 (4 Sprints)**
 
 **🔴 REFINEMENT FINAL - 20/02 (4 Personas Sign-off) ✅**
 
@@ -714,7 +722,7 @@ CTO/Eng Sr + ML Expert, todas as decisões foram consolidadas e aprovadas:
 **1️⃣ Product Owner Validation:**
 - ✅ **Scope:** Execução automática ONLY (defer dashboard/analytics)
 - ✅ **AC (Acceptance Criteria):** 8 critérios definidos e testáveis
-- ✅ **Timeline:** 10/04/2026 é viável com disciplina técnica
+- ✅ **Timeline:** Go-Live é viável com disciplina técnica
 - ✅ **Decision:** GO para refinement de "historias de usuário"
   [→ User Story Completa](docs/agente_autonomo/US-001-EXECUTION_AUTOMATION_v1.2.md)
 
@@ -763,11 +771,11 @@ SPRINT 3 (13/03-19/03): Integration & Backtest
 ├─ Delivery: Full backtest + Walk-forward + Live-ready model
 └─ GATE 3 (19/03): Sharpe > 1.0 BLOCKER + Trader UAT ready
 
-SPRINT 4 (20/03-10/04): UAT & Production Launch 🏁
+SPRINT 4: UAT & Production Launch 🏁
 ├─ Eng Sr (35h): Staging deploy + Performance validation + Monitoring
 ├─ ML Expert (25h): Model serialization + Retraining pipeline + Monitoring
 ├─ Delivery: Production-ready code + Trader validated
-└─ GO LIVE: 10/04/2026 (50k capital Phase 1 Beta)
+└─ GO LIVE: 50k capital Phase 1 Beta
 ```
 
 **⚠️ Riscos Identificados & Mitigação:**

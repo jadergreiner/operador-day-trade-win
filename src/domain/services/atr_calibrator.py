@@ -40,13 +40,13 @@ class ATRCalibrator:
         Calcula o trailing stop ideal com base no ATR.
         """
         ts = atr * self.multiplier
-        
+
         # Garante limites
         if ts < self.min_trailing_stop:
             return self.min_trailing_stop
         if ts > self.max_trailing_stop:
             return self.max_trailing_stop
-            
+
         return ts
 
     def suggest_volume(self, atr: Decimal, base_volume: int = 1) -> int:

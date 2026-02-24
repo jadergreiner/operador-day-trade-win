@@ -1,7 +1,7 @@
 # ✅ SPRINT 1 STRUCTURE SETUP - COMPLETE
 
-**Data:** 23/02/2026  
-**Status:** ✅ 100% SETUP COMPLETO  
+**Data:** 23/02/2026
+**Status:** ✅ 100% SETUP COMPLETO
 **Objetivo:** Preparar infraestrutura código + testes para Sprint 1 kickoff (24/02)
 
 ---
@@ -323,7 +323,7 @@ Est. effort: ~1K LOC over 48 hours"
 
 ---
 
-**Documento preparado para execução Sprint 1 (24-25 FEV)**  
-**Todas as estruturas prontas para desenvolvimento**  
+**Documento preparado para execução Sprint 1 (24-25 FEV)**
+**Todas as estruturas prontas para desenvolvimento**
 **🟢 GO para kickoff 24/02 09:00 BRT**
 

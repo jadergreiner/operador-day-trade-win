@@ -345,6 +345,6 @@ Após esta padronização, verificar:
 ---
 
 **Documento criado:** 23 de Fevereiro de 2026
-**Vigência:** Até fim do projeto (10/04/2026)
+**Vigência:** Até fim do projeto
 **Última revisão:** 23/02 20:00 BRT
 **Status:** ✅ PADRÃO OFICIAL

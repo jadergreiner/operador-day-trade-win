@@ -23,12 +23,12 @@ from src.application.ml_feature_engineer import MLFeatureEngineer
 
 class TestDetectPatterns:
     """Test suite para detect_patterns() - Issue #8"""
-    
+
     @pytest.fixture
     def engineer(self):
         """Create MLFeatureEngineer instance."""
         return MLFeatureEngineer()
-    
+
     @pytest.fixture
     def sample_data(self):
         """Create sample dataset (17280 samples, 24 features)."""
@@ -41,13 +41,13 @@ class TestDetectPatterns:
         ])
         np.random.shuffle(y)  # Shuffle labels
         return X, y
-    
+
     # ==================== TEST AC-1: LABEL DISTRIBUTION ====================
-    
+
     def test_detect_patterns_label_distribution(self, engineer, sample_data):
         """
         AC-1: Analyze label distribution (captured vs uncaptured).
-        
+
         Given: dataset with 60/40 label split
         When: detect_patterns(X, y) called
         Then: returns label_distribution with counts and ratio
@@ -59,13 +59,13 @@ class TestDetectPatterns:
         # - Assert 'negative' count == 6912
         # - Assert 'ratio' == 0.6
         pass
-    
+
     # ==================== TEST AC-2: FEATURE PATTERNS ====================
-    
+
     def test_detect_patterns_feature_importance(self, engineer, sample_data):
         """
         AC-2: Detect patterns correlated with features.
-        
+
         Given: dataset with some correlated features
         When: detect_patterns(X, y) called
         Then: returns feature importance scores
@@ -76,13 +76,13 @@ class TestDetectPatterns:
         # - Assert 'feature_importance' is not empty
         # - Assert features ranked by importance
         pass
-    
+
     # ==================== TEST AC-3: INSIGHTS ====================
-    
+
     def test_detect_patterns_insights(self, engineer, sample_data):
         """
         AC-3: Generate markdown insights report.
-        
+
         Given: dataset analyzed
         When: detect_patterns(X, y) called
         Then: returns text insights list
@@ -93,13 +93,13 @@ class TestDetectPatterns:
         # - Assert len(insights) > 0
         # - Assert insights contain meaningful text
         pass
-    
+
     # ==================== TEST AC-4: HISTOGRAM ====================
-    
+
     def test_detect_patterns_histogram(self, engineer, sample_data, tmp_path):
         """
         AC-4: Plot histogram of label distribution.
-        
+
         Given: dataset analyzed
         When: detect_patterns(X, y) called
         Then: saves histogram to file
@@ -110,13 +110,13 @@ class TestDetectPatterns:
         # - Assert file exists at plot_path
         # - Assert file is valid image (PNG/JPG)
         pass
-    
+
     # ==================== TEST AC-5: TOP 10 FEATURES ====================
-    
+
     def test_detect_patterns_top_features(self, engineer, sample_data):
         """
         AC-5: Identify top 10 most relevant features.
-        
+
         Given: dataset with feature importance
         When: detect_patterns(X, y) called
         Then: returns top 10 feature names
@@ -127,13 +127,13 @@ class TestDetectPatterns:
         # - Assert len(top_features) <= 10
         # - Assert features ranked by importance
         pass
-    
+
     # ==================== TEST AC-6: COVERAGE ====================
-    
+
     def test_detect_patterns_execution_time(self, engineer, sample_data):
         """
         AC-6: Return execution_time in metadata.
-        
+
         Given: detect_patterns() executed
         When: function returns
         Then: includes execution_time in dict
@@ -143,11 +143,11 @@ class TestDetectPatterns:
         # - Assert 'execution_time' in result
         # - Assert execution_time > 0
         pass
-    
+
     def test_detect_patterns_complete_return(self, engineer, sample_data):
         """
         AC-6: Return dict has all required keys.
-        
+
         Given: detect_patterns() executed
         When: function returns
         Then: dict has all expected keys

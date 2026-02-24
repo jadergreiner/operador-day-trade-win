@@ -25,7 +25,7 @@
 - **#003 [MÉDIA]:** Falta cálculo de Sharpe Ratio → ⏳ 8h
 - **#004 [BAIXA]:** Documentação de RL → ⏳ 16h
 
-**ETA Resolução:** 27/02/2026
+**ETA Resolução:** Sprint Integration
 
 ---
 
@@ -61,7 +61,7 @@ v1.1.0 - Sistema Base Alertas
 ```
 
 **Esforço:** 13 pontos (1 sprint)
-**Timeline:** Semanas 1-4 de Março (13/03/2026)
+**Timeline:** Sprint 1 (BETA Launch)
 **Target:** Latência <30s, Throughput 100+ alertas/min
 
 ---

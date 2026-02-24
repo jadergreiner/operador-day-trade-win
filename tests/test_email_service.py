@@ -63,7 +63,7 @@ def sample_alert_data() -> dict:
 async def test_email_send_success(email_service: EmailService, sample_alert_data: dict):
     """
     AC-4.1: Email sent successfully on first attempt.
-    
+
     Verifies:
     - SMTP connection established
     - Message created with correct To/From
@@ -74,14 +74,14 @@ async def test_email_send_success(email_service: EmailService, sample_alert_data
         # Setup mock SMTP instance
         mock_instance = MagicMock()
         mock_smtp_class.return_value = mock_instance
-        
+
         # Execute
         result = await email_service.send_email_with_retry(
             to_email="test@example.com",
             subject="Test Alert",
             **sample_alert_data
         )
-        
+
         # Verify
         assert result is True, "Should return True on success"
         mock_instance.login.assert_called_once()
@@ -97,7 +97,7 @@ async def test_email_send_success(email_service: EmailService, sample_alert_data
 async def test_email_retry_on_failure(email_service: EmailService, sample_alert_data: dict):
     """
     AC-4.2: Retries 3x with exponential backoff on failure.
-    
+
     Verifies:
     - First 2 attempts raise exceptions
     - 3rd attempt succeeds
@@ -108,25 +108,25 @@ async def test_email_retry_on_failure(email_service: EmailService, sample_alert_
         # Fail first 2 times, succeed on 3rd
         mock_fail = MagicMock(side_effect=Exception("Connection timeout"))
         mock_success = MagicMock()
-        
+
         mock_smtp_class.side_effect = [
             mock_fail,  # Attempt 1: raises exception
             mock_fail,  # Attempt 2: raises exception
             mock_success  # Attempt 3: succeeds
         ]
-        
+
         # Execute (track time to verify backoff)
         import time
         start = time.time()
-        
+
         result = await email_service.send_email_with_retry(
             to_email="test@example.com",
             subject="Test Alert",
             **sample_alert_data
         )
-        
+
         elapsed = time.time() - start
-        
+
         # Verify
         assert result is True, "Should return True after successful retry"
         assert elapsed >= 3.0, "Should wait at least 3s total (1s + 2s backoff)"
@@ -141,7 +141,7 @@ async def test_email_retry_on_failure(email_service: EmailService, sample_alert_
 async def test_invalid_smtp_credentials(email_service: EmailService, sample_alert_data: dict):
     """
     AC-4.3: Handle invalid SMTP credentials gracefully.
-    
+
     Verifies:
     - SMTPAuthenticationError is caught
     - All 3 retries attempted
@@ -153,14 +153,14 @@ async def test_invalid_smtp_credentials(email_service: EmailService, sample_aler
         mock_instance = MagicMock()
         mock_instance.login.side_effect = Exception("Invalid credentials")
         mock_smtp_class.return_value = mock_instance
-        
+
         # Execute
         result = await email_service.send_email_with_retry(
             to_email="test@example.com",
             subject="Test Alert",
             **sample_alert_data
         )
-        
+
         # Verify
         assert result is False, "Should return False after all retries"
         assert mock_instance.login.call_count >= 3, "Should retry 3 times"
@@ -175,7 +175,7 @@ async def test_invalid_smtp_credentials(email_service: EmailService, sample_aler
 async def test_template_rendering(email_service: EmailService, sample_alert_data: dict):
     """
     AC-4.4: Template renders correctly with Jinja2 variables.
-    
+
     Verifies:
     - Templates directory exists
     - alert_email.html template found
@@ -185,13 +185,13 @@ async def test_template_rendering(email_service: EmailService, sample_alert_data
     # Verify template exists
     template_path = Path("templates") / "alert_email.html"
     assert template_path.exists(), f"Template not found: {template_path}"
-    
+
     # Render template
     html = email_service._render_template(
         "alert_email.html",
         **sample_alert_data
     )
-    
+
     # Verify content
     assert isinstance(html, str), "Should return string"
     assert len(html) > 100, "Should return complete HTML"
@@ -205,7 +205,7 @@ async def test_template_rendering(email_service: EmailService, sample_alert_data
 def test_template_rendering_sync(email_service: EmailService, sample_alert_data: dict):
     """Synchronous version of template rendering test."""
     html = email_service._render_template("alert_email.html", **sample_alert_data)
-    
+
     assert "WIN$N" in html
     assert "194.50" in html
     assert "BUY" in html
@@ -218,7 +218,7 @@ def test_template_rendering_sync(email_service: EmailService, sample_alert_data:
 def test_config_from_env(mock_env_vars):
     """
     AC-4.5: Configuration loads from environment variables.
-    
+
     Verifies:
     - .env variables are loaded correctly
     - ${VAR_NAME} syntax is substituted
@@ -226,7 +226,7 @@ def test_config_from_env(mock_env_vars):
     - YAML config integrated with env vars
     """
     service = EmailService("config/alertas_email.yaml")
-    
+
     # Verify env vars were substituted
     assert service.config['email']['smtp']['host'] == 'smtp.gmail.com'
     assert service.config['email']['smtp']['port'] == '587'
@@ -242,7 +242,7 @@ def test_config_from_env(mock_env_vars):
 async def test_send_alert_email_method(email_service: EmailService, sample_alert_data: dict, mock_env_vars):
     """
     Test send_alert_email convenience method.
-    
+
     Verifies:
     - Uses alert_email.html template
     - Uses ALERT_EMAIL from env if not provided
@@ -251,10 +251,10 @@ async def test_send_alert_email_method(email_service: EmailService, sample_alert
     with patch('smtplib.SMTP') as mock_smtp:
         mock_instance = MagicMock()
         mock_smtp.return_value = mock_instance
-        
+
         # Execute without explicit to_email (should use ALERT_EMAIL)
         result = await email_service.send_alert_email(**sample_alert_data)
-        
+
         # Verify
         assert result is True
         mock_instance.sendmail.assert_called_once()
@@ -267,11 +267,11 @@ async def test_send_alert_email_method(email_service: EmailService, sample_alert
 def test_type_hints():
     """
     Verify all functions have proper type hints.
-    
+
     This is a compile-time check that passes if module is properly typed.
     """
     import inspect
-    
+
     # Check EmailService methods
     methods = [
         email_service.__init__,
@@ -279,7 +279,7 @@ def test_type_hints():
         email_service._render_template,
         email_service._get_smtp_connection,
     ]
-    
+
     # Note: Runtime type checking would require external tools like mypy
     # This test documents the requirement
     pass

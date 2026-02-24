@@ -1,8 +1,8 @@
 # 📧 CONFIGURAÇÃO EMAIL - GMAIL (PASSO-A-PASSO)
 
-**Objetivo:** Configurar envio de emails via Gmail para alertas do Operador Quântico  
-**Serviço:** Gmail SMTP  
-**Tipo de Autenticação:** App Password (Seguro)  
+**Objetivo:** Configurar envio de emails via Gmail para alertas do Operador Quântico
+**Serviço:** Gmail SMTP
+**Tipo de Autenticação:** App Password (Seguro)
 **Tempo:** 10 minutos
 
 ---
@@ -94,24 +94,24 @@ email:
     port: ${SMTP_PORT:587}                     # Lê do .env, default: 587 (TLS)
     from_email: ${FROM_EMAIL}                  # Lê do .env (obrigatório)
     password: ${PASSWORD}                      # Lê do .env (obrigatório - App Password)
-    
+
     # TLS Configuration (para port 587)
     use_tls: true                              # ✅ SEMPRE true para Gmail
     use_ssl: false                             # ❌ false (TLS já fornece segurança)
-    
+
     timeout: ${EMAIL_TIMEOUT:10}               # Timeout em segundos
-    
+
   sender:
     name: ${EMAIL_NAME:Operador Quantico}      # Nome do remetente
     email: ${FROM_EMAIL}                       # Email do remetente (mesmo que from_email)
-    
+
   recipient:
     alert_email: ${ALERT_EMAIL}                # Email para receber alertas
-    
+
   retry:
     max_attempts: ${EMAIL_MAX_RETRIES:3}       # Tentativas se falhar
     backoff_seconds: [1, 2, 4]                 # Exponential: 1s, 2s, 4s
-    
+
   rate_limit:
     max_per_minute: 60                         # Máximo 60 emails/minuto
     cooldown_seconds: 1
@@ -146,94 +146,94 @@ load_dotenv()
 
 def test_gmail_connection():
     """Testa conexão com Gmail SMTP"""
-    
+
     # Lê variáveis de ambiente
     SMTP_HOST = os.getenv('SMTP_HOST', 'smtp.gmail.com')
     SMTP_PORT = int(os.getenv('SMTP_PORT', '587'))
     FROM_EMAIL = os.getenv('FROM_EMAIL')
     PASSWORD = os.getenv('PASSWORD')
-    
+
     print("=" * 60)
     print("🔍 TESTE DE CONFIGURAÇÃO GMAIL SMTP")
     print("=" * 60)
-    
+
     # Validação básica
     if not FROM_EMAIL:
         print("❌ ERRO: FROM_EMAIL não configurado no .env")
         return False
-    
+
     if not PASSWORD:
         print("❌ ERRO: PASSWORD não configurado no .env")
         return False
-    
+
     print(f"✅ SMTP_HOST: {SMTP_HOST}")
     print(f"✅ SMTP_PORT: {SMTP_PORT}")
     print(f"✅ FROM_EMAIL: {FROM_EMAIL}")
     print(f"✅ PASSWORD: {'*' * len(PASSWORD)}")
-    
+
     try:
         print("\n📡 Conectando ao Gmail SMTP...")
-        
+
         # Cria conexão SMTP com TLS
         smtp = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
         print(f"✅ Conexão estabelecida")
-        
+
         # Inicia TLS
         print("🔒 Iniciando TLS...")
         smtp.starttls()
         print("✅ TLS ativado")
-        
+
         # Faz login
         print(f"🔑 Autenticando com {FROM_EMAIL}...")
         smtp.login(FROM_EMAIL, PASSWORD)
         print("✅ Autenticação bem-sucedida!")
-        
+
         # Fecha conexão
         smtp.quit()
         print("\n✅ CONEXÃO GMAIL TESTADA COM SUCESSO!")
         print("=" * 60)
         return True
-        
+
     except smtplib.SMTPAuthenticationError:
         print("❌ ERRO DE AUTENTICAÇÃO:")
         print("   - Email ou App Password incorretos")
         print("   - Verifique se 2FA está ativado no Google")
         print("   - Regenere o App Password e tente novamente")
         return False
-        
+
     except smtplib.SMTPException as e:
         print(f"❌ ERRO SMTP: {str(e)}")
         return False
-        
+
     except Exception as e:
         print(f"❌ ERRO GERAL: {str(e)}")
         return False
 
 def send_test_email():
     """Envia email de teste"""
-    
+
     FROM_EMAIL = os.getenv('FROM_EMAIL')
     PASSWORD = os.getenv('PASSWORD')
     ALERT_EMAIL = os.getenv('ALERT_EMAIL', FROM_EMAIL)
-    
+
     print("\n" + "=" * 60)
     print("📧 ENVIANDO EMAIL DE TESTE")
     print("=" * 60)
-    
+
     try:
         # Cria email
         msg = MIMEMultipart('alternative')
         msg['Subject'] = "✅ Teste Email - Operador Quântico"
         msg['From'] = FROM_EMAIL
         msg['To'] = ALERT_EMAIL
-        
+
         # Conteúdo em HTML
         html = """
         <html>
             <body style="font-family: Arial, sans-serif;">
                 <h2 style="color: #1a1a1a;">✅ Teste de Email Bem-Sucedido!</h2>
                 <p>Se você recebeu este email, a configuração do Gmail SMTP está <strong>funcionando corretamente</strong>.</p>
-                
+
                 <div style="background: #f5f5f5; padding: 15px; border-left: 4px solid #51cf66;">
                     <p><strong>Detalhes do Teste:</strong></p>
                     <ul>
@@ -242,9 +242,9 @@ def send_test_email():
                         <li>⏰ Hora: {timestamp}</li>
                     </ul>
                 </div>
-                
+
                 <p>Você está pronto para receber alertas do Operador Quântico! 🚀</p>
-                
+
                 <hr>
                 <p style="color: #999; font-size: 0.9em;">
                     Mensagem automática gerada por Operador Quântico v1.1
@@ -252,7 +252,7 @@ def send_test_email():
             </body>
         </html>
         """
-        
+
         from datetime import datetime
         timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         html = html.format(
@@ -260,9 +260,9 @@ def send_test_email():
             to_email=ALERT_EMAIL,
             timestamp=timestamp
         )
-        
+
         msg.attach(MIMEText(html, 'html'))
-        
+
         # Envia email
         print(f"📤 Enviando para {ALERT_EMAIL}...")
         smtp = smtplib.SMTP('smtp.gmail.com', 587)
@@ -270,12 +270,12 @@ def send_test_email():
         smtp.login(FROM_EMAIL, PASSWORD)
         smtp.sendmail(FROM_EMAIL, [ALERT_EMAIL], msg.as_string())
         smtp.quit()
-        
+
         print("✅ EMAIL ENVIADO COM SUCESSO!")
         print(f"   Verifique sua caixa de entrada em {ALERT_EMAIL}")
         print("=" * 60)
         return True
-        
+
     except Exception as e:
         print(f"❌ ERRO AO ENVIAR: {str(e)}")
         return False
@@ -467,9 +467,9 @@ Se tiver dúvidas:
 
 ---
 
-**Configuração Gmail:** ✅ COMPLETA  
-**Pronto para usar:** ✅ SIM  
-**Tempo total:** ~10 minutos  
+**Configuração Gmail:** ✅ COMPLETA
+**Pronto para usar:** ✅ SIM
+**Tempo total:** ~10 minutos
 **Segurança:** ✅ Ambiente variables (sem hardcode)
 
 🎉 **Seus alertas do Operador Quântico agora vão via Email Gmail!**

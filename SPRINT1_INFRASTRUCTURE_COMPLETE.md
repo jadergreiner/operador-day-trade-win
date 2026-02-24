@@ -335,5 +335,5 @@ Feature
 
 **Status:** 🟢 **SPRINT 1 READY FOR EXECUTION**
 
-Data: 24/02/2026  
+Data: 24/02/2026
 Próximo Checkpoint: 27/02 09:00 (Sprint 1 Kickoff)

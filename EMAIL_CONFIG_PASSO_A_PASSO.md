@@ -1,9 +1,9 @@
 # 🔴 EMAIL CONFIG - PASSO-A-PASSO PARA LIBERAR (TODAY 17:00 BRT)
 
-**Propósito:** Liberar versão v1.1 (Alertas) para Beta 13/03  
-**Owner:** Eng Sr  
-**Deadline:** TODAY 23/02 17:00 BRT ⏰  
-**Esforço:** 1-2 horas  
+**Propósito:** Liberar versão v1.1 (Alertas) para Beta 13/03
+**Owner:** Eng Sr
+**Deadline:** TODAY 23/02 17:00 BRT ⏰
+**Esforço:** 1-2 horas
 **Blocker:** SIM - Atrasa Beta se não completar TODAY
 
 ---
@@ -24,15 +24,15 @@ email:
     use_tls: true              # para port 587
     use_ssl: false             # para port 465, muda para true
     timeout: 10
-    
+
   sender:
     name: "Operador Quântico"
     email: ${FROM_EMAIL}
-    
+
   retry:
     max_attempts: 3
     backoff_seconds: [1, 2, 4]  # Exponential: 1s, 2s, 4s
-    
+
   rate_limit:
     max_per_minute: 60
     cooldown_seconds: 1
@@ -61,10 +61,10 @@ email:
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; }
         .header { background: #1a1a1a; color: white; padding: 15px; text-align: center; }
         .content { padding: 20px 0; }
-        .alert-box { 
-            border-left: 5px solid #ff6b6b; 
-            padding: 15px; 
-            background: #fff5f5; 
+        .alert-box {
+            border-left: 5px solid #ff6b6b;
+            padding: 15px;
+            background: #fff5f5;
             margin: 15px 0;
         }
         .success { border-left-color: #51cf66; background: #f1fdf4; }
@@ -80,7 +80,7 @@ email:
         <div class="header">
             <h1>🚀 Alerta Quantico</h1>
         </div>
-        
+
         <div class="content">
             <div class="alert-box {{ alert_class }}">
                 <h2>{{ action }} - {{ symbol }}</h2>
@@ -89,7 +89,7 @@ email:
                 <p><strong>Padrão:</strong> {{ pattern_type }}</p>
                 <p><strong>Confiança:</strong> {{ confidence }}%</p>
             </div>
-            
+
             <div>
                 <h3>Métricas:</h3>
                 <div class="metric">
@@ -105,12 +105,12 @@ email:
                     <div class="value">{{ volume }}</div>
                 </div>
             </div>
-            
+
             <hr>
-            
+
             <p><strong>Recomendação:</strong> {{ recommendation }}</p>
         </div>
-        
+
         <div class="footer">
             <p>Gerado por Operador Quântico | {{ timestamp_iso }}</p>
         </div>
@@ -152,26 +152,26 @@ class EmailService:
         self.jinja_env = Environment(
             loader=FileSystemLoader("templates")
         )
-    
+
     def _get_smtp_connection(self):
         """Create SMTP connection (SSL or TLS)"""
         cfg = self.config['email']['smtp']
-        
+
         if cfg.get('use_ssl'):
             smtp = smtplib.SMTP_SSL(cfg['host'], cfg['port'])
         else:
             smtp = smtplib.SMTP(cfg['host'], cfg['port'])
             if cfg.get('use_tls'):
                 smtp.starttls()
-        
+
         smtp.login(cfg['from_email'], cfg['password'])
         return smtp
-    
+
     def _render_template(self, template_name: str, **kwargs) -> str:
         """Render Jinja2 template with variables"""
         template = self.jinja_env.get_template(template_name)
         return template.render(**kwargs)
-    
+
     async def send_email_with_retry(
         self,
         to_email: str,
@@ -180,24 +180,24 @@ class EmailService:
         **template_vars
     ) -> bool:
         """Send email with exponential backoff retry (3x)"""
-        
+
         cfg = self.config['email']['retry']
         max_attempts = cfg['max_attempts']
         backoff_seconds = cfg['backoff_seconds']
-        
+
         for attempt in range(1, max_attempts + 1):
             try:
                 # Render template
                 html_body = self._render_template(template_name, **template_vars)
-                
+
                 # Create email
                 msg = MIMEMultipart('alternative')
                 msg['Subject'] = subject
                 msg['From'] = self.config['email']['sender']['email']
                 msg['To'] = to_email
-                
+
                 msg.attach(MIMEText(html_body, 'html'))
-                
+
                 # Send
                 smtp = self._get_smtp_connection()
                 smtp.sendmail(
@@ -206,13 +206,13 @@ class EmailService:
                     msg.as_string()
                 )
                 smtp.quit()
-                
+
                 logger.info(f"Email sent successfully to {to_email}")
                 return True
-                
+
             except Exception as e:
                 logger.warning(f"Email send attempt {attempt} failed: {str(e)}")
-                
+
                 if attempt < max_attempts:
                     wait_time = backoff_seconds[attempt - 1]
                     logger.info(f"Retrying in {wait_time}s...")
@@ -260,7 +260,7 @@ async def test_email_send_success(email_service):
     with patch('smtplib.SMTP') as mock_smtp:
         mock_instance = MagicMock()
         mock_smtp.return_value = mock_instance
-        
+
         result = await email_service.send_email_with_retry(
             to_email="test@example.com",
             subject="Test",
@@ -269,7 +269,7 @@ async def test_email_send_success(email_service):
             price="194.50",
             timestamp="23/02/2026 14:30:00"
         )
-        
+
         assert result == True
         mock_instance.sendmail.assert_called_once()
 
@@ -283,7 +283,7 @@ async def test_email_retry_on_failure(email_service):
             Exception("Timeout"),
             MagicMock()
         ]
-        
+
         result = await email_service.send_email_with_retry(
             to_email="test@example.com",
             subject="Test",
@@ -292,7 +292,7 @@ async def test_email_retry_on_failure(email_service):
             price="194.50",
             timestamp="23/02/2026 14:30:00"
         )
-        
+
         assert result == True
         assert mock_smtp.call_count == 3  # Called 3 times
 
@@ -301,7 +301,7 @@ async def test_invalid_smtp_credentials(email_service):
     """AC-4.3: Handle invalid credentials"""
     with patch('smtplib.SMTP.login') as mock_login:
         mock_login.side_effect = Exception("Invalid credentials")
-        
+
         result = await email_service.send_email_with_retry(
             to_email="test@example.com",
             subject="Test",
@@ -310,7 +310,7 @@ async def test_invalid_smtp_credentials(email_service):
             price="194.50",
             timestamp="23/02/2026 14:30:00"
         )
-        
+
         assert result == False  # Finally fails
 
 def test_template_rendering(email_service):
@@ -329,7 +329,7 @@ def test_template_rendering(email_service):
         recommendation="Compra conservadora com SL",
         timestamp_iso="2026-02-23T14:30:00Z"
     )
-    
+
     assert "WIN$N" in html
     assert "194.50" in html
     assert "BUY" in html
@@ -341,7 +341,7 @@ def test_config_from_env(email_service):
     os.environ['SMTP_PORT'] = '587'
     os.environ['FROM_EMAIL'] = 'bot@example.com'
     os.environ['PASSWORD'] = 'secret'
-    
+
     assert email_service.config['email']['smtp']['host'] == 'smtp.gmail.com'
     # Cleanup
     for key in ['SMTP_HOST', 'SMTP_PORT', 'FROM_EMAIL', 'PASSWORD']:
@@ -502,9 +502,9 @@ PARE e FIX:
 
 ---
 
-**Owner:** Eng Sr  
-**Deadline:** TODAY 23/02 17:00 BRT ⏰  
-**Impacto:** Desbloqueia Beta 13/03 + Checkpoint 24/02 09:00  
+**Owner:** Eng Sr
+**Deadline:** TODAY 23/02 17:00 BRT ⏰
+**Impacto:** Desbloqueia Beta 13/03 + Checkpoint 24/02 09:00
 **Prioridade:** 🔴 CRÍTICA - BLOCKER
 
 ---

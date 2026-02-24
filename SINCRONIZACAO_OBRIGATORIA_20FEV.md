@@ -203,7 +203,7 @@ Total: 4 commits, 34 ahead origin/main, Working tree CLEAN
 │ ✅ Working tree CLEAN                                       │
 │ ✅ 34 commits ahead origin/main (pronto para push)         │
 │                                                              │
-│ STATUS: 🟢 PRONTO PARA SPRINT 1 (27/02/2026)              │
+│ STATUS: 🟢 PRONTO PARA SPRINT 1                             │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -211,5 +211,5 @@ Total: 4 commits, 34 ahead origin/main, Working tree CLEAN
 ---
 
 **Data Conclusão:** 20/02/2026 16:15 BRT
-**Próximo Gate:** 05/03/2026 (Sprint 1 review)
+**Próximo Gate:** Sprint 1 review
 

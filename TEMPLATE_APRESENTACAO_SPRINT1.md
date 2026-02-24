@@ -1,8 +1,8 @@
 # 🎤 TEMPLATE DE APRESENTAÇÃO - Sprint 1 Kickoff
 
-**Para:** Board Meeting / Executive Standup  
-**Duração:** 30 minutos (com Q&A)  
-**Apresentador(a):** CTO ou Product Owner  
+**Para:** Board Meeting / Executive Standup
+**Duração:** 30 minutos (com Q&A)
+**Apresentador(a):** CTO ou Product Owner
 **Data Apresentação:** 26-27 FEV 2026
 
 ---
@@ -552,7 +552,7 @@ Alguma pergunta?
 
 ---
 
-**Apresentação Pronta Para Usar:** 23/02/2026  
-**Duração Estimada:** 30 minutos (c/ Q&A)  
+**Apresentação Pronta Para Usar:** 23/02/2026
+**Duração Estimada:** 30 minutos (c/ Q&A)
 **Aprovação Requerida:** CTO + CFO + PO + ML Lead
 
