@@ -48,6 +48,7 @@ def print_header():
     print("     - Risk Validator: 3 gates (Capital, Correlacao, Volatilidade)")
     print("     - OrdersExecutor: Async queue + P&L monitor")
     print("     - Performance: P95 Tuning ativo (Imports Estaticos + RL Engine Pool)")
+    print("     - S2-6 ANALYTICS: INTEGRADO com Monitor Operador (sync real-time)")
     print()
 
 def get_choice():
@@ -167,13 +168,16 @@ def start_journals():
     print()
 
 def run_agent(trade_flag, target_date):
-    """Executa o agente principal"""
-    print(f"Iniciando Agente Micro Tendencia WINFUT...")
+    """Executa o agente principal COM S2-6 ANALYTICS INTEGRADO"""
+    print(f"Iniciando Agente Micro Tendencia WINFUT + S2-6 ANALYTICS...")
+    print(f"   🔗 S2-6 Analytics: INTEGRADO")
+    print(f"   📊 Monitor Operador: SINCRONIZADO (real-time)")
     print()
 
+    # ─ Usa launcher com S2-6 integrado (em vez do agente original) ─
     cmd = [
         sys.executable,
-        "scripts/agente_micro_tendencia_winfut.py",
+        "scripts/launch_agent_with_s2_6.py",
         trade_flag,
         "--account 1000346516"
     ]
