@@ -1,8 +1,8 @@
 # 📐 S2-4 Design: Integração Normalizada de Fibonacci (Mimas) no micro_score
 
-**Autor**: Squad S2-4 / Arquiteto de Sistemas  
-**Versão**: 1.0  
-**Data**: 24/02/2026  
+**Autor**: Squad S2-4 / Arquiteto de Sistemas
+**Versão**: 1.0
+**Data**: 24/02/2026
 **Status**: DESIGN REVIEW-READY
 
 ---
@@ -120,7 +120,7 @@ Responsabilidade:
 
 class FibonacciCalculator:
     """Calculadora normalizada de scores Fibonacci."""
-  
+
     def __init__(self, weight: float = 0.15):
         """
         Args:
@@ -183,19 +183,19 @@ Testes de integração com CycleResult:
 
 class TestFibonacciIntegrationWithCycleResult(unittest.TestCase):
     """Validar que Fibonacci não quebra lógica existente."""
-  
+
     def test_micro_score_not_broken_with_fibonacci(self):
         """THEN: micro_score mantém semântica com Fibonacci normalizado."""
         # Setup
         cycle_result = create_sample_cycle_result()
         micro_score_before = cycle_result.micro_score
-  
+
         # Apply Fibonacci normalization
         fibonacci_calc = FibonacciCalculator(weight=0.15)
         contribution = fibonacci_calc.calculate_weighted_contribution(
             cycle_result.mima.fan_score
         )
-  
+
         # Validate
         self.assertGreaterEqual(contribution, 0.0)
         self.assertLessEqual(contribution, 0.15)
@@ -337,5 +337,5 @@ Métrica de Sucesso:
 
 ---
 
-**Status**: ✅ Design READY FOR REVIEW  
+**Status**: ✅ Design READY FOR REVIEW
 **Sign-off Needed**: Arquiteto de Sistemas + ML Lead + CTO

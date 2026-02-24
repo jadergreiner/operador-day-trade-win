@@ -114,7 +114,7 @@ class TestFeedbackIntegrationManager:
         # (Nos testes reais, seria interativo)
         # Por agora, only validamos limpeza se sucesso
 
-        # Obs: Não podemos testar handle_manual_intervention 
+        # Obs: Não podemos testar handle_manual_intervention
         # sem entrada do usuário. Então testamos apenas estrutura.
 
     def test_capture_timestamp_sincronizado(self, manager):

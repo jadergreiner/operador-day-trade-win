@@ -29,7 +29,7 @@ O operador day-trade-win é uma plataforma projetada para otimizar o desempenho 
 - **Oportunidade 20: Salvaguarda de Persistência (State Lock):** ⏳ **ROADMAP** - Criar um arquivo de bloqueio de sessão (`.session_lock`) na inicialização do robô. Em caso de queda do terminal ou fechamento acidental da janela, o sistema detectará o estado anterior ao reiniciar, permitindo retomar a gestão de posições abertas e mantendo o histórico do "Advogado do Diabo" sem interrupções.
 - **Oportunidade 21: Analytics de Intervenção Manual:** ✅ **CONCLUÍDO 24/02**
   - 8 categorias de feedback estruturado (Código 1-8)
-  - Menu interativo integrado ao loop principal  
+  - Menu interativo integrado ao loop principal
   - Persistência em SQLite com índices otimizados
   - REST API endpoints: registrar, histórico, análise agregada
   - 31 testes unitários + integração (98% coverage)

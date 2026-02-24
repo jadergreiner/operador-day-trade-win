@@ -114,7 +114,7 @@ class TestFeedbackCollectorInit:
             conn = sqlite3.connect(str(db_path))
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT name FROM sqlite_master 
+                SELECT name FROM sqlite_master
                 WHERE type='table' AND name='intervencoes_manuais'
             """)
             table = cursor.fetchone()
@@ -134,7 +134,7 @@ class TestFeedbackCollectorInit:
             conn = sqlite3.connect(str(db_path))
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT name FROM sqlite_master 
+                SELECT name FROM sqlite_master
                 WHERE type='index' AND tbl_name='intervencoes_manuais'
             """)
             indices = [row[0] for row in cursor.fetchall()]
@@ -183,7 +183,7 @@ class TestRegistrarIntervencao:
         conn = sqlite3.connect(collector.db_path)
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT codigo_intervencao, resultado_operacao 
+            SELECT codigo_intervencao, resultado_operacao
             FROM intervencoes_manuais WHERE id_intervencao = ?
         """, (id_new,))
         row = cursor.fetchone()
@@ -214,7 +214,7 @@ class TestRegistrarIntervencao:
         conn = sqlite3.connect(collector.db_path)
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT contexto_json FROM intervencoes_manuais 
+            SELECT contexto_json FROM intervencoes_manuais
             WHERE id_intervencao = ?
         """, (id_new,))
         row = cursor.fetchone()

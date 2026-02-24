@@ -3,9 +3,9 @@
 
 # S2-6 GUIA OPERACIONAL — Analytics de Intervenção Manual
 
-**Versão:** v1.0  
-**Data:** 2026-02-24  
-**Público:** Traders, Operadores MT5  
+**Versão:** v1.0
+**Data:** 2026-02-24
+**Público:** Traders, Operadores MT5
 **Objetivo:** Manual de uso do sistema de feedback de intervenção manual
 
 ---
@@ -111,7 +111,7 @@ Sistema exibirá:
 - Erro de comunicação com corretora
 
 **Impacto IA:**
-"Este trade foi bom, mas a execução falhou."  
+"Este trade foi bom, mas a execução falhou."
 → IA não desconta o erro dele
 
 ---
@@ -126,7 +126,7 @@ Sistema exibirá:
 - Gatilho externo impossível de prever
 
 **Impacto IA:**
-"O sinal era bom, mas o mundo mudou."  
+"O sinal era bom, mas o mundo mudou."
 → IA aprendeque existe risco exógeno
 
 ---
@@ -141,7 +141,7 @@ Sistema exibirá:
 - Fim do expediente/turno
 
 **Impacto IA:**
-"O trade seria válido, mas encerrei por preservação."  
+"O trade seria válido, mas encerrei por preservação."
 → IA refina dimensionamento de tickets
 
 ---
@@ -154,7 +154,7 @@ Sistema exibirá:
 - Quer reentrar com score menor ou tamanho reduzido
 
 **Impacto IA:**
-"Mesmo com stop, havia reentrada possível."  
+"Mesmo com stop, havia reentrada possível."
 → IA melhora detecção pós-stop
 
 ---
@@ -169,7 +169,7 @@ Sistema exibirá:
 - Liquidez desapareceu (fase de close)
 
 **Impacto IA:**
-"Sinal correto, mas execução impossível."  
+"Sinal correto, mas execução impossível."
 → IA aprende a pausar em cenários similares
 
 ---
@@ -183,7 +183,7 @@ Sistema exibirá:
 - Histórico recente de perdas nesta faixa de score
 
 **Impacto IA:**
-"O trader não confiou. Havia razão sub-consciente?"  
+"O trader não confiou. Havia razão sub-consciente?"
 → IA investiga recalibragem de threshold
 
 ---
@@ -198,7 +198,7 @@ Sistema exibirá:
 - Simples pausa
 
 **Impacto IA:**
-"Decisão operacional, não resultado de trade."  
+"Decisão operacional, não resultado de trade."
 → IA desconta essa intervenção
 
 ---
@@ -260,25 +260,25 @@ Retrainamento do Modelo ML
 ## 🔍 FAQ
 
 ### P: Posso skip o menu?
-**R:** Não. Menu obrigatório quando encerro manualmente.  
+**R:** Não. Menu obrigatório quando encerro manualmente.
 Propósito: aprimorar IA continuamente.
 
 ### P: Meu feedback é anônimo?
-**R:** Em desenvolvimento. Futuro: vincular a trader ID para  
+**R:** Em desenvolvimento. Futuro: vincular a trader ID para
 análise de "estilo pessoal de risco."
 
 ### P: Posso editar depois?
 **R:** Não (v1.0). Feedback é imutável. Tenha cuidado.
 
 ### P: E se escolher código errado?
-**R:** Sem undo na v1.0. Na v1.1: modal de confirmação.  
+**R:** Sem undo na v1.0. Na v1.1: modal de confirmação.
 Dica: releia antes de pressar ENTER.
 
 ### P: Quanto tempo leva?
 **R:** 5-10 segundos (5x mais rápido que anotar à mão).
 
 ### P: Dados vão pra cloud?
-**R:** Não. Armazenamento local: `data/feedback/analytics_intervencao_manual.db`  
+**R:** Não. Armazenamento local: `data/feedback/analytics_intervencao_manual.db`
 Seguro, privado, sob seu controle.
 
 ---
@@ -319,6 +319,6 @@ Seguro, privado, sob seu controle.
 
 ---
 
-**Status:** 🟢 v1.0 OPERACIONAL  
-**Próxima Versão:** v1.1 (Dashboard + edição)  
+**Status:** 🟢 v1.0 OPERACIONAL
+**Próxima Versão:** v1.1 (Dashboard + edição)
 **Support:** #s2-6-feedback-squad no Slack

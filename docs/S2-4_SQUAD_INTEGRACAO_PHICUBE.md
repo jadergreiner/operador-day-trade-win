@@ -1,10 +1,10 @@
 # 📋 S2-4: Integração Phicube (Mimas) — Squad Multidisciplinar
 
-**ID da Tarefa**: S2-4  
-**Título**: Integração Phicube (Mimas)  
-**Prioridade**: 🟢 **PRIORIZADO SPRINT 2**  
-**Status**: 🟡 **EM ANDAMENTO** (iniciado 24/02/2026)  
-**Owner Principal**: [ML Expert](BOARD_MULTIDISCIPLINAR.json)  
+**ID da Tarefa**: S2-4
+**Título**: Integração Phicube (Mimas)
+**Prioridade**: 🟢 **PRIORIZADO SPRINT 2**
+**Status**: 🟡 **EM ANDAMENTO** (iniciado 24/02/2026)
+**Owner Principal**: [ML Expert](BOARD_MULTIDISCIPLINAR.json)
 
 ---
 
@@ -246,7 +246,7 @@ Task-009 (Doc) [4h] ─┐
 Task-010 (Gov) [2h] ─┼─→ EXECUTION + SYNC (contínuo)
 ```
 
-**Timeline Total Estimado**: 8-10h (caminho crítico)  
+**Timeline Total Estimado**: 8-10h (caminho crítico)
 **Data Target**: 26-27/02/2026
 
 ---

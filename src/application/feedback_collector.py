@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class FeedbackIntervencaoManual:
     """Feedback de intervenção manual do trader.
-    
+
     Attributes:
         codigo_intervencao: Código de 1-8 indicando motivo da intervenção.
         timestamp: ISO 8601 timestamp da intervenção.
@@ -49,7 +49,7 @@ class FeedbackIntervencaoManual:
 
 class FeedbackCollector:
     """Coletor de feedback de intervenção manual.
-    
+
     Responsibilidades:
     - Inicializar e gerenciar BD SQLite
     - Solicitar feedback ao trader via console
@@ -71,7 +71,7 @@ class FeedbackCollector:
 
     def __init__(self, db_path: str):
         """Inicializa o coletor de feedback.
-        
+
         Args:
             db_path: Caminho para arquivo SQLite de feedback.
         """
@@ -89,7 +89,7 @@ class FeedbackCollector:
                 CREATE TABLE IF NOT EXISTS intervencoes_manuais (
                     id_intervencao INTEGER PRIMARY KEY AUTOINCREMENT,
                     timestamp TEXT NOT NULL,
-                    codigo_intervencao INTEGER 
+                    codigo_intervencao INTEGER
                         CHECK (codigo_intervencao BETWEEN 1 AND 8),
                     descricao_codigo TEXT,
                     contexto_json TEXT,
@@ -100,13 +100,13 @@ class FeedbackCollector:
 
             # Criar índices
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS 
-                    idx_timestamp_intervencoes 
+                CREATE INDEX IF NOT EXISTS
+                    idx_timestamp_intervencoes
                 ON intervencoes_manuais(timestamp DESC)
             """)
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS 
-                    idx_codigo_intervencoes 
+                CREATE INDEX IF NOT EXISTS
+                    idx_codigo_intervencoes
                 ON intervencoes_manuais(codigo_intervencao)
             """)
 
@@ -124,14 +124,14 @@ class FeedbackCollector:
         contexto: Dict,
     ) -> FeedbackIntervencaoManual:
         """Exibe menu e coleta feedback do trader.
-        
+
         Args:
             operacao_id: ID da operação sendo encerrada.
             contexto: Dict com contexto de mercado.
-        
+
         Returns:
             FeedbackIntervencaoManual com código e dados.
-        
+
         Raises:
             ValueError: Se código inválido ou entrada inválida.
         """
@@ -186,14 +186,14 @@ class FeedbackCollector:
         resultado: str,
     ) -> int:
         """Persiste feedback em intervencoes_manuais.
-        
+
         Args:
             feedback: Objeto FeedbackIntervencaoManual.
             resultado: Resultado final ('win', 'loss', 'closed').
-        
+
         Returns:
             id_intervencao: ID da linha inserida (PK).
-        
+
         Raises:
             sqlite3.Error: Se erro ao escrever BD.
         """
@@ -204,12 +204,12 @@ class FeedbackCollector:
             contexto_json = json.dumps(feedback.contexto)
 
             cursor.execute("""
-                INSERT INTO intervencoes_manuais 
+                INSERT INTO intervencoes_manuais
                 (
-                    timestamp, 
-                    codigo_intervencao, 
+                    timestamp,
+                    codigo_intervencao,
                     descricao_codigo,
-                    contexto_json, 
+                    contexto_json,
                     resultado_operacao
                 )
                 VALUES (?, ?, ?, ?, ?)
@@ -242,11 +242,11 @@ class FeedbackCollector:
         filtro_data: Optional[Tuple[str, str]] = None,
     ) -> List[Dict]:
         """Retorna histórico de intervenções com filtro opcional.
-        
+
         Args:
             filtro_data: Tuple (data_inicio, data_fim) em ISO format.
                         Se None, retorna últimas 100 linhas.
-        
+
         Returns:
             Lista de dicts com dados das intervenções.
         """
@@ -283,13 +283,13 @@ class FeedbackCollector:
         filtro_data: Optional[Tuple[str, str]] = None,
     ) -> Dict:
         """Retorna análise agregada por código de intervenção.
-        
+
         Args:
             filtro_data: Tuple (data_inicio, data_fim) em ISO format.
-        
+
         Returns:
             Dict com estatísticas por código.
-        
+
         Examples:
             >>> relatorio = collector.gerar_relatorio_agregado()
             >>> print(relatorio['total'])
@@ -304,13 +304,13 @@ class FeedbackCollector:
             if filtro_data:
                 data_inicio, data_fim = filtro_data
                 cursor.execute("""
-                    SELECT COUNT(*) as total 
+                    SELECT COUNT(*) as total
                     FROM intervencoes_manuais
                     WHERE timestamp BETWEEN ? AND ?
                 """, (data_inicio, data_fim))
             else:
                 cursor.execute("""
-                    SELECT COUNT(*) as total 
+                    SELECT COUNT(*) as total
                     FROM intervencoes_manuais
                 """)
 
@@ -319,8 +319,8 @@ class FeedbackCollector:
             # Por código
             if filtro_data:
                 cursor.execute("""
-                    SELECT 
-                        codigo_intervencao, 
+                    SELECT
+                        codigo_intervencao,
                         COUNT(*) as contagem
                     FROM intervencoes_manuais
                     WHERE timestamp BETWEEN ? AND ?
@@ -329,8 +329,8 @@ class FeedbackCollector:
                 """, (data_inicio, data_fim))
             else:
                 cursor.execute("""
-                    SELECT 
-                        codigo_intervencao, 
+                    SELECT
+                        codigo_intervencao,
                         COUNT(*) as contagem
                     FROM intervencoes_manuais
                     GROUP BY codigo_intervencao
