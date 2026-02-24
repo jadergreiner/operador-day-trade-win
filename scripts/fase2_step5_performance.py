@@ -19,23 +19,23 @@ def load_backtest_data():
 def run_performance_test(iterations=100):
     """Executa teste de performance com N iterações"""
     backtest = load_backtest_data()
-    
+
     print('=' * 70)
     print('🔍 STEP 5️⃣: PERFORMANCE LOAD TEST')
     print('=' * 70)
     print()
-    
+
     print('📊 DADOS DE TESTE:')
     velas = backtest.get('metricas', {}).get('velas_processadas', 17280)
     print(f'  Total velas: {velas}')
     print(f'  Iterações: {iterations}')
     print()
-    
+
     # Performance test
     print('⏱️  EXECUTANDO ITERAÇÕES DE VALIDAÇÃO...')
     times = []
     start_global = time.time()
-    
+
     for i in range(iterations):
         start = time.time()
         # Simulate validation cycle - read all metrics from backtest
@@ -49,16 +49,16 @@ def run_performance_test(iterations=100):
         ])
         elapsed = (time.time() - start) * 1000
         times.append(elapsed)
-        
+
         if (i + 1) % 20 == 0:
             elapsed_global = (time.time() - start_global)
             print(f'  ✓ Iteração {i+1}/{iterations} - {elapsed_global:.1f}s')
-    
+
     total_time = (time.time() - start_global) * 1000
     p95 = sorted(times)[int(len(times) * 0.95)]
     p99 = sorted(times)[int(len(times) * 0.99)]
     avg = sum(times) / len(times)
-    
+
     print()
     print('📈 RESULTADOS DE PERFORMANCE:')
     print(f'  Tempo total: {total_time:.2f}ms')
@@ -66,20 +66,20 @@ def run_performance_test(iterations=100):
     print(f'  P95 latência: {p95:.2f}ms (Target: <500ms) → {"✅ PASS" if p95 < 500 else "❌ FAIL"}')
     print(f'  P99 latência: {p99:.2f}ms')
     print()
-    
+
     # Memory check
     proc = psutil.Process(os.getpid())
     mem = proc.memory_info().rss / 1024 / 1024
     print('💾 MEMÓRIA:')
     print(f'  Uso: {mem:.2f}MB (Target: <200MB) → {"✅ PASS" if mem < 200 else "❌ FAIL"}')
     print()
-    
+
     # Overall status
     all_pass = p95 < 500 and mem < 200
     status = '✅ PASSOU' if all_pass else '❌ FALHOU'
     print(f'{status} STEP 5️⃣ RESULTADO: {status}')
     print()
-    
+
     # Save results
     result = {
         'step': '5_performance',
@@ -95,13 +95,13 @@ def run_performance_test(iterations=100):
         },
         'timestamp': datetime.now().isoformat()
     }
-    
+
     with open('FASE2_STEP5_RESULTS.json', 'w') as f:
         json.dump(result, f, indent=2)
-    
+
     print(f'💾 Resultados salvos: FASE2_STEP5_RESULTS.json')
     print()
-    
+
     return all_pass
 
 if __name__ == '__main__':

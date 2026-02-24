@@ -400,7 +400,7 @@ class TestEdgeCases:
         assert result.gate_name == "VOLATILITY"
         assert result.status == GateStatus.WARN
         assert "alta" in result.message
-    
+
     def test_processor_return_tuple_structure(self):
         """Teste que processador retorna tuple (approved, results) corretamente"""
         # Na linha 406, ensure que return é executado com tuple correto

@@ -7,10 +7,10 @@ status: 🟢 PRONTO PARA EXECUÇÃO
 
 # 🟠 FASE 2 - EXECUÇÃO DE VALIDAÇÕES
 
-**Timeline:** 27/02/2026 - 05/03/2026  
-**Responsável:** ML Expert + Eng Sr + QA Lead + DevOps  
-**Próximo Milestone:** Gate 1 Decision (05/03 14:00)  
-**Status:** 🟢 PRONTO PARA KICK-OFF  
+**Timeline:** 27/02/2026 - 05/03/2026
+**Responsável:** ML Expert + Eng Sr + QA Lead + DevOps
+**Próximo Milestone:** Gate 1 Decision (05/03 14:00)
+**Status:** 🟢 PRONTO PARA KICK-OFF
 
 ---
 
@@ -32,10 +32,10 @@ Decision Point: 05/03 14:00 → GO / NO-GO para FASE 3
 
 ## 4️⃣ ML METRICS RE-VALIDATION
 
-**Status:** ⏳ PRONTO PARA EXECUTAR  
-**Prioridade:** 🔴 CRÍTICA (Bloqueador)  
-**Responsável:** ML Expert  
-**Timeline:** 27/02 09:00 - 27/02 12:00  
+**Status:** ⏳ PRONTO PARA EXECUTAR
+**Prioridade:** 🔴 CRÍTICA (Bloqueador)
+**Responsável:** ML Expert
+**Timeline:** 27/02 09:00 - 27/02 12:00
 
 ### Critérios de Aceitação
 
@@ -105,10 +105,10 @@ python scripts/validate_gate1_checkpoint.py --metrics-only
 
 ## 5️⃣ PERFORMANCE LOAD TEST
 
-**Status:** ⏳ PRONTO PARA EXECUTAR  
-**Prioridade:** 🔴 CRÍTICA (Bloqueador)  
-**Responsável:** Eng Sr / DevOps  
-**Timeline:** 27/02 12:00 - 27/02 16:00  
+**Status:** ⏳ PRONTO PARA EXECUTAR
+**Prioridade:** 🔴 CRÍTICA (Bloqueador)
+**Responsável:** Eng Sr / DevOps
+**Timeline:** 27/02 12:00 - 27/02 16:00
 
 ### Critérios de Aceitação
 
@@ -171,10 +171,10 @@ python -m memory_profiler scripts/agente_micro_tendencia_winfut.py --profile
 
 ## 6️⃣ CODE QUALITY RE-CHECK
 
-**Status:** ⏳ PRONTO PARA EXECUTAR  
-**Prioridade:** 🔴 CRÍTICA (Bloqueador)  
-**Responsável:** QA Lead  
-**Timeline:** 27/02 14:00 - 27/02 18:00  
+**Status:** ⏳ PRONTO PARA EXECUTAR
+**Prioridade:** 🔴 CRÍTICA (Bloqueador)
+**Responsável:** QA Lead
+**Timeline:** 27/02 14:00 - 27/02 18:00
 
 ### Critérios de Aceitação
 
@@ -236,10 +236,10 @@ python -m black --check src/ scripts/
 
 ## 7️⃣ RISK FRAMEWORK SMOKE TEST
 
-**Status:** ⏳ PRONTO PARA EXECUTAR  
-**Prioridade:** 🔴 CRÍTICA (Bloqueador)  
-**Responsável:** Eng Sr  
-**Timeline:** 27/02 16:00 - 27/02 20:00  
+**Status:** ⏳ PRONTO PARA EXECUTAR
+**Prioridade:** 🔴 CRÍTICA (Bloqueador)
+**Responsável:** Eng Sr
+**Timeline:** 27/02 16:00 - 27/02 20:00
 
 ### Critérios de Aceitação
 
@@ -418,7 +418,7 @@ Timeline:              06/03 - 10/03/2026
 
 ---
 
-**Document:** FASE 2 - Execução de Validações  
-**Status:** 🟢 **PRONTO PARA KICK-OFF 27/02**  
-**Next:** [FASE 2 Daily Progress](FASE2_DAILY_PROGRESS.md)  
+**Document:** FASE 2 - Execução de Validações
+**Status:** 🟢 **PRONTO PARA KICK-OFF 27/02**
+**Next:** [FASE 2 Daily Progress](FASE2_DAILY_PROGRESS.md)
 

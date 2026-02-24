@@ -7,9 +7,9 @@ status: ✅ ATIVO
 
 # 🚀 PRÓXIMAS AÇÕES - Sprint 2 Finalizando + Sprint 1 Começando
 
-**Data:** 24/02/2026 (HOJE)  
-**Status Geral:** 🟢 ACIMA DO PLANEJADO + ✅ BUG CORRIGIDO  
-**Próximo Milestone:** Sprint 1 Kickoff (27/02 09:00 BRT)  
+**Data:** 24/02/2026 (HOJE)
+**Status Geral:** 🟢 ACIMA DO PLANEJADO + ✅ BUG CORRIGIDO
+**Próximo Milestone:** Sprint 1 Kickoff (27/02 09:00 BRT)
 
 ---
 
@@ -36,8 +36,8 @@ status: ✅ ATIVO
 ### 🔴 HOJE (24/02) - AÇÕES CRÍTICAS
 
 #### ❶ UAT Funcional Tests (S2-6 Wrapper)
-**Responsável:** Eng Sr (você ou QA Lead)  
-**Duração:** 1-2 horas  
+**Responsável:** Eng Sr (você ou QA Lead)
+**Duração:** 1-2 horas
 **Checklist:**
 
 ```bash
@@ -45,12 +45,12 @@ status: ✅ ATIVO
   └─ Imports OK (adapter fallback OK)
   └─ Execução sem crash
   └─ Log de trades em S2-6 (graceful degradation se offline)
-  
+
 ✓ Testar wrapper no operador:
   └─ Monitor Operador sincronizado
   └─ Timestamps corretos
   └─ Dashboard refrescando
-  
+
 ✓ Testar fallback:
   └─ S2-6 offline → adapter.is_connected = False
   └─ Agente continua rodando (sem bloqueio)
@@ -74,8 +74,8 @@ python scripts/agente_micro_tendencia_s2_6_integrated.py
 ---
 
 #### ❷ Gate 1 Checkpoint Preparação
-**Timeline:** 05/03 (10 dias)  
-**Responsável:** CTO + Head Finanças  
+**Timeline:** 05/03 (10 dias)
+**Responsável:** CTO + Head Finanças
 **O que validar:**
 
 | Critério | Status | Ação |
@@ -101,10 +101,10 @@ python scripts/agente_micro_tendencia_s2_6_integrated.py
 ### 🟠 AMANHÃ (25/02) - SPRINT 1 PRÉ-KICKOFF
 
 #### ❶ TODO-1: Load Dataset + ML Labeling
-**Persona:** Persona 2 (ML Expert)  
-**Duração:** 2-3 horas  
-**Início:** 09:00 BRT  
-**Deadline:** 12:30 BRT  
+**Persona:** Persona 2 (ML Expert)
+**Duração:** 2-3 horas
+**Início:** 09:00 BRT
+**Deadline:** 12:30 BRT
 
 **Task Specification:** [DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md](DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md)
 
@@ -144,8 +144,8 @@ python scripts/agente_micro_tendencia_s2_6_integrated.py
 ---
 
 #### ❷ GitHub Issue Creation (Personas Assignment)
-**Responsável:** Product Owner  
-**Duração:** 1 hora  
+**Responsável:** Product Owner
+**Duração:** 1 hora
 **Criação de 4 issues:**
 
 1. **Issue #66 (HIGH - Sprint 1)**
@@ -198,8 +198,8 @@ Load backtest_optimized_results.json and generate training dataset.
 ### 🟢 SEGUNDA-FEIRA (27/02) - SPRINT 1 OFFICIAL KICKOFF
 
 #### 🎯 Gate 2 Checkpoint: GO/NO-GO Decision
-**Hora:** 09:00-14:00 BRT  
-**Responsáveis:** CTO + CFO + Eng Sr + ML Expert + Product Owner  
+**Hora:** 09:00-14:00 BRT
+**Responsáveis:** CTO + CFO + Eng Sr + ML Expert + Product Owner
 **Duração:** 5 horas (com breaks)
 
 **O que será validado:**
@@ -233,8 +233,8 @@ Load backtest_optimized_results.json and generate training dataset.
 ---
 
 #### 🚀 TODO-2,3,4 Kickoff: Orders Executor Framework
-**Responsável:** Persona 1 (Eng Sr)  
-**Duração:** 4 horas (02/03 10:00-14:00)  
+**Responsável:** Persona 1 (Eng Sr)
+**Duração:** 4 horas (02/03 10:00-14:00)
 **Pré-requisito:** Gate 2 = GO
 
 **Tasks:**
@@ -242,7 +242,7 @@ Load backtest_optimized_results.json and generate training dataset.
   - Gate 1: Capital Adequacy
   - Gate 2: Correlation Check (<70%)
   - Gate 3: Volatility Band Check
-  
+
 - **TODO-3:** Orders Executor (async queue)
   - Queue processing
   - Retry logic (3x exponential backoff)
@@ -382,9 +382,9 @@ Load backtest_optimized_results.json and generate training dataset.
 
 ## 📞 PRÓXIMO STANDUP
 
-**Quando:** Amanhã (25/02) 09:00 BRT  
-**Duração:** 15 min  
-**Attendees:** Eng Sr + ML Expert + PO + QA  
+**Quando:** Amanhã (25/02) 09:00 BRT
+**Duração:** 15 min
+**Attendees:** Eng Sr + ML Expert + PO + QA
 
 **Agenda:**
 - [ ] Status TODO-1 (100% ready?)
@@ -406,12 +406,12 @@ Load backtest_optimized_results.json and generate training dataset.
 - 🎯 Gate 2 GO esperado (27/02)
 - 🚀 Sprint 1 kickoff ready (27/02 14:00+)
 
-**Próximo Milestone:** 🎯 Gate 2 Checkpoint (27/02 09:00)  
+**Próximo Milestone:** 🎯 Gate 2 Checkpoint (27/02 09:00)
 **Go-Live Target:** 10/04/2026 (FASE 1 Beta - R$ 50k)
 
 ---
 
-**Data:** 24/02/2026 23:00 BRT  
-**Criado por:** GitHub Copilot  
+**Data:** 24/02/2026 23:00 BRT
+**Criado por:** GitHub Copilot
 **Status:** ✅ SYNCED COM STATUS_ENTREGAS.md + ROADMAP
 

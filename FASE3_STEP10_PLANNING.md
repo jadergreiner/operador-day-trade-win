@@ -1,10 +1,10 @@
 # FASE 3: STEP 🔟 - UAT TRADER VALIDATION
 ## Documentação de Planejamento e Preparação
 
-**Data:** 25/02/2026 (Antecipado - planejando STEP 10)  
-**Timeline Planejado:** 08/03-10/03 (3 dias de UAT ao vivo)  
-**Timeline Target:** 26/02-28/02 (antecipado 100% por estar ahead of schedule)  
-**Responsável:** Head Trader + Eng Sr (suporte)  
+**Data:** 25/02/2026 (Antecipado - planejando STEP 10)
+**Timeline Planejado:** 08/03-10/03 (3 dias de UAT ao vivo)
+**Timeline Target:** 26/02-28/02 (antecipado 100% por estar ahead of schedule)
+**Responsável:** Head Trader + Eng Sr (suporte)
 **Status:** 🟢 PRONTO PARA INICIAR
 
 ---
@@ -237,7 +237,7 @@ IF Level 3 or 4 detected:
 {
   "period_start": "2026-02-26T12:00:00Z",
   "period_end": "2026-02-28T16:00:00Z",
-  
+
   "signals": {
     "total_generated": 0,  // Should be ≥50
     "by_hour": {},  // Distribution over time
@@ -247,37 +247,37 @@ IF Level 3 or 4 detected:
       "low": 0      // < 0.60
     }
   },
-  
+
   "alerts": {
     "emails_sent": 0,    // Should be ≥50
     "emails_delivered": 0,  // Should be 100%
     "avg_latency_ms": 0   // Should be <1000
   },
-  
+
   "dashboard": {
     "page_loads": 0,
     "avg_load_time_ms": 0,  // Should be <2000
     "uptime_pct": 100.0     // Should be >99.5%
   },
-  
+
   "system": {
     "crashes": 0,  // Should be 0
     "errors": 0,   // Should be 0 (or very low)
     "warnings": 0,
     "uptime_pct": 100.0  // Should be >99.5%
   },
-  
+
   "overrides": {
     "manual_overrides_tested": 0,  // Should be ≥5
     "success_rate": 100.0
   },
-  
+
   "p_and_l": {
     "backtest_total": 0,
     "actual_total": 0,
     "variance_pct": 0  // Should be ±5%
   },
-  
+
   "trader_feedback": {
     "approval_vote": "PENDING",  // PASS/FAIL
     "satisfaction_score": 0,     // 1-10, should be ≥9
@@ -382,7 +382,7 @@ OR (
 
 ---
 
-**Status:** 🟢 READY FOR 26/02 KICKOFF  
-**Owner:** Head Trader  
-**Duration:** 72 hours (26/02 12:00 - 28/02 16:00)  
+**Status:** 🟢 READY FOR 26/02 KICKOFF
+**Owner:** Head Trader
+**Duration:** 72 hours (26/02 12:00 - 28/02 16:00)
 **Next Milestone:** STEP 11 (02/03) + Gate 2 (14/03)

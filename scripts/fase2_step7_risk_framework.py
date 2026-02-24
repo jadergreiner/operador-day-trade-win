@@ -36,7 +36,7 @@ def test_capital_adequacy_gate():
         # Simular validação
         available_margin = ctx.account_balance - ctx.margin_used
         position_cost = ctx.position_size * 2  # Assuming 0.5x leverage requirement
-        
+
         if position_cost <= available_margin:
             return GateResult('CapitalAdequacy', 'PASS', 'Margem suficiente')
         else:
@@ -53,9 +53,9 @@ def test_correlation_gate():
             'WINFUT': {'size': 1000, 'correlation': 0.45},
             'XXBR': {'size': 500, 'correlation': 0.35}
         }
-        
+
         avg_correlation = sum([p['correlation'] for p in positions.values()]) / len(positions)
-        
+
         if avg_correlation <= 0.70:  # Max allowed
             return GateResult('Correlation', 'PASS', f'Correlação média: {avg_correlation:.2f}')
         else:
@@ -68,7 +68,7 @@ def test_volatility_gate():
     print('  🔄 Testando Gate 3: Volatility Band Check...')
     try:
         volatility = 1.8  # 1.8-sigma
-        
+
         # Faixas de volatilidade
         if volatility <= 1.5:
             return GateResult('Volatility', 'PASS', f'Volatilidade normal: {volatility:.2f}-sigma')
@@ -81,23 +81,23 @@ def test_volatility_gate():
 
 def run_risk_framework_smoke_test():
     """Executa smoke test do Risk Framework"""
-    
+
     print('=' * 70)
     print('🔍 STEP 7️⃣: RISK FRAMEWORK SMOKE TEST')
     print('=' * 70)
     print()
-    
+
     print('📋 VALIDANDO 3 GATES DO FRAMEWORK:')
     print()
-    
+
     gates = []
     gates.append(test_capital_adequacy_gate())
     gates.append(test_correlation_gate())
     gates.append(test_volatility_gate())
-    
+
     print()
     print('📊 RESULTADOS DOS GATES:')
-    
+
     all_pass = True
     for i, gate in enumerate(gates, 1):
         status_icon = '✅' if gate.status == 'PASS' else ('⚠️' if gate.status == 'WARN' else '❌')
@@ -106,18 +106,18 @@ def run_risk_framework_smoke_test():
         print(f'    Reason: {gate.reason}')
         if gate.status == 'FAIL':
             all_pass = False
-    
+
     print()
     print('✅ VALIDAÇÕES COMPLETAS:')
     print('  ✅ 3 Gates funcionam corretamente')
     print('  ✅ Error handling validado')
     print('  ✅ Chain of Responsibility operacional')
     print()
-    
+
     status = '✅ PASSOU' if all_pass else '⚠️ COM AVISOS'
     print(f'{status} STEP 7️⃣ RESULTADO: Risk Framework operacional')
     print()
-    
+
     # Save results
     result = {
         'step': '7_risk_framework',
@@ -138,13 +138,13 @@ def run_risk_framework_smoke_test():
         },
         'timestamp': datetime.now().isoformat()
     }
-    
+
     with open('FASE2_STEP7_RESULTS.json', 'w') as f:
         json.dump(result, f, indent=2)
-    
+
     print(f'💾 Resultados salvos: FASE2_STEP7_RESULTS.json')
     print()
-    
+
     return all_pass
 
 if __name__ == '__main__':
