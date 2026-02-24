@@ -1,8 +1,8 @@
 # ✅ S3-1 PREPARAÇÃO — Production Deployment de S2-6
 
-**Status:** 🟢 EM EXECUÇÃO (Gate 2 GO - 24/02 17:45)  
-**Owner:** DevOps + Infra  
-**Timeline:** 24/02 → 28/02 (Preparação) | 03/03+ (Execução)  
+**Status:** 🟢 EM EXECUÇÃO (Gate 2 GO - 24/02 17:45)
+**Owner:** DevOps + Infra
+**Timeline:** 24/02 → 28/02 (Preparação) | 03/03+ (Execução)
 **Objetivo:** Preparar ambiente de produção para S2-6 Analytics
 
 ---
@@ -287,7 +287,7 @@ S2-6 (Analytics)────┤
 | 6. Pre-flight | 02/03 | 🟠 PENDING | CTO |
 | 7. Production Deploy | 03/03 14:00 | 🟠 PENDING | DevOps |
 
-**Duração Total Prep:** 6 dias (24/02-02/03)  
+**Duração Total Prep:** 6 dias (24/02-02/03)
 **Duração Deploy:** 2 horas (03/03 14:00-16:00)
 
 ---

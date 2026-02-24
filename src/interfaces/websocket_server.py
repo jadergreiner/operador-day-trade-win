@@ -400,7 +400,7 @@ analytics_collector: Optional[AnalyticsCollector] = None
 async def log_intervention(data: dict):
     """
     Registra uma intervenção manual (OVERRIDE, PAUSE, CANCEL, EXECUTE).
-    
+
     Request body:
     {
         "symbol": "WINFUT",
@@ -409,7 +409,7 @@ async def log_intervention(data: dict):
         "ml_signal": 0.75,
         "trader_decision": "Aumentar 25% do ticket"
     }
-    
+
     Response:
     {
         "intervention_id": 1,
@@ -418,7 +418,7 @@ async def log_intervention(data: dict):
     """
     if not analytics_collector:
         raise HTTPException(status_code=503, detail="Analytics não inicializado")
-    
+
     try:
         intervention_id = analytics_collector.log_intervention(
             symbol=data.get("symbol", "WINFUT"),
@@ -428,16 +428,16 @@ async def log_intervention(data: dict):
             reason=data.get("reason"),
             notes=data.get("notes")
         )
-        
+
         if intervention_id is None:
             raise HTTPException(status_code=400, detail="Erro ao registrar intervenção")
-        
+
         return {
             "intervention_id": intervention_id,
             "status": "logged",
             "timestamp": asyncio.get_running_loop().time()
         }
-    
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -449,13 +449,13 @@ async def log_intervention(data: dict):
 async def update_intervention_result(intervention_id: int, data: dict):
     """
     Atualiza resultado de uma intervenção.
-    
+
     Request body:
     {
         "result": "WIN",  # ou LOSS, PARTIAL
         "p_and_l": 475.50
     }
-    
+
     Response:
     {
         "status": "updated"
@@ -463,19 +463,19 @@ async def update_intervention_result(intervention_id: int, data: dict):
     """
     if not analytics_collector:
         raise HTTPException(status_code=503, detail="Analytics não inicializado")
-    
+
     try:
         success = analytics_collector.update_intervention_result(
             intervention_id=intervention_id,
             result=data.get("result", "PARTIAL"),
             p_and_l=float(data.get("p_and_l", 0.0))
         )
-        
+
         if not success:
             raise HTTPException(status_code=404, detail="Intervenção não encontrada")
-        
+
         return {"status": "updated"}
-    
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -487,10 +487,10 @@ async def update_intervention_result(intervention_id: int, data: dict):
 async def get_analytics_stats(symbol: Optional[str] = None):
     """
     Retorna estatísticas de intervenções.
-    
+
     Query params:
     - symbol: Filtrar por símbolo (ex: WINFUT). Se não fornecido, retorna global.
-    
+
     Response:
     {
         "total_interventions": 10,
@@ -504,7 +504,7 @@ async def get_analytics_stats(symbol: Optional[str] = None):
     """
     if not analytics_collector:
         raise HTTPException(status_code=503, detail="Analytics não inicializado")
-    
+
     try:
         stats = analytics_collector.get_intervention_stats(symbol=symbol)
         return stats
@@ -517,7 +517,7 @@ async def get_analytics_stats(symbol: Optional[str] = None):
 async def get_analytics_dashboard():
     """
     Retorna dashboard completo de analytics.
-    
+
     Response:
     {
         "global": {
@@ -536,10 +536,10 @@ async def get_analytics_dashboard():
     """
     if not analytics_collector:
         raise HTTPException(status_code=503, detail="Analytics não inicializado")
-    
+
     try:
         global_stats = analytics_collector.get_intervention_stats()
-        
+
         dashboard = {
             "global": global_stats,
             "by_action": {
@@ -550,7 +550,7 @@ async def get_analytics_dashboard():
             },
             "timestamp": asyncio.get_running_loop().time()
         }
-        
+
         return dashboard
     except Exception as e:
         logger.error(f"Erro ao gerar dashboard: {e}")
@@ -567,7 +567,7 @@ async def startup():
     global analytics_collector
     logger.info("🚀 WebSocket Server iniciando...")
     logger.info("📍 Ouvindo em ws://0.0.0.0:8765/alertas")
-    
+
     # Inicializar Analytics Collector para S2-6
     try:
         analytics_collector = AnalyticsCollector("data/analytics.db")
@@ -585,7 +585,7 @@ async def shutdown():
     logger.info("🛑 WebSocket Server desligando...")
     for conn in list(manager.active_connections):
         manager.disconnect(conn)
-    
+
     # Fechar Analytics Collector
     if analytics_collector:
         try:

@@ -11,7 +11,7 @@ Expected Results:
   - Trigger accuracy ≥80%
   - Performance: P95 <50ms
   - Memory stable (<100MB)
-  
+
 Execution Sequence: Setup → Load Dataset → Run Tests → Analyze → Report
 logging.basicConfig(
     level=logging.INFO,

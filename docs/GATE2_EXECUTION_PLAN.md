@@ -360,7 +360,7 @@ Signature:    _____________
 
 ---
 
-**Document Created:** Framework Ready  
-**Execution Sequence:** Setup → Backtest → Analysis → UAT → Decision  
+**Document Created:** Framework Ready
+**Execution Sequence:** Setup → Backtest → Analysis → UAT → Decision
 **Status:** Ready for Gate 2 Execution
 

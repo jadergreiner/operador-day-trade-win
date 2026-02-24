@@ -26,7 +26,7 @@ try:
     backup_path = f"backups/analytics_prod_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db"
     if not os.path.exists("backups"):
         os.makedirs("backups")
-    
+
     # Fazer backup do staging DB como simulação de backup prod
     import shutil
     shutil.copy("data/analytics_staging.db", backup_path)

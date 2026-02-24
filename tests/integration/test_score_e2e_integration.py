@@ -49,7 +49,7 @@ def confluence_engine():
 def sample_df_m1_bull():
     """
     Fixture: DataFrame com padrão BULL (60 candles).
-    
+
     CASE: Candlesticks com tendência BULL
     THEN: Gera features que indicam BULL
     """
@@ -76,7 +76,7 @@ def sample_df_m1_bull():
 def sample_df_m1_bear():
     """
     Fixture: DataFrame com padrão BEAR (60 candles).
-    
+
     CASE: Candlesticks com tendência BEAR
     THEN: Gera features que indicam BEAR
     """
@@ -169,9 +169,9 @@ class TestE2EPipelineBull:
 
         # VALIDAÇÕES de performance
         # Permitindo primeira iteração com cold start (~2000ms)
-        # Depois ~15ms cada = 99*15ms = ~1.5s, total ~3.5s 
+        # Depois ~15ms cada = 99*15ms = ~1.5s, total ~3.5s
         assert total_time < 5.0  # <5s para 100 (aumentado para acomodar cold start)
-        
+
         # P95 sem primeira iteração (apenas warm runs)
         warm_latencies = latencies[1:]  # Excluir primeira (cold)
         p95_warm = np.percentile(warm_latencies, 95) if warm_latencies else 20

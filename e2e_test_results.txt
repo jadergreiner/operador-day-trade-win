@@ -1,0 +1,93 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-7.4.0, pluggy-1.6.0 -- C:\Users\Usuario\AppData\Local\Programs\Python\Python311\python.exe
+cachedir: .pytest_cache
+rootdir: C:\repo\operador-day-trade-win
+configfile: pyproject.toml
+plugins: anyio-3.7.1, asyncio-0.21.0, cov-4.1.0
+asyncio: mode=Mode.STRICT
+collecting ... collected 9 items
+
+C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\site-packages\coverage\control.py:950: CoverageWarning: No data was collected. (no-data-collected); see https://coverage.readthedocs.io/en/7.11.3/messages.html#warning-no-data-collected
+  self._warn("No data was collected.", slug="no-data-collected")
+C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\site-packages\coverage\report_core.py:107: CoverageWarning: Couldn't parse Python file 'C:\repo\operador-day-trade-win\src\infrastructure\database\auditoria_alertas.py' (couldnt-parse); see https://coverage.readthedocs.io/en/7.11.3/messages.html#warning-couldnt-parse
+  coverage._warn(msg, slug="couldnt-parse")
+tests/integration/test_score_e2e_integration.py::TestE2EPipelineBull::test_e2e_pipeline_bull_seguro_case_dataset_to_confluence_then_trigger_buy_when_valido ERROR [ 11%]
+
+=================================== ERRORS ====================================
+_ ERROR at setup of TestE2EPipelineBull.test_e2e_pipeline_bull_seguro_case_dataset_to_confluence_then_trigger_buy_when_valido _
+E   TypeError: ScoreT60Inference.__init__() missing 1 required positional argument: 'model_path'
+
+---------- coverage: platform win32, python 3.11.9-final-0 -----------
+Name                                                            Stmts   Miss  Cover   Missing
+---------------------------------------------------------------------------------------------
+src\application\feedback_collector.py                             120    120     0%   8-362
+src\application\ml_classifier.py                                  176    176     0%   13-499
+src\application\ml_feature_engineer.py                            169    169     0%   13-577
+src\application\orders_executor.py                                191    191     0%   10-561
+src\application\risk_validator.py                                 129    129     0%   15-443
+src\application\services\__main__.py                               31     31     0%   7-56
+src\application\services\ai_reflection_journal.py                 217    217     0%   8-619
+src\application\services\alerta_delivery.py                       115    115     0%   3-323
+src\application\services\alerta_formatter.py                       26     26     0%   3-239
+src\application\services\automated_trading.py                     151    151     0%   12-431
+src\application\services\backtest\backtest_engine.py              104    104     0%   3-361
+src\application\services\backtest\display.py                      109    109     0%   3-237
+src\application\services\backtest\historical_data_provider.py     460    460     0%   3-824
+src\application\services\detector_padroes_tecnico.py               72     72     0%   3-326
+src\application\services\detector_volatilidade.py                  82     82     0%   3-271
+src\application\services\diary_feedback.py                        151    151     0%   28-476
+src\application\services\email_service.py                         103    103     0%   6-279
+src\application\services\fundamental_analysis.py                  119    119     0%   3-340
+src\application\services\head_directives.py                        78     78     0%   27-277
+src\application\services\macro_analysis.py                         85     85     0%   3-237
+src\application\services\macro_scenario_guardian.py               449    449     0%   17-971
+src\application\services\macro_score\engine.py                    365    365     0%   3-1047
+src\application\services\macro_score\feedback_evaluator.py         92     92     0%   3-238
+src\application\services\macro_score\forex_handler.py              50     50     0%   3-154
+src\application\services\macro_score\futures_resolver.py          100    100     0%   3-227
+src\application\services\macro_score\item_registry.py              61     61     0%   3-368
+src\application\services\macro_score\technical_scorer.py          329    329     0%   3-698
+src\application\services\ml\feature_engineering_v2.py             161    161     0%   13-374
+src\application\services\ml\target_engineering.py                 119    119     0%   12-273
+src\application\services\ml\winfut_dataset.py                     113    113     0%   3-273
+src\application\services\ml\winfut_feature_engineer.py             99     99     0%   15-271
+src\application\services\ml\winfut_model_trainer.py               146    146     0%   15-334
+src\application\services\premarket_briefing.py                    168    168     0%   7-481
+src\application\services\processador_bdi.py                        53     53     0%   8-127
+src\application\services\quantum_operator.py                      234    234     0%   8-719
+src\application\services\risk_manager.py                           57     57     0%   3-212
+src\application\services\rl_persistence_service.py                311    311     0%   14-749
+src\application\services\sentiment_analysis.py                    228    228     0%   3-530
+src\application\services\technical_analysis.py                    285    285     0%   3-710
+src\application\services\trading_journal.py                       231    231     0%   8-520
+src\application\services\volume_analysis.py                        42     42     0%   7-113
+src\domain\entities\alerta.py                                      78     78     0%   3-145
+src\domain\entities\portfolio.py                                  102    102     0%   3-236
+src\domain\entities\trade.py                                      134    134     0%   3-236
+src\domain\enums\alerta_enums.py                                   33     33     0%   3-55
+src\domain\enums\macro_score_enums.py                              42     42     0%   3-69
+src\domain\enums\trading_enums.py                                  77     77     0%   3-139
+src\domain\exceptions\domain_exceptions.py                         36     36     0%   4-109
+src\domain\exceptions\macro_score_exceptions.py                     9      9     0%   3-27
+src\domain\value_objects\financial.py                             122    122     0%   3-244
+src\domain\value_objects\macro_score.py                            31     31     0%   3-58
+src\infrastructure\adapters\mt5_adapter.py                        382    382     0%   3-946
+src\infrastructure\database\rl_schema.py                          192    192     0%   27-452
+src\infrastructure\database\schema.py                             243    243     0%   3-355
+src\infrastructure\providers\fila_alertas.py                       96     96     0%   3-295
+src\infrastructure\providers\forex_api_provider.py                 68     68     0%   7-136
+src\infrastructure\providers\mt5_adapter.py                       147    147     0%   10-379
+src\infrastructure\repositories\macro_score_repository.py          60     60     0%   3-252
+src\infrastructure\repositories\rl_repository.py                  134    134     0%   7-694
+src\infrastructure\repositories\trade_repository.py                51     51     0%   3-153
+src\interfaces\cli\quantum_operator_cli.py                        142    142     0%   7-236
+src\interfaces\websocket_fila_integrador.py                        44     44     0%   7-117
+src\interfaces\websocket_server.py                                 75     75     0%   7-412
+---------------------------------------------------------------------------------------------
+TOTAL                                                            8679   8679     0%
+Coverage HTML written to dir htmlcov
+
+=========================== short test summary info ===========================
+ERROR tests/integration/test_score_e2e_integration.py::TestE2EPipelineBull::test_e2e_pipeline_bull_seguro_case_dataset_to_confluence_then_trigger_buy_when_valido
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+============================== 1 error in 3.81s ===============================

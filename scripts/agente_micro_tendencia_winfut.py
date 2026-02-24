@@ -146,7 +146,7 @@ _atr_calibrator = ATRCalibrator(
 
 # FibonacciCalculator para normalização do Fan Score (S2-4)
 # Transforma fan_score [-6, +6] em contribuição [0.0, 0.15] ao micro_score
-_fibonacci_calc = FibonacciCalculator(weight=0.15)
+_fibonacci_calc = FibonacciCalculator()
 
 # Diretiva ativa do Head Financeiro (carregada na main, atualizada a cada ciclo)
 _active_directive: HeadDirective | None = None
@@ -3199,7 +3199,7 @@ def _run_cycle(mt5: MT5Adapter) -> CycleResult:
     )
     # 12) Clamp micro_score em intervalo válido [0.0, 1.0] para probabilidade
     result.micro_score = max(0.0, min(1.0, result.micro_score))
-    
+
     # 13) Classificação micro tendência
     result.micro_trend = _classify_micro_trend(
         result.macro_score, result.micro_score, result.momentum.adx,

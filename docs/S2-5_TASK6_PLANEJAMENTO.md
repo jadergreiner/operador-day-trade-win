@@ -1,7 +1,7 @@
 # 📋 S2-5 Task 6: Planejamento — Final Tests + Documentation
 
-**Estimativo:** ~3 horas  
-**Timeline:** 15:00-18:00 (se iniciado agora)  
+**Estimativo:** ~3 horas
+**Timeline:** 15:00-18:00 (se iniciado agora)
 **Status:** 🟡 PRONTO PARA INICIAR
 
 ---
@@ -137,18 +137,18 @@ Consolidar e validar todo o pipeline S2-5 (Tasks 1-5) com:
    from scripts.score_t60_inference import ScoreT60Inference
    from scripts.score_t60_confluence import ScoreT60Confluence
    from application.services.macro_scenario_guardian import MacroScenarioGuardian
-   
+
    # Initialize
    engine = ScoreT60Inference()
    confluence = ScoreT60Confluence(threshold_bull=0.62)
-   
+
    # Predict
    t60_result = engine.predict_from_df(df_m1)
    smc_status = guardian.get_smc_status()
-   
+
    # Compute confluence
    result = confluence.compute_confluence(t60_result, smc_status)
-   
+
    # Trade decision
    if result['trigger'] == 'BUY':
        executor.send_order(tipo='BUY', condicao=result['confidence'])
@@ -254,16 +254,16 @@ Task 5 (Confluência)─┤
 
 **Iniciar Task 6 agora?** ✅ SIM
 
-**Estimativa:** 3h (até 18:00)  
-**Precedência:** Task 5 100% completo + todas dependências OK  
-**Go/No-Go Decision:** Task 6 é obrigatória antes de Gate 2  
+**Estimativa:** 3h (até 18:00)
+**Precedência:** Task 5 100% completo + todas dependências OK
+**Go/No-Go Decision:** Task 6 é obrigatória antes de Gate 2
 
 **Próximo Checkpoint:** 18:00 (S2-5 COMPLETE) → Gate 2 Planning
 
 ---
 
-**Prepared by:** ML Expert + Eng Sr  
-**Date:** 24/02/2026 14:15  
-**Approval:** Pronto para start  
+**Prepared by:** ML Expert + Eng Sr
+**Date:** 24/02/2026 14:15
+**Approval:** Pronto para start
 **Dependencies Met:** ✅ All clear
 

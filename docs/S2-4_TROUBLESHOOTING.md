@@ -1,9 +1,9 @@
 # 🔧 S2-4 TROUBLESHOOTING — Diagnóstico e Soluções
 
-**Versão:** 1.0  
-**Data:** 24/02/2026  
-**Status:** 🟢 PRODUCTION READY  
-**Público:** Traders, Eng Sr, DevOps  
+**Versão:** 1.0
+**Data:** 24/02/2026
+**Status:** 🟢 PRODUCTION READY
+**Público:** Traders, Eng Sr, DevOps
 **SLA:** <5 min para identificar raiz
 
 ---
@@ -35,8 +35,8 @@
 [14:30:25] WINFUT ... Fibonacci=0.0  ← depois de 3+ velas ainda 0.0
 ```
 
-**Motivo:**  
-O sistema precisa de **610 candles** (mínimo) para calcular a M610 (maior período).  
+**Motivo:**
+O sistema precisa de **610 candles** (mínimo) para calcular a M610 (maior período).
 Com velas M1: 610 candles = ~10 horas contínuas.
 
 **Solução:**
@@ -67,8 +67,8 @@ Alignment=BAIXA
 Fan Score=-6
 ```
 
-**Motivo:**  
-Todas as 7 MIMAs estão em alinhamento descendente (M8 < M17 < ... < M610).  
+**Motivo:**
+Todas as 7 MIMAs estão em alinhamento descendente (M8 < M17 < ... < M610).
 Fibonacci não contribui para compras neste cenário.
 
 **Solução:**
@@ -97,7 +97,7 @@ Fan Score oscila normalmente (-6 a +6)
 Mas contribution always 0.0
 ```
 
-**Motivo:**  
+**Motivo:**
 FibonacciConfig foi configurado com `weight=0.0`.
 
 **Solução:**
@@ -445,23 +445,23 @@ Quando algo estiver errado, seguir esta ordem:
 [ ] 1. Fibonacci = 0.0 persistente 10h+ depois?
     [ ] Sim → Q1A (aguarde candles)
     [ ] Não → próximo
-    
+
 [ ] 2. Fan score oscila wildly entre velas?
     [ ] Sim → Q2 (normal em mercado indeciso)
     [ ] Não → próximo
-    
+
 [ ] 3. Fibonacci sempre 0 mas fan_score varia?
     [ ] Sim → Q1C (check weight = 0.0)
     [ ] Não → próximo
-    
+
 [ ] 4. Testes falharem (pytest)?
     [ ] Sim → Q9 (import path problem)
     [ ] Não → próximo
-    
+
 [ ] 5. Backtest piorou drasticamente?
     [ ] Sim → Q8 (weight má configurado)
     [ ] Não → próximo
-    
+
 [ ] 6. Dashboard não mostra Fibonacci?
     [ ] Sim → Q7 (agente/monitor não rodando)
     [ ] Não → próximo
@@ -537,8 +537,8 @@ Depois de resolver, confirmar:
 
 ---
 
-**Última Atualização:** 24/02/2026 20:45  
-**Validado por:** Eng Sr + ML Expert Squad  
+**Última Atualização:** 24/02/2026 20:45
+**Validado por:** Eng Sr + ML Expert Squad
 **Status:** ✅ PRODUCTION READY
 
 ---

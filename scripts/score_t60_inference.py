@@ -250,7 +250,7 @@ class ScoreT60Inference:
         low_close = abs(df["low"] - df["close"].shift())
         ranges = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
         atr_14 = ranges.rolling(14).mean().iloc[-1]
-        
+
         plus_dm = df["high"].diff().where(df["high"].diff() > df["low"].diff().abs(), 0)
         minus_dm = df["low"].diff().mul(-1).where(df["low"].diff().abs() > df["high"].diff(), 0)
         plus_di = 100 * (plus_dm.rolling(14).mean().iloc[-1] / atr_14) if atr_14 > 0 else 50

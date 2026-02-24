@@ -1,8 +1,8 @@
 # ✅ S2-6 INICIAÇÃO DE EXECUÇÃO — Analytics de Intervenção Manual
 
-**Status:** 🟢 AUTORIZADO (Gate 2 GO - 24/02 17:45)  
-**Owner:** Doc Advocate + Infra  
-**Timeline:** 24/02 19:00 → 28/02 14:00  
+**Status:** 🟢 AUTORIZADO (Gate 2 GO - 24/02 17:45)
+**Owner:** Doc Advocate + Infra
+**Timeline:** 24/02 19:00 → 28/02 14:00
 **Objetivo:** Analytics completo de intervenções manuais para produção
 
 ---
@@ -74,16 +74,16 @@ from typing import Optional, Dict
 @dataclass
 class AnalyticsCollector:
     """Coletor de eventos de intervenção manual"""
-    
+
     def __init__(self, db_path: str):
         self.db_path = db_path
         self.conn = None
-    
+
     def connect(self):
         """Conecta á base de dados"""
         self.conn = sqlite3.connect(self.db_path)
         self.conn.row_factory = sqlite3.Row
-    
+
     def log_intervention(
         self,
         symbol: str,
@@ -94,14 +94,14 @@ class AnalyticsCollector:
     ) -> int:
         """
         Registra uma intervenção manual.
-        
+
         Returns:
             intervention_id para posterior update
         """
         cursor = self.conn.cursor()
         cursor.execute("""
             INSERT INTO trader_interventions (
-                timestamp, symbol, action, reason, 
+                timestamp, symbol, action, reason,
                 ml_signal, trader_decision, created_at
             )
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -116,7 +116,7 @@ class AnalyticsCollector:
         ))
         self.conn.commit()
         return cursor.lastrowid
-    
+
     def update_intervention_result(
         self,
         intervention_id: int,
@@ -131,14 +131,14 @@ class AnalyticsCollector:
             WHERE id = ?
         """, (result, p_and_l, intervention_id))
         self.conn.commit()
-    
+
     def get_intervention_stats(self, symbol: Optional[str] = None):
         """Retorna estatísticas de intervenções"""
         cursor = self.conn.cursor()
-        
+
         if symbol:
             cursor.execute("""
-                SELECT 
+                SELECT
                     COUNT(*) as total_interventions,
                     SUM(CASE WHEN result = 'WIN' THEN 1 ELSE 0 END) as wins,
                     SUM(CASE WHEN result = 'LOSS' THEN 1 ELSE 0 END) as losses,
@@ -149,7 +149,7 @@ class AnalyticsCollector:
             """, (symbol,))
         else:
             cursor.execute("""
-                SELECT 
+                SELECT
                     COUNT(*) as total_interventions,
                     SUM(CASE WHEN result = 'WIN' THEN 1 ELSE 0 END) as wins,
                     SUM(CASE WHEN result = 'LOSS' THEN 1 ELSE 0 END) as losses,
@@ -157,9 +157,9 @@ class AnalyticsCollector:
                     SUM(p_and_l) as total_pnl
                 FROM trader_interventions
             """)
-        
+
         return dict(cursor.fetchone())
-    
+
     def close(self):
         if self.conn:
             self.conn.close()
@@ -188,7 +188,7 @@ analytics = AnalyticsCollector("data/analytics.db")
 async def log_intervention(data: dict):
     """
     Log uma intervenção manual
-    
+
     Body:
     {
         "symbol": "WINFUT",
@@ -211,7 +211,7 @@ async def log_intervention(data: dict):
 async def update_intervention_result(intervention_id: int, data: dict):
     """
     Atualiza resultado de uma intervenção
-    
+
     Body:
     {
         "result": "WIN",  # WIN, LOSS, PARTIAL
@@ -317,8 +317,8 @@ python -m pytest tests/integration/test_analytics_api.py -v
 | 4. Tests | 150 min | 04:00 | QA |
 | 5. Deploy Plan | 120 min | 06:00 | Doc Advocate |
 
-**Total:** 12 horas (pode paralelizar)  
-**Início:** 24/02 19:00  
+**Total:** 12 horas (pode paralelizar)
+**Início:** 24/02 19:00
 **Conclusão:** 25/02 07:00
 
 ---

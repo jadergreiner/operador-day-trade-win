@@ -63,7 +63,7 @@ try:
     # Executar algumas queries para pré-carregar cache
     for i in range(3):
         requests.get(f"http://localhost:8001/api/analytics/stats", timeout=5)
-    
+
     print(f"OK - Cache warmed up (3 requests)")
     deployment_log["steps"].append("Cache warmed up")
     cache_ready = True
@@ -117,7 +117,7 @@ try:
         if resp.status_code == 200:
             print(f"OK - Health check #{i+1}: PASS")
         time.sleep(1)
-    
+
     print(f"OK - Error rate: 0.0%% (normal)")
     print(f"OK - Latency P95: 2065ms (normal)")
     print(f"OK - Memory: 85MB (normal)")
