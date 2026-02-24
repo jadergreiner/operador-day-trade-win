@@ -1,8 +1,8 @@
 # ✅ S2-4 INICIAÇÃO DE EXECUÇÃO — Integração Phicube (Mimas)
 
-**Status:** 🟢 AUTORIZADO (Gate 2 GO - 24/02 17:45)  
-**Owner:** ML Expert + Data Engineer  
-**Timeline:** 24/02 18:00 → 26/02 14:00  
+**Status:** 🟢 AUTORIZADO (Gate 2 GO - 24/02 17:45)
+**Owner:** ML Expert + Data Engineer
+**Timeline:** 24/02 18:00 → 26/02 14:00
 **Objetivo:** Integrar Fibonacci (Fan Score) ao micro_score
 
 ---
@@ -54,42 +54,42 @@ class FibonacciConfig:
 
 class FibonacciCalculator:
     """
-    Utilitário para cálculo de normalização e contribuição 
+    Utilitário para cálculo de normalização e contribuição
     do Fibonacci Fan Score ao micro_score.
-    
+
     Fan Score [-6, +6] → Normalized [0.0, 1.0] → Contribution [0.0, 0.15]
     """
-    
+
     def __init__(self, config: FibonacciConfig = None):
         self.config = config or FibonacciConfig()
-    
+
     def normalize_fan_score(self, fan_score: int) -> float:
         """
         Normaliza fan_score de [-6, +6] para [0.0, 1.0]
-        
+
         Args:
             fan_score: Valor bruto [-6, +6]
-        
+
         Returns:
             Valor normalizado [0.0, 1.0]
         """
         score_range = self.config.max_fan_score - self.config.min_fan_score
         normalized = (fan_score - self.config.min_fan_score) / score_range
         return max(0.0, min(1.0, normalized))  # Clamp [0.0, 1.0]
-    
+
     def calculate_weighted_contribution(self, fan_score: int) -> float:
         """
         Calcula contribuição ponderada ao micro_score.
-        
+
         Args:
             fan_score: Valor bruto [-6, +6]
-        
+
         Returns:
             Contribuição [0.0, self.config.weight]
         """
         normalized = self.normalize_fan_score(fan_score)
         return normalized * self.config.weight
-    
+
     def get_config(self) -> Dict:
         """Retorna configuração atual"""
         return {
@@ -131,10 +131,10 @@ def _merge_scores(volatility_score, momentum_score, mima_score, fan_score):
     Novo signature com fan_score param
     """
     base_micro = volatility_score * 0.4 + momentum_score * 0.35 + mima_score * 0.15
-    
+
     # 🆕 Adicionar contribuição Fibonacci
     fibonacci_contribution = fibonacci_calc.calculate_weighted_contribution(fan_score)
-    
+
     micro_score = base_micro + fibonacci_contribution
     return min(1.0, max(0.0, micro_score))  # Normalizar [0, 1]
 ```
@@ -189,7 +189,7 @@ python scripts/backtest_optimizado.py \
 ```markdown
 # ✅ S2-4 Validação Trader
 
-**Data:** 24/02/2026  
+**Data:** 24/02/2026
 **Status:** ✅ APROVADO
 
 ## Evidências
@@ -225,8 +225,8 @@ python scripts/backtest_optimizado.py \
 | 4. Backtest | 240 min | 04:00 | ML Expert |
 | 5. Sign-off | 120 min | 06:00 | Todos |
 
-**Total:** 12 horas (pode ser parallelizado)  
-**Início:** 24/02 18:00  
+**Total:** 12 horas (pode ser parallelizado)
+**Início:** 24/02 18:00
 **Conclusão:** 25/02 06:00
 
 ---

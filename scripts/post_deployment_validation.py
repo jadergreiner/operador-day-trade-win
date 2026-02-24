@@ -25,7 +25,7 @@ try:
         "dashboard": {"endpoint": "/api/analytics/dashboard", "expected": 200},
         "metrics": {"endpoint": "/metrics", "expected": 200},
     }
-    
+
     all_smoke_pass = True
     for test_name, test_config in tests.items():
         resp = requests.get(f"http://localhost:8001{test_config['endpoint']}", timeout=5)
@@ -34,7 +34,7 @@ try:
         else:
             print(f"FAIL - {test_name}: {resp.status_code} (expected {test_config['expected']})")
             all_smoke_pass = False
-    
+
     validation_results["Smoke Tests"] = all_smoke_pass
 except Exception as e:
     print(f"FAIL - {e}")
@@ -47,7 +47,7 @@ print("[2/4] User Acceptance Tests")
 print("-" * 80)
 try:
     print("OK - Trader dapat registrar intervencao...")
-    
+
     # Simular intervencao manual
     payload = {
         "symbol": "WINFUT",
@@ -55,12 +55,12 @@ try:
         "trader_decision": "aumentar_ticket_25pct",
         "p_and_l": 500.00
     }
-    
+
     resp = requests.post("http://localhost:8001/api/intervention/log", json=payload, timeout=5)
     if resp.status_code in [200, 201]:
         intervention_id = resp.json().get("intervention_id")
         print(f"OK - Intervencao registrada (id: {intervention_id})")
-        
+
         # Simular resultado
         result_payload = {
             "result": "WIN",
@@ -73,7 +73,7 @@ try:
         )
         if resp2.status_code in [200, 201]:
             print(f"OK - Resultado registrado (WIN)")
-            
+
             # Consultar stats
             resp3 = requests.get("http://localhost:8001/api/analytics/stats", timeout=5)
             if resp3.status_code == 200:
@@ -86,7 +86,7 @@ try:
             validation_results["User Acceptance Tests"] = False
     else:
         validation_results["User Acceptance Tests"] = False
-        
+
 except Exception as e:
     print(f"FAIL - {e}")
     validation_results["User Acceptance Tests"] = False
@@ -98,17 +98,17 @@ print("[3/4] Monitor Metrics")
 print("-" * 80)
 try:
     resp = requests.get("http://localhost:8001/metrics", timeout=5)
-    
+
     if resp.status_code == 200:
         print(f"OK - Metrics endpoint responding")
         print(f"OK - Response size: {len(resp.text)} bytes")
-        
+
         # Verificar metricas basicas
         metrics_text = resp.text
         expected_patterns = ["timestamp", "status"]
-        
+
         found_patterns = sum(1 for pattern in expected_patterns if pattern in metrics_text)
-        
+
         if found_patterns >= 1:
             print(f"OK - Metricas content OK")
             validation_results["Monitor Metrics"] = True
@@ -118,7 +118,7 @@ try:
     else:
         print(f"FAIL - Metrics endpoint returned {resp.status_code}")
         validation_results["Monitor Metrics"] = False
-        
+
 except Exception as e:
     print(f"FAIL - {e}")
     validation_results["Monitor Metrics"] = False
@@ -133,17 +133,17 @@ try:
     if os.path.exists("logs"):
         log_files = [f for f in os.listdir("logs") if f.endswith(".log")]
         print(f"OK - Found {len(log_files)} log files")
-        
+
         # Simular verificacao de erros
         critical_errors = 0
         print(f"OK - No CRITICAL errors found")
         print(f"OK - No major warnings detected")
-        
+
         validation_results["Check Logs"] = critical_errors == 0
     else:
         print(f"INFO - Logs directory not found (expected on new deployment)")
         validation_results["Check Logs"] = True
-        
+
 except Exception as e:
     print(f"FAIL - {e}")
     validation_results["Check Logs"] = False
@@ -156,14 +156,14 @@ print("-" * 80)
 try:
     conn = sqlite3.connect("data/analytics_staging.db")
     cursor = conn.cursor()
-    
+
     cursor.execute("SELECT COUNT(*) FROM trader_interventions")
     count = cursor.fetchone()[0]
-    
+
     print(f"OK - Database accessible")
     print(f"OK - Records: {count} intervencoes")
     print(f"OK - Replication status: IN-SYNC")
-    
+
     conn.close()
 except Exception as e:
     print(f"FAIL - {e}")

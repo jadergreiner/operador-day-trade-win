@@ -1,6 +1,6 @@
 # S2-5 Task 6: Performance Benchmarks — Cross-Task Analysis
 
-**Data:** 24/02/2026  
+**Data:** 24/02/2026
 **Status:** ✅ MEASURED (Live execution)
 
 ---
@@ -251,8 +251,8 @@ Pipeline can handle **1.93M confluências/day** (8h trading):
 
 ---
 
-**Prepared by:** QA Lead  
-**Date:** 24/02/2026 14:30  
-**Approval:** Performance targets achieved  
+**Prepared by:** QA Lead
+**Date:** 24/02/2026 14:30
+**Approval:** Performance targets achieved
 **Next:** Gate 2 Checkpoint Validation
 

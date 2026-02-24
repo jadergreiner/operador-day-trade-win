@@ -343,7 +343,7 @@ MONITOR_OPERADOR.bat
 [OPERADOR DE EXECUÇÃO] Status Geral
 ────────────────────────────────────────────────────────────────────────────
   [LIVE] LIVE
-  
+
   Componentes Operacionais:
     [✓] WEBSOCKET SERVER
         └─ status: ACTIVE
