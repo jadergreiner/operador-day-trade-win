@@ -1,8 +1,8 @@
 # 🟢 STATUS DAS ENTREGAS — Fonte de Verdade (v1.0.0)
 
-**Última Sincronização:** 2026-02-24T11:52:00Z
+**Última Sincronização:** 2026-02-24T12:14:00Z
 **Responsável pela Sincronia:** [Doc Advocate](BOARD_MULTIDISCIPLINAR.json)
-**Status Geral:** 🟡 Sprint 2 - S2-5 Task 2 COMPLETA + S2-4 EM ANDAMENTO
+**Status Geral:** 🟡 Sprint 2 - S2-5 Task 3 COMPLETA + S2-4 EM ANDAMENTO
 **Protocolo:** [SYNC] Obrigatório
 
 ---
@@ -16,7 +16,7 @@
 | **S2-2** | Calibrador ATR Dinâmico | [ML Lead](BOARD_MULTIDISCIPLINAR.json) | ✅ COMPLETO | [S2-2] | Trailing Stop Adaptive |
 | **S2-3** | Confluência SMC (M1/M5) | [Eng Sr](BOARD_MULTIDISCIPLINAR.json) | ✅ COMPLETO | [S2-3] | 98% coverage, SMC alinhado |
 | **S2-5-ISO** | **✅ MT5 Terminal Isolation** | [Arq. Sistemas](BOARD_MULTIDISCIPLINAR.json) | ✅ **COMPLETO** | [S2-5-ISO] | Isolamento Terminal/Conta + Retry automático (15 testes) |
-| **S2-5** | **✅ Probabilidade T+60** | [ML Expert](BOARD_MULTIDISCIPLINAR.json) | � **TASK 2 COMPLETA** | [run_t60_training_task2.py](https://github.com/jadergreiner/operador-day-trade-win/blob/main/scripts/run_t60_training_task2.py) | **TASK 1 ✅ COMPLETA:** Dataset Builder (25 features) + 34 testes (98% coverage, d20a5c7). **TASK 2 ✅ COMPLETA:** XGBoost Grid Search 32 configs (51s, F1=0.612 test, precision=0.625). Modelo: `score_t60_v1.0_BEST.pkl`, Resultados: `grid_search_results.json`. Next: Task 4 Real-time Inference |
+| **S2-5** | **✅ Probabilidade T+60** | [ML Expert](BOARD_MULTIDISCIPLINAR.json) | 🟢 **TASK 3 COMPLETA** | [score_t60_train_parallel.py](https://github.com/jadergreiner/operador-day-trade-win/blob/main/scripts/score_t60_train_parallel.py) | **TASK 1 ✅:** Dataset Builder (25 features, d20a5c7). **TASK 2 ✅:** XGBoost Grid Search (F1=0.612, 6f6048e). **TASK 3 ✅:** Parallelization with n_jobs=-1 (1.4x speedup, 45.6s, F1=0.620 best config). Next: Task 4 Real-time Inference |
 | **S2-4** | Integração Phicube (Mimas) | [ML Expert](BOARD_MULTIDISCIPLINAR.json) | 🟡 **EM ANDAMENTO** | [S2-4] | **T1 ✅ COMPLETA:** PhiCubeCalculator (350 LOC) + 39 testes (98% coverage). **T2 ✅ COMPLETA:** Testes + docs README. **T3-T8:** Integração ao agente (próximo) |
 
 ### 📈 Entregas Táticas (NEXT - SHOULD)
