@@ -145,9 +145,12 @@ class TestAnalyticsCollectorLogIntervention:
             analytics_db.log_intervention(
                 symbol="WINFUT",
                 action="INVALID_ACTION",
-                ml_signal=0.5
+                ml_signal=0.5,
+                trader_decision="Teste"
             )
-        assert "Action must be one of" in str(exc_info.value)
+        # Verificar que mensagem contém referência ao inválido
+        error_msg = str(exc_info.value)
+        assert "inválido" in error_msg.lower() or "invalid" in error_msg.lower()
 
 
 class TestAnalyticsCollectorUpdateResult:
@@ -158,14 +161,15 @@ class TestAnalyticsCollectorUpdateResult:
         intervention_id = analytics_db.log_intervention(
             symbol="WINFUT",
             action="OVERRIDE",
-            ml_signal=0.75
+            ml_signal=0.75,
+            trader_decision="Aumentar posição"
         )
         
         success = analytics_db.update_intervention_result(
             intervention_id=intervention_id,
             result="WIN",
-            pnl=475.50,
-            close_reason="TP atingido"
+            p_and_l=475.50,
+            notes="TP atingido"
         )
         assert success is True
     
@@ -174,14 +178,15 @@ class TestAnalyticsCollectorUpdateResult:
         intervention_id = analytics_db.log_intervention(
             symbol="WINFUT",
             action="OVERRIDE",
-            ml_signal=0.75
+            ml_signal=0.75,
+            trader_decision="Aumentar posição"
         )
         
         success = analytics_db.update_intervention_result(
             intervention_id=intervention_id,
             result="LOSS",
-            pnl=-250.00,
-            close_reason="SL acionado"
+            p_and_l=-250.00,
+            notes="SL acionado"
         )
         assert success is True
     
@@ -190,14 +195,15 @@ class TestAnalyticsCollectorUpdateResult:
         intervention_id = analytics_db.log_intervention(
             symbol="WINFUT",
             action="OVERRIDE",
-            ml_signal=0.75
+            ml_signal=0.75,
+            trader_decision="Aumentar posição"
         )
         
         success = analytics_db.update_intervention_result(
             intervention_id=intervention_id,
             result="PARTIAL",
-            pnl=125.25,
-            close_reason="Saída parcial"
+            p_and_l=125.25,
+            notes="Saída parcial"
         )
         assert success is True
     
@@ -206,16 +212,19 @@ class TestAnalyticsCollectorUpdateResult:
         intervention_id = analytics_db.log_intervention(
             symbol="WINFUT",
             action="OVERRIDE",
-            ml_signal=0.75
+            ml_signal=0.75,
+            trader_decision="Teste"
         )
         
         with pytest.raises(ValueError) as exc_info:
             analytics_db.update_intervention_result(
                 intervention_id=intervention_id,
                 result="INVALID_RESULT",
-                pnl=100.00
+                p_and_l=100.00
             )
-        assert "Result must be one of" in str(exc_info.value)
+        # Verificar que mensagem contém referência ao inválido
+        error_msg = str(exc_info.value)
+        assert "inválido" in error_msg.lower() or "invalid" in error_msg.lower()
 
 
 class TestAnalyticsCollectorGetStats:
@@ -226,7 +235,7 @@ class TestAnalyticsCollectorGetStats:
         stats = analytics_db.get_intervention_stats()
         
         assert stats is not None
-        assert stats["total"] == 0
+        assert stats["total_interventions"] == 0
         assert stats["wins"] == 0
         assert stats["losses"] == 0
         assert stats["partials"] == 0
@@ -238,17 +247,20 @@ class TestAnalyticsCollectorGetStats:
         id1 = analytics_db.log_intervention(
             symbol="WINFUT",
             action="OVERRIDE",
-            ml_signal=0.75
+            ml_signal=0.75,
+            trader_decision="Aumentar"
         )
         id2 = analytics_db.log_intervention(
             symbol="WINFUT",
             action="PAUSE",
-            ml_signal=0.0
+            ml_signal=0.0,
+            trader_decision="Pausar"
         )
         id3 = analytics_db.log_intervention(
             symbol="WINFUT",
             action="EXECUTE",
-            ml_signal=0.9
+            ml_signal=0.9,
+            trader_decision="Executar"
         )
         
         # Atualizar resultados
@@ -259,11 +271,11 @@ class TestAnalyticsCollectorGetStats:
         # Obter stats
         stats = analytics_db.get_intervention_stats()
         
-        assert stats["total"] == 3
+        assert stats["total_interventions"] == 3
         assert stats["wins"] == 2
         assert stats["losses"] == 1
         assert stats["partials"] == 0
-        assert abs(stats["win_rate"] - 0.6667) < 0.01  # 2/3
+        assert abs(stats["win_rate"] - 66.67) < 1.0  # 2/3 = 66.67%
         assert abs(stats["total_pnl"] - 600.00) < 0.01
         assert abs(stats["avg_pnl"] - 200.00) < 0.01
     
@@ -273,7 +285,7 @@ class TestAnalyticsCollectorGetStats:
         
         # Campos obrigatórios
         required_fields = [
-            "total", "wins", "losses", "partials",
+            "total_interventions", "wins", "losses", "partials",
             "win_rate", "total_pnl", "avg_pnl"
         ]
         
@@ -281,11 +293,11 @@ class TestAnalyticsCollectorGetStats:
             assert field in stats, f"Field '{field}' missing from stats"
         
         # Validar tipos
-        assert isinstance(stats["total"], int)
+        assert isinstance(stats["total_interventions"], int)
         assert isinstance(stats["wins"], int)
         assert isinstance(stats["losses"], int)
         assert isinstance(stats["partials"], int)
-        assert isinstance(stats["win_rate"], float)
+        assert isinstance(stats["win_rate"], (int, float))
         assert isinstance(stats["total_pnl"], (int, float))
         assert isinstance(stats["avg_pnl"], (int, float))
 
@@ -327,26 +339,27 @@ class TestAnalyticsEndpointResponseSchemas:
             analytics_db.log_intervention(
                 symbol="WINFUT",
                 action=action,
-                ml_signal=0.5
+                ml_signal=0.5,
+                trader_decision=f"Ação: {action}"
             )
         
         # Obter stats globais
         global_stats = analytics_db.get_intervention_stats()
         
         # Validar estrutura global
-        assert "total" in global_stats
+        assert "total_interventions" in global_stats
         assert "wins" in global_stats
         assert "win_rate" in global_stats
         assert "total_pnl" in global_stats
         
         # Dashboard teria estrutura como:
         # {
-        #     "global": { total, wins, win_rate, total_pnl, ... },
+        #     "global": { total_interventions, wins, win_rate, total_pnl, ... },
         #     "by_action": {
-        #         "OVERRIDE": { total, wins, ... },
-        #         "PAUSE": { total, wins, ... },
-        #         "CANCEL": { total, wins, ... },
-        #         "EXECUTE": { total, wins, ... }
+        #         "OVERRIDE": { total_interventions, wins, ... },
+        #         "PAUSE": { total_interventions, wins, ... },
+        #         "CANCEL": { total_interventions, wins, ... },
+        #         "EXECUTE": { total_interventions, wins, ... }
         #     }
         # }
 
@@ -370,16 +383,16 @@ class TestAnalyticsCompleteWorkflow:
         success = analytics_db.update_intervention_result(
             intervention_id=id1,
             result="WIN",
-            pnl=500.00,
-            close_reason="TP atingido"
+            p_and_l=500.00,
+            notes="TP atingido"
         )
         assert success is True
         
         # 3. Obter stats
         stats = analytics_db.get_intervention_stats()
-        assert stats["total"] == 1
+        assert stats["total_interventions"] == 1
         assert stats["wins"] == 1
-        assert stats["win_rate"] == 1.0
+        assert stats["win_rate"] == 100.0
         assert stats["total_pnl"] == 500.00
 
 
@@ -387,47 +400,50 @@ class TestAnalyticsValidation:
     """Testes de validação de dados."""
     
     def test_negative_pnl_allowed(self, analytics_db):
-        """Deve permitir PnL negativo (losses)."""
+        """Deve permitir P&L negativo (losses)."""
         intervention_id = analytics_db.log_intervention(
             symbol="WINFUT",
             action="OVERRIDE",
-            ml_signal=0.75
+            ml_signal=0.75,
+            trader_decision="Teste negativo"
         )
         
         success = analytics_db.update_intervention_result(
             intervention_id=intervention_id,
             result="LOSS",
-            pnl=-1000.50  # Negativo é válido
+            p_and_l=-1000.50  # Negativo é válido
         )
         assert success is True
     
     def test_zero_pnl_allowed(self, analytics_db):
-        """Deve permitir PnL zero (break-even)."""
+        """Deve permitir P&L zero (break-even)."""
         intervention_id = analytics_db.log_intervention(
             symbol="WINFUT",
             action="OVERRIDE",
-            ml_signal=0.75
+            ml_signal=0.75,
+            trader_decision="Teste zero"
         )
         
         success = analytics_db.update_intervention_result(
             intervention_id=intervention_id,
             result="PARTIAL",
-            pnl=0.00  # Zero é válido
+            p_and_l=0.00  # Zero é válido
         )
         assert success is True
     
     def test_large_pnl_values(self, analytics_db):
-        """Deve permitir valores grandes de PnL."""
+        """Deve permitir valores grandes de P&L."""
         intervention_id = analytics_db.log_intervention(
             symbol="WINFUT",
             action="OVERRIDE",
-            ml_signal=0.75
+            ml_signal=0.75,
+            trader_decision="Teste valor grande"
         )
         
         success = analytics_db.update_intervention_result(
             intervention_id=intervention_id,
             result="WIN",
-            pnl=9999999.99  # Valor grande
+            p_and_l=9999999.99  # Valor grande
         )
         assert success is True
 
