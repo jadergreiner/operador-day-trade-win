@@ -1,8 +1,8 @@
 # S2-4: Integração Phicube (Mimas) — Guia Técnico
 
-**Status:** 🟡 EM ANDAMENTO  
-**Implementação:** T1 ✅ COMPLETA | T2 ✅ COMPLETA | T3-T8 (Finalizando)  
-**Data:** 24/02/2026  
+**Status:** 🟡 EM ANDAMENTO
+**Implementação:** T1 ✅ COMPLETA | T2 ✅ COMPLETA | T3-T8 (Finalizando)
+**Data:** 24/02/2026
 
 ---
 
@@ -184,7 +184,7 @@ pytest tests/unit/test_s2_4_phicube_impl.py --cov=scripts.score_phicube
    ```
 
 2. **No loop M1:**
-   
+
 ```python
    phicube_calc.add_candle(close_price)
    mima_data = phicube_calc.calculate()
@@ -192,7 +192,7 @@ pytest tests/unit/test_s2_4_phicube_impl.py --cov=scripts.score_phicube
    ```
 
 3. **Logging:**
-   
+
    ```python
 json_output["phicube"] = phicube_calc.get_status()
    ```

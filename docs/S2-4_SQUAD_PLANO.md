@@ -1,11 +1,11 @@
 # S2-4: Integração Phicube (Mimas) — Plano de Execução Squad
 
-**ID:** S2-4  
-**Task:** Integração Phicube (Mimas) — Cálculo de Leque Fibonacci  
-**Timeline:** 26/02-27/02/2026  
-**Líder Squad:** ML Expert  
-**Squad Size:** 13 membros (8 core tasks)  
-**Expected Impact:** +3-5% win rate via confluência geométrica  
+**ID:** S2-4
+**Task:** Integração Phicube (Mimas) — Cálculo de Leque Fibonacci
+**Timeline:** 26/02-27/02/2026
+**Líder Squad:** ML Expert
+**Squad Size:** 13 membros (8 core tasks)
+**Expected Impact:** +3-5% win rate via confluência geométrica
 
 ---
 
@@ -86,7 +86,7 @@ sinais SMC.
 | **T7** | Risk Review & Gates | Risk Officer | 5,14,2 | 1h | Aprovação de critérios de decisão | T1,T6 |
 | **T8** | Final Testing & Commit | Operações | 9,2 | 1h | `git commit + push` | T1-T7 |
 
-**Total Horas Squad:** 16.5h (tempo paralelo efetivo: ~6-8h)  
+**Total Horas Squad:** 16.5h (tempo paralelo efetivo: ~6-8h)
 **Coordenação:** Standups 06:00 / 12:00 / 18:00 BRT (30 min cada)
 
 ---
@@ -192,7 +192,7 @@ phicube_calc = PhiCubeCalculator()
 for new_candle in stream:
     phicube_calc.add_candle(new_candle.close)
     mima_data = phicube_calc.calculate()
-  
+
     # Adicionar ao micro_score
     micro_score += mima_data.get_weighted_score(weight=0.15)
 ```

@@ -1,0 +1,84 @@
+test_add_candle_decimal_precision (__main__.TestAddCandle.test_add_candle_decimal_precision)
+THEN: Converte float para Decimal com precisÒo 2 casas. ... ok
+test_add_candle_multiple (__main__.TestAddCandle.test_add_candle_multiple)
+THEN: Adiciona m·ltiplos candles sequencialmente. ... ok
+test_add_candle_single (__main__.TestAddCandle.test_add_candle_single)
+THEN: Adiciona um candle com sucesso. ... ok
+test_add_candle_window_limit (__main__.TestAddCandle.test_add_candle_window_limit)
+THEN: Respeita limite de janela (mantÚm ·ltimos N). ... ok
+test_alignment_alta_positive_fan (__main__.TestAlignmentDetection.test_alignment_alta_positive_fan)
+THEN: Alinhamento ALTA quando fan_score > 2. ... ok
+test_alignment_baixa_negative_fan (__main__.TestAlignmentDetection.test_alignment_baixa_negative_fan)
+THEN: Alinhamento BAIXA quando fan_score < -2. ... ok
+test_alignment_misto_near_zero (__main__.TestAlignmentDetection.test_alignment_misto_near_zero)
+THEN: Alinhamento MISTO quando |fan_score| <= 2. ... ok
+test_calculate_empty_history (__main__.TestCalculateMethod.test_calculate_empty_history)
+THEN: calculate() com hist¾rico vazio retorna defaults. ... Hist¾rico vazio, retornando MimaData padrÒo
+ok
+test_calculate_returns_mima_data (__main__.TestCalculateMethod.test_calculate_returns_mima_data)
+THEN: calculate() retorna MimaData vßlido. ... ok
+test_calculate_updates_fan_score (__main__.TestCalculateMethod.test_calculate_updates_fan_score)
+THEN: calculate() atualiza fan_score. ... ok
+test_constant_price_no_movement (__main__.TestEdgeCases.test_constant_price_no_movement)
+THEN: Preþo constante resulta em fan_score=0. ... ok
+test_rapid_price_changes (__main__.TestEdgeCases.test_rapid_price_changes)
+THEN: Mudanþas rßpidas processadas corretamente. ... ok
+test_very_small_price_movements (__main__.TestEdgeCases.test_very_small_price_movements)
+THEN: Diferenþas mÝnimas (~0.01) contam para alinhamento. ... ok
+test_factory_creates_calculator (__main__.TestFactoryFunction.test_factory_creates_calculator)
+THEN: Factory retorna PhiCubeCalculator vßlido. ... ok
+test_fan_score_all_alta_maximum (__main__.TestFanScoreCalculation.test_fan_score_all_alta_maximum)
+THEN: Fan score +6 quando ordem crescente (ALTA). ... ok
+test_fan_score_all_baixa_minimum (__main__.TestFanScoreCalculation.test_fan_score_all_baixa_minimum)
+THEN: Fan score -6 quando ordem decrescente (BAIXA). ... ok
+test_fan_score_identical_values_zero (__main__.TestFanScoreCalculation.test_fan_score_identical_values_zero)
+THEN: Fan score 0 quando todas Mimas iguais. ... ok
+test_fan_score_misto_near_zero (__main__.TestFanScoreCalculation.test_fan_score_misto_near_zero)
+THEN: Fan score ~0 quando misturado. ... ok
+test_get_status_mimas_data (__main__.TestGetStatus.test_get_status_mimas_data)
+THEN: Status contÚm dados de todas 7 Mimas. ... ok
+test_get_status_structure (__main__.TestGetStatus.test_get_status_structure)
+THEN: get_status() retorna dict com estrutura correta. ... ok
+test_get_fan_score (__main__.TestGetterMethods.test_get_fan_score)
+THEN: get_fan_score() retorna fan_score bruto. ... ok
+test_get_normalized_score (__main__.TestGetterMethods.test_get_normalized_score)
+THEN: get_normalized_score() retorna [0, 1]. ... ok
+test_get_weighted_score (__main__.TestGetterMethods.test_get_weighted_score)
+THEN: get_weighted_score() aplica peso. ... ok
+test_normalize_all_scores_range (__main__.TestNormalization.test_normalize_all_scores_range)
+THEN: Todos fan_scores normalizam para [0, 1]. ... ok
+test_normalize_maximum_score_6 (__main__.TestNormalization.test_normalize_maximum_score_6)
+THEN: Fan score +6 normaliza para 1.0. ... ok
+test_normalize_minimum_score_minus_6 (__main__.TestNormalization.test_normalize_minimum_score_minus_6)
+THEN: Fan score -6 normaliza para 0.0. ... ok
+test_normalize_zero_score_05 (__main__.TestNormalization.test_normalize_zero_score_05)
+THEN: Fan score 0 normaliza para 0.5. ... ok
+test_init_custom_window (__main__.TestPhiCubeInitialization.test_init_custom_window)
+THEN: Inicializa com window_size customizado. ... ok
+test_init_default_window (__main__.TestPhiCubeInitialization.test_init_default_window)
+THEN: Inicializa com window_size padrÒo (610). ... ok
+test_sma_exact_period (__main__.TestSMACalculation.test_sma_exact_period)
+THEN: Calcula SMA com exatamente N candles. ... ok
+test_sma_insufficient_history (__main__.TestSMACalculation.test_sma_insufficient_history)
+THEN: Retorna None se hist¾rico < perÝodo. ... ok
+test_sma_simple_values (__main__.TestSMACalculation.test_sma_simple_values)
+THEN: SMA com valores simples Ú correto. ... ok
+test_slope_alta_increasing (__main__.TestSlopeUpdate.test_slope_alta_increasing)
+THEN: Slope ALTA quando SMA aumenta. ... ok
+test_slope_baixa_decreasing (__main__.TestSlopeUpdate.test_slope_baixa_decreasing)
+THEN: Slope BAIXA quando SMA diminui. ... ok
+test_slope_neutro_equal (__main__.TestSlopeUpdate.test_slope_neutro_equal)
+THEN: Slope NEUTRO quando SMA igual. ... ok
+test_slope_neutro_no_previous (__main__.TestSlopeUpdate.test_slope_neutro_no_previous)
+THEN: Slope NEUTRO quando nÒo hß valor anterior. ... ok
+test_weighted_score_custom_weight_020 (__main__.TestWeightedScore.test_weighted_score_custom_weight_020)
+THEN: Peso customizado 0.20 aplicado corretamente. ... ok
+test_weighted_score_default_weight_015 (__main__.TestWeightedScore.test_weighted_score_default_weight_015)
+THEN: Peso padrÒo 0.15 aplicado corretamente. ... ok
+test_weighted_score_minimum_fan (__main__.TestWeightedScore.test_weighted_score_minimum_fan)
+THEN: Fan score -6 contribui 0 (mÝnimo). ... ok
+
+----------------------------------------------------------------------
+Ran 39 tests in 0.007s
+
+OK
