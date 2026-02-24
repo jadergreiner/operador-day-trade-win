@@ -570,7 +570,8 @@ class MacroScoreEngine:
             if tick is None:
                 return None, None, "Tick indisponivel"
 
-            now_brt = datetime.utcnow() + timedelta(hours=-3)
+            offset = self._mt5.get_time_offset_hours() if hasattr(self._mt5, 'get_time_offset_hours') else -3
+            now_brt = datetime.utcnow() + timedelta(hours=offset)
             tick_age = (now_brt - tick.timestamp).total_seconds()
             if tick_age > self._stale_tick_seconds:
                 return None, None, f"Tick desatualizado ({int(tick_age)}s)"
@@ -699,7 +700,8 @@ class MacroScoreEngine:
         """Retorna o primeiro preco do dia salvo no DB (M1)."""
         session = get_session()
         try:
-            now = datetime.utcnow() + timedelta(hours=-3)
+            offset = self._mt5.get_time_offset_hours() if hasattr(self._mt5, 'get_time_offset_hours') else -3
+            now = datetime.utcnow() + timedelta(hours=offset)
             row = (
                 session.query(MarketDataModel)
                 .filter(MarketDataModel.symbol == symbol)
@@ -730,7 +732,8 @@ class MacroScoreEngine:
         """Retorna o ultimo preco do dia salvo no DB (M1)."""
         session = get_session()
         try:
-            now = datetime.utcnow() + timedelta(hours=-3)
+            offset = self._mt5.get_time_offset_hours() if hasattr(self._mt5, 'get_time_offset_hours') else -3
+            now = datetime.utcnow() + timedelta(hours=offset)
             row = (
                 session.query(MarketDataModel)
                 .filter(MarketDataModel.symbol == symbol)

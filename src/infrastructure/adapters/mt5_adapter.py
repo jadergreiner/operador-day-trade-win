@@ -96,6 +96,11 @@ class IBrokerAdapter(ABC):
         """Obtem o patrimonio atual da conta."""
         pass
 
+    @abstractmethod
+    def get_time_offset_hours(self) -> int:
+        """Retorna o offset de fuso horario detectado (horas)."""
+        pass
+
 
 class MT5Adapter(IBrokerAdapter):
     """
@@ -152,6 +157,22 @@ class MT5Adapter(IBrokerAdapter):
                 server=self.server,
                 timeout=self.timeout,
             )
+
+            if authorized:
+                # Sincronizacao Dinamica de Timezone (GAP-02 / Oportunidade 7)
+                try:
+                    # Tenta capturar o server time de um simbolo ativo para calcular o offset real
+                    tick = mt5.symbol_info_tick("WIN$N") or mt5.symbol_info_tick("WDO$N")
+                    if tick:
+                        server_time_secs = tick.time
+                        local_time_secs = int(datetime.utcnow().timestamp())
+                        # Alvo: UTC-3 (Brasilia)
+                        target_brt_secs = local_time_secs - (3 * 3600)
+                        auto_offset = target_brt_secs - server_time_secs
+                        # Arredonda para horas cheias para evitar jitter de rede
+                        self._time_offset_seconds = round(auto_offset / 3600) * 3600
+                except Exception:
+                    pass
 
             if not authorized:
                 raise BrokerConnectionError(
@@ -587,6 +608,10 @@ class MT5Adapter(IBrokerAdapter):
             raise BrokerConnectionError("Failed to get account info")
 
         return Decimal(str(account_info.equity))
+
+    def get_time_offset_hours(self) -> int:
+        """Retorna o offset de fuso horario detectado (horas)."""
+        return int(self._time_offset_seconds / 3600) if self._time_offset_seconds is not None else -3
 
     def _ensure_connected(self) -> None:
         """Garante que estamos conectados ao MT5."""

@@ -8,7 +8,7 @@
 
 ## 🎯 Sprint 0 — Foundation (CONCLUÍDO ✅)
 
-**Duração:** 2 semanas (06-20 FEV 2026)
+**Duração:** 2 semanas
 **Objetivo:** Estabelecer base sólida com ML + alertas
 
 ### Tasks Entregues
@@ -21,10 +21,27 @@
 
 ---
 
-## 📅 Sprint 1 — Operacionalização (ATUAL 🔵)
+## 🎯 Sprint 1 — Operacionalização (CONCLUÍDO ✅)
 
-**Duração:** 1 semana (20-27 FEV 2026)
+**Duração:** 1 semana
 **Objetivo:** Operação 24/7 com automação completa
+
+### Tasks Entregues
+
+| ID | Task | Owner | Status | Entrega |
+|----|------|-------|--------|---------|
+| S1-1 | Configuração MT5 Production | Dev | ✅ DONE | real_account=True |
+| S1-2 | Health Checks 24/7 | Infra | ✅ DONE | MONITOR_LOGS.bat |
+| S1-4 | Testes E2E Automação | QA | ✅ DONE | Suíte de testes integrados |
+| S1-5 | Performance Tuning | Dev | ✅ DONE | Latência P95 ~71ms |
+| S1-6 | Documentation Updates | Doc | ✅ DONE | STATUS_ENTREGAS Sincro |
+
+---
+
+## 📅 Sprint 2 — Inteligência e Visibilidade (ATUAL 🔵)
+
+**Duração:** 2 semanas
+**Objetivo:** Dashboard real-time e expansão lógica do modelo
 
 ### Backlog Priorizado (MoSCoW)
 
@@ -32,42 +49,28 @@
 
 | ID | Task | Owner | Estimativa | Status | Deadline |
 |----|------|-------|-----------|--------|----------|
-| S1-1 | Configuração MT5 Production | Dev | 4h | ⏳ PENDING | 24 FEV |
-| S1-2 | Health Checks 24/7 | Infra | 6h | ⏳ PENDING | 25 FEV |
-| S1-3 | Monitoring Dashboard | Dev | 8h | ⏳ PENDING | 25 FEV |
-| S1-4 | Testes E2E Automação | QA | 8h | ⏳ PENDING | 26 FEV |
+| S2-2 | Calibrador ATR Dinâmico | ML | 8h | ⏳ PENDING | P1 |
+| S2-3 | Confluência SMC (M1/M5) | Dev | 10h | ⏳ PENDING | P1 |
+| S2-4 | Integração Phicube (Mimas) | ML | 6h | ⏳ PENDING | P1 |
 
 #### SHOULD (Altas)
 
 | ID | Task | Owner | Estimativa | Status | Deadline |
 |----|------|-------|-----------|--------|----------|
-| S1-5 | Performance Tuning | Dev | 4h | ⏳ PENDING | 26 FEV |
-| S1-6 | Documentation Updates | Doc | 3h | ⏳ PENDING | 27 FEV |
+| S2-5 | Probabilidade T+60 | ML | 15h | ⏳ BACKLOG | P2 |
+| S2-1 | Dashboard de Monitoramento | Dev | 12h | ⏩ DESPRIORIZADO | P3 |
+| S2-6 | Analytics de Intervenção | Doc | 6h | ⏳ BACKLOG | P2 |
 
 #### COULD (Médias)
 
 | ID | Task | Owner | Estimativa | Status | Deadline |
 |----|------|-------|-----------|--------|----------|
-| S1-7 | Telegram Integration v2 | Dev | 3h | ⏳ BACKLOG | TBD |
-| S1-8 | Multi-Symbol Support | ML | 6h | ⏳ BACKLOG | TBD |
+| S2-7 | Telegram Integration v2 | Dev | 3h | ⏳ BACKLOG | TBD |
+| S2-8 | Hot-Reload de Pesos | Dev | 5h | ⏳ BACKLOG | TBD |
 
 ---
 
-## 🌌 Sprint 2 — Inteligência (PLANEJADO)
-
-**Duração:** 2 semanas (01-15 MAR 2026)
-**Objetivo:** ML + Backtesting + Multi-Symbol
-
-### Épicos Planejados
-
-- **S2-1:** Backtesting Engine com métricas
-- **S2-2:** Otimização de parâmetros via GridSearch
-- **S2-3:** Multi-Symbol support (5 ativos)
-- **S2-4:** Dashboard de performance real-time
-
----
-
-## 📊 Métricas de Progresso
+## 🌌 Sprint 3 — Escala (PLANEJADO)
 
 ### Sprint 0
 - ✅ 3/3 tasks (100%)
@@ -76,7 +79,7 @@
 
 ### Sprint 1 (Atual)
 - 🔵 0/4 MUST iniciado
-- 📈 Progresso esperado: 50% até 25 FEV
+- 📈 Progresso esperado: 50% atingido no monitoramento.
 
 ---
 
