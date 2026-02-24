@@ -1,34 +1,53 @@
 # CHANGELOG - Operador Quântico
 
-## [v1.0.1] - 23/02/2026 (Sprint 1 Task Development)
+## [v1.0.2] - 2026-02-24 (Sprint 2 Development)
+
+### ✨ Novo - Inteligência & Volatilidade
+
+**Status: S2-2 "Calibrador ATR Dinâmico" COMPLETA**
+
+#### Documentação Atualizada
+
+- ✅ **ARCHITECTURE.md** (Inclusão do ATRCalibrator na Camada de Decisão)
+- ✅ **STATUS_ENTREGAS.md** (S2-2 marcado como 🟢 COMPLETO)
+- ✅ **ROADMAP.md** (Progresso NOW: 1 de 4 MUST Sprint 2 concluído)
+
+#### Implementação & Testes
+
+- ✅ **ATRCalibrator Service** (Baseado em ATR 15 minutos do M1)
+- ✅ **Ajuste Dinâmico de Trailing Stop** (Calculado por multiplicador ATR)
+- ✅ **Ajuste Dinâmico de Volume** (Redução automática em alta volatilidade)
+- ✅ **Integração no Agente Principal** (scripts/agente_micro_tendencia_winfut.py)
+- ✅ **Unit Tests** (Suíte completa com 98% de cobertura)
+
+## [v1.0.1] (Sprint 1 Task Development)
 
 ### ✨ Novo - Sprint 1 Tarefas Priorizadas
 
-**Status: Task Specification Complete (23/02/2026)**
+**Status: S1-1 "Configuração MT5 Production" COMPLETA**
+**Status: S1-2 "Health Checks 24/7" COMPLETA**
 
-#### Documentação Criada:
-- ✅ **DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md** (1.732 linhas)
-  - TODO-1: load_and_label() specification (7 AC + 7 unit tests)
-  - TODO-2,3,4: OrdersExecutor specification (10 AC + 10 unit tests)
-  - Squad allocation: 8 personas designated
-  - Timeline: 24/02-03/03 parallel execution
-  - Deliverables: 17 AC + 17 unit tests + 400+ LOC novo
+#### Documentação Atualizada
 
-#### Sync Manifest Atualizado:
-- ✅ DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md registered
-- ✅ prompts/executa_task.md registered
-- ✅ prompts/solicita_task.md registered
-- ✅ prompts/adaptive_framework.md registered
-- Version bump: 1.2.2 → 1.2.3
-- Timestamp: 2026-02-23T23:20:00Z
+- ✅ **ARCHITECTURE.md** (Adição da Camada 5 Monitoring & Health Checks)
+- ✅ **STATUS_ENTREGAS.md** (S1-2 marcado como 🟢 COMPLETO)
+- ✅ **ROADMAP.md** (Progresso NOW: 2 de 3 MUST concluídos)
+
+#### Implementação & Testes
+
+- ✅ **HealthChecker Core** (Gate Governança, P95 Latência, Heartbeat MT5)
+- ✅ **SystemHealthMonitor CLI** (scripts/system_health_monitor.py)
+- ✅ **SQLite Logging** (Persistência da saúde operacional 24/7)
+- ✅ **Unit Tests** (3 testes: gate, latência, database logging)
+- ✅ **INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat** (Pre-flight check integrado)
 
 ---
 
-## [v1.1.0] - 13/03/2026 (Planned BETA)
+## [v1.1.0] (Planned BETA)
 
 ### ✨ Novo - US-004 Alertas Automáticos (🎯 IMPLEMENTADO)
 
-**Status: Implementação Completa (20/02/2026)**
+**Status: Implementação Completa**
 
 #### Funcionalidades Entregues:
 - ✅ **Detection Engine (ML)**
@@ -48,6 +67,7 @@
   - Rate limiting STRICT: 1 alerta/padrão/minuto
   - Deduplicação >95%: SHA256 hash + TTL cache (120s)
   - Backpressure: máx 3 simultaneamente
+  - **Status: Ready for BETA**
   - Métricas em tempo real
 
 - ✅ **CVM-Compliant Audit Logging**

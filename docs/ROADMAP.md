@@ -1,9 +1,9 @@
 # ROADMAP do Operador Day Trade Win
 
 ## 📊 Execução / Visibilidade (v1.0.1)
-- **Sprint atual:** Sprint 1 — Operacionalização (Foco Execução)
-- **Última atualização:** 2026-02-24T00:15:00Z
-- **Progresso NOW:** 3 de 3 MUST (S1-1, S1-2 e S1-4 concluídos)
+- **Sprint atual:** Sprint 2 — Inteligência e Visibilidade (Foco Execução)
+- **Última atualização:** 2026-02-24T18:30:00Z
+- **Progresso NOW:** 1 de 4 MUST (S2-2 concluído)
 - **Status da Fonte de Verdade:** [docs/STATUS_ENTREGAS.md](STATUS_ENTREGAS.md) (🟢 SINCRO)
 
 ## Visão do Produto

@@ -3,7 +3,33 @@
     "total_members": 17,
     "quorum_required": 12,
     "critical_members": 4,
-    "voting_weight": "majority_simple"
+    "voting_weight": "majority_simple",
+    "squads_especificas": [
+      {
+        "id": "S1-4",
+        "task": "Testes E2E Automação",
+        "lider": "QA Automation",
+        "membros_ids": [2, 3, 4, 6, 7, 8, 9, 11, 12, 14],
+        "status": "ATRIBUÍDO",
+        "data_criacao": "2026-02-24"
+      },
+      {
+        "id": "S1-5",
+        "task": "Performance Tuning",
+        "lider": "Arquiteto de Sistemas",
+        "membros_ids": [2, 3, 4, 6, 7, 8, 9, 11, 12, 14],
+        "status": "COMPLETO",
+        "data_criacao": "2026-02-24"
+      },
+      {
+        "id": "S2-2",
+        "task": "Calibrador ATR Dinâmico",
+        "lider": "Eng Sr",
+        "membros_ids": [2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 17],
+        "status": "COMPLETO",
+        "data_criacao": "2026-02-24"
+      }
+    ]
   },
   "members": [
     {
@@ -120,7 +146,7 @@
     },
     {
       "id": 8,
-      "nome": "Doc Advocate",
+      "nome": "Head de Documentação & Standards",
       "especialidade": "Documentação & QA",
       "prioridade": "⭐⭐ ALTA",
       "bloco": 3,
