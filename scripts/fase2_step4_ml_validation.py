@@ -25,20 +25,20 @@ def validate_ml_metrics() -> Tuple[bool, Dict]:
     print("\n" + "=" * 70)
     print("🔍 STEP 4️⃣: ML METRICS RE-VALIDATION")
     print("=" * 70)
-    
+
     if not BACKTEST_FILE.exists():
         print(f"❌ Arquivo não encontrado: {BACKTEST_FILE}")
         return False, {}
-    
+
     with open(BACKTEST_FILE, 'r') as f:
         data = json.load(f)
-    
+
     # Extrair métricas (usando F1 histórico ou backtest se disponível)
     # O backtest atual traz as métricas que validamos
     capture = data.get("taxas", {}).get("taxa_captura_pct", 0)
     fp_rate = data.get("taxas", {}).get("taxa_false_positive_pct", 100)
     win_rate = data.get("taxas", {}).get("win_rate_estimado_pct", 0)
-    
+
     # F1 score baseado em backup histórico
     # Usar captura e FP para estimativa: F1 ≈ 2 * (precision * recall) / (precision + recall)
     # Capture = recall (94.48%)
@@ -65,7 +65,7 @@ def validate_ml_metrics() -> Tuple[bool, Dict]:
 
     all_pass = f1_pass and capture_pass and fp_pass and win_pass
     status = "🟢 PASS" if all_pass else "🔴 FAIL"
-    
+
     print(f"\n  Overall ML Status: {status}\n")
 
     return all_pass, {
@@ -81,7 +81,7 @@ def validate_ml_metrics() -> Tuple[bool, Dict]:
 def main():
     """Executa validação de métricas ML"""
     ml_pass, ml_data = validate_ml_metrics()
-    
+
     # Salvar resultado
     result = {
         "step": "4_ml_metrics",
@@ -89,13 +89,13 @@ def main():
         "data": ml_data,
         "timestamp": datetime.now().isoformat()
     }
-    
+
     output_file = Path("FASE2_STEP4_RESULTS.json")
     with open(output_file, 'w') as f:
         json.dump(result, f, indent=2)
-    
+
     print(f"💾 Resultados salvos: {output_file}")
-    
+
     # Decisão
     if ml_pass:
         print("\n✅ STEP 4️⃣ PASSED - Proceder para STEP 5️⃣ (Performance)")

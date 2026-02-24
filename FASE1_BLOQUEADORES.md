@@ -7,17 +7,17 @@ status: ⚠️ CRÍTICO - Executar em sequência
 
 # 🔴 FASE 1 - BLOQUEADORES (Gate 1)
 
-**Status:** ⚠️ CRÍTICO - Sem passar FASE 1, todo o Gate 1 falha  
-**Sequência:** 1️⃣ → 2️⃣ → 3️⃣ (não pular passos)  
+**Status:** ⚠️ CRÍTICO - Sem passar FASE 1, todo o Gate 1 falha
+**Sequência:** 1️⃣ → 2️⃣ → 3️⃣ (não pular passos)
 **Timeline:** Executar sequencialmente até completion
 
 ---
 
 ## 1️⃣ RISK VALIDATORS CODE REVIEW
 
-**Status:** ⏳ PRONTO PARA REVISAR  
-**Responsável:** CTO  
-**Bloqueador:** Sem aprovação, não passa para testes  
+**Status:** ⏳ PRONTO PARA REVISAR
+**Responsável:** CTO
+**Bloqueador:** Sem aprovação, não passa para testes
 
 ### O Que Revisar
 
@@ -107,9 +107,9 @@ Ação:
 
 ## 2️⃣ RISK FRAMEWORK TESTS: 3/3 PASS
 
-**Status:** ⏳ PRONTO PARA TESTAR  
-**Responsável:** QA Lead  
-**Bloqueador:** Se 1 teste falhar, não passa  
+**Status:** ⏳ PRONTO PARA TESTAR
+**Responsável:** QA Lead
+**Bloqueador:** Se 1 teste falhar, não passa
 
 ### O Que Testar
 
@@ -170,7 +170,7 @@ python -m pytest tests/test_risk_*.py -v --cov=src/application/risk_validator --
 # tests/test_risk_integration.py::test_all_gates_sequential PASSED
 # tests/test_risk_integration.py::test_gate_failure_blocking PASSED
 # tests/test_risk_integration.py::test_all_gates_pass PASSED
-# 
+#
 # ============================================
 # 6 passed in 2.34s
 # Coverage: 94%
@@ -213,8 +213,8 @@ python -m pytest tests/test_risk_validators.py::test_capital_gate -vv --tb=long 
 
 ## 3️⃣ CTO SIGN-OFF
 
-**Status:** ⏳ PRONTO PARA AUTORIZAR  
-**Responsável:** CTO  
+**Status:** ⏳ PRONTO PARA AUTORIZAR
+**Responsável:** CTO
 **Bloqueador:** Sem assinatura, Gate 1 não pode prosseguir
 
 ### O Que CTO Valida
@@ -430,7 +430,7 @@ python -m pytest tests/test_risk_*.py -v --cov=src/application/risk_validator
 
 ---
 
-**Document:** FASE 1 - Bloqueadores (Gate 1)  
-**Status:** ⚠️ READY FOR EXECUTION  
+**Document:** FASE 1 - Bloqueadores (Gate 1)
+**Status:** ⚠️ READY FOR EXECUTION
 **Next:** Execute 1️⃣ → 2️⃣ → 3️⃣ nesta sequência
 

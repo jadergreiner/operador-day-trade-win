@@ -7,10 +7,10 @@ timeline: 05/03 17:00 BRT (IMMOVABLE)
 ---
 
 # 🎯 GATE 1 CHECKPOINT VALIDATION PLAN
-**Decisão:** GO / NO-GO para Sprint 2  
-**Data:** 05/03/2026 17:00 BRT  
-**Responsáveis:** CTO + Head Finanças + ML Expert + Eng Sr  
-**Status:** 📋 Plano de validação criado  
+**Decisão:** GO / NO-GO para Sprint 2
+**Data:** 05/03/2026 17:00 BRT
+**Responsáveis:** CTO + Head Finanças + ML Expert + Eng Sr
+**Status:** 📋 Plano de validação criado
 
 ---
 
@@ -32,7 +32,7 @@ timeline: 05/03 17:00 BRT (IMMOVABLE)
 | **Risk Framework** | Correlation Gate | ✅ | ⏳ Sprint 1 | TODO ⟳ |
 | **Risk Framework** | Volatility Gate | ✅ | ⏳ Sprint 1 | TODO ⟳ |
 
-**Roadmap:** 
+**Roadmap:**
 - ✅ Items 1-10: READY NOW
 - ⏳ Items 11-13: RiskValidator (Sprint 1, due 27/02-03/03)
 
@@ -497,8 +497,8 @@ END IF
 
 ---
 
-**Documento Versão:** 1.0  
-**Data Criação:** 24/02/2026  
-**Última Atualização:** 24/02/2026 23:45 BRT  
+**Documento Versão:** 1.0
+**Data Criação:** 24/02/2026
+**Última Atualização:** 24/02/2026 23:45 BRT
 **Status:** 📋 READY FOR EXECUTION
 

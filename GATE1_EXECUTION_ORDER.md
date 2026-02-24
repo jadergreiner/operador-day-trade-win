@@ -7,8 +7,8 @@ status: ✅ READY FOR EXECUTION
 
 # 🎯 GATE 1 CHECKPOINT - ORDEM DE EXECUÇÃO (Prioridade)
 
-**Status:** 🟢 READY FOR GATE 1  
-**Tipo:** Checklist sem datas (Prioridade lógica)  
+**Status:** 🟢 READY FOR GATE 1
+**Tipo:** Checklist sem datas (Prioridade lógica)
 **Objetivo:** Garantir GO/NO-GO decisão imovível
 
 ---
@@ -18,9 +18,9 @@ status: ✅ READY FOR EXECUTION
 Executar nesta ordem - SE FALHAR, ESCALATE IMEDIATAMENTE:
 
 ### 1️⃣ Risk Validators Code Review
-**Prioridade:** 🔴 CRÍTICA  
-**Responsável:** CTO  
-**Bloqueador:** Sem aprovação, não entra em testes  
+**Prioridade:** 🔴 CRÍTICA
+**Responsável:** CTO
+**Bloqueador:** Sem aprovação, não entra em testes
 
 ```
 ✓ Revisar implementação complete (TODO-2,3,4)
@@ -38,9 +38,9 @@ Executar nesta ordem - SE FALHAR, ESCALATE IMEDIATAMENTE:
 ---
 
 ### 2️⃣ Risk Framework Tests (3/3 PASS)
-**Prioridade:** 🔴 CRÍTICA  
-**Responsável:** QA Lead  
-**Bloqueador:** Sem testes PASS, não posso validar integridade  
+**Prioridade:** 🔴 CRÍTICA
+**Responsável:** QA Lead
+**Bloqueador:** Sem testes PASS, não posso validar integridade
 
 ```
 ✓ Unit tests risk validators: 3/3 PASS
@@ -61,9 +61,9 @@ python -m pytest tests/test_risk_integration.py -v
 ---
 
 ### 3️⃣ CTO Sign-off
-**Prioridade:** 🔴 CRÍTICA  
-**Responsável:** CTO  
-**Bloqueador:** Autorização formal necessária para passarem adiante  
+**Prioridade:** 🔴 CRÍTICA
+**Responsável:** CTO
+**Bloqueador:** Autorização formal necessária para passarem adiante
 
 ```
 ✓ Review steps 1-2 completados
@@ -80,9 +80,9 @@ python -m pytest tests/test_risk_integration.py -v
 ## 🟠 VALIDAÇÕES PRINCIPAIS (FASE 2)
 
 ### 4️⃣ ML Metrics Re-validation
-**Prioridade:** 🟠 ALTA  
-**Responsável:** ML Expert  
-**Bloqueador:** F1 < 0.65 = NO-GO  
+**Prioridade:** 🟠 ALTA
+**Responsável:** ML Expert
+**Bloqueador:** F1 < 0.65 = NO-GO
 
 ```
 ✓ Confirmar F1 score: > 0.65
@@ -110,9 +110,9 @@ python scripts/validate_gate1_checkpoint.py --metrics-only
 ---
 
 ### 5️⃣ Performance Load Test
-**Prioridade:** 🟠 ALTA  
-**Responsável:** DevOps / Eng Sr  
-**Bloqueador:** P95 > 500ms = NO-GO  
+**Prioridade:** 🟠 ALTA
+**Responsável:** DevOps / Eng Sr
+**Bloqueador:** P95 > 500ms = NO-GO
 
 ```
 ✓ Run 100+ iteration backtest
@@ -140,9 +140,9 @@ python -m memory_profiler scripts/agente_micro_tendencia_winfut.py
 ---
 
 ### 6️⃣ Code Quality Re-check
-**Prioridade:** 🟠 ALTA  
-**Responsável:** QA Lead  
-**Bloqueador:** Tests < 85 = NO-GO  
+**Prioridade:** 🟠 ALTA
+**Responsável:** QA Lead
+**Bloqueador:** Tests < 85 = NO-GO
 
 ```
 ✓ Run full test suite: ≥85/85 PASS
@@ -173,9 +173,9 @@ black --check src/ scripts/
 ---
 
 ### 7️⃣ Risk Framework Smoke Test
-**Prioridade:** 🟠 ALTA  
-**Responsável:** Eng Sr  
-**Bloqueador:** Algum gate não funcionar = NO-GO  
+**Prioridade:** 🟠 ALTA
+**Responsável:** Eng Sr
+**Bloqueador:** Algum gate não funcionar = NO-GO
 
 ```
 ✓ Gate 1 (Capital): Execute + validate
@@ -204,9 +204,9 @@ python scripts/validate_risk_gates.py
 ## 🟡 VERIFICAÇÕES FINAIS (FASE 3)
 
 ### 8️⃣ Security Scan
-**Prioridade:** 🟡 MÉDIA  
-**Responsável:** DevOps / Arch  
-**Bloqueador:** Vulnerabilidades críticas  
+**Prioridade:** 🟡 MÉDIA
+**Responsável:** DevOps / Arch
+**Bloqueador:** Vulnerabilidades críticas
 
 ```
 ✓ Scan dependencies: pip-audit
@@ -226,9 +226,9 @@ safety check
 ---
 
 ### 9️⃣ Gate 1 Readiness Report
-**Prioridade:** 🟡 MÉDIA  
-**Responsável:** Product Owner  
-**Bloqueador:** Informação incompleta  
+**Prioridade:** 🟡 MÉDIA
+**Responsável:** Product Owner
+**Bloqueador:** Informação incompleta
 
 ```
 ✓ Consolidate all metrics (1-8)
@@ -252,8 +252,8 @@ reports/gate1_presentation.pptx
 ## 🟢 DECISÃO FINAL (FASE 4)
 
 ### 🔟 Data Prep & Consolidation
-**Prioridade:** 🟢 IMPORTANTE  
-**Responsável:** Product Owner  
+**Prioridade:** 🟢 IMPORTANTE
+**Responsável:** Product Owner
 
 ```
 ✓ Consolidate all reports (1-9)
@@ -266,8 +266,8 @@ reports/gate1_presentation.pptx
 ---
 
 ### 1️⃣1️⃣ Stakeholder Alignment (CTO + Head Finanças)
-**Prioridade:** 🟢 IMPORTANTE  
-**Responsável:** Heads  
+**Prioridade:** 🟢 IMPORTANTE
+**Responsável:** Heads
 
 ```
 ✓ Review all 9 validation reports
@@ -280,8 +280,8 @@ reports/gate1_presentation.pptx
 ---
 
 ### 1️⃣2️⃣ Formal Presentation
-**Prioridade:** 🟢 IMPORTANTE  
-**Responsável:** Product Owner / CTO  
+**Prioridade:** 🟢 IMPORTANTE
+**Responsável:** Product Owner / CTO
 
 ```
 ✓ Present executive summary
@@ -294,8 +294,8 @@ reports/gate1_presentation.pptx
 ---
 
 ### 1️⃣3️⃣ Final Q&A Session
-**Prioridade:** 🟢 IMPORTANTE  
-**Responsável:** Whole team  
+**Prioridade:** 🟢 IMPORTANTE
+**Responsável:** Whole team
 
 ```
 ✓ Answer CTO questions
@@ -308,8 +308,8 @@ reports/gate1_presentation.pptx
 ---
 
 ### 1️⃣4️⃣ Vote & Decision (GO/NO-GO) 🎯
-**Prioridade:** 🔴 CRÍTICA  
-**Responsável:** CTO + Head Finanças  
+**Prioridade:** 🔴 CRÍTICA
+**Responsável:** CTO + Head Finanças
 
 ```
 ✓ All 4 criteria reviewed
@@ -327,8 +327,8 @@ reports/gate1_presentation.pptx
 ---
 
 ### 1️⃣5️⃣ Announcement & Documentation
-**Prioridade:** 🟢 IMPORTANTE  
-**Responsável:** Product Owner  
+**Prioridade:** 🟢 IMPORTANTE
+**Responsável:** Product Owner
 
 ```
 ✓ Announce decision to team
@@ -449,8 +449,8 @@ NEXT MILESTONE:
 
 ---
 
-**Documento:** Gate 1 Execution Order (No Fixed Dates)  
-**Status:** ✅ READY FOR EXECUTION  
-**Commit:** [DB05732]  
+**Documento:** Gate 1 Execution Order (No Fixed Dates)
+**Status:** ✅ READY FOR EXECUTION
+**Commit:** [DB05732]
 **Próximo:** Execute de 1️⃣ a 1️⃣5️⃣ nesta ordem
 
