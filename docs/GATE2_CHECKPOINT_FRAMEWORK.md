@@ -1,10 +1,8 @@
 # 🎯 GATE 2 CHECKPOINT — Validação de Backtest S2-5
 
-**Data:** 27/02/2026 09:00  
-**Status:** 🟡 IN PROGRESS  
-**Objetivo:** Validar pipeline S2-5 com backtest antes de S2-6 deployment
-
----
+**Status:** ✅ FRAMEWORK READY  
+**Objetivo:** Validar pipeline S2-5 com backtest antes de S2-6 deployment  
+**Sequência:** Backtest → Accuracy Analysis → Risk Validation → Trader UAT → Decision
 
 ## 📊 Gate 2 Validation Framework
 
@@ -43,38 +41,26 @@ S2-5 Sprint (Code Complete)
 
 ### ⏳ Gate 2 Validation Tasks (NOW)
 
-**Task 1: Backtest S2-5 Pipeline**
-```
-Objective: Test the complete score_t60 + confluência pipeline with 
-           historical data (50+ candle sequences)
-Timeline: 27/02 09:00-11:00
-Acceptance: 50+ backtests completed without errors
-```
+**Step 1: Backtest S2-5 Pipeline**
+- Test complete score_t60 + confluência pipeline
+- Run 50+ iterations with historical data
+- Acceptance: Zero crashes, execution successful
 
-**Task 2: Confluência Trigger Accuracy**
-```
-Objective: Validate that confluência triggers (BUY/SELL/AGUARDAR) 
-           align with expected market conditions
-Timeline: 27/02 11:00-12:00
-Target: ≥80% trigger accuracy vs expected signals
-```
+**Step 2: Confluência Trigger Accuracy**
+- Validate triggers (BUY/SELL/AGUARDAR) vs market conditions
+- Target: ≥80% trigger accuracy
+- Type: Cross-check with expected signals
 
-**Task 3: Risk Framework Validation**
-```
-Objective: Ensure risk validators (3 gates) function correctly
-Timeline: 27/02 12:00-13:00
-Criteria: 
+**Step 3: Risk Framework Validation**
+- Ensure 3-gate risk validator functional
   - Capital adequacy checks
   - Correlation validation (<70%)
   - Volatility band checks
-```
+- Criteria: All gates pass edge case tests
 
-**Task 4: Trader UAT Sign-Off**
-```
-Objective: Get trader approval for signal quality
-Timeline: 27/02 13:00-14:00
-Gate Pass: Trader confirms >80% signal relevance
-```
+**Step 4: Trader UAT Sign-Off**
+- Trader reviews 20+ confluence trigger examples
+- Gate Pass: ≥80% signal relevance approved
 
 ---
 
@@ -84,7 +70,7 @@ Gate Pass: Trader confirms >80% signal relevance
 
 ```
 Dataset Size:        1.000+ historical candles (WINFUT, WDOIM3)
-Test Scenarios:      
+Test Scenarios:
   1. Bull Market (trending up)
   2. Bear Market (trending down)
   3. Sideways (consolidation)
@@ -112,16 +98,16 @@ Expected Outcomes:
 ```
 Step 1: Load historical dataset (1.000+ candles)
   └─ Validate: Data integrity, timezone consistency
-  
+
 Step 2: Run score_t60_inference on each sequence
   └─ Validate: 25 features extracted correctly
-  
+
 Step 3: Compute confluência for each T60 result
   └─ Validate: 4-state matrix working (BULL/BEAR/CONFLITO/AGUARDAR)
-  
+
 Step 4: Generate trigger decisions (BUY/SELL/HOLD/AGUARDAR)
   └─ Validate: Trigger logic correct vs market conditions
-  
+
 Step 5: Aggregate statistics and performance metrics
   └─ Validate: Win rate projection, Sharpe ratio, max drawdown
 ```
@@ -220,32 +206,32 @@ Reasoning:
 
 ---
 
-## ⏰ Gate 2 Timeline
+### ⏳ Gate 2 Execution Sequence
 
 ```
-27/02 09:00  │ Start Gate 2 Checkpoint
-             │ ├─ Load historical dataset
-             │ └─ Run 50+ backtest iterations
-             │
-27/02 11:00  │ Analyze Confluência Accuracy
-             │ └─ Validate trigger decisions (target >80%)
-             │
-27/02 12:00  │ Validate Risk Framework
-             │ └─ Test 3-gate risk validators
-             │
-27/02 13:00  │ Trader UAT Sign-Off
-             │ └─ Collect feedback + approval
-             │
-27/02 14:00  │ 🎯 GATE 2 DECISION
-             │ ├─ IF GO → Approve S2-6 deployment
-             │ └─ IF NO-GO → Identify fixes + retest
+Step 1: Start Gate 2 Checkpoint
+        ├─ Load historical dataset
+        └─ Run 50+ backtest iterations
+        
+Step 2: Analyze Confluência Accuracy
+        └─ Validate trigger decisions (target >80%)
+        
+Step 3: Validate Risk Framework
+        └─ Test 3-gate risk validators
+        
+Step 4: Trader UAT Sign-Off  
+        └─ Collect feedback + approval
+        
+Step 5: 🎯 GATE 2 DECISION
+        ├─ IF GO → Approve S2-6 deployment
+        └─ IF NO-GO → Identify fixes + retest
 ```
 
 ---
 
 ## 📋 Next Steps (Immediate)
 
-### Before 27/02 09:00 (Preparation)
+### Pre-Checkpoint (Preparation)
 
 - [ ] Verify all Task 6 artifacts are committed
 - [ ] Review S2-5_PERFORMANCE_BENCHMARKS.md
@@ -253,7 +239,7 @@ Reasoning:
 - [ ] Set up backtest runner script
 - [ ] Schedule trader UAT meeting
 
-### During 27/02 09:00-14:00 (Execution)
+### During Checkpoint (Execution)
 
 - [ ] Execute backtest (50+ iterations)
 - [ ] Collect accuracy metrics
@@ -261,7 +247,7 @@ Reasoning:
 - [ ] Conduct trader UAT
 - [ ] Document all results
 
-### After 27/02 14:00 (Decision)
+### Post-Checkpoint (Decision)
 
 **IF GO:**
 - [ ] Update STATUS_ENTREGAS.md
@@ -279,7 +265,7 @@ Reasoning:
 
 ## ✍️ Gate 2 Sign-Off Template
 
-**To be completed on 27/02 14:00:**
+**To be completed upon Gate 2 completion:**
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -336,7 +322,6 @@ Blocking issues: NONE
 
 ---
 
-**Document Created:** 24/02/2026 15:00  
 **Status:** Checkpoint Framework Ready  
-**Next Update:** 27/02/2026 14:00 (Decision)
+**Execution Sequence:** Backtest → Accuracy → Risk → UAT → Decision
 
