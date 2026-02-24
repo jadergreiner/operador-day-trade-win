@@ -92,18 +92,18 @@ def criar_label_t60(df_m1, row_idx):
     Criar label para previsão T+60
     Retorna: 1 (BULL) se close[t+60] > close[t] + threshold
              0 (BEAR) caso contrário
-    
+
     Threshold: 0.15% = ~15 pontos em WIN ~10000
     """
     close_t = df_m1.loc[row_idx, 'close']
-    
+
     # Verificar se há 60 velas à frente
     if row_idx + 60 >= len(df_m1):
         return None  # Ignorar últimas 60 linhas
-    
+
     close_t60 = df_m1.loc[row_idx + 60, 'close']
     threshold = close_t * 0.0015  # 0.15%
-    
+
     if close_t60 > close_t + threshold:
         return 1  # BULL
     else:
@@ -187,12 +187,12 @@ else:
 ```
 para cada vela h (1h):
     score_t60 = modelo_t60(features_últimas_60_velas_m1)
-    
+
     if score_t60 > 0.65:
         predição = "BULL"
         realidade = close[h+1] > close[h]?
         acerto = (predição == realidade)
-        
+
         logs.append({
             'hora': h,
             'score_t60': score_t60,

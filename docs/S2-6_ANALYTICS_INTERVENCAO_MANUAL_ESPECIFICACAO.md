@@ -3,12 +3,12 @@
 
 # S2-6 — Analytics de Intervenção Manual
 
-**ID:** S2-6  
-**Task:** Analytics de Intervenção Manual  
-**Estado:** 🔴 BACKLOG → 🟡 PRIORIZADO (24/02/2026)  
-**Owner:** Doc Advocate + Squad Multidisciplinar  
-**Timeline:** 24/02 - 27/02 (4 dias)  
-**Impacto Esperado:** +1-2% win rate via feedback trader-IA  
+**ID:** S2-6
+**Task:** Analytics de Intervenção Manual
+**Estado:** 🔴 BACKLOG → 🟡 PRIORIZADO (24/02/2026)
+**Owner:** Doc Advocate + Squad Multidisciplinar
+**Timeline:** 24/02 - 27/02 (4 dias)
+**Impacto Esperado:** +1-2% win rate via feedback trader-IA
 **Criticidade:** 🟠 MÉDIA (não bloqueia operações, melhora treinamento)
 
 ---
@@ -146,44 +146,44 @@ Código? > _
 ```python
 class FeedbackCollector:
     """Coletor de feedback de intervenção manual."""
-  
+
     def __init__(self, db_path: str):
         self.db_path = db_path
         self._init_db()
-  
+
     def _init_db(self):
         """Inicializa tabela intervencoes_manuais."""
         ...
-  
+
     def solicitar_feedback(self, operacao_id: str,
                           contexto: dict) -> FeedbackIntervencaoManual:
         """
         Exibe menu e coleta feedback do trader.
-  
+
         Retorna: FeedbackIntervencaoManual com código e timestamp.
         """
         ...
-  
+
     def registrar_intervencao(self,
                             feedback: FeedbackIntervencaoManual,
                             resultado: str) -> int:
         """
         Persiste feedback em intervencoes_manuais.
-  
+
         Retorna: id_intervencao (PK).
         """
         ...
-  
+
     def obter_historico(self,
                        filtro_data: Tuple[str, str]) ->
                        List[FeedbackIntervencaoManual]:
         """Retorna histórico de intervenções com filtro de data."""
         ...
-  
+
     def gerar_relatorio_agregado(self) -> dict:
         """
         Retorna análise agregada por código com contagem e percentual.
-  
+
         {
           "1": {"count": 45, "percentual": 18.3, "descricao": "Falha Técnica"},
           ...
@@ -198,7 +198,7 @@ class FeedbackCollector:
 @dataclass
 class FeedbackIntervencaoManual:
     """Feedback de intervenção manual do trader."""
-  
+
     codigo_intervencao: int  # 1-8
     timestamp: str
     contexto: dict  # {score, volatilidade, ...}
@@ -336,11 +336,11 @@ while True:
     try:
         # Lógica existente (BDI, SMC, ML)
         ordem_executada = executar_ordem_se_sinal_valido(...)
-  
+
         if ordem_executada:
             # NOVO: Aguardar resultado da posição
             resultado = aguardar_resultado_posicao(timeout=3600)
-  
+
             # NOVO: Se trader encerrou manualmente
             if resultado.tipo == "intervencao_manual":
                 feedback = feedback_collector.solicitar_feedback(
@@ -427,6 +427,6 @@ Outro                  |██ 1.2%  (3 ops)
 
 ---
 
-**Estado:** 🟡 PRIORIZADO  
-**Criado:** 2026-02-24T20:35:00Z  
+**Estado:** 🟡 PRIORIZADO
+**Criado:** 2026-02-24T20:35:00Z
 **Last Updated:** 2026-02-24T20:35:00Z

@@ -4,10 +4,10 @@
 
 # 📊 REVISÃO DAS PENDÊNCIAS — SPRINT 2 (Finalização)
 
-**Data da Revisão:** 2026-02-24T23:45:00Z  
-**Responsável:** Head de Finanças  
-**Status Geral:** 🟡 Sprint 2 em execução (60% completo)  
-**Timeline Original:** Sprint 2 (20/02 - 03/03)  
+**Data da Revisão:** 2026-02-24T23:45:00Z
+**Responsável:** Head de Finanças
+**Status Geral:** 🟡 Sprint 2 em execução (60% completo)
+**Timeline Original:** Sprint 2 (20/02 - 03/03)
 **Data Revisão:** 24/02 (Ponto de Controle)
 
 ---
@@ -313,27 +313,27 @@ futura do `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`:
 
 ### OPORTUNIDADE 1: Reconciliação Automática de Posições MT5
 
-**Severidade:** 🔴 CRÍTICA  
-**Complexidade:** 🟠 ALTA  
-**Timeline Estimada:** 1-2 dias  
+**Severidade:** 🔴 CRÍTICA
+**Complexidade:** 🟠 ALTA
+**Timeline Estimada:** 1-2 dias
 
 **Descrição:**
 Implementar rotina automática de reconciliação entre posições abertas em `sqlite`
 vs MT5 real. Sistema deve detectar desincronias (ex: posição fechada em MT5 mas não
 marcada em DB) e alertar/corrigir automaticamente.
 
-**Why:** Reduz risco operacional de decisões baseadas em dados desincronizados  
-**Impact:** -5-10% em false trades por desincronismo  
-**Owner:** Eng Sr + Infra DevOps  
+**Why:** Reduz risco operacional de decisões baseadas em dados desincronizados
+**Impact:** -5-10% em false trades por desincronismo
+**Owner:** Eng Sr + Infra DevOps
 **Sprint:** 3+
 
 ---
 
 ### OPORTUNIDADE 2: Limite de Exposição Dinâmica (Capital Adequação)
 
-**Severidade:** 🟠 ALTA  
-**Complexidade:** 🟠 ALTA  
-**Timeline Estimada:** 2-3 dias  
+**Severidade:** 🟠 ALTA
+**Complexidade:** 🟠 ALTA
+**Timeline Estimada:** 2-3 dias
 
 **Descrição:**
 Adicionar gate de capital adequação dinâmica que ajusta `max_exposure` baseado em:
@@ -342,87 +342,87 @@ Adicionar gate de capital adequação dinâmica que ajusta `max_exposure` basead
 - Correlação entre posições abertas
 - Volatilidade do mercado
 
-**Why:** Reduz risco de blow-up em dias de alta volatilidade  
-**Impact:** -20-30% em máximo drawdown aceitável  
+**Why:** Reduz risco de blow-up em dias de alta volatilidade
+**Impact:** -20-30% em máximo drawdown aceitável
 **Formula Base:**
 ```
 max_exposure = capital_inicial * (1 - (daily_pnl_pct / 100))
              * (1 - correlation_factor)
              * volatility_dampening_factor
 ```
-**Owner:** Risk Officer + Eng Sr  
+**Owner:** Risk Officer + Eng Sr
 **Sprint:** 3+
 
 ---
 
 ### OPORTUNIDADE 3: Consolidação de Ordens (Order Batching)
 
-**Severidade:** 🟡 MÉDIA  
-**Complexidade:** 🟡 MÉDIA  
-**Timeline Estimada:** 1-2 dias  
+**Severidade:** 🟡 MÉDIA
+**Complexidade:** 🟡 MÉDIA
+**Timeline Estimada:** 1-2 dias
 
 **Descrição:**
 Implementar logic que agrupa múltiplas ordens pequenas em ordem única maior
 quando detecta padrão de múltiplas entradas no mesmo ativo em <5 min.
 Benefício: Reduz taxas e slippage.
 
-**Why:** Otimiza custos de execução  
-**Impact:** +0.5-1% win rate via redução de custos  
-**Trigger:** >3 ordens no mesmo ativo em 5 min  
-**Action:** Consolidar em 1 ordem de tamanho somado  
-**Owner:** Eng Sr + Orders Executor  
+**Why:** Otimiza custos de execução
+**Impact:** +0.5-1% win rate via redução de custos
+**Trigger:** >3 ordens no mesmo ativo em 5 min
+**Action:** Consolidar em 1 ordem de tamanho somado
+**Owner:** Eng Sr + Orders Executor
 **Sprint:** 3+
 
 ---
 
 ### OPORTUNIDADE 4: Monitoramento de Correlação Intraday
 
-**Severidade:** 🟡 MÉDIA  
-**Complexidade:** 🟠 ALTA  
-**Timeline Estimada:** 2-3 dias  
+**Severidade:** 🟡 MÉDIA
+**Complexidade:** 🟠 ALTA
+**Timeline Estimada:** 2-3 dias
 
 **Descrição:**
 Implementar monitor em tempo real de correlação entre ativos da carteira.
 Se correlação > 0.7, emitir alerta e sugerir redução de exposição em um dos ativos.
 
-**Why:** Previne concentrated risk  
-**Impact:** -10-15% em correlação média da carteira  
+**Why:** Previne concentrated risk
+**Impact:** -10-15% em correlação média da carteira
 **Metrics:**
 - Pearson correlation (20-period rolling)
 - Trigger limit: 0.70
 - Alert color: YELLOW (>0.6) → RED (>0.75)
 
-**Owner:** Risk Officer + Data Engineer  
+**Owner:** Risk Officer + Data Engineer
 **Sprint:** 3+
 
 ---
 
 ### OPORTUNIDADE 5: Persistência de Estado com Backup Automático
 
-**Severidade:** 🔴 CRÍTICA  
-**Complexidade:** 🟠 ALTA  
-**Timeline Estimada:** 1-2 dias  
+**Severidade:** 🔴 CRÍTICA
+**Complexidade:** 🟠 ALTA
+**Timeline Estimada:** 1-2 dias
 
 **Descrição:**
 Implementar `.session_lock` file com backup automático a cada 5 min.
 Em caso de crash, sistema detecta e restaura estado anterior, permitindo
 retorno gracioso ao operador com histórico completo.
 
-**Why:** Aumenta resiliência operacional em caso de crash  
-**Impact:** -100% perda de estado em crash (recuperação automática)  
-**Storage:** ~/.operador_session_backup/ (hourly rotated)  
-**Restore:** Automático na próxima inicialização  
+**Why:** Aumenta resiliência operacional em caso de crash
+**Impact:** -100% perda de estado em crash (recuperação automática)
+**Storage:** ~/.operador_session_backup/ (hourly rotated)
+**Restore:** Automático na próxima inicialização
 
-**Owner:** Eng Sr + Infra DevOps  
+**Owner:** Eng Sr + Infra DevOps
 **Sprint:** 3+ (Oportunidade 20 do Roadmap)
 
 ---
 
 ### OPORTUNIDADE 6: Análise de Rejeição de Ordem (Dead Letter)
 
-**Severidade:** 🟡 MÉDIA  
-**Complexidade:** 🟡 MÉDIA  
-**Timeline Estimada:** 1-2 dias  
+**Severidade:** 🟡 MÉDIA
+**Complexidade:** 🟡 MÉDIA
+**Timeline Estimada:** 1-2 dias
 
 **Descrição:**
 Implementar queue de "ordens rejeitadas" que classifica rejeições por tipo:
@@ -434,19 +434,19 @@ Implementar queue de "ordens rejeitadas" que classifica rejeições por tipo:
 
 Cada categoria dispara ação corretiva automática ou alerta ao trader.
 
-**Why:** Reduz manual troubleshooting de ordens cuja falha não é aparente  
-**Impact:** +5-10% resolução automática de erros transientes  
-**Storage:** SQLite `rejected_orders` table com índices por tipo  
-**Owner:** Eng Sr + QA Automation  
+**Why:** Reduz manual troubleshooting de ordens cuja falha não é aparente
+**Impact:** +5-10% resolução automática de erros transientes
+**Storage:** SQLite `rejected_orders` table com índices por tipo
+**Owner:** Eng Sr + QA Automation
 **Sprint:** 3+
 
 ---
 
 ### OPORTUNIDADE 7: Calibração de Threshold de SMC por Sessão
 
-**Severidade:** 🟡 MÉDIA  
-**Complexidade:** 🟠 ALTA  
-**Timeline Estimada:** 2-3 dias  
+**Severidade:** 🟡 MÉDIA
+**Complexidade:** 🟠 ALTA
+**Timeline Estimada:** 2-3 dias
 
 **Descrição:**
 Implementar auto-calibração de thresholds de SMC baseada em características
@@ -459,22 +459,22 @@ observadas na abertura:
 Usar essas métricas para dynamicamente ajustar `confidence_min` e
 `risk_reward_min` para a sessão.
 
-**Why:** Adapta sistema a condições de mercado do dia  
-**Impact:** +1-2% win rate em dias de alta volatilidade  
+**Why:** Adapta sistema a condições de mercado do dia
+**Impact:** +1-2% win rate em dias de alta volatilidade
 **Formula:**
 ```
 confidence_min = 0.45 + (gap_pct * 0.5) + (atr_pct * 0.3) + (volume_anomaly * 0.2)
 ```
-**Owner:** ML Expert + Eng Sr  
+**Owner:** ML Expert + Eng Sr
 **Sprint:** 3+
 
 ---
 
 ### OPORTUNIDADE 8: Audit Trail Completo de Decisões
 
-**Severidade:** 🟡 MÉDIA  
-**Complexidade:** 🟠 ALTA  
-**Timeline Estimada:** 2-3 dias  
+**Severidade:** 🟡 MÉDIA
+**Complexidade:** 🟠 ALTA
+**Timeline Estimada:** 2-3 dias
 
 **Descrição:**
 Implementar `decision_audit_log` que registra para cada sinal **rejeitado**
@@ -486,19 +486,19 @@ pelo sistema:
 
 Usar para análise retrospectiva de decisões "boas" rejeitadas.
 
-**Why:** Melhora iteração do modelo via análise de "false negatives"  
-**Impact:** +0.5-1% win rate via aprendizado de rejeições  
-**Storage:** SQLite `decision_log` table (10M+ rows/ano)  
-**Owner:** ML Expert + Data Engineer  
+**Why:** Melhora iteração do modelo via análise de "false negatives"
+**Impact:** +0.5-1% win rate via aprendizado de rejeições
+**Storage:** SQLite `decision_log` table (10M+ rows/ano)
+**Owner:** ML Expert + Data Engineer
 **Sprint:** 3+
 
 ---
 
 ### OPORTUNIDADE 9: Circuit Breaker Dinâmico baseado em Sharpe
 
-**Severidade:** 🔴 CRÍTICA  
-**Complexidade:** 🟠 ALTA  
-**Timeline Estimada:** 2-3 dias  
+**Severidade:** 🔴 CRÍTICA
+**Complexidade:** 🟠 ALTA
+**Timeline Estimada:** 2-3 dias
 
 **Descrição:**
 Implementar circuit breaker que monitora Sharpe ratio em tempo real (últimas
@@ -508,20 +508,20 @@ Implementar circuit breaker que monitora Sharpe ratio em tempo real (últimas
 - 0.5 < Sharpe < 1.0: reduce leverage 50%
 - Sharpe < 0.5: HALT (só reentrada manual)
 
-**Why:** Protege capital em períodos de baixa qualidade de sinais  
-**Impact:** -30-40% em drawdown durante backtest ruins  
-**Calculation:** (P&L_2h - RF) / Volatility_2h  
+**Why:** Protege capital em períodos de baixa qualidade de sinais
+**Impact:** -30-40% em drawdown durante backtest ruins
+**Calculation:** (P&L_2h - RF) / Volatility_2h
 
-**Owner:** Risk Officer + ML Expert  
+**Owner:** Risk Officer + ML Expert
 **Sprint:** 3+
 
 ---
 
 ### OPORTUNIDADE 10: Sincronização Automática com Feedback Loop
 
-**Severidade:** 🟡 MÉDIA  
-**Complexidade:** 🟠 ALTA  
-**Timeline Estimada:** 2-3 dias  
+**Severidade:** 🟡 MÉDIA
+**Complexidade:** 🟠 ALTA
+**Timeline Estimada:** 2-3 dias
 
 **Descrição:**
 Integrar S2-6 (Analytics Manual) + ML pipeline para que:
@@ -531,11 +531,11 @@ Integrar S2-6 (Analytics Manual) + ML pipeline para que:
 4. Novo modelo testado em backtest imediato (últimas 2h)
 5. Se Sharpe > modelo ativo, hot-swap automático
 
-**Why:** Accelera iteração do modelo baseado em trader feedback  
-**Impact:** +1-3% win rate via continuous learning  
-**Safety:** Shadow mode (2h backtest) antes de hot-swap  
+**Why:** Accelera iteração do modelo baseado em trader feedback
+**Impact:** +1-3% win rate via continuous learning
+**Safety:** Shadow mode (2h backtest) antes de hot-swap
 
-**Owner:** ML Expert + Eng Sr + Data Engineer  
+**Owner:** ML Expert + Eng Sr + Data Engineer
 **Sprint:** 3
 
 ---
@@ -564,7 +564,7 @@ Integrar S2-6 (Analytics Manual) + ML pipeline para que:
 
 ### Para Finalizar Sprint 2 (27/02-03/03)
 
-1. **Priorize S2-4 + S2-5:** 
+1. **Priorize S2-4 + S2-5:**
    - Ambas críticas para confluência de curto prazo
    - Squad grande alocada
    - Gates diários garantem qualidade
@@ -602,6 +602,6 @@ Integrar S2-6 (Analytics Manual) + ML pipeline para que:
 
 ---
 
-> **[SYNC] Documento de Revisão Sprint 2 — 24/02/2026**  
+> **[SYNC] Documento de Revisão Sprint 2 — 24/02/2026**
 > **Próxima Revisão:** 27/02 14:00 BRT (Dia de Kickoff S2-4 + S2-5)
 

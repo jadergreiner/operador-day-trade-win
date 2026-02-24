@@ -1,8 +1,8 @@
 # 🛠️ S2-4 GUIA DE IMPLEMENTAÇÃO — Integração Fibonacci ao micro_score
 
-**Autor**: Arquiteto de Sistemas + Eng Sr  
-**Versão**: 1.0  
-**Data**: 24/02/2026  
+**Autor**: Arquiteto de Sistemas + Eng Sr
+**Versão**: 1.0
+**Data**: 24/02/2026
 **Status**: PRONTO PARA EXECUÇÃO (Sprint 2)
 
 ---
@@ -17,7 +17,7 @@
    ```bash
    # Arquivo chave
    scripts/agente_micro_tendencia_winfut.py
-  
+
    # Linhas importantes
    - Linha 303: @dataclass MimaItem (definição)
    - Linha 312: @dataclass MimaData (definição)
@@ -36,15 +36,15 @@
 3. Criar documento: `docs/S2-4_FIBONACCI_SPEC.md`
    ```markdown
    # Especificação Fibonacci
-  
+
    ## Código Existente
-  
+
    **Arquivo**: scripts/agente_micro_tendencia_winfut.py
    **Funções**: _calc_mimas(), _calc_ema()
    **Classes**: MimaItem, MimaData
-  
+
    ## Fan Score Range
-  
+
    - Calculo: 6 comparações (7 Mimas, pares consecutivos)
    - Min: -6 (todas EMAs em ordem decrescente)
    - Max: +6 (todas EMAs em ordem crescente)
@@ -56,7 +56,7 @@
    # ✅ JÁ CRIADO em tests/unit/test_s2_4_fibonacci.py
    # Rodar:
    python -m pytest tests/unit/test_s2_4_fibonacci.py -v
-  
+
    # Esperado: 19 PASSED ✅
    ```
 
@@ -84,12 +84,12 @@
            self.weight = weight
            self.min_fan_score = -6
            self.max_fan_score = 6
-  
+
        def normalize_fan_score(self, fan_score: int) -> float:
            """[-6, +6] → [0.0, 1.0]"""
            return (fan_score - self.min_fan_score) / \
                   (self.max_fan_score - self.min_fan_score)
-  
+
        def calculate_weighted_contribution(self, fan_score: int) -> float:
            """Contribution ao micro_score"""
            normalized = self.normalize_fan_score(fan_score)
@@ -112,10 +112,10 @@
    """Calculadora normalizada de Fibonacci (Mimas)."""
    from decimal import Decimal
    from typing import Union
-  
+
    class FibonacciCalculator:
        """Normaliza e pondera contribuição Fibonacci ao micro_score."""
-  
+
        def __init__(self, weight: float = 0.15):
            """
            Args:
@@ -123,11 +123,11 @@
            """
            if not (0.0 <= weight <= 0.30):
                raise ValueError(f"weight {weight} must be in [0.0, 0.30]")
-  
+
            self.weight = weight
            self.min_fan_score = -6
            self.max_fan_score = 6
-  
+
        def normalize_fan_score(self, fan_score: int) -> float:
            """Normalizar fan_score [-6, +6] para [0.0, 1.0]."""
            if not (self.min_fan_score <= fan_score <= self.max_fan_score):
@@ -137,13 +137,13 @@
                )
            range_size = self.max_fan_score - self.min_fan_score
            return (fan_score - self.min_fan_score) / float(range_size)
-  
+
        def calculate_weighted_contribution(self, fan_score: int) -> float:
            """Calcular contribuição ponderada ao micro_score.
-  
+
            Args:
                fan_score: Score de leque Fibonacci [-6, +6]
-  
+
            Returns:
                Contribuição normalizada e ponderada [0.0, 0.15]
            """
@@ -158,20 +158,20 @@
        # ... outros scores ...
        + result.mima.fan_score  # ← REMOVER ISSO
    )
-  
+
    # DEPOIS:
    from src.analysis.fibonacci_calculator import FibonacciCalculator
-  
+
    fibonacci_calc = FibonacciCalculator(weight=0.15)
    fibonacci_contribution = fibonacci_calc.calculate_weighted_contribution(
        result.mima.fan_score
    )
-  
+
    result.micro_score = (
        # ... outros scores ...
        + fibonacci_contribution  # ← ADICIONAR ISSO
    )
-  
+
    # Registrar para auditoria (opcional)
    result.fibonacci_normalized = fibonacci_calc.normalize_fan_score(
        result.mima.fan_score
@@ -183,7 +183,7 @@
    ```bash
    # Validar mypy
    mypy src/analysis/fibonacci_calculator.py --strict
-  
+
    # Esperado: Success: no issues found in 1 source file
    ```
 
@@ -196,7 +196,7 @@
 1. **Executar testes existentes**:
    ```bash
    python -m pytest tests/unit/test_s2_4_fibonacci.py -v
-  
+
    # Resultado esperado:
    # 19 PASSED ✅
    ```
@@ -204,24 +204,24 @@
 2. **Verificar cobertura**:
    ```bash
    python -m pytest tests/unit/test_s2_4_fibonacci.py --cov=src.analysis.fibonacci_calculator --cov-report=html
-  
+
    # Esperado: >98% coverage
    ```
 
 3. **Adicionar testes de integração** (novo arquivo):
    ```python
    # tests/unit/test_fibonacci_integration.py
-  
+
    import unittest
    from src.analysis.fibonacci_calculator import FibonacciCalculator
-  
+
    class TestFibonacciIntegrationWithCycleResult(unittest.TestCase):
        """Validar integração com micro_score sem quebra."""
-  
+
        def test_weighted_contribution_in_micro_score_range(self):
            """THEN: Contribuição fica dentro da range esperada."""
            calc = FibonacciCalculator(weight=0.15)
-  
+
            for fan_score in range(-6, 7):
                contrib = calc.calculate_weighted_contribution(fan_score)
                self.assertGreaterEqual(contrib, 0.0)
@@ -237,26 +237,26 @@
 1. **Rodar backtest isolado** (cria script):
    ```python
    # scripts/backtest_fibonacci_scenarios.py
-  
+
    import json
    from src.analysis.fibonacci_calculator import FibonacciCalculator
-  
+
    # Testar 4 pesos
    weights = [0.10, 0.15, 0.20, 0.25]
    results = {}
-  
+
    for weight in weights:
        calc = FibonacciCalculator(weight=weight)
-  
+
        # (Rodar backtest com seu dataset histórico)
        # ...
-  
+
        results[f"weight_{weight}"] = {
            "win_rate": win_rate,
            "sharpe_ratio": sharpe,
            "trades_count": count,
        }
-  
+
    # Salvar
    with open("backtest_fibonacci_results.json", "w") as f:
        json.dump(results, f, indent=2)
@@ -299,10 +299,10 @@
    ```bash
    # Copiar código para staging
    cp src/analysis/fibonacci_calculator.py /staging/src/analysis/
-  
+
    # Atualizar arquivo principal
    cp scripts/agente_micro_tendencia_winfut.py /staging/scripts/
-  
+
    # Validar imports
    python -c "from src.analysis.fibonacci_calculator import FibonacciCalculator; print('OK')"
    ```
@@ -311,10 +311,10 @@
    ```bash
    # Testar INICIAR.BAT em modo staging
    INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
-  
+
    # Validar logs
    tail -100 logs/micro_tendencia.log
-  
+
    # Esperado: Fibonacci score visível
    # [INFO] FIBONACCI_SCORE=0.87 (normalized)
    ```
@@ -323,7 +323,7 @@
    ```bash
    # Latência P95
    python -c "python scripts/benchmark_fibonacci.py"
-  
+
    # Esperado: <500ms por ciclo
    ```
 
@@ -342,24 +342,24 @@
 2. **Sign-off**: Criar documento `docs/S2-4_TRADER_VALIDATION.md`
    ```markdown
    # Validação de Sinais - Trader Líder
-  
+
    ## Observação em Staging
-  
-   **Data**: 26/02/2026  
+
+   **Data**: 26/02/2026
    **Duração**: 2.5h
-  
+
    ### Sinais Capturados
-  
+
    1. [14:30] COMPRA + Fibonacci +6 → Confirmado visualmente ✅
    2. [14:45] VENDA + Fibonacci -3 → Parcial, ruído mercado
    3. ...
-  
+
    ### Conclusão
-  
+
    - Win rate esperado: +3-5% ✅
    - Confiança visual: AUMENTOU ✅
    - Recomendação: **GO para Produção**
-  
+
    **Sign-off**: Trader Líder
    ```
 
@@ -373,7 +373,7 @@
    ```bash
    # Markdown
    python -m pymarkdown scan docs/S2-4_*.md
-  
+
    # Python
    mypy src/analysis/fibonacci_calculator.py --strict
    black src/analysis/fibonacci_calculator.py
@@ -396,9 +396,9 @@
            src/analysis/fibonacci_calculator.py \
            scripts/agente_micro_tendencia_winfut.py \
            tests/unit/test_s2_4_fibonacci.py
-  
+
    git commit -m "feat: S2-4 Integração Phicube (Mimas) - Fibonacci normalizado no micro_score"
-  
+
    git push origin main
    ```
 
@@ -482,5 +482,5 @@ weight = 0  # int (será ignorado!)
 
 ---
 
-**Status**: ✅ Guia READY FOR EXECUTION  
+**Status**: ✅ Guia READY FOR EXECUTION
 **Sign-off**: Arquiteto + Eng Sr

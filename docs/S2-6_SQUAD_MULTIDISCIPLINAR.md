@@ -3,12 +3,12 @@
 
 # S2-6 SQUAD MULTIDISCIPLINAR — Analytics de Intervenção Manual
 
-**ID Task:** S2-6  
-**Leader:** Doc Advocate (Persona 17)  
-**Squad Size:** 8 personas  
-**Data Criação:** 2026-02-24  
-**Data Início:** 2026-02-24 16:00  
-**Data Target Conclusão:** 2026-02-27 18:00  
+**ID Task:** S2-6
+**Leader:** Doc Advocate (Persona 17)
+**Squad Size:** 8 personas
+**Data Criação:** 2026-02-24
+**Data Início:** 2026-02-24 16:00
+**Data Target Conclusão:** 2026-02-27 18:00
 **Status:** 🟡 SQUAD FORMADA E ATIVADA
 
 ---
@@ -70,8 +70,8 @@ def _handle_manual_intervention(trade_id, resultado):
 - ✅ Validação de entrada (1-8)
 - ✅ Integração com `agente_micro_tendencia_winfut.py` funcional
 
-**Prazo:** 25/02 23:59  
-**Owner:** Eng Sr  
+**Prazo:** 25/02 23:59
+**Owner:** Eng Sr
 **Status:** 🔴 TODO
 
 ---
@@ -94,20 +94,20 @@ def _handle_manual_intervention(trade_id, resultado):
 
 class FeedbackDatasetPipeline:
     """Pipeline de integração feedback -> dataset."""
-  
+
     def export_intervencoes_para_csv(self,
                                     db_path: str) -> pd.DataFrame:
         """Export estruturado com features."""
         # feedback_csv com colunas:
         # timestamp, codigo, contexto_score, contexto_vol, resultado
         ...
-  
+
     def enrich_features(self, df: pd.DataFrame) -> pd.DataFrame:
         """Enriquece com features de contexto."""
         # Extrai: score, volatilidade, win_rate, p_and_l
         # Normaliza e une com features técnicas existentes
         ...
-  
+
     def merge_com_dataset_principal(self,
                                    feedback_df: pd.DataFrame,
                                    principal_path: str) -> None:
@@ -121,8 +121,8 @@ class FeedbackDatasetPipeline:
 - ✅ Validação de distribuição
 - ✅ Documentação de uso
 
-**Prazo:** 26/02 23:59  
-**Owner:** ML Expert  
+**Prazo:** 26/02 23:59
+**Owner:** ML Expert
 **Status:** 🔴 TODO
 
 ---
@@ -151,7 +151,7 @@ class FeedbackRequest(BaseModel):
     timestamp: str
     contexto: dict
     descricao: str = ""
-  
+
     @validator('codigo')
     def codigo_valido(cls, v):
         if not 1 <= v <= 8:
@@ -180,8 +180,8 @@ async def obter_analise(data_inicio: str, data_fim: str):
 - ✅ Rate limiting básico
 - ✅ Documentação OpenAPI
 
-**Prazo:** 26/02 23:59  
-**Owner:** Arquiteto Sistemas  
+**Prazo:** 26/02 23:59
+**Owner:** Arquiteto Sistemas
 **Status:** 🔴 TODO
 
 ---
@@ -232,8 +232,8 @@ def backup_analytics_db(db_path: str, backup_dir: str):
 - ✅ Health check integrado
 - ✅ Disaster recovery runbook
 
-**Prazo:** 25/02 23:59  
-**Owner:** Infra DevOps  
+**Prazo:** 25/02 23:59
+**Owner:** Infra DevOps
 **Status:** 🔴 TODO
 
 ---
@@ -284,8 +284,8 @@ END;
 - ✅ Retention policy automatizada
 - ✅ Relatório de performance
 
-**Prazo:** 25/02 23:59  
-**Owner:** Data Engineer  
+**Prazo:** 25/02 23:59
+**Owner:** Data Engineer
 **Status:** 🔴 TODO
 
 ---
@@ -441,8 +441,8 @@ def test_cleanup_retention_policy():
 - ✅ Coverage report: 98%+
 - ✅ Todos testes verbosos em português
 
-**Prazo:** 26/02 23:59  
-**Owner:** QA Automation  
+**Prazo:** 26/02 23:59
+**Owner:** QA Automation
 **Status:** 🔴 TODO
 
 ---
@@ -467,21 +467,21 @@ def registrar_intervencao(self,
                          feedback: FeedbackIntervencaoManual,
                          resultado: str) -> int:
     """Registra feedback de intervenção manual em BD.
-  
+
     Persiste a intervenção com timestamp sincronizado, código
     de classificação (1-8) e contexto de mercado capturado.
-  
+
     Args:
         feedback: Objeto FeedbackIntervencaoManual com os dados.
         resultado: Resultado da operação ('win', 'loss', 'closed').
-  
+
     Returns:
         id_intervencao: ID da linha inserida (PK).
-  
+
     Raises:
         ValueError: Se código_intervencao não está entre 1-8.
         sqlite3.Error: Se erro ao escrever BD.
-  
+
     Examples:
         >>> feedback = FeedbackIntervencaoManual(
         ...     codigo_intervencao=3,
@@ -501,8 +501,8 @@ def registrar_intervencao(self,
 - ✅ `docs/S2-6_OPERACIONAL_GUIA.md`: Guia para traders
 - ✅ Lint: 0 erros pymarkdown
 
-**Prazo:** 27/02 23:59  
-**Owner:** Head Documentação  
+**Prazo:** 27/02 23:59
+**Owner:** Head Documentação
 **Status:** 🔴 TODO
 
 ---
@@ -564,8 +564,8 @@ def registrar_intervencao(self,
 - ✅ `docs/SYNCHRONIZATION.md`: New sync record
 - ✅ Validação MONITOR_OPERADOR.bat sem erros
 
-**Prazo:** 27/02 23:59  
-**Owner:** Doc Advocate  
+**Prazo:** 27/02 23:59
+**Owner:** Doc Advocate
 **Status:** 🔴 TODO
 
 ---
@@ -608,6 +608,6 @@ Task 8 │        │        │ ▓▓▓▓▓▓│  Governance
 
 ---
 
-**Status:** 🟡 FORMADA  
-**Created:** 2026-02-24T20:40:00Z  
+**Status:** 🟡 FORMADA
+**Created:** 2026-02-24T20:40:00Z
 **Target Delivery:** 2026-02-27T18:00:00Z

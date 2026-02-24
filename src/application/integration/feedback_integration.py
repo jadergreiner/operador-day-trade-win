@@ -1,6 +1,6 @@
 """Integração de feedback ao loop principal do agente.
 
-Este módulo mostra como integrar FeedbackCollector ao 
+Este módulo mostra como integrar FeedbackCollector ao
 agente_micro_tendencia_winfut.py de forma não-intrusiva.
 """
 
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class FeedbackIntegrationManager:
     """Gerenciador de integração de feedback ao loop principal.
-    
+
     Responsabilidades:
     - Capturar contexto de mercado durante operação
     - Solicitar feedback ao trader quando posição encerrada manualmente
@@ -26,7 +26,7 @@ class FeedbackIntegrationManager:
 
     def __init__(self, feedback_db_path: str):
         """Inicializa gerenciador de feedback.
-        
+
         Args:
             feedback_db_path: Caminho para BD de feedback SQLite.
         """
@@ -43,17 +43,17 @@ class FeedbackIntegrationManager:
         p_and_l_sessao: float,
     ) -> None:
         """Captura contexto da operação antes de sua conclusão.
-        
+
         Esta função deve ser chamada APÓS uma ordem ser executada
         e a posição estar aberta.
-        
+
         Args:
             trade_id: ID único da operação em execução.
             score_ia: Score da IA para este trade (0-1).
             volatilidade_atr: ATR atual do instrumento.
             win_rate_sessao: Win rate acumulado da sessão.
             p_and_l_sessao: P&L acumulado da sessão.
-        
+
         Examples:
             >>> manager.capture_trade_context(
             ...     trade_id="WINFUT-2026-02-24-14-30",
@@ -78,18 +78,18 @@ class FeedbackIntegrationManager:
         trade_outcome: str,
     ) -> Optional[Dict]:
         """Solicita feedback ao trader quando intervenção manual detecta.
-        
+
         Deve ser chamado quando:
         - Trader encerra posição manualmente via interface
         - Sistema detecta encerramento externo (MT5)
         - Posição atinge timeout e trader a encerra manualmente
-        
+
         Args:
             trade_outcome: Resultado da operação ('win', 'loss', 'closed').
-        
+
         Returns:
             Dicionário com dados de feedback registrados ou None se cancelado.
-        
+
         Examples:
             >>> resultado = manager.handle_manual_intervention("win")
             >>> if resultado:
@@ -137,12 +137,12 @@ class FeedbackIntegrationManager:
 
     def get_feedback_status_badge(self) -> str:
         """Retorna badge com status agregado de feedback.
-        
+
         Útil para exibir no dashboard MONITOR_OPERADOR.bat
-        
+
         Returns:
             String com status e estatísticas.
-        
+
         Examples:
             >>> badge = manager.get_feedback_status_badge()
             >>> print(badge)
@@ -205,10 +205,10 @@ while True:
     try:
         # Lógica existente: BDI, SMC, ML
         ordem_executada = executar_ordem_se_sinal_valido(...)
-        
+
         if ordem_executada:
             trade_id = gerar_trade_id()  # Ex: "WINFUT-2026-02-24-14-30"
-            
+
             # NOVO: Capturar contexto IMEDIATAMENTE após execução
             feedback_manager.capture_trade_context(
                 trade_id=trade_id,
@@ -217,30 +217,30 @@ while True:
                 win_rate_sessao=stats.win_rate,
                 p_and_l_sessao=stats.p_and_l_resultado,
             )
-            
+
             # Aguardar resultado (pode ser automático ou manual)
             resultado = aguardar_resultado_posicao(
                 trade_id=trade_id,
                 timeout=3600,  # 1 hora
             )
-            
+
             # NOVO: Se encerramento manual
             if resultado.tipo == "intervencao_manual":
                 feedback_response = feedback_manager.handle_manual_intervention(
                     trade_outcome=resultado.outcome,
                 )
-                
+
                 if feedback_response:
                     logger.info(
                         f"Feedback coletado. "
                         f"Código: {feedback_response['codigo']} "
                         f"({feedback_response['descricao']})"
                     )
-        
+
         # NOVO: Atualizar status badge no MONITOR_OPERADOR.bat
         status_badge = feedback_manager.get_feedback_status_badge()
         print(f"\\n{status_badge}\\n")
-        
+
     except Exception as e:
         logger.error(f"Erro no loop: {e}")
         time.sleep(5)

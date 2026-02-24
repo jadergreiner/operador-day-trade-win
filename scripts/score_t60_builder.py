@@ -93,10 +93,10 @@ class ScoreT60Builder:
             "roc_12",
             # Slopes (3)
             "slope_5", "slope_10", "slope_20",
-            # Volatilidade (1)
-            "volatility_20",
-            # Adicionais (4)
-            "volume_profile", "price_momentum", "trend_strength", "mean_reversion"
+            # Volatilidade (2)
+            "volatility_20", "volatility_5",
+            # Adicionais (5) ← Expandido de 4
+            "volume_profile", "price_momentum", "trend_strength", "mean_reversion", "adx"
         ]
 
     def load_data(self, filepath: str) -> DataFrame:
@@ -225,6 +225,9 @@ class ScoreT60Builder:
         # Volatilidade (std 20)
         df["volatility_20"] = df["close"].pct_change().rolling(20).std()
 
+        # Volatilidade curta (std 5)
+        df["volatility_5"] = df["close"].pct_change().rolling(5).std()
+
         # Features adicionais
         df["volume_profile"] = (
             df["volume"] - df["volume"].rolling(20).mean()
@@ -237,8 +240,25 @@ class ScoreT60Builder:
             df["close"] - df["close"].rolling(30).mean()
         ) / df["close"].rolling(30).std()
 
+        # ADX (Average Directional Index) - versão simplificada
+        up_move = df["high"].diff()
+        down_move = -df["low"].diff()
+        plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0)
+        minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0)
+        tr = np.maximum(
+            df["high"] - df["low"],
+            np.maximum(
+                abs(df["high"] - df["close"].shift()),
+                abs(df["low"] - df["close"].shift())
+            )
+        )
+        plus_di = 100 * plus_dm / tr
+        minus_di = 100 * minus_dm / tr
+        dx = 100 * abs(plus_di - minus_di) / (plus_di + minus_di + 1e-10)
+        df["adx"] = dx.rolling(14).mean()
+
         # Preencher NaNs iniciais
-        df = df.fillna(method="bfill").fillna(method="ffill")
+        df = df.bfill().ffill()
 
         logger.info(f"✅ {len(self.features_list)} features extraídas")
 
