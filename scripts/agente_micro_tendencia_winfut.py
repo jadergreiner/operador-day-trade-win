@@ -107,6 +107,7 @@ from src.application.services.diary_feedback import (
     load_latest_feedback,
 )
 from src.domain.services.atr_calibrator import ATRCalibrator
+from src.fibonacci_calculator import FibonacciCalculator
 
 # --- Imports movidos para otimização de performance (S1-5) ---
 try:
@@ -142,6 +143,10 @@ _atr_calibrator = ATRCalibrator(
     max_trailing_stop=Decimal("400"),
     high_volatility_threshold=Decimal("300")
 )
+
+# FibonacciCalculator para normalização do Fan Score (S2-4)
+# Transforma fan_score [-6, +6] em contribuição [0.0, 0.15] ao micro_score
+_fibonacci_calc = FibonacciCalculator(weight=0.15)
 
 # Diretiva ativa do Head Financeiro (carregada na main, atualizada a cada ciclo)
 _active_directive: HeadDirective | None = None
@@ -3176,6 +3181,10 @@ def _run_cycle(mt5: MT5Adapter) -> CycleResult:
     result.mima.fan_score = final_score
 
     # 11) Score Micro (soma dos componentes intraday)
+    # S2-4: Normalizar fan_score com FibonacciCalculator [-6,+6] -> contribution [0.0,0.15]
+    fibonacci_contribution = _fibonacci_calc.calculate_weighted_contribution(
+        result.mima.fan_score
+    )
     result.micro_score = (
         result.smc.bos_score + result.smc.equilibrium_score + result.smc.fvg_score
         + result.vwap_score
@@ -3185,14 +3194,17 @@ def _run_cycle(mt5: MT5Adapter) -> CycleResult:
         + result.volume_score + result.obv_score
         + result.candle_pattern_score
         + result.aggression_score
-        + result.mima.fan_score  # Ativação oficial do Phicube no Score (+-6)
+        + fibonacci_contribution  # S2-4: Contribuição Fibonacci normalizada
         + result.smc_multi_tf.confluence_score  # S2-3: Confluência M1/M5 (Micro Convicção)
     )
-    # 12) Classificação micro tendência
+    # 12) Clamp micro_score em intervalo válido [0.0, 1.0] para probabilidade
+    result.micro_score = max(0.0, min(1.0, result.micro_score))
+    
+    # 13) Classificação micro tendência
     result.micro_trend = _classify_micro_trend(
         result.macro_score, result.micro_score, result.momentum.adx,
     )
-    # 13) Gerar oportunidades
+    # 14) Gerar oportunidades
     closes_m5 = [c.close.value for c in candles_m5]
     highs_m5 = [c.high.value for c in candles_m5]
     lows_m5 = [c.low.value for c in candles_m5]
