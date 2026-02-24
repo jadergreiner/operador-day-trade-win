@@ -44,6 +44,43 @@ class _MicroTrendConfig(_BaseTradingConfig):
     )
 
 
+def _start_session(db_path: str, mode: str, account: int) -> int:
+    """Registra início da sessão de trading."""
+    import sqlite3
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO trading_sessions (timestamp_start, mode, account)
+            VALUES (?, ?, ?)
+        """, (datetime.now().isoformat(), mode, account))
+        sid = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return sid
+    except Exception:
+        return 0
+
+
+def _end_session(db_path: str, session_id: int):
+    """Registra fim da sessão de trading."""
+    import sqlite3
+    if not session_id:
+        return
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE trading_sessions
+            SET timestamp_end = ?, status = 'COMPLETED'
+            WHERE id = ?
+        """, (datetime.now().isoformat(), session_id))
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+
 def _get_config() -> _MicroTrendConfig:
     return _MicroTrendConfig()
 
@@ -70,6 +107,21 @@ from src.application.services.diary_feedback import (
     load_latest_feedback,
 )
 
+# --- Imports movidos para otimização de performance (S1-5) ---
+try:
+    from src.application.services.rl_persistence_service import RLPersistenceService
+    from src.infrastructure.repositories.rl_repository import SqliteRLRepository
+    from src.infrastructure.database.rl_schema import create_rl_tables
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+except ImportError:
+    # Fallback para ambiente de desenvolvimento sem todas as deps
+    RLPersistenceService = None
+    SqliteRLRepository = None
+    create_rl_tables = None
+    create_engine = None
+    sessionmaker = None
+
 # ────────────────────────────────────────────────────────────────
 # Constantes
 # ────────────────────────────────────────────────────────────────
@@ -87,6 +139,9 @@ _active_directive: HeadDirective | None = None
 
 # Feedback do diário (análise crítica RL, carregado a cada 10 ciclos)
 _diary_feedback: DiaryFeedback | None = None
+
+# ── Auditoria de Sessão ──
+_session_id: int | None = None
 
 # ── Dampening do Macro Score (EMA inter-ciclo) ──
 _prev_macro_score: int | None = None
@@ -231,6 +286,30 @@ class SMCMultiTF:
 
 
 @dataclass
+class MimaItem:
+    """Item individual de Mima (Phi Cube)."""
+
+    period: int
+    value: Decimal = Decimal("0")
+    slope: str = "NEUTRO"  # ALTA, BAIXA, NEUTRO
+
+
+@dataclass
+class MimaData:
+    """Dados consolidados de Mimas (Phi Cube)."""
+
+    m8: MimaItem = field(default_factory=lambda: MimaItem(8))
+    m17: MimaItem = field(default_factory=lambda: MimaItem(17))
+    m34: MimaItem = field(default_factory=lambda: MimaItem(34))
+    m72: MimaItem = field(default_factory=lambda: MimaItem(72))
+    m144: MimaItem = field(default_factory=lambda: MimaItem(144))
+    m305: MimaItem = field(default_factory=lambda: MimaItem(305))
+    m610: MimaItem = field(default_factory=lambda: MimaItem(610))
+    alignment: str = "MISTO"     # ALTA, BAIXA, MISTO
+    fan_score: int = 0         # Pontuação de alinhamento [0-7]
+
+
+@dataclass
 class MomentumData:
     """Indicadores de momentum M5."""
 
@@ -296,6 +375,7 @@ class CycleResult:
     smc: SMCData = field(default_factory=SMCData)
     smc_multi_tf: SMCMultiTF = field(default_factory=SMCMultiTF)
     momentum: MomentumData = field(default_factory=MomentumData)
+    mima: MimaData = field(default_factory=MimaData)
     regions: list = field(default_factory=list)
     opportunities: list = field(default_factory=list)
     # Volume
@@ -305,6 +385,8 @@ class CycleResult:
     candle_pattern_score: int = 0
     aggression_score: int = 0
     aggression_ratio: Decimal = Decimal("0.50")
+    # Divergências (Advogado do Diabo)
+    divergence_notes: str = ""
 
 
 # ────────────────────────────────────────────────────────────────
@@ -1202,6 +1284,89 @@ def _map_regions_multi_tf(
     merged.sort(key=lambda r: abs(r.distance_pct))
 
     return merged
+
+def _calc_mimas(candles: list[Candle]) -> MimaData:
+    """Calcula Mimas (Phi Cube) - Médias Exponenciais.
+
+    Prazos: 8, 17, 34, 72, 144, 305, 610.
+    """
+    mima = MimaData()
+    if not candles:
+        return mima
+
+    closes = [c.close.value for c in candles]
+    periods = [8, 17, 34, 72, 144, 305, 610]
+    items = [mima.m8, mima.m17, mima.m34, mima.m72, mima.m144, mima.m305, mima.m610]
+
+    for i, p in enumerate(periods):
+        emas = _calc_ema(closes, p)
+        if len(emas) >= 2 and emas[-1] > 0:
+            items[i].value = emas[-1].quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+            if emas[-1] > emas[-2]:
+                items[i].slope = "ALTA"
+            elif emas[-1] < emas[-2]:
+                items[i].slope = "BAIXA"
+
+    # Alinhamento (Basic Fan)
+    if mima.m8.value > mima.m17.value > mima.m34.value > mima.m72.value:
+        mima.alignment = "ALTA"
+    elif mima.m8.value < mima.m17.value < mima.m34.value < mima.m72.value:
+        mima.alignment = "BAIXA"
+
+    # Score de Leque (0 a 7 - quantidade de mimas alinhadas acima da próxima)
+    score = 0
+    mimas_list = [mima.m8, mima.m17, mima.m34, mima.m72, mima.m144, mima.m305, mima.m610]
+    for j in range(len(mimas_list) - 1):
+        if mimas_list[j].value > mimas_list[j + 1].value:
+            score += 1
+        elif mimas_list[j].value < mimas_list[j + 1].value:
+            score -= 1
+    mima.fan_score = score
+
+    return mima
+
+
+def _check_divergences(result: CycleResult, candles: list[Candle]) -> str:
+    """Advogado do Diabo: Identifica divergências mercado vs modelo.
+
+    Coisas como:
+    - Agente manda VENDER mas fluxo/volatilidade está comprador.
+    - Score Macro negativo mas o índice está renovando máximas.
+    - Mercado reverteu mas o Bias continua no lado oposto.
+    """
+    notes = []
+    if not candles or len(candles) < 2:
+        return ""
+
+    last = candles[-1]
+    prev = candles[-2]
+    price = result.price_current
+
+    # 1. Divergência Macro Score vs Preço
+    if result.macro_score < -3 and price > prev.close.value:
+        notes.append("MACRO_URSO_PRECO_ALTO: Score negativo mas preço subindo")
+    elif result.macro_score > 3 and price < prev.close.value:
+        notes.append("MACRO_TOURO_PRECO_BAIXO: Score positivo mas preço caindo")
+
+    # 2. Divergência Fluxo (Proxy Aggression) vs Intenção Operadora
+    for opp in result.opportunities:
+        if opp.direction == "COMPRA" and result.aggression_ratio < Decimal("0.45"):
+            notes.append("COMPRA_CONTRA_FLUXO: Operador sugere compra com agressão vendedora")
+        elif opp.direction == "VENDA" and result.aggression_ratio > Decimal("0.55"):
+            notes.append("VENDA_CONTRA_FLUXO: Operador sugere venda com agressão compradora")
+
+    # 3. Divergência de Volatilidade / VWAP
+    if result.vwap_score >= 1 and price > result.vwap.vwap:
+        notes.append("REVERSAO_BLOQUEADA: Agente busca compra mas preço acima do VWAP")
+    elif result.vwap_score <= -1 and price < result.vwap.vwap:
+        notes.append("REVERSAO_BLOQUEADA: Agente busca venda mas preço abaixo do VWAP")
+
+    # 4. Reversão não capturada
+    if abs(result.macro_score) < 2 and abs(price - prev.close.value) > 100:
+        notes.append("MOVIMENTO_ACELERADO_RESERVADO: O mercado correu mas o score está neutro")
+
+    return " | ".join(notes) if notes else ""
+
 
 def _calc_momentum(candles: list[Candle]) -> MomentumData:
     """Calcula indicadores de momentum a partir de candles M5."""
@@ -2888,6 +3053,28 @@ def _run_cycle(mt5: MT5Adapter) -> CycleResult:
     )
     # 10) Padrões de candle
     result.candle_pattern_score = _detect_candle_patterns(candles_m5, result.regions)
+    # 10b) Mima (Phi Cube) - Multi Timeframe (8, 17, 34 no M5 / 72, 144, 305, 610 no M15)
+    # Proposta fractal Phicube: Mima 72 do M15 é a Mima 17 do H1 (Estrutura)
+    mima_m5 = _calc_mimas(candles_m5)
+    mima_m15 = _calc_mimas(candles_m15) if candles_m15 else mima_m5
+    
+    # Consolidar Leque: Gatilhos (M5) + Estrutura (M15)
+    result.mima = mima_m5
+    # Sobrescreve as mimas lentas com as do fractal superior (M15) para mais estabilidade
+    result.mima.m72 = mima_m15.m72
+    result.mima.m144 = mima_m15.m144
+    result.mima.m305 = mima_m15.m305
+    result.mima.m610 = mima_m15.m610
+    
+    # Recalcula o fan_score com o mix fractal
+    final_score = 0
+    mlist = [result.mima.m8, result.mima.m17, result.mima.m34, result.mima.m72, 
+             result.mima.m144, result.mima.m305, result.mima.m610]
+    for j in range(len(mlist) - 1):
+        if mlist[j].value > mlist[j+1].value: final_score += 1
+        elif mlist[j].value < mlist[j+1].value: final_score -= 1
+    result.mima.fan_score = final_score
+
     # 11) Score Micro (soma dos componentes intraday)
     result.micro_score = (
         result.smc.bos_score + result.smc.equilibrium_score + result.smc.fvg_score
@@ -2898,6 +3085,7 @@ def _run_cycle(mt5: MT5Adapter) -> CycleResult:
         + result.volume_score + result.obv_score
         + result.candle_pattern_score
         + result.aggression_score
+        + result.mima.fan_score  # Ativação oficial do Phicube no Score (+-6)
     )
     # 12) Classificação micro tendência
     result.micro_trend = _classify_micro_trend(
@@ -2909,6 +3097,10 @@ def _run_cycle(mt5: MT5Adapter) -> CycleResult:
     lows_m5 = [c.low.value for c in candles_m5]
     atr = _calc_atr(highs_m5, lows_m5, closes_m5, 14) if candles_m5 else Decimal("0")
     result.opportunities = _generate_opportunities(result, atr)
+
+    # 14) Advogado do Diabo (Divergências)
+    result.divergence_notes = _check_divergences(result, candles_m5)
+
     return result
 
 
@@ -2921,6 +3113,17 @@ def _create_micro_trend_tables(db_path: str) -> None:
     import sqlite3
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS trading_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp_start DATETIME NOT NULL,
+            timestamp_end DATETIME,
+            mode TEXT NOT NULL,
+            account INTEGER,
+            status TEXT DEFAULT 'IN_PROGRESS',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS micro_trend_decisions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -3050,10 +3253,33 @@ def _create_micro_trend_tables(db_path: str) -> None:
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    # FIX 23/02/2026: BIRTH CERTIFICATE - Colunas extras para trade snapshot
+    for col_def in [
+        ("decision_id", "INTEGER"),
+        ("mima_fan_score", "INTEGER"),
+        ("divergence_notes", "TEXT"),
+        ("aggression_ratio", "REAL"),
+    ]:
+        try:
+            cursor.execute(f"ALTER TABLE simulated_trades ADD COLUMN {col_def[0]} {col_def[1]}")
+        except Exception:
+            pass  # Coluna já existe
+
     # FIX 12/02/2026: Colunas extras para dampening e guardian override
     for col_def in [
         ("macro_score_raw", "INTEGER"),
         ("directive_suspended", "INTEGER DEFAULT 0"),
+        ("mima_8", "REAL"),
+        ("mima_17", "REAL"),
+        ("mima_34", "REAL"),
+        ("mima_72", "REAL"),
+        ("mima_144", "REAL"),
+        ("mima_305", "REAL"),
+        ("mima_610", "REAL"),
+        ("mima_alignment", "TEXT"),
+        ("mima_fan_score", "INTEGER"),
+        ("divergence_notes", "TEXT"),
+        ("aggression_ratio", "REAL"),
     ]:
         try:
             cursor.execute(f"ALTER TABLE micro_trend_decisions ADD COLUMN {col_def[0]} {col_def[1]}")
@@ -3063,8 +3289,8 @@ def _create_micro_trend_tables(db_path: str) -> None:
     conn.close()
 
 
-def _persist_cycle(db_path: str, result: CycleResult) -> None:
-    """Persiste resultado do ciclo no SQLite."""
+def _persist_cycle(db_path: str, result: CycleResult) -> int:
+    """Persiste resultado do ciclo no SQLite. Retorna decision_id."""
     import sqlite3
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -3080,8 +3306,10 @@ def _persist_cycle(db_path: str, result: CycleResult) -> None:
         (timestamp, macro_score, macro_signal, macro_confidence, micro_score,
          micro_trend, price_current, price_open, vwap, pivot_pp,
          smc_direction, smc_equilibrium, adx, rsi, num_opportunities,
-         macro_score_raw, directive_suspended)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         macro_score_raw, directive_suspended,
+         mima_8, mima_17, mima_34, mima_72, mima_144, mima_305, mima_610,
+         mima_alignment, mima_fan_score, divergence_notes, aggression_ratio)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         result.timestamp.isoformat(),
         result.macro_score, result.macro_signal, float(result.macro_confidence),
@@ -3092,6 +3320,10 @@ def _persist_cycle(db_path: str, result: CycleResult) -> None:
         float(result.momentum.adx), float(result.momentum.rsi),
         len(result.opportunities),
         raw_score, directive_suspended,
+        float(result.mima.m8.value), float(result.mima.m17.value), float(result.mima.m34.value),
+        float(result.mima.m72.value), float(result.mima.m144.value), float(result.mima.m305.value),
+        float(result.mima.m610.value), result.mima.alignment, result.mima.fan_score,
+        result.divergence_notes, float(result.aggression_ratio) if result.aggression_ratio else 0.0,
     ))
     decision_id = cursor.lastrowid
     # Items macro
@@ -3133,6 +3365,7 @@ def _persist_cycle(db_path: str, result: CycleResult) -> None:
         ))
     conn.commit()
     conn.close()
+    return decision_id
 
 
 # ────────────────────────────────────────────────────────────────
@@ -3384,7 +3617,7 @@ def _display_cycle(result: CycleResult):
     print(f"╚{'═' * 68}╝")
 
 
-def _persist_simulated_trade(db_path: str, opp: 'Opportunity', result: 'CycleResult') -> None:
+def _persist_simulated_trade(db_path: str, opp: 'Opportunity', result: 'CycleResult', decision_id: int = 0) -> None:
     """Persiste um trade simulado (shadow mode) no banco de dados."""
     import sqlite3
     from datetime import date
@@ -3394,8 +3627,9 @@ def _persist_simulated_trade(db_path: str, opp: 'Opportunity', result: 'CycleRes
         INSERT INTO simulated_trades
         (timestamp, session_date, direction, entry_price, stop_loss, take_profit,
          risk_reward, confidence, reason, macro_score, micro_score, micro_trend,
-         smc_direction, price_at_decision)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         smc_direction, price_at_decision, decision_id, mima_fan_score,
+         divergence_notes, aggression_ratio)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         datetime.now().isoformat(),
         date.today().isoformat(),
@@ -3411,6 +3645,10 @@ def _persist_simulated_trade(db_path: str, opp: 'Opportunity', result: 'CycleRes
         result.micro_trend if hasattr(result, 'micro_trend') else None,
         result.smc_direction if hasattr(result, 'smc_direction') else None,
         float(result.price_current) if result.price_current else None,
+        decision_id,
+        result.mima.fan_score if hasattr(result, 'mima') else 0,
+        result.divergence_notes if hasattr(result, 'divergence_notes') else "",
+        float(result.aggression_ratio) if hasattr(result, 'aggression_ratio') and result.aggression_ratio else 0.0,
     ))
     conn.commit()
     conn.close()
@@ -3629,20 +3867,24 @@ def _is_market_hours() -> bool:
 def main():
     """Loop principal do agente de micro tendências."""
     config = _get_config()
-    global DB_PATH, AUTO_TRADING_ENABLED, SIMULATE_MODE
+    global DB_PATH, AUTO_TRADING_ENABLED, SIMULATE_MODE, _session_id
     DB_PATH = config.db_path
 
     # Checa flag --account <numero> para override de conta MT5
+    login_id = config.mt5_login
     if "--account" in sys.argv:
         idx = sys.argv.index("--account")
         if idx + 1 < len(sys.argv):
             config.mt5_login = int(sys.argv[idx + 1])
+            login_id = config.mt5_login
             print(f"\n  🔑 Conta MT5 override: {config.mt5_login}")
 
     # Checa flag --simulate (shadow mode — prioridade sobre --auto-trade)
+    mode_str = "ANALYSIS"
     if "--simulate" in sys.argv:
         SIMULATE_MODE = True
         AUTO_TRADING_ENABLED = True  # Ativa avaliação de oportunidades
+        mode_str = "SIMULATED"
         print("\n  🧪  MODO SIMULADO (SHADOW MODE) ATIVADO")
         print("  🧪  Nenhuma ordem será enviada ao MT5")
         print("  🧪  Sinais serão logados em simulated_trades para análise posterior")
@@ -3650,6 +3892,7 @@ def main():
     # Checa flag --auto-trade
     elif "--auto-trade" in sys.argv:
         AUTO_TRADING_ENABLED = True
+        mode_str = "REAL"
         print("\n  ⚠️  MODO TRADING AUTOMÁTICO ATIVADO")
         print("  ⚠️  ORDENS REAIS SERÃO EXECUTADAS NO MT5")
         print("  ⚠️  Pressione Ctrl+C para encerrar com segurança\n")
@@ -3659,6 +3902,10 @@ def main():
     _create_micro_trend_tables(DB_PATH)
     create_directives_table(DB_PATH)
     create_diary_feedback_table(DB_PATH)
+
+    # ── Auditoria de Sessão ──
+    _session_id = _start_session(DB_PATH, mode_str, login_id)
+    print(f"  🏁 Sessão ID: {_session_id} iniciada")
 
     # ── Carrega diretivas do Head Financeiro ──
     global _active_directive
@@ -3770,8 +4017,23 @@ def main():
     cycle_count = 0
     trading_mgr: Optional[MicroTradingManager] = None
 
+    # Inicializa engine global de RL para evitar overhead
+    rl_engine = None
+    if all([create_engine, sessionmaker, SqliteRLRepository, RLPersistenceService]):
+        try:
+            engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
+            create_rl_tables(engine)
+            SessionLocal = sessionmaker(bind=engine)
+            rl_db_session = SessionLocal()
+            rl_repo = SqliteRLRepository(rl_db_session)
+            rl_engine = RLPersistenceService(rl_repo)
+            rl_engine.initialize()
+        except Exception as e:
+            print(f"  ⚠ Erro ao inicializar engine RL: {e}")
+
     while True:
         try:
+            start_time = time.perf_counter() # [S1-5] Medição de latência P95
             # Verifica horário de pregão
             if not _is_market_hours():
                 # Fecha posições abertas ao sair do pregão
@@ -3818,6 +4080,14 @@ def main():
             print(f"\n  ──── Ciclo #{cycle_count} ────")
             result = _run_cycle(mt5)
 
+            # Persiste no banco (SNAPSHOT DE NASCIMENTO)
+            decision_id = 0
+            try:
+                decision_id = _persist_cycle(DB_PATH, result)
+                print(f"  ✓ Snapshot persistido no SQLite (ID: {decision_id})")
+            except Exception as e:
+                print(f"  ✗ Erro ao persistir snapshot: {e}")
+
             # Exibe resultados
             _display_cycle(result)
 
@@ -3840,8 +4110,8 @@ def main():
                                   f"TP: {best.take_profit} │ R/R: {best.risk_reward}:1")
                             print(f"     Confiança: {best.confidence:.0f}% │ Razão: {best.reason}")
                             try:
-                                _persist_simulated_trade(DB_PATH, best, result)
-                                print(f"  ✓ Sinal logado em simulated_trades (sem ordem real)")
+                                _persist_simulated_trade(DB_PATH, best, result, decision_id)
+                                print(f"  ✓ Sinal logado em simulated_trades (com decision_id={decision_id})")
                             except Exception as e:
                                 print(f"  ✗ Erro ao logar sinal simulado: {e}")
                         else:
@@ -3883,70 +4153,53 @@ def main():
             # Exibe status do trading
             _display_trading_status(trading_mgr if AUTO_TRADING_ENABLED else None)
 
-            # Persiste no banco
-            try:
-                _persist_cycle(DB_PATH, result)
-                print(f"  ✓ Dados persistidos no SQLite")
-            except Exception as e:
-                print(f"  ✗ Erro ao persistir: {e}")
-
             # Persiste episódio RL para aprendizagem por reforço
-            try:
-                from src.application.services.rl_persistence_service import RLPersistenceService
-                from src.infrastructure.repositories.rl_repository import SqliteRLRepository
-                from src.infrastructure.database.rl_schema import create_rl_tables
-                from sqlalchemy import create_engine
-                from sqlalchemy.orm import sessionmaker
+            if rl_engine:
+                try:
+                    episode_id = rl_engine.persist_micro_cycle(result)
+                    if episode_id:
+                        print(f"  ✓ Episódio RL persistido: {episode_id[:8]}...")
 
-                engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
-                create_rl_tables(engine)
-                SessionLocal = sessionmaker(bind=engine)
-                rl_session = SessionLocal()
-                rl_repo = SqliteRLRepository(rl_session)
-                rl_service = RLPersistenceService(rl_repo)
-                rl_service.initialize()
+                    # Avaliar recompensas pendentes
+                    def _get_win_price():
+                        try:
+                            return result.price_current
+                        except Exception:
+                            return None
 
-                episode_id = rl_service.persist_micro_cycle(result)
-                if episode_id:
-                    print(f"  ✓ Episódio RL persistido: {episode_id[:8]}...")
-
-                # Avaliar recompensas pendentes
-                def _get_win_price():
-                    try:
-                        return result.price_current
-                    except Exception:
-                        return None
-
-                def _get_win_price_range(start_dt, end_dt):
-                    """Retorna (max_price, min_price) do WIN no intervalo via candles M1."""
-                    try:
-                        candles = mt5.get_candles_range(
-                            Symbol(SYMBOL), TimeFrame.M1,
-                            start_dt, end_dt,
-                        )
-                        if not candles:
+                    def _get_win_price_range(start_dt, end_dt):
+                        """Retorna (max_price, min_price) do WIN no intervalo via candles M1."""
+                        try:
+                            candles = mt5.get_candles_range(
+                                Symbol(SYMBOL), TimeFrame.M1,
+                                start_dt, end_dt,
+                            )
+                            if not candles:
+                                return None, None
+                            max_price = max(c.high.value for c in candles)
+                            min_price = min(c.low.value for c in candles)
+                            return float(max_price), float(min_price)
+                        except Exception:
                             return None, None
-                        max_price = max(c.high.value for c in candles)
-                        min_price = min(c.low.value for c in candles)
-                        return float(max_price), float(min_price)
-                    except Exception:
-                        return None, None
 
-                evaluated = rl_service.evaluate_pending_rewards(
-                    _get_win_price, _get_win_price_range
-                )
-                if evaluated > 0:
-                    print(f"  ✓ {evaluated} recompensas RL avaliadas")
-
-                rl_session.close()
-            except Exception as e:
-                print(f"  ⚠ RL: {e}")
+                    evaluated = rl_engine.evaluate_pending_rewards(
+                        _get_win_price, _get_win_price_range
+                    )
+                    if evaluated > 0:
+                        print(f"  ✓ {evaluated} recompensas RL avaliadas")
+                except Exception as e:
+                    print(f"  ⚠ RL Loop: {e}")
 
             # Desconecta MT5
             try:
                 mt5.disconnect()
             except Exception:
                 pass
+
+            # [S1-5] Medição de performance final do ciclo
+            end_time = time.perf_counter()
+            latency_ms = (end_time - start_time) * 1000
+            print(f"  ⏱ Latência do Ciclo: {latency_ms:.2f}ms {'✅' if latency_ms < 500 else '⚠️'}")
 
             # Aguarda próximo ciclo
             _wait_with_progress(REFRESH_SECONDS)
@@ -3971,6 +4224,10 @@ def main():
                 print(f"\n  ════ RESUMO DO DIA ════")
                 print(f"  Trades: {summary['trades']} │ W/L: {summary['wins']}/{summary['losses']}")
                 print(f"  Win Rate: {summary['win_rate']:.0f}% │ PnL: {summary['daily_pnl']:+.0f} pts")
+
+            # ── Auditoria de Sessão (Fim) ──
+            _end_session(DB_PATH, _session_id)
+            print(f"  🏁 Sessão ID: {_session_id} encerrada com sucesso")
             break
         except Exception as e:
             print(f"\n  ✗ Erro no ciclo: {e}")
