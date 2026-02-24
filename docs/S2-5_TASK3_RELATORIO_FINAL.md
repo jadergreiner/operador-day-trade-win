@@ -60,7 +60,7 @@ grid_search:
   n_configs: 32
   cv_folds: 5
   cv_type: time-series    # Sem leakage
-  
+
   param_space:
     max_depth: [4-8]
     learning_rate: [0.05-0.2]

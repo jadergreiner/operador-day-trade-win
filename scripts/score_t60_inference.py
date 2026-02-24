@@ -17,11 +17,12 @@ Date: 2026-02-24
 
 import logging
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import json
 import pickle
 from datetime import datetime
 import hashlib
+import time
 
 import pandas as pd
 import numpy as np
@@ -30,9 +31,15 @@ from pandas import DataFrame
 # Configurar logging
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s | %(levelname)-8s | %(message)s"
+    format="%(asctime)s | %(levelname)-8s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
 )
 logger = logging.getLogger(__name__)
+
+# Constants
+WINDOW_SIZE: int = 60  # últimas 60 velas M1
+INFERENCE_TIMEOUT: float = 5.0  # 5 segundos max timeout
+LATENCY_TARGET_MS: float = 50.0  # <50ms P95
 
 
 class ScoreT60Inference:
@@ -40,23 +47,31 @@ class ScoreT60Inference:
     Executor de inferência para Score T+60 em tempo real.
 
     Pipeline:
-    1. Carregar modelo + metadados
+    1. Carregar modelo + metadados (lazy loading)
     2. Extrair últimas 60 velas M1
     3. Extrair 25 features
     4. Normalizar com scaler do modelo
-    5. Fazer predição
+    5. Fazer predição (<50ms P95)
     6. Salvar resultado em JSON
 
+    Features:
+    - Lazy loading (modelo carregado na primeira predição)
+    - Latency tracking (medição de tempo de resposta)
+    - Error handling com retry logic (timeout 5s)
+    - Validation (janelas, features, resultados)
+
     Attributes:
-        model: Modelo XGBoost carregado
+        model: Modelo XGBoost carregado (lazy)
         scaler: StandardScaler do treino
         metadata: Metadados do modelo
         last_score: Último score calculado
+        model_loaded: Flag lazy loading
+        latency_measurements: Historic de latências (ms)
     """
 
     def __init__(self, model_path: str) -> None:
         """
-        Inicializa inference engine.
+        Inicializa inference engine com lazy loading.
 
         Args:
             model_path: Caminho para arquivo .pkl do modelo
@@ -64,37 +79,64 @@ class ScoreT60Inference:
         Raises:
             FileNotFoundError: Se modelo não existe
         """
-        model_path = Path(model_path)
-
-        if not model_path.exists():
-            raise FileNotFoundError(f"Modelo não encontrado: {model_path}")
-
-        logger.info(f"Carregando modelo: {model_path}")
-
-        # Carregar modelo
-        with open(model_path, "rb") as f:
-            self.model = pickle.load(f)
-
-        # Carregar metadados
-        metadata_path = model_path.with_suffix(".json")
-        if metadata_path.exists():
-            with open(metadata_path, "r") as f:
-                self.metadata = json.load(f)
-        else:
-            self.metadata = None
-
-        # Reconstruir scaler a partir de metadados
-        if self.metadata:
-            from sklearn.preprocessing import StandardScaler
-            self.scaler = StandardScaler()
-            self.scaler.mean_ = np.array(self.metadata.get("scaler_mean", []))
-            self.scaler.scale_ = np.array(self.metadata.get("scaler_std", []))
-        else:
-            self.scaler = None
-
+        self.model_path: str = str(model_path)
+        self.model: Optional[Any] = None
+        self.scaler: Optional[Any] = None
+        self.metadata: Optional[Dict[str, Any]] = None
         self.last_score: Optional[Dict[str, Any]] = None
+        self.model_loaded: bool = False
+        self.latency_measurements: List[float] = []
 
-        logger.info("✅ Modelo carregado com sucesso")
+        # Validar que arquivo existe
+        model_file = Path(self.model_path)
+        if not model_file.exists():
+            raise FileNotFoundError(f"Modelo não encontrado: {self.model_path}")
+
+        logger.info(f"✅ Engine inicializado (lazy loading habilitado)")
+
+    def _load_model_lazy(self) -> None:
+        """
+        Carrega modelo XGBoost na primeira predição (lazy loading).
+
+        Raises:
+            RuntimeError: Se deserialization falhar
+        """
+        if self.model_loaded:
+            return
+
+        logger.info(f"Carregando modelo: {self.model_path}")
+
+        try:
+            # Carregar modelo
+            with open(self.model_path, "rb") as f:
+                self.model = pickle.load(f)
+
+            # Carregar metadados
+            metadata_path = Path(self.model_path).with_suffix(".json")
+            if metadata_path.exists():
+                with open(metadata_path, "r") as f:
+                    self.metadata = json.load(f)
+            else:
+                self.metadata = None
+
+            # Reconstruir scaler a partir de metadados
+            if self.metadata:
+                from sklearn.preprocessing import StandardScaler
+                self.scaler = StandardScaler()
+                self.scaler.mean_ = np.array(
+                    self.metadata.get("scaler_mean", [])
+                )
+                self.scaler.scale_ = np.array(
+                    self.metadata.get("scaler_std", [])
+                )
+            else:
+                self.scaler = None
+
+            self.model_loaded = True
+            logger.info("✅ Modelo carregado com sucesso (lazy)")
+
+        except Exception as e:
+            raise RuntimeError(f"Failed to load model: {e}") from e
 
     @staticmethod
     def _extract_features_from_window(
@@ -222,72 +264,161 @@ class ScoreT60Inference:
     def predict_from_df(
         self,
         df_m1: DataFrame,
-        use_last_n_rows: int = 60
+        use_last_n_rows: int = 60,
+        retry_count: int = 3
     ) -> Dict[str, Any]:
         """
-        Faz predição a partir de DataFrame M1.
+        Faz predição a partir de DataFrame M1 com latency tracking.
 
         Args:
-            df_m1: DataFrame com velas M1
+            df_m1: DataFrame com velas M1 (OHLCV)
             use_last_n_rows: Número de velas anteriores (default 60)
+            retry_count: Tentativas em caso de timeout
 
         Returns:
-            Dicionário com score, classe, confiança
-        """
-        logger.info(f"Fazendo predição com últimas {use_last_n_rows} velas...")
+            Dicionário com score, classe, confiança, latência
 
-        if len(df_m1) < use_last_n_rows:
-            raise ValueError(
-                f"DataFrame tem apenas {len(df_m1)} velas, "
-                f"precisamos de {use_last_n_rows}"
+        Raises:
+            ValueError: Se validação falhar
+            TimeoutError: Se timeout excedido após retries
+        """
+        start_time = time.time()
+
+        try:
+            # Carregar modelo (lazy)
+            self._load_model_lazy()
+
+            logger.info(f"Fazendo predição com últimas {use_last_n_rows} velas...")
+
+            # Validar janela
+            if len(df_m1) < use_last_n_rows:
+                raise ValueError(
+                    f"DataFrame tem apenas {len(df_m1)} velas, "
+                    f"precisamos de {use_last_n_rows}"
+                )
+
+            # Pegar últimas N velas
+            df_window = df_m1.tail(use_last_n_rows).copy()
+
+            # Validar dados (sem NaN)
+            if df_window.isnull().any().any():
+                raise ValueError("NaN values found in window")
+
+            # Extrair features (com retry)
+            features = None
+            for attempt in range(retry_count):
+                try:
+                    features = self._extract_features_from_window(df_window)
+                    break
+                except Exception as e:
+                    if attempt == retry_count - 1:
+                        raise TimeoutError(
+                            f"Feature extraction failed after {retry_count} attempts: {e}"
+                        ) from e
+                    logger.warning(f"Retry {attempt + 1}/{retry_count}: {e}")
+                    time.sleep(0.1)
+
+            # Reshape e normalizar
+            X = features.reshape(1, -1)
+            if self.scaler is not None:
+                X = self.scaler.transform(X)
+
+            # Predição (com retry)
+            score_raw = None
+            for attempt in range(retry_count):
+                try:
+                    # Check timeout
+                    elapsed = time.time() - start_time
+                    if elapsed > INFERENCE_TIMEOUT:
+                        raise TimeoutError(
+                            f"Inference timeout: {elapsed:.2f}s > {INFERENCE_TIMEOUT}s"
+                        )
+
+                    # Predição
+                    score_raw = self.model.predict_proba(X)[0, 1]
+                    break
+
+                except TimeoutError:
+                    raise
+                except Exception as e:
+                    if attempt == retry_count - 1:
+                        raise TimeoutError(
+                            f"Prediction failed after {retry_count} attempts: {e}"
+                        ) from e
+                    logger.warning(f"Retry {attempt + 1}/{retry_count}: {e}")
+                    time.sleep(0.1)
+
+            # Classe e confiança
+            if score_raw > 0.65:
+                classe = "BULL"
+                confianca = "ALTA"
+            elif score_raw < 0.35:
+                classe = "BEAR"
+                confianca = "ALTA"
+            else:
+                classe = "NEUTRO"
+                confianca = "BAIXA"
+
+            # Calcular latência
+            latency_ms = (time.time() - start_time) * 1000
+            self.latency_measurements.append(latency_ms)
+
+            # Validar latência
+            if latency_ms > LATENCY_TARGET_MS:
+                logger.warning(f"⚠️ Latência alta: {latency_ms:.2f}ms > {LATENCY_TARGET_MS}ms")
+
+            # Calcular hash de features para auditoria
+            features_hash = hashlib.md5(str(features).encode()).hexdigest()[:8]
+
+            result = {
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "score_t60": float(score_raw),
+                "classe": classe,
+                "confianca": confianca,
+                "latency_ms": float(latency_ms),
+                "model_version": self.metadata.get("model_type", "unknown")
+                if self.metadata else "unknown",
+                "velas_usadas": use_last_n_rows,
+                "features_hash": features_hash
+            }
+
+            self.last_score = result
+
+            logger.info(
+                f"✅ Predição: {classe} (score={score_raw:.3f}, "
+                f"conf={confianca}, latency={latency_ms:.2f}ms)"
             )
 
-        # Pegar últimas N velas
-        df_window = df_m1.tail(use_last_n_rows).copy()
+            return result
 
-        # Extrair features
-        features = self._extract_features_from_window(df_window)
+        except Exception as e:
+            logger.error(f"❌ Erro em predição: {e}")
+            raise
 
-        # Reshape e normalizar
-        X = features.reshape(1, -1)
-        if self.scaler is not None:
-            X = self.scaler.transform(X)
+    def get_latency_stats(self) -> Dict[str, float]:
+        """
+        Retorna estatísticas de latência acumuladas.
 
-        # Predição
-        score_raw = self.model.predict_proba(X)[0, 1]  # Probabilidade classe 1 (BULL)
+        Returns:
+            Dict com P50, P95, P99, mean, max (em ms)
+        """
+        if not self.latency_measurements:
+            return {
+                "p50": 0.0,
+                "p95": 0.0,
+                "p99": 0.0,
+                "mean": 0.0,
+                "max": 0.0,
+            }
 
-        # Classe e confiança
-        if score_raw > 0.65:
-            classe = "BULL"
-            confianca = "ALTA"
-        elif score_raw < 0.35:
-            classe = "BEAR"
-            confianca = "ALTA"
-        else:
-            classe = "NEUTRO"
-            confianca = "BAIXA"
-
-        # Calcular hash de features para auditoria
-        features_hash = hashlib.md5(str(features).encode()).hexdigest()[:8]
-
-        result = {
-            "timestamp": datetime.now().isoformat(),
-            "score_t60": float(score_raw),
-            "classe": classe,
-            "confianca": confianca,
-            "model_version": self.metadata.get("model_type", "unknown")
-            if self.metadata else "unknown",
-            "velas_usadas": use_last_n_rows,
-            "features_hash": features_hash
+        measurements = np.array(self.latency_measurements)
+        return {
+            "p50": float(np.percentile(measurements, 50)),
+            "p95": float(np.percentile(measurements, 95)),
+            "p99": float(np.percentile(measurements, 99)),
+            "mean": float(measurements.mean()),
+            "max": float(measurements.max()),
         }
-
-        self.last_score = result
-
-        logger.info(
-            f"✅ Predição: {classe} (score={score_raw:.2f}, conf={confianca})"
-        )
-
-        return result
 
     def save_score(
         self,
