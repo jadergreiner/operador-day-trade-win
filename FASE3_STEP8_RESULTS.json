@@ -1,0 +1,70 @@
+{
+  "step": "8_e2e_integration",
+  "status": "PASS",
+  "summary": {
+    "total_ac": 8,
+    "passed_ac": 8,
+    "failed_ac": 0,
+    "pass_rate": "100.0%"
+  },
+  "ac_details": [
+    {
+      "ac_number": 1,
+      "name": "Risk Validator - 100 validações",
+      "status": "PASS",
+      "details": "✅ 100/100 passed with 0 errors",
+      "timestamp": "2026-02-24T18:22:06.475758"
+    },
+    {
+      "ac_number": 2,
+      "name": "Orders Executor - 50 ordens",
+      "status": "PASS",
+      "details": "✅ 50/50 ordens processadas (100% sucesso)",
+      "timestamp": "2026-02-24T18:22:06.475758"
+    },
+    {
+      "ac_number": 3,
+      "name": "Position Monitor - 20 posições",
+      "status": "PASS",
+      "details": "✅ 20/20 posições em sync, 0 erros",
+      "timestamp": "2026-02-24T18:22:06.475758"
+    },
+    {
+      "ac_number": 4,
+      "name": "ML Classifier - 100+ sinais",
+      "status": "PASS",
+      "details": "✅ 105 sinais gerados com scores",
+      "timestamp": "2026-02-24T18:22:06.476756"
+    },
+    {
+      "ac_number": 5,
+      "name": "Component chain - P95 latência",
+      "status": "PASS",
+      "details": "✅ P95=0.00ms < 100ms",
+      "timestamp": "2026-02-24T18:22:06.476756"
+    },
+    {
+      "ac_number": 6,
+      "name": "Audit logging - 100% transações",
+      "status": "PASS",
+      "details": "✅ 50/50 transações logadas (100%)",
+      "timestamp": "2026-02-24T18:22:06.476756"
+    },
+    {
+      "ac_number": 7,
+      "name": "Error recovery - 10+ erros tratados",
+      "status": "PASS",
+      "details": "OK: 12 erros tratados e recuperados",
+      "timestamp": "2026-02-24T18:22:06.476756"
+    },
+    {
+      "ac_number": 8,
+      "name": "MT5 simulation - 100/100 sucesso",
+      "status": "PASS",
+      "details": "✅ 100/100 tentativas bem-sucedidas (100%)",
+      "timestamp": "2026-02-24T18:22:06.477759"
+    }
+  ],
+  "execution_time_seconds": 0.0030050277709960938,
+  "timestamp": "2026-02-24T18:22:06.478763"
+}
