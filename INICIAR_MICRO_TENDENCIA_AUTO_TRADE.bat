@@ -13,13 +13,18 @@ echo      - Abertura B3: 13:00 (Quarta-feira de Cinzas).
 echo.
 echo    Calibracao Ativa:
 echo      Conta MT5:       1000346516
-echo      Contratos:       1
+echo      Contratos:       Dinamico (Calibrador ATR S2-2)
 echo      Max Posicoes:    1
 echo      Max Loss Diario: 500 pts
 echo      Max Trades/Dia:  3 (REDUZIDO: Cautela Volatilidade)
-echo      Trailing Stop:   200 pts (AJUSTADO: Mais Volatilidade)
-echo      Confianca Min:   55%% (MAIOR SELETIVIDADE)
+echo      Trailing Stop:   Dinamico (2.0x ATR 15m)
+echo      Confianca Min:   45%% (MAIOR SELETIVIDADE)
 echo      Risk/Reward Min: 1.5:1
+echo.
+echo    Seguranca Ativa (Phase 7):
+echo      - Risk Validator: 3 gates (Capital, Correlacao, Volatilidade)
+echo      - OrdersExecutor: Async queue + P&L monitor
+echo      - Performance: P95 Tuning ativo (Imports Estaticos + RL Engine Pool)
 echo.
 echo    Escolha o modo de operacao:
 echo.
@@ -85,7 +90,20 @@ if not exist "%PYTHON_EXE%" (
 )
 
 cd /d "%~dp0"
-
+REM ==============================================================================
+REM [S1-2] GATE DE MONITORAMENTO E SAUDE 24/7 (PRE-FLIGHT CHECK)
+REM ==============================================================================
+echo [PRE-FLIGHT] Verificando saude do sistema (S1-2)...
+"%PYTHON_EXE%" scripts\system_health_monitor.py
+if errorlevel 1 (
+    echo.
+    echo [ERRO CRITICO] Falha no Pre-Flight Check (S1-2).
+    echo O sistema NAO esta pronto para operacao real ou simulada.
+    echo Verifique docs/STATUS_ENTREGAS.md e garanta sincronizacao [SYNC].
+    pause
+    exit /b 1
+)
+echo.
 REM Sincroniza operações reais recentes do MT5 para o banco local
 echo Sincronizando operacoes reais MT5 -> SQLite...
 "%PYTHON_EXE%" scripts\sync_mt5_trades_to_db.py --days-back 3

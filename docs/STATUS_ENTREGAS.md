@@ -13,7 +13,7 @@
 
 | ID | Issue/Task | Owner | Status | PR/Commit | Obs. |
 |:---|:---|:---|:---:|:---|:---|
-| **S2-2** | Calibrador ATR Dinâmico | [ML Lead](BOARD_MULTIDISCIPLINAR.json) | ⏳ AGENDADO | - | Trailing Stop Adaptive |
+| **S2-2** | Calibrador ATR Dinâmico | [ML Lead](BOARD_MULTIDISCIPLINAR.json) | � COMPLETO | [S2-2] | Trailing Stop Adaptive |
 | **S2-3** | Confluência SMC (M1/M5) | [Eng Sr](BOARD_MULTIDISCIPLINAR.json) | ⏳ AGENDADO | - | Sinais de "Convicção Máxima" |
 | **S2-4** | Integração Phicube (Mimas) | [ML Expert](BOARD_MULTIDISCIPLINAR.json) | ⏳ AGENDADO | - | Ativação do Score de Leque |
 

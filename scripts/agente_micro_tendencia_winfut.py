@@ -106,6 +106,7 @@ from src.application.services.diary_feedback import (
     create_diary_feedback_table,
     load_latest_feedback,
 )
+from src.domain.services.atr_calibrator import ATRCalibrator
 
 # --- Imports movidos para otimização de performance (S1-5) ---
 try:
@@ -133,6 +134,14 @@ DB_PATH: str | None = None
 
 # Instância global do MacroScoreEngine (inicializada no main)
 _macro_engine: MacroScoreEngine | None = None
+
+# Calibrador Dinâmico ATR (S2-2)
+_atr_calibrator = ATRCalibrator(
+    multiplier=Decimal("2.0"),
+    min_trailing_stop=Decimal("150"),
+    max_trailing_stop=Decimal("400"),
+    high_volatility_threshold=Decimal("300")
+)
 
 # Diretiva ativa do Head Financeiro (carregada na main, atualizada a cada ciclo)
 _active_directive: HeadDirective | None = None
@@ -387,6 +396,7 @@ class CycleResult:
     aggression_ratio: Decimal = Decimal("0.50")
     # Divergências (Advogado do Diabo)
     divergence_notes: str = ""
+    atr_15: Decimal = Decimal("0")
 
 
 # ────────────────────────────────────────────────────────────────
@@ -3057,7 +3067,7 @@ def _run_cycle(mt5: MT5Adapter) -> CycleResult:
     # Proposta fractal Phicube: Mima 72 do M15 é a Mima 17 do H1 (Estrutura)
     mima_m5 = _calc_mimas(candles_m5)
     mima_m15 = _calc_mimas(candles_m15) if candles_m15 else mima_m5
-    
+
     # Consolidar Leque: Gatilhos (M5) + Estrutura (M15)
     result.mima = mima_m5
     # Sobrescreve as mimas lentas com as do fractal superior (M15) para mais estabilidade
@@ -3065,10 +3075,10 @@ def _run_cycle(mt5: MT5Adapter) -> CycleResult:
     result.mima.m144 = mima_m15.m144
     result.mima.m305 = mima_m15.m305
     result.mima.m610 = mima_m15.m610
-    
+
     # Recalcula o fan_score com o mix fractal
     final_score = 0
-    mlist = [result.mima.m8, result.mima.m17, result.mima.m34, result.mima.m72, 
+    mlist = [result.mima.m8, result.mima.m17, result.mima.m34, result.mima.m72,
              result.mima.m144, result.mima.m305, result.mima.m610]
     for j in range(len(mlist) - 1):
         if mlist[j].value > mlist[j+1].value: final_score += 1
@@ -3096,6 +3106,13 @@ def _run_cycle(mt5: MT5Adapter) -> CycleResult:
     highs_m5 = [c.high.value for c in candles_m5]
     lows_m5 = [c.low.value for c in candles_m5]
     atr = _calc_atr(highs_m5, lows_m5, closes_m5, 14) if candles_m5 else Decimal("0")
+    
+    # ATR 15 minutos (15 candles de M1) - S2-2 Calibrador Dinâmico
+    closes_m1 = [c.close.value for c in candles_m1]
+    highs_m1 = [c.high.value for c in candles_m1]
+    lows_m1 = [c.low.value for c in candles_m1]
+    result.atr_15 = _calc_atr(highs_m1, lows_m1, closes_m1, 15) if candles_m1 else Decimal("0")
+
     result.opportunities = _generate_opportunities(result, atr)
 
     # 14) Advogado do Diabo (Divergências)
@@ -3868,6 +3885,7 @@ def main():
     """Loop principal do agente de micro tendências."""
     config = _get_config()
     global DB_PATH, AUTO_TRADING_ENABLED, SIMULATE_MODE, _session_id
+    global TRAILING_DISTANCE_PTS, MAX_CONTRACTS
     DB_PATH = config.db_path
 
     # Checa flag --account <numero> para override de conta MT5
@@ -4079,6 +4097,19 @@ def main():
             cycle_count += 1
             print(f"\n  ──── Ciclo #{cycle_count} ────")
             result = _run_cycle(mt5)
+
+            # ⚙️ Calibração Dinâmica ATR (S2-2)
+            if result.atr_15 > 0:
+                old_ts = TRAILING_DISTANCE_PTS
+                old_vol = MAX_CONTRACTS
+                
+                TRAILING_DISTANCE_PTS = _atr_calibrator.calculate_trailing_stop(result.atr_15)
+                MAX_CONTRACTS = _atr_calibrator.suggest_volume(result.atr_15, base_volume=1) # Usando 1 como base conforme constantes
+                
+                if TRAILING_DISTANCE_PTS != old_ts or MAX_CONTRACTS != old_vol:
+                    print(f"  ⚙️ Calibração ATR (15min: {result.atr_15:.1f} pts):")
+                    print(f"     Trailing Stop: {old_ts:.0f} → {TRAILING_DISTANCE_PTS:.0f} pts")
+                    print(f"     Contratos: {old_vol} → {MAX_CONTRACTS}")
 
             # Persiste no banco (SNAPSHOT DE NASCIMENTO)
             decision_id = 0
