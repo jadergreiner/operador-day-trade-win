@@ -2,7 +2,7 @@
 
 **Última Sincronização:** 2026-02-24T23:45:00Z (FASE 1 CTO SIGN-OFF ✅ APROVADO)
 **Responsável pela Sincronia:** [Doc Advocate](BOARD_MULTIDISCIPLINAR.json)
-**Status Geral:** 🟢 **Sprint 2-5: 100% COMPLETO** | ✅ **Gate 2 GO ACTIVE** | 🟢 **S2-4 COMPLETE (100%)** | � **S2-6 COMPLETE (100%)** | 🟢 **FASE 1 COMPLETO (100%)** | ✅ **PRONTO PARA FASE 2**
+**Status Geral:** 🟢 **Sprint 2-5: 100% COMPLETO** | ✅ **Gate 2 GO ACTIVE** | 🟢 **S2-4 COMPLETE (100%)** | 🟢 **S2-6 COMPLETE (100%)** | 🟢 **FASE 1 COMPLETO (100%)** | 🟠 **FASE 2 KICK-OFF 27/02**
 **Protocolo:** [SYNC] Obrigatório
 
 ---
@@ -18,6 +18,21 @@
 | **Decisão Final** | ✅ **GO PARA FASE 2** | Habilitado 2026-02-24T23:45:00Z |
 
 📄 Documentação: [FASE1_CTO_SIGN_OFF_OFICIAL.md](../FASE1_CTO_SIGN_OFF_OFICIAL.md) | [FASE1_BLOQUEADORES.md](../FASE1_BLOQUEADORES.md)
+
+---
+
+## 🟠 PRÓXIMO MILESTONE: FASE 2 - VALIDAÇÕES (27/02-05/03)
+
+### Visão Geral
+| Componente | Descrição | Timeline | Status |
+|:---|:---|:---|:---|
+| **4️⃣ ML Metrics Re-validation** | F1 > 0.65, Capture > 85%, FP < 10%, Win > 60% | 27/02 09:00-12:00 | ⏳ PRONTO |
+| **5️⃣ Performance Load Test** | P95 < 500ms, Memory < 200MB, 100+ iterações | 27/02 12:00-16:00 | ⏳ PRONTO |
+| **6️⃣ Code Quality Re-check** | 85/85 tests PASS, mypy --strict OK, coverage >90% | 27/02 14:00-18:00 | ⏳ PRONTO |
+| **7️⃣ Risk Framework Smoke Test** | 3 gates funcionando, error handling OK | 27/02 16:00-20:00 | ⏳ PRONTO |
+| **Decision Point** | GO/NO-GO para FASE 3 | 05/03 14:00 | ⏳ SCHEDULED |
+
+📄 Documentação: [FASE2_EXECUCAO_VALIDACOES.md](../FASE2_EXECUCAO_VALIDACOES.md) | Kick-off: **27/02 09:00 BRT**
 
 ---
 
