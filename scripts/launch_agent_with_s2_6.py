@@ -38,7 +38,7 @@ def setup_s2_6_integration():
     """
     print("\n  🔗 MONKEY-PATCH: Integração S2-6 Analytics")
     print("  " + "=" * 58)
-    
+
     try:
         # ─ Guarda referência original ─
         OriginalMicroTradingManager = agente_module.MicroTradingManager
@@ -59,7 +59,7 @@ def setup_s2_6_integration():
         print(f"  ✅ S2-6 Analytics: {'ONLINE' if ADAPTER_AVAILABLE else 'FALLBACK'}")
         print("  " + "=" * 58)
         return adapter
-    
+
     except Exception as e:
         print(f"  ⚠️  Erro ao patchear S2-6: {e}")
         print(f"     Sistema operará sem S2-6 (fallback mode)")
