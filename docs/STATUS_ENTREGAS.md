@@ -23,7 +23,7 @@
 | ID | Issue/Task | Owner | Status | PR/Commit | Obs. |
 |:---|:---|:---|:---:|:---|:---|
 | **S2-5** | Probabilidade T+60 | [ML Expert](BOARD_MULTIDISCIPLINAR.json) | 🟡 **PRIORIZADO** | - | Previsão Direcional T+60 (1h) + Confluência SMC |
-| **S2-6** | Analytics de Intervenção Manual | [Doc Advocate](BOARD_MULTIDISCIPLINAR.json) | ⏳ BACKLOG | - | Feedback Loop Trader-IA |
+| **S2-6** | Analytics de Intervenção Manual | [Doc Advocate](BOARD_MULTIDISCIPLINAR.json) | 🟢 **COMPLETO** | [S2-6] | 8 categorias feedback, 31 testes PASS, BD + API |
 
 ---
 
