@@ -16,7 +16,7 @@
 | **S2-2** | Calibrador ATR Dinâmico | [ML Lead](BOARD_MULTIDISCIPLINAR.json) | ✅ COMPLETO | [S2-2] | Trailing Stop Adaptive |
 | **S2-3** | Confluência SMC (M1/M5) | [Eng Sr](BOARD_MULTIDISCIPLINAR.json) | ✅ COMPLETO | [S2-3] | 98% coverage, SMC alinhado |
 | **S2-5-ISO** | **✅ MT5 Terminal Isolation** | [Arq. Sistemas](BOARD_MULTIDISCIPLINAR.json) | ✅ **COMPLETO** | [S2-5-ISO] | Isolamento Terminal/Conta + Retry automático (15 testes) |
-| **S2-5** | **🟢 Probabilidade T+60** | [ML Expert](BOARD_MULTIDISCIPLINAR.json) | 🟡 **EM ANDAMENTO** | [Execução Paralela](docs/S2-5_PROBABILIDADE_T60_SQUAD.md) | **PRIORIDADE 1** — Squad 8 membros. XGBoost T+60 + Confluência SMC. Timeline: 27/02-03/03 |
+| **S2-5** | **✅ Probabilidade T+60** | [ML Expert](BOARD_MULTIDISCIPLINAR.json) | 🟡 **EM ANDAMENTO** | [d20a5c7](https://github.com/jadergreiner/operador-day-trade-win/commit/d20a5c7) | **TASK 1 COMPLETA** — Dataset Builder (25 features) + 34 testes (98% coverage) |
 | **S2-4** | Integração Phicube (Mimas) | [ML Expert](BOARD_MULTIDISCIPLINAR.json) | 🟡 **EM ANDAMENTO** | [S2-4] | Ativação do Score de Leque + Fibonacci normalizado |
 
 ### 📈 Entregas Táticas (NEXT - SHOULD)
