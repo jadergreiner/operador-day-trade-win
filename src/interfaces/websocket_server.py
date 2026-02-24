@@ -2,16 +2,19 @@
 WebSocket Server para Alertas Automáticos
 
 FastAPI + WebSockets para real-time delivery de alertas.
+Inclui API REST para Analytics (S2-6).
 """
 
 import asyncio
 import logging
-from typing import Set
+from typing import Set, Optional
 import json
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.responses import JSONResponse, HTMLResponse
 import uvicorn
+
+from src.analytics_collector import AnalyticsCollector
 
 logger = logging.getLogger(__name__)
 
@@ -385,17 +388,211 @@ async def get_dashboard():
     return html_content
 
 
+# ════════════════════════════════════════════════════════════════════════════════
+# S2-6: ANALYTICS DE INTERVENÇÃO MANUAL (Endpoints REST)
+# ════════════════════════════════════════════════════════════════════════════════
+
+# Analytics Collector global (inicializado na startup)
+analytics_collector: Optional[AnalyticsCollector] = None
+
+
+@app.post("/api/intervention/log")
+async def log_intervention(data: dict):
+    """
+    Registra uma intervenção manual (OVERRIDE, PAUSE, CANCEL, EXECUTE).
+    
+    Request body:
+    {
+        "symbol": "WINFUT",
+        "action": "OVERRIDE",  # ou PAUSE, CANCEL, EXECUTE
+        "reason": "Divergência SMC com confluência",
+        "ml_signal": 0.75,
+        "trader_decision": "Aumentar 25% do ticket"
+    }
+    
+    Response:
+    {
+        "intervention_id": 1,
+        "status": "logged"
+    }
+    """
+    if not analytics_collector:
+        raise HTTPException(status_code=503, detail="Analytics não inicializado")
+    
+    try:
+        intervention_id = analytics_collector.log_intervention(
+            symbol=data.get("symbol", "WINFUT"),
+            action=data.get("action"),
+            ml_signal=float(data.get("ml_signal", 0.0)),
+            trader_decision=data.get("trader_decision", ""),
+            reason=data.get("reason"),
+            notes=data.get("notes")
+        )
+        
+        if intervention_id is None:
+            raise HTTPException(status_code=400, detail="Erro ao registrar intervenção")
+        
+        return {
+            "intervention_id": intervention_id,
+            "status": "logged",
+            "timestamp": asyncio.get_running_loop().time()
+        }
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Erro ao registrar intervenção: {e}")
+        raise HTTPException(status_code=500, detail="Erro interno")
+
+
+@app.post("/api/intervention/{intervention_id}/result")
+async def update_intervention_result(intervention_id: int, data: dict):
+    """
+    Atualiza resultado de uma intervenção.
+    
+    Request body:
+    {
+        "result": "WIN",  # ou LOSS, PARTIAL
+        "p_and_l": 475.50
+    }
+    
+    Response:
+    {
+        "status": "updated"
+    }
+    """
+    if not analytics_collector:
+        raise HTTPException(status_code=503, detail="Analytics não inicializado")
+    
+    try:
+        success = analytics_collector.update_intervention_result(
+            intervention_id=intervention_id,
+            result=data.get("result", "PARTIAL"),
+            p_and_l=float(data.get("p_and_l", 0.0))
+        )
+        
+        if not success:
+            raise HTTPException(status_code=404, detail="Intervenção não encontrada")
+        
+        return {"status": "updated"}
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Erro ao atualizar resultado: {e}")
+        raise HTTPException(status_code=500, detail="Erro interno")
+
+
+@app.get("/api/analytics/stats")
+async def get_analytics_stats(symbol: Optional[str] = None):
+    """
+    Retorna estatísticas de intervenções.
+    
+    Query params:
+    - symbol: Filtrar por símbolo (ex: WINFUT). Se não fornecido, retorna global.
+    
+    Response:
+    {
+        "total_interventions": 10,
+        "wins": 6,
+        "losses": 2,
+        "partials": 2,
+        "win_rate": 60.0,
+        "avg_pnl": 150.5,
+        "total_pnl": 1505.0
+    }
+    """
+    if not analytics_collector:
+        raise HTTPException(status_code=503, detail="Analytics não inicializado")
+    
+    try:
+        stats = analytics_collector.get_intervention_stats(symbol=symbol)
+        return stats
+    except Exception as e:
+        logger.error(f"Erro ao buscar stats: {e}")
+        raise HTTPException(status_code=500, detail="Erro interno")
+
+
+@app.get("/api/analytics/dashboard")
+async def get_analytics_dashboard():
+    """
+    Retorna dashboard completo de analytics.
+    
+    Response:
+    {
+        "global": {
+            "total_interventions": 10,
+            "wins": 6,
+            "win_rate": 60.0,
+            "total_pnl": 1505.0
+        },
+        "by_action": {
+            "OVERRIDE": {...},
+            "PAUSE": {...},
+            "CANCEL": {...},
+            "EXECUTE": {...}
+        }
+    }
+    """
+    if not analytics_collector:
+        raise HTTPException(status_code=503, detail="Analytics não inicializado")
+    
+    try:
+        global_stats = analytics_collector.get_intervention_stats()
+        
+        dashboard = {
+            "global": global_stats,
+            "by_action": {
+                "OVERRIDE": analytics_collector.get_interventions_by_action("OVERRIDE", limit=5),
+                "PAUSE": analytics_collector.get_interventions_by_action("PAUSE", limit=5),
+                "CANCEL": analytics_collector.get_interventions_by_action("CANCEL", limit=5),
+                "EXECUTE": analytics_collector.get_interventions_by_action("EXECUTE", limit=5),
+            },
+            "timestamp": asyncio.get_running_loop().time()
+        }
+        
+        return dashboard
+    except Exception as e:
+        logger.error(f"Erro ao gerar dashboard: {e}")
+        raise HTTPException(status_code=500, detail="Erro interno")
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# LIFECYCLE HANDLERS
+# ════════════════════════════════════════════════════════════════════════════════
+
+
 async def startup():
     """Startup event."""
+    global analytics_collector
     logger.info("🚀 WebSocket Server iniciando...")
     logger.info("📍 Ouvindo em ws://0.0.0.0:8765/alertas")
+    
+    # Inicializar Analytics Collector para S2-6
+    try:
+        analytics_collector = AnalyticsCollector("data/analytics.db")
+        if analytics_collector.connect():
+            logger.info("✅ Analytics Collector inicializado")
+        else:
+            logger.warning("⚠️  Analytics Collector falhou ao conectar")
+    except Exception as e:
+        logger.error(f"❌ Erro ao inicializar Analytics: {e}")
 
 
 async def shutdown():
     """Shutdown event."""
+    global analytics_collector
     logger.info("🛑 WebSocket Server desligando...")
     for conn in list(manager.active_connections):
         manager.disconnect(conn)
+    
+    # Fechar Analytics Collector
+    if analytics_collector:
+        try:
+            analytics_collector.close()
+            logger.info("✅ Analytics Collector fechado")
+        except Exception as e:
+            logger.error(f"❌ Erro ao fechar Analytics: {e}")
 
 
 app.add_event_handler("startup", startup)
