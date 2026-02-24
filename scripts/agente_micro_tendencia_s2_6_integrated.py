@@ -31,7 +31,7 @@ try:
         TradeEvent,
     )
     ADAPTER_AVAILABLE = True
-    
+
     # Wrapper para tornar RealAnalyticsAdapter mais robusto
     class AnalyticsAdapter:
         """Wrapper robusto do adapter real com fallback gracioso."""
@@ -42,22 +42,24 @@ try:
             except Exception as e:
                 self.real_adapter = None
             self.connected = False
-        
+
         def log_intervention(self, event):
             try:
                 if self.real_adapter:
-                    return self.real_adapter.log_intervention(event)
+                    result = self.real_adapter.log_intervention(event)
+                    # Se retorna None, usa fallback
+                    return result if result else f"fallback_{datetime.now().timestamp()}"
             except Exception:
                 pass
             return f"fallback_{datetime.now().timestamp()}"
-        
+
         def update_result(self, intervention_id, result, p_and_l):
             try:
                 if self.real_adapter:
                     return self.real_adapter.update_result(intervention_id, result, p_and_l)
             except Exception:
                 pass
-        
+
         def get_stats(self):
             try:
                 if self.real_adapter:
@@ -70,7 +72,7 @@ try:
 except ImportError:
     print("  ⚠️  S2-6 Analytics Adapter não encontrado. Modo fallback ativo.")
     ADAPTER_AVAILABLE = False
-    
+
     # Fallback: criar dummy adapter
     class TradeEvent:
         def __init__(self, symbol, action, trader_decision, p_and_l):
@@ -151,8 +153,9 @@ class MicroTradingManagerS2_6(OriginalMicroTradingManager):
                     intervention_id = self.analytics_adapter.log_intervention(event)
 
                     # ─ 3) Rastreia trade com S2-6 ─
-                    if ticket in self.open_trades:
-                        trade = self.open_trades[ticket]
+                    # Encontra trade na lista pelo ticket
+                    trade = next((t for t in self.open_trades if t.ticket == ticket), None)
+                    if trade:
                         self.trades_with_s2_6[ticket] = TradeWithS2_6(
                             original_trade=trade,
                             intervention_id=intervention_id,
@@ -162,7 +165,7 @@ class MicroTradingManagerS2_6(OriginalMicroTradingManager):
                                  f"(Ticket: {ticket}, {opportunity.direction})")
             except Exception as e:
                 self._log(f"⚠️  Erro ao logar em S2-6: {str(e)[:40]}... (ignorado)")
-        
+
         return ticket
 
     def manage_positions(self, current_price: float) -> None:
@@ -175,7 +178,8 @@ class MicroTradingManagerS2_6(OriginalMicroTradingManager):
         trades_to_close = []
 
         # ─ 1) Identifica trades para fechar (lógica original) ─
-        for ticket, trade in list(self.open_trades.items()):
+        for trade in self.open_trades:
+            ticket = trade.ticket
             close_reason = self._check_exit_conditions(trade, current_price)
             if close_reason:
                 trades_to_close.append((ticket, trade, close_reason))
@@ -265,10 +269,10 @@ class MicroTradingManagerS2_6(OriginalMicroTradingManager):
 def initialize_s2_6_adapter(api_url: str = "http://localhost:8000") -> AnalyticsAdapter:
     """Inicializa adapter S2-6 com URL customizável (tolerante a falhas)."""
     adapter = AnalyticsAdapter(api_url=api_url)
-    
+
     try:
         stats = adapter.get_stats()
-        
+
         # Verifica se stats é None ou não tem status
         if stats and isinstance(stats, dict) and stats.get("status") == "online":
             print(f"  ✅ S2-6 Analytics CONECTADO ({api_url})")
@@ -278,7 +282,7 @@ def initialize_s2_6_adapter(api_url: str = "http://localhost:8000") -> Analytics
         print(f"  ⚠️  S2-6 Analytics indisponível ({api_url})")
         print(f"     Erro: {str(e)[:60]}...")
         print(f"     Operando em modo fallback (sem logging em S2-6)")
-    
+
     return adapter
 
 

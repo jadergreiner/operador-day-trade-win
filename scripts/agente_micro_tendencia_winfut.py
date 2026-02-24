@@ -2075,7 +2075,7 @@ def _generate_opportunities(
                 f"COMPRA: SMC={result.smc.equilibrium} + RSI={result.momentum.rsi_score} não alinhado")
     else:
         result._rejection_reasons.append(
-            f"COMPRA: macro_score {result.macro_score:+d} < threshold +{buy_threshold}")
+            f"COMPRA: macro_score {result.macro_score:+.0f} < threshold +{buy_threshold}")
     # Oportunidade de VENDA
     if result.macro_score <= sell_threshold:
         # ── Filtros do Head Financeiro para VENDA ──
@@ -2237,7 +2237,7 @@ def _generate_opportunities(
                 f"VENDA: SMC={result.smc.equilibrium} + RSI={result.momentum.rsi_score} não alinhado")
     else:
         result._rejection_reasons.append(
-            f"VENDA: macro_score {result.macro_score:+d} > threshold {sell_threshold}")
+            f"VENDA: macro_score {result.macro_score:+.0f} > threshold {sell_threshold}")
     # ── Oportunidade TREND FOLLOWING — comprar pullbacks em tendência forte ──
     # Condições: ADX>25 (tendência), score>5 (direção), micro negativo (pullback)
     # Isso captura o cenário "mercado subindo, agente esperando DISCOUNT que nunca vem"
@@ -2311,7 +2311,7 @@ def _generate_opportunities(
                         risk_reward=rr,
                         confidence=tf_conf,
                         reason=f"Trend pullback: Macro +{result.macro_score}, ADX={adx_val:.0f}, "
-                               f"micro={result.micro_score:+d}{tf_extra}",
+                               f"micro={result.micro_score:+.0f}{tf_extra}",
                         region="TREND_FOLLOW",
                     ))
 
@@ -2379,7 +2379,7 @@ def _generate_opportunities(
                         risk_reward=rr,
                         confidence=tf_conf,
                         reason=f"Trend pullback: Macro {result.macro_score}, ADX={adx_val:.0f}, "
-                               f"micro={result.micro_score:+d}{tf_extra}",
+                               f"micro={result.micro_score:+.0f}{tf_extra}",
                         region="TREND_FOLLOW",
                     ))
 
@@ -2390,7 +2390,7 @@ def _generate_opportunities(
     )
     if reversal_blocked:
         result._rejection_reasons.append(
-            f"REVERSÃO BLOQUEADA: ADX={adx_val:.0f} e macro direcional forte ({result.macro_score:+d})"
+            f"REVERSÃO BLOQUEADA: ADX={adx_val:.0f} e macro direcional forte ({result.macro_score:+.0f})"
         )
     if abs(result.macro_score) < buy_threshold and not reversal_blocked:
         # Reversão de alta em sobrevenda
@@ -3062,10 +3062,10 @@ def _check_directive_divergence(result: CycleResult) -> None:
             _diary_feedback.guardian_bias_override = "NEUTRO"
             _diary_feedback.guardian_alertas.append(
                 f"AUTO-SUSPENSÃO: Diretiva {hd.direction} suspensa — "
-                f"score {result.macro_score:+d} divergiu por {_directive_diverge_counter} ciclos"
+                f"score {result.macro_score:+.0f} divergiu por {_directive_diverge_counter} ciclos"
             )
             print(f"  ⚠️  GUARDIAN: Diretiva {hd.direction} SUSPENSA — "
-                  f"score {result.macro_score:+d} diverge por {_directive_diverge_counter} ciclos")
+                  f"score {result.macro_score:+.0f} diverge por {_directive_diverge_counter} ciclos")
     else:
         _directive_diverge_counter = 0
 
@@ -3528,7 +3528,7 @@ def _display_smc_multi_tf(result: CycleResult):
 
     print(f"╠{'─' * 68}╣")
     print(f"║  SMC MULTI-TIMEFRAME  │ Alinhamento: "
-          f"{align_icon} {multi.alignment} ({multi.alignment_score:+d})")
+          f"{align_icon} {multi.alignment} ({multi.alignment_score:+.0f})")
     print(f"║  {'─' * 64}")
 
     # Header da tabela
@@ -3606,7 +3606,7 @@ def _display_cycle(result: CycleResult):
     total_count = len(result.macro_items)
     macro_icon = "🟢" if result.macro_signal == "COMPRA" else ("🔴" if result.macro_signal == "VENDA" else "⚪")
     raw_score = getattr(result, '_raw_macro_score', result.macro_score)
-    dampening_tag = f" (raw: {raw_score:+d})" if raw_score != result.macro_score else ""
+    dampening_tag = f" (raw: {raw_score:+.0f})" if raw_score != result.macro_score else ""
     print(f"║  DIRECIONAL DO DIA: {macro_icon} {result.macro_signal} "
           f"│ Score: {result.macro_score:+d}{dampening_tag} │ Conf: {result.macro_confidence * 100:.1f}%"
           f" │ {avail_count}/{total_count} itens")
@@ -3632,20 +3632,20 @@ def _display_cycle(result: CycleResult):
         trend_icon = "↩️"
     else:
         trend_icon = "↔️"
-    print(f"║  MICRO TENDÊNCIA: {trend_icon} {result.micro_trend} │ Score Micro: {result.micro_score:+d}")
+    print(f"║  MICRO TENDÊNCIA: {trend_icon} {result.micro_trend} │ Score Micro: {result.micro_score:+.0f}")
     # SMC
     print(f"║  SMC: {result.smc.direction} │ {result.smc.equilibrium} │ "
-          f"BOS: {result.smc.bos_score:+d} │ EQ: {result.smc.equilibrium_score:+d} │ "
-          f"FVG: {result.smc.fvg_score:+d}")
+          f"BOS: {result.smc.bos_score:+.0f} │ EQ: {result.smc.equilibrium_score:+.0f} │ "
+          f"FVG: {result.smc.fvg_score:+.0f}")
     # ── SMC Multi-Timeframe (H4, M15, M5) ──
     _display_smc_multi_tf(result)
     # Momentum
     m = result.momentum
-    print(f"║  RSI: {m.rsi}({m.rsi_score:+d}) │ Stoch: {m.stoch}({m.stoch_score:+d}) │ "
-          f"MACD: {m.macd_signal}({m.macd_score:+d}) │ ADX: {m.adx}({m.adx_score:+d})")
-    print(f"║  BB: {m.bb_position}({m.bb_score:+d}) │ EMA9: {m.ema9_distance_pct}%({m.ema9_score:+d}) │ "
-          f"Vol: {result.volume_score:+d} │ OBV: {result.obv_score:+d} │ "
-          f"VWAP: {result.vwap_score:+d} │ Candle: {result.candle_pattern_score:+d}")
+    print(f"║  RSI: {m.rsi}({m.rsi_score:+.0f}) │ Stoch: {m.stoch}({m.stoch_score:+.0f}) │ "
+          f"MACD: {m.macd_signal}({m.macd_score:+.0f}) │ ADX: {m.adx}({m.adx_score:+.0f})")
+    print(f"║  BB: {m.bb_position}({m.bb_score:+.0f}) │ EMA9: {m.ema9_distance_pct}%({m.ema9_score:+.0f}) │ "
+          f"Vol: {result.volume_score:+.0f} │ OBV: {result.obv_score:+.0f} │ "
+          f"VWAP: {result.vwap_score:+.0f} │ Candle: {result.candle_pattern_score:+.0f}")
     # Saldo de agressão
     agr_label = "COMPRA" if result.aggression_score > 0 else ("VENDA" if result.aggression_score < 0 else "NEUTRO")
     print(f"║  AGR: {agr_label}({result.aggression_score:+d}) │ "
