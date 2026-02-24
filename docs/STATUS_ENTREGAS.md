@@ -1,8 +1,8 @@
 # 🟢 STATUS DAS ENTREGAS — Fonte de Verdade (v1.0.0)
 
-**Última Sincronização:** 2026-02-24T00:30:00Z
+**Última Sincronização:** 2026-02-24T18:45:00Z
 **Responsável pela Sincronia:** [Doc Advocate](BOARD_MULTIDISCIPLINAR.json)
-**Status Geral:** 🔵 Sprint 2 - Início de Desenvolvimento
+**Status Geral:** 🔵 Sprint 2 - Desenvolvimento da Prioridade 0 (S2-5)
 **Protocolo:** [SYNC] Obrigatório
 
 ---
@@ -13,8 +13,9 @@
 
 | ID | Issue/Task | Owner | Status | PR/Commit | Obs. |
 |:---|:---|:---|:---:|:---|:---|
-| **S2-2** | Calibrador ATR Dinâmico | [ML Lead](BOARD_MULTIDISCIPLINAR.json) | � COMPLETO | [S2-2] | Trailing Stop Adaptive |
-| **S2-3** | Confluência SMC (M1/M5) | [Eng Sr](BOARD_MULTIDISCIPLINAR.json) | ⏳ AGENDADO | - | Sinais de "Convicção Máxima" |
+| **S2-2** | Calibrador ATR Dinâmico | [ML Lead](BOARD_MULTIDISCIPLINAR.json) | ✅ COMPLETO | [S2-2] | Trailing Stop Adaptive |
+| **S2-3** | Confluência SMC (M1/M5) | [Eng Sr](BOARD_MULTIDISCIPLINAR.json) | ✅ COMPLETO | [S2-3] | 98% coverage, SMC alinhado |
+| **S2-5** | **🔴 MT5 Terminal Isolation** | [Arq. Sistemas](BOARD_MULTIDISCIPLINAR.json) | 🟡 **EM ANDAMENTO** | - | **PRIORIDADE 0** — Isolamento Terminal/Conta + Retry automático |
 | **S2-4** | Integração Phicube (Mimas) | [ML Expert](BOARD_MULTIDISCIPLINAR.json) | ⏳ AGENDADO | - | Ativação do Score de Leque |
 
 ### 📈 Entregas Táticas (NEXT - SHOULD)
