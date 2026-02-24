@@ -5,24 +5,24 @@ email:
     port: ${SMTP_PORT:587}                     # TLS port (not SSL which is 465)
     from_email: ${FROM_EMAIL}                  # Gmail address from .env (required)
     password: ${PASSWORD}                      # App Password from .env (required)
-    
+
     # TLS Configuration (for port 587)
     use_tls: true                              # Always true for Gmail
     use_ssl: false                             # False when using TLS
-    
+
     timeout: ${EMAIL_TIMEOUT:10}               # Connection timeout in seconds
-    
+
   sender:
     name: ${EMAIL_NAME:Operador Quantico}      # Display name for sender
     email: ${FROM_EMAIL}                       # Sender email address
-    
+
   recipient:
     alert_email: ${ALERT_EMAIL}                # Email to receive alerts
-    
+
   retry:
     max_attempts: ${EMAIL_MAX_RETRIES:3}       # Number of retry attempts
     backoff_seconds: [1, 2, 4]                 # Exponential backoff: 1s, 2s, 4s
-    
+
   rate_limit:
     max_per_minute: 60                         # Max 60 emails per minute
     cooldown_seconds: 1                        # Cooldown between sends

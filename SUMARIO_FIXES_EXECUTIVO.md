@@ -116,13 +116,13 @@ fc11dfb fix: Adicionar operadores de comparacao a Price
 - [ ] Verificar que todos os 3 terminais abrem SEM ERRO
 - [ ] Confirmar backtest_results.json foi criado
 
-### SEGUNDA (27/02/2026) - Phase 6 Kickoff
+### Phase 6 Kickoff
 - [ ] **Eng Sr**: INTEGRATION-ENG-001 (BDI Integration) - 3-4h
 - [ ] **Eng Sr**: INTEGRATION-ENG-002 (WebSocket) - 2-3h
 - [ ] **ML Expert**: INTEGRATION-ML-001 (Backtest Setup) - 2-3h
 - [ ] **ML Expert**: INTEGRATION-ML-002 (Backtest Validation) - 2-3h
 
-### 13/03/2026 - Target BETA Launch
+### Target BETA Launch
 - [ ] 8 parallel integration tasks completadas
 - [ ] Backtest gates: Capture ≥85%, FP ≤10%, Win ≥60%
 - [ ] Performance targets: P95 <30s, Memory <50MB

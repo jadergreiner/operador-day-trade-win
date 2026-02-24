@@ -152,13 +152,13 @@ AC: 11
   ✓ MT5 integration
   ✓ Retry logic (3x exponential backoff)
   ✓ Logging
-  
+
   TODO-3 (monitor_positions):
   ✓ 30s polling
   ✓ SL detection
   ✓ History tracking
   ✓ Performance <500ms
-  
+
   TODO-4 (handle_stop_loss):
   ✓ Market close
   ✓ Audit logging
@@ -210,11 +210,11 @@ gh issue list --limit 10
 
 **Output:**
 ```
-ID  TITLE                                                       LABELS                    
-#9  ENG-202: Integrar detector de padrões no BDI                enhancement, help wanted  
-#8  ML-102: Detectar padrões em backtest_optimized_results      enhancement, help wanted  
-#7  ENG-201: Implementar OrdersExecutor com 3 métodos críticos  enhancement, help wanted  
-#6  ML-101: Implementar load_and_label() para backtest_opti...  enhancement, help wanted  
+ID  TITLE                                                       LABELS
+#9  ENG-202: Integrar detector de padrões no BDI                enhancement, help wanted
+#8  ML-102: Detectar padrões em backtest_optimized_results      enhancement, help wanted
+#7  ENG-201: Implementar OrdersExecutor com 3 métodos críticos  enhancement, help wanted
+#6  ML-101: Implementar load_and_label() para backtest_opti...  enhancement, help wanted
 ```
 
 ---
@@ -241,7 +241,7 @@ ID  TITLE                                                       LABELS
    ```bash
    # Check TODO locations
    grep -n "TODO-2\|TODO-3\|TODO-4" src/application/orders_executor.py
-   
+
    # Run tests
    pytest tests/unit/test_orders_executor.py -v
    ```
@@ -250,7 +250,7 @@ ID  TITLE                                                       LABELS
    ```bash
    # Check TODO locations
    grep -n "TODO-1\|TODO-5" src/application/ml_feature_engineer.py
-   
+
    # Run tests
    pytest tests/unit/test_load_and_label.py tests/unit/test_pattern_detection.py -v
    ```
@@ -259,7 +259,7 @@ ID  TITLE                                                       LABELS
    ```bash
    # See all open issues
    gh issue list
-   
+
    # View specific issue
    gh issue view <number>
    ```
@@ -283,7 +283,7 @@ ID  TITLE                                                       LABELS
 
 ---
 
-**Report Generated:** 2026-02-24 18:30 BRT  
-**Status:** 🟢 READY FOR EXECUTION  
-**Git Commits:** 21328b7 + d16053d  
+**Report Generated:** 2026-02-24 18:30 BRT
+**Status:** 🟢 READY FOR EXECUTION
+**Git Commits:** 21328b7 + d16053d
 **Next Review:** 27/02 09:00 (Sprint 1 Standup)

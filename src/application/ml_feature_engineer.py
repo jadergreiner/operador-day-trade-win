@@ -437,7 +437,7 @@ class DatasetLoader:
     ) -> Dict:
         """
         Carrega backtest_optimized_results.json e associa labels às features.
-        
+
         Acceptance Criteria (Issue #6 - ML-101):
         ☐ AC-1: Load JSON file efficiently into memory
         ☐ AC-2: Return dict with features (X) + labels (y)
@@ -463,7 +463,7 @@ class DatasetLoader:
                     'n_features': int
                 }
             }
-            
+
         Related:
             - GitHub Issue #6: ML-101
             - Tests: tests/unit/test_load_and_label.py
@@ -473,38 +473,38 @@ class DatasetLoader:
         # TODO: Validate file exists (raise FileNotFoundError)
         # TODO: Load JSON from backtest_optimized_results.json
         # TODO: Handle JSON decode errors
-        
+
         # AC-2: Create return dict structure
         # TODO: Extract features as numpy array X (17280, N_features)
         # TODO: Extract labels as numpy array y (17280,)
         # TODO: Create metadata dict
-        
+
         # AC-3: Map window_id → labels (no off-by-one)
         # TODO: Extract window_id mappings from JSON
         # TODO: Validate mapping is continuous (no gaps)
         # TODO: Validate no index out of bounds
-        
+
         # AC-4: Class imbalance < 70%
         # TODO: Calculate positive_ratio = sum(y) / len(y)
         # TODO: Assert 0.3 <= positive_ratio <= 0.7
         # TODO: Raise DataImbalanceError if fails
-        
+
         # AC-5: Zero NaN values
         # TODO: Assert np.isnan(X).sum() == 0
         # TODO: Assert np.isnan(y).sum() == 0
         # TODO: Raise NaNValidationError if fails
-        
+
         # AC-6: Performance < 500ms
         # TODO: Use timer decorator or time.time()
         # TODO: Assert execution_time < 500 ms
-        
+
         # AC-7: Unit tests > 90% coverage
         # TODO: Create tests/unit/test_load_and_label.py
         # TODO: test_load_and_label_success
         # TODO: test_load_and_label_nan_handling
         # TODO: test_load_and_label_imbalance_check
         # TODO: test_load_and_label_performance
-        
+
         logger.info("TODO-1: Implement load_and_label() - See AC-1 through AC-7 above")
         raise NotImplementedError("TODO-1: load_and_label() not implemented yet")
     # ==================== TODO-1: LOAD_AND_LABEL END (GitHub Issue #6) ====================
@@ -513,7 +513,7 @@ class DatasetLoader:
     def detect_patterns(self, X: np.ndarray, y: np.ndarray) -> Dict:
         """
         Analisa distribuição de labels e detecta padrões nas features.
-        
+
         Acceptance Criteria (Issue #8 - ML-102):
         ☐ AC-1: Analyze label distribution (captured vs uncaptured)
         ☐ AC-2: Detect patterns correlated with features
@@ -521,11 +521,11 @@ class DatasetLoader:
         ☐ AC-4: Plot histogram of label distribution
         ☐ AC-5: Identify top 10 most relevant features
         ☐ AC-6: Unit tests with fixtures from TODO-1
-        
+
         Args:
             X (np.ndarray): Features array (17280, N_features)
             y (np.ndarray): Labels array (17280,)
-            
+
         Returns:
             Dict: {
                 'label_distribution': {
@@ -539,7 +539,7 @@ class DatasetLoader:
                 'plot_path': str,
                 'execution_time': float
             }
-            
+
         Related:
             - GitHub Issue #8: ML-102
             - Depends on: Issue #6 (TODO-1)
@@ -551,29 +551,29 @@ class DatasetLoader:
         # TODO: Count negative samples (y == 0)
         # TODO: Calculate ratio = positive / total
         # TODO: Log distribution
-        
+
         # AC-2: Detect feature patterns
         # TODO: Calculate feature importance (correlation with y)
         # TODO: For each feature: corr = np.corrcoef(X[:, i], y)[0, 1]
         # TODO: Rank features by absolute correlation
-        
+
         # AC-3: Generate insights report
         # TODO: Create text insights based on feature importance
         # TODO: Identify top predictive features
         # TODO: Identify multicollinearity issues
-        
+
         # AC-4: Plot histogram
         # TODO: Use matplotlib to plot label distribution
         # TODO: Save to outputs/label_distribution_histogram.png
-        
+
         # AC-5: Top 10 features
         # TODO: Sort features by importance
         # TODO: Extract top 10 feature names
-        
+
         # AC-6: Unit tests
         # TODO: Create tests/unit/test_pattern_detection.py
         # TODO: Use fixtures from test_load_and_label.py
-        
+
         logger.info("TODO-5: Implement detect_patterns() - See AC-1 through AC-6 above")
         raise NotImplementedError("TODO-5: detect_patterns() not implemented yet")
     # ==================== TODO-5: DETECT_PATTERNS END (GitHub Issue #8) ====================

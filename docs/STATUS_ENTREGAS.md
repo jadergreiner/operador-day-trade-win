@@ -1,8 +1,8 @@
 # 🟢 STATUS DAS ENTREGAS — Fonte de Verdade (v1.0.0)
 
-**Última Sincronização:** 2026-02-24T20:15:00Z
+**Última Sincronização:** 2026-02-24T20:30:00Z
 **Responsável pela Sincronia:** [Doc Advocate](BOARD_MULTIDISCIPLINAR.json)
-**Status Geral:** 🟡 Sprint 2 - Desenvolvimento S2-5 (CONCLUÍDO) + S2-4 (EM ANDAMENTO)
+**Status Geral:** 🟡 Sprint 2 - Desenvolvimento S2-5 Probabilidade T+60 (PRIORIZADO) + S2-4 (EM ANDAMENTO)
 **Protocolo:** [SYNC] Obrigatório
 
 ---
@@ -22,7 +22,7 @@
 
 | ID | Issue/Task | Owner | Status | PR/Commit | Obs. |
 |:---|:---|:---|:---:|:---|:---|
-| **S2-5** | Probabilidade T+60 | [ML Lead](BOARD_MULTIDISCIPLINAR.json) | ⏳ BACKLOG | - | Previsão Direcional Janela 1h |
+| **S2-5** | Probabilidade T+60 | [ML Expert](BOARD_MULTIDISCIPLINAR.json) | 🟡 **PRIORIZADO** | - | Previsão Direcional T+60 (1h) + Confluência SMC |
 | **S2-6** | Analytics de Intervenção Manual | [Doc Advocate](BOARD_MULTIDISCIPLINAR.json) | ⏳ BACKLOG | - | Feedback Loop Trader-IA |
 
 ---

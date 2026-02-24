@@ -277,7 +277,7 @@ Se performance mantida:
 │ Readiness BETA:       100% (pronto integração)  │
 ├─────────────────────────────────────────────────┤
 │ Próximo:    Integração BDI + Deploy Config     │
-│ Timeline:   13/03/2026 GO-LIVE BETA            │
+│ Timeline:   GO-LIVE BETA                       │
 │ Capital:    R$ 50k/trade, máx R$ 400k/dia     │
 │ KPI Gate:   Win rate ≥60% para Phase 1         │
 └─────────────────────────────────────────────────┘
@@ -295,7 +295,7 @@ Se performance mantida:
 
 ---
 
-**Status Final:** ✅ **PRONTO PARA INTEGRAÇÃO E BETA** (13/03/2026)
+**Status Final:** ✅ **PRONTO PARA INTEGRAÇÃO E BETA**
 
 Quaisquer dúvidas ou necessidade de ajustes, favor entrar em contato.
 

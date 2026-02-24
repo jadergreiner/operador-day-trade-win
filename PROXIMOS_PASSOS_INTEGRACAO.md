@@ -1,7 +1,7 @@
-# 🎯 PRÓXIMOS PASSOS - INTEGRAÇÃO US-004 (Semana 27/02)
+# 🎯 PRÓXIMOS PASSOS - INTEGRAÇÃO US-004
 
 **Responsável:** Engenheiro Sr (Integration Lead)
-**Deadline:** 13/03/2026 (15 dias)
+**Deadline:** BETA Launch
 **Status:** Código 100% Pronto para Integração
 
 ---
@@ -259,7 +259,7 @@ Apenas se profiling indicar bottleneck:
 
 ---
 
-## 🚀 GO-LIVE CHECKLIST (13/03/2026)
+## 🚀 GO-LIVE CHECKLIST (BETA Launch)
 
 ```
 ┌─────────────────────────────────┐

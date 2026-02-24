@@ -26,12 +26,12 @@ from src.application.ml_feature_engineer import MLFeatureEngineer
 
 class TestLoadAndLabel:
     """Test suite para load_and_label() - Issue #6"""
-    
+
     @pytest.fixture
     def engineer(self):
         """Create MLFeatureEngineer instance."""
         return MLFeatureEngineer()
-    
+
     @pytest.fixture
     def mock_backtest_data(self):
         """Create mock backtest_optimized_results.json data."""
@@ -43,12 +43,12 @@ class TestLoadAndLabel:
             ]).tolist(),
             "window_ids": list(range(17280))
         }
-    
+
     # ==================== TEST AC-1: LOAD JSON ====================
     def test_load_and_label_success(self, engineer, mock_backtest_data, tmp_path):
         """
         AC-1, AC-2: Load JSON and return dict structure.
-        
+
         Given: backtest_optimized_results.json exists with valid data
         When: load_and_label(path) called
         Then: returns dict with X, y, metadata keys
@@ -61,14 +61,14 @@ class TestLoadAndLabel:
         # - Assert X is numpy array with shape (17280, 24)
         # - Assert y is numpy array with shape (17280,)
         pass
-    
+
     def test_load_and_label_file_not_found(self, engineer):
         """AC-1: Raise FileNotFoundError if file doesn't exist."""
         # TODO: Implement test
         # - Call load_and_label() with non-existent path
         # - Assert FileNotFoundError raised
         pass
-    
+
     def test_load_and_label_invalid_json(self, engineer, tmp_path):
         """AC-1: Raise JSONDecodeError if JSON is malformed."""
         # TODO: Implement test
@@ -76,7 +76,7 @@ class TestLoadAndLabel:
         # - Call load_and_label()
         # - Assert JSONDecodeError raised
         pass
-    
+
     # ==================== TEST AC-3: MAPPING ====================
     def test_load_and_label_window_id_mapping(self, engineer, mock_backtest_data, tmp_path):
         """AC-3: Map window_id → labels correctly (no off-by-one)."""
@@ -85,7 +85,7 @@ class TestLoadAndLabel:
         # - Verify no off-by-one errors
         # - Verify no gaps in window_id sequence
         pass
-    
+
     # ==================== TEST AC-4: IMBALANCE ====================
     def test_load_and_label_imbalance_ok(self, engineer, mock_backtest_data, tmp_path):
         """AC-4: Accept imbalance < 70% (60/40 split OK)."""
@@ -94,7 +94,7 @@ class TestLoadAndLabel:
         # - Assert no DataImbalanceError raised
         # - Assert metadata['imbalance'] == 0.6
         pass
-    
+
     def test_load_and_label_imbalance_too_high(self, engineer, tmp_path):
         """AC-4: Reject imbalance > 70%."""
         # TODO: Implement test
@@ -102,7 +102,7 @@ class TestLoadAndLabel:
         # - Call load_and_label()
         # - Assert DataImbalanceError raised
         pass
-    
+
     # ==================== TEST AC-5: NAN VALUES ====================
     def test_load_and_label_zero_nan(self, engineer, mock_backtest_data, tmp_path):
         """AC-5: Verify zero NaN values."""
@@ -111,7 +111,7 @@ class TestLoadAndLabel:
         # - Assert np.isnan(X).sum() == 0
         # - Assert np.isnan(y).sum() == 0
         pass
-    
+
     def test_load_and_label_nan_handling(self, engineer, tmp_path):
         """AC-5: Reject data with NaN values."""
         # TODO: Implement test
@@ -119,7 +119,7 @@ class TestLoadAndLabel:
         # - Call load_and_label()
         # - Assert NaNValidationError raised
         pass
-    
+
     # ==================== TEST AC-6: PERFORMANCE ====================
     def test_load_and_label_performance(self, engineer, mock_backtest_data, tmp_path):
         """AC-6: Execution time < 500ms for 17k+ samples."""
@@ -128,7 +128,7 @@ class TestLoadAndLabel:
         # - Assert execution_time < 500ms
         # - Assert metadata['execution_time'] recorded
         pass
-    
+
     # ==================== TEST AC-7: COVERAGE ====================
     def test_load_and_label_metadata(self, engineer, mock_backtest_data, tmp_path):
         """AC-2: Verify metadata dict complete."""

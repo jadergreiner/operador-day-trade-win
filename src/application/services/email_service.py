@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class EmailService:
     """
     Async email service with retry logic and Jinja2 template support.
-    
+
     Features:
     - Gmail SMTP configuration with TLS/SSL
     - Exponential backoff retry (configurable attempts)
@@ -32,39 +32,39 @@ class EmailService:
     def __init__(self, config_file: str = "config/alertas_email.yaml") -> None:
         """
         Initialize email service with YAML configuration.
-        
+
         Args:
             config_file: Path to YAML config file with email settings
-            
+
         Raises:
             FileNotFoundError: If config file not found
             yaml.YAMLError: If config file is invalid YAML
         """
         if not Path(config_file).exists():
             raise FileNotFoundError(f"Config file not found: {config_file}")
-        
+
         with open(config_file, 'r', encoding='utf-8') as f:
             self.config: Dict = yaml.safe_load(f)
-        
+
         # Substitute environment variables in config
         self._substitute_env_vars()
-        
+
         # Initialize Jinja2 template environment
         template_dir = Path("templates").absolute()
         if not template_dir.exists():
             raise FileNotFoundError(f"Templates directory not found: {template_dir}")
-        
+
         self.jinja_env: Environment = Environment(
             loader=FileSystemLoader(str(template_dir)),
             autoescape=True
         )
-        
+
         logger.info(f"EmailService initialized with config: {config_file}")
 
     def _substitute_env_vars(self) -> None:
         """
         Substitute environment variables in config (${VAR_NAME} format).
-        
+
         This allows sensitive data to be loaded from .env without hardcoding.
         """
         def substitute(value: any) -> any:
@@ -74,14 +74,14 @@ class EmailService:
                 if '${' in value and '}' in value:
                     import re
                     pattern = r'\$\{([^}]+)\}'
-                    
+
                     def replace_var(match):
                         var_name = match.group(1)
                         env_value = os.getenv(var_name)
                         if env_value is None:
                             raise ValueError(f"Environment variable not found: {var_name}")
                         return env_value
-                    
+
                     return re.sub(pattern, replace_var, value)
                 return value
             elif isinstance(value, dict):
@@ -89,21 +89,21 @@ class EmailService:
             elif isinstance(value, list):
                 return [substitute(v) for v in value]
             return value
-        
+
         self.config = substitute(self.config)
 
     def _get_smtp_connection(self) -> smtplib.SMTP:
         """
         Create and authenticate SMTP connection.
-        
+
         Returns:
             Authenticated SMTP connection instance
-            
+
         Raises:
             smtplib.SMTPException: If connection or authentication fails
         """
         cfg = self.config['email']['smtp']
-        
+
         try:
             # Create SMTP connection based on SSL/TLS config
             if cfg.get('use_ssl', False):
@@ -118,16 +118,16 @@ class EmailService:
                     int(cfg['port']),
                     timeout=int(cfg.get('timeout', 10))
                 )
-                
+
                 if cfg.get('use_tls', True):
                     smtp.starttls()
-            
+
             # Authenticate
             smtp.login(cfg['from_email'], cfg['password'])
             logger.debug(f"SMTP connection established to {cfg['host']}:{cfg['port']}")
-            
+
             return smtp
-            
+
         except smtplib.SMTPAuthenticationError as e:
             logger.error(f"SMTP authentication failed: {str(e)}")
             raise
@@ -142,14 +142,14 @@ class EmailService:
     ) -> str:
         """
         Render Jinja2 template with provided variables.
-        
+
         Args:
             template_name: Name of template file in templates/ directory
             **template_vars: Variables to inject into template
-            
+
         Returns:
             Rendered HTML string
-            
+
         Raises:
             jinja2.TemplateNotFound: If template not found
             jinja2.TemplateSyntaxError: If template has syntax errors
@@ -172,19 +172,19 @@ class EmailService:
     ) -> bool:
         """
         Send email with exponential backoff retry mechanism.
-        
+
         Attempts to send email up to max_attempts times. If initial attempt fails,
         waits exponentially longer between retries (e.g., 1s, 2s, 4s).
-        
+
         Args:
             to_email: Recipient email address
             subject: Email subject line
             template_name: Name of HTML template file to render
             **template_vars: Variables for template rendering
-            
+
         Returns:
             True if email sent successfully, False if all retries exhausted
-            
+
         Example:
             >>> service = EmailService()
             >>> success = await service.send_email_with_retry(
@@ -199,21 +199,21 @@ class EmailService:
         cfg = self.config['email']['retry']
         max_attempts: int = cfg['max_attempts']
         backoff_seconds: list = cfg['backoff_seconds']
-        
+
         for attempt in range(1, max_attempts + 1):
             try:
                 # Render HTML template
                 html_body = self._render_template(template_name, **template_vars)
-                
+
                 # Create email message
                 msg = MIMEMultipart('alternative')
                 msg['Subject'] = subject
                 msg['From'] = self.config['email']['sender']['email']
                 msg['To'] = to_email
-                
+
                 # Attach HTML body
                 msg.attach(MIMEText(html_body, 'html'))
-                
+
                 # Send email
                 smtp = self._get_smtp_connection()
                 try:
@@ -224,18 +224,18 @@ class EmailService:
                     )
                 finally:
                     smtp.quit()
-                
+
                 logger.info(
                     f"Email sent successfully to {to_email} "
                     f"(attempt {attempt}/{max_attempts})"
                 )
                 return True
-                
+
             except Exception as e:
                 logger.warning(
                     f"Email send attempt {attempt}/{max_attempts} failed: {str(e)}"
                 )
-                
+
                 # If not last attempt, wait and retry
                 if attempt < max_attempts:
                     wait_time = backoff_seconds[attempt - 1]
@@ -250,7 +250,7 @@ class EmailService:
                         f"Last error: {str(e)}"
                     )
                     return False
-        
+
         return False
 
     async def send_alert_email(
@@ -260,13 +260,13 @@ class EmailService:
     ) -> bool:
         """
         Send alert email using alert_email.html template.
-        
+
         Convenience method that uses alert-specific template and config.
-        
+
         Args:
             to_email: Recipient email (defaults to ALERT_EMAIL config)
             **alert_data: Alert variables (action, symbol, price, etc.)
-            
+
         Returns:
             True if email sent successfully
         """
@@ -275,7 +275,7 @@ class EmailService:
             if not to_email:
                 logger.error("No recipient email provided and ALERT_EMAIL not set")
                 return False
-        
+
         return await self.send_email_with_retry(
             to_email=to_email,
             subject=f"Alerta: {alert_data.get('action', 'AÇÃO')} - {alert_data.get('symbol', 'ATIVO')}",
@@ -287,11 +287,11 @@ class EmailService:
 # Example usage:
 if __name__ == "__main__":
     import sys
-    
+
     async def test_email():
         """Test email service (requires proper .env setup)"""
         service = EmailService()
-        
+
         success = await service.send_email_with_retry(
             to_email="test@example.com",
             subject="Teste Alerta Quantico",
@@ -309,12 +309,12 @@ if __name__ == "__main__":
             timestamp_iso="2026-02-23T14:30:00Z",
             alert_class="success"
         )
-        
+
         if success:
             print("✅ Email sent successfully")
             sys.exit(0)
         else:
             print("❌ Email send failed")
             sys.exit(1)
-    
+
     asyncio.run(test_email())

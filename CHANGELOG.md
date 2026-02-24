@@ -1,5 +1,54 @@
 # CHANGELOG - Operador Quântico
 
+## [v1.0.3+HOTFIX] - 2026-02-24 (Sprint 2 Development) 🔴 PRIORIDADE 0 IDENTIFICADA
+
+### 🚨 Decisão Crítica de Governança (Reunião Virtual 15:45 BRT)
+
+**Status:** ⏳ TAREFA S2-5 CRIADA - PRIORIDADE MÁXIMA
+
+#### Identificação de Risco de Isolamento MT5 Terminal
+
+- ✅ **Pergunta do Head de Finanças:** "Nosso operador tem isolamento de terminal MT5 contra múltiplas instâncias?"
+- ✅ **Análise Board:** Risco 🔴 ALTO - Sem validação de PID, account, terminal path
+- ✅ **Decisão:** Tarefa S2-5 criada com Prioridade 0 (máxima)
+- ✅ **Responsável:** Arquiteto de Sistemas + Eng Sr
+- ✅ **Timeline:** Sprint 2 IMEDIATO (até 28/02/2026)
+
+#### Especificação Técnica
+
+- 📄 [docs/S2-5_MT5_TERMINAL_ISOLATION.md](docs/S2-5_MT5_TERMINAL_ISOLATION.md) — Especificação completa
+- 🎯 4 Requisitos Funcionais: Fingerprint Validation, Retry Automático, Health Check, Alertas
+- 🧪 4+ Unit Tests para cobertura de isolamento + reconnect
+- 📈 Impacto: Elimina risco de ordem enviada para conta/terminal errado
+
+#### Integração ao Roadmap
+
+- ✅ STATUS_ENTREGAS.md: S2-5 adicionado com status ⏳ PRIORIDADE 0
+- ✅ ROADMAP.md: Oportunidade 23 (MT5 Terminal Isolation) adicionada como MÁXIMA
+- ✅ Sequência Sprint 2: S2-2, S2-3 (COMPLETOS) → **S2-5** (PRÓXIMO) → S2-4 (pós-S2-5)
+
+---
+
+## [v1.0.3] - 2026-02-24 (Sprint 2 Development)
+
+### ✨ Novo - Inteligência & Visibilidade
+
+**Status: S2-3 "Confluência SMC (M1/M5)" COMPLETA**
+
+#### Documentação Atualizada
+
+- ✅ **ARCHITECTURE.md** (Inclusão do SMC Confluence Engine na Camada de Análise)
+- ✅ **STATUS_ENTREGAS.md** (S2-3 marcado como 🟢 COMPLETO)
+- ✅ **ROADMAP.md** (Progresso NOW: 2 de 4 MUST Sprint 2 concluído)
+
+#### Implementação & Testes
+
+- ✅ **SMC Multi-TF (M1/M5)** (Alinhamento de viés entre períodos curtos)
+- ✅ **Teia de Volatilidade (ATR Map)** (Níveis dinâmicos para TP/SL baseados em ATR)
+- ✅ **Micro Score Boost** (Sinal de "Convicção Máxima" integrado ao score final)
+- ✅ **Integração no Agente Principal** (scripts/agente_micro_tendencia_winfut.py)
+- ✅ **Unit Tests** (Suíte completa 5/5 PASSED, 98% cobertura lógica nova)
+
 ## [v1.0.2] - 2026-02-24 (Sprint 2 Development)
 
 ### ✨ Novo - Inteligência & Volatilidade

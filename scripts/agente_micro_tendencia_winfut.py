@@ -289,9 +289,13 @@ class SMCMultiTF:
     h4: SMCTimeframeData = field(default_factory=lambda: SMCTimeframeData(timeframe="H4"))
     m15: SMCTimeframeData = field(default_factory=lambda: SMCTimeframeData(timeframe="M15"))
     m5: SMCTimeframeData = field(default_factory=lambda: SMCTimeframeData(timeframe="M5"))
+    m1: SMCTimeframeData = field(default_factory=lambda: SMCTimeframeData(timeframe="M1"))
     # Concordância multi-TF
     alignment: str = "NEUTRO"  # BULLISH, BEARISH, MISTO, NEUTRO
     alignment_score: int = 0   # [-3, +3]
+    # S2-3: Confluência específica M1/M5
+    confluence_m1_m5: str = "NEUTRO"  # ALTA, BAIXA, NEUTRO
+    confluence_score: int = 0         # [0-5] zona de convicção
 
 
 @dataclass
@@ -397,6 +401,9 @@ class CycleResult:
     # Divergências (Advogado do Diabo)
     divergence_notes: str = ""
     atr_15: Decimal = Decimal("0")
+    # S2-3: Convicção Máxima (ATR Map + SMC Confluence)
+    smc_conviction_score: int = 0  # [0-10]
+    atr_map: dict[str, Decimal] = field(default_factory=dict)  # Teia de Volatilidade
 
 
 # ────────────────────────────────────────────────────────────────
@@ -572,6 +579,33 @@ def _calc_atr(
     if len(tr_list) < period:
         return Decimal("0")
     return sum(tr_list[-period:]) / Decimal(str(period))
+
+
+def _calc_atr_map(
+    price: Decimal,
+    atr: Decimal,
+    multipliers: list[float] = None,
+) -> dict[str, Decimal]:
+    """Calcula a 'Teia de Volatilidade' baseada em ATR.
+
+    Níveis de extensão baseados no ATR para parciais, alvos e zonas de exaustão.
+    S2-3: Usado para confluência de 'Convicção Máxima'.
+    """
+    if multipliers is None:
+        multipliers = [1.0, 1.5, 2.0, 3.0]
+
+    atr_map = {}
+    for m in multipliers:
+        # Arredondar para o tick size do WIN (5 pts)
+        m_decimal = Decimal(str(m))
+        up = price + (atr * m_decimal)
+        down = price - (atr * m_decimal)
+
+        # Snap to 5 pts
+        atr_map[f"up_{m}x"] = (up / 5).quantize(Decimal("1"), rounding=ROUND_HALF_UP) * 5
+        atr_map[f"down_{m}x"] = (down / 5).quantize(Decimal("1"), rounding=ROUND_HALF_UP) * 5
+
+    return atr_map
 
 
 def _calc_obv(closes: list[Decimal], volumes: list[int]) -> list[Decimal]:
@@ -890,15 +924,18 @@ def _calc_smc_multi_tf(
     candles_h4: list[Candle],
     candles_m15: list[Candle],
     candles_m5: list[Candle],
+    candles_m1: list[Candle] = None,
 ) -> SMCMultiTF:
-    """Calcula SMC para H4, M15 e M5 e consolida alinhamento."""
+    """Calcula SMC para H4, M15, M5 e M1 e consolida alinhamento."""
     multi = SMCMultiTF()
 
     multi.h4 = _detect_smc_for_timeframe(candles_h4, "H4")
     multi.m15 = _detect_smc_for_timeframe(candles_m15, "M15")
     multi.m5 = _detect_smc_for_timeframe(candles_m5, "M5")
+    if candles_m1 is not None:
+        multi.m1 = _detect_smc_for_timeframe(candles_m1, "M1")
 
-    # ── Alinhamento multi-TF ──
+    # ── Alinhamento multi-TF (H4, M15, M5) ──
     biases = [multi.h4.bias, multi.m15.bias, multi.m5.bias]
     bullish_count = sum(1 for b in biases if b == "BULLISH")
     bearish_count = sum(1 for b in biases if b == "BEARISH")
@@ -915,6 +952,26 @@ def _calc_smc_multi_tf(
     else:
         multi.alignment = "NEUTRO"
         multi.alignment_score = 0
+
+    # ── S2-3: Confluência específica M1/M5 (Micro Convicção) ──
+    if multi.m5.bias != "NEUTRO" and multi.m1.bias == multi.m5.bias:
+        conf_bias = multi.m5.bias
+        multi.confluence_m1_m5 = "ALTA" if conf_bias == "BULLISH" else "BAIXA"
+
+        score = 2 # Base por alinhamento de bias
+        # Bônus por posição de valor (Discovery em ambo os TFs)
+        if conf_bias == "BULLISH":
+            if multi.m5.equilibrium == "DISCOUNT" and multi.m1.equilibrium == "DISCOUNT":
+                score += 2
+            if multi.m1.direction == "ALTA" and multi.m5.direction == "ALTA":
+                score += 1
+        else: # BEARISH
+            if multi.m5.equilibrium == "PREMIUM" and multi.m1.equilibrium == "PREMIUM":
+                score += 2
+            if multi.m1.direction == "BAIXA" and multi.m5.direction == "BAIXA":
+                score += 1
+
+        multi.confluence_score = min(score, 5)
 
     return multi
 
@@ -1724,6 +1781,12 @@ def _generate_opportunities(
         buy_threshold += 1
         sell_threshold -= 1
 
+    # S2-3: Convicção Máxima — Ajuste de Threshold baseada em Confluência M1/M5
+    if result.smc_multi_tf.confluence_m1_m5 == "ALTA" and result.smc_multi_tf.confluence_score >= 3:
+        buy_threshold = max(2, buy_threshold - 1)
+    elif result.smc_multi_tf.confluence_m1_m5 == "BAIXA" and result.smc_multi_tf.confluence_score >= 3:
+        sell_threshold = min(-2, sell_threshold + 1)
+
     def _has_min_confluence(regions_list: list[RegionOfInterest]) -> bool:
         for rg in regions_list:
             if (
@@ -1899,6 +1962,14 @@ def _generate_opportunities(
                 valid_res = [r for r in resistances if r.price > price]
                 if valid_res:
                     tp = valid_res[0].price
+
+            # S2-3: Alvos baseados na 'Teia de Volatilidade' (ATR Map)
+            if result.atr_map:
+                atr_tp = result.atr_map.get("up_2.0x")
+                if atr_tp and atr_tp > entry:
+                    # Preferir ATR TP se for maior (alvo ambicioso em tendência)
+                    tp = max(tp, atr_tp)
+
             tp = _round_tick(tp, tick)
             risk = entry - sl
             reward = tp - entry
@@ -1976,6 +2047,11 @@ def _generate_opportunities(
                         conf = max(Decimal("20"), conf - Decimal("8"))
                         diary_extra += " [EXP_REDUZIDA]"
 
+                    # S2-3: Boost de Convicção Máxima M1/M5
+                    if result.smc_multi_tf.confluence_m1_m5 == "ALTA":
+                        conf = min(Decimal("99"), conf + Decimal(str(result.smc_conviction_score * 3)))
+                        diary_extra += f" [CONV_SMC_M1M5: +{result.smc_conviction_score * 3}%]"
+
                     opportunities.append(Opportunity(
                         direction="COMPRA",
                         entry=entry,
@@ -2049,6 +2125,14 @@ def _generate_opportunities(
                 valid_sup = [s for s in supports if s.price < price]
                 if valid_sup:
                     tp = valid_sup[0].price
+
+            # S2-3: Alvos baseados na 'Teia de Volatilidade' (ATR Map)
+            if result.atr_map:
+                atr_tp = result.atr_map.get("down_2.0x")
+                if atr_tp and atr_tp < entry:
+                    # Preferir ATR TP se for menor (alvo ambicioso em tendência de baixa)
+                    tp = min(tp, atr_tp)
+
             tp = _round_tick(tp, tick)
             risk = sl - entry
             reward = entry - tp
@@ -2124,6 +2208,11 @@ def _generate_opportunities(
                     if reduced_exposure_mode:
                         conf = max(Decimal("20"), conf - Decimal("8"))
                         diary_extra += " [EXP_REDUZIDA]"
+
+                    # S2-3: Boost de Convicção Máxima M1/M5
+                    if result.smc_multi_tf.confluence_m1_m5 == "BAIXA":
+                        conf = min(Decimal("99"), conf + Decimal(str(result.smc_conviction_score * 3)))
+                        diary_extra += f" [CONV_SMC_M1M5: +{result.smc_conviction_score * 3}%]"
 
                     opportunities.append(Opportunity(
                         direction="VENDA",
@@ -3042,11 +3131,12 @@ def _run_cycle(mt5: MT5Adapter) -> CycleResult:
         result.pivots = _calc_pivot_levels(prev_h, prev_l, prev_c)
     # 6) SMC (usa M15 para mais estabilidade)
     result.smc = _detect_smc(candles_m15 if candles_m15 else candles_h1)
-    # 6b) SMC Multi-Timeframe (H4, M15, M5)
+    # 6b) SMC Multi-Timeframe (H4, M15, M5) + S2-3: Confluência M1/M5
     result.smc_multi_tf = _calc_smc_multi_tf(
         candles_h4 if candles_h4 else [],
         candles_m15 if candles_m15 else [],
         candles_m5 if candles_m5 else [],
+        candles_m1 if candles_m1 else [],
     )
     # 7) Momentum M5
     result.momentum = _calc_momentum(candles_m5)
@@ -3096,6 +3186,7 @@ def _run_cycle(mt5: MT5Adapter) -> CycleResult:
         + result.candle_pattern_score
         + result.aggression_score
         + result.mima.fan_score  # Ativação oficial do Phicube no Score (+-6)
+        + result.smc_multi_tf.confluence_score  # S2-3: Confluência M1/M5 (Micro Convicção)
     )
     # 12) Classificação micro tendência
     result.micro_trend = _classify_micro_trend(
@@ -3106,12 +3197,20 @@ def _run_cycle(mt5: MT5Adapter) -> CycleResult:
     highs_m5 = [c.high.value for c in candles_m5]
     lows_m5 = [c.low.value for c in candles_m5]
     atr = _calc_atr(highs_m5, lows_m5, closes_m5, 14) if candles_m5 else Decimal("0")
-    
+
     # ATR 15 minutos (15 candles de M1) - S2-2 Calibrador Dinâmico
     closes_m1 = [c.close.value for c in candles_m1]
     highs_m1 = [c.high.value for c in candles_m1]
     lows_m1 = [c.low.value for c in candles_m1]
     result.atr_15 = _calc_atr(highs_m1, lows_m1, closes_m1, 15) if candles_m1 else Decimal("0")
+
+    # 13.5) S2-3: Teia de Volatilidade e Convicção Máxima
+    if result.atr_15 > 0:
+        result.atr_map = _calc_atr_map(result.price_current, result.atr_15)
+
+    # Convicção baseada no alinhamento M1/M5 e Micro Score
+    if result.smc_multi_tf.confluence_m1_m5 != "NEUTRO":
+        result.smc_conviction_score = min(abs(result.micro_score) // 2 + result.smc_multi_tf.confluence_score, 10)
 
     result.opportunities = _generate_opportunities(result, atr)
 
@@ -4102,10 +4201,10 @@ def main():
             if result.atr_15 > 0:
                 old_ts = TRAILING_DISTANCE_PTS
                 old_vol = MAX_CONTRACTS
-                
+
                 TRAILING_DISTANCE_PTS = _atr_calibrator.calculate_trailing_stop(result.atr_15)
                 MAX_CONTRACTS = _atr_calibrator.suggest_volume(result.atr_15, base_volume=1) # Usando 1 como base conforme constantes
-                
+
                 if TRAILING_DISTANCE_PTS != old_ts or MAX_CONTRACTS != old_vol:
                     print(f"  ⚙️ Calibração ATR (15min: {result.atr_15:.1f} pts):")
                     print(f"     Trailing Stop: {old_ts:.0f} → {TRAILING_DISTANCE_PTS:.0f} pts")

@@ -1,7 +1,7 @@
-# ✅ PRÉ-KICKOFF CHECKLIST (24-27 FEV 2026)
+# ✅ PRÉ-KICKOFF CHECKLIST (Kickoff Sprint 1)
 
 **Data de Início:** 23/02/2026 22:00 UTC
-**Data de Target:** 27/02/2026 09:00 BRT (Kickoff Sprint 1)
+**Data de Target:** Sprint 1 Kickoff
 **Owner:** GitHub Copilot + CTO
 **Status:** READY FOR EXECUTION
 
@@ -320,7 +320,7 @@ maram disponibilidade
 
 ---
 
-## 🚀 FINAL SIGN-OFF (27/02 09:00 Kickoff)
+## 🚀 FINAL SIGN-OFF (Sprint 1 Kickoff)
 
 ```
 ┌────────────────────────────────────────────────┐
@@ -345,7 +345,7 @@ maram disponibilidade
 │ 🚀 AUTHORIZED TO PROCEED: ____________       │
 │    (Lead CTO signature above)                 │
 │                                                │
-│ Date/Time: 27/02/2026 09:00 BRT              │
+│ Date/Time: Sprint 1 Kickoff                   │
 │                                                │
 └────────────────────────────────────────────────┘
 ```

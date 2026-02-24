@@ -12,10 +12,10 @@
         .header h1 { font-size: 1.8em; margin-bottom: 5px; }
         .header p { font-size: 0.9em; opacity: 0.9; }
         .content { padding: 20px; }
-        .alert-box { 
-            border-left: 5px solid #ff6b6b; 
-            padding: 15px; 
-            background: #fff5f5; 
+        .alert-box {
+            border-left: 5px solid #ff6b6b;
+            padding: 15px;
+            background: #fff5f5;
             margin: 15px 0;
             border-radius: 4px;
         }
@@ -44,7 +44,7 @@
             <h1>🚀 Alerta Quantico</h1>
             <p>Sistema Autônomo de Operações</p>
         </div>
-        
+
         <div class="content">
             <div class="alert-box {{ alert_class }}">
                 <h2>{{ action }} - {{ symbol }}</h2>
@@ -53,7 +53,7 @@
                 <p><strong>Padrão Detectado:</strong> {{ pattern_type }}</p>
                 <p><strong>Confiança:</strong> {{ confidence }}%</p>
             </div>
-            
+
             <div>
                 <h3>Métricas Técnicas:</h3>
                 <div class="metrics">
@@ -75,15 +75,15 @@
                     </div>
                 </div>
             </div>
-            
+
             <hr>
-            
+
             <div class="recommendation">
                 <p><strong>📊 Recomendação:</strong> {{ recommendation }}</p>
               <p class="timestamp"><strong>Gerado:</strong> {{ timestamp_iso }}</p>
             </div>
         </div>
-        
+
         <div class="footer">
             <p>⚠️ Este é um alerta automático. Sempre valide antes de executar operações.</p>
             <p>Operador Quântico | Agente Autônomo</p>

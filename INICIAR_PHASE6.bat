@@ -244,7 +244,7 @@ echo *  Proximos passos:                                                        
 echo *  1. Siga: CHECKLIST_INTEGRACAO_PHASE6.md                                 *
 echo *  2. Daily sync: 15h00                                                    *
 echo *  3. Commit ao final de cada tarefa                                       *
-echo *  4. Target: BETA LAUNCH 13/03/2026                                       *
+echo *  4. Target: BETA LAUNCH                                                  *
 echo *                                                                            *
 echo ******************************************************************************
 echo.
@@ -255,12 +255,12 @@ goto FIM
 cls
 echo.
 echo ******************************************************************************
-echo *  AGENDADO PARA SEGUNDA 27/02 9:00 AM                                     *
+echo *  AGENDADO PARA KICKOFF                                                   *
 echo ******************************************************************************
 echo.
 echo Preparacao concluida!
 echo.
-echo Para iniciar segunda, execute:
+echo Para iniciar, execute:
 echo.
 echo   Terminal 1 (Eng Sr):
 echo   cd c:\repo\operador-day-trade-win
@@ -271,7 +271,7 @@ echo   cd c:\repo\operador-day-trade-win
 echo   Siga: CHECKLIST_INTEGRACAO_PHASE6.md - Task INTEGRATION-ML-001
 echo.
 echo   Daily Sync: 15h00
-echo   Target: BETA LAUNCH 13/03/2026
+echo   Target: BETA LAUNCH
 echo.
 pause
 goto FIM
