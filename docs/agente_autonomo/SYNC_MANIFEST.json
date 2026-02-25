@@ -1,0 +1,135 @@
+{
+  "version": "1.2.4",
+  "last_update": "2026-02-24T16:00:00Z",
+  "last_health_check": "2026-02-24T16:00:00Z",
+  "status": "synchronized",
+  "description": "Manifest de sincronização de documentação do Agente Autônomo",
+  "documents": [
+    {
+      "id": "doc_001",
+      "path": "docs/ROADMAP.md",
+      "type": "strategic",
+      "checksum": "sha256_roadmap_v1.1",
+      "last_modified": "2026-02-24T23:00:00Z",
+      "version": "1.1.0",
+      "status": "synchronized",
+      "mandatory_sync_with": ["FEATURES.md", "STATUS_ENTREGAS.md"],
+      "description": "Visão estratégica do roadmap (Now/Next/Later)"
+    },
+    {
+      "id": "doc_002",
+      "path": "docs/PLANO_DE_SPRINTS_MVP_NOW.md",
+      "type": "operational",
+      "checksum": "sha256_plano_v1.1",
+      "last_modified": "2026-02-24T16:00:00Z",
+      "version": "1.1.0",
+      "status": "synchronized",
+      "mandatory_sync_with": [
+        "ANALISE_PRIORIZACAO_24FEV.md",
+        "STATUS_ENTREGAS.md"
+      ],
+      "description": "Backlog detalhado do Sprint ativo e timeline"
+    },
+    {
+      "id": "doc_003",
+      "path": "ANALISE_PRIORIZACAO_24FEV.md",
+      "type": "operational_critical",
+      "checksum": "sha256_analise_v1.0",
+      "last_modified": "2026-02-24T16:00:00Z",
+      "version": "1.0.0",
+      "status": "synchronized",
+      "mandatory_sync_with": [
+        "PLANO_DE_SPRINTS_MVP_NOW.md",
+        "TAREFAS_INTEGRACAO_PHASE6.md",
+        "STATUS_ENTREGAS.md"
+      ],
+      "description": "Status atual, dependências, riscos e TODOs"
+    },
+    {
+      "id": "doc_004",
+      "path": "TAREFAS_INTEGRACAO_PHASE6.md",
+      "type": "operational",
+      "checksum": "sha256_tarefas_v1.0",
+      "last_modified": "2026-02-20T14:00:00Z",
+      "version": "1.0.0",
+      "status": "synchronized",
+      "mandatory_sync_with": ["ANALISE_PRIORIZACAO_24FEV.md"],
+      "description": "Parallelogram de tasks para Eng Sr + ML Expert"
+    },
+    {
+      "id": "doc_005",
+      "path": "docs/FEATURES.md",
+      "type": "strategic",
+      "checksum": "sha256_features_v1.0",
+      "last_modified": "2026-02-20T00:00:00Z",
+      "version": "1.0.0",
+      "status": "needs_update",
+      "mandatory_sync_with": ["ROADMAP.md"],
+      "description": "Mapa de features com prioridade e status"
+    },
+    {
+      "id": "doc_006",
+      "path": "docs/BOARD_STRUCTURE.md",
+      "type": "governance",
+      "checksum": "sha256_board_v1.0",
+      "last_modified": "2026-02-20T00:00:00Z",
+      "version": "1.0.0",
+      "status": "needs_update",
+      "mandatory_sync_with": ["prompts/squad_multi.md"],
+      "description": "Responsabilidades por persona (RACI matrix)"
+    },
+    {
+      "id": "doc_007",
+      "path": "docs/CRITERIOS_DE_ACEITE_MVP.md",
+      "type": "governance",
+      "checksum": "sha256_criterios_v1.0",
+      "last_modified": "2026-02-20T00:00:00Z",
+      "version": "1.0.0",
+      "status": "needs_update",
+      "mandatory_sync_with": "ANALISE_PRIORIZACAO_24FEV.md",
+      "description": "Matriz de critérios de aceite padrão"
+    },
+    {
+      "id": "doc_008",
+      "path": "docs/agente_autonomo/AGENTE_AUTONOMO_ARQUITETURA.md",
+      "type": "technical",
+      "checksum": "sha256_arch_v1.2",
+      "last_modified": "2026-02-23T00:00:00Z",
+      "version": "1.2.0",
+      "status": "synchronized",
+      "mandatory_sync_with": [
+        "AGENTE_AUTONOMO_FEATURES.md",
+        "AGENTE_AUTONOMO_ROADMAP.md"
+      ],
+      "description": "Decisões aprovadas sobre MT5 API, Risk, Orders"
+    },
+    {
+      "id": "doc_009",
+      "path": "docs/agente_autonomo/AGENTE_AUTONOMO_FEATURES.md",
+      "type": "strategic",
+      "checksum": "sha256_features_agent_v1.2",
+      "last_modified": "2026-02-23T00:00:00Z",
+      "version": "1.2.0",
+      "status": "synchronized",
+      "mandatory_sync_with": [
+        "AGENTE_AUTONOMO_ARQUITETURA.md",
+        "AGENTE_AUTONOMO_ROADMAP.md"
+      ],
+      "description": "Features com prioridade e status"
+    }
+  ],
+  "sync_rules": {
+    "automatic_check_interval_hours": 6,
+    "enforce_blocking": true,
+    "enforce_level": "strict",
+    "pre_commit_validation": true
+  },
+  "health_check": {
+    "total_documents": 9,
+    "synchronized": 6,
+    "needs_update": 3,
+    "unsynchronized": 0,
+    "blockers": []
+  },
+  "notes": "ANALISE_PRIORIZACAO_24FEV.md criado como fonte de verdade operacional. Atualizar FEATURES.md, BOARD_STRUCTURE.md e CRITERIOS_DE_ACEITE_MVP.md com dados reais."
+}
