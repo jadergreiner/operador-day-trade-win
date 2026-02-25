@@ -128,7 +128,7 @@ class ExecutionOrder:
         trade = Trade(
             symbol=Symbol(self.symbol),
             side=side,
-            quantity=Quantity(Decimal(str(self.volume))),
+            quantity=Quantity(int(self.volume)),  # Converte para int
             entry_price=Price(Decimal(str(self.entry_price))),
             entry_time=self.execution_time or datetime.utcnow(),
             broker_trade_id=mt5_ticket,
@@ -227,7 +227,7 @@ class SendToMT5Command(OrderExecutionCommand):
             False se rejeitado ou falha de persistência crítica
         """
         import asyncio
-        from src.infrastructure.exceptions import OrderExecutionError
+        from src.domain.exceptions.domain_exceptions import OrderExecutionError
         from src.domain.entities import Order
         from src.domain.value_objects import Symbol, Quantity, Price
         from src.domain.enums.trading_enums import OrderSide, OrderType
@@ -246,7 +246,7 @@ class SendToMT5Command(OrderExecutionCommand):
                 Order(
                     symbol=Symbol(order.symbol),
                     side=OrderSide.BUY if order.order_type.upper() == "BUY" else OrderSide.SELL,
-                    quantity=Quantity(Decimal(str(order.volume))),
+                    quantity=Quantity(int(order.volume)),  # Converte para int
                     order_type=OrderType.MARKET,
                     stop_loss=Price(Decimal(str(order.stop_loss))) if order.stop_loss else None,
                     take_profit=Price(Decimal(str(order.take_profit))) if order.take_profit else None,
