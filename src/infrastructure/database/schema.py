@@ -328,6 +328,59 @@ class SimpleScoreMatrixModel(Base):
     created_at = Column(DateTime, default=datetime.now)
 
 
+class OperationModel(Base):
+    """
+    Table for storing all trading operations (TASK-CRÍTICA-0).
+    
+    Mais granular que TradeModel - rastreia TODAS as ações:
+    - Sinais detectados
+    - Decisões tomadas
+    - Ordens enviadas
+    - Execuções
+    """
+
+    __tablename__ = "operations"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    operation_id = Column(String(36), nullable=False, unique=True, index=True)
+    timestamp = Column(DateTime, nullable=False, index=True)
+    symbol = Column(String(20), nullable=False, index=True)
+    operation_type = Column(String(20), nullable=False)  # SIGNAL/DECISION/ORDER/EXECUTION
+    quantity = Column(Integer, nullable=True)
+    price = Column(Numeric(18, 6), nullable=True)
+    status = Column(String(20), nullable=False, index=True)  # PENDING/EXECUTED/FAILED
+    details = Column(JSON, nullable=True)  # Metadados da operação
+    created_at = Column(DateTime, default=datetime.now, index=True)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+class AuditTrailModel(Base):
+    """
+    Table for comprehensive audit trail (TASK-CRÍTICA-0).
+    
+    Rastreia TODAS as decisões e ações:
+    - Who: persona que executou/aprovou
+    - What: descrição da ação
+    - When: timestamp
+    - Why: reasoning (sinal, gate, decisão)
+    - Result: outcome (sucesso/falha)
+    """
+
+    __tablename__ = "audit_trail"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    event_id = Column(String(36), nullable=False, unique=True, index=True)
+    timestamp = Column(DateTime, nullable=False, index=True)
+    actor = Column(String(50), nullable=False)  # "ENG_SR", "ML_EXPERT", "SYSTEM"
+    action_type = Column(String(50), nullable=False)  # DETECT/VALIDATE/EXECUTE/OVERRIDE
+    description = Column(String(500), nullable=False)
+    operation_id = Column(String(36), nullable=True, index=True)  # Link to OperationModel
+    reasoning = Column(String(1000), nullable=True)  # Por que desta ação (gate, sinal, etc)
+    result = Column(String(20), nullable=False)  # SUCCESS/FAILURE
+    result_details = Column(JSON, nullable=True)  # Erro details, metrics
+    created_at = Column(DateTime, default=datetime.now, index=True)
+
+
 def create_database(db_path: str = "data/db/trading.db") -> None:
     """
     Create all database tables.
