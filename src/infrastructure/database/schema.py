@@ -331,7 +331,7 @@ class SimpleScoreMatrixModel(Base):
 class OperationModel(Base):
     """
     Table for storing all trading operations (TASK-CRÍTICA-0).
-    
+
     Mais granular que TradeModel - rastreia TODAS as ações:
     - Sinais detectados
     - Decisões tomadas
@@ -357,7 +357,7 @@ class OperationModel(Base):
 class AuditTrailModel(Base):
     """
     Table for comprehensive audit trail (TASK-CRÍTICA-0).
-    
+
     Rastreia TODAS as decisões e ações:
     - Who: persona que executou/aprovou
     - What: descrição da ação

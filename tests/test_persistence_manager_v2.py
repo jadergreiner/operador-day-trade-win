@@ -87,7 +87,7 @@ class TestPersistenceManagerIntegration:
     async def test_e2e_pipeline(self):
         """Full E2E pipeline."""
         manager = PersistenceManager(db_path=":memory:")
-        
+
         # Validate labels
         labels = [
             {"timestamp": f"2026-02-24T10:{i:02d}:00", "label": "BUY", "confidence": 0.85 + (i * 0.01)}
@@ -95,12 +95,12 @@ class TestPersistenceManagerIntegration:
         ]
         val_result = await manager.validate_labels(labels)
         assert val_result["valid"] == True
-        
+
         # Create splits
         dataset = [{"id": i, "data": 1.0} for i in range(100)]
         splits = await manager.create_data_splits(dataset)
         assert len(splits["train"]) + len(splits["val"]) + len(splits["test"]) == 100
-        
+
         # Save features
         features = [f"feature_{i}" for i in range(24)]
         await manager.save_feature_names(features)
