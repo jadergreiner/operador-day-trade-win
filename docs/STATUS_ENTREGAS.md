@@ -558,11 +558,88 @@ Summary: 10/10 PASSED (100%) | Coverage: 100% on load_and_label()
 
 ---
 
-## ⏩ ITENS DESPRIORIZADOS (Sprint 2 -> Sprint 3+)
+## 📋 SPEC: Dashboard ML-Confidence Integration (Sprint 2)
+
+**Status:** 📝 SPEC PRONTA | **Criada:** 25/02 22:00 BRT | **Timeline:** 27/02-05/03 (Sprint 2)
+
+### 🎯 Objetivo
+Atualizar dashboard operador para exibir CONFIDENCE SCORES probabilísticos baseados em ML,
+em vez de confiar apenas em contagem de macros. Melhoria esperada: 60.3% → 72%+ confidence.
+
+### 📊 Impacto
+```
+DASHBOARD v1.1 (HOJE):  "VENDA Conf: 60.3%" (contagem: 96/104 items)
+        ⬇️
+DASHBOARD v1.2 (06/03): "VENDA Conf: 72.0%" (ML prob + macro weighted)
+```
+
+### 🔧 Mudanças Técnicas Requeridas
+| Componente | Mudança | Responsável | Status |
+|:---|:---|:---|:---:|
+| `MLFeaturesExtractor` | NOVO - Extract 24 features em tempo real | Eng Sr | ⏳ Sprint 2 |
+| `MLConfidenceEngineV1_2` | NOVO - Load model + predict_proba | Eng Sr | ⏳ Sprint 2 |
+| `MacroScoreEngine` | ADD ml_confidence field (opt) | Eng Sr | ⏳ Sprint 2 |
+| `MacroScoreResult` | ADD ml_confidence + weighted_conf | Eng Sr | ⏳ Sprint 2 |
+| Unit Tests | NEW - 10 test cases (AC-1 até AC-7) | QA | ⏳ Sprint 2 |
+
+### ✅ Acceptance Criteria
+| AC | Critério | Target | Status |
+|:---|:---|:---|:---:|
+| **AC-1** | Load model_v1_2_grid_search.pkl | ✅ Ready | ⏳ SPRINT 2 |
+| **AC-2** | Extract 24 features (current state) | ✅ Ready | ⏳ SPRINT 2 |
+| **AC-3** | ML probability in range [0, 1] | ✅ Ready | ⏳ SPRINT 2 |
+| **AC-4** | Backward compatibility (no breaking) | ✅ Ready | ⏳ SPRINT 2 |
+| **AC-5** | Dashboard renders ML confidence | ✅ Ready | ⏳ SPRINT 2 |
+| **AC-6** | E2E full pipeline works | ✅ Ready | ⏳ SPRINT 2 |
+| **AC-7** | Performance delta <500ms | ✅ Ready | ⏳ SPRINT 2 |
+
+### 📅 Sprint 2 Timeline (27/02 - 05/03)
+```
+PARALELO TRACK A - Grid Search (ML Expert):
+  27/02: Kick-off + setup (load_and_label OUTPUT ready ✅)
+  28/02: Grid loop (8 thresholds)
+  01/03: Backtest validation (F1 > 0.65, WR > 60%)
+  02/03: Model selection + SAVE model_v1_2_grid_search.pkl
+  03/03: Final validation
+  OUTPUT: model_v1_2_grid_search.pkl ✅ (ready for integration)
+
+PARALELO TRACK B - Dashboard Integration (Eng Sr):
+  27/02: Kick-off + design MLConfidenceEngineV1_2
+  28/02: Implement MLFeaturesExtractor
+  01/03: Implement ML confidence calculation
+  02/03: Integrate into MacroScoreEngine
+    └─ WAIT FOR: model_v1_2_grid_search.pkl from Track A
+  03/03: Unit tests + E2E tests
+  04-05/03: Buffer + performance tuning
+
+GATE 1 (05/03 18:00):
+  ├─ Grid Search F1 > 0.65? ✅
+  ├─ Dashboard tests passing? ✅
+  ├─ Performance <500ms delta? ✅
+  └─ GO/NO-GO Deploy 06/03?
+
+DEPLOY (06/03 if GO):
+  ├─ Merge feature/dashboard-ml-confidence → main
+  ├─ Deploy to production
+  ├─ Toggle use_ml_confidence = true
+  └─ Dashboard v1.2 LIVE ✅
+```
+
+### 📚 Referência
+- **Full Spec:** [SPEC_DASHBOARD_ML_CONFIDENCE.py](../SPEC_DASHBOARD_ML_CONFIDENCE.py)
+- **Dependency:** load_and_label() output (INTEGRATION-ML-001: ✅ READY)
+- **Blocks:** Operador confidence improvement for Phase D (auto-trading)
+
+### 🎤 Decisão de Aprovação
+**Pending Gate 1 (05/03):** Spec aprovada conceptualmente, execução rola em Sprint 2.
+
+---
+
+## ⏩ ITENS DESPRIORIZADOS (Sprint 3+)
 
 | ID | Task | Motivo | Status |
 |:---|:---|:---|:---:|
-| **S2-1** | Dashboard de Monitoramento | Priorização de Lógica e Qualidade de Sinal | ⏳ AGENDADO |
+| **S3-1** | Dashboard de Monitoramento Avançado | Priorização de Lógica e Qualidade de Sinal | ⏳ AGENDADO |
 
 ---
 
