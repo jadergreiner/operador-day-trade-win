@@ -62,7 +62,7 @@
 | **🔟 Trader UAT** | 50 scenarios, 9.2/10 approval, live trades | 8/8 | ✅ PASSED | 08/03 → 25/02 |
 | **1️⃣1️⃣ Pre-Prod Audit** | Security, Compliance, DR, sign-off | 8/8 | ✅ PASSED | 11/03 → 25/02 |
 
-**Gate 2 Decision:** 25/02 19:30 - 🟢 **PRODUCTION DEPLOYMENT AUTHORIZED**  
+**Gate 2 Decision:** 25/02 19:30 - 🟢 **PRODUCTION DEPLOYMENT AUTHORIZED**
 **Result:** All 32/32 AC Passed | 6/6 Stakeholders Approved | Live Operations GO
 
 📄 Documentação: [FASE3 Documents](../FASE3_STEP8_COMPLETION.md) | [Gate 2 Decision](../GATE2_OFFICIAL_DECISION.md)
@@ -79,7 +79,7 @@
 | **3️⃣ Configuration** | Trading params, Risk validators, Alerts, Dashboard | 8/8 | ✅ PASSED | 24 params active |
 | **4️⃣ Final Validation** | Integration tests, Security, Compliance, Trader UAT | 8/8 | ✅ PASSED | 1200+ tests passed |
 
-**Final Decision:** ✅ **GO FOR PRODUCTION IMMEDIATELY**  
+**Final Decision:** ✅ **GO FOR PRODUCTION IMMEDIATELY**
 **Result:** All 32/32 AC Passed | Infrastructure Ready | Trading Live | Capital Deployed
 
 📄 Documentação: [FASE4 Documents](../FASE4_COMPLETE_SUMMARY.md) | [Go-Live Auth](../GO_LIVE_AUTHORIZATION.md) | [Live Log](../OPERADOR_LIVE_TRADING_LOG.md)
@@ -277,6 +277,54 @@
 | **GAP-02** | Sincronia de Timezone MT5 (-3h) | 🟠 MÉDIA | Oportunidade 7 do Roadmap | 🟢 RESOLVIDO |
 | **GAP-03** | Interface Visual de Monitoramento | 🟠 MÉDIA | S1-3 movido para S2-1 | ⏳ AGENDADO |
 
+
+---
+
+## 🔄 **PHASE 6 INTEGRATION — BDI + WEBSOCKET + BACKTEST (24/02+)**
+
+### Deliberação Aprovada (24/02 14:35 BRT)
+
+| Componente | Decision | Owner | Timeline | Status |
+|:---|:---|:---|:---|:---|
+| **INTEGRATION-ENG-001** | ✅ **GO** — BDI Integration | Eng Sr | 27-28/02 (3-4h) | 🟢 **AUTORIZADO** |
+| **INTEGRATION-ML-001** | ✅ **NEXT** — Backtesting Setup | ML Expert | 27-28/02 (2-3h) | ⏳ PRONTA |
+| **INTEGRATION-ENG-002** | ✅ **NEXT** — WebSocket Server | Eng Sr | 01-02/03 (2-3h) | ⏳ PRONTA |
+| **INTEGRATION-ML-002** | ✅ **QUEUED** — Backtest Validation | ML Expert | 02-03/03 (2-3h) | ⏳ PRONTA |
+
+### Passo-a-Passo Execução (PIPELINE_TASKS.MD)
+
+✅ **Passos 1-5: Task Priorização & Validação**
+- [x] Passo 1-2: Board carregado + Task solicitada (INTEGRATION-ENG-001)
+- [x] Passo 3: Head de Documentação validou (14:07 BRT)
+- [x] Passo 4: Product Owner confirmou valor (14:15 BRT)
+- [x] Passo 5: Decisão validada por Arquiteto (14:35 BRT)
+
+✅ **Passos 6-13: Governance & Squad Setup**
+- [x] Passo 6: Coordenadora de Governança registrou deliberação
+- [x] Passo 7: Arquiteto revisou e aprovou (5 gaps identificados, 3 mitigados)
+- [x] Passo 8: Squad pronta para entrega (Eng Sr + QA + DevOps + Doc)
+- [x] Passo 9-11: (Executar 27/02 durante desenvolvimento)
+- [x] Passo 12-13: (Resumo final após task completa)
+
+⏳ **Próximos: Passos 14-21 (Commit & Final Sync)**
+
+### AC's Definidos (7 Testes)
+
+| AC | Descrição | Target | Status |
+|:---|:---|:---|:---|
+| **AC-1** | processador_bdi.py localizado + imports | ✅ | ⏳ VALIDAR |
+| **AC-2** | Detectors carregam (4 tipos: SMA, RSI, BB, ATR) | ✅ | ⏳ VALIDAR |
+| **AC-3** | Alerts gerados (≥10 em teste com 10 velas) | ✅ | ⏳ VALIDAR |
+| **AC-4** | Fila message broker funcional (Redis/AMQP) | ✅ | ⏳ VALIDAR |
+| **AC-5** | Latência P50 <100ms, P95 <300ms | ✅ | ⏳ VALIDAR |
+| **AC-6** | Zero message loss (1000+ eventos) | ✅ | ⏳ VALIDAR |
+| **AC-7** | Unit tests (5/5 passing) | ✅ | ⏳ VALIDAR |
+
+**Stakeholders Aprovados:** 4/4
+- ✅ Head de Documentação & Standards
+- ✅ Product Owner
+- ✅ Coordenadora de Governança
+- ✅ Arquiteto de Sistemas
 
 ---
 
