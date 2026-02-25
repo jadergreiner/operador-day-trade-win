@@ -211,7 +211,139 @@ class RLTradeOutcomeReceiver:
 
 **Tecnologias**: asyncio, Event Bus, Repository Pattern, Type Safety
 
-### 5. Monitoring & Health Checks Layer (Camada de Monitoramento)
+### 5. Trade Persistence Layer (Confirmation Closure) ✅ IMPLEMENTED (Phase 2-3)
+
+**Status:** ✅ COMPLETE - TASK-CRÍTICA-0 Resolution  
+**Implementation Date:** 2026-02-24 → 2026-02-25  
+**Validation:** 9/9 E2E Tests Passing
+
+**Responsabilidade**: Garantir que 100% das ordens executadas em MT5 sejam persistidas em SQLite com retry logic, audit trail e zero data loss.
+
+**Componentes Implementados:**
+
+#### A. SendToMT5Command ✅ (Execute Phase)
+- **Arquivo:** [src/application/orders_executor.py](../src/application/orders_executor.py#L206-315)
+- **Responsabilidade:** Envia ordem a MT5 e persiste resultado
+- **Fluxo:**
+  1. Recebe ExecutionOrder da fila
+  2. Chama MT5Adapter.send_order() → Obtém ticket
+  3. Atualiza ExecutionOrder com ticket + execution_time
+  4. Converte para Trade entity via to_trade()
+  5. Persiste em BD com retry logic (3x exponential backoff)
+  6. Atualiza audit log
+
+**Implementação:**
+```python
+class SendToMT5Command(OrderExecutionCommand):
+    async def execute(self, order: ExecutionOrder) -> bool:
+        # 1. ENVIAR AO MT5
+        ticket = self.mt5_adapter.send_order(order_entity)
+        
+        # 2. CONVERTER PARA TRADE
+        trade = order.to_trade(ticket)
+        
+        # 3. PERSISTIR COM RETRY (3x exponential backoff: 0.5s, 1s, 2s)
+        persisted = await self._persist_with_retry(
+            trade, order, max_retries=3
+        )
+        
+        # 4. AUDIT LOG & RETURN
+        if persisted:
+            order.add_audit(OrderState.EXECUTED, "Trade persistido")
+            return True
+        else:
+            order.add_audit(OrderState.REJECTED, "Persistência falhou")
+            return False
+```
+
+#### B. ExecutionOrder.to_trade() ✅ (Converter Phase)
+- **Arquivo:** [src/application/orders_executor.py](../src/application/orders_executor.py#L113-145)
+- **Responsabilidade:** Mapeia ExecutionOrder (application) → Trade (domain)
+- **Mapeamento:**
+  - symbol: str → Symbol(str)
+  - order_type: "BUY"/"SELL" → OrderSide enum
+  - volume: float → Quantity(int) - convert to int
+  - entry_price: float → Price(Decimal)
+  - stop_loss/take_profit: float → Price(Decimal)
+  - status → TradeStatus.OPEN
+  - notes preserva detector_spike + ml_classifier_score
+
+**Implementação:**
+```python
+def to_trade(self, mt5_ticket: str) -> Trade:
+    return Trade(
+        symbol=Symbol(self.symbol),
+        side=OrderSide.BUY if self.order_type.upper() == "BUY" else OrderSide.SELL,
+        quantity=Quantity(int(self.volume)),  # Convert to int
+        entry_price=Price(Decimal(str(self.entry_price))),
+        broker_trade_id=mt5_ticket,
+        status=TradeStatus.OPEN,
+        notes=f"Detector={self.detector_spike:.2f}σ, ML={self.ml_classifier_score:.2%}"
+    )
+```
+
+#### C. Retry Logic with Exponential Backoff ✅
+- **Implementação:** [orders_executor.py:291-310](../src/application/orders_executor.py#L291-310)
+- **Estratégia:** Max 3 tentativas, aguards 0.5s → 1s → 2s
+- **Tratamento de Erros:**
+  - Transient failures (network) → retry
+  - Database locks → retry
+  - Permanent failures → REJECTED status
+  - All retries exhausted → log + DLQ
+
+**Fórmula:**
+```
+delay_ms = 500 * (2 ^ (attempt - 1))
+Tentativa 1: 500ms
+Tentativa 2: 1000ms
+Tentativa 3: 2000ms
+```
+
+#### D. Audit Trail Logging ✅
+- **Implementação:** [orders_executor.py:60-72](../src/application/orders_executor.py#L60-72)
+- **Estados Rastreáveis:**
+  ```
+  ENQUEUED → VALIDATED → SENT_TO_MT5 → ACCEPTED_BY_MT5 → EXECUTED (ou REJECTED)
+  ```
+- **Metadata Capturada:** timestamp, ticket, execution_time, trade_id, retry_count, error_msg
+
+**CVM/B3 Compliance:**
+- ✅ Quando ordem foi enviada
+- ✅ Quando foi confirmada em MT5
+- ✅ Quando foi persistida em DB
+- ✅ Qualquer erro no processo
+- ✅ Número de retries realizados
+
+### Test Coverage ✅ (Phase 3 Validation)
+
+**Arquivo:** [tests/test_send_to_mt5_command_e2e.py](../tests/test_send_to_mt5_command_e2e.py)
+
+**9 E2E Tests:**
+- ✅ Happy path: MT5 send → BD persist (2 tests)
+- ✅ Retry logic: Fail → retry → success (2 tests)
+- ✅ Converter: ExecutionOrder → Trade mapping (2 tests)
+- ✅ E2E integration: Full pipeline (2 tests)
+- ✅ Reconciliation: 4 real trades from 24/02 (1 test)
+
+**Result:** 9/9 PASSED (100%)
+
+### Next Steps: Verification & RL Feedback Layers ⏳
+
+**Phase 4-A (Verification Layer)** - TBD:
+- Implementar TradeSyncVerifier
+- Comparar trades MT5 vs SQLite
+- Daily reconciliation job
+
+**Phase 4-B (RL Feedback Closure)** - TBD:
+- TradeClosedEvent → RL system
+- PnL feedback para aprendizado
+- Historical outcome tracking
+
+**Referência Completa:** [docs/PERSISTENCE_GUARANTEE_PROTOCOL.md](../docs/PERSISTENCE_GUARANTEE_PROTOCOL.md)
+
+**Tecnologias**: asyncio, Retry Pattern, SQLite ACID, Type Hints, Clean Architecture
+
+### 6. Monitoring & Health Checks Layer (Camada de Monitoramento)
 
 **Responsabilidade**: Garantir integridade operacional 24/7, latência e sincronia.
 
