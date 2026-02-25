@@ -137,6 +137,45 @@ System Readiness:    ⚠️ DATA PERSISTENCE FAILURE (see Critical Findings)
 
 ---
 
+## 📊 **ANÁLISE DE LOGS & INSIGHTS EXTRAÍDOS**
+
+**Data da Análise:** 24/02/2026 | **Período:** Diários 20260210-20260224 (10 arquivos)
+**Fontes Analisadas:** 
+- `data/diarios/` (markdown narratives)
+- `reflections_log.jsonl` (445+ AI reflection entries)
+- `trading.db` (audit database)
+
+**🔍 Documento Principal:** [ANALISE_LOGS_ROADMAP_INSIGHTS.md](ANALISE_LOGS_ROADMAP_INSIGHTS.md)
+
+**Descobertas Principais:**
+
+**3 CRITICAL BLOCKERS (Phase 1 Impact):**
+1. Trade persistence layer broken (4 executed → 0 recorded)
+2. Error logging missing in diary generation
+3. RL feedback loop asymmetric (learning saved, outcomes missing)
+
+**8+ HIGH-PRIORITY INSIGHTS (Phase 2+ Optimization):**
+1. **Exhaustion Detection** - Head vê volume exhaustion (-55%), AI não detecta
+2. **Regime Detection** - Market behavior lateral (9-12h) ≠ trending (12-16h)
+3. **Smart Money Detection** - Institutional flow + S&P500 correlation gaps
+4. **Confidence Calibration** - AI at 0.4 (very low), should filter <0.60
+5. **Inter-Agent Protocol** - AI vs Head Financeiro decisions need structured format
+6. **Hourly Patterns** - Time-of-day adaptive thresholds missing
+7. **Audit Trail Linkage** - Decision→Trade→Outcome linking missing
+8. **AI Emotional Reset** - Model degrading (excessive cynicism in moods)
+
+**Expected Win Rate Impact:**
+- Current: ~60% (Phase 1 target)
+- With Phase 2 insights: 65-68% (projections)
+- Major features: Exhaustion, Regime, Smart Money detection
+
+**📋 ROADMAP TICKETS GENERATED:**
+- P0 (3): Trade persistence + Error logging + RL feedback closure
+- P1 (5): Feature engineering (exhaustion, regime, smart money, confidence filtering, audit)
+- P2 (3): Decision protocol, hourly patterns, compliance linkage
+
+---
+
 ## ⚠️ **CRITICAL FINDINGS**
 
 ### 🔴 🔴 🔴 BLOCKER CRÍTICO - FALHA DE INTEGRIDADE DE DADOS
@@ -147,7 +186,7 @@ System Readiness:    ⚠️ DATA PERSISTENCE FAILURE (see Critical Findings)
 - ❌ Sistema SQLite: **0 operações foram REGISTRADAS** (banco vazio)
 - 🔴 **FALHA CRÍTICA:** Dados reais no MT5 não foram persistidos no database central
 
-**OPERAÇÕES REAIS EXECUT ADAS (do MT5):**
+**OPERAÇÕES REAIS EXECUTADAS (do MT5):**
 ```
 Operação 1: 09:34:54 | Ticket 2276014161 | WINJ26 SELL 1 lot @ 193245
 Operação 2: 09:49:27 | Ticket 2276015509 | WINJ26 BUY  1 lot @ 193450  → Posição fechada com -38 pts
