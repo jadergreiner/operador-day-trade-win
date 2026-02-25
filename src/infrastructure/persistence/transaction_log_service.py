@@ -101,23 +101,23 @@ class TransactionLogService:
                 retry_count INTEGER DEFAULT 0,
                 checksum TEXT NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                
+
                 CONSTRAINT journal_immutable CHECK(status IN ('PENDING', 'COMMITTED', 'FAILED', 'DEAD_LETTERED'))
             )
         """)
 
         cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_journal_timestamp 
+            CREATE INDEX IF NOT EXISTS idx_journal_timestamp
             ON transaction_journal(timestamp DESC)
         """)
 
         cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_journal_entity 
+            CREATE INDEX IF NOT EXISTS idx_journal_entity
             ON transaction_journal(entity_id)
         """)
 
         cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_journal_status 
+            CREATE INDEX IF NOT EXISTS idx_journal_status
             ON transaction_journal(status)
         """)
 
@@ -185,7 +185,7 @@ class TransactionLogService:
 
         try:
             cursor.execute("""
-                INSERT INTO transaction_journal 
+                INSERT INTO transaction_journal
                 (tx_id, timestamp, tx_type, status, entity_id, data, checksum)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (
@@ -268,7 +268,7 @@ class TransactionLogService:
 
             if retry:
                 cursor.execute("""
-                    INSERT INTO dead_letter_queue 
+                    INSERT INTO dead_letter_queue
                     (tx_id, reason, next_retry, last_error)
                     VALUES (?, ?, ?, ?)
                 """, (tx_id, "Falha em persistência", _calculate_next_retry(), error))
@@ -309,7 +309,7 @@ class TransactionLogService:
 
         try:
             cursor.execute("""
-                SELECT dlq.dlq_id, dlq.tx_id, dlq.timestamp, dlq.reason, 
+                SELECT dlq.dlq_id, dlq.tx_id, dlq.timestamp, dlq.reason,
                        dlq.retry_count, dlq.next_retry, dlq.last_error
                 FROM dead_letter_queue dlq
                 WHERE dlq.next_retry IS NULL OR dlq.next_retry <= CURRENT_TIMESTAMP
