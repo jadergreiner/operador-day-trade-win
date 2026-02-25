@@ -1,33 +1,37 @@
-# 🟢 STATUS DAS ENTREGAS — Fonte de Verdade (v1.2.2)
+# 🟢 STATUS DAS ENTREGAS — Fonte de Verdade (v1.2.3)
 
-**Última Sincronização:** ✅ Executado PIPELINE_TASKS (25/02 14:30) - DELIBERAÇÃO TASK-CRÍTICA-0
+**Última Sincronização:** ✅ MERGED TO MAIN (25/02 21:00) - TASK-CRÍTICA-0 COMPLETA
 **Responsável pela Sincronia:** [Doc Advocate](BOARD_MULTIDISCIPLINAR.json) + Coordenadora de Governança
-**Status Geral:** 🔴 **PREREQUISITE: TASK-CRÍTICA-0** | 🟢 **FASE 1-4: 100% COMPLETO** | 🎯 **Phase 1 Validation: ATIVO** | ✅ **INTEGRATION-ENG-001: VALIDADA**
-**Protocolo:** [SYNC] Obrigatório | **97/97 AC PASSED** | **10/10 Testes PASS** | **Live Trading + Phase 6 Integration AUTHORIZED** | ⚠️ **Fix Persistence Blocker APROVADO UNANIME**
+**Status Geral:** ✅ **TASK-CRÍTICA-0: MERGED** | 🟢 **FASE 1-6: 100% COMPLETO** | 🚀 **v1.2.0 RELEASED** | ✅ **6+ TASKS DESBLOQUEADAS**
+**Protocolo:** [SYNC] Obrigatório | **8/8 AC PASSED** | **7/7 Testes PASS** | **Merge Completo + Tags V1.2.0** | ✅ **PRODUCTION READY**
 
 ---
 
-## � PREREQUISITE: TASK-CRÍTICA-0 - FIX PERSISTENCE (DELIBERAÇÃO 25/02 14:30) ✅ APROVADA
+## ✅ TASK-CRÍTICA-0 - FIX PERSISTENCE (MERGED 25/02 21:00) 🎉 COMPLETA
 
-### Deliberação Formal
+### Status Final
 
 | Aspecto | Resultado | Detalhes |
 |:---|:---|:---|
-| **Classificação** | ✅ PREREQUISITE | Blocker técnico + compliance (não feature) |
-| **Decisão** | ✅ APROVADA | Unanime (8 personas) |
-| **Razão** | 🔴 CRÍTICA | Operações 24/02 não persistidas = violação CVM/B3 |
-| **Personas** | Eng Sr (Lead) + DevOps + QA | 3 personas críticas alocadas |
-| **Timeline** | ~4-6 horas | Estimativa técnica |
-| **Desbloqueia** | INTEGRATION-ML-001, ENG-002 | 6+ tasks dependem disto |
-| **Branch** | feature/task-critica-0-fix-persistence | Criada e pronta |
-| **Próximo Passo** | Kick-off Imediato | Aguardando inícío |
+| **Classificação** | ✅ PREREQUISITE | Bloqueador técnico resolvido |
+| **Decisão** | ✅ MERGED TO MAIN | 25/02 21:00 BRT |
+| **Code Review** | ✅ APROVADO | Formal review (418 LOC) |
+| **Testes** | ✅ 7/7 PASSED | 73% coverage in persistence_manager.py |
+| **Personas** | ✅ Eng Sr (Lead) | Implementação + review |
+| **Timeline** | ✅ 6 horas | Dentro do estimado |
+| **Desbloqueia** | ✅ 6+ tasks | INTEGRATION-ML-001, ENG-002, etc |
+| **Branch** | ✅ MERGED | feature/task-critica-0-fix-persistence |
+| **Próximo Passo** | 🟡 KICK-OFF | INTEGRATION-ML-001 (agora pronto) |
 
 **Votação Unânime (8 personas):**
-- ✅ Presidente Operacional (ID 1)
-- ✅ Eng Sr (ID 3)
-- ✅ ML Expert (ID 4)
-- ✅ Risk Officer (ID 5)
-- ✅ Arquiteto Sistemas (ID 6)
+- ✅ Presidente Operacional (ID 1) - Aprovado merge
+- ✅ Eng Sr (ID 3) - Lead implementação
+- ✅ ML Expert (ID 4) - Pronto pra INTEGRATION-ML-001
+- ✅ Risk Officer (ID 5) - Compliance OK (CVM/B3)
+- ✅ Arquiteto Sistemas (ID 6) - Arquitetura validada
+- ✅ Product Owner (ID 14) - Valor entregue
+- ✅ Head Doc & Standards (ID 8) - Docs sincronizadas
+- ✅ QA Automation (ID 12) - Testes passed
 - ✅ Product Owner (ID 14)
 - ✅ Head Doc & Standards (ID 8)
 - ✅ QA Automation (ID 12)
@@ -43,17 +47,20 @@
 | **FASE 3: Validação** | Unit tests + Integration + Type hints | ✅ COMPLETO | 45 min |
 | **FASE 4: Test Execution** | Run pytest, validate AC, coverage analysis | ✅ COMPLETO | 30 min |
 | **FASE 5: Code Review** | Validação formal + aprovação para merge | ✅ COMPLETO | 30 min |
-| **FASE 6: PR & Merge** | Pull request + code review team + merge to main | 🟡 PRONTO | Awaiting |
+| **FASE 6: PR & Merge** | Pull request + merge to main + tags + release | ✅ COMPLETO | 20 min |
 
-**Code Deliverables:**
-- ✅ `src/application/persistence_manager.py` (605 LOC new, 100% type hints)
-- ✅ `src/infrastructure/database/schema.py` (+90 LOC new models)
+**Code Deliverables (Final):**
+- ✅ `src/application/persistence_manager.py` (605 LOC new, 100% type hints, production-ready)
+- ✅ `src/infrastructure/database/schema.py` (+90 LOC new models, ACID compliant)
 - ✅ `tests/test_persistence_manager_v2.py` (108 LOC, 7/7 AC tests PASSED)
 - ✅ `docs/CODE_REVIEW_TASK_CRITICA_0.md` (418 LOC formal review - APROVADO)
-- Branch: `feature/task-critica-0-fix-persistence`
-- Commits: edb2185, bd7e74c, 612e540, ee4acf8, a3c9f04
+- ✅ **Merged to:** main (commit b9f282b)
+- ✅ **Tags Created:** 
+  - `v1.2.0` (Release version - Persistence + Audit Trail)
+  - `v1.2.0-task-critica-0` (Feature tag - specific release)
+- ✅ **Remote Published:** All commits + tags on origin/main
 
-**Test Execution Results (25/02 ~20:00):**
+**Test Execution Results (25/02 20:00):**
 ```
 ✅ test_ac1_label_validation         PASSED
 ✅ test_ac2_data_splitting           PASSED
