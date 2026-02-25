@@ -85,15 +85,15 @@ class TestSendToMT5CommandHappyPath:
         # Setup
         command = SendToMT5Command(mock_mt5_adapter, mock_trade_repository)
         order = sample_execution_order
-        
+
         # Execute
         result = await command.execute(order)
-        
+
         # Assert
         assert result is True, "Execução deveria retornar True"
         assert order.mt5_ticket == "2276014161", "Ticket deveria ser atualizado"
         assert order.state == OrderState.EXECUTED, "Estado deveria ser EXECUTED"
-        
+
         # Verify chamadas
         mock_mt5_adapter.send_order.assert_called_once()
         mock_trade_repository.save.assert_called_once()  # Persistência chamada
@@ -112,16 +112,16 @@ class TestSendToMT5CommandHappyPath:
         # Setup
         command = SendToMT5Command(mock_mt5_adapter, mock_trade_repository)
         order = sample_execution_order
-        
+
         # Execute
         await command.execute(order)
-        
+
         # Assert audit log
         states = [log.state for log in order.audit_log]
         assert OrderState.SENT_TO_MT5 in states
         assert OrderState.ACCEPTED_BY_MT5 in states
         assert OrderState.EXECUTED in states
-        
+
         # Audit log deveria ter pelo menos 3 entradas
         assert len(order.audit_log) >= 3
 
@@ -144,14 +144,14 @@ class TestSendToMT5CommandRetryLogic:
         repo = Mock(spec=ITradeRepository)
         # Falha 1x, sucede 2ª vez
         repo.save = Mock(side_effect=[Exception("Connection lost"), None])
-        
+
         command = SendToMT5Command(mock_mt5_adapter, repo, max_retries=3)
         order = sample_execution_order
-        
+
         # Execute
         with patch('asyncio.sleep', new_callable=AsyncMock):
             result = await command.execute(order)
-        
+
         # Assert
         assert result is True, "Deveria suceder após retry"
         assert repo.save.call_count == 2, "save() deveria ser chamado 2x"
@@ -171,14 +171,14 @@ class TestSendToMT5CommandRetryLogic:
         # Setup
         repo = Mock(spec=ITradeRepository)
         repo.save = Mock(side_effect=Exception("Permanent connection failure"))
-        
+
         command = SendToMT5Command(mock_mt5_adapter, repo, max_retries=3)
         order = sample_execution_order
-        
+
         # Execute
         with patch('asyncio.sleep', new_callable=AsyncMock):
             result = await command.execute(order)
-        
+
         # Assert
         assert result is False, "Deveria retornar False após todas falharem"
         assert order.state == OrderState.REJECTED
@@ -199,10 +199,10 @@ class TestExecutionOrderToTrade:
         # Setup
         order = sample_execution_order
         ticket = "2276014161"
-        
+
         # Execute
         trade = order.to_trade(ticket)
-        
+
         # Assert
         assert isinstance(trade, Trade)
         assert trade.symbol.code == "WINJ26"
@@ -210,7 +210,7 @@ class TestExecutionOrderToTrade:
         assert trade.quantity.value == 1  # Inteiro
         assert trade.broker_trade_id == ticket
         assert trade.status == TradeStatus.OPEN
-        
+
         # Notes devem conter metadata do detector
         assert "2.50σ" in trade.notes or "2.5" in trade.notes  # Detector spike
         assert "85" in trade.notes  # ML score (85.00%)
@@ -231,10 +231,10 @@ class TestExecutionOrderToTrade:
             detector_spike=1.8,
             ml_classifier_score=0.92,
         )
-        
+
         # Execute
         trade = order.to_trade("2276014162")
-        
+
         # Assert
         assert trade.side == OrderSide.SELL
 
@@ -248,27 +248,27 @@ class TestIntegrationE2E:
     ):
         """
         Cenário: Pipeline completa de execução
-        
+
         Fluxo:
         1. ExecutionOrder enfileirada
         2. SendToMT5Command.execute()
         3. MT5Adapter.send_order() chamado
         4. Trade persistido em BD
         5. Audit log completo
-        
+
         Esperado: Sucesso em todas as etapas
         """
         # Setup
         command = SendToMT5Command(mock_mt5_adapter, mock_trade_repository)
         order = sample_execution_order
-        
+
         # Execute
         result = await command.execute(order)
-        
+
         # Assert
         assert result is True
         assert order.state == OrderState.EXECUTED
-        
+
         # Capturar o Trade que foi persistido
         saved_trade = mock_trade_repository.save.call_args[0][0]
         assert saved_trade.broker_trade_id == "2276014161"
@@ -285,13 +285,13 @@ class TestIntegrationE2E:
         # Setup
         adapter = Mock()
         adapter.send_order = Mock(side_effect=Exception("Not connected to MT5"))
-        
+
         command = SendToMT5Command(adapter, mock_trade_repository)
         order = sample_execution_order
-        
+
         # Execute
         result = await command.execute(order)
-        
+
         # Assert
         assert result is False
         assert order.state == OrderState.REJECTED
@@ -316,18 +316,18 @@ class TestReconciliation:
             ("2276015907", "WINJ26", "BUY", 193490.00),
             ("2276016015", "WINJ26", "SELL", 193475.00),
         ]
-        
+
         # Mock persistent storage
         persisted_trades = []
-        
+
         def capture_trade(trade):
             persisted_trades.append(trade)
-        
+
         repo = Mock(spec=ITradeRepository)
         repo.save = Mock(side_effect=capture_trade)
-        
+
         adapter = Mock()
-        
+
         # Execute: Simular cada trade
         for ticket, symbol, side, price in trades_24feb:
             order = ExecutionOrder(
@@ -341,15 +341,15 @@ class TestReconciliation:
                 detector_spike=2.0,
                 ml_classifier_score=0.80,
             )
-            
+
             adapter.send_order = Mock(return_value=ticket)
             command = SendToMT5Command(adapter, repo)
-            
+
             await command.execute(order)
-        
+
         # Assert
         assert len(persisted_trades) == 4, "Deveria persistir 4 trades"
-        
+
         # Verificar cada trade
         for i, (ticket, symbol, side, price) in enumerate(trades_24feb):
             trade = persisted_trades[i]

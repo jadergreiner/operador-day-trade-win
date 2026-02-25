@@ -106,13 +106,13 @@ class ExecutionOrder:
     def to_trade(self, mt5_ticket: str) -> "Trade":
         """
         Converte ExecutionOrder para Trade entity para persistência.
-        
+
         Mapeia os campos da ordem executada para o domain model Trade.
         Chamado após execução bem-sucedida em MT5.
-        
+
         Args:
             mt5_ticket: Número do ticket retornado pelo MT5
-            
+
         Returns:
             Trade entity pronta para persistência
         """
@@ -120,10 +120,10 @@ class ExecutionOrder:
         from src.domain.value_objects import Symbol, Quantity, Price, Money
         from src.domain.enums.trading_enums import OrderSide, TradeStatus
         from decimal import Decimal
-        
+
         # Mapeia side (string "BUY"/"SELL" → OrderSide enum)
         side = OrderSide.BUY if self.order_type.upper() == "BUY" else OrderSide.SELL
-        
+
         # Cria Trade domain entity
         trade = Trade(
             symbol=Symbol(self.symbol),
@@ -138,7 +138,7 @@ class ExecutionOrder:
             commission=Money(Decimal("0")),  # Será atualizado após execução final
             notes=f"Detector\u003d{self.detector_spike:.2f}σ, ML\u003d{self.ml_classifier_score:.2%}"
         )
-        
+
         return trade
 
 
@@ -199,7 +199,7 @@ class SendToMT5Command(OrderExecutionCommand):
     def __init__(self, mt5_adapter, trade_repository, max_retries: int = 3):
         """
         Inicializa comando de envio a MT5.
-        
+
         Args:
             mt5_adapter: Adaptador para MetaTrader 5
             trade_repository: Repositório para persistência de trades
@@ -212,7 +212,7 @@ class SendToMT5Command(OrderExecutionCommand):
     async def execute(self, order: ExecutionOrder) -> bool:
         """
         Envia ordem ao MT5 e persiste resultado.
-        
+
         Fluxo:
         1. Enviar ordem via MT5Adapter.send_order()
         2. Obter ticket de resposta
@@ -221,7 +221,7 @@ class SendToMT5Command(OrderExecutionCommand):
         5. Persistir em BD com retry (3x exponential backoff)
         6. Se persistência falhar: adicionar a dead-letter queue
         7. Atualizar audit log
-        
+
         Returns:
             True se enviado E persistido com sucesso
             False se rejeitado ou falha de persistência crítica
@@ -232,7 +232,7 @@ class SendToMT5Command(OrderExecutionCommand):
         from src.domain.value_objects import Symbol, Quantity, Price
         from src.domain.enums.trading_enums import OrderSide, OrderType
         from decimal import Decimal
-        
+
         try:
             # 1. ENVIAR AO MT5
             logger.info(f"[{order.order_id}] Enviando a MT5...")
@@ -240,7 +240,7 @@ class SendToMT5Command(OrderExecutionCommand):
                 OrderState.SENT_TO_MT5,
                 "Iniciando envio a MT5"
             )
-            
+
             # Chamar MT5Adapter.send_order() que retorna ticket string
             ticket = self.mt5_adapter.send_order(
                 Order(
@@ -252,27 +252,27 @@ class SendToMT5Command(OrderExecutionCommand):
                     take_profit=Price(Decimal(str(order.take_profit))) if order.take_profit else None,
                 )
             )
-            
+
             # 2. ATUALIZAR COM TICKET E TIMESTAMP
             order.mt5_ticket = ticket
             order.execution_time = datetime.utcnow()
-            
+
             order.add_audit(
                 OrderState.ACCEPTED_BY_MT5,
                 f"Ticket {ticket} recebido de MT5",
                 {"ticket": ticket, "execution_time": order.execution_time.isoformat()}
             )
-            
+
             # 3-5. CONVERTER PARA TRADE E PERSISTIR COM RETRY
             trade = order.to_trade(ticket)
-            
+
             logger.info(f"[{order.order_id}] Persistindo trade ticket={ticket} em BD...")
-            
+
             # Retry logic: 3x com exponential backoff (0.5s, 1s, 2s)
             persisted = await self._persist_with_retry(
                 trade, order, max_retries=self.max_retries
             )
-            
+
             if persisted:
                 order.add_audit(
                     OrderState.EXECUTED,
@@ -291,7 +291,7 @@ class SendToMT5Command(OrderExecutionCommand):
                 logger.error(f"[{order.order_id}] FALHA CRÍTICA: Não conseguiu persistir trade em BD")
                 # TODO: Adicionar a dead-letter queue
                 return False
-                
+
         except OrderExecutionError as e:
             order.add_audit(
                 OrderState.REJECTED,
@@ -300,7 +300,7 @@ class SendToMT5Command(OrderExecutionCommand):
             )
             logger.error(f"[{order.order_id}] Erro MT5: {e}")
             return False
-            
+
         except Exception as e:
             order.add_audit(
                 OrderState.REJECTED,
@@ -319,28 +319,28 @@ class SendToMT5Command(OrderExecutionCommand):
     ) -> bool:
         """
         Persiste trade em BD com retry logic e exponential backoff.
-        
+
         Args:
             trade: Trade entity para persistir
             order: ExecutionOrder para audit
             max_retries: Número máximo de tentativas
             backoff_seconds: Lista de segundos para backoff [0.5, 1, 2]
-            
+
         Returns:
             True se persistido, False se todos retries falharem
         """
         import asyncio
-        
+
         if backoff_seconds is None:
             backoff_seconds = [0.5, 1.0, 2.0]
-        
+
         for attempt in range(max_retries):
             try:
                 # Tentar persistir
                 self.trade_repository.save(trade)
                 logger.info(f"[{order.order_id}] Persistência bem-sucedida na tentativa {attempt + 1}")
                 return True
-                
+
             except Exception as e:
                 if attempt < max_retries - 1:
                     wait_time = backoff_seconds[attempt]
@@ -353,7 +353,7 @@ class SendToMT5Command(OrderExecutionCommand):
                     logger.error(
                         f"[{order.order_id}] Persistência falhou após {max_retries} tentativas: {e}"
                     )
-                    
+
         return False
 
     async def undo(self, order: ExecutionOrder) -> bool:
