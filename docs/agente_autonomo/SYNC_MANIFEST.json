@@ -1,7 +1,7 @@
 {
-  "version": "1.2.4",
-  "last_update": "2026-02-24T16:00:00Z",
-  "last_health_check": "2026-02-24T16:00:00Z",
+  "version": "1.2.5",
+  "last_update": "2026-02-25T16:00:00Z",
+  "last_health_check": "2026-02-25T16:00:00Z",
   "status": "synchronized",
   "description": "Manifest de sincronização de documentação do Agente Autônomo",
   "documents": [
@@ -116,6 +116,21 @@
         "AGENTE_AUTONOMO_ROADMAP.md"
       ],
       "description": "Features com prioridade e status"
+    },
+    {
+      "id": "doc_010",
+      "path": "PIPELINE_EXECUTION_RESULT_25FEV.md",
+      "type": "operational_critical",
+      "checksum": "sha256_pipeline_exec_v1.0",
+      "last_modified": "2026-02-25T16:00:00Z",
+      "version": "1.0.0",
+      "status": "synchronized",
+      "mandatory_sync_with": [
+        "STATUS_ENTREGAS.md",
+        "DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md",
+        "prompts/PIPELINE_TASKS.MD"
+      ],
+      "description": "Resultado de execução do Pipeline - Task priorizada + aprovações"
     }
   ],
   "sync_rules": {
@@ -125,8 +140,8 @@
     "pre_commit_validation": true
   },
   "health_check": {
-    "total_documents": 9,
-    "synchronized": 6,
+    "total_documents": 10,
+    "synchronized": 7,
     "needs_update": 3,
     "unsynchronized": 0,
     "blockers": []
