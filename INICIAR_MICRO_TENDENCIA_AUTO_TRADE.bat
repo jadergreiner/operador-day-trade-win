@@ -2,12 +2,12 @@
 REM ============================================================
 REM  OPERADOR MICRO TENDENCIA - v1.2.3 (25/02/2026)
 REM ============================================================
-REM 
+REM
 REM  Releases:
 REM    v1.2.0 (20/02): TASK-CRITICA-0 - Core infrastructure + ORM
 REM    v1.2.3 (25/02): INTEGRATION-ML-001 - ML dataset loading
 REM                    14/14 tests PASSING | 94% code coverage
-REM 
+REM
 REM  Integrações Ativas:
 REM    ✅ BDI Detection (v1.2.0)
 REM    ✅ SMC Confluence (M1/M5 validation)
