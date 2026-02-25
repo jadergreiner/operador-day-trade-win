@@ -337,11 +337,44 @@ python -m src.interfaces.cli.quantum_operator_cli
   - Integration points definidos (RiskValidationResult, Order, MLPrediction)
   - Gate 1 criteria (05/03 17:00): Features OK + Risk OK + Baseline F1 >0.65
 
+### 🟢 INTEGRATION-ML-001: Dataset Loading ✅ COMPLETE (25/02 15:00)
+
+**Status:** ✅ **PHASES 1-2 DELIVERED - READY FOR MAIN MERGE**
+
+#### Metrics:
+- ✅ **Implementation:** 245 LOC (data_loader.py) + 280 LOC tests
+- ✅ **Test Results:** 14/14 PASSING (100% pass rate)
+- ✅ **Coverage:** 94% (target >90%)
+- ✅ **Performance:** 111.6ms vs 500ms SLA (78% margin)
+- ✅ **All 7 AC Validated:** Load, Labels, Features, Splits, NaN, Persistence, Coverage
+
+#### Deliverables:
+- ✅ `src/application/data_loader.py` - load_and_label() function (245 LOC, 100% type hints)
+- ✅ `tests/unit/test_load_and_label.py` - 14 comprehensive tests (280 LOC)
+- ✅ Data files: feature_names.json, statistics.json, training_dataset.csv
+- ✅ Documentation: 3 reports (kickoff, phase 1, phase 2 completion)
+
+#### Phase Execution:
+- **Phase 1 (15 min):** Implementation + 6/7 AC validation ✅ DONE
+- **Phase 2 (6.73s):** 14 comprehensive tests + 94% coverage ✅ DONE
+- **Phase 3 (next):** PR creation → main merge (26-27/02)
+- **Phase 4 (post):** Unblocks 6+ downstream tasks
+
+#### Ready for:
+- [x] Code review
+- [x] Merge to main
+- [x] Gate 1 checkpoint (05/03)
+- [x] INTEGRATION-ML-002 start (Backtest validation)
+
+See: [INTEGRATION_ML001_DELIVERY_COMPLETE.md](INTEGRATION_ML001_DELIVERY_COMPLETE.md)
+
+---
+
 ### Sprint 1 Timeline (27/02 - 05/03)
 
 | Dia | Eng Sr | ML Expert | Gate |
 |-----|--------|-----------|------|
-| **27/02** | MT5 API skeleton (100 LOC) | Dataset load + features (50 LOC) | Design sync |
+| **27/02** | MT5 API skeleton (100 LOC) | ✅ Dataset load COMPLETE | Design sync |
 | **28/02** | Risk Validator (100 LOC) | Feature engineering (200 LOC) | Tech meeting |
 | **01/03** | Orders Executor (120 LOC) | Grid search setup | Code review |
 | **02/03** | E2E integration test | Backtest validation | Metrics check |

@@ -55,7 +55,7 @@
 - ✅ `tests/test_persistence_manager_v2.py` (108 LOC, 7/7 AC tests PASSED)
 - ✅ `docs/CODE_REVIEW_TASK_CRITICA_0.md` (418 LOC formal review - APROVADO)
 - ✅ **Merged to:** main (commit b9f282b)
-- ✅ **Tags Created:** 
+- ✅ **Tags Created:**
   - `v1.2.0` (Release version - Persistence + Audit Trail)
   - `v1.2.0-task-critica-0` (Feature tag - specific release)
 - ✅ **Remote Published:** All commits + tags on origin/main
