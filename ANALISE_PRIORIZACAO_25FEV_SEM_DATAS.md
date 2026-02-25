@@ -27,10 +27,11 @@
 ### TASK-CRÍTICA-0: FIX PERSISTENCE (🔴 P0 - BLOCKER ABSOLUTO)
 
 ```
-Status: 🔴 EMERGENCIAL - Deve ser iniciada AGORA
-Personas: Eng Sr (Lead) + DevOps + QA
+Status: ✅ APROVADA UNANIME - PREREQUISITE (Blocker Técnico + Compliance)
+Classificação: PREREQUISITE (não feature, desbloqueador crítico)
+Personas: Eng Sr (Lead) + DevOps (ID 7) + QA (ID 12)
 Duração: ~4-6 horas (estimada)
-Prioridade: 🔴 CRÍTICA - Bloqueia todas as tasks
+Prioridade: 🔴 CRÍTICA - Bloqueia INTEGRATION-ML-001 e ENG-002
 
 Por Quê This Priority:
 ├─ Operações reais não foram persistidas em 24/02
@@ -43,9 +44,15 @@ Desbloqueia:
 ├─ INTEGRATION-ML-001 (Dataset Loading)
 ├─ INTEGRATION-ENG-002 (WebSocket)
 └─ Qualquer task dependente de persistência
+
+Deliberação:
+├─ Votação: ✅ UNANIME (8 personas)
+├─ Data: 25/02/2026 14:30
+├─ Decisão: APROVA EXECUÇÃO IMEDIATA
+└─ Registrada em: docs/STATUS_ENTREGAS.md
 ```
 
-**Status:** 🟡 AGUARDANDO KICK-OFF
+**Status:** ✅ APROVADA - Branch criada: feature/task-critica-0-fix-persistence
 
 ---
 

@@ -1,13 +1,42 @@
 # 🟢 STATUS DAS ENTREGAS — Fonte de Verdade (v1.2.2)
 
-**Última Sincronização:** ✅ Executado PIPELINE_TASKS (25/02 10:45)
+**Última Sincronização:** ✅ Executado PIPELINE_TASKS (25/02 14:30) - DELIBERAÇÃO TASK-CRÍTICA-0
 **Responsável pela Sincronia:** [Doc Advocate](BOARD_MULTIDISCIPLINAR.json) + Coordenadora de Governança
-**Status Geral:** 🟢 **FASE 1-4: 100% COMPLETO** | 🎯 **Phase 1 Validation: ATIVO** | ✅ **INTEGRATION-ENG-001: VALIDADA** | 🔴 **PRÓXIMA: INTEGRATION-ENG-002**
-**Protocolo:** [SYNC] Obrigatório | **97/97 AC PASSED** | **10/10 Testes PASS** | **Live Trading + Phase 6 Integration AUTHORIZED**
+**Status Geral:** 🔴 **PREREQUISITE: TASK-CRÍTICA-0** | 🟢 **FASE 1-4: 100% COMPLETO** | 🎯 **Phase 1 Validation: ATIVO** | ✅ **INTEGRATION-ENG-001: VALIDADA**
+**Protocolo:** [SYNC] Obrigatório | **97/97 AC PASSED** | **10/10 Testes PASS** | **Live Trading + Phase 6 Integration AUTHORIZED** | ⚠️ **Fix Persistence Blocker APROVADO UNANIME**
 
 ---
 
-## 🟢 EXECUÇÃO DO PIPELINE_TASKS - STATUS (25/02 10:45) ✅
+## � PREREQUISITE: TASK-CRÍTICA-0 - FIX PERSISTENCE (DELIBERAÇÃO 25/02 14:30) ✅ APROVADA
+
+### Deliberação Formal
+
+| Aspecto | Resultado | Detalhes |
+|:---|:---|:---|
+| **Classificação** | ✅ PREREQUISITE | Blocker técnico + compliance (não feature) |
+| **Decisão** | ✅ APROVADA | Unanime (8 personas) |
+| **Razão** | 🔴 CRÍTICA | Operações 24/02 não persistidas = violação CVM/B3 |
+| **Personas** | Eng Sr (Lead) + DevOps + QA | 3 personas críticas alocadas |
+| **Timeline** | ~4-6 horas | Estimativa técnica |
+| **Desbloqueia** | INTEGRATION-ML-001, ENG-002 | 6+ tasks dependem disto |
+| **Branch** | feature/task-critica-0-fix-persistence | Criada e pronta |
+| **Próximo Passo** | Kick-off Imediato | Aguardando inícío |
+
+**Votação Unânime (8 personas):**
+- ✅ Presidente Operacional (ID 1)
+- ✅ Eng Sr (ID 3)
+- ✅ ML Expert (ID 4)
+- ✅ Risk Officer (ID 5)
+- ✅ Arquiteto Sistemas (ID 6)
+- ✅ Product Owner (ID 14)
+- ✅ Head Doc & Standards (ID 8)
+- ✅ QA Automation (ID 12)
+
+📄 **Referência:** [ANALISE_PRIORIZACAO_25FEV_SEM_DATAS.md](../ANALISE_PRIORIZACAO_25FEV_SEM_DATAS.md#task-crítica-0-fix-persistence)
+
+---
+
+## 🟢 EXECUÇÃO DO PIPELINE_TASKS - STATUS (25/02 14:30) ✅
 
 **INTEGRATION-ENG-001 (BDI Integration) — VALIDADA COM SUCESSO**
 
@@ -47,7 +76,7 @@
 - [PREPARACAO_EXECUCAO_ENG001_24FEV.md](../PREPARACAO_EXECUCAO_ENG001_24FEV.md) — Ambiente + código skeleton
 - [RESUMO_EXECUTIVO_PIPELINE_24FEV_COMPLETO.md](../RESUMO_EXECUTIVO_PIPELINE_24FEV_COMPLETO.md) — Resumo com prioridades
 
-**AC (7 Critérios):** 
+**AC (7 Critérios):**
 1. Dataset loading (1.000+ records, no NaN)
 2. VolumeSpike detector + tests
 3. VolatilityBand detector + tests
@@ -56,8 +85,8 @@
 6. Signal format validation (5 fields)
 7. OrdersExecutor E2E integration
 
-**Squad:** Eng Sr (Lead) + QA Automation + Doc Advocate + Arquiteto  
-**Prioridade:** 🔴 CRÍTICA (blocker absoluto)  
+**Squad:** Eng Sr (Lead) + QA Automation + Doc Advocate + Arquiteto
+**Prioridade:** 🔴 CRÍTICA (blocker absoluto)
 **Impacto:** Desbloqueia ENG-002, ENG-003, ENG-004 (caminho crítico, 8-12h)
 
 ---
