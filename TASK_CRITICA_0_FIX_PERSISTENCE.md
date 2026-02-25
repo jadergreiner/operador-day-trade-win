@@ -1,8 +1,8 @@
 # 🚨 TASK-CRÍTICA-0: FIX PERSISTENCE BUG
 
-**Status:** 🔴 **BLOCKER ABSOLUTO** - Investigação + Fix Requerida  
-**Prioridade:** 🔴 **P0 - CRÍTICA - Bloqueia todas as tasks subsequentes**  
-**Atribuição:** Eng Sr (Lead) + DevOps + QA Automation  
+**Status:** 🔴 **BLOCKER ABSOLUTO** - Investigação + Fix Requerida
+**Prioridade:** 🔴 **P0 - CRÍTICA - Bloqueia todas as tasks subsequentes**
+**Atribuição:** Eng Sr (Lead) + DevOps + QA Automation
 **Duração Estimada:** 4-6 horas (investigação + implementação + validação)
 
 ---
@@ -65,9 +65,13 @@
 
 ## ✅ ACCEPTANCE CRITERIA (5 verificáveis)
 
-1. ✅ **Causa Raiz Identificada**
-   - Documento explicando por que dados de 24/02 não foram salvos
-   - Referências a logs, code path, ou configuração
+1. ✅ **Causa Raiz Identificada** - AC-1 COMPLETO (25/02 01:15 BRT)
+   - Documento: [CAUSA_RAIZ_PERSISTENCIA_DOCUMENTO_TECNICO.md](CAUSA_RAIZ_PERSISTENCIA_DOCUMENTO_TECNICO.md)
+   - **Raiz Identificada:** SendToMT5Command.execute() é um TODO skeleton que nunca persiste em BD
+   - **Evidência:** Code review + análise de fluxo de execução + logs comparados (MT5 vs SQLite)
+   - **Secundárias:** ExecutionOrder sem ORM mapping, OrdersExecutionOrchestrator sem trade_repository DI
+   - **Impacto:** -41 pts reais perdidos (24/02), 0 auditoria, 4 trades não rastreados
+   - ✅ Assinado por: GitHub Copilot Agent (Investigação Técnica)
 
 2. ✅ **Fix Implementado**
    - Retry logic com 3x exponential backoff adicionado
@@ -159,6 +163,76 @@ NENHUMA - Task é independente
 | **Impacto de Negócio** | 🔴 Crítico - Auditoria + Compliance |
 | **Risco de Não Fazer** | 🔴 Crítico - Produto não viável |
 | **Ordem de Execução** | **#1 - AGORA (antes de qualquer outra task)** |
+
+---
+
+## 🎯 PHASE 1: INVESTIGAÇÃO - STATUS ✅ CONCLUÍDO
+
+**Timestamp:** 25/02/2026 01:15 BRT
+**Duração:** ~1.5 horas (análise completa)
+**Persona Líder:** GitHub Copilot Agent (Autonomous)
+
+### Atividades Concluídas Phase 1
+
+| Atividade | Status | Evidência |
+|-----------|--------|-----------|
+| Análise orders_executor.py | ✅ | 500+ LOC revisado, SendToMT5Command TODO identified |
+| Análise mt5_adapter.py | ✅ | send_order() mapeado, sem save() call identified |
+| Análise trade_repository.py | ✅ | save() encontrado, nunca chamado por executor |
+| Logs MT5 de 24/02 | ✅ | 4 tickets confirmados: 2276014161-2276016015 |
+| Logs SQLite de 24/02 | ✅ | simulated_trades VAZIO, 0 records |
+| Fluxo esperado vs realidade | ✅ | Mapeado gap completo |
+| Raizes primárias identificadas | ✅ | SendToMT5Command skeleton identificada |
+| Raizes secundárias identificadas | ✅ | ExecutionOrder + OrdersExecutionOrchestrator gaps |
+| Documento técnico criado | ✅ | CAUSA_RAIZ_PERSISTENCIA_DOCUMENTO_TECNICO.md |
+| AC-1 Completo | ✅ | Assinado por Investigação Técnica |
+
+### Achados-Chave Phase 1
+
+1. **SendToMT5Command.execute()** é um TODO skeleton (linhas 146-164)
+   - Não chama mt5_adapter.send_order()
+   - Não persiste em BD
+   - Retorna True falsamente
+
+2. **ExecutionOrder** é dataclass sem ORM mapping
+   - Sem to_trade_model() converter
+   - audit_log em memória, não persistido
+
+3. **OrdersExecutionOrchestrator** não injeta trade_repository
+   - Constructor não tem trade_repository param
+   - Commands não têm acesso a BD
+
+4. **Impacto Quantificado:**
+   - 4 trades reais executados (24/02 09:34-09:55)
+   - 0 trades persistidos em SQLite
+   - -41 pts de P&L real perdido
+   - ~2.420k em comissões não rastreadas
+   - 0% auditável
+
+### Próximas Fases (Sequencial)
+
+- ⏳ **Phase 2: Implementation** (1.5-2h estimado)
+  - Implementar SendToMT5Command.execute() completo
+  - Adicionar ExecutionOrder.to_trade_model() converter
+  - Injetar trade_repository em OrdersExecutionOrchestrator
+  - Adicionar retry logic + dead-letter queue
+  
+- ⏳ **Phase 3: Validation** (1-1.5h estimado)
+  - E2E test: 10 operações simuladas → 100% SQLite
+  - Teste de falha de conexão + recovery
+  - Verificar reconciliação 24/02 trades
+  
+- ⏳ **Phase 4: Documentation** (0.5h estimado)
+  - Update ARCHITECTURE.md
+  - Create PERSISTENCE_GUARANTEE_PROTOCOL.md
+  - Sign-off by CTO
+
+**Go/No-Go Decision:** ✅ **GO DIRETO PARA PHASE 2**
+- Causa raiz completamente clara
+- Fix strategy definida e viável
+- Esforço estimado 4-6 horas para todas as 4 phases
+
+---
 
 ---
 
