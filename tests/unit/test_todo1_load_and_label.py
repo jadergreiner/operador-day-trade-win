@@ -30,7 +30,7 @@ class TestTodo1LoadAndLabel:
         """AC-1: Load CSV file efficiently"""
         if not training_dataset_path.exists():
             pytest.skip("training_dataset.csv not found")
-        
+
         loader = DatasetLoader(str(training_dataset_path))
         result = loader.load_and_label(dataset_path=str(training_dataset_path))
 
@@ -45,13 +45,13 @@ class TestTodo1LoadAndLabel:
         """AC-2: Generate labels (0/1 only)"""
         if not training_dataset_path.exists():
             pytest.skip("training_dataset.csv not found")
-        
+
         loader = DatasetLoader(str(training_dataset_path))
         result = loader.load_and_label(dataset_path=str(training_dataset_path))
 
         y = result['y']
         unique_labels = np.unique(y)
-        
+
         assert set(unique_labels) <= {0, 1}, \
             f"Labels must be 0 or 1, got {set(unique_labels)}"
         assert result['metadata']['nan_count'] == 0
@@ -61,13 +61,13 @@ class TestTodo1LoadAndLabel:
         """AC-3: Extract exactly 24 features"""
         if not training_dataset_path.exists():
             pytest.skip("training_dataset.csv not found")
-        
+
         loader = DatasetLoader(str(training_dataset_path))
         result = loader.load_and_label(dataset_path=str(training_dataset_path))
 
         n_features = result['metadata']['n_features']
         assert n_features == 24, f"Expected 24 features, got {n_features}"
-        
+
         X = result['X']
         assert X.shape[1] == 24
         print(f"✅ AC-3: 24 features extracted (shape: {X.shape})")
@@ -76,7 +76,7 @@ class TestTodo1LoadAndLabel:
         """AC-4: Validate class imbalance < 70%"""
         if not training_dataset_path.exists():
             pytest.skip("training_dataset.csv not found")
-        
+
         loader = DatasetLoader(str(training_dataset_path))
         result = loader.load_and_label(dataset_path=str(training_dataset_path))
 
@@ -89,16 +89,16 @@ class TestTodo1LoadAndLabel:
         """AC-5: Zero NaN values in all columns"""
         if not training_dataset_path.exists():
             pytest.skip("training_dataset.csv not found")
-        
+
         loader = DatasetLoader(str(training_dataset_path))
         result = loader.load_and_label(dataset_path=str(training_dataset_path))
 
         X = result['X']
         y = result['y']
-        
+
         nan_count_X = np.isnan(X).sum()
         nan_count_y = np.isnan(y).sum()
-        
+
         assert nan_count_X == 0, f"NaN in X: {nan_count_X}"
         assert nan_count_y == 0, f"NaN in y: {nan_count_y}"
         assert result['metadata']['nan_count'] == 0
@@ -108,7 +108,7 @@ class TestTodo1LoadAndLabel:
         """AC-6: Feature names persisted to metadata"""
         if not training_dataset_path.exists():
             pytest.skip("training_dataset.csv not found")
-        
+
         loader = DatasetLoader(str(training_dataset_path))
         result = loader.load_and_label(dataset_path=str(training_dataset_path))
 
@@ -121,15 +121,15 @@ class TestTodo1LoadAndLabel:
         """AC-7: Execution time < 500ms"""
         if not training_dataset_path.exists():
             pytest.skip("training_dataset.csv not found")
-        
+
         loader = DatasetLoader(str(training_dataset_path))
 
         start = time.perf_counter()
         result = loader.load_and_label(dataset_path=str(training_dataset_path))
         elapsed_ms = (time.perf_counter() - start) * 1000
-        
+
         execution_time_ms = result['metadata']['execution_time_ms']
-        
+
         assert execution_time_ms < 500, \
             f"Performance {execution_time_ms:.1f}ms exceeds 500ms SLA"
         print(f"✅ AC-7: Performance OK ({execution_time_ms:.1f}ms < 500ms)")
@@ -140,13 +140,13 @@ def test_window_ids_continuous(training_dataset_path):
     """Validar window_ids é contínuo (AC-3 adicional)"""
     if not training_dataset_path.exists():
         pytest.skip("training_dataset.csv not found")
-    
+
     loader = DatasetLoader(str(training_dataset_path))
     result = loader.load_and_label(dataset_path=str(training_dataset_path))
 
     window_ids = result['window_ids']
     expected_ids = np.arange(len(window_ids))
-    
+
     assert np.array_equal(window_ids, expected_ids), \
         "window_ids not contiguous"
     print(f"✅ window_ids continuous ({window_ids[0]}-{window_ids[-1]})")
@@ -156,7 +156,7 @@ def test_metadata_structure(training_dataset_path):
     """Validar estrutura de metadata"""
     if not training_dataset_path.exists():
         pytest.skip("training_dataset.csv not found")
-    
+
     loader = DatasetLoader(str(training_dataset_path))
     result = loader.load_and_label(dataset_path=str(training_dataset_path))
 
@@ -166,10 +166,10 @@ def test_metadata_structure(training_dataset_path):
         'n_samples', 'n_features', 'feature_names',
         'label_distribution'
     ]
-    
+
     for key in required_keys:
         assert key in metadata, f"Missing metadata key: {key}"
-    
+
     # Validar label_distribution
     label_dist = metadata['label_distribution']
     assert label_dist['total'] == metadata['n_samples']
@@ -179,10 +179,10 @@ def test_metadata_structure(training_dataset_path):
 def test_file_not_found():
     """AC-7 adicional: FileNotFoundError"""
     loader = DatasetLoader("/invalid/path.csv")
-    
+
     with pytest.raises(FileNotFoundError):
         loader.load_and_label(dataset_path="/invalid/path.csv")
-    
+
     print(f"✅ FileNotFoundError raised correctly")
 
 

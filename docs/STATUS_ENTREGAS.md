@@ -146,33 +146,33 @@ Summary: 10/10 PASSED (100%) | Coverage: 100% on load_and_label()
    - Carrega training_dataset.csv (435 samples × 26 colunas)
    - FileNotFoundError se arquivo não existe
    - Validação estrutura conforme spec
-   
+
 2. ✅ **AC-2** Generate labels (0/1 only)
    - Labels apenas 0 (SKIP) ou 1 (BUY)
    - Zero NaN em labels
    - Distribuição balanceada
-   
+
 3. ✅ **AC-3** Extract 24 features
    - Exatamente 24 features (não 23, não 25)
    - Features nomeadas conforme convenção
    - Grupos: volatility(4) + momentum(4) + MA(5) + patterns(3) + lags(2) + correlation(2)
-   
+
 4. ✅ **AC-4** Validate class imbalance
    - Imbalance entre 20-80% (54.9% real)
    - Nunca desbalanceado (0-100%)
    - Erro se fora do range
-   
+
 5. ✅ **AC-5** Zero NaN values
    - 0 NaN em X (features)
    - 0 NaN em y (labels)
    - 0 NaN em window_ids
    - Validação em 11.310 células
-   
+
 6. ✅ **AC-6** Feature names persisted
    - Metadata com feature_names list (24 items)
    - Label distribution persistida
    - Estatísticas (imbalance_pct, execution_time_ms)
-   
+
 7. ✅ **AC-7** Performance <500ms
    - Execution time: 20.8ms (vs 500ms target)
    - Performance benchmark PASSED

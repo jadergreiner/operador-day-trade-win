@@ -8,8 +8,8 @@ Status: 📝 SPEC PRONTO PARA SPRINT 2
 
 Objetivo:
 ─────────
-Atualizar dashboard para exibir CONFIDENCE SCORES probabilísticos 
-baseados em load_and_label() + grid search, em vez de simples 
+Atualizar dashboard para exibir CONFIDENCE SCORES probabilísticos
+baseados em load_and_label() + grid search, em vez de simples
 contagem de itens macro.
 
 Impacto:
@@ -44,7 +44,7 @@ PIPELINE_DIAGRAMA = """
 │  Dashboard renderiza:  VENDA | Score -13 | Conf 60.3%                │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
-         
+
          ⬇️  MUDANÇA PARA
 
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -88,21 +88,21 @@ print(PIPELINE_DIAGRAMA)
 MUDANCAS_REQUERIDAS = """
 1. src/application/services/macro_score/engine.py
    ────────────────────────────────────────────
-   
+
    ANTES:
    -------
    class MacroScoreEngine:
        def calculate_confidence(self):
            positive_count = sum(1 for item in items if item.bias == 1)
            return (positive_count / len(items)) * 0.654  # HARDCODED 65.4%
-   
+
    DEPOIS:
    -------
    class MacroScoreEngine:
        def calculate_confidence(self):
            # Manter lógica anterior para compatibilidade
            return (positive_count / len(items)) * 0.654
-       
+
        def add_ml_confidence(self, ml_prob: float, weight_ml: float = 0.6):
            # NOVO: Método para integrar ML
            macro_conf = self.calculate_confidence()
@@ -111,20 +111,20 @@ MUDANCAS_REQUERIDAS = """
 
 2. src/application/services/ml_features_extractor.py [NOVO]
    ─────────────────────────────────────────────────────
-   
+
    class MLFeaturesExtractor:
        def extract_current_candles_features(self) -> np.ndarray:
            '''
            Extrai 24 features do estado ATUAL do mercado.
-           
+
            Input:
            ├─ current_candles_m1 (últimas 50 velas M1)
            ├─ current_candles_m5 (últimas 20 velas M5)
            └─ current_candles_m15 (últimas 10 velas M15)
-           
+
            Output:
            └─ features: np.array (24,) com valores float32
-           
+
            Features extraídas (mesmos de load_and_label):
            ├─ Volatility (4): bollinger_upper/lower, atr, historical
            ├─ Momentum (4): rsi, macd, roc, obv
@@ -136,25 +136,25 @@ MUDANCAS_REQUERIDAS = """
 
 3. src/application/services/ml_confidence_engine.py [NOVO]
    ──────────────────────────────────────────────
-   
+
    class MLConfidenceEngineV1_2:
        def __init__(self):
            self.model = self._load_model()  # model_v1_2_grid_search.pkl
            self.feature_extractor = MLFeaturesExtractor()
-       
+
        def _load_model(self):
            import pickle
            with open('models/model_v1_2_grid_search.pkl', 'rb') as f:
                return pickle.load(f)
-       
+
        def calculate_ml_confidence(self, macro_score: float) -> Dict:
            '''
            Calcula confidence probabilístico baseado em ML.
-           
+
            Input:
            ├─ macro_score: int (ex: -13, +5, etc)
            └─ current market state (implícito via self.feature_extractor)
-           
+
            Output:
            {
                'ml_confidence': 0.752,  # 75.2% (model.predict_proba)
@@ -175,9 +175,9 @@ MUDANCAS_REQUERIDAS = """
 
 4. src/application/macro_score/engine.py (integração final)
    ─────────────────────────────────────────────────
-   
+
    MUDANÇA em MacroScoreResult (dataclass):
-   
+
    ANTES:
    @dataclass
    class MacroScoreResult:
@@ -185,7 +185,7 @@ MUDANCAS_REQUERIDAS = """
        bias: str  # "COMPRA", "VENDA", "NEUTRO"
        confidence: float  # 0.0-1.0
        items: List[ItemScoreResult]
-   
+
    DEPOIS:
    @dataclass
    class MacroScoreResult:
@@ -246,7 +246,7 @@ Criterion: Dashboard exibe confidence novo (sem quebrar anterior)
 Verificação:
   ANTES: VENDA | Score -13 | Conf 60.3%
   DEPOIS: VENDA | Score -13 | Conf 72.0% ⬆️
-  
+
   Both renderizam sem erro, escolha via toggle
 
 AC-6: E2E Test

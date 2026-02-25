@@ -44,9 +44,17 @@ class TestOrdersExecutor:
         return adapter
 
     @pytest.fixture
-    def executor(self, mock_risk_validator, mock_mt5_adapter):
+    def mock_trade_repository(self):
+        """Mock ITradeRepository instance."""
+        repo = MagicMock()
+        repo.save = AsyncMock(return_value=True)
+        repo.find_by_id = AsyncMock(return_value=None)
+        return repo
+
+    @pytest.fixture
+    def executor(self, mock_risk_validator, mock_mt5_adapter, mock_trade_repository):
         """Create OrdersExecutor instance with mocks."""
-        return OrdersExecutor(mock_risk_validator, mock_mt5_adapter)
+        return OrdersExecutor(mock_risk_validator, mock_mt5_adapter, mock_trade_repository)
 
     # ==================== TEST TODO-2: EXECUTE_ORDER ====================
 

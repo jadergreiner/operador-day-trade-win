@@ -16,6 +16,10 @@ import uuid
 from datetime import datetime
 import json
 
+# Importar classes para exportação
+from src.infrastructure.providers.mt5_adapter import OrderStatus
+from src.domain.entities.trade import Position
+
 logger = logging.getLogger(__name__)
 
 
@@ -757,6 +761,11 @@ class OrdersExecutionOrchestrator:
         else:
              return {"success": False, "message": "Falha ao fechar posição"}
     # ==================== TODO-4: HANDLE_STOP_LOSS END ====================
+
+
+# Aliases para compatibilidade com imports
+Order = ExecutionOrder  # Alias: ExecutionOrder também pode ser importado como Order
+OrdersExecutor = OrdersExecutionOrchestrator
 
 
 if __name__ == "__main__":
