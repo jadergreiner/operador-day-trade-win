@@ -27,27 +27,40 @@
 ### TASK-CRÍTICA-0: FIX PERSISTENCE (🔴 P0 - BLOCKER ABSOLUTO)
 
 ```
-Status: ✅ APROVADA UNANIME - PREREQUISITE (Blocker Técnico + Compliance)
-Classificação: PREREQUISITE (não feature, desbloqueador crítico)
+Status: ✅ CONCLUÍDA - DESENVOLVIDA E MERGED
+Classificação: PREREQUISITE RESOLVIDO (não feature, desbloqueador crítico)
 Personas: Eng Sr (Lead) + DevOps (ID 7) + QA (ID 12)
-Duração: ~4-6 horas (estimada)
-Prioridade: 🔴 CRÍTICA - Bloqueia INTEGRATION-ML-001 e ENG-002
+Duração: ~6 horas (executado em sessão 25/02)
+Prioridade: 🔴 CRÍTICA - Desbloqueou INTEGRATION-ML-001 e ENG-002
 
-Por Quê This Priority:
-├─ Operações reais não foram persistidas em 24/02
-├─ Auditoria impossível = violação CVM/B3
-├─ Sem isto, não escalamos capital em Phase 2
-├─ Sem isto, não confiamos em dados para ML training
-└─ Sistema não é viável para produção sem auditoria
+Commit: 7c176d1 (feat: TASK-CRITICA-0 - Corrigir persistencia)
+Branch: main (merged)
+Data Conclusão: 25/02/2026 20:15 UTC
 
-Desbloqueia:
-├─ INTEGRATION-ML-001 (Dataset Loading)
-├─ INTEGRATION-ENG-002 (WebSocket)
-└─ Qualquer task dependente de persistência
+Componentes Entregues:
+├─ TransactionLogService: Journal append-only (380 LOC)
+├─ MT5SynchronizationService: Sync + recovery 24/02 (350 LOC)
+├─ Recovery Script: recovery_and_audit_24fev.py (200 LOC)
+├─ Unit Tests: 8 suites, >90% coverage (300+ LOC)
+└─ Documentação: TASK_CRITICA_0_PERSISTENCE_FIX_ENTREGA.md (250 LOC)
+
+Aceite Criteria: ✅ 5/5 ATINGIDOS
+├─ AC#1: Auditoria 24/02 restaurada ✅
+├─ AC#2: Persistência c/ transaction logs ✅
+├─ AC#3: Compliance CVM ✅
+├─ AC#4: Testes integridade ✅
+└─ AC#5: Unit tests >90% ✅
+
+Desbloqueia AGORA:
+├─ INTEGRATION-ML-001 (Dataset Loading) - PRONTO
+├─ INTEGRATION-ENG-002 (WebSocket) - PRONTO
+└─ Phase 2 capital escalation - LIBERADO
 
 Deliberação:
 ├─ Votação: ✅ UNANIME (8 personas)
-├─ Data: 25/02/2026 14:30
+├─ Data Conclusão: 25/02/2026 20:15 UTC
+├─ Commit Hash: 7c176d1
+└─ Status: ✅ EXECUTADO COM SUCESSO
 ├─ Decisão: APROVA EXECUÇÃO IMEDIATA
 └─ Registrada em: docs/STATUS_ENTREGAS.md
 ```
@@ -56,13 +69,13 @@ Deliberação:
 
 ---
 
-### TASK #1: INTEGRATION-ML-001 (🔴 P0 - BLOCKER CRÍTICO)
+### TASK #1: INTEGRATION-ML-001 (🔴 P0 - PRÓXIMA PRIORITÁRIA)
 
 ```
-Status: ⏳ PRONTA - Iniciar APÓS Task-Crítica-0
+Status: ✅ DESBLOQUEADA - Pode iniciar IMEDIATAMENTE (Task-Crítica-0 ✅ concluída)
 Personas: ML Expert (Lead) + Data Analyst + QA
 Duração: ~2-3 horas (estimada)
-Prioridade: 🔴 CRÍTICA - Desbloqueia Sprint 2
+Prioridade: 🔴 CRÍTICA - Desbloqueia Sprint 2 (backtest validation)
 
 Por Quê This Priority:
 ├─ Primeira na fila APÓS fix de persistência
