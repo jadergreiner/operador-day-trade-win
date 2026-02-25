@@ -97,7 +97,7 @@ class AuditTrail:
 class PersistenceManager:
     """
     Gerenciador centralizado de persistência de dados.
-    
+
     Implementa:
     - Async queue de operações (não-bloqueante)
     - Persistência atomic em SQLite (ACID)
@@ -114,7 +114,7 @@ class PersistenceManager:
     ):
         """
         Inicializa Manager.
-        
+
         Args:
             db_path: Caminho do banco de dados SQLite
             queue_size: Tamanho máximo da fila async
@@ -124,11 +124,11 @@ class PersistenceManager:
         self.session: Optional[Session] = None
         self._running = False
         self._recovery_log: List[str] = []
-        
+
         # Criar banco de dados se não existir
         create_database(db_path)
         self.session = get_session(db_path)
-        
+
         logger.info(f"PersistenceManager inicializado com DB: {db_path}")
 
     async def start(self) -> None:
@@ -163,7 +163,7 @@ class PersistenceManager:
     async def persist_operation(self, operation: OperationRecord) -> None:
         """
         Persiste operação em DB de forma async.
-        
+
         Fluxo:
         1. Enfileira em async queue
         2. Worker processa (não-bloqueante)
@@ -189,7 +189,7 @@ class PersistenceManager:
             self.session.add(model)
             self.session.commit()
             logger.info(f"Operação {operation.operation_id} persistida no DB")
-            
+
             # Audit trail
             await self._log_audit(
                 actor="SYSTEM",
@@ -207,10 +207,10 @@ class PersistenceManager:
         model = self.session.query(OperationModel).filter(
             OperationModel.operation_id == operation_id
         ).first()
-        
+
         if not model:
             return None
-        
+
         return OperationRecord(
             operation_id=model.operation_id,
             timestamp=model.timestamp,
@@ -229,7 +229,7 @@ class PersistenceManager:
     async def validate_labels(self, labels: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         Valida labels com consistency checks.
-        
+
         Verifica:
         - Duplicatas
         - NaN/None values
@@ -244,7 +244,7 @@ class PersistenceManager:
             "total_records": len(labels),
             "class_distribution": {},
         }
-        
+
         seen = set()
         for label in labels:
             # Verificar duplicatas
@@ -252,21 +252,21 @@ class PersistenceManager:
             if ts in seen:
                 validation_report["duplicates"] += 1
             seen.add(ts)
-            
+
             # Verificar valores faltantes
             if label.get("label") is None or label.get("confidence") is None:
                 validation_report["missing_values"] += 1
-            
+
             # Contar classes
             class_name = label.get("label", "UNKNOWN")
             validation_report["class_distribution"][class_name] = \
                 validation_report["class_distribution"].get(class_name, 0) + 1
-        
+
         validation_report["valid"] = (
             validation_report["duplicates"] == 0 and
             validation_report["missing_values"] == 0
         )
-        
+
         return validation_report
 
     # ========================================================
@@ -276,7 +276,7 @@ class PersistenceManager:
     async def extract_features(self, market_data: Dict[str, Any]) -> Dict[str, float]:
         """
         Extrai 24 engineered features.
-        
+
         Groups:
         1. Volatility (4): Bollinger Bands, ATR, Hist Vol, 3-Sigma
         2. Momentum (4): RSI, MACD, ROC, OBV
@@ -286,57 +286,62 @@ class PersistenceManager:
         6. Correlation (2): 20-period correlation, Trend strength
         """
         features = {}
-        
+
         close = np.array(market_data.get("close", []))
         volume = np.array(market_data.get("volume", []))
         high = np.array(market_data.get("high", []))
         low = np.array(market_data.get("low", []))
-        
+
         if len(close) == 0:
             return {}
-        
+
         # Volatility features (4)
         features["bollinger_bands_width"] = np.std(close[-20:])
         features["atr"] = np.mean(high - low)
         features["historical_volatility"] = np.std(np.diff(close))
         features["three_sigma_band"] = np.std(close) * 3
-        
+
         # Momentum features (4)
         features["rsi"] = self._calculate_rsi(close)
         features["macd"] = self._calculate_macd(close)
         features["roc"] = (close[-1] - close[-10]) / close[-10] if len(close) > 10 else 0.0
         features["obv"] = np.sum(volume)
-        
+
         # MA features (5)
         features["sma_50"] = np.mean(close[-50:]) if len(close) >= 50 else np.mean(close)
         features["ema_9"] = self._calculate_ema(close, 9)
         features["ema_21"] = self._calculate_ema(close, 21)
         features["sma_slope"] = (features["sma_50"] - close[-1]) / features["sma_50"]
         features["trend_strength"] = abs(close[-1] - np.mean(close[-50:]))
-        
+
         # Pattern features (3)
         features["mean_reversion_signal"] = self._detect_mean_reversion(close)
         features["volume_spike"] = np.max(volume[-10:]) / np.mean(volume[-50:])
         features["impulse_signal"] = np.mean(np.diff(close[-5:]))
-        
+
         # Lag features (9)
-        for lag in range(1, 6):
-            features[f"return_lag_{lag}"] = np.diff(close)[-lag] if len(close) > lag else 0.0
+        if len(close) > 5:
+            for lag in range(1, 6):
+                features[f"return_lag_{lag}"] = float(np.diff(close)[-lag])
         for lag in range(1, 4):
-            features[f"close_lag_{lag}"] = close[-lag] if len(close) > lag else close[-1]
-        
+            features[f"close_lag_{lag}"] = float(close[-lag] if len(close) > lag else close[-1])
+
         # Correlation features (2)
-        features["correlation_20p"] = np.corrcoef(close[-20:], range(20))[0, 1]
-        features["trend_consistency"] = abs(np.mean(np.diff(close[-10:])))
-        
+        if len(close) >= 20:
+            x = np.arange(20, dtype=float)
+            close_20 = close[-20:].astype(float)
+            features["correlation_20p"] = float(np.corrcoef(close_20, x)[0, 1])
+        else:
+            features["correlation_20p"] = 0.0
+        features["trend_consistency"] = float(abs(np.mean(np.diff(close[-10:])))) if len(close) >= 10 else 0.0
         # Garantir 24 features
         while len(features) < 24:
             features[f"filler_{len(features)}"] = 0.0
-        
+
         # Limitar a 24
         feature_keys = list(features.keys())[:24]
         features = {k: features[k] for k in feature_keys}
-        
+
         return features
 
     # ========================================================
@@ -351,7 +356,7 @@ class PersistenceManager:
         total = len(dataset)
         train_size = int(total * 0.70)
         val_size = int(total * 0.15)
-        
+
         return {
             "train": dataset[:train_size],
             "val": dataset[train_size : train_size + val_size],
@@ -368,7 +373,7 @@ class PersistenceManager:
     ) -> Dict[str, Dict[str, float]]:
         """Computa estatísticas descritivas."""
         stats = {}
-        
+
         for name, values in features.items():
             if isinstance(values, (list, np.ndarray)):
                 arr = np.array(values)
@@ -386,7 +391,7 @@ class PersistenceManager:
                     "mean": float(values),
                     "std": 0.0,
                 }
-        
+
         return stats
 
     # ========================================================
@@ -397,22 +402,22 @@ class PersistenceManager:
         """Salva lista de feature names em arquivo."""
         path = Path("data/feature_names.json")
         path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         with open(path, "w") as f:
             json.dump({"features": names}, f, indent=2)
-        
+
         logger.info(f"Feature names salvos: {len(names)} features")
 
     async def load_feature_names(self) -> List[str]:
         """Carrega lista de feature names."""
         path = Path("data/feature_names.json")
-        
+
         if not path.exists():
             return []
-        
+
         with open(path, "r") as f:
             data = json.load(f)
-        
+
         return data.get("features", [])
 
     # ========================================================
@@ -438,9 +443,9 @@ class PersistenceManager:
             {"name": "Feature Names Persisted", "passed": names_persisted},
             {"name": "Audit Trail Complete", "passed": len(self._recovery_log) > 0},
         ]
-        
+
         all_passed = all(c["passed"] for c in checks)
-        
+
         return {
             "status": "PASSED" if all_passed else "FAILED",
             "total_checks": len(checks),
@@ -458,7 +463,7 @@ class PersistenceManager:
     ) -> List[OperationRecord]:
         """
         Recupera operações perdidas do dia especificado.
-        
+
         Recuperação via journal replay.
         """
         # Parse date
@@ -467,14 +472,14 @@ class PersistenceManager:
         except ValueError:
             logger.error(f"Data inválida: {checkpoint_date}")
             return []
-        
+
         # Query operations do dia
         recovered = []
         models = self.session.query(OperationModel).filter(
             OperationModel.timestamp >= target_date,
             OperationModel.timestamp < target_date + timedelta(days=1),
         ).all()
-        
+
         for model in models:
             record = OperationRecord(
                 operation_id=model.operation_id,
@@ -487,7 +492,7 @@ class PersistenceManager:
                 details=json.loads(model.details) if model.details else {},
             )
             recovered.append(record)
-        
+
         logger.info(f"Recuperadas {len(recovered)} operações do dia {checkpoint_date}")
         return recovered
 
@@ -507,7 +512,7 @@ class PersistenceManager:
     ) -> None:
         """Registra evento em audit trail."""
         event_id = str(uuid4())
-        
+
         model = AuditTrailModel(
             event_id=event_id,
             timestamp=datetime.now(),
@@ -519,10 +524,10 @@ class PersistenceManager:
             result=result,
             result_details=json.dumps(result_details) if result_details else None,
         )
-        
+
         self.session.add(model)
         self.session.commit()
-        
+
         self._recovery_log.append(event_id)
 
     # ========================================================
@@ -534,17 +539,17 @@ class PersistenceManager:
         """Calcula RSI."""
         if len(prices) < period:
             return 50.0
-        
+
         deltas = np.diff(prices[-period:])
         gains = np.where(deltas > 0, deltas, 0)
         losses = np.where(deltas < 0, -deltas, 0)
-        
+
         avg_gain = np.mean(gains)
         avg_loss = np.mean(losses)
-        
+
         if avg_loss == 0:
             return 100.0 if avg_gain > 0 else 50.0
-        
+
         rs = avg_gain / avg_loss
         rsi = 100 - (100 / (1 + rs))
         return float(rsi)
@@ -554,7 +559,7 @@ class PersistenceManager:
         """Calcula MACD simples."""
         if len(prices) < 26:
             return 0.0
-        
+
         ema_12 = np.mean(prices[-12:])
         ema_26 = np.mean(prices[-26:])
         return float(ema_12 - ema_26)
@@ -571,14 +576,14 @@ class PersistenceManager:
         """Detecta sinal de mean reversion."""
         if len(prices) < 20:
             return 0.0
-        
+
         current = prices[-1]
         mean = np.mean(prices[-20:])
         std = np.std(prices[-20:])
-        
+
         if std == 0:
             return 0.0
-        
+
         z_score = (current - mean) / std
         return float(z_score)
 
@@ -608,11 +613,11 @@ class PersistenceManager:
 if __name__ == "__main__":
     # Quick test
     import asyncio
-    
+
     async def main():
         manager = PersistenceManager()
         await manager.start()
-        
+
         # Test persist operation
         op = OperationRecord(
             operation_id="OP-TEST-001",
@@ -624,12 +629,12 @@ if __name__ == "__main__":
             status="EXECUTED",
         )
         await manager.persist_operation(op)
-        
+
         # Test label validation
         labels = [{"timestamp": "2026-02-24T10:00:00", "label": "BUY", "confidence": 0.95}]
         validation = await manager.validate_labels(labels)
         print(f"Validation: {validation}")
-        
+
         await manager.stop()
-    
+
     asyncio.run(main())
