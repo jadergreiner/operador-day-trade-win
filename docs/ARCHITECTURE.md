@@ -14,6 +14,14 @@ Sistema de trading quantitativo para Mini Índice Brasileiro (WIN) com arquitetu
 3. **Domain-Driven Design**: Modelagem centrada no domínio financeiro
 4. **SOLID Principles**: Código modular, extensível e testável
 5. **Observability First**: Logging, métricas e auditoria em todas as camadas
+6. **🔴 CRITICAL - Confirmation Closure Principle** ⭐ NEW
+   - **Toda operação crítica DEVE ter ciclo fechado:**
+     1. Request Layer (envio para MT5)
+     2. Confirmation Layer (escuta e persiste resposta)
+     3. Verification Layer (valida 1:1 mapping)
+     4. Feedback Layer (notifica sistema de aprendizado)
+   - **Sem qualquer uma dessas 4 camadas, o ciclo não está fechado**
+   - ⚠️ **Status (24/02):** Camadas 1 implantada, 2-4 FALTANDO (veja P0-CAUSA_RAIZ_DADOS_DESAPARECIDOS.md)
 
 ## Arquitetura em Camadas
 
@@ -137,6 +145,71 @@ isolamento obrigatório de terminal.
 - **Execution Logger**: Auditoria de execuções
 
 **Tecnologias**: MetaTrader5 Python API, HTTP/REST, Pydantic
+
+### 🔴 6. Confirmation & Feedback Layers (CAMADAS FALTANDO - P0 CRÍTICO)
+
+**⚠️ STATUS 24/02: FALTANDO - Causando dados desaparecidos**
+
+**Responsabilidade**: Confirmar execução em MT5, persistir trades, fechar loop de aprendizado.
+
+**Componentes FALTANDO:**
+
+#### **A. Confirmation Handler Layer** ❌ MISSING
+- **O que faz:** Escuta resposta de MT5 após send_order()
+- **Status:** SEM IMPLEMENTAÇÃO
+- **Evidência:** 4 trades executados em MT5, 0 persistidos em SQLite
+- **Impacto:** Audit trail incompleto, violação CVM/B3
+
+```python
+# FALTA IMPLEMENTAR:
+class ExecutionConfirmationHandler:
+    """Handle MT5 execution responses and persist trades"""
+    async def on_order_execution(self, event: OrderExecutedEvent):
+        # 1. Parse MT5 response (ticket, price, time, fee)  
+        # 2. INSERT executed_trade (com decision_id linkage)
+        # 3. UPDATE pending_order status
+        # 4. Publish trade_outcome_event para RL
+```
+
+#### **B. Verification Layer** ❌ MISSING  
+- **O que faz:** Valida 1:1 mapping entre MT5 executions ↔ Database records
+- **Status:** SEM IMPLEMENTAÇÃO
+- **Evidência:** Nenhum relatório de discrepâncias MT5 vs SQLite
+- **Impacto:** Impossível detectar perdas de dados
+
+```python
+# FALTA IMPLEMENTAR:
+class TradeSyncVerifier:
+    """Verify 1:1 mapping MT5 executions ↔ Database records"""
+    def validate(self) -> TradeSyncReport:
+        # Compara trades em MT5 (history_deals)
+        # com trades em SQLite (simulated_trades)
+        # Output: Report de discrepâncias (MUST BE ZERO)
+```
+
+#### **C. RL Feedback Closure Layer** ❌ MISSING
+- **O que faz:** Envia resultados reais de trades ao RL system
+- **Status:** SEM IMPLEMENTAÇÃO  
+- **Evidência:** RL aprendendo com 239 simulações, 0 outcomes reais
+- **Impacto:** Machine learning sem aprendizado de verdade
+
+```python
+# FALTA IMPLEMENTAR:
+class RLTradeOutcomeReceiver:
+    """Close the learning loop: trade outcome → RL update"""
+    async def on_trade_closed(self, event: TradeClosedEvent):
+        # Calcula realized_pnl
+        # UPDATE rl_rewards com outcome REAL
+        # RL system aprende com verdade, não simulação
+```
+
+**🚨 AÇÃO IMEDIATA (P0):**
+- Ver [P0-CAUSA_RAIZ_DADOS_DESAPARECIDOS.md](../P0-CAUSA_RAIZ_DADOS_DESAPARECIDOS.md) para design completo
+- Implementar 3 componentes (4-6 horas)
+- Validar com E2E test
+- Deploy hoje ou 25/02
+
+**Tecnologias**: asyncio, Event Bus, Repository Pattern, Type Safety
 
 ### 5. Monitoring & Health Checks Layer (Camada de Monitoramento)
 
