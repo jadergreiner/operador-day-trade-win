@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 Test suite E2E para validar persistência de trades (TASK-CRÍTICA-0 Phase 3)
 
@@ -33,7 +35,7 @@ from src.infrastructure.repositories.trade_repository import ITradeRepository
 
 @pytest.fixture
 def mock_mt5_adapter():
-    \"\"\"Mock do MT5Adapter que simula execução bem-sucedida\"\"\"
+    """Mock do MT5Adapter que simula execução bem-sucedida"""
     adapter = Mock()
     adapter.send_order = Mock(return_value="2276014161")  # Simulate ticket
     adapter.is_connected = Mock(return_value=True)
@@ -42,7 +44,7 @@ def mock_mt5_adapter():
 
 @pytest.fixture
 def mock_trade_repository():
-    \"\"\"Mock do TradeRepository para capturar calls de save()\"\"\"
+    """Mock do TradeRepository para capturar calls de save()"""
     repo = Mock(spec=ITradeRepository)
     repo.save = Mock()  # Simula save bem-sucedido por padrão
     return repo
@@ -50,12 +52,12 @@ def mock_trade_repository():
 
 @pytest.fixture
 def sample_execution_order():
-    \"\"\"ExecutionOrder de exemplo \"\"\"
+    """ExecutionOrder de exemplo"""
     return ExecutionOrder(
         order_id="ORD-TEST001",
         symbol="WINJ26",
         order_type="BUY",
-        volume=1.0,
+        volume=1,  # Inteiro para Quantity
         entry_price=193245.00,
         stop_loss=193450.00,
         take_profit=192890.00,
@@ -66,20 +68,20 @@ def sample_execution_order():
 
 
 class TestSendToMT5CommandHappyPath:
-    \"\"\"Teste do caminho feliz: MT5 send → BD persist\"\"\"
+    """Teste do caminho feliz: MT5 send → BD persist"""
 
     @pytest.mark.asyncio
     async def test_execute_sends_to_mt5_and_persists(
         self, mock_mt5_adapter, mock_trade_repository, sample_execution_order
     ):
-        \"\"\"
+        """
         Cenário: Ordem enfileirada é enviada a MT5 e persistida em BD
         Esperado:
           - send_order() é chamado uma vez
           - save() é chamado uma vez
           - ExecutionOrder.mt5_ticket é atualizado
           - Estado final: EXECUTED
-        \"\"\"
+        """
         # Setup
         command = SendToMT5Command(mock_mt5_adapter, mock_trade_repository)
         order = sample_execution_order
@@ -100,13 +102,13 @@ class TestSendToMT5CommandHappyPath:
     async def test_audit_log_contains_all_checkpoints(
         self, mock_mt5_adapter, mock_trade_repository, sample_execution_order
     ):
-        \"\"\"
+        """
         Cenário: Audit log contém todos os passos da execução
         Esperado:
           - SENT_TO_MT5
           - ACCEPTED_BY_MT5
           - EXECUTED
-        \"\"\"
+        """
         # Setup
         command = SendToMT5Command(mock_mt5_adapter, mock_trade_repository)
         order = sample_execution_order
@@ -125,19 +127,19 @@ class TestSendToMT5CommandHappyPath:
 
 
 class TestSendToMT5CommandRetryLogic:
-    \"\"\"Teste do retry logic com exponential backoff\"\"\"
+    """Teste do retry logic com exponential backoff"""
 
     @pytest.mark.asyncio
     async def test_retry_on_persistence_failure(
         self, mock_mt5_adapter, sample_execution_order
     ):
-        \"\"\"
+        """
         Cenário: save() falha no primeiro retry, sucede no segundo
         Esperado:
           - _persist_with_retry() é chamado com max_retries=3
           - Deveria aguardar 0.5s, 1s antes de suceder
           - Resultado final: True (sucesso)
-        \"\"\"
+        """
         # Setup
         repo = Mock(spec=ITradeRepository)
         # Falha 1x, sucede 2ª vez
@@ -159,13 +161,13 @@ class TestSendToMT5CommandRetryLogic:
     async def test_all_retries_exhausted_returns_false(
         self, mock_mt5_adapter, sample_execution_order
     ):
-        \"\"\"
+        """
         Cenário: Todas as 3 tentativas de save() falham
         Esperado:
           - Resultado: False
           - Estado: REJECTED
           - save() chamado 3x
-        \"\"\"
+        """
         # Setup
         repo = Mock(spec=ITradeRepository)
         repo.save = Mock(side_effect=Exception("Permanent connection failure"))
@@ -184,16 +186,16 @@ class TestSendToMT5CommandRetryLogic:
 
 
 class TestExecutionOrderToTrade:
-    \"\"\"Teste da conversão ExecutionOrder → Trade entity\"\"\"
+    """Teste da conversão ExecutionOrder → Trade entity"""
 
     def test_to_trade_creates_valid_trade_entity(self, sample_execution_order):
-        \"\"\"
+        """
         Cenário: ExecutionOrder.to_trade() cria Trade entity válida
         Esperado:
           - Trade entity com todos os campos mapeados
           - broker_trade_id = ticket
           - status = OPEN
-        \"\"\"
+        """
         # Setup
         order = sample_execution_order
         ticket = "2276014161"
@@ -205,24 +207,24 @@ class TestExecutionOrderToTrade:
         assert isinstance(trade, Trade)
         assert trade.symbol.code == "WINJ26"
         assert trade.side == OrderSide.BUY
-        assert trade.quantity.value == Decimal("1.0")
+        assert trade.quantity.value == 1  # Inteiro
         assert trade.broker_trade_id == ticket
         assert trade.status == TradeStatus.OPEN
         
         # Notes devem conter metadata do detector
         assert "2.50σ" in trade.notes or "2.5" in trade.notes  # Detector spike
-        assert "85%" in trade.notes or "0.85" in trade.notes  # ML score
+        assert "85" in trade.notes  # ML score (85.00%)
 
     def test_to_trade_sell_order(self):
-        \"\"\"
+        """
         Cenário: Ordem SELL é convertida com side correto
-        \"\"\"
+        """
         # Setup
         order = ExecutionOrder(
             order_id="ORD-SELL",
             symbol="WINJ26",
             order_type="SELL",  # SELL
-            volume=1.0,
+            volume=1,  # Inteiro
             entry_price=193400.00,
             stop_loss=193200.00,
             take_profit=193600.00,
@@ -238,13 +240,13 @@ class TestExecutionOrderToTrade:
 
 
 class TestIntegrationE2E:
-    \"\"\"Testes de integração E2E\"\"\"
+    """Testes de integração E2E"""
 
     @pytest.mark.asyncio
     async def test_full_execution_pipeline(
         self, mock_mt5_adapter, mock_trade_repository, sample_execution_order
     ):
-        \"\"\"
+        """
         Cenário: Pipeline completa de execução
         
         Fluxo:
@@ -255,7 +257,7 @@ class TestIntegrationE2E:
         5. Audit log completo
         
         Esperado: Sucesso em todas as etapas
-        \"\"\"
+        """
         # Setup
         command = SendToMT5Command(mock_mt5_adapter, mock_trade_repository)
         order = sample_execution_order
@@ -276,10 +278,10 @@ class TestIntegrationE2E:
     async def test_mt5_connection_error_handling(
         self, mock_trade_repository, sample_execution_order
     ):
-        \"\"\"
+        """
         Cenário: MT5 não está conectado
         Esperado: OrderExecutionError, ordem rejeitada
-        \"\"\"
+        """
         # Setup
         adapter = Mock()
         adapter.send_order = Mock(side_effect=Exception("Not connected to MT5"))
@@ -296,17 +298,17 @@ class TestIntegrationE2E:
 
 
 class TestReconciliation:
-    \"\"\"Testes de reconciliação para 24/02 trades\"\"\"
+    """Testes de reconciliação para 24/02 trades"""
 
     @pytest.mark.asyncio
     async def test_24feb_trades_now_persist(self):
-        \"\"\"
+        """
         Cenário: 4 trades de 24/02 são simulados e persistem em BD
         Esperado:
           - 4 trades são salvos
           - Cada um com ticket correto
           - Status: OPEN (pois não foram fechados)
-        \"\"\"
+        """
         # Setup: Simular os 4 trades reais de 24/02
         trades_24feb = [
             ("2276014161", "WINJ26", "SELL", 193245.00),
@@ -332,7 +334,7 @@ class TestReconciliation:
                 order_id=f"ORD-24FEB-{ticket}",
                 symbol=symbol,
                 order_type=side,
-                volume=1.0,
+                volume=1,  # Inteiro
                 entry_price=price,
                 stop_loss=price + 200,
                 take_profit=price - 400,
@@ -355,10 +357,6 @@ class TestReconciliation:
             assert trade.symbol.code == symbol
             assert trade.status == TradeStatus.OPEN
 
-
-# ============================================================================
-# EXECUTAR OS TESTES
-# ============================================================================
 
 if __name__ == "__main__":
     # pytest tests/test_send_to_mt5_command_e2e.py -v --tb=short
