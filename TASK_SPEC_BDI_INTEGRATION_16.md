@@ -194,6 +194,7 @@ RESULTADO ESPERADO:
 ### **FASE 1: Setup (27/02 10:00-11:00 - 1h)**
 
 **Passo 1.1: Localizar e revisar processador_bdi.py**
+
 ```bash
 cd C:\repo\operador-day-trade-win
 
@@ -208,6 +209,7 @@ python -c "from src.application.services.processador_bdi import processador_bdi"
 ```
 
 **Passo 1.2: Entender os Detectors**
+
 ```python
 # Ler a documentação de cada detector
 # - VolatilityDetector: Logic, thresholds, output
@@ -220,6 +222,7 @@ python -c "from src.application.services.processador_bdi import processador_bdi"
 ```
 
 **Passo 1.3: Setup do Ambiente**
+
 ```bash
 # Criar ambiente teste isolado
 python -m venv venv_bdi_test
@@ -237,6 +240,7 @@ python -c "from src.application import *; print('All imports OK')"
 ### **FASE 2: Implementação (27/02 11:00-12:30 - 1.5h)**
 
 **Passo 2.1: Validar que Detectors Inicializam**
+
 ```python
 # File: src/application/services/processador_bdi.py
 
@@ -267,12 +271,14 @@ class BDIProcessor:
 ```
 
 **Passo 2.2: Hook no Config**
+
 ```python
 # Validar que config carrega (alertas.yaml)
 # Esperado: thresholds, min_confidence, queue_type, etc
 ```
 
 **Passo 2.3: Test Feed de Candles**
+
 ```python
 # Simular market data
 # Feed 50 candles históricos
@@ -286,6 +292,7 @@ class BDIProcessor:
 **Almoço: 12:30-13:00**
 
 **Passo 3.1: Test 1 - Initialization**
+
 ```python
 # File: tests/integration/test_bdi_integration.py
 
@@ -302,6 +309,7 @@ def test_bdi_detector_initialization():
 ```
 
 **Passo 3.2: Test 2 - Alert Generation**
+
 ```python
 def test_alert_generation():
     processor = BDIProcessor()
@@ -318,6 +326,7 @@ def test_alert_generation():
 ```
 
 **Passo 3.3: Test 3 - Message Queue**
+
 ```python
 def test_message_queue_delivery():
     processor = BDIProcessor()
@@ -338,6 +347,7 @@ def test_message_queue_delivery():
 ```
 
 **Passo 3.4: Test 4 - Latency**
+
 ```python
 def test_latency_performance():
     processor = BDIProcessor()
@@ -359,6 +369,7 @@ def test_latency_performance():
 ```
 
 **Passo 3.5: Test 5 - Zero Loss**
+
 ```python
 def test_zero_message_loss():
     processor = BDIProcessor()
@@ -385,6 +396,7 @@ def test_zero_message_loss():
 ### **FASE 4: Code Review & Refinement (27/02 16:00-17:00 - 1h)**
 
 **Passo 4.1: Code Review**
+
 ```bash
 # Static analysis
 python -m mypy src/application/services/processador_bdi.py --strict
@@ -403,6 +415,7 @@ pytest tests/ --cov=src/application/services/processador_bdi --cov-report=term
 - Validar error handling
 
 **Passo 4.3: Final Run**
+
 ```bash
 pytest tests/integration/test_bdi_integration.py -v
 

@@ -248,22 +248,62 @@ python -m src.interfaces.cli.quantum_operator_cli
 - ⏳ 23/02-12/03: Final adjustments
 - 🚀 **BETA LAUNCH**: Authorized for immediate deployment
 
+## 🚀 Sprint 2 - Phase 6 Integration (24/02 iniciado ✅)
+
+**Phase 6: Integration Tasks - BDI + WebSocket + Email + Staging**  
+**Status:** ✅ PRONTO PARA KICKOFF | 🚀 SPRINT 2 OFFICIAL KICKOFF: 27/02 09:00 BRT
+
+### **Issues Criadas (4/4)** ✅
+
+| # | Título | Persona | Prioridade | Status |
+|---|--------|---------|-----------|--------|
+| #16 | Label backtest_optimized_results (TODO-1) | ML Expert | 🔴 CRÍTICA | ASSIGNED |
+| #18 | OrdersExecutor - 3 TODOs (TODO-2,3,4) | Eng Sr | 🔴 CRÍTICA | ASSIGNED |
+| #17 | Detector padrões no backtest | ML Expert | 🟠 ALTA | CREATED |
+| #19 | Integração detector padrões | Eng Sr | 🟠 ALTA | CREATED |
+
+### **Próximos Passos (CRÍTICO)**
+
+**HOJE 24/02:**
+- [ ] 17:00: Confirmação escrita - Personas alocadas?
+- [ ] Calendário bloqueado 27/02-05/03?
+- [ ] Documents sincronizados?
+
+**AMANHÃ 25/02 09:00-12:00:**
+- [ ] Ramp-up Eng Sr (codebase review)
+- [ ] Setup ML Expert (Jupyter + dependencies)
+- [ ] CI/CD validation
+
+**SEGUNDA 27/02:**
+- [ ] **09:00-10:00:** Sprint 2 Official Kickoff Meeting
+- [ ] **10:00:** BDI Integration (#16) START
+- [ ] **10:30:** Backtesting Setup paralelo START
+- [ ] **15:00:** Daily Standup #1
+
+### **Documentação Sprint 2** ✅
+
+**Execução:**
+- [SPRINT2_OFFICIAL_KICKOFF_27FEV.md](SPRINT2_OFFICIAL_KICKOFF_27FEV.md) - Agenda reunião 09:00-10:00 (5 blocos)
+- [TASK_SPEC_BDI_INTEGRATION_16.md](TASK_SPEC_BDI_INTEGRATION_16.md) - BDI Integration (7 AC + 4 fases)
+- [TASK_SPEC_BACKTEST_SETUP_17.md](TASK_SPEC_BACKTEST_SETUP_17.md) - Backtesting Setup (6 AC + implementação)
+- [DAILY_STANDUP_CONFIG_SPRINT2.md](DAILY_STANDUP_CONFIG_SPRINT2.md) - Daily standup 15:00 BRT
+
+**Rastreamento:**
+- [ANALISE_PRIORIZACAO_24FEV.md](ANALISE_PRIORIZACAO_24FEV.md) - Fonte de verdade (status, dependências, riscos)
+- [docs/PLANO_DE_SPRINTS_MVP_NOW.md](docs/PLANO_DE_SPRINTS_MVP_NOW.md) - Sprint plan atualizado com issues
+
+---
+
 ## 🚀 Sprint 1 - Task Specification Complete
 
 **US-001: Execução Automática de Ordens com Validação ML**
-**Status:** ✅ DESIGN COMPLETE + TASK SPECS + AÇÃO RÁPIDA | 🚀 SPRINT 1 KICKOFF: 27/02 09:00 BRT
+**Status:** ✅ DESIGN COMPLETE | 🚀 SPRINT 1 KICKOFF: 27/02 09:00 BRT (+ Phase 6 Integration)
 
-> **PRÓXIMOS PASSOS (CRÍTICO):**
-> 1. 🔴 **EMAIL CONFIG TODAY** (17:00 BRT) → Ver [ACAO_RAPIDA_EMAIL_CHECKPOINT.md](ACAO_RAPIDA_EMAIL_CHECKPOINT.md)
-> 2. 🟠 **CHECKPOINT AMANHÃ 09:00** (15 min) → Ver [ACAO_RAPIDA_EMAIL_CHECKPOINT.md](ACAO_RAPIDA_EMAIL_CHECKPOINT.md)
-> 3. 🟡 **GITHUB ISSUES AMANHÃ 09:20** (4 issues) → Ver [ACAO_RAPIDA_EMAIL_CHECKPOINT.md](ACAO_RAPIDA_EMAIL_CHECKPOINT.md)
->
 > **DOCUMENTAÇÃO COMPLETA:**
-> - [REVALIDACAO_ROADMAP_ANALISE_COMPLETA_23FEV.md](REVALIDACAO_ROADMAP_ANALISE_COMPLETA_23FEV.md) - Análise frameworks + 14 TODOs rastreados
-> - [DESENVOLVIMENTO_SPRINT1_TASKS_PRIORIZADAS.md](DESENVOLVIMENTO_SPRINT1_TASKS_PRIORIZADAS.md) - Task specs 4 fases, 8 personas
+> - [REVALIDACAO_ROADMAP_ANALISE_COMPLETA_23FEV.md](REVALIDACAO_ROADMAP_ANALISE_COMPLETA_23FEV.md) - Análise frameworks
+> - [DESENVOLVIMENTO_SPRINT1_TASKS_PRIORIZADAS.md](DESENVOLVIMENTO_SPRINT1_TASKS_PRIORIZADAS.md) - Task specs 8 personas
 > - [EXECUTA_SOLICITA_TASK_ANALISE_23FEV.md](EXECUTA_SOLICITA_TASK_ANALISE_23FEV.md) - Auto-descoberta framework
-> - [INDICE_SPRINT1_DOCUMENTATION.md](INDICE_SPRINT1_DOCUMENTATION.md) - Guia navegação por persona
-> - [RESUMO_EXECUTIVO_SPRINT1_DESENVOLVIMENTO.md](RESUMO_EXECUTIVO_SPRINT1_DESENVOLVIMENTO.md) - Executive summary
+> - [INDICE_SPRINT1_DOCUMENTATION.md](INDICE_SPRINT1_DOCUMENTATION.md) - Guia navegação
 
 ### Agentes Autônomos - Entrega (20/02 18:00)
 

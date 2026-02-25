@@ -39,6 +39,7 @@ Name: [Eng Sr / ML Expert / QA Lead]
 ```
 
 **EXEMPLO REAL (Eng Sr em 27/02 15:00):**
+
 ```
 Name: Eng Sr
 
@@ -150,15 +151,15 @@ SPRINT METRICS:
 
 1. ACKNOWLEDGE
    ✅ Adicionado ao tracking board
-   
+  
 2. ROOT CAUSE
    - Call CTO (15:35)
    - Descoberta: Firewall bloqueando porta MT5
-   
+  
 3. MITIGAÇÃO  
    - Option: Use mock MT5 temporário (30 min impl)
    - Continuar BDI com dados históricos
-   
+  
 4. RESOLUTION
    - Mock MT5 pronto (16:00)
    - BDI rodando normal
@@ -213,27 +214,27 @@ SPRINT METRICS:
 
 ```
 15:00 - Product Owner opens meeting
-PO: "Sprint 2 kickoff official! Objective: Complete BDI + Backtest before 01/03. 
+PO: "Sprint 2 kickoff official! Objective: Complete BDI + Backtest before 01/03.
      Any blockers preventing start?"
        Eng Sr: "No blockers" ✅
        ML Expert: "No blockers" ✅
 
 15:01 - Eng Sr (3 min)
-Eng Sr: "✅ Completei setup environment + code review da arquitetura. 
-        🎯 Vou começar BDI Integration agora (10:00-17:00), expecting 5/5 
+Eng Sr: "✅ Completei setup environment + code review da arquitetura.
+        🎯 Vou começar BDI Integration agora (10:00-17:00), expecting 5/5
         tests by EOD. 🚨 Nenhum blocker."
 
 15:04 - ML Expert (3 min)
-ML Expert: "✅ Completei validação de dados históricos e feature list. 
-          🎯 Vou começar data loading agora (10:30-12:30), planning 
+ML Expert: "✅ Completei validação de dados históricos e feature list.
+          🎯 Vou começar data loading agora (10:30-12:30), planning
           backtest_optimized_results.json by EOD. 🚨 Nenhum blocker."
 
 15:07 - QA Lead (2 min)
-QA: "✅ Validated test fixtures. 🎯 Vou estar ready para rodar qualquer 
+QA: "✅ Validated test fixtures. 🎯 Vou estar ready para rodar qualquer
      test assim que código ficar pronto. 🚨 Clean slate, ready to roll."
 
 15:09 - Product Owner (1 min)
-PO: "Excelente. Team synchronized. Decisions? Questions? [Silence]. 
+PO: "Excelente. Team synchronized. Decisions? Questions? [Silence].
      Próximo standup amanhã 15:00. Let's go! 💪"
 
 15:10 - Meeting encerrado

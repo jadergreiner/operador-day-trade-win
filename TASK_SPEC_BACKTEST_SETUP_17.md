@@ -235,6 +235,7 @@ RESULTADO ESPERADO:
 ### **FASE 1: Setup (27/02 10:00-10:30 - 30min)**
 
 **Passo 1.1: MT5 Connection**
+
 ```python
 # File: scripts/setup_mt5_connection.py
 
@@ -252,6 +253,7 @@ print(f"Connected to: {adapter.get_account_info()}")
 ```
 
 **Passo 1.2: Environment Setup**
+
 ```bash
 # Setup ML environment
 python -m venv venv_ml
@@ -265,6 +267,7 @@ python -c "import pandas, numpy, sklearn; print('ML libs OK')"
 ```
 
 **Passo 1.3: Data Source Validation**
+
 ```python
 # Validar que consegue acessar dados
 adapter = MT5Adapter()
@@ -278,6 +281,7 @@ print(f"Loaded {len(candles)} candles")
 ### **FASE 2: Data Loading & Features (27/02 10:30-11:45 - 1h 15min)**
 
 **Passo 2.1: Load Dados Históricos**
+
 ```python
 # File: src/ml/data_loader.py
 
@@ -307,6 +311,7 @@ print(f"Loaded {len(df)} candles")
 ```
 
 **Passo 2.2: Feature Engineering**
+
 ```python
 # File: src/ml/feature_engineer.py
 
@@ -392,6 +397,7 @@ print(f"Engineered {len(features_df.columns)} features")
 ### **FASE 3: Detector Execution (27/02 11:45-12:30 - 45min)**
 
 **Passo 3.1: Run Detector**
+
 ```python
 # File: scripts/run_backtest_detector.py
 
@@ -448,6 +454,7 @@ print(f"✅ Saved {len(results)} alerts to backtest_optimized_results.json")
 ### **FASE 4: Metrics & Tests (27/02 12:30-13:30)**
 
 **Teste #1: MT5 Connection**
+
 ```python
 def test_mt5_data_connection():
     loader = DataLoader(days=60)
@@ -460,6 +467,7 @@ def test_mt5_data_connection():
 ```
 
 **Teste #2: Dataset Loading**
+
 ```python
 def test_dataset_loading():
     loader = DataLoader(days=60)
@@ -471,6 +479,7 @@ def test_dataset_loading():
 ```
 
 **Teste #3: Feature Engineering**
+
 ```python
 def test_feature_engineering():
     loader = DataLoader(days=60)
@@ -485,6 +494,7 @@ def test_feature_engineering():
 ```
 
 **Test #4: Detector Execution**
+
 ```python
 def test_detector_execution():
     # ... load data, engineer features ...
@@ -499,6 +509,7 @@ def test_detector_execution():
 ```
 
 **Test #5: Metrics Calculation**
+
 ```python
 def test_metrics_calculation():
     # Load backtest_optimized_results.json
