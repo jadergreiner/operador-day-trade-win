@@ -17,6 +17,7 @@
 - Objectivo: Completar BDI Integration + Backtesting antes 01/03 decision
 
 ✅ **Estrutura da Reunião**
+
 ```
 09:00-09:05: Abertura
 09:05-09:25: Alocção e Confirmações
@@ -226,6 +227,7 @@ Timeline Esperado:
 ### **Decisão GO/NO-GO**
 
 **If TODOS checklist PASS:**
+
 ```
 🟢 GO - Sprint 2 Official Kickoff APROVADO
 ├─ 10:00: Eng Sr + ML Expert começam trabalho paralelo
@@ -234,6 +236,7 @@ Timeline Esperado:
 ```
 
 **If ALGUM checklist FAIL:**
+
 ```
 🔴 NO-GO - Adiar kickoff até resolver
 ├─ Resolver bloqueadores (máx 2h)
@@ -278,9 +281,10 @@ Timeline Esperado:
 - **Duração:** 15 minutos
 - **Participantes:** Eng Sr, ML Expert, QA Lead, Product Owner
 - **Format:**
+  
   ```
   Cada pessoa (3-5 min):
-  ✅ O que completei ontem?
+✅ O que completei ontem?
   🎯 O que planeio fazer hoje?
   🚨 Algum bloqueador?
   ```
