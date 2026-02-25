@@ -250,7 +250,7 @@ python -m src.interfaces.cli.quantum_operator_cli
 
 ## 🚀 Sprint 2 - Phase 6 Integration (24/02 iniciado ✅)
 
-**Phase 6: Integration Tasks - BDI + WebSocket + Email + Staging**  
+**Phase 6: Integration Tasks - BDI + WebSocket + Email + Staging**
 **Status:** ✅ PRONTO PARA KICKOFF | 🚀 SPRINT 2 OFFICIAL KICKOFF: 27/02 09:00 BRT
 
 ### **Issues Criadas (4/4)** ✅
@@ -289,6 +289,10 @@ python -m src.interfaces.cli.quantum_operator_cli
 - [DAILY_STANDUP_CONFIG_SPRINT2.md](DAILY_STANDUP_CONFIG_SPRINT2.md) - Daily standup 15:00 BRT
 
 **Rastreamento:**
+- [PRIORIDADE_PROXIMA_TASK_24FEV.md](PRIORIDADE_PROXIMA_TASK_24FEV.md) - 🎯 **PRÓXIMA AÇÃO IMEDIATA** (4 seções: Status, Dependências, Risco, TODOs)
+  - **PRÓXIMA TASK:** INTEGRATION-ENG-001 (BDI Integration) - 27/02 10:00 - BLOCKER ABSOLUTO
+  - **TOP 3:** ENG-001 → ML-001 (paralelo) → ENG-002
+  - **SLA Crítico:** Phase 1 Decision 01/03 18:00 (5 dias úteis)
 - [ANALISE_PRIORIZACAO_24FEV.md](ANALISE_PRIORIZACAO_24FEV.md) - Fonte de verdade (status, dependências, riscos)
 - [docs/PLANO_DE_SPRINTS_MVP_NOW.md](docs/PLANO_DE_SPRINTS_MVP_NOW.md) - Sprint plan atualizado com issues
 
