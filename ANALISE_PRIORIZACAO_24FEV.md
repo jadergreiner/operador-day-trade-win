@@ -223,8 +223,9 @@ ETA: 3-4h (02/03 implementar | 03/03 validar)
 
 ## 🎯 SEÇÃO 7: ISSUES PARA CRIAR
 
-### Issue #66: Label backtest_optimized_results (TODO-1)
+### Issue #16 ✅: Label backtest_optimized_results (TODO-1)
 ```
+Link: https://github.com/jadergreiner/operador-day-trade-win/issues/16
 Tipo: Feature
 Persona: ML Expert (Persona 2 - "The Brain")
 Prioridade: 🔴 CRÍTICA
@@ -241,8 +242,9 @@ AC:
   7. Quality gates passaram (7/7 testes green)
 ```
 
-### Issue #67: OrdersExecutor - 3 TODOs
+### Issue #18 ✅: OrdersExecutor - 3 TODOs
 ```
+Link: https://github.com/jadergreiner/operador-day-trade-win/issues/18
 Tipo: Feature
 Persona: Eng Sr (Persona 1)
 Prioridade: 🔴 CRÍTICA
@@ -262,8 +264,9 @@ AC:
   10. Integration tests (10/10 passing)
 ```
 
-### Issue #68: Detector padrões no backtest
+### Issue #17 ✅: Detector padrões no backtest
 ```
+Link: https://github.com/jadergreiner/operador-day-trade-win/issues/17
 Tipo: Feature
 Persona: ML Expert (Persona 2)
 Prioridade: 🟠 ALTA
@@ -278,8 +281,9 @@ AC:
   5. Documentation atualizada
 ```
 
-### Issue #69: Integração detector padrões
+### Issue #19 ✅: Integração detector padrões
 ```
+Link: https://github.com/jadergreiner/operador-day-trade-win/issues/19
 Tipo: Feature
 Persona: Eng Sr (Persona 1)
 Prioridade: 🟠 ALTA
