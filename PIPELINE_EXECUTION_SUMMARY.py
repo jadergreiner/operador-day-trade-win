@@ -14,7 +14,7 @@
 
 1️⃣ TASK EXECUTADA: INTEGRATION-ML-001 (TODO-1)
    └─ Objetivo: Load e label dataset para treinamento ML
-   └─ Owner: ML Expert (Persona 2)  
+   └─ Owner: ML Expert (Persona 2)
    └─ Status: ✅ IMPLEMENTADO + TESTADO + DOCUMENTADO
 
 2️⃣ PIPELINE DE ENTREGA EXECUTADO (21 passos do PIPELINE_TASKS.MD):
