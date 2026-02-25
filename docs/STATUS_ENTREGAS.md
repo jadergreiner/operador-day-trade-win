@@ -1,9 +1,9 @@
-# 🟢 STATUS DAS ENTREGAS — Fonte de Verdade (v1.1.0)
+# 🟢 STATUS DAS ENTREGAS — Fonte de Verdade (v1.2.0)
 
-**Última Sincronização:** 2026-02-24T23:59:59Z (🚀 GO-LIVE EXECUTADO - SISTEMA EM PRODUÇÃO REAL!)
-**Responsável pela Sincronia:** [Doc Advocate](BOARD_MULTIDISCIPLINAR.json)
-**Status Geral:** 🟢 **Sprint 2-5: 100% COMPLETO** | ✅ **Gate 1 PASSOU** | ✅ **Gate 2 PASSOU** | ✅ **FASE 1-4 APPROVED** | ✅ **FASE 1 COMPLETA** | ✅ **FASE 2 COMPLETA** | ✅ **FASE 3 COMPLETA** | 🚀 **FASE 4 COMPLETA** | 🎯 **Phase 1 Validation: 24/02-01/03 (ACTIVE)**
-**Protocolo:** [SYNC] Obrigatório | **96/96 AC PASSED** | **6/6 Stakeholders Approved** | **Live Trading Activated**
+**Última Sincronização:** Atualizado após Pipeline Deliberação (25/02)
+**Responsável pela Sincronia:** [Doc Advocate](BOARD_MULTIDISCIPLINAR.json) + Coordenadora de Governança
+**Status Geral:** 🟢 **FASE 1-4: 100% COMPLETO** | 🎯 **Phase 1 Validation: ATIVO** | 📋 **PRÓXIMA TASK: INTEGRATION-ENG-001 (AUTORIZADA)** | ✅ **Pipeline Deliberação: COMPLETO**
+**Protocolo:** [SYNC] Obrigatório | **96/96 AC PASSED** | **5/5 Personas Unânimes** | **Live Trading Activated**
 
 ---
 
@@ -21,7 +21,31 @@
 
 ---
 
-## 🟠 PRÓXIMO MILESTONE: FASE 2 - VALIDAÇÕES (27/02-05/03)
+## � PRÓXIMA TASK AUTORIZADA: INTEGRATION-ENG-001 (BDI Integration)
+
+**Status:** ✅ APROVADA POR PIPELINE DELIBERAÇÃO (5/5 unânime)
+
+**Documentos de Referência:**
+- [PIPELINE_DELIBERACAO_24FEV.md](../PIPELINE_DELIBERACAO_24FEV.md) — Atas oficiais com votação
+- [PREPARACAO_EXECUCAO_ENG001_24FEV.md](../PREPARACAO_EXECUCAO_ENG001_24FEV.md) — Ambiente + código skeleton
+- [RESUMO_EXECUTIVO_PIPELINE_24FEV_COMPLETO.md](../RESUMO_EXECUTIVO_PIPELINE_24FEV_COMPLETO.md) — Resumo com prioridades
+
+**AC (7 Critérios):** 
+1. Dataset loading (1.000+ records, no NaN)
+2. VolumeSpike detector + tests
+3. VolatilityBand detector + tests
+4. MeanReversion detector + tests
+5. Parallel execution (< 100ms P95)
+6. Signal format validation (5 fields)
+7. OrdersExecutor E2E integration
+
+**Squad:** Eng Sr (Lead) + QA Automation + Doc Advocate + Arquiteto  
+**Prioridade:** 🔴 CRÍTICA (blocker absoluto)  
+**Impacto:** Desbloqueia ENG-002, ENG-003, ENG-004 (caminho crítico, 8-12h)
+
+---
+
+## 🟠 PRÓXIMO MILESTONE: Integration Tasks (Phase 6)
 
 ### Visão Geral - TODOS STEPS EXECUTADOS ✅
 | Componente | Descrição | Timeline | Status |

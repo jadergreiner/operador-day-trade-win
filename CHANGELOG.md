@@ -1,5 +1,26 @@
 # CHANGELOG - Operador Quântico
 
+## [v1.2.1] - Pipeline Deliberação & INTEGRATION-ENG-001 Autorizado
+
+### 🎯 Pipeline de Deliberação de Tasks Completado
+
+**Status:** ✅ COMPLETO (25/02)
+
+- ✅ 21 passos do pipeline executados com sucesso
+- ✅ Board multidisciplinar: 17 membros, 5 personas críticas
+- ✅ Próxima task identificada: INTEGRATION-ENG-001 (BDI Integration)
+- ✅ Votação: 5/5 unânime (Eng Sr + PO + Head Doc + Arquiteto + Coordenadora)
+- ✅ Documentação: Priorização clara, pronta para execução
+
+**Documentos Criados:**
+1. PIPELINE_DELIBERACAO_24FEV.md — Atas e deliberação oficial
+2. PREPARACAO_EXECUCAO_ENG001_24FEV.md — Ambiente técnico + código skeleton
+3. RESUMO_EXECUTIVO_PIPELINE_24FEV_COMPLETO.md — Resumo executivo
+
+**Commit:** 3c15044 - docs: Pipeline de deliberacao INTEGRATION-ENG-001
+
+---
+
 ## [v1.2.0] - 2026-02-24 (Sprint 2 Milestone)
 
 ### 🚀 S2-5: Probabilidade T+60 (INICIADO - Kickoff 27/02/2026)
