@@ -17,7 +17,7 @@
 ### Tarefas de Integração (Phase 6)
 | ID | Tarefa | Owner | Status | Prioridade | ETA |
 |----|--------|-------|--------|-----------|-----|
-| INTEGRATION-ENG-001 | BDI Integration | Eng Sr | ⏳ PRONTA | 🔴 CRÍTICA | 27-28/02 (3-4h) |
+| INTEGRATION-ENG-001 | BDI Integration | Eng Sr | ✅ COMPLETE | 🔴 CRÍTICA | 24/02 ✅ |
 | INTEGRATION-ML-001 | Backtesting Setup | ML Expert | ⏳ PRONTA | 🔴 CRÍTICA | 27-28/02 (2-3h) |
 | INTEGRATION-ENG-002 | WebSocket Server | Eng Sr | ⏳ PRONTA | 🔴 CRÍTICA | 01-02/03 (2-3h) |
 | INTEGRATION-ML-002 | Backtest Validation | ML Expert | ⏳ PRONTA | 🔴 CRÍTICA | 02-03/03 (2-3h) |
