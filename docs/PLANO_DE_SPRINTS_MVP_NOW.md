@@ -40,18 +40,28 @@
 
 ## 📅 Sprint 2 — Inteligência e Visibilidade (ATUAL 🔵)
 
-**Duração:** 2 semanas
+**Duração:** 2 semanas (27/02-13/03)
+**Kickoff:** 27/02 09:00 BRT
 **Objetivo:** Dashboard real-time e expansão lógica do modelo
+
+### Bloqueadores Phase 6 (Integration Tasks - 27/02-07/03)
+
+| ID | Task | Owner | Estimativa | Status | Issue |
+|----|------|-------|-----------|--------|-------|
+| ENG-001 | BDI Integration | Eng Sr | 3-4h | ⏳ INICIADA | #66 |
+| ML-001 | Backtesting Setup | ML Expert | 2-3h | ⏳ INICIADA | #67 |
+| ENG-002 | WebSocket Server | Eng Sr | 2-3h | ⏳ QUEUED | #68 |
+| ML-002 | Backtest Validation | ML Expert | 2-3h | ⏳ QUEUED | #69 |
 
 ### Backlog Priorizado (MoSCoW)
 
 #### MUST (Críticas)
 
-| ID | Task | Owner | Estimativa | Status | Deadline |
-|----|------|-------|-----------|--------|----------|
-| S2-2 | Calibrador ATR Dinâmico | ML | 8h | ⏳ PENDING | P1 |
-| S2-3 | Confluência SMC (M1/M5) | Dev | 10h | ⏳ PENDING | P1 |
-| S2-4 | Integração Phicube (Mimas) | ML | 6h | ⏳ PENDING | P1 |
+| ID | Task | Owner | Estimativa | Status | Issue | Deadline |
+|----|------|-------|-----------|--------|-------|----------|
+| S2-2 | Calibrador ATR Dinâmico | ML | 8h | ⏳ PENDING | TBD | 05/03 |
+| S2-3 | Confluência SMC (M1/M5) | Dev | 10h | ⏳ PENDING | TBD | 05/03 |
+| S2-4 | Integração Phicube (Mimas) | ML | 6h | ⏳ PENDING | TBD | 05/03 |
 
 #### SHOULD (Altas)
 
