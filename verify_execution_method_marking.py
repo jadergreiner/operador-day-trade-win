@@ -68,7 +68,7 @@ def verify_execution_method_marking() -> bool:
 
         cutoff_time = datetime.now() - timedelta(days=1)
         cursor.execute("""
-            SELECT 
+            SELECT
                 id,
                 trade_id,
                 symbol,

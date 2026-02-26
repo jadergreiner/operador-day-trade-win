@@ -1,8 +1,8 @@
 # 🏷️ Implementação: Marca de Diferenciação de Ordens
 
-**Data**: 26/02/2026  
-**Status**: ✅ COMPLETO  
-**Commit**: 645dcd1  
+**Data**: 26/02/2026
+**Status**: ✅ COMPLETO
+**Commit**: 645dcd1
 
 ---
 
@@ -43,23 +43,23 @@ class Order:
 ```python
 def execute_entry(self, opp: Opportunity) -> Optional[str]:
     """Executa entrada no MT5. Retorna ticket ou None."""
-    
+
     # ✅ VALIDAÇÃO OBRIGATÓRIA
     if not opp.stop_loss or opp.stop_loss <= Decimal("0"):
         logger.error(f"ERRO: stop_loss inválido {opp.stop_loss}")
         return None
-    
+
     if not opp.take_profit or opp.take_profit <= Decimal("0"):
         logger.error(f"ERRO: take_profit inválido {opp.take_profit}")
         return None
-    
+
     order = Order(
         # ... campos ...
         execution_method="automated",  # ← MARCA AUTOMÁTICA
     )
 ```
 
-**Impacto**: 
+**Impacto**:
 - Oportunidades inválidas são rejeitadas **ANTES** de criar a ordem
 - Todas as ordens automáticas recebem a marca `execution_method="automated"`
 - Sistema não cria ordens sem proteção (SL/TP)
@@ -74,7 +74,7 @@ class TradeModel(Base):
     execution_method = Column(String(20), default="manual", nullable=False)
 ```
 
-**Impacto**: 
+**Impacto**:
 - Todas as trades têm registro de como foram criadas
 - Default é "manual" para compatibilidade com dados históricos
 - Índice opcional para query rápida
@@ -103,7 +103,7 @@ cursor.execute("""
 """, (..., "automated", ...))
 ```
 
-**Impacto**: 
+**Impacto**:
 - Trades sincronizadas do MT5 são marcadas como "automated"
 - Manutenção de histórico consistente
 
@@ -138,7 +138,7 @@ Quando o sistema `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` rodar novamente:
 
 ### Todas as ordens automáticas:
 ```sql
-SELECT * FROM trades 
+SELECT * FROM trades
 WHERE execution_method = 'automated'
 ORDER BY entry_time DESC;
 ```
@@ -147,15 +147,15 @@ ORDER BY entry_time DESC;
 ```sql
 SELECT symbol, side, entry_price, stop_loss, take_profit, profit_loss
 FROM trades
-WHERE execution_method = 'automated' 
-  AND stop_loss IS NOT NULL 
+WHERE execution_method = 'automated'
+  AND stop_loss IS NOT NULL
   AND take_profit IS NOT NULL
 ORDER BY entry_time DESC;
 ```
 
 ### Comparação Manual vs Automático:
 ```sql
-SELECT 
+SELECT
     execution_method,
     COUNT(*) as total,
     ROUND(AVG(profit_loss), 2) as pnl_medio,

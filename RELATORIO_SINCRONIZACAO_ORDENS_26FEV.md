@@ -111,7 +111,7 @@ Depois (Corrigido):
 ### Dados Atualizados
 ```sql
 UPDATE trades
-SET 
+SET
   status = 'CLOSED',
   exit_price = 194130,
   exit_time = '2026-02-26T18:21:23',

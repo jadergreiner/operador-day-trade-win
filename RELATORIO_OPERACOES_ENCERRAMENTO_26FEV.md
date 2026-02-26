@@ -1,8 +1,8 @@
 # 📊 Relatório de Operações - Encerramento Manual WIN 26/02/2026
 
-**Data**: 26 de fevereiro de 2026  
-**Horário de Encerramento**: 18:22:23  
-**Ativo**: WINFUT / WINJ26  
+**Data**: 26 de fevereiro de 2026
+**Horário de Encerramento**: 18:22:23
+**Ativo**: WINFUT / WINJ26
 **Status**: ✅ Encerramento Confirmado em Banco de Dados
 
 ---
@@ -146,6 +146,6 @@ Compliance:              ✅ CVM/B3 - Auditado
 
 ---
 
-**Relatório Gerado**: 26/02/2026 18:22:23  
-**Status**: ✅ Validado em Banco de Dados  
+**Relatório Gerado**: 26/02/2026 18:22:23
+**Status**: ✅ Validado em Banco de Dados
 **Compliance**: CVM/B3 Conforme

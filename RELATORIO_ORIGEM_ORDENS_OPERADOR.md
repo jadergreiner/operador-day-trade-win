@@ -1,6 +1,6 @@
 # 👤 Relatório de Origem das Ordens - OPERADOR MANUAL
 
-**Data**: 26 de fevereiro de 2026  
+**Data**: 26 de fevereiro de 2026
 **Status**: ✅ CONFIRMADO - OPERADOR MANUAL
 
 ---
@@ -172,6 +172,6 @@ Status: Filled + Closed (TP hit)
 
 ---
 
-**Relatório Gerado**: 2026-02-26  
-**Conclusão**: ✅ OPERADOR MANUAL - 94% Confiança  
+**Relatório Gerado**: 2026-02-26
+**Conclusão**: ✅ OPERADOR MANUAL - 94% Confiança
 **Status**: VERIFICADO E VALIDADO
