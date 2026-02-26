@@ -1,5 +1,77 @@
 # CHANGELOG - Operador Quântico
 
+## [v1.2.4] - 2026-02-25 TASK #3 (INTEGRATION-ML-002) Deliberação + Plano Execução
+
+### ✅ TASK #3: INTEGRATION-ML-002 - Backtest Validation Pipeline Deliberação Completa
+
+**Status:** 🟢 **PIPELINE DELIBERAÇÃO + PLANO EXECUÇÃO PUBLICADO** (Commit 818abce)
+
+**Decisão:** ✅ Unânime (8/8 personas aprovaram)
+
+**Timestamp:** 25/02/2026 23:58 UTC
+
+**Deliverables Publicados:**
+- ✅ [RESUMO_PIPELINE_TASK3_DELIBERACAO_25FEV.md](RESUMO_PIPELINE_TASK3_DELIBERACAO_25FEV.md)
+- ✅ [PLANO_EXECUCAO_TASK3_SQUAD_PARALELA.md](PLANO_EXECUCAO_TASK3_SQUAD_PARALELA.md)
+- ✅ [ESPECIFICACAO_TASK3_ML002_BACKTEST_VALIDATION.md](ESPECIFICACAO_TASK3_ML002_BACKTEST_VALIDATION.md)
+- ✅ [docs/STATUS_ENTREGAS.md](docs/STATUS_ENTREGAS.md) — Task "EM DESENVOLVIMENTO"
+
+**Pipeline Deliberação (Passos 1-8) - CONCLUÍDO:**
+1. ✅ Board multidisciplinar carregado (17 profissionais, 4 críticos)
+2. ✅ TASK #3 priorizada (Gate 2 decision key para capital escalation)
+3. ✅ Head Doc & Standards validou especificação (7 AC + 7 tests)
+4. ✅ Product Owner confirmou valor crítico (R$ 255-430k)
+5. ✅ Decisão UNÂNIME (8/8 personas)
+6. ✅ Coordenadora registrou deliberação em docs
+7. ✅ Arquiteto validou arquitetura (sem gaps)
+8. ✅ Squad alocada (ML Expert + QA + DocAdvocate)
+
+**Squad Alocação:**
+- **ML Expert (ID 4)** — Lead: Grid search 8 thresholds
+- **QA Automation (ID 12)** — Tests: TDD + coverage > 90%
+- **Doc Advocate (ID 8)** — Docs: Sincronização + commit prep
+- **Arquiteto (ID 6)** — Backup: Code review
+- **DevOps (ID 7)** — Backup: Infra support
+
+**AC Specification (7 Acceptance Criteria):**
+- [ ] 1. Grid search executado (8 thresholds 1.0-4.5)
+- [ ] 2. Métricas calculadas (F1, Precision, Recall, ROC-AUC, Win Rate)
+- [ ] 3. **F1 >= 0.65** (🔴 BLOCKER Gate 2)
+- [ ] 4. **Win Rate >= 60%** (🔴 BLOCKER Gate 2)
+- [ ] 5. Threshold ótimo identificado e salvo
+- [ ] 6. Relatório JSON gerado (backtest_final_metrics.json)
+- [ ] 7. Unit tests > 90% coverage
+
+**Timeline Paralelo (4 Etapas - Duração Total: 2-3h):**
+- **ETAPA 1 (15 min):** Development setup
+- **ETAPA 2 (80 min):** Core implementation paralelo
+- **ETAPA 3 (45 min):** Validação & testing
+- **ETAPA 4 (30 min):** Finalização & commit
+
+**Desbloqueia:**
+- ✅ INTEGRATION-ML-003 (Performance Benchmarking)
+- ✅ INTEGRATION-ML-004 (Final Validation)
+- ✅ INTEGRATION-ENG-003 (Email Configuration)
+- ✅ INTEGRATION-ENG-004 (Staging Deployment)
+- ✅ Sprint 2 inteira (40+ horas liberadas)
+- ✅ Phase 2 capital escalation (R$ 50k → R$ 100k)
+
+**Gate 2 Decision Point:**
+```
+IF (AC-3 ✅) AND (AC-4 ✅):
+  └─ GO → Phase 2 capital escalation aprovada
+
+ELSE:
+  └─ NO-GO → Iterate on features
+```
+
+**Próximos Passos (Passos 9-12):**
+- ⏳ Squad iniciará desenvolvimento em paralelo
+- ⏳ Duração: ~2-3 horas até Gate 2 decision
+- ⏳ Resultado: Desbloqueia 4+ tasks + Sprint 2
+
+---
+
 ## [v1.2.3] - 2026-02-25 INTEGRATION-ML-001 Dataset Loading Complete
 
 ### ✨ Dataset Loading with Automatic Labeling ✅ DELIVERED
