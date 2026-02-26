@@ -1,10 +1,10 @@
 # 🚀 PRIORITY 5: ATI-2 OAuth Authentication Endpoints
 
-**Owner:** Dev-Backend-1  
-**Assigned:** Eng Sr to assign  
-**Status:** ACTIVE - IN EXECUTION  
-**Start Time:** 2026-02-27 00:00:00Z  
-**Estimated Duration:** 4-6 hours (parallel with PRIORITY 4)  
+**Owner:** Dev-Backend-1
+**Assigned:** Eng Sr to assign
+**Status:** ACTIVE - IN EXECUTION
+**Start Time:** 2026-02-27 00:00:00Z
+**Estimated Duration:** 4-6 hours (parallel with PRIORITY 4)
 **Target Completion:** When 8/8 AC tests passing + rate limiting verified
 
 ---
@@ -12,8 +12,8 @@
 ## 📋 TASK SHEET
 
 ### Subtask 5.1: JWTManager + PasswordManager Setup
-**Duration:** 1 hour  
-**Dependencies:** None  
+**Duration:** 1 hour
+**Dependencies:** None
 
 ```python
 # Location: src/application/oauth_auth_ati2.py
@@ -39,8 +39,8 @@
 ---
 
 ### Subtask 5.2: Login Endpoint Implementation
-**Duration:** 1.5 hours  
-**Dependencies:** 5.1 complete  
+**Duration:** 1.5 hours
+**Dependencies:** 5.1 complete
 
 ```python
 # Required:
@@ -67,8 +67,8 @@
 ---
 
 ### Subtask 5.3: Token Refresh Endpoint
-**Duration:** 1 hour  
-**Dependencies:** 5.2 complete  
+**Duration:** 1 hour
+**Dependencies:** 5.2 complete
 
 ```python
 # Required:
@@ -93,8 +93,8 @@
 ---
 
 ### Subtask 5.4: Integration + Security Testing
-**Duration:** 1.5 hours  
-**Dependencies:** 5.3 complete  
+**Duration:** 1.5 hours
+**Dependencies:** 5.3 complete
 
 ```python
 # Required:
@@ -190,7 +190,7 @@ If you get stuck:
 
 ## ✅ NEXT STEP
 
-**Type when complete:** 
+**Type when complete:**
 ```
 "PRIORITY 5 DONE: OAuth endpoints ready + 8/8 AC tests passing + rate limiting verified"
 ```
@@ -199,6 +199,6 @@ Then: Ready for PRIORITY 6 (RabbitMQ) integration
 
 ---
 
-**Status:** 🟢 **ACTIVE**  
-**Owner:** Dev-Backend-1  
+**Status:** 🟢 **ACTIVE**
+**Owner:** Dev-Backend-1
 **Next Review:** After Subtask 5.2 (2h 30m)

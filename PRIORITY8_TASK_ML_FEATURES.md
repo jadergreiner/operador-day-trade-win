@@ -1,10 +1,10 @@
 # 🚀 PRIORITY 8: ATI-5 ML Feature Pipeline + Baseline Model
 
-**Owner:** ML Expert + Data Scientist  
-**Assigned:** ML Expert to lead  
-**Status:** ACTIVE - IN EXECUTION  
-**Start Time:** 2026-02-27 00:00:00Z  
-**Estimated Duration:** 8-10 hours (parallel with PRIORITY 4+5)  
+**Owner:** ML Expert + Data Scientist
+**Assigned:** ML Expert to lead
+**Status:** ACTIVE - IN EXECUTION
+**Start Time:** 2026-02-27 00:00:00Z
+**Estimated Duration:** 8-10 hours (parallel with PRIORITY 4+5)
 **Target Completion:** When 8/8 AC tests passing + F1 > 0.65 + SHAP analysis complete
 
 ---
@@ -12,8 +12,8 @@
 ## 📋 TASK SHEET
 
 ### Subtask 8.1: Dataset Loading + Preprocessing
-**Duration:** 2 hours  
-**Dependencies:** None  
+**Duration:** 2 hours
+**Dependencies:** None
 
 ```python
 # Location: src/ml/feature_pipeline_ati5.py
@@ -39,8 +39,8 @@
 ---
 
 ### Subtask 8.2: Feature Engineering (24 Features)
-**Duration:** 3 hours  
-**Dependencies:** 8.1 complete  
+**Duration:** 3 hours
+**Dependencies:** 8.1 complete
 
 ```python
 # Required Groups:
@@ -92,8 +92,8 @@
 ---
 
 ### Subtask 8.3: Feature Scaling + Data Preparation
-**Duration:** 1.5 hours  
-**Dependencies:** 8.2 complete  
+**Duration:** 1.5 hours
+**Dependencies:** 8.2 complete
 
 ```python
 # Required:
@@ -117,8 +117,8 @@
 ---
 
 ### Subtask 8.4: XGBoost Grid Search + Training
-**Duration:** 2.5 hours  
-**Dependencies:** 8.3 complete  
+**Duration:** 2.5 hours
+**Dependencies:** 8.3 complete
 
 ```python
 # Grid Search Parameters (8 configurations):
@@ -152,8 +152,8 @@ Config 8: depth=3, lr=0.2, trees=100
 ---
 
 ### Subtask 8.5: SHAP Analysis + Model Interpretation
-**Duration:** 1 hour  
-**Dependencies:** 8.4 complete  
+**Duration:** 1 hour
+**Dependencies:** 8.4 complete
 
 ```python
 # Required:
@@ -256,7 +256,7 @@ If you get stuck:
 
 ## ✅ NEXT STEP
 
-**Type when complete:** 
+**Type when complete:**
 ```
 "PRIORITY 8 DONE: ML pipeline ready + 8/8 AC tests passing + F1 > 0.65 + SHAP analysis complete"
 ```
@@ -265,6 +265,6 @@ Then: Ready for PRIORITY 9 (Drift Detection) - which depends on this
 
 ---
 
-**Status:** 🟢 **ACTIVE**  
-**Owner:** ML Expert + Data Scientist  
+**Status:** 🟢 **ACTIVE**
+**Owner:** ML Expert + Data Scientist
 **Next Review:** After Subtask 8.2 (5h 00m)
