@@ -162,113 +162,116 @@ Resultado GATE 2:
 
 ---
 
+## � FASES DE EXECUÇÃO (PARALELA)
+
+### FASE 1 - RAMP UP
+
+**SQUAD 1 (TRACK 1)**
+- Design Review ATI-1,2,3,4
+- Architecture definition
+- RabbitMQ + Docker setup
+- TDD test fixtures preparation
+- Team kickoff + confirmations
+
+**SQUAD 2 (TRACK 2)**
+- Dataset loading + validation
+- Feature engineering planning
+- Correlation study preparation
+- SHAP methodology definition
+- Team kickoff + confirmations
+
+**SQUAD 3 (TRACK 3)**
+- Status: Bloqueado (aguardando GATE 1 GO)
+
+---
+
+### FASE 2 - DESENVOLVIMENTO
+
+**SQUAD 1 (TRACK 1)**
+- Dev ATI-1 (Dashboard)
+- Dev ATI-2 (OAuth)
+- Dev ATI-3 (RabbitMQ Queue)
+- Dev ATI-4 (WebSocket)
+- Integration tests (30%)
+
+**SQUAD 2 (TRACK 2)**
+- SHAP analysis implementation
+- Correlation matrix computation
+- Waterfall + dependence plots
+- Alert configuration setup
+
+**SQUAD 3 (TRACK 3)**
+- Status: Bloqueado
+
+---
+
+### FASE 3 - ACELERAÇÃO
+
+**SQUAD 1 (TRACK 1)**
+- Dev ATI-8 (Retry Logic)
+- Dev ATI-9 (Position Monitor)
+- Integration tests (70%)
+- Performance validation
+- Code reviews + cleanup
+
+**SQUAD 2 (TRACK 2)**
+- Drift rules configuration
+- Alert integration
+- Monitoring setup
+- Code reviews + finalization
+
+**SQUAD 3 (TRACK 3)**
+- Status: Bloqueado
+
+---
+
+### FASE 4 - FINALIZAÇÃO & GATE 1
+
+**SQUAD 1 (TRACK 1)**
+- Final tests + fixes
+- Documentation completion
+- Deployment preparation
+- Ready for GATE 1 validation
+
+**SQUAD 2 (TRACK 2)**
+- Final tests + tuning
+- Feature rankings finalization
+- Alert threshold tuning
+- Ready for GATE 1 validation
+
+**SQUAD 3 (TRACK 3)**
+- Status: 🎯 GATE 1 DECISION CHECKPOINT
+- Resultado: GO → TRACK 3 inicia | NO-GO → refactor
+
+---
+
+### FASE 5 - TRACK 3 EXECUÇÃO (Após GATE 1 GO)
+
+**SQUAD 3 (TRACK 3)**
+- Backtest 252 dias (full run)
+- Sharpe / Win Rate / Drawdown calc
+- Regime analysis + equity curve
+- Gate 2 validation framework
+- CFO approval workflow
+
+**SQUAD 1 + SQUAD 2**
+- Support role (bug fixes, monitoring)
+
+---
+
+### FASE 6 - GATE 2 DECISION & ACTIVATION (Após TRACK 3 COMPLETO)
+
+**SQUAD 3 (TRACK 3) + CFO + Trader Líder + CEO**
+- 🎯 GATE 2 DECISION CHECKPOINT
+- Métrica: Sharpe ≥ 1.0 ✅
+- Métrica: Win Rate ≥ 59% ✅
+- Métrica: Drawdown ≤ 15% ✅
+- Métrica: Consistency ≤ 30% ✅
+- Resultado: ALL PASS → R$ 100k ativado | ANY FAIL → R$ 50k refactor
+
+---
+
 ## 📅 TIMELINE DE PARALELIZAÇÃO (SEMANAL)
-
-### Week 1 (27 FEV - 05 MAR) - RAMP UP
-```
-SQUAD 1 (TRACK 1)           SQUAD 2 (TRACK 2)
-├─ Design Review ATI-1,2,3  ├─ Dataset loading
-├─ Arch definition (ATI-4)  ├─ Feature engineering
-├─ RabbitMQ + Docker setup  └─ Correlation study
-├─ TDD test fixtures
-└─ Team kickoff 15:00 BRT
-
-SQUAD 3 (TRACK 3)
-└─ Blocked (waiting GATE 1)
-```
-
-### Week 2 (06 MAR - 12 MAR) - DEVELOPMENT
-```
-SQUAD 1 (TRACK 1)                SQUAD 2 (TRACK 2)
-├─ Dev ATI-1 (Dashboard)        ├─ SHAP analysis
-├─ Dev ATI-2 (OAuth)            └─ Waterfall plots
-├─ Dev ATI-3 (Queue)
-├─ Dev ATI-4 (WebSocket)
-└─ Integration tests (30%)
-
-SQUAD 3 (TRACK 3)
-└─ Blocked
-```
-
-### Week 3 (13 MAR - 19 MAR) - ACCELERATION
-```
-SQUAD 1 (TRACK 1)                SQUAD 2 (TRACK 2)
-├─ Dev ATI-8 (Retry)            ├─ Drift rules config
-├─ Dev ATI-9 (Position)         ├─ Alert integration
-├─ Integration tests (70%)       └─ Monitoring setup
-├─ Performance validation
-└─ Code reviews + cleanup
-
-SQUAD 3 (TRACK 3)
-└─ Blocked
-```
-
-### Week 4 (20 MAR - 26 MAR) - FINALIZATION
-```
-SQUAD 1 (TRACK 1)                SQUAD 2 (TRACK 2)
-├─ Final tests + fixes          ├─ Final tests
-├─ Documentation                ├─ Feature rankings
-├─ Deployment prep              └─ Alert tuning
-└─ Ready for GATE 1
-
-SQUAD 3 (TRACK 3)
-└─ Blocked
-```
-
-### Week 5 (27 MAR - 02 APR) - GATE 1 CHECKPOINT
-```
-🎯 GATE 1 DECISION POINT (Monday 27/03 17:00 BRT)
-
-SQUAD 1 + SQUAD 2 + Product Owner + Eng Sr + CFO
-
-Validação:
-├─ TRACK 1: 48 AC all PASSING (8 per ATI: 1,2,3,4,8,9)
-├─ TRACK 2: 16 AC all PASSING (8 per ATI: 5,6)
-├─ Tests: 64+ unit tests ≥98% coverage
-├─ Code reviews: 2+ approvals
-├─ Documentation: Complete + sync
-└─ RESULT: ✅ GO → Start TRACK 3
-             ❌ NO-GO → 3-day refactor cycle
-
-SQUAD 3 (TRACK 3)
-└─ Pending GATE 1 GO decision
-```
-
-### Week 6-7 (03 APR - 16 APR) - TRACK 3 EXECUTION
-```
-(Only if GATE 1 = GO)
-
-SQUAD 3 (TRACK 3)
-├─ Backtest 252 days (full run)
-├─ Sharpe / Win Rate / Drawdown calc
-├─ Regime analysis + equity curve
-├─ Gate 2 validation framework
-└─ CFO approval workflow
-
-SQUAD 1 + SQUAD 2
-└─ Support role (bug fixes, monitoring)
-```
-
-### Week 8 (17 APR - 23 APR) - GATE 2 CHECKPOINT
-```
-🎯 GATE 2 DECISION POINT (MONDAY 17/04 17:00 BRT)
-
-SQUAD 3 + CFO + Trader Líder + Presidentela Operacional
-
-Validação Backtest Results:
-├─ Sharpe Ratio ≥ 1.0 ✅
-├─ Win Rate ≥ 59% ✅
-├─ Drawdown ≤ 15% ✅
-├─ Consistency ≤ 30% ✅
-└─ RESULT: ✅ ALL PASS → Ativa R$ 100k 🚀
-             ❌ ANY FAIL → Continua R$ 50k (3-week refactor)
-
-Capital Activation
-├─ CFO approval signed
-├─ Dashboard deployed
-├─ Monitoring active
-└─ Phase 2 START: Week 9
-```
 
 ---
 
@@ -849,68 +852,105 @@ ATI-10: Gate 2 Decision .............. ⏳ Blocked by GATE 1
 
 ---
 
-## 🚀 PRÓXIMOS PASSOS (IMMEDIATE - 27 FEV 09:00)
+## 🎯 PRÓXIMAS TAREFAS (EM ORDEM DE PRIORIDADE)
 
-### Day 1 - 27 FEV 2026
+### P0 - Críticas (Must-Have)
 
-**09:00 BRT - Team Standup Kick-off**
-```
-├─ Confirmação de squads (11 personas presentes)
-├─ Review dos 12 passos squad_multi.md
-├─ Confirmação timeline + checkpoints
-├─ Q&A e clarificações
-└─ Start development environment setup
-```
+**1. Team Kick-off & Confirmação de Squads**
+- Confirmação de 11 personas designadas
+- Review dos 12 passos squad_multi.md
+- Confirmação timeline + checkpoints imóveis
+- Q&A e clarificações
+- **Responsável:** Coordenadora de Governança
 
-**10:00 BRT - Environment Setup (SQUAD 1 Lead)**
-```
-├─ Docker setup (RabbitMQ, PostgreSQL, Redis)
-├─ Python venv creation
-├─ CI/CD pipeline configuration
-├─ TDD test fixtures
-└─ First ATI-1 branch creation
-```
+**2. Environment Setup (SQUAD 1 Lead)**
+- Docker setup (RabbitMQ, PostgreSQL, Redis)
+- Python venv creation + dependencies
+- CI/CD pipeline configuration
+- TDD test fixtures preparados
+- **Responsável:** Infra DevOps
 
-**14:00 BRT - Design Review Phase 1 (SQUAD 1)**
-```
-├─ Arquiteto + Eng Sr + Dev-Backend
-├─ Review ATI-1, ATI-2 designs
-├─ API specifications finalized
-└─ DB schema approved
-```
+**3. Design Reviews (SQUAD 1 + SQUAD 2)**
+- Review ATI-1, ATI-2, ATI-3, ATI-4 designs
+- Review ATI-5, ATI-6 ML designs
+- API specifications formalizadas
+- DB schema aprovado
+- **Responsável:** Arquiteto de Sistemas + Eng Sr + ML Expert
 
-**15:00 BRT - Daily Standup #1**
-```
-├─ Status SQUAD 1: Setup complete ✅
-├─ Status SQUAD 2: Dataset loading started ✅
-├─ Status SQUAD 3: Blocked (waiting GATE 1)
-└─ Risks: None yet
-```
+**4. Development Starts (All Squads)**
+- SQUAD 1: ATI-1,2,3,4 implementação
+- SQUAD 2: ATI-5,6 implementação
+- SQUAD 3: Bloqueado (aguardando GATE 1)
+- **Responsável:** Eng Sr, ML Expert
 
-**16:00 BRT - Design Review Phase 2 (SQUAD 2)**
-```
-├─ ML Expert + Data Scientist
-├─ Feature engineering plan review
-├─ SHAP analysis methodology
-└─ Drift detection rules finalized
-```
+**5. TDD Test Implementation**
+- SQUAD 1: 48+ unit tests (CASE-THEN-WHEN)
+- SQUAD 2: 16+ unit tests
+- Target coverage: >90%
+- **Responsável:** QA Manager, Test Automation
 
-**18:00 BRT - Commit & Documentation**
-```
-├─ Initial commit: "feat: ENTREGA_PARALELA_SQUAD_MULTI iniciada"
-├─ Files: This document + initial branches
-├─ Push to origin/main
-└─ End of Day 1 summary
-```
+### P1 - Altas (Should-Have)
 
-### Week 1 Full Schedule
-```
-MON 27/02: Team kickoff + environment setup + design reviews
-TUE 28/02: Design refinement + TDD fixture creation
-WED 01/03: Development starts (ATI-1,2,3,4,5,6 first sprint)
-THU 02/03: Code review + unit tests
-FRI 03/03: Integration tests + documentation + weekly commit
-```
+**6. Code Reviews & Integration**
+- 2+ reviewers approval per feature
+- Integration tests entre features
+- Performance validation (P95 <500ms)
+- **Responsável:** Arquiteto de Sistemas
+
+**7. Daily Standups (Recurring)**
+- SQUAD 1, SQUAD 2, SQUAD 3 status
+- Risk discussion + blocker resolution
+- **Responsável:** Coordenadora de Governança(Frequência: Diária
+
+**8. Weekly Documentation Sync**
+- STATUS_ENTREGAS.md (AC progress)
+- CHANGELOG.md (versioning)
+- SYNC_MANIFEST.json (checksums)
+- README.md (timeline visual)
+- **Responsável:** Doc Advocate
+- **Frequência:** Semanalmente
+
+**9. Operador Integração Progressiva**
+- Week 1: OAuth imports
+- Week 2: Dashboard + WebSocket
+- Week 3: RabbitMQ consumer
+- Week 4: ML modules (SHAP, drift)
+- **Responsável:** Dev-Backend Lead
+
+**10. Lint & Code Quality**
+- Python: pycodestyle + pylint + mypy --strict
+- Markdown: pymarkdown (≤80 chars)
+- Commits: pattern validation (sem acentos)
+- UTF-8 encoding: verification
+- **Responsável:** QA Manager
+
+### P2 - Médias (Nice-to-Have)
+
+**11. Weekly Commits & Push**
+- Pattern: "feat: ATI-# status (X/X AC passed)"
+- All UTF-8 encoded
+- Push to origin/main
+- **Responsável:** Coordenadora de Governança
+- **Frequência:** Semanalmente
+
+**12. Risk Management & Escalation**
+- Blocker resolution <24h
+- Risk assessment weekly
+- Escalation if needed
+- **Responsável:** Coordenadora de Governança
+
+### Checkpoints Críticos
+
+**GATE 1 - AC Validation**
+- TRACK 1: 48 AC PASS | TRACK 2: 16 AC PASS
+- Total: 64/64 AC must pass
+- Decision: GO (TRACK 3 inicia) ou NO-GO (3d refactor)
+- **Responsável:** Eng Sr + ML Expert + PO + CFO
+
+**GATE 2 - Capital Activation**
+- Backtest: Sharpe≥1.0 + WR≥59% + DD≤15% + Cons≤30%
+- Decision: ALL PASS (R$ 100k) ou ANY FAIL (R$ 50k refactor)
+- **Responsável:** ML Expert + CFO + CEO
 
 ---
 

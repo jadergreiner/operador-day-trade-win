@@ -205,11 +205,11 @@ Implementado:
 
 ### Passo 5: Validação Operador ✅
 ```
-Checkpoints semanais definidos:
-├─ Week 1: Baseline snapshot
-├─ Week 2-4: Feature integration testing
-├─ Week 5: GATE 1 full validation
-└─ Week 6-8: TRACK 3 integration
+Checkpoints definidos:
+├─ Fase 1: Baseline snapshot
+├─ Fase 2-3: Feature integration testing
+├─ Fase 4: GATE 1 full validation
+└─ Fase 5-6: TRACK 3 integration
 ```
 
 ### Passo 6: Testes Unitários ✅
@@ -223,38 +223,38 @@ Especificados:
 
 ### Passo 7: Documentação ✅
 ```
-Sincronização semanal:
-├─ Terça 18:00 BRT: Doc Advocate updates
-├─ STATUS_ENTREGAS.md atualizado semanalmente
-├─ CHANGELOG.md: Weekly v-bumps
+Sincronização:
+├─ Doc Advocate updates regular
+├─ STATUS_ENTREGAS.md atualizado periodicamente
+├─ CHANGELOG.md: Version bumps
 └─ README.md: Timeline visual updated
 ```
 
 ### Passo 8: Status Updates ✅
 ```
-Ciclo formal (Passos 6-12):
-├─ Week 5: GATE 1 status → GO/NO-GO decision
-├─ Week 8: GATE 2 status → Capital decision
-┣─  Final: STATUS_ENTREGAS v1.2.9 (Phase 2 ready)
+Ciclo formal:
+├─ GATE 1: Status validation → GO/NO-GO decision
+├─ GATE 2: Status validation → Capital decision
+├─ Final: STATUS_ENTREGAS (Phase 2 ready)
 └─ Formal records preserved
 ```
 
 ### Passo 9: Operador Integração ✅
 ```
-Weekly updates:
-├─ INICIAR.BAT importa OAuth (Week 1)
-├─ INICIAR.BAT adiciona Dashboard (Week 2)
-├─ INICIAR.BAT integra Queue (Week 3)
-├─ INICIAR.BAT adiciona ML modules (Week 4)
-├─ INICIAR.BAT GATE 1 validation (Week 5)
-└─ INICIAR.BAT GATE 2 integration (Week 8)
+Integração progressiva:
+├─ Fase 1: OAuth imports
+├─ Fase 2: Dashboard + WebSocket
+├─ Fase 3: RabbitMQ consumer
+├─ Fase 4: ML modules
+├─ Fase 4: GATE 1 validation
+└─ Fase 6: GATE 2 integration
 ```
 
 ### Passo 10: Teste Mínimo ✅
 ```
 Validações:
 ├─ Daily: INICIAR.BAT executa sem erro
-├─ Daily: Dashboard <3s load time
+├─ Daily: Dashboard load <3s
 ├─ Daily: Auth login funciona
 ├─ Daily: Queue test message (no loss)
 ├─ GATE 1: All 8 features operational
@@ -273,8 +273,8 @@ Aplicado:
 ### Passo 12: Commit & Push ✅
 ```
 Git Workflow:
-├─ Commit 7dd772c: Plano paralelo (26/02)
-├─ Weekly commits: Friday 18:00
+├─ Commits: Plano paralelo + weekly updates
+├─ Frequência: Regular (Friday 18:00)
 ├─ Pattern: "feat: ATI-# status (X/X AC passed)"
 ├─ All UTF-8 encoded
 └─ Push to origin/main (GitHub)
@@ -282,9 +282,9 @@ Git Workflow:
 
 ---
 
-## 📊 MÉTRICAS DE SUCESSO ESPERADAS
+## 📊 MÉTRICAS DE SUCESSO
 
-### Code Quality (Week 5 GATE 1)
+### Code Quality (GATE 1)
 ```
 ✅ Type Hints: 100%
 ✅ Test Coverage: ≥98%
@@ -293,72 +293,101 @@ Git Workflow:
 ✅ Lint Score: A (pycodestyle + pylint)
 ```
 
-### Timeline (Week 5 + Week 8)
+### Timeline Gates
 ```
-✅ GATE 1 (27/03 17:00) PASS → TRACK 3 desbloqueado
-✅ GATE 2 (17/04 17:00) PASS → R$ 100k ativado
+✅ GATE 1: TRACK 1 + TRACK 2 = 64 AC PASS → TRACK 3 inicia
+✅ GATE 2: Backtest Sharpe≥1.0 + WR≥59% + DD≤15% + Cons≤30%
 ```
 
-### Team Performance (Ongoing)
+### Team Performance
 ```
-✅ Squad 1 Velocity: 50h/week
-✅ Squad 2 Velocity: 20h/week
-✅ Squad 3 Velocity: 30h/week (após desbloqueio)
-✅ Blocker Resolution: <24h
+✅ Squad 1 Velocity: 50h allocation
+✅ Squad 2 Velocity: 20h allocation
+✅ Squad 3 Velocity: 30h allocation (após desbloqueio)
+✅ Blocker Resolution: <24h target
 ```
 
 ---
 
-## 🚀 PRÓXIMOS PASSOS (27 FEV 09:00)
+## 🎯 PRÓXIMAS TAREFAS (EM ORDEM DE PRIORIDADE)
 
-### Morning Standup - 09:00 BRT
-```
-✅ Confirmação de squads (11 personas presentes)
-✅ Review dos 12 passos squad_multi.md
-✅ Confirmação timeline + checkpoints imóveis
-✅ Q&A e clarificações
-✅ Start development environment setup
-```
+### P0 - Críticas
 
-### Environment Setup - 10:00 BRT (SQUAD 1 Lead)
-```
-✅ Docker setup (RabbitMQ, PostgreSQL, Redis)
-✅ Python venv creation + dependencies
-✅ CI/CD pipeline configuration
-✅ TDD test fixtures + first repository branches
-```
+**1. Team Kick-off & Confirmação de Squads**
+- Confirmação de 11 personas designadas
+- Review dos 12 passos squad_multi.md
+- Confirmação timeline + checkpoints imóveis
+- Q&A e clarificações
 
-### Design Review Phase 1 - 14:00 BRT (SQUAD 1)
-```
-✅ Arquiteto + Eng Sr + Dev-Backend
-✅ Review ATI-1, ATI-2 designs
-✅ API specifications finalized
-✅ DB schema approved
-```
+**2. Environment Setup (SQUAD 1 Lead)**
+- Docker setup (RabbitMQ, PostgreSQL, Redis)
+- Python venv creation + dependencies
+- CI/CD pipeline configuration
+- TDD test fixtures
 
-### Daily Standup #1 - 15:00 BRT
-```
-✅ Status SQUAD 1: Setup ready ✅
-✅ Status SQUAD 2: Dataset loading started ✅
-✅ Status SQUAD 3: Blocked (waiting GATE 1)
-✅ Risks: None yet
-```
+**3. Design Review Phase 1 (SQUAD 1)**
+- Arquiteto + Eng Sr + Dev-Backend
+- Review ATI-1, ATI-2 designs
+- API specifications finalized
+- DB schema approved
 
-### Design Review Phase 2 - 16:00 BRT (SQUAD 2)
-```
-✅ ML Expert + Data Scientist
-✅ Feature engineering plan review
-✅ SHAP analysis methodology
-✅ Drift detection rules finalized
-```
+**4. Design Review Phase 2 (SQUAD 2)**
+- ML Expert + Data Scientist
+- Feature engineering plan review
+- SHAP analysis methodology
+- Drift detection rules finalized
 
-### End of Day Summary - 18:00 BRT
-```
-✅ Documentation + commit
-✅ Weekly sync (every Friday)
-✅ Status updates (STATUS_ENTREGAS.md)
-└─ End of Day 1 summary
-```
+**5. Development Starts (All Squads)**
+- SQUAD 1: Setup ready
+- SQUAD 2: Dataset loading
+- SQUAD 3: Blocked (waiting GATE 1)
+- Risk: None yet
+
+### P1 - Altas
+
+**6. TDD Test Implementation**
+- SQUAD 1: 48+ unit tests
+- SQUAD 2: 16+ unit tests
+- Target coverage: ≥98%
+
+**7. Code Reviews & Integration**
+- 2+ reviewers per feature
+- Integration tests
+- Performance validation (P95 <500ms)
+
+**8. Daily Standups (Recurring)**
+- SQUAD 1, SQUAD 2, SQUAD 3 status
+- Risk discussion
+
+**9. Weekly Documentation Sync**
+- STATUS_ENTREGAS.md updates
+- CHANGELOG.md versioning
+- SYNC_MANIFEST.json checksums
+- README.md timeline
+
+**10. Operador Integração**
+- Week 1: OAuth imports
+- Week 2: Dashboard + WebSocket
+- Week 3: RabbitMQ consumer
+- Week 4: ML modules
+
+### P2 - Médias
+
+**11. Lint & Code Quality**
+- Python: pycodestyle + pylint + mypy --strict
+- Markdown: pymarkdown (≤80 chars)
+- Commit messages: pattern validation
+- UTF-8 encoding: verification
+
+**12. Weekly Commits & Push**
+- Pattern: "feat: ATI-# status (X/X AC passed)"
+- All UTF-8 encoded
+- Push to origin/main
+
+**13. Risk Management**
+- Blocker resolution <24h
+- Risk assessment weekly
+- Escalation if needed
 
 ---
 
