@@ -1,9 +1,9 @@
 # 🚀 EXECUÇÃO DE TODAS AS 10 ATIVIDADES - Sprint 2
 
-**Status:** 🟢 **PLANO DE EXECUÇÃO PARALELO COMPLETO**  
-**Framework:** {{prompts\executa_task.md}} aplicado a cada ATI  
-**Squad:** 11 personas | **356 horas** | **3 tracks paralelos**  
-**Timeline:** 6-8 semanas | **Gates:** 2 imóveis  
+**Status:** 🟢 **PLANO DE EXECUÇÃO PARALELO COMPLETO**
+**Framework:** {{prompts\executa_task.md}} aplicado a cada ATI
+**Squad:** 11 personas | **356 horas** | **3 tracks paralelos**
+**Timeline:** 6-8 semanas | **Gates:** 2 imóveis
 
 ---
 
@@ -22,11 +22,11 @@ Cada atividade segue o framework **executa_task.md** com 4 etapas:
 
 ## 📌 Contexto
 
-**Prioridade:** 🔴 **P0-CRÍTICO**  
-**Lead:** Eng Sr (40h)  
-**Squad:** Dev-Backend-3 (WebSocket), QA Manager (32h), Test Automation (16h)  
-**Duração:** ~4-5 semanas  
-**Valor:** ⭐⭐⭐⭐⭐ Visibilidade 100% das ordens ao operador  
+**Prioridade:** 🔴 **P0-CRÍTICO**
+**Lead:** Eng Sr (40h)
+**Squad:** Dev-Backend-3 (WebSocket), QA Manager (32h), Test Automation (16h)
+**Duração:** ~4-5 semanas
+**Valor:** ⭐⭐⭐⭐⭐ Visibilidade 100% das ordens ao operador
 
 ## 👥 Alocação de Personas
 
@@ -125,7 +125,7 @@ class TestDashboardLoad:
         # Verificar render correto
         # Assert todas ordensvisíveis
         pass
-    
+
     def test_dashboard_empty_state(self):
         # Load 0 ordens
         # Verificar mensagem "Nenhuma ordem"
@@ -136,13 +136,13 @@ class TestWebSocket:
         # Connect ao /ws/orders
         # Verificar handshake
         pass
-    
+
     def test_websocket_update_latency(self):
         # Send 100 updates
         # Medir latência P95
         # Assert <100ms
         pass
-    
+
     def test_websocket_disconnect_reconnect(self):
         # Desconectar
         # Reconectar automático
@@ -155,16 +155,16 @@ class TestFiltering:
         # Filter por WIN$N
         # Verificar resultado
         pass
-    
+
     # ... 4 testes adicionais
-    
+
 class TestExport:
     def test_export_csv(self):
         # Export 50 ordens
         # Verificar CSV format
         # Validar headers + data
         pass
-    
+
     # ... 2 testes adicionais
 
 class TestAudit:
@@ -180,7 +180,7 @@ class TestResponsive:
         # Verificar layout correto
         # Testar filtros funcionam
         pass
-    
+
     # ... testes para tablet + desktop
 
 # Total: 8+ unit tests
@@ -264,11 +264,11 @@ VALIDAÇÃO:
 
 ## 📌 Contexto
 
-**Prioridade:** 🔴 **P0-CRÍTICO**  
-**Lead:** Dev-Backend-1 (Auth Specialist) (40h)  
-**Squad:** QA Manager, Doc Advocate  
-**Duração:** ~3-4 semanas  
-**Valor:** ⭐⭐⭐⭐⭐ Segurança + Multi-operadores  
+**Prioridade:** 🔴 **P0-CRÍTICO**
+**Lead:** Dev-Backend-1 (Auth Specialist) (40h)
+**Squad:** QA Manager, Doc Advocate
+**Duração:** ~3-4 semanas
+**Valor:** ⭐⭐⭐⭐⭐ Segurança + Multi-operadores
 
 ## 👥 Alocação
 
@@ -343,11 +343,11 @@ docs/
 
 ## 📌 Contexto
 
-**Prioridade:** 🔴 **P0-CRÍTICO**  
-**Lead:** Dev-Backend-2 (Queue Specialist) (40h)  
-**Squad:** Infra DevOps, QA Manager  
-**Duração:** ~4 semanas  
-**Valor:** ⭐⭐⭐⭐⭐ Confiabilidade 99.9%  
+**Prioridade:** 🔴 **P0-CRÍTICO**
+**Lead:** Dev-Backend-2 (Queue Specialist) (40h)
+**Squad:** Infra DevOps, QA Manager
+**Duração:** ~4 semanas
+**Valor:** ⭐⭐⭐⭐⭐ Confiabilidade 99.9%
 
 ## 👥 Alocação
 
@@ -413,11 +413,11 @@ docs/
 
 ## 📌 Contexto
 
-**Prioridade:** 🔴 **P0-CRÍTICO**  
-**Lead:** Dev-Backend-3 (WebSocket Specialist) (40h)  
-**Squad:** Arquiteto de Sistemas, QA Manager  
-**Duração:** ~4 semanas  
-**Valor:** ⭐⭐⭐⭐⭐ Real-time <100ms  
+**Prioridade:** 🔴 **P0-CRÍTICO**
+**Lead:** Dev-Backend-3 (WebSocket Specialist) (40h)
+**Squad:** Arquiteto de Sistemas, QA Manager
+**Duração:** ~4 semanas
+**Valor:** ⭐⭐⭐⭐⭐ Real-time <100ms
 
 ## 👥 Alocação
 
@@ -477,11 +477,11 @@ docs/
 
 ## 📌 Contexto
 
-**Prioridade:** 🟡 **P1-IMPORTANTE (Independente)**  
-**Lead:** ML Expert (44h)  
-**Squad:** Data Scientist, QA Manager  
-**Duração:** ~2-3 semanas  
-**Valor:** ⭐⭐⭐⭐ Inteligência do modelo  
+**Prioridade:** 🟡 **P1-IMPORTANTE (Independente)**
+**Lead:** ML Expert (44h)
+**Squad:** Data Scientist, QA Manager
+**Duração:** ~2-3 semanas
+**Valor:** ⭐⭐⭐⭐ Inteligência do modelo
 
 ## 👥 Alocação
 
@@ -545,11 +545,11 @@ docs/
 
 ## 📌 Contexto
 
-**Prioridade:** 🟡 **P1-IMPORTANTE (Independente)**  
-**Lead:** Data Scientist (44h)  
-**Squad:** ML Expert, Infra DevOps  
-**Duração:** ~2-3 semanas  
-**Valor:** ⭐⭐⭐⭐ Monitoramento contínuo  
+**Prioridade:** 🟡 **P1-IMPORTANTE (Independente)**
+**Lead:** Data Scientist (44h)
+**Squad:** ML Expert, Infra DevOps
+**Duração:** ~2-3 semanas
+**Valor:** ⭐⭐⭐⭐ Monitoramento contínuo
 
 ## 👥 Alocação
 
@@ -605,12 +605,12 @@ docs/
 
 ## 📌 Contexto
 
-**Prioridade:** 🔴 **P0-CRÍTICO (Sequencial)**  
-**Lead:** ML Expert (44h)  
-**Status:** 🟡 **Bloqueado (aguarda ENG-003)**  
-**Squad:** Data Scientist, QA Manager, CFO  
-**Duração:** ~2-3 semanas (após GATE 1)  
-**Valor:** ⭐⭐⭐⭐⭐ Validação científica  
+**Prioridade:** 🔴 **P0-CRÍTICO (Sequencial)**
+**Lead:** ML Expert (44h)
+**Status:** 🟡 **Bloqueado (aguarda ENG-003)**
+**Squad:** Data Scientist, QA Manager, CFO
+**Duração:** ~2-3 semanas (após GATE 1)
+**Valor:** ⭐⭐⭐⭐⭐ Validação científica
 
 ## 👥 Alocação
 
@@ -683,11 +683,11 @@ docs/
 
 ## 📌 Contexto
 
-**Prioridade:** 🔴 **P0-CRÍTICO**  
-**Lead:** Dev-Backend-2 (Reliability Specialist) (32h)  
-**Squad:** QA Manager, Doc Advocate  
-**Duração:** ~2-3 semanas  
-**Valor:** ⭐⭐⭐⭐ Resiliência  
+**Prioridade:** 🔴 **P0-CRÍTICO**
+**Lead:** Dev-Backend-2 (Reliability Specialist) (32h)
+**Squad:** QA Manager, Doc Advocate
+**Duração:** ~2-3 semanas
+**Valor:** ⭐⭐⭐⭐ Resiliência
 
 ## 👥 Alocação
 
@@ -743,11 +743,11 @@ docs/
 
 ## 📌 Contexto
 
-**Prioridade:** 🔴 **P0-CRÍTICO**  
-**Lead:** Dev-Backend-3 (Position Specialist) (32h)  
-**Squad:** QA Manager, Arquiteto  
-**Duração:** ~3-4 semanas  
-**Valor:** ⭐⭐⭐⭐ Controle automático de risco  
+**Prioridade:** 🔴 **P0-CRÍTICO**
+**Lead:** Dev-Backend-3 (Position Specialist) (32h)
+**Squad:** QA Manager, Arquiteto
+**Duração:** ~3-4 semanas
+**Valor:** ⭐⭐⭐⭐ Controle automático de risco
 
 ## 👥 Alocação
 
@@ -803,12 +803,12 @@ docs/
 
 ## 📌 Contexto
 
-**Prioridade:** 🔴 **P0-CRÍTICO**  
-**Lead:** ML Expert + CFO (40h total)  
-**Status:** 🟡 **Bloqueado (aguarda ML-004)**  
-**Squad:** QA Manager, Doc Advocate  
-**Duração:** ~1-2 semanas (após GATE 1)  
-**Valor:** ⭐⭐⭐⭐⭐ **Ativa R$ 100k Fase 2**  
+**Prioridade:** 🔴 **P0-CRÍTICO**
+**Lead:** ML Expert + CFO (40h total)
+**Status:** 🟡 **Bloqueado (aguarda ML-004)**
+**Squad:** QA Manager, Doc Advocate
+**Duração:** ~1-2 semanas (após GATE 1)
+**Valor:** ⭐⭐⭐⭐⭐ **Ativa R$ 100k Fase 2**
 
 ## 👥 Alocação
 
@@ -995,5 +995,5 @@ Semana 8: GATE 2 CHECKPOINT
 
 ---
 
-*Documento: EXECUCAO_10_ATIVIDADES_SPRINT2_FRAMEWORK.md*  
+*Documento: EXECUCAO_10_ATIVIDADES_SPRINT2_FRAMEWORK.md*
 **Status:** 🟢 Ready for Execution | **Framework:** {{prompts\executa_task.md}} Applied to All 10 ATI

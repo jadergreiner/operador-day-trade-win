@@ -51,7 +51,7 @@ async def client():
     """Cria mock AsyncClient para testes."""
     if AsyncClient is None:
         pytest.skip("httpx not installed")
-    
+
     # Mock client - não precisa servidor ativo
     mock_client = AsyncMock(spec=AsyncClient)
     return mock_client
