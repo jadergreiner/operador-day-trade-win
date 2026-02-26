@@ -22,8 +22,14 @@
 | 10 | Capital Decision Framework (Gate 2) | ML Expert + CFO | 40h | 🟡 Bloqueado |
 
 **Documentação:**
-- 📄 [10_ATIVIDADES_CRITICAS_SPRINT2.md](10_ATIVIDADES_CRITICAS_SPRINT2.md) - Especificação detalhada
-- 📄 [GOVERNANCA_DELIBERACAO_SPRINT2.md](GOVERNANCA_DELIBERACAO_SPRINT2.md) - Aprovações formais
+- 📄 [ENTREGA_PARALELA_10_FEATURES_SQUAD_MULTI.md](ENTREGA_PARALELA_10_FEATURES_SQUAD_MULTI.md)
+  - Plano operacional: 3 squads paralelos, 12 passos execução
+  - GATE 1 (Week 5): 64/64 AC TRACK 1+2 PASS
+  - GATE 2 (Week 8): Sharpe≥1.0 → R$ 100k ativado
+- 📄 [10_ATIVIDADES_CRITICAS_SPRINT2.md](10_ATIVIDADES_CRITICAS_SPRINT2.md)
+  - Especificação detalhada (118 AC, 98+ testes)
+- 📄 [GOVERNANCA_DELIBERACAO_SPRINT2.md](GOVERNANCA_DELIBERACAO_SPRINT2.md)
+  - Aprovações formais (8/8 personas)
 
 ---
 

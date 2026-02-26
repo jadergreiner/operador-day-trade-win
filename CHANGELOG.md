@@ -1,5 +1,45 @@
 # CHANGELOG - Operador Quântico
 
+## [v1.2.8] - 2026-02-26 Execução Paralela Squads Multidisciplinares
+
+### 📋 ENTREGA PARALELA DAS 10 FEATURES - SQUAD MULTI
+
+**Status:** 🟢 **ESTRUTURA OPERACIONAL PRONTA** (Plano: 26feb02)
+
+**Plano de Execução ({{prompts\squad_multi.md}}):**
+- ✅ 3 squads paralelos: TRACK 1 (224h) + TRACK 2 (88h) + TRACK 3 (84h)
+- ✅ 12 passos operacionais mapeados (design→dev→test→integration)
+- ✅ GATE 1 imóvel: 27/03/2026 17:00 BRT (Week 5)
+- ✅ GATE 2 imóvel: 17/04/2026 17:00 BRT (Week 8)
+- ✅ Capital activation: R$ 100k após GATE 2 = GO
+- ✅ Operador integração: INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
+
+**SQUAD 1 - TRACK 1 (Backend Infrastructure - 224h)**
+- Lead: Eng Sr | Personas: 3× Dev-Backend + Arquiteto + Infra + QA
+- Features: 6 (ATI-1 Dashboard, ATI-2 OAuth, ATI-3 Queue, ATI-4 WebSocket, ATI-8 Retry, ATI-9 Position)
+- AC Target: 48/48 PASS em GATE 1
+
+**SQUAD 2 - TRACK 2 (ML Analysis - 88h)**
+- Lead: ML Expert | Personas: Data Scientist + Data Engineer
+- Features: 2 (ATI-5 SHAP, ATI-6 Drift)
+- AC Target: 16/16 PASS em GATE 1
+
+**SQUAD 3 - TRACK 3 (Validation - 84h - BLOQUEADO)**
+- Lead: ML Expert + CFO | Personas: Trader Líder + PO
+- Features: 2 (ATI-7 Backtest, ATI-10 Gate2Decision)
+- AC Target: 30/30 PASS em GATE 2
+- Status: Desbloqueado após GATE 1 = GO
+
+**Timeline Semanal:**
+- Week 1-4: TRACK 1 + TRACK 2 desenvolvimento paralelo
+- Week 5: GATE 1 checkpoint (27/03 17:00 BRT)
+- Week 6-8: TRACK 3 execução (após GO)
+- Week 8: GATE 2 checkpoint (17/04 17:00 BRT)
+
+**Documentação:** ENTREGA_PARALELA_10_FEATURES_SQUAD_MULTI.md (1500+ linhas)
+
+---
+
 ## [v1.2.7] - 2026-02-26 SPRINT 2: 10 ATIVIDADES CRÍTICAS APROVADAS
 
 ### ✅ SPRINT 2: 10 ATIVIDADES CRÍTICAS - Entrega de Features com Valor Real
