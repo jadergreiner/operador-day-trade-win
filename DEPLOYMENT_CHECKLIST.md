@@ -1,7 +1,7 @@
 # Deployment Checklist - Phase 3 to Phase 4
 
-**Data:** 26/02/2026  
-**Próxima Fase:** Staging Deployment (01-05/03)  
+**Data:** 26/02/2026
+**Próxima Fase:** Staging Deployment (01-05/03)
 **Timeline:** 10/04/2026 GO LIVE
 
 ---
@@ -210,14 +210,14 @@ from locust import HttpUser, task, between
 
 class TraderUser(HttpUser):
     wait_time = between(1, 3)
-    
+
     @task
     def login(self):
         self.client.post("/auth/login", json={
             "username": "trader01",
             "password": "password"
         })
-    
+
     @task
     def predict(self):
         self.client.post("/backtest/predict", json={
@@ -414,7 +414,7 @@ az monitor metrics alert create \
 
 **Status:** 🟢 **READY FOR STAGING**
 
-**Next Milestone:** 01/03 Staging Deployment  
-**Go-Live Target:** 10/03/2026  
-**Capital Activation:** FASE 1 R$ 50k  
+**Next Milestone:** 01/03 Staging Deployment
+**Go-Live Target:** 10/03/2026
+**Capital Activation:** FASE 1 R$ 50k
 **Expected ROI:** 300% in 90 days

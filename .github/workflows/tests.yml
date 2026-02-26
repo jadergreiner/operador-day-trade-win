@@ -15,12 +15,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Setup Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-    
+
     - name: Cache pip packages
       uses: actions/cache@v3
       with:
@@ -28,7 +28,7 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
-    
+
     - name: Instalar dependencias
       run: |
         python -m pip install --upgrade pip
@@ -37,38 +37,38 @@ jobs:
         pip install python-jose passlib python-multipart
         pip install xgboost scikit-learn pandas numpy
         pip install aiofiles
-    
+
     - name: Criar diretorios de modelos
       run: |
         if (!(Test-Path "models")) { New-Item -ItemType Directory -Path "models" }
         if (!(Test-Path "data")) { New-Item -ItemType Directory -Path "data" }
-    
+
     - name: "ETAPA 1: Testes OAuth (P5.2) - 12 testes"
       run: |
         python -m pytest tests/unit/test_ati2_auth_endpoints.py -v --tb=short --junitxml=reports/oauth-results.xml
-    
+
     - name: "ETAPA 2: Testes Performance WebSocket (P4.4) - 6 testes"
       run: |
         python -m pytest tests/performance/test_websocket_load.py -v --tb=short --junitxml=reports/websocket-perf-results.xml
-    
+
     - name: "ETAPA 3: Testes XGBoost (P8.2) - 5 testes"
       run: |
         python -m pytest tests/unit/test_ati8_xgboost_training.py -v --tb=short --junitxml=reports/xgboost-results.xml
       continue-on-error: true
-    
+
     - name: "ETAPA 4: Testes Integracao OAuth + WebSocket - 7 testes"
       run: |
         python -m pytest tests/integration/test_websocket_oauth_integration.py -v --tb=short --junitxml=reports/integration-oauth-results.xml
-    
+
     - name: "ETAPA 5: Testes Endpoints Autenticados - 13 testes"
       run: |
         python -m pytest tests/integration/test_websocket_authenticated_endpoints.py -v --tb=short --junitxml=reports/integration-endpoints-results.xml
       continue-on-error: true
-    
+
     - name: "ETAPA 6: Testes Backtesting + XGBoost - 20 testes"
       run: |
         python -m pytest tests/unit/test_backtest_server.py -v --tb=short --junitxml=reports/backtest-results.xml
-    
+
     - name: Consolidar Resultados de Testes
       if: always()
       run: |
@@ -87,21 +87,21 @@ jobs:
         echo "" >> test-summary.md
         echo "**Total:** 63+ Testes | **Duration:** ~100s | **Status:** 🟢 Production Ready" >> test-summary.md
         cat test-summary.md
-    
+
     - name: Upload Test Reports
       if: always()
       uses: actions/upload-artifact@v3
       with:
         name: test-reports
         path: reports/
-    
+
     - name: Upload Test Summary
       if: always()
       uses: actions/upload-artifact@v3
       with:
         name: test-summary
         path: test-summary.md
-    
+
     - name: Publicar Resultados
       if: always()
       run: |
@@ -112,15 +112,15 @@ jobs:
   quality-checks:
     needs: test
     runs-on: windows-latest
-    
+
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
-    
+
     - name: Code Quality Checks
       run: |
         echo "Verificando qualidade do codigo..."
@@ -128,7 +128,7 @@ jobs:
         echo "✅ Clean Architecture: Validated"
         echo "✅ UTF-8 Compliance: OK"
         echo "✅ Production Ready: Yes"
-    
+
     - name: Security Scan
       run: |
         echo "Executando verificacoes de seguranca..."
@@ -140,10 +140,10 @@ jobs:
   deploy-ready:
     needs: quality-checks
     runs-on: windows-latest
-    
+
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Deployment Readiness Check
       run: |
         echo "Verificando prontidao para deployment..."
@@ -153,7 +153,7 @@ jobs:
         echo "✅ Architecture: Validated"
         echo ""
         echo "🟢 Status: READY FOR STAGING DEPLOYMENT"
-    
+
     - name: Create Release Notes
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
