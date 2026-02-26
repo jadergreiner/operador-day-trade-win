@@ -1,10 +1,10 @@
 # 📢 PRIORITY 2: TEAM STANDUP + PLANNING REVIEW
 
-**Owner:** Eng Sr (SQUAD 1 Lead)  
-**Duration:** 30 min  
-**Attendees:** 11 personas  
-**Timestamp:** 2026-02-26 23:58:00Z  
-**Predecessor:** PRIORITY 1 ✅ Complete  
+**Owner:** Eng Sr (SQUAD 1 Lead)
+**Duration:** 30 min
+**Attendees:** 11 personas
+**Timestamp:** 2026-02-26 23:58:00Z
+**Predecessor:** PRIORITY 1 ✅ Complete
 **Next:** PRIORITY 3 (GATE 1 Approval)
 
 ---
@@ -18,7 +18,7 @@
 "Pessoal, bem-vindos a Sprint 2!
 
 PRIORITY 1 ✅ COMPLETO:
-  ✅ Python 3.11.9 
+  ✅ Python 3.11.9
   ✅ FastAPI, XGBoost, SHAP, Pytest
   ✅ 6 Git branches ready
   ⚠️  Docker: will start in background
@@ -340,7 +340,7 @@ C) "Review documentation more, come back"
 
 ---
 
-**Status:** 🟡 **PRIORITY 2 STANDUP INITIATED**  
-**Next:** Gather team confirmations above  
-**Then:** PRIORITY 3 (GATE 1 Final Approval)  
+**Status:** 🟡 **PRIORITY 2 STANDUP INITIATED**
+**Next:** Gather team confirmations above
+**Then:** PRIORITY 3 (GATE 1 Final Approval)
 

@@ -27,30 +27,30 @@ MAX_CONNECTIONS_PER_TRADER = 5
 
 class ConnectionManager:
     """Manages WebSocket connections for traders"""
-    
+
     def __init__(self):
         # Map: trader_id -> List of WebSocket connections
         self.active_connections: Dict[str, List[WebSocket]] = {}
         self.connection_times: Dict[WebSocket, float] = {}
-    
+
     async def connect(self, websocket: WebSocket, trader_id: str):
         """Accept WebSocket connection and register"""
         await websocket.accept()
-        
+
         if trader_id not in self.active_connections:
             self.active_connections[trader_id] = []
-        
+
         # Check max connections per trader
         if len(self.active_connections[trader_id]) >= MAX_CONNECTIONS_PER_TRADER:
             await websocket.close(code=1008, reason="Max connections exceeded")
             raise RuntimeError(f"Max connections ({MAX_CONNECTIONS_PER_TRADER}) exceeded for {trader_id}")
-        
+
         self.active_connections[trader_id].append(websocket)
         self.connection_times[websocket] = time.time()
-        
+
         logger.info(f"✅ Connection accepted for trader {trader_id} "
                    f"(total: {len(self.active_connections[trader_id])})")
-    
+
     async def disconnect(self, websocket: WebSocket, trader_id: str):
         """Remove WebSocket connection"""
         if trader_id in self.active_connections:
@@ -58,19 +58,19 @@ class ConnectionManager:
                 self.active_connections[trader_id].remove(websocket)
                 if not self.active_connections[trader_id]:
                     del self.active_connections[trader_id]
-                
+
                 if websocket in self.connection_times:
                     del self.connection_times[websocket]
-                
+
                 logger.info(f"❌ Disconnect for trader {trader_id}")
             except ValueError:
                 pass
-    
-    async def broadcast(self, message: dict, trader_id: Optional[str] = None, 
+
+    async def broadcast(self, message: dict, trader_id: Optional[str] = None,
                        exclude: Optional[WebSocket] = None):
         """
         Broadcast message to connections
-        
+
         Args:
             message: Message dict to send
             trader_id: If provided, send only to this trader's connections
@@ -84,18 +84,18 @@ class ConnectionManager:
             connections = []
             for trader_conns in self.active_connections.values():
                 connections.extend(trader_conns)
-        
+
         disconnected = []
         for connection in connections:
             if exclude and connection == exclude:
                 continue
-            
+
             try:
                 await connection.send_json(message)
             except Exception as e:
                 logger.error(f"❌ Broadcast error: {e}")
                 disconnected.append((connection, trader_id))
-        
+
         # Clean up disconnected
         for conn, tid in disconnected:
             await self.disconnect(conn, tid)
@@ -103,13 +103,13 @@ class ConnectionManager:
 
 class MessageHandler:
     """Handles incoming WebSocket messages"""
-    
+
     @staticmethod
     def validate_message(data: dict) -> bool:
         """Validate message format"""
         required_fields = ["type", "trader_id"]
         return all(field in data for field in required_fields)
-    
+
     @staticmethod
     async def route_message(data: dict, websocket: WebSocket, manager: ConnectionManager):
         """Route message based on type"""
@@ -119,10 +119,10 @@ class MessageHandler:
                 "message": "Invalid message format"
             })
             return
-        
+
         msg_type = data.get("type")
         trader_id = data.get("trader_id")
-        
+
         if msg_type == "order":
             # Route order message
             await manager.broadcast({
@@ -131,48 +131,48 @@ class MessageHandler:
                 "timestamp": datetime.utcnow().isoformat(),
                 "payload": data.get("payload")
             }, trader_id=trader_id)
-        
+
         elif msg_type == "ping":
             # Respond to ping
             await websocket.send_json({
                 "type": "pong",
                 "timestamp": datetime.utcnow().isoformat()
             })
-        
+
         else:
             logger.warning(f"Unknown message type: {msg_type}")
 
 
 class HeartbeatManager:
     """Manages WebSocket heartbeat keep-alive"""
-    
+
     def __init__(self, manager: ConnectionManager):
         self.manager = manager
         self.tasks: Dict[str, asyncio.Task] = {}
-    
+
     async def start_heartbeat(self, websocket: WebSocket, trader_id: str):
         """Start heartbeat for connection"""
         task_id = f"{trader_id}_{id(websocket)}"
-        
+
         async def heartbeat_loop():
             while True:
                 try:
                     await asyncio.sleep(HEARTBEAT_INTERVAL)
-                    
+
                     await websocket.send_json({
                         "type": "ping",
                         "timestamp": datetime.utcnow().isoformat()
                     })
-                    
+
                 except Exception as e:
                     logger.error(f"❌ Heartbeat error for {trader_id}: {e}")
                     await self.manager.disconnect(websocket, trader_id)
                     break
-        
+
         task = asyncio.create_task(heartbeat_loop())
         self.tasks[task_id] = task
         logger.info(f"💓 Heartbeat started for {trader_id} (interval: {HEARTBEAT_INTERVAL}s)")
-    
+
     async def stop_heartbeat(self, websocket: WebSocket, trader_id: str):
         """Stop heartbeat for connection"""
         task_id = f"{trader_id}_{id(websocket)}"
@@ -215,13 +215,13 @@ message_handler = MessageHandler()
 async def websocket_endpoint(websocket: WebSocket, trader_id: str, token: str = Query(...)):
     """
     WebSocket endpoint for real-time orders
-    
+
     AC-1: Connection persistence (reconnect within 5s)
     AC-2: P95 latency < 100ms
     AC-5: Graceful disconnect (cleanup)
     AC-6: Heartbeat working (30s interval)
     """
-    
+
     # Verify JWT token
     try:
         verify_jwt_token(token)
@@ -229,17 +229,17 @@ async def websocket_endpoint(websocket: WebSocket, trader_id: str, token: str = 
         await websocket.close(code=1008, reason="Unauthorized")
         logger.error(f"❌ Unauthorized connection attempt for {trader_id}")
         return
-    
+
     # Connect
     try:
         await connection_manager.connect(websocket, trader_id)
     except RuntimeError as e:
         logger.error(f"❌ Connection failed: {e}")
         return
-    
+
     # Start heartbeat
     await heartbeat_manager.start_heartbeat(websocket, trader_id)
-    
+
     # Message loop
     try:
         while True:
@@ -248,27 +248,27 @@ async def websocket_endpoint(websocket: WebSocket, trader_id: str, token: str = 
                 websocket.receive_json(),
                 timeout=HEARTBEAT_INTERVAL + 10  # Allow grace period
             )
-            
+
             # Track latency (AC-2: P95 < 100ms)
             receive_time = time.time()
-            
+
             # Route message
             await message_handler.route_message(data, websocket, connection_manager)
-            
+
             # Log latency
             latency = (time.time() - receive_time) * 1000  # ms
             if latency > 100:
                 logger.warning(f"⚠️ High latency detected: {latency:.2f}ms")
-    
+
     except asyncio.TimeoutError:
         logger.warning(f"⏱️ Timeout for {trader_id} - closing connection")
-    
+
     except WebSocketDisconnect:
         logger.info(f"👋 Client disconnected: {trader_id}")
-    
+
     except Exception as e:
         logger.error(f"❌ WebSocket error: {e}")
-    
+
     finally:
         # Cleanup
         await heartbeat_manager.stop_heartbeat(websocket, trader_id)

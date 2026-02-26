@@ -1,8 +1,8 @@
 # 🚀 PRIORITY 4 SUBTASK 4.1: ConnectionManager Setup + Event Loop
 
-**Owner:** Dev-Backend-3  
-**Status:** 🟢 START NOW  
-**Duration:** 45 minutes  
+**Owner:** Dev-Backend-3
+**Status:** 🟢 START NOW
+**Duration:** 45 minutes
 **Target:** ConnectionManager fully functional + accept/disconnect/broadcast working
 
 ---
@@ -107,28 +107,28 @@ from unittest.mock import AsyncMock
 
 async def manual_test():
     manager = ConnectionManager()
-    
+
     # Create mock websockets
     ws1 = AsyncMock()
     ws2 = AsyncMock()
-    
+
     # Test 1: Connect
     print("Test 1: Connecting...")
     await manager.connect(ws1, "TRADER_001")
     assert "TRADER_001" in manager.active_connections
     print("✅ Connect test passed")
-    
+
     # Test 2: Store connection time (for AC-2 latency)
     print("Test 2: Connection time stored...")
     assert ws1 in manager.connection_times
     print("✅ Connection time test passed")
-    
+
     # Test 3: Multiple connections per trader
     print("Test 3: Multiple connections...")
     await manager.connect(ws2, "TRADER_001")
     assert len(manager.active_connections["TRADER_001"]) == 2
     print("✅ Multiple connections test passed")
-    
+
     # Test 4: Broadcast
     print("Test 4: Broadcasting...")
     await manager.broadcast(
@@ -137,13 +137,13 @@ async def manual_test():
     )
     assert ws1.send_json.called
     print("✅ Broadcast test passed")
-    
+
     # Test 5: Disconnect
     print("Test 5: Disconnecting...")
     await manager.disconnect(ws1, "TRADER_001")
     assert len(manager.active_connections["TRADER_001"]) == 1
     print("✅ Disconnect test passed")
-    
+
     print("\n✅✅✅ All manual tests PASSED!")
 
 # Run
@@ -273,7 +273,7 @@ Then automatically proceed to **Subtask 4.2: WebSocket Endpoint** (1.5h)
 
 ---
 
-**Status:** 🟢 **READY TO EXECUTE**  
-**Owner:** Dev-Backend-3  
-**Blocker:** None - code ready in repo  
+**Status:** 🟢 **READY TO EXECUTE**
+**Owner:** Dev-Backend-3
+**Blocker:** None - code ready in repo
 **Estimated Time to Completion:** 45 min

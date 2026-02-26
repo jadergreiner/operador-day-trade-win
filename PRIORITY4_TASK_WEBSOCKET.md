@@ -1,10 +1,10 @@
 # 🚀 PRIORITY 4: ATI-1 WebSocket Real-time Orders
 
-**Owner:** Dev-Backend-3  
-**Assigned:** Eng Sr to assign  
-**Status:** ACTIVE - IN EXECUTION  
-**Start Time:** 2026-02-27 00:00:00Z  
-**Estimated Duration:** 4-6 hours  
+**Owner:** Dev-Backend-3
+**Assigned:** Eng Sr to assign
+**Status:** ACTIVE - IN EXECUTION
+**Start Time:** 2026-02-27 00:00:00Z
+**Estimated Duration:** 4-6 hours
 **Target Completion:** When P95 latency <100ms + 6/6 AC tests passing
 
 ---
@@ -12,8 +12,8 @@
 ## 📋 TASK SHEET
 
 ### Subtask 4.1: Event Loop Setup + Connection Manager
-**Duration:** 45 min  
-**Dependencies:** None  
+**Duration:** 45 min
+**Dependencies:** None
 
 ```python
 # Location: src/application/websocket_server_ati1.py
@@ -37,8 +37,8 @@
 ---
 
 ### Subtask 4.2: WebSocket Endpoint Implementation
-**Duration:** 1.5 hours  
-**Dependencies:** 4.1 complete  
+**Duration:** 1.5 hours
+**Dependencies:** 4.1 complete
 
 ```python
 # Required:
@@ -62,8 +62,8 @@
 ---
 
 ### Subtask 4.3: Heartbeat Implementation
-**Duration:** 1 hour  
-**Dependencies:** 4.2 complete  
+**Duration:** 1 hour
+**Dependencies:** 4.2 complete
 
 ```python
 # Required:
@@ -84,8 +84,8 @@
 ---
 
 ### Subtask 4.4: Performance + Integration
-**Duration:** 1.5 hours  
-**Dependencies:** 4.3 complete  
+**Duration:** 1.5 hours
+**Dependencies:** 4.3 complete
 
 ```python
 # Required:
@@ -169,7 +169,7 @@ If you get stuck:
 
 ## ✅ NEXT STEP
 
-**Type when complete:** 
+**Type when complete:**
 ```
 "PRIORITY 4 DONE: WebSocket endpoint ready + 6/6 AC tests passing"
 ```
@@ -178,6 +178,6 @@ Then: Move to PRIORITY 6 (RabbitMQ) - which depends on this
 
 ---
 
-**Status:** 🟢 **ACTIVE**  
-**Owner:** Dev-Backend-3  
+**Status:** 🟢 **ACTIVE**
+**Owner:** Dev-Backend-3
 **Next Review:** After Subtask 4.2 (2h 15m)
