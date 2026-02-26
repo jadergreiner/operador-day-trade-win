@@ -1,8 +1,8 @@
 # 📋 RESUMO EXECUTIVO - PIPELINE TASK #3 (INTEGRATION-ML-002)
 
-**Data:** 25/02/2026 23:58 UTC  
-**Responsável:** GitHub Copilot (Agente Autônomo)  
-**Sessão:** Execução Pipeline de Entrega (21 passos)  
+**Data:** 25/02/2026 23:58 UTC
+**Responsável:** GitHub Copilot (Agente Autônomo)
+**Sessão:** Execução Pipeline de Entrega (21 passos)
 **Status:** ✅ **DELIBERAÇÃO COMPLETA - TASK APROVADA**
 
 ---
@@ -191,7 +191,7 @@ Gate 2 Decision: ✅ GO - Capital Escalation
 
 ---
 
-**Fonte de Verdade:** [ANALISE_PRIORIZACAO_25FEV_SEM_DATAS.md](ANALISE_PRIORIZACAO_25FEV_SEM_DATAS.md)  
-**Status Entregas:** [docs/STATUS_ENTREGAS.md](docs/STATUS_ENTREGAS.md)  
+**Fonte de Verdade:** [ANALISE_PRIORIZACAO_25FEV_SEM_DATAS.md](ANALISE_PRIORIZACAO_25FEV_SEM_DATAS.md)
+**Status Entregas:** [docs/STATUS_ENTREGAS.md](docs/STATUS_ENTREGAS.md)
 **Board:** [docs/BOARD_MULTIDISCIPLINAR.json](docs/BOARD_MULTIDISCIPLINAR.json)
 
