@@ -21,6 +21,11 @@ class TradingConfig(BaseSettings):
     mt5_login: int = Field(..., description="MT5 account login")
     mt5_password: str = Field(..., description="MT5 account password")
     mt5_server: str = Field(..., description="MT5 server name")
+    mt5_terminal_path: str = Field(
+        ...,
+        description="Exact path to terminal64.exe (S2-5 Terminal Isolation) — "
+                    "Required to prevent accidental connection to different MT5 terminals (FBS, XP, etc)"
+    )
 
     # Trading Parameters
     trading_symbol: str = Field(

@@ -109,6 +109,14 @@ from src.application.services.diary_feedback import (
 from src.domain.services.atr_calibrator import ATRCalibrator
 from src.fibonacci_calculator import FibonacciCalculator
 
+# --- Integração LightGBM ML (26/02/2026) ---
+try:
+    from src.application.services.ml.lgbm_agent_integrator import get_lgbm_integrator
+    LGBM_INTEGRATOR_AVAILABLE = True
+except ImportError:
+    LGBM_INTEGRATOR_AVAILABLE = False
+    get_lgbm_integrator = None
+
 # --- Imports movidos para otimização de performance (S1-5) ---
 try:
     from src.application.services.rl_persistence_service import RLPersistenceService
@@ -135,6 +143,9 @@ DB_PATH: str | None = None
 
 # Instância global do MacroScoreEngine (inicializada no main)
 _macro_engine: MacroScoreEngine | None = None
+
+# Instância global do LGBM Integrator (inicializada no main)
+_lgbm_integrator = None
 
 # Calibrador Dinâmico ATR (S2-2)
 _atr_calibrator = ATRCalibrator(
@@ -2580,15 +2591,37 @@ class MicroTradingManager:
 
         return True, "OK"
 
-    def evaluate_opportunity(self, opp: Opportunity) -> tuple[bool, str]:
-        """Avalia se uma oportunidade deve ser executada."""
-        global _active_directive
+    def evaluate_opportunity(self, opp: Opportunity, cycle_result=None) -> tuple[bool, str]:
+        """Avalia se uma oportunidade deve ser executada (técnicas + ML)."""
+        global _active_directive, _lgbm_integrator
 
+        # ── Validação Básica ──
         if opp.confidence < MIN_CONFIDENCE_TRADE:
             return False, f"Confiança {opp.confidence:.0f}% < mínimo {MIN_CONFIDENCE_TRADE}%"
 
         if opp.risk_reward < MIN_RR_TRADE:
             return False, f"R/R {opp.risk_reward} < mínimo {MIN_RR_TRADE}"
+
+        # ── Score do Modelo LightGBM (26/02/2026) ──
+        # Reforça confiança com ML — se modelo não disponível, continua com técnicas
+        lgbm_score = 0.5  # default 50% se indisponível
+        lgbm_reasoning = ""
+        if LGBM_INTEGRATOR_AVAILABLE and _lgbm_integrator is not None:
+            try:
+                lgbm_score, lgbm_reasoning = _lgbm_integrator.score_opportunity(cycle_result, opp)
+                # Mistura score LGBM com confiança técnica (60% técnico, 40% ML)
+                weighted_confidence = (opp.confidence * 0.6) + (lgbm_score * 100 * 0.4)
+                print(f"     🤖 LGBM: {lgbm_score:.1%} | Score misto: {weighted_confidence:.0f}%")
+            except Exception as e:
+                # Se falhar, usa apenas técnicas
+                weighted_confidence = opp.confidence
+                lgbm_reasoning = f"(LGBM erro: {str(e)[:30]})"
+        else:
+            weighted_confidence = opp.confidence
+
+        # Reavalia com score misto
+        if weighted_confidence < MIN_CONFIDENCE_TRADE:
+            return False, f"Score misto {weighted_confidence:.0f}% < {MIN_CONFIDENCE_TRADE}% (técnico={opp.confidence:.0f}%, ML={lgbm_score:.1%})"
 
         # FIX 12/02/2026: Cooling-off anti-TILT — bloqueia reentrada na mesma
         # direção por COOLING_OFF_MINUTES minutos após stop loss.
@@ -2625,7 +2658,8 @@ class MicroTradingManager:
             if trade.direction != opp.direction:
                 return False, f"Já tem posição {trade.direction} aberta — conflito"
 
-        return True, "Oportunidade aprovada"
+        approval_msg = f"Oportunidade aprovada (técnico={opp.confidence:.0f}%, ML={lgbm_score:.1%})" if lgbm_reasoning else "Oportunidade aprovada"
+        return True, approval_msg
 
     def execute_entry(self, opp: Opportunity) -> Optional[str]:
         """Executa entrada no MT5. Retorna ticket ou None."""
@@ -2907,11 +2941,12 @@ class MicroTradingManager:
 # ────────────────────────────────────────────────────────────────
 
 def _connect_mt5(config) -> MT5Adapter:
-    """Conecta ao MetaTrader 5."""
+    """Conecta ao MetaTrader 5 com isolamento de terminal."""
     mt5 = MT5Adapter(
         login=config.mt5_login,
         password=config.mt5_password,
         server=config.mt5_server,
+        terminal_exe_path=config.mt5_terminal_path,  # S2-5: Terminal Isolation
     )
     if not mt5.connect():
         raise RuntimeError("Falha ao conectar no MT5. Verifique .env e terminal MT5.")
@@ -4044,6 +4079,20 @@ def main():
     global _diary_feedback
     _diary_feedback = load_latest_feedback(DB_PATH)
 
+    # ── Inicializa Modelo LightGBM (26/02/2026) ──
+    global _lgbm_integrator
+    if LGBM_INTEGRATOR_AVAILABLE and get_lgbm_integrator:
+        try:
+            _lgbm_integrator = get_lgbm_integrator()
+            if _lgbm_integrator and _lgbm_integrator.model_loaded:
+                print(f"  🤖 LightGBM Integrator: Ativo (F1: 0.5664, Acc: 59.55%)")
+            else:
+                print(f"  ⚠️  LightGBM Integrator: Modelo não carregado")
+        except Exception as e:
+            print(f"  ⚠️  LightGBM Integrator: Falha ao inicializar ({str(e)[:40]})")
+    else:
+        print(f"  ℹ️  LightGBM Integrator: Não disponível (modo técnico apenas)")
+
     _display_header()
     print(f"\n  DB: {DB_PATH}")
     print(f"  Símbolo: {SYMBOL}")
@@ -4185,6 +4234,16 @@ def main():
             # Conecta ao MT5
             mt5 = _connect_mt5(config)
 
+            # Valida isolamento de terminal (S2-5) — previne switch acidental ao terminal errado
+            if not mt5._validate_terminal_isolation():
+                print(f"  ⚠️  ISOLAMENTO DE TERMINAL VIOLADO!")
+                print(f"     Login esperado: {config.mt5_login}")
+                print(f"     Terminal esperado: {config.mt5_terminal_path}")
+                print(f"     🛑 Abortando ciclo — reconecte no terminal correto")
+                mt5.disconnect()
+                time.sleep(5)
+                continue
+
             # Inicializa trading manager (mantém estado entre ciclos)
             if AUTO_TRADING_ENABLED and trading_mgr is None:
                 trading_mgr = MicroTradingManager(mt5, SYMBOL)
@@ -4244,7 +4303,7 @@ def main():
                     if can_trade:
                         best = max(result.opportunities,
                                    key=lambda o: (o.confidence, o.risk_reward))
-                        should_enter, eval_reason = trading_mgr.evaluate_opportunity(best)
+                        should_enter, eval_reason = trading_mgr.evaluate_opportunity(best, result)
                         if should_enter:
                             direction_icon = "🟢" if best.direction == "COMPRA" else "🔴"
                             print(f"\n  🧪 SINAL SIMULADO {direction_icon} {best.direction}")
@@ -4276,7 +4335,7 @@ def main():
                         # Seleciona melhor oportunidade (maior R/R com confiança mínima)
                         best = max(result.opportunities,
                                    key=lambda o: (o.confidence, o.risk_reward))
-                        should_enter, eval_reason = trading_mgr.evaluate_opportunity(best)
+                        should_enter, eval_reason = trading_mgr.evaluate_opportunity(best, result)
                         if should_enter:
                             direction_icon = "🟢" if best.direction == "COMPRA" else "🔴"
                             print(f"\n  ⚡ EXECUTANDO {direction_icon} {best.direction}")
