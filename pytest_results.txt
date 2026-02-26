@@ -1,0 +1,42 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-7.4.0, pluggy-1.6.0
+rootdir: C:\repo\operador-day-trade-win
+configfile: pytest.ini
+testpaths: tests
+plugins: anyio-3.7.1, asyncio-0.21.0, cov-4.1.0
+asyncio: mode=Mode.STRICT
+collected 644 items
+
+tests\test_alertas_integration.py FF.F                                   [  0%]
+tests\test_alertas_unit.py ...F...FFFF                                   [  2%]
+tests\test_email_service.py EEEEEFEF                                     [  3%]
+tests\test_health_checker.py ...                                         [  4%]
+tests\test_mt5_adapter.py ..                                             [  4%]
+tests\test_mt5_connection.py .                                           [  4%]
+tests\test_orders_executor.py .                                          [  4%]
+tests\test_performance_tuning.py ..                                      [  4%]
+tests\test_persistence_manager.py F.F...FF
+
+=========================== short test summary info ===========================
+FAILED tests/test_alertas_integration.py::TestFluxoCompletoVolatilidade::test_fluxo_completo_volatilidade_ate_websocket
+FAILED tests/test_alertas_integration.py::TestFluxoCompletoVolatilidade::test_fluxo_completo_volatilidade_ate_email
+FAILED tests/test_alertas_integration.py::TestIntegracaoComAuditoria::test_alerta_registrado_em_auditoria
+FAILED tests/test_alertas_unit.py::TestDetectorVolatilidade::test_detector_identifica_volatilidade_extrema
+FAILED tests/test_alertas_unit.py::TestAlertaFormatter::test_alertformatter_gera_html_valido
+FAILED tests/test_alertas_unit.py::TestAlertaFormatter::test_alertformatter_sms_respeita_limite
+FAILED tests/test_alertas_unit.py::TestFilaAlertas::test_queue_deduplicacao_alerts
+FAILED tests/test_alertas_unit.py::TestFilaAlertas::test_rate_limiting_falha_corretamente
+FAILED tests/test_email_service.py::test_config_from_env - ValueError: Enviro...
+FAILED tests/test_email_service.py::test_type_hints - AttributeError: 'functi...
+FAILED tests/test_persistence_manager.py::TestPersistenceManager::test_persist_operation_success
+FAILED tests/test_persistence_manager.py::TestPersistenceManager::test_feature_engineering_extraction
+FAILED tests/test_persistence_manager.py::TestPersistenceManager::test_quality_gates_passing
+FAILED tests/test_persistence_manager.py::TestPersistenceManager::test_recovery_mechanism_replay
+ERROR tests/test_email_service.py::test_email_send_success - ValueError: Envi...
+ERROR tests/test_email_service.py::test_email_retry_on_failure - ValueError: ...
+ERROR tests/test_email_service.py::test_invalid_smtp_credentials - ValueError...
+ERROR tests/test_email_service.py::test_template_rendering - ValueError: Envi...
+ERROR tests/test_email_service.py::test_template_rendering_sync - ValueError:...
+ERROR tests/test_email_service.py::test_send_alert_email_method - ValueError:...
+!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 20 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+============= 14 failed, 20 passed, 6 errors in 222.27s (0:03:42) =============
