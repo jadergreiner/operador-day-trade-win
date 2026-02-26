@@ -1,9 +1,9 @@
 # 🤖 SUBTASK 8.1: ML Dataset Loading & Preparation
 
-**Owner:** ML Expert (Data Science Team)  
-**Duration:** 2 hours  
-**Status:** 🟢 READY TO START  
-**Start Time:** NOW (PARALLEL with PRIORITY 4.3 + 5.1)  
+**Owner:** ML Expert (Data Science Team)
+**Duration:** 2 hours
+**Status:** 🟢 READY TO START
+**Start Time:** NOW (PARALLEL with PRIORITY 4.3 + 5.1)
 
 ---
 
@@ -122,13 +122,13 @@ import asyncio
 import pandas as pd
 import numpy as np
 from src.ml.feature_pipeline_ati5 import (
-    DataLoader, FeatureEngineer, DataPreprocessor, 
+    DataLoader, FeatureEngineer, DataPreprocessor,
     LabelGenerator, DataValidator
 )
 
 async def validate_ml_pipeline():
     """Run ML pipeline validation tests."""
-    
+
     # Load data
     print("\n📊 TEST 1: Data Loading")
     loader = DataLoader()
@@ -136,7 +136,7 @@ async def validate_ml_pipeline():
     print(f"✓ Data loaded: {len(df)} rows")
     print(f"✓ Columns: {list(df.columns)}")
     print(f"✓ Date range: {df.index.min()} to {df.index.max()}")
-    
+
     # Feature engineering
     print("\n📊 TEST 2: Feature Engineering")
     engineer = FeatureEngineer()
@@ -144,18 +144,18 @@ async def validate_ml_pipeline():
     print(f"✓ Features calculated: {len(features_df.columns)} features")
     print(f"✓ Feature names: {list(features_df.columns)[:5]}...")
     print(f"✓ Feature count: {len(features_df.columns)} (target: 24)")
-    
+
     # Validate feature count
     assert len(features_df.columns) >= 24, "Insufficient features"
     print(f"✓ Feature count verified: {len(features_df.columns)}")
-    
+
     # Data preprocessing
     print("\n📊 TEST 3: Data Preprocessing")
     preprocessor = DataPreprocessor()
     processed_df = preprocessor.preprocess(features_df)
     print(f"✓ Missing values: {processed_df.isnull().sum().sum()}")
     print(f"✓ Shape after preprocessing: {processed_df.shape}")
-    
+
     # Label generation
     print("\n📊 TEST 4: Label Generation")
     label_gen = LabelGenerator()
@@ -164,12 +164,12 @@ async def validate_ml_pipeline():
     print(f"✓ Label distribution:")
     print(f"   - Profitable (1): {(labels == 1).sum()} ({100*(labels==1).sum()/len(labels):.1f}%)")
     print(f"   - Unprofitable (0): {(labels == 0).sum()} ({100*(labels==0).sum()/len(labels):.1f}%)")
-    
+
     # Data quality validation
     print("\n📊 TEST 5: Data Quality Validation")
     validator = DataValidator()
     metrics = validator.compute_quality_metrics(processed_df, labels)
-    
+
     print(f"✓ Feature Statistics:")
     for feature in processed_df.columns[:5]:
         mean = processed_df[feature].mean()
@@ -179,28 +179,28 @@ async def validate_ml_pipeline():
         print(f"   {feature}:")
         print(f"      Mean: {mean:.4f}, Std: {std:.4f}")
         print(f"      Min: {min_val:.4f}, Max: {max_val:.4f}")
-    
+
     print(f"\n✓ Quality Metrics:")
     print(f"   Missing values: {metrics['missing_pct']:.2f}%")
     print(f"   Feature scaling: Normalized (μ≈0, σ≈1)")
     print(f"   Label balance: {metrics['label_balance']:.2f}")
     print(f"   Data points: {len(processed_df)}")
-    
+
     # Train/val/test split
     print("\n📊 TEST 6: Train/Val/Test Split")
     train_size = int(0.7 * len(processed_df))
     val_size = int(0.15 * len(processed_df))
     test_size = len(processed_df) - train_size - val_size
-    
+
     print(f"✓ Train set: {train_size} rows ({100*train_size/len(processed_df):.1f}%)")
     print(f"✓ Validation set: {val_size} rows ({100*val_size/len(processed_df):.1f}%)")
     print(f"✓ Test set: {test_size} rows ({100*test_size/len(processed_df):.1f}%)")
-    
+
     # Feature importance check
     print("\n📊 TEST 7: Feature Correlation Check")
     correlation_matrix = processed_df.corr()
     high_corr_pairs = []
-    
+
     for i in range(len(correlation_matrix.columns)):
         for j in range(i+1, len(correlation_matrix.columns)):
             if abs(correlation_matrix.iloc[i, j]) > 0.95:
@@ -209,14 +209,14 @@ async def validate_ml_pipeline():
                     correlation_matrix.columns[j],
                     correlation_matrix.iloc[i, j]
                 ))
-    
+
     if high_corr_pairs:
         print(f"⚠️  High correlation pairs (>0.95): {len(high_corr_pairs)}")
         for feat1, feat2, corr in high_corr_pairs[:3]:
             print(f"   {feat1} <-> {feat2}: {corr:.3f}")
     else:
         print(f"✓ No excessive feature correlation (all <0.95)")
-    
+
     # Final summary
     print("\n✅ ML PIPELINE VALIDATION COMPLETE!\n")
     print(f"Summary:")
@@ -478,6 +478,6 @@ When complete, proceed to **SUBTASK 8.2** (XGBoost Model Training)
 
 ---
 
-**Parallel Timeline:** Can run simultaneously with Subtasks 4.3 + 5.1  
+**Parallel Timeline:** Can run simultaneously with Subtasks 4.3 + 5.1
 **Time to Complete:** ~120 min ⏱️
 

@@ -259,11 +259,11 @@ class TestHeartbeat:
         """AC-4.5: Heartbeat tolerates send failures and continues."""
         manager = ConnectionManager()
         hb_manager = HeartbeatManager(manager)
-        
+
         # Mock websocket that raises error on first send
         ws = AsyncMock(spec=WebSocket)
         ws.send_json = AsyncMock(side_effect=[ConnectionError("WebSocket closed"), None])
-        
+
         trader_id = "trader1"
 
         # Start heartbeat

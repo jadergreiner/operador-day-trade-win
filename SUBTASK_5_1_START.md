@@ -1,9 +1,9 @@
 # 🔐 SUBTASK 5.1: OAuth Setup & Configuration
 
-**Owner:** Dev-Backend-1 (Authentication Team)  
-**Duration:** 1.5 hours  
-**Status:** 🟢 READY TO START  
-**Start Time:** NOW (PARALLEL with PRIORITY 4+8)  
+**Owner:** Dev-Backend-1 (Authentication Team)
+**Duration:** 1.5 hours
+**Status:** 🟢 READY TO START
+**Start Time:** NOW (PARALLEL with PRIORITY 4+8)
 
 ---
 
@@ -121,13 +121,13 @@ async def validate_oauth():
     """Run OAuth validation tests."""
     config = OAuthConfig()
     manager = OAuthManager(config)
-    
+
     # Test 1: Generate token
     print("\n🔐 TEST 1: Token Generation")
     token = manager.generate_token(trader_id="trader001", scopes=["read", "write"])
     print(f"✓ Token generated: {token[:50]}...")
     print(f"✓ Token length: {len(token)} characters")
-    
+
     # Test 2: Validate token
     print("\n🔐 TEST 2: Token Validation")
     payload = manager.validate_token(token)
@@ -135,7 +135,7 @@ async def validate_oauth():
     print(f"✓ Trader ID: {payload.get('trader_id')}")
     print(f"✓ Scopes: {payload.get('scopes')}")
     print(f"✓ Expiration: {datetime.fromtimestamp(payload['exp']).isoformat()}")
-    
+
     # Test 3: Validate claims
     print("\n🔐 TEST 3: Claim Validation")
     assert payload['trader_id'] == 'trader001', "trader_id mismatch"
@@ -143,11 +143,11 @@ async def validate_oauth():
     assert 'write' in payload['scopes'], "write scope missing"
     assert payload['exp'] > datetime.now().timestamp(), "token expired"
     print("✓ All claims validated")
-    
+
     # Test 4: Token expiration
     print("\n🔐 TEST 4: Token Expiration Check")
     expired_token = manager.generate_token(
-        trader_id="trader001", 
+        trader_id="trader001",
         scopes=["read"],
         exp_minutes=-1  # Already expired
     )
@@ -156,7 +156,7 @@ async def validate_oauth():
         print("✗ Expired token should have failed")
     except Exception as e:
         print(f"✓ Expired token rejected: {e}")
-    
+
     # Test 5: Refresh token
     print("\n🔐 TEST 5: Token Refresh")
     refresh_token = manager.generate_refresh_token(trader_id="trader001")
@@ -164,12 +164,12 @@ async def validate_oauth():
     new_payload = manager.validate_token(new_access_token)
     print(f"✓ New token generated from refresh")
     print(f"✓ New token trader_id: {new_payload['trader_id']}")
-    
+
     # Test 6: Rate limiting
     print("\n🔐 TEST 6: Rate Limiting")
     limiter = manager.rate_limiter
     client_ip = "192.168.1.100"
-    
+
     # Simulate 100 login attempts
     attempts = 0
     for i in range(105):
@@ -178,24 +178,24 @@ async def validate_oauth():
         else:
             print(f"✓ Rate limit triggered at attempt {i+1}")
             break
-    
+
     print(f"✓ Allowed {attempts} attempts from {client_ip}")
-    
+
     # Test 7: Permission validation
     print("\n🔐 TEST 7: Permission Validation")
     token_read_only = manager.generate_token(trader_id="trader001", scopes=["read"])
     payload_read = manager.validate_token(token_read_only)
-    
+
     validator = manager.permission_validator
-    
+
     # Check read permission (should pass)
     has_read = validator.check_permission(payload_read, "read")
     print(f"✓ Read permission check: {has_read}")
-    
+
     # Check write permission (should fail)
     has_write = validator.check_permission(payload_read, "write")
     print(f"✓ Write permission check: {has_write} (should be False)")
-    
+
     print("\n✅ ALL OAUTH VALIDATION TESTS PASSED!\n")
 
 if __name__ == "__main__":
@@ -405,6 +405,6 @@ When complete, proceed to **SUBTASK 5.2** (FastAPI OAuth Endpoints)
 
 ---
 
-**Parallel Timeline:** Can run simultaneously with Subtasks 4.3 + 8.1  
+**Parallel Timeline:** Can run simultaneously with Subtasks 4.3 + 8.1
 **Time to Complete:** ~90 min ⏱️
 

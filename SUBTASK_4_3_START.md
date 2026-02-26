@@ -1,9 +1,9 @@
 # 🚀 SUBTASK 4.3: Heartbeat Advanced Validation
 
-**Owner:** Dev-Backend-3 (WebSocket Team)  
-**Duration:** 1 hour  
-**Status:** 🟢 READY TO START  
-**Start Time:** NOW  
+**Owner:** Dev-Backend-3 (WebSocket Team)
+**Duration:** 1 hour
+**Status:** 🟢 READY TO START
+**Start Time:** NOW
 
 ---
 
@@ -51,10 +51,10 @@ Implement and validate **advanced heartbeat functionality** to ensure robust con
 ```python
 class HeartbeatManager:
     """Manages heartbeat signals for WebSocket connections."""
-    
+
     def __init__(self):
         self.tasks: dict[str, asyncio.Task] = {}
-    
+
     async def start_heartbeat(self, trader_id: str, send_func):
         """Start heartbeat loop for trader."""
         async def heartbeat_loop():
@@ -71,11 +71,11 @@ class HeartbeatManager:
                         logger.warning(f"Heartbeat send failed: {e}")
             except asyncio.CancelledError:
                 logger.info(f"Heartbeat cancelled for trader {trader_id}")
-        
+
         if trader_id not in self.tasks:
             task = asyncio.create_task(heartbeat_loop())
             self.tasks[trader_id] = task
-    
+
     async def stop_heartbeat(self, trader_id: str):
         """Stop heartbeat for trader."""
         if trader_id in self.tasks:
@@ -103,14 +103,14 @@ async def test_heartbeat_timeout_recovery():
     """AC-4.1: Connection survives 40s without heartbeat (30s + 10s grace)."""
     hb_manager = HeartbeatManager()
     mock_send = AsyncMock()
-    
+
     # Start heartbeat
     await hb_manager.start_heartbeat("trader1", mock_send)
-    
+
     # Simulate 40 seconds passing (exceeds 30s interval)
     await asyncio.sleep(0.1)  # Minimal wait to ensure task created
     assert "trader1" in hb_manager.tasks
-    
+
     # Task should still exist after synthetic 40s
     task = hb_manager.tasks["trader1"]
     assert not task.done()
@@ -122,18 +122,18 @@ async def test_heartbeat_pause_resume():
     connection_manager = ConnectionManager()
     hb_manager = HeartbeatManager()
     mock_send = AsyncMock()
-    
+
     # Start heartbeat
     await hb_manager.start_heartbeat("trader1", mock_send)
-    
+
     # Simulate no connections (pause scenario)
     assert len(connection_manager.active_connections) == 0
-    
+
     # Simulate reconnect
     mock_ws = AsyncMock()
     await connection_manager.connect("trader1", mock_ws)
     assert len(connection_manager.active_connections["trader1"]) == 1
-    
+
     # Heartbeat should resume
     await asyncio.sleep(0.1)
     assert "trader1" in hb_manager.tasks
@@ -144,21 +144,21 @@ async def test_heartbeat_sequence():
     """AC-4.3: Multiple heartbeats in sequence without task accumulation."""
     hb_manager = HeartbeatManager()
     send_count = 0
-    
+
     async def mock_send(msg):
         nonlocal send_count
         send_count += 1
-    
+
     # Start heartbeat
     await hb_manager.start_heartbeat("trader1", mock_send)
-    
+
     # Check task exists (one task)
     assert len(hb_manager.tasks) == 1
     initial_task = hb_manager.tasks["trader1"]
-    
+
     # Wait briefly for potential additional task creation
     await asyncio.sleep(0.1)
-    
+
     # Still only one task (no accumulation)
     assert len(hb_manager.tasks) == 1
     assert hb_manager.tasks["trader1"] is initial_task
@@ -169,14 +169,14 @@ async def test_heartbeat_clean_cancellation():
     """AC-4.4: Heartbeat cancels cleanly without warnings."""
     hb_manager = HeartbeatManager()
     mock_send = AsyncMock()
-    
+
     # Start heartbeat
     await hb_manager.start_heartbeat("trader1", mock_send)
     assert "trader1" in hb_manager.tasks
-    
+
     # Stop heartbeat (should not raise warnings)
     await hb_manager.stop_heartbeat("trader1")
-    
+
     # Verify task is gone
     assert "trader1" not in hb_manager.tasks
     logger.info("✓ Heartbeat clean cancellation: No pending tasks")
@@ -186,20 +186,20 @@ async def test_heartbeat_error_resilience():
     """AC-4.5: Heartbeat tolerates send failures and continues."""
     hb_manager = HeartbeatManager()
     send_count = 0
-    
+
     async def mock_send_with_error(msg):
         nonlocal send_count
         send_count += 1
         if send_count == 1:
             raise ConnectionError("WebSocket closed")
         # Second call succeeds
-    
+
     # Start heartbeat
     await hb_manager.start_heartbeat("trader1", mock_send_with_error)
-    
+
     # Let heartbeat run briefly
     await asyncio.sleep(0.1)
-    
+
     # Task should still exist despite error
     assert "trader1" in hb_manager.tasks
     assert not hb_manager.tasks["trader1"].done()
