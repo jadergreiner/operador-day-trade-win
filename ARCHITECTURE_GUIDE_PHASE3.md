@@ -1,7 +1,7 @@
 # Guia de Arquitetura - Phase 3 Integration
 
-**Data:** 26/02/2026  
-**Status:** 🟢 Production Ready  
+**Data:** 26/02/2026
+**Status:** 🟢 Production Ready
 **Versão:** 1.0.0
 
 ---
@@ -417,13 +417,13 @@ import json
 async def connect():
     token = "eyJ..."  # Do login anterior
     uri = f"ws://localhost:8000/ws?token={token}"
-    
+
     async with websockets.connect(uri) as websocket:
         # Enviar ping
         await websocket.send(json.dumps({"type": "ping"}))
         response = await websocket.recv()
         print(f"Pong: {response}")
-        
+
         # Obter usuários
         await websocket.send(json.dumps({"type": "get_users"}))
         response = await websocket.recv()
@@ -551,6 +551,6 @@ Solução:
 
 ---
 
-**Last Updated:** 26/02/2026  
-**Version:** 1.0.0  
+**Last Updated:** 26/02/2026
+**Version:** 1.0.0
 **Status:** 🟢 Production Ready
