@@ -47,9 +47,10 @@ def register_manual_closure():
                     entry_price,
                     entry_time,
                     status,
+                    execution_method,
                     notes,
                     created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 trade_id,
                 'WINFUT',
@@ -58,6 +59,7 @@ def register_manual_closure():
                 0.0,
                 timestamp,
                 'MANUAL_CLOSURE',
+                'manual',
                 'Encerramento manual de operações WIN ao término do horário',
                 timestamp
             ))

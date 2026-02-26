@@ -181,8 +181,8 @@ def _upsert_trade(conn: sqlite3.Connection, trade: SyncTrade) -> tuple[str, int]
                 stop_loss, take_profit,
                 status, broker_trade_id,
                 commission, profit_loss, return_percentage,
-                notes, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                notes, execution_method, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             """,
             (
                 trade.trade_id,
@@ -199,6 +199,7 @@ def _upsert_trade(conn: sqlite3.Connection, trade: SyncTrade) -> tuple[str, int]
                 trade.profit_loss,
                 trade.return_percentage,
                 trade.notes,
+                "automated",  # Trades sincronizadas do MT5 (automáticas)
             ),
         )
         return "inserted", 1
@@ -217,7 +218,7 @@ def _upsert_trade(conn: sqlite3.Connection, trade: SyncTrade) -> tuple[str, int]
             exit_price = ?, exit_time = ?,
             status = ?, broker_trade_id = ?,
             commission = ?, profit_loss = ?, return_percentage = ?,
-            notes = ?, updated_at = CURRENT_TIMESTAMP
+            notes = ?, execution_method = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         """,
         (
@@ -234,6 +235,7 @@ def _upsert_trade(conn: sqlite3.Connection, trade: SyncTrade) -> tuple[str, int]
             trade.profit_loss,
             trade.return_percentage,
             trade.notes,
+            "automated",  # Atualizar para automático
             existing_id,
         ),
     )

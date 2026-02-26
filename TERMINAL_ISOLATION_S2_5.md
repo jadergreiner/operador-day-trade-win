@@ -30,7 +30,7 @@ No `src/infrastructure/adapters/mt5_adapter.py`:
 def _get_mt5_terminal_pid(self) -> Optional[int]:
     """
     Encontra o PID do processo terminal64.exe em execução.
-    
+
     Se terminal_exe_path foi especificado, valida que corresponde.
     Caso contrário, usa o primeiro encontrado.
     """
@@ -62,7 +62,7 @@ Antes de CADA ordem crítica:
 def send_order(self, order: Order) -> str:
     # Valida isolamento antes de operação crítica (S2-5)
     self._ensure_connected_with_isolation()
-    
+
     # Depois executa ordem...
 ```
 
