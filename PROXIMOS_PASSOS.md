@@ -1,7 +1,7 @@
 # 🚀 PRÓXIMOS PASSOS - AÇÃO IMEDIATA
 
-**Status Atual:** ETAPA 2 ✅ COMPLETA (Gate 2: 🟢 GO)  
-**Data:** 25/02/2026 ~ 26/02/2026  
+**Status Atual:** ETAPA 2 ✅ COMPLETA (Gate 2: 🟢 GO)
+**Data:** 25/02/2026 ~ 26/02/2026
 **Ação Recomendada:** Proceder ETAPA 3 + ETAPA 4 (75 min)
 
 ---
@@ -202,7 +202,7 @@ After ETAPA 3 + 4 complete:
    - Coverage >= 90%
    - 5-fold CV Mean F1 > 0.65
    - No overfitting (gap < 5%)
-   
+
 ✅ ETAPA 4 PASS CRITERIA:
    - mypy: No type errors
    - pylint: No critical lint issues

@@ -1,7 +1,7 @@
 # ✅ GOVERNANÇA FINALIZADA - TASK #3 (INTEGRATION-ML-002)
 
-**Data:** 25/02/2026 23:58 UTC  
-**Status:** 🟢 **PIPELINE COMPLETO + SINCRONIZAÇÃO FINALIZADA**  
+**Data:** 25/02/2026 23:58 UTC
+**Status:** 🟢 **PIPELINE COMPLETO + SINCRONIZAÇÃO FINALIZADA**
 **Versão:** v1.2.4 (SYNC_MANIFEST.json + CHANGELOG.md atualizados)
 
 ---
@@ -285,8 +285,8 @@ A squad pode iniciar a implementação imediatamente com confiança de que:
 
 ---
 
-**Registrado por:** Coordenadora de Governança + Doc Advocate + Head de Documentação  
-**Timestamp:** 25/02/2026 23:58 UTC  
-**Commits Publicados:** 818abce, 1c240c1  
-**Versão SYNC:** v1.3.1  
+**Registrado por:** Coordenadora de Governança + Doc Advocate + Head de Documentação
+**Timestamp:** 25/02/2026 23:58 UTC
+**Commits Publicados:** 818abce, 1c240c1
+**Versão SYNC:** v1.3.1
 **Status:** 🟢 **GOVERNANÇA FINALIZADA - GO PARA EXECUÇÃO IMEDIATA**

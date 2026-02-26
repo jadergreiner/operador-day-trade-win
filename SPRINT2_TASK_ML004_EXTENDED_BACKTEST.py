@@ -57,7 +57,7 @@ Out-of-Sample: Feb 2026 - Latest (validation)
    - Source: MT5 history (via broker API)
    - Resolution: 15-minute bars
    - Period: Feb 2025 - Feb 2026
-   
+
 2. Expected Size
    - Trading days: 252
    - Bars per day: 26 (9:30 - 19:00 BRT, 15-min)
@@ -124,7 +124,7 @@ Current Policy:
   - Deployed: Feb 26, 2026 (LIVE)
   - Retrain when: Win Rate falls below 55% for 5 consecutive days
   - Frequency: ~Monthly (as data accumulates)
-  
+
 This Backtest:
   - Simulates with SAME model (no retraining)
   - Acceptable because: 252 days test period covers diverse conditions
@@ -144,13 +144,13 @@ This Backtest:
 Entry Rules:
   - Signal: p >= 0.30
   - Entry: Next bar open (1 bar delay for realistic entry)
-  
+
 Exit Rules:
   - Duration: 2-5 bars (typical scalp/day trade)
   - OR: Profit target hit (TP = entry + 100 pips)
   - OR: Stop loss hit (SL = entry - 50 pips)
   - OR: End of day (4:55 PM BRT close)
-  
+
 Position Sizing:
   - Fixed: 1 contract per trade
   - Capital: R$ 50k (Phase 1 starting capital)
@@ -189,7 +189,7 @@ Example:
   Mean daily return: +0.25%
   Std dev: +0.20%
   Sharpe = 0.25% / 0.20% = 1.25 ✅ (PASS)
-  
+
 Target: >= 1.0 (risk adjusted)
 Risk-Free: 0% (conservative, actual: ~10% Selic BRL)
 ```
@@ -203,7 +203,7 @@ Example:
   TP (profitable): 145 trades
   FP (loss): 95 trades
   Win Rate = 145 / 240 = 60.4% ✅ (PASS)
-  
+
 Target: >= 59% (minimum acceptable)
 Historical (Sprint 1): 60.7% (expect slight decay)
 ```
@@ -216,7 +216,7 @@ Example:
   Peak equity: R$ 52,000
   Trough: R$ 44,500
   Drawdown = (52k - 44.5k) / 52k = 14.4% ✅ (PASS)
-  
+
 Target: < 15% (risk control)
 Acceptable: Up to 15%
 Critical: > 20% (triggers circuit breaker)
@@ -231,7 +231,7 @@ Monthly P&L:
   Feb: +2,100 (4.2% return)
   Mar: +2,800 (5.6% return)
   ...
-  
+
 Expected: Std Dev < 30% of mean month return
 Why: Trading should be consistent, not volatile
 ```
@@ -243,7 +243,7 @@ Live Trading (30 days): TBD during Phase 1
 Expected Correlation: <= 5% decay
   - Acceptable: Live WR >= 57.5%
   - Suspect: Live WR < 54%
-  
+
 Why: Accounts for slippage, market differences, etc.
 ```
 
@@ -286,12 +286,12 @@ Analysis:
     - Avg VOLATILITY_BOLLINGER: 0.18 (high vol)
     - Avg MOMENTUM_RSI: 68 (overbought/oversold)
     - Avg MOMENTUM_OBV: +500k (volume)
-    
+
   Losing trades (95):
     - Avg VOLATILITY_BOLLINGER: 0.08 (low vol)
     - Avg MOMENTUM_RSI: 50 (neutral)
     - Avg MOMENTUM_OBV: -200k (declining volume)
-    
+
 Insight: Model works better in high-volatility, high-volume conditions
 Action: Monitor feature values in production, alert if patterns change
 ```
@@ -340,13 +340,13 @@ Note: Not sufficient for seasonal strategy, but awareness important
 def run_backtest(model, X_data, dates, prices):
     positions = []
     trades = []
-    
+
     for i in range(len(X_data)):
         # Generate prediction
         # Execute order
         # Track P&L
         # Log trade
-        
+
     return trades, equity_curve
 
 # backtest/metrics.py (100 LOC)
@@ -354,7 +354,7 @@ def calculate_metrics(trades, equity_curve):
     sharpe = calculate_sharpe(returns)
     win_rate = calculate_win_rate(trades)
     drawdown = calculate_drawdown(equity_curve)
-    
+
     return {
         'sharpe': sharpe,
         'win_rate': win_rate,
