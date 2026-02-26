@@ -224,12 +224,12 @@ Threshold │ F1    │ Win Rate │ P&L/day │ Risk
   - Mean of each feature (to detect shift)
   - Std dev of each feature
   - Min/Max values
-  
+
 [Model Performance]
   - Win Rate (target: >= 59%)
   - F1 Score (actual trading)
   - Sharpe Ratio (actual returns)
-  
+
 [Trading Metrics]
   - Number of trades
   - Average trade duration

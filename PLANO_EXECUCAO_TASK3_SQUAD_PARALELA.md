@@ -1,8 +1,8 @@
 # 🚀 PLANO DE EXECUÇÃO - TASK #3 (INTEGRATION-ML-002)
 
-**Versão:** 1.0  
-**Data:** 25/02/2026 23:58 UTC  
-**Status:** ✅ PRONTO PARA EXECUÇÃO IMEDIATA  
+**Versão:** 1.0
+**Data:** 25/02/2026 23:58 UTC
+**Status:** ✅ PRONTO PARA EXECUÇÃO IMEDIATA
 **Framework:** `prompts/executa_task.md` + `prompts/squad_multi.md`
 
 ---
@@ -205,19 +205,19 @@ HORA 2-3 (Validação + Finalização):
 
 class BacktestValidator:
     """Validador de backtest com grid search de thresholds."""
-    
+
     def __init__(self, X, y):
         """Initialize with training data."""
         self.X = X
         self.y = y
         self.model = None  # XGBoost ou modelo pre-trained
-        
+
     def grid_search(self, thresholds: list) -> dict:
         """
         Execute grid search across thresholds.
-        
+
         Thresholds: [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5]
-        
+
         Returns: {
             threshold: {
                 'f1': float,
@@ -235,32 +235,32 @@ class BacktestValidator:
             # 1. Split data (70/15/15)
             X_train, X_val, X_test, y_train, y_val, y_test = \
                 self._split_data(threshold)
-            
+
             # 2. Train model (ou usar pré-treinado)
             if self.model is None:
                 self.model = self._train_model(X_train, y_train)
-            
+
             # 3. Validate e evaluate
             y_pred_val = self.model.predict(X_val)
             metrics_val = self._calculate_metrics(y_val, y_pred_val)
-            
+
             # 4. Backtest (simular trades)
             trades = self._backtest_signal(y_test, y_pred_test)
             metrics_test = self._calculate_backtest_metrics(trades)
-            
+
             # 5. Consolidate results
             results[threshold] = {
                 'metrics_val': metrics_val,
                 'metrics_test': metrics_test,
                 'trades_count': len(trades)
             }
-        
+
         return results
-    
+
     def select_optimal_threshold(self, results: dict) -> float:
         """Select best threshold by F1 score."""
         return max(results, key=lambda t: results[t]['metrics_val']['f1'])
-    
+
     def save_report(self, results: dict, filepath: str) -> None:
         """Save report to backtest_final_metrics.json."""
         optimal_threshold = self.select_optimal_threshold(results)
@@ -337,7 +337,7 @@ def test_report_generation(training_data, tmp_path):
     report_path = tmp_path / "backtest_final_metrics.json"
     validator.save_report(results, str(report_path))
     assert report_path.exists()
-    
+
 # AC-7: Coverage > 90%
 def test_full_pipeline(training_data):
     X, y = training_data
@@ -378,7 +378,7 @@ pytest tests/unit/test_task3_ml002_backtest_validation.py \
 # test_ac5_optimal_threshold_selection PASSED
 # test_ac6_report_generation PASSED
 # test_ac7_full_pipeline PASSED
-# 
+#
 # Coverage: 95% (>90% target)
 ```
 
@@ -467,8 +467,8 @@ Antes de iniciar, confirmar:
 
 ---
 
-**Status:** 🟢 PRONTO PARA INICIAR  
-**Timestamp:** 25/02/2026 23:58 UTC  
-**Squad:** ML Expert (ID 4) + QA (ID 12) + DocAdvocate (ID 8)  
-**Duração ETA:** 2-3 horas  
+**Status:** 🟢 PRONTO PARA INICIAR
+**Timestamp:** 25/02/2026 23:58 UTC
+**Squad:** ML Expert (ID 4) + QA (ID 12) + DocAdvocate (ID 8)
+**Duração ETA:** 2-3 horas
 **Decision Point:** AC-3 >= 0.65 + AC-4 >= 60% = GO

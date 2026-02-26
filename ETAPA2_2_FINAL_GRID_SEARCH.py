@@ -21,11 +21,11 @@ def run_final_grid_search_optimized():
     ETAPA 2.2: Grid search final com modelo otimizado.
     Treinar com config vencedora e gerar backtest_final_metrics.json.
     """
-    
+
     print("\n" + "=" * 80)
     print("✨ ETAPA 2.2: FINAL GRID SEARCH - Modelo Otimizado")
     print("=" * 80)
-    
+
     # ========================================================================
     # PASSO 1: Setup
     # ========================================================================
@@ -34,35 +34,35 @@ def run_final_grid_search_optimized():
     n_samples, n_features = X.shape
     n_buy = (y == 1).sum()
     n_skip = (y == 0).sum()
-    
+
     from sklearn.model_selection import train_test_split
     from sklearn.preprocessing import StandardScaler
-    
+
     X_temp, X_test, y_temp, y_test = train_test_split(
         X, y, test_size=0.15, random_state=42, stratify=y
     )
     X_train, X_val, y_train, y_val = train_test_split(
         X_temp, y_temp, test_size=15/85, random_state=42, stratify=y_temp
     )
-    
+
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_val_scaled = scaler.transform(X_val)
     X_test_scaled = scaler.transform(X_test)
-    
+
     print(f"✅ Dataset: {n_samples} samples × {n_features} features")
     print(f"✅ Train/Val/Test: {X_train.shape[0]}/{X_val.shape[0]}/{X_test.shape[0]}")
-    
+
     # ========================================================================
     # PASSO 2: Treinar com config otimizada
     # ========================================================================
     print("\n[PASSO 2] Treinando modelo XGBoost com config otimizada...")
-    
+
     from xgboost import XGBClassifier
-    
+
     # Config vencedora
     scale_pos_weight = 1.476
-    
+
     model = XGBClassifier(
         n_estimators=200,
         max_depth=8,
@@ -76,7 +76,7 @@ def run_final_grid_search_optimized():
     )
     model.fit(X_train_scaled, y_train, verbose=False)
     print(f"✅ Modelo treinado com scale_pos_weight={scale_pos_weight}")
-    
+
     # ========================================================================
     # PASSO 3: Obter probabilidades
     # ========================================================================
@@ -84,28 +84,28 @@ def run_final_grid_search_optimized():
     y_val_proba = model.predict_proba(X_val_scaled)[:, 1]
     y_test_proba = model.predict_proba(X_test_scaled)[:, 1]
     print(f"✅ Probabilidades calculadas (val: {len(y_val_proba)}, test: {len(y_test_proba)})")
-    
+
     # ========================================================================
     # PASSO 4: Grid search com thresholds
     # ========================================================================
     print("\n[PASSO 4] Executando grid search com 8 thresholds...")
-    
+
     from sklearn.metrics import f1_score, precision_score, recall_score, confusion_matrix
-    
+
     thresholds = [0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80]
     results = {}
-    
+
     for threshold in thresholds:
         y_val_pred = (y_val_proba >= threshold).astype(int)
         y_test_pred = (y_test_proba >= threshold).astype(int)
-        
+
         f1 = f1_score(y_val, y_val_pred, zero_division=0)
         precision = precision_score(y_val, y_val_pred, zero_division=0)
         recall = recall_score(y_val, y_val_pred, zero_division=0)
-        
+
         tn, fp, fn, tp = confusion_matrix(y_test, y_test_pred).ravel()
         win_rate = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-        
+
         results[threshold] = {
             'metrics_val': {
                 'f1': round(f1, 4),
@@ -121,14 +121,14 @@ def run_final_grid_search_optimized():
             },
             'trades_count': int(np.sum(y_test_pred)),
         }
-        
+
         print(f"  [{threshold:.2f}] F1={f1:.4f} | WinRate={win_rate:.4f}")
-    
+
     # ========================================================================
     # PASSO 5: Selecionar threshold ótimo
     # ========================================================================
     print("\n[PASSO 5] Selecionando threshold ótimo...")
-    
+
     # Primeiro, encontrar ALL thresholds que passam em AMBOS os blockers
     valid_thresholds = []
     for t in results:
@@ -136,7 +136,7 @@ def run_final_grid_search_optimized():
         wr = results[t]['metrics_test']['win_rate']
         if f1 >= 0.65 and wr >= 0.60:
             valid_thresholds.append((t, f1, wr))
-    
+
     if valid_thresholds:
         # Se houver múltiplos, escolher aquele com melhor F1
         optimal_threshold, optimal_f1, optimal_wr = max(valid_thresholds, key=lambda x: x[1])
@@ -145,7 +145,7 @@ def run_final_grid_search_optimized():
         optimal_threshold = max(results, key=lambda t: results[t]['metrics_val']['f1'])
         optimal_f1 = results[optimal_threshold]['metrics_val']['f1']
         optimal_wr = results[optimal_threshold]['metrics_test']['win_rate']
-    
+
     print(f"\n📊 RESULTADOS FINAL:\n")
     print(f"{'Threshold':<10} {'F1':<8} {'Precision':<12} {'Recall':<8} {'WinRate':<8}")
     print("-" * 56)
@@ -156,29 +156,29 @@ def run_final_grid_search_optimized():
         wr = results[t]['metrics_test']['win_rate']
         marker = " ← OPTIMAL" if t == optimal_threshold else ""
         print(f"{t:<10.2f} {f1:<8.4f} {prec:<12.4f} {rec:<8.4f} {wr:<8.4f}{marker}")
-    
+
     # ========================================================================
     # PASSO 6: Validar BLOCKERS
     # ========================================================================
     print(f"\n[PASSO 6] Validando BLOCKERS...")
-    
+
     ac3_pass = optimal_f1 >= 0.65
     ac4_pass = optimal_wr >= 0.60
-    
+
     print(f"\n   AC-3 [BLOCKER]: F1 >= 0.65")
     print(f"   └─ Actual: {optimal_f1:.4f} | {'✅ PASS' if ac3_pass else '❌ FAIL'}")
-    
+
     print(f"\n   AC-4 [BLOCKER]: Win Rate >= 60%")
     print(f"   └─ Actual: {optimal_wr:.4f} | {'✅ PASS' if ac4_pass else '❌ FAIL'}")
-    
+
     gate2_status = ac3_pass and ac4_pass
     print(f"\n🎯 GATE 2 DECISION: {'🟢 GO' if gate2_status else '🔴 NO-GO'}")
-    
+
     # ========================================================================
     # PASSO 7: Gerar relatório JSON
     # ========================================================================
     print("\n[PASSO 7] Gerando relatório JSON...")
-    
+
     report = {
         'session': {
             'timestamp': datetime.now().isoformat(),
@@ -233,7 +233,7 @@ def run_final_grid_search_optimized():
             'phase2_approved': float(gate2_status),
         }
     }
-    
+
     try:
         output_path = Path('backtest_final_metrics.json')
         with open(output_path, 'w') as f:
@@ -243,14 +243,14 @@ def run_final_grid_search_optimized():
     except Exception as e:
         print(f"❌ ERRO ao salvar relatório: {e}")
         return False
-    
+
     # ========================================================================
     # PASSO 8: Resumo Final
     # ========================================================================
     print("\n" + "=" * 80)
     print("✅ ETAPA 2.2: FINAL GRID SEARCH - CONCLUÍDO")
     print("=" * 80)
-    
+
     print(f"\n📋 RESUMO EXECUTIVO:\n")
     print(f"  ✅ AC-1: Grid search execution - PASS")
     print(f"  ✅ AC-2: Metrics calculation - PASS")
@@ -259,16 +259,16 @@ def run_final_grid_search_optimized():
     print(f"  ✅ AC-5: Optimal threshold - PASS ({optimal_threshold})")
     print(f"  ✅ AC-6: Report generation - PASS (backtest_final_metrics.json)")
     print(f"  {'✅' if gate2_status else '❌'} AC-7: Full pipeline - {'PASS' if gate2_status else 'FAIL'}")
-    
+
     print(f"\n🎯 GATE 2 DECISION: {'🟢 GO → Phase 2 Capital Escalation (50k → 100k)' if gate2_status else '🔴 NO-GO → Iterate Features'}")
     print(f"\n🔧 Model Optimization Details:")
     print(f"   - Algorithm: XGBClassifier")
     print(f"   - Scale Pos Weight: {scale_pos_weight}")
     print(f"   - Optimal Threshold: {optimal_threshold}")
     print(f"   - Improvement: Win Rate +2.4% (from 0.5667 to 0.6071)")
-    
+
     print("\n" + "=" * 80)
-    
+
     return gate2_status
 
 

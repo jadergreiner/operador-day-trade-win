@@ -1,7 +1,7 @@
 # 📋 RESUMO: Pipeline de Deliberação - TASK #3 (INTEGRATION-ML-002)
 
-**Data Deliberação:** 25/02/2026 23:58 UTC  
-**Status:** ✅ PIPELINE EXECUTADO ATÉ PASSO 8 - PRONTO PARA DESENVOLVIMENTO  
+**Data Deliberação:** 25/02/2026 23:58 UTC
+**Status:** ✅ PIPELINE EXECUTADO ATÉ PASSO 8 - PRONTO PARA DESENVOLVIMENTO
 **Responsável:** GitHub Copilot + Agentes Autônomos (Coordenadora Governança + Head Doc)
 
 ---
@@ -187,7 +187,7 @@ STATUS: 🟢 PRONTO PARA INICIAR DESENVOLVIMENTO AGORA
 
 ---
 
-**Registrado por:** Coordenadora de Governança + GitHub Copilot  
-**Timestamp:** 25/02/2026 23:58 UTC  
-**Branch:** main (docs updates)  
+**Registrado por:** Coordenadora de Governança + GitHub Copilot
+**Timestamp:** 25/02/2026 23:58 UTC
+**Branch:** main (docs updates)
 **Próximo Check:** Passo 9-14 (Desenvolvimento + Tests + Documentação)

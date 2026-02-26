@@ -1,0 +1,89 @@
+{
+  "sprint": "Sprint 2",
+  "phase": "Phase 2 Execution & Deployment",
+  "start_date": "2026-02-26T00:00:00",
+  "end_date": "2026-03-12T00:00:00",
+  "duration_days": 15,
+  "team_size": 8,
+  "tasks": {
+    "ENG-003": {
+      "title": "MT5 REST API Implementation",
+      "squad": "Backend",
+      "lead": "Eng Sr",
+      "duration_days": 6,
+      "start": "26/02",
+      "end": "03/03",
+      "status": "NOT_STARTED",
+      "priority": "P0",
+      "dependencies": [],
+      "subtasks": [
+        "API design & architecture",
+        "Authentication layer",
+        "Order execution endpoints",
+        "Position tracking service",
+        "Error handling & retry logic",
+        "Integration testing"
+      ]
+    },
+    "ML-003": {
+      "title": "Feature Importance Analysis",
+      "squad": "ML",
+      "lead": "ML Expert",
+      "duration_days": 5,
+      "start": "26/02",
+      "end": "02/03",
+      "status": "NOT_STARTED",
+      "priority": "P1",
+      "dependencies": [
+        "Sprint 1 model"
+      ],
+      "subtasks": [
+        "SHAP values calculation",
+        "Feature interaction analysis",
+        "Correlation matrix update",
+        "Feature drift monitoring",
+        "Documentation"
+      ]
+    },
+    "ML-004": {
+      "title": "Extended Backtest (252 trading days)",
+      "squad": "ML",
+      "lead": "ML Expert",
+      "duration_days": 7,
+      "start": "03/03",
+      "end": "10/03",
+      "status": "BLOCKED",
+      "priority": "P0",
+      "dependencies": [
+        "ENG-003 ready"
+      ],
+      "subtasks": [
+        "Historical data load (1 year)",
+        "Performance simulation",
+        "Sharpe ratio calculation",
+        "Drawdown analysis",
+        "Trading journal generation",
+        "Report compilation"
+      ]
+    }
+  },
+  "milestones": {
+    "kickoff": {
+      "date": "26/02 09:00",
+      "description": "Sprint 2 Offical Kickoff"
+    },
+    "gate_1": {
+      "date": "05/03 17:00",
+      "description": "ENG-003 + ML-003 Complete"
+    },
+    "gate_2": {
+      "date": "10/03 17:00",
+      "description": "ML-004 Complete + UAT Ready"
+    },
+    "go_live": {
+      "date": "13/03 14:00",
+      "description": "Phase 2 Capital Activation (50k → 100k)"
+    }
+  },
+  "generated_at": "2026-02-25T23:58:21.603372"
+}

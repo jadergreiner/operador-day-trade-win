@@ -1,7 +1,7 @@
 # ✨ SPRINT 1 - CONCLUSÃO FINAL
 
-**Data:** 25/02/2026  
-**Duração Total:** 175 minutos (~3 horas)  
+**Data:** 25/02/2026
+**Duração Total:** 175 minutos (~3 horas)
 **Status:** 🟢 **SUCESSO TOTAL**
 
 ---
@@ -12,7 +12,7 @@
 
 ### ETAPA 3: Validation & Testing ✅
 - **7/7 Unit Tests PASSED**
-- AC-1: Dataset Loading ✅ 
+- AC-1: Dataset Loading ✅
 - AC-2: Feature Scaling ✅
 - AC-3: Model Training (F1=0.6742) ✅
 - AC-4: Validation Metrics ✅
@@ -55,7 +55,7 @@ XGBClassifier(
 
 **Optimal Threshold:** 0.30 (probability likelihood for BUY)
 
-**Dataset:** 
+**Dataset:**
 - 435 samples × 24 features
 - Class distribution: 54.9% BUY, 45.1% SKIP
 - Split: 70% train / 15% val / 15% test (stratified)
@@ -78,12 +78,12 @@ XGBClassifier(
    - BacktestValidator class
    - grid_search() method
    - Dataset loading & feature scaling
-   
+
 2. **ETAPA2_2_FINAL_GRID_SEARCH.py** (240 LOC)
    - Grid search com 8 thresholds
    - Model training com scale_pos_weight=1.476
    - Metrics calculation & JSON report generation
-   
+
 3. **ETAPA3_VALIDATION_TESTS.py** (194 LOC)
    - 7 Acceptance Criteria tests
    - Cross-validation (5-fold)
@@ -95,7 +95,7 @@ XGBClassifier(
    - Complete grid search results (8 thresholds)
    - Optimal threshold selection
    - AC criteria validation
-   
+
 2. **ETAPA3_validation_report.json** (1,862 bytes)
    - Unit test results
    - CV scores per fold
@@ -167,7 +167,7 @@ XGBClassifier(
 ## ✅ CHECKLIST SPRINT 1
 
 - [x] ETAPA 1: Development Setup (15 min)
-- [x] ETAPA 2: Core Implementation (85 min) 
+- [x] ETAPA 2: Core Implementation (85 min)
 - [x] ETAPA 3: Validation & Testing (45 min)
 - [x] ETAPA 4: Finalization & Commit (30 min)
 - [x] GATE 2: Approved (F1=0.7045, WR=0.6071)
@@ -190,7 +190,7 @@ XGBClassifier(
 **Code Metrics:**
 - Total Python LOC: 529
 - Total Markdown: 26 KB
-- Total JSON: 5.8 KB  
+- Total JSON: 5.8 KB
 - Git Commits: 1 (a7f5664)
 - Files Staged: 19
 
