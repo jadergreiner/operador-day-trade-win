@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "version": "1.0.0",
-    "last_update": "2026-02-24T23:15:00Z",
+    "version": "1.0.1",
+    "last_update": "2026-02-25T23:58:00Z",
     "protocol": "[SYNC] Mandatory synchronization",
     "maintainer": "Doc Advocate (id 17)",
-    "description": "Manifest de sincronização de documentos críticos do projeto"
+    "description": "Manifest de sincronização de documentos críticos do projeto - Atualizado com INTEGRATION-ML-002"
   },
   "documents_tracked": [
     {
@@ -165,6 +165,58 @@
       "documentation": "Specs + Squad + Executive plan"
     }
   },
+  "new_integrations_25feb": [
+    {
+      "id": "DOC-TASK3-001",
+      "name": "DELIBERACAO_TASK3_ML002_25FEV.md",
+      "type": "governance_decision",
+      "criticality": "🔴 CRÍTICA",
+      "created": "2026-02-25T23:58:00Z",
+      "sync_status": "✅ SINCRONIZADO",
+      "mandatory_sync_with": [
+        "docs/STATUS_ENTREGAS.md",
+        "ESPECIFICACAO_TASK3_ML002_BACKTEST_VALIDATION.md"
+      ],
+      "content_tags": ["Task #3", "Votação unânime", "Grid search", "Gate 2 blocker"]
+    },
+    {
+      "id": "DOC-TASK3-002",
+      "name": "ESPECIFICACAO_TASK3_ML002_BACKTEST_VALIDATION.md",
+      "type": "technical_specification",
+      "criticality": "🔴 CRÍTICA",
+      "created": "2026-02-25T23:58:00Z",
+      "sync_status": "✅ SINCRONIZADO",
+      "mandatory_sync_with": [
+        "TESTES_TASK3_ML002_ESPECIFICACAO.md",
+        "DELIBERACAO_TASK3_ML002_25FEV.md"
+      ],
+      "content_tags": ["Grid search 8 thresholds", "AC-1 a AC-7", "backtest_final_metrics.json"]
+    },
+    {
+      "id": "DOC-TASK3-003",
+      "name": "TESTES_TASK3_ML002_ESPECIFICACAO.md",
+      "type": "test_specification",
+      "criticality": "🔴 CRÍTICA",
+      "created": "2026-02-25T23:58:00Z",
+      "sync_status": "✅ SINCRONIZADO",
+      "mandatory_sync_with": [
+        "ESPECIFICACAO_TASK3_ML002_BACKTEST_VALIDATION.md"
+      ],
+      "content_tags": ["7 Unit tests", "1 E2E test", "Coverage >90%"]
+    },
+    {
+      "id": "DOC-TASK3-004",
+      "name": "RESUMO_PIPELINE_TASK3_25FEV.md",
+      "type": "executive_summary",
+      "criticality": "🟠 ALTA",
+      "created": "2026-02-25T23:58:00Z",
+      "sync_status": "✅ SINCRONIZADO",
+      "mandatory_sync_with": [
+        "docs/STATUS_ENTREGAS.md"
+      ],
+      "content_tags": ["Pipeline 21 passos", "Deliberação", "Próximas ações"]
+    }
+  ],
   "next_actions": [
     {
       "action": "Register all new S2-5 documents in SYNC_MANIFEST",
