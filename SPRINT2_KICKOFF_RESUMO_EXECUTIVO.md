@@ -351,8 +351,8 @@ Todos os arquivos de especificação estão prontos:
 | **QA Lead** | Responsável QA | Test Manager |
 | **Product Owner** | PO | CFO (aprovação capital) |
 
-**Standups:** Diário 15:00 UTC  
-**Gates:** 05/03 & 10/03 17:00 UTC (revisões formais)  
+**Standups:** Diário 15:00 UTC
+**Gates:** 05/03 & 10/03 17:00 UTC (revisões formais)
 **Escalação:** Imediato se bloqueadores detectados
 
 ---

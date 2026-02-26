@@ -13,9 +13,9 @@ Validar e aprovar os designs de arquitetura antes de implementação
 ## 📋 TRACKS PARALELOS
 
 ### TRACK 1: Backend Design Review
-**Lead:** Eng Sr + Arquiteto  
-**Features:** ATI-1, ATI-2, ATI-3, ATI-4  
-**Duração:** 8-12 horas  
+**Lead:** Eng Sr + Arquiteto
+**Features:** ATI-1, ATI-2, ATI-3, ATI-4
+**Duração:** 8-12 horas
 
 #### ATI-1: WebSocket Server
 **Responsável:** Eng Sr
@@ -159,9 +159,9 @@ Validar e aprovar os designs de arquitetura antes de implementação
 ---
 
 ### TRACK 2: ML Design Review
-**Lead:** ML Expert + Data Scientist  
-**Features:** ATI-5, ATI-6  
-**Duração:** 6-8 horas  
+**Lead:** ML Expert + Data Scientist
+**Features:** ATI-5, ATI-6
+**Duração:** 6-8 horas
 
 #### ATI-5: ML Model Training
 **Responsável:** ML Expert

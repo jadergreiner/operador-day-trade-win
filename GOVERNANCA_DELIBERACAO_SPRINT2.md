@@ -1,9 +1,9 @@
 # ✅ DELIBERAÇÃO E GOVERNANÇA - 10 Atividades Sprint 2
 
-**Data:** 26/02/2026 00:00 BRT  
-**Sessão:** Execução PIPELINE_TASKS.MD - Passos 6-12  
-**Status:** 🟢 **APROVADO PARA MOBILIZAÇÃO IMEDIATA**  
-**Framework:** PIPELINE_TASKS.MD (21 passos de governança)  
+**Data:** 26/02/2026 00:00 BRT
+**Sessão:** Execução PIPELINE_TASKS.MD - Passos 6-12
+**Status:** 🟢 **APROVADO PARA MOBILIZAÇÃO IMEDIATA**
+**Framework:** PIPELINE_TASKS.MD (21 passos de governança)
 
 ---
 
@@ -11,7 +11,7 @@
 
 ### ✅ Passo 6: Coordenadora de Governança Registra
 
-**Persona:** Coordenadora de Governança (ID #2)  
+**Persona:** Coordenadora de Governança (ID #2)
 **Ação:** Registrar deliberação formal de 10 atividades
 
 ```
@@ -49,14 +49,14 @@ Escalação:
 └─ Bloqueador processo → Presidente Operacional
 ```
 
-**Registrado em:** STATUS_ENTREGAS.md (seção Sprint 2)  
-**Assinatura:** Coordenadora de Governança  
+**Registrado em:** STATUS_ENTREGAS.md (seção Sprint 2)
+**Assinatura:** Coordenadora de Governança
 
 ---
 
 ### ✅ Passo 7: Arquiteto de Sistemas Valida
 
-**Persona:** Arquiteto de Sistemas (ID #6)  
+**Persona:** Arquiteto de Sistemas (ID #6)
 **Ação:** Revisar gaps e arquitetura
 
 **Análise de Arquitetura:**
@@ -246,7 +246,7 @@ Bloqueador: Aguarda TRACK 1 (ENG-003 ready)
 
 ### ✅ Passo 10: Doc Advocate Documenta
 
-**Persona:** Doc Advocate  
+**Persona:** Doc Advocate
 **Responsabilidade:** Guardiã da documentação, documenta conforme desenvolve
 
 **Policy de Documentação:**
@@ -285,7 +285,7 @@ Estilo:
 
 ### ✅ Passo 11: QA Automation Escreve Testes
 
-**Persona:** QA Manager + Test Automation Engineer  
+**Persona:** QA Manager + Test Automation Engineer
 **Responsabilidade:** Testes antes do desenvolvedor (TDD)
 
 **Cobertura de Testes por ATI:**
@@ -323,7 +323,7 @@ Test Categories:
 
 ### ✅ Passo 12: Head Monitoring Acompanha
 
-**Persona:** Head de Documentação & Standards (ID #8)  
+**Persona:** Head de Documentação & Standards (ID #8)
 **Responsabilidade:** Acompanhar entregas, atualizar docs
 
 **Monitoramento:**
@@ -378,10 +378,10 @@ GATE 2 (Quando ML-004 pronto):
 9. ✅ **Position Monitor** - Controle SL/TP automático
 10. ✅ **Gate 2 Decision** - **Ativa R$ 100k**
 
-**Equipes Mobilizadas:** 11 personas (Eng Sr + 3 devs + 2 ML + CFO + QA + Infra + Docs)  
-**Horas Alocadas:** 356h  
-**Tracks Paralelos:** 3 (Backend + Features + Backtest)  
-**Gates:** 2 (GATE 1 ENG-003+ML-003 | GATE 2 ML-004+Capital)  
+**Equipes Mobilizadas:** 11 personas (Eng Sr + 3 devs + 2 ML + CFO + QA + Infra + Docs)
+**Horas Alocadas:** 356h
+**Tracks Paralelos:** 3 (Backend + Features + Backtest)
+**Gates:** 2 (GATE 1 ENG-003+ML-003 | GATE 2 ML-004+Capital)
 
 ### ✅ Próximos Passos
 
@@ -445,6 +445,6 @@ GATE 2 (Quando ML-004 pronto):
 
 ---
 
-*Documento: GOVERNANCA_DELIBERACAO_SPRINT2.md*  
-*Framework: PIPELINE_TASKS.MD (Passos 6-12 completados)*  
+*Documento: GOVERNANCA_DELIBERACAO_SPRINT2.md*
+*Framework: PIPELINE_TASKS.MD (Passos 6-12 completados)*
 *Status: 🟢 Ready for User Approval*

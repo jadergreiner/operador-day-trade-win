@@ -1,10 +1,10 @@
 # 🚀 10 ATIVIDADES CRÍTICAS - Sprint 2
 ## Entrega de Features com Valor Real ao Operador
 
-**Status:** 🟢 **MOBILIZAÇÃO IMEDIATA - SQUADS ATIVADAS**  
-**Framework:** {{prompts/PIPELINE_TASKS.MD}} - 21 passos de execução  
-**Modelo:** Parallelization-First + Ready-When-Done  
-**Prioridade:** 10 atividades bloqueadoras que habilitam o operador  
+**Status:** 🟢 **MOBILIZAÇÃO IMEDIATA - SQUADS ATIVADAS**
+**Framework:** {{prompts/PIPELINE_TASKS.MD}} - 21 passos de execução
+**Modelo:** Parallelization-First + Ready-When-Done
+**Prioridade:** 10 atividades bloqueadoras que habilitam o operador
 
 ---
 
@@ -29,11 +29,11 @@
 
 ## 🔴 ATIVIDADE #1: DASHBOARD DE ORDENS EM TEMPO REAL
 
-**Prioridade:** 🔴 **P0-CRÍTICO (Bloqueador)**  
-**Lead:** Eng Sr + Dev-Backend-3 (WebSocket)  
-**Squad:** Timeline Backend (5 pessoas)  
-**Duração:** 40 horas  
-**Valor Operacional:** ⭐⭐⭐⭐⭐ Visibilidade 100% das ordens  
+**Prioridade:** 🔴 **P0-CRÍTICO (Bloqueador)**
+**Lead:** Eng Sr + Dev-Backend-3 (WebSocket)
+**Squad:** Timeline Backend (5 pessoas)
+**Duração:** 40 horas
+**Valor Operacional:** ⭐⭐⭐⭐⭐ Visibilidade 100% das ordens
 
 ### Descrição
 Criar um dashboard integrado que mostra ao operador **todas as ordens em tempo real** com atualização <100ms via WebSocket. O operador enxerga:
@@ -80,11 +80,11 @@ docs/DASHBOARD_ORDERS_GUIDE.md
 
 ## 🔴 ATIVIDADE #2: API DE AUTENTICAÇÃO OAUTH 2.0
 
-**Prioridade:** 🔴 **P0-CRÍTICO**  
-**Lead:** Dev-Backend-1 (Auth Specialist)  
-**Squad:** T1-Auth (2 pessoas)  
-**Duração:** 40 horas  
-**Valor Operacional:** ⭐⭐⭐⭐⭐ Segurança + Acesso autorizado  
+**Prioridade:** 🔴 **P0-CRÍTICO**
+**Lead:** Dev-Backend-1 (Auth Specialist)
+**Squad:** T1-Auth (2 pessoas)
+**Duração:** 40 horas
+**Valor Operacional:** ⭐⭐⭐⭐⭐ Segurança + Acesso autorizado
 
 ### Descrição
 Implementar OAuth 2.0 com suporte a múltiplos operadores. Cada operador autentica com credenciais próprias, recebe JWT com validade 8h, e pode renovar sem logout.
@@ -127,11 +127,11 @@ docs/AUTH_OAUTH2_API.md
 
 ## 🔴 ATIVIDADE #3: FILA ASYNC DE ORDENS (RABBITMQ)
 
-**Prioridade:** 🔴 **P0-CRÍTICO**  
-**Lead:** Dev-Backend-2 (Queue Specialist)  
-**Squad:** T1-Queue (2 pessoas)  
-**Duração:** 40 horas  
-**Valor Operacional:** ⭐⭐⭐⭐⭐ Confiabilidade 99.9%  
+**Prioridade:** 🔴 **P0-CRÍTICO**
+**Lead:** Dev-Backend-2 (Queue Specialist)
+**Squad:** T1-Queue (2 pessoas)
+**Duração:** 40 horas
+**Valor Operacional:** ⭐⭐⭐⭐⭐ Confiabilidade 99.9%
 
 ### Descrição
 Implementar fila RabbitMQ que garante **nenhuma ordem é perdida**. Operador clica "Enviar", ordem entra na fila, consumer processa com confirmação ACK.
@@ -175,11 +175,11 @@ docs/QUEUE_ARCHITECTURE.md
 
 ## 🔴 ATIVIDADE #4: WEBSOCKET REAL-TIME POSITIONS
 
-**Prioridade:** 🔴 **P0-CRÍTICO**  
-**Lead:** Dev-Backend-3 (WebSocket Specialist)  
-**Squad:** T1-WebSocket (2 pessoas)  
-**Duração:** 40 horas  
-**Valor Operacional:** ⭐⭐⭐⭐⭐ Visibilidade <100ms  
+**Prioridade:** 🔴 **P0-CRÍTICO**
+**Lead:** Dev-Backend-3 (WebSocket Specialist)
+**Squad:** T1-WebSocket (2 pessoas)
+**Duração:** 40 horas
+**Valor Operacional:** ⭐⭐⭐⭐⭐ Visibilidade <100ms
 
 ### Descrição
 Operador abre WebSocket e recebe atualizações de posições **em menos de 100ms**. Cada mudança (P&L, preço, SL/TP) é transmitida em tempo real.
@@ -221,11 +221,11 @@ docs/WEBSOCKET_API.md
 
 ## 🟡 ATIVIDADE #5: ANÁLISE DE FEATURES SHAP + CORRELAÇÃO
 
-**Prioridade:** 🟡 **P1-IMPORTANTE (Independente)**  
-**Lead:** ML Expert  
-**Squad:** T2-Features (2 pessoas)  
-**Duração:** 44 horas  
-**Valor Operacional:** ⭐⭐⭐⭐ Inteligência do modelo  
+**Prioridade:** 🟡 **P1-IMPORTANTE (Independente)**
+**Lead:** ML Expert
+**Squad:** T2-Features (2 pessoas)
+**Duração:** 44 horas
+**Valor Operacional:** ⭐⭐⭐⭐ Inteligência do modelo
 
 ### Descrição
 Analisar quais **24 features** estão contribuindo mais para as decisões do modelo. Gerar relatório SHAP com top 10 features e matriz de correlação 24×24.
@@ -270,11 +270,11 @@ docs/FEATURE_ANALYSIS_GUIDE.md
 
 ## 🟡 ATIVIDADE #6: REGRAS DE DRIFT + ALERTAS
 
-**Prioridade:** 🟡 **P1-IMPORTANTE (Independente)**  
-**Lead:** Data Scientist  
-**Squad:** T2-Drift (2 pessoas)  
-**Duração:** 44 horas  
-**Valor Operacional:** ⭐⭐⭐⭐ Monitoramento contínuo  
+**Prioridade:** 🟡 **P1-IMPORTANTE (Independente)**
+**Lead:** Data Scientist
+**Squad:** T2-Drift (2 pessoas)
+**Duração:** 44 horas
+**Valor Operacional:** ⭐⭐⭐⭐ Monitoramento contínuo
 
 ### Descrição
 Detectar automaticamente quando **o modelo está degradando** (drift detection). 3 regras:
@@ -319,12 +319,12 @@ docs/DRIFT_MONITORING_GUIDE.md
 
 ## 🔴 ATIVIDADE #7: BACKTEST DE 252 DIAS COMPLETO
 
-**Prioridade:** 🔴 **P0-CRÍTICO (Sequencial)**  
-**Lead:** ML Expert  
-**Squad:** T3-Backtest (2 pessoas)  
-**Duração:** 44 horas  
-**Status:** 🟡 **Bloqueado (aguarda ENG-003)**  
-**Valor Operacional:** ⭐⭐⭐⭐⭐ Validação Sharpe ≥1.0  
+**Prioridade:** 🔴 **P0-CRÍTICO (Sequencial)**
+**Lead:** ML Expert
+**Squad:** T3-Backtest (2 pessoas)
+**Duração:** 44 horas
+**Status:** 🟡 **Bloqueado (aguarda ENG-003)**
+**Valor Operacional:** ⭐⭐⭐⭐⭐ Validação Sharpe ≥1.0
 
 ### Descrição
 Backtest histórico de **252 dias** (1 ano completo) com 17.280 velas. Calcular Sharpe ≥1.0, Win Rate ≥59%, Drawdown <15%.
@@ -387,11 +387,11 @@ docs/BACKTEST_METHODOLOGY.md
 
 ## 🔴 ATIVIDADE #8: RETRY LOGIC (3X BACKOFF EXPONENCIAL)
 
-**Prioridade:** 🔴 **P0-CRÍTICO**  
-**Lead:** Dev-Backend-2 (Reliability Specialist)  
-**Squad:** T1-Reliability (2 pessoas)  
-**Duração:** 32 horas  
-**Valor Operacional:** ⭐⭐⭐⭐ Resiliência  
+**Prioridade:** 🔴 **P0-CRÍTICO**
+**Lead:** Dev-Backend-2 (Reliability Specialist)
+**Squad:** T1-Reliability (2 pessoas)
+**Duração:** 32 horas
+**Valor Operacional:** ⭐⭐⭐⭐ Resiliência
 
 ### Descrição
 Se uma ordem falha, tentar 3 vezes com backoff exponencial (1s → 2s → 4s). **Nenhuma ordem é perdida**.
@@ -433,11 +433,11 @@ docs/RETRY_STRATEGY.md
 
 ## 🔴 ATIVIDADE #9: POSITION MONITORING + SL/TP AUTOMÁTICO
 
-**Prioridade:** 🔴 **P0-CRÍTICO**  
-**Lead:** Dev-Backend-3 (Position Specialist)  
-**Squad:** T1-Positions (2 pessoas)  
-**Duração:** 32 horas  
-**Valor Operacional:** ⭐⭐⭐⭐ Controle automático  
+**Prioridade:** 🔴 **P0-CRÍTICO**
+**Lead:** Dev-Backend-3 (Position Specialist)
+**Squad:** T1-Positions (2 pessoas)
+**Duração:** 32 horas
+**Valor Operacional:** ⭐⭐⭐⭐ Controle automático
 
 ### Descrição
 Monitorar posições abertas e **executar automaticamente Stop Loss e Take Profit** quando níveis são atingidos.
@@ -479,12 +479,12 @@ docs/POSITION_MANAGEMENT_GUIDE.md
 
 ## 🔴 ATIVIDADE #10: CAPITAL DECISION FRAMEWORK (GATE 2)
 
-**Prioridade:** 🔴 **P0-CRÍTICO**  
-**Lead:** ML Expert + CFO  
-**Squad:** T3-Decision (3 pessoas)  
-**Duração:** 40 horas  
-**Status:** 🟡 **Bloqueado (aguarda ML-004)**  
-**Valor Operacional:** ⭐⭐⭐⭐⭐ **Ativa R$ 100k Fase 2**  
+**Prioridade:** 🔴 **P0-CRÍTICO**
+**Lead:** ML Expert + CFO
+**Squad:** T3-Decision (3 pessoas)
+**Duração:** 40 horas
+**Status:** 🟡 **Bloqueado (aguarda ML-004)**
+**Valor Operacional:** ⭐⭐⭐⭐⭐ **Ativa R$ 100k Fase 2**
 
 ### Descrição
 Framework que valida todas as métricas de backtest e aprova (ou não) o aumento de capital de R$ 50k → R$ 100k.
@@ -718,6 +718,6 @@ Próximos passos:
 
 ---
 
-*Documento: 10_ATIVIDADES_CRITICAS_SPRINT2.md*  
-*Status: 🟢 Ready for Approval & Execution*  
+*Documento: 10_ATIVIDADES_CRITICAS_SPRINT2.md*
+*Status: 🟢 Ready for Approval & Execution*
 *Framework: PIPELINE_TASKS.MD (Passos 1-5 completados)*

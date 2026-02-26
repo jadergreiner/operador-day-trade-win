@@ -1,8 +1,8 @@
 # 🎯 PRÓXIMAS TAREFAS (EM ORDEM DE PRIORIDADE)
 
-**Documento:** PROXIMAS_TAREFAS_PRIORIDADE.md  
-**Status:** ✅ Atualizado - Sem datas fictícias  
-**Operador:** INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat  
+**Documento:** PROXIMAS_TAREFAS_PRIORIDADE.md
+**Status:** ✅ Atualizado - Sem datas fictícias
+**Operador:** INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
 **Responsável:** Coordenadora de Governança + Board Multidisciplinar
 
 ---
@@ -18,7 +18,7 @@
 - [ ] Q&A e clarificações de dúvidas
 - [ ] Document attendance + sign-off
 
-**Responsável:** Coordenadora de Governança  
+**Responsável:** Coordenadora de Governança
 **Equipe:** Board Multidisciplinar (11 personas)
 
 ---
@@ -33,7 +33,7 @@
 - [ ] Git branches criadas (feature/ATI-1 a ATI-10)
 - [ ] Verify all developers can access development environment
 
-**Responsável:** Infra DevOps  
+**Responsável:** Infra DevOps
 **Equipe:** SQUAD 1 (Eng Sr, 3x Dev-Backend)
 
 ---
@@ -56,7 +56,7 @@
 - [ ] ML pipeline architecture approved
 - [ ] Monitoring setup specifications finalizadas
 
-**Responsável:** Arquiteto de Sistemas + Eng Sr + ML Expert  
+**Responsável:** Arquiteto de Sistemas + Eng Sr + ML Expert
 **Approval:** Eng Sr + ML Expert + Product Owner
 
 ---
@@ -71,7 +71,7 @@
 - [ ] First Hello World test passing
 - [ ] CI/CD pipeline green (first commit)
 
-**Responsável:** Infra DevOps + Eng Sr  
+**Responsável:** Infra DevOps + Eng Sr
 **Definition of Done:** All checks green on main branch
 
 ---
@@ -95,7 +95,7 @@
 - [ ] ML model mocks
 - [ ] Backtest data fixtures
 
-**Responsável:** QA Manager + Test Automation Engineer  
+**Responsável:** QA Manager + Test Automation Engineer
 **Target:** 98% code coverage (global target)
 
 ---
@@ -121,7 +121,7 @@
 - [ ] ATI-7: Backtest 252 dias (20 AC) - Blocked
 - [ ] ATI-10: Gate 2 Decision Framework (10 AC) - Blocked
 
-**Responsável:** Eng Sr (SQUAD 1) + ML Expert (SQUAD 2)  
+**Responsável:** Eng Sr (SQUAD 1) + ML Expert (SQUAD 2)
 **Definition of Done:** Feature coding complete, unit tests green
 
 ---
@@ -137,7 +137,7 @@
 - [ ] Clean Code principles validated
 - [ ] Commit messages follow pattern (sem acentos)
 
-**Responsável:** Arquiteto de Sistemas + Eng Sr (SQUAD 1) / ML Expert (SQUAD 2)  
+**Responsável:** Arquiteto de Sistemas + Eng Sr (SQUAD 1) / ML Expert (SQUAD 2)
 **Tools:** GitHub PR reviews, pre-commit hooks
 
 ---
@@ -153,7 +153,7 @@
 - [ ] Performance tests: P95 latency <500ms
 - [ ] Reliability tests: Queue zero message loss
 
-**Responsável:** QA Manager + Integration Engineer  
+**Responsável:** QA Manager + Integration Engineer
 **Test Coverage:** End-to-end flows
 
 ---
@@ -167,8 +167,8 @@
 - [ ] Risk discussion (5min) - New risks + escalation
 - [ ] Action items recorded + assigned
 
-**Responsável:** Coordenadora de Governança (Facilitadora)  
-**Frequência:** Diária, horário fixo  
+**Responsável:** Coordenadora de Governança (Facilitadora)
+**Frequência:** Diária, horário fixo
 **Format:** Async update + weekly sync optional
 
 ---
@@ -184,8 +184,8 @@
 - [ ] UTF-8 encoding validated
 - [ ] Cross-references verified working
 
-**Responsável:** Doc Advocate  
-**Frequência:** Semanal, Terça 18:00 (fuso horário)  
+**Responsável:** Doc Advocate
+**Frequência:** Semanal, Terça 18:00 (fuso horário)
 **Output:** Formal documentation record
 
 ---
@@ -222,7 +222,7 @@
 - [ ] INICIAR.BAT integra backtest scores
 - [ ] Capital activation status displayed
 
-**Responsável:** Dev-Backend Lead + Operações  
+**Responsável:** Dev-Backend Lead + Operações
 **Validation:** Operator remains functional end-to-end
 
 ---
@@ -244,7 +244,7 @@
 - [ ] Pattern: "feat: ...", "fix: ...", "docs: ..."
 - [ ] UTF-8 encoding on all files
 
-**Responsável:** QA Manager  
+**Responsável:** QA Manager
 **Frequency:** Per feature completion, weekly audit
 
 ---
@@ -258,7 +258,7 @@
 - [ ] Risk mitigation plans assigned
 - [ ] Escalation path clear (Coordenadora → Eng Sr/ML Expert → CEO)
 
-**Responsável:** Coordenadora de Governança  
+**Responsável:** Coordenadora de Governança
 **Frequency:** Semanal, Thursday status
 
 ---
@@ -273,8 +273,8 @@
 - [ ] SSH key working (GitHub authentication)
 - [ ] Commits pushed to origin/main
 
-**Responsável:** Coordenadora de Governança (coordena)  
-**Frequency:** Weekly, every Friday 18:00 BRT  
+**Responsável:** Coordenadora de Governança (coordena)
+**Frequency:** Weekly, every Friday 18:00 BRT
 **Audit:** Git log reviewed + CHANGELOG maintained
 
 ---
@@ -362,8 +362,8 @@
 
 ---
 
-**Última Atualização:** d4fd4aa  
-**Responsável:** Coordenadora de Governança  
+**Última Atualização:** d4fd4aa
+**Responsável:** Coordenadora de Governança
 **Próxima Review:** Após cada checkpoint
 
 ---

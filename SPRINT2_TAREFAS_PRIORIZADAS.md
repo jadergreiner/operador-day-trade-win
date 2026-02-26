@@ -267,4 +267,4 @@ Próximo step: Team standup + começar quando squad tiver ready.
 ---
 
 *Formato: Activity-First (Prioridades, sem datas)*
-*Gerado: 26/02/2026*
+*Atualizado: Sem data (ready-when-done)*
