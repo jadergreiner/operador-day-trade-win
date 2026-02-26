@@ -20,47 +20,47 @@ class DatasetLoader:
     def load_dataset(self) -> Tuple[pd.DataFrame, pd.Series]:
         """
         AC-8.1: Carregar dataset com 29 features e labels balanceados
-        
+
         Returns:
             (features_df, labels_series)
         """
         # Simulando dataset - em produção seria CSV real
         np.random.seed(42)
-        
+
         # 29 features (conforme SUBTASK 8.1)
         n_samples = 1000
-        
+
         # Gerar labels primeiro para correlação com features
         labels = np.random.choice([0, 1], n_samples, p=[0.65, 0.35])
-        
+
         # Features com correlação com labels (para melhor predição)
         # Adiciona sinal aos dados de forma que o modelo consiga aprender
         data = {}
-        
+
         # Volatilidade (4) - correlação com opportunities
         data['bb_upper'] = np.where(labels == 1, np.random.uniform(0.5, 2, n_samples), np.random.uniform(-2, -0.5, n_samples))
         data['bb_lower'] = np.where(labels == 1, np.random.uniform(0.3, 1.5, n_samples), np.random.uniform(-1.5, 0.3, n_samples))
         data['atr'] = np.where(labels == 1, np.random.uniform(50, 200, n_samples), np.random.uniform(5, 50, n_samples))
         data['sigma_3dev'] = np.where(labels == 1, np.random.uniform(1, 3, n_samples), np.random.uniform(0, 1, n_samples))
-        
+
         # Momentum (4)
         data['rsi'] = np.where(labels == 1, np.random.uniform(30, 50, n_samples), np.random.uniform(40, 70, n_samples))
         data['macd'] = np.where(labels == 1, np.random.uniform(0.5, 3, n_samples), np.random.uniform(-3, 0.5, n_samples))
         data['roc'] = np.where(labels == 1, np.random.uniform(2, 10, n_samples), np.random.uniform(-10, 2, n_samples))
         data['obv'] = np.where(labels == 1, np.random.uniform(1e6, 5e6, n_samples), np.random.uniform(0, 1e6, n_samples))
-        
+
         # Moving Average (5)
         data['sma50'] = np.where(labels == 1, np.random.uniform(100, 500, n_samples), np.random.uniform(0, 100, n_samples))
         data['ema9'] = np.where(labels == 1, np.random.uniform(150, 450, n_samples), np.random.uniform(50, 150, n_samples))
         data['ema21'] = np.where(labels == 1, np.random.uniform(120, 400, n_samples), np.random.uniform(60, 120, n_samples))
         data['slope_sma50'] = np.where(labels == 1, np.random.uniform(0.5, 2, n_samples), np.random.uniform(-2, 0.5, n_samples))
         data['sma_trend'] = labels  # Perfeita correlação com label para ajudar
-        
+
         # Padrões (3)
         data['mean_reversion'] = np.where(labels == 1, np.random.choice([0, 1], n_samples, p=[0.3, 0.7]), np.random.choice([0, 1], n_samples, p=[0.8, 0.2]))
         data['volume_spike'] = np.where(labels == 1, np.random.choice([0, 1], n_samples, p=[0.2, 0.8]), np.random.choice([0, 1], n_samples, p=[0.9, 0.1]))
         data['impulse_wave'] = np.where(labels == 1, np.random.choice([0, 1], n_samples, p=[0.25, 0.75]), np.random.choice([0, 1], n_samples, p=[0.85, 0.15]))
-        
+
         # Lags (6)
         data['return_lag1'] = np.where(labels == 1, np.random.uniform(0.5, 3, n_samples), np.random.uniform(-3, 0.5, n_samples))
         data['return_lag2'] = np.where(labels == 1, np.random.uniform(0.3, 2, n_samples), np.random.uniform(-2, 0.3, n_samples))
@@ -68,7 +68,7 @@ class DatasetLoader:
         data['close_lag1'] = np.where(labels == 1, np.random.uniform(100, 400, n_samples), np.random.uniform(50, 100, n_samples))
         data['volume_lag1'] = np.where(labels == 1, np.random.uniform(1e5, 1e6, n_samples), np.random.uniform(1e3, 1e5, n_samples))
         data['volume_lag5'] = np.where(labels == 1, np.random.uniform(5e4, 5e5, n_samples), np.random.uniform(1e3, 5e4, n_samples))
-        
+
         # Correlação (7 features em vez de 4 para total de 29)
         data['corr_sp500'] = np.where(labels == 1, np.random.uniform(0.3, 0.9, n_samples), np.random.uniform(-0.9, -0.3, n_samples))
         data['trend_strength'] = np.where(labels == 1, np.random.uniform(0.6, 1.0, n_samples), np.random.uniform(0, 0.4, n_samples))
@@ -77,15 +77,15 @@ class DatasetLoader:
         data['beta_coefficient'] = np.where(labels == 1, np.random.uniform(1.0, 2.0, n_samples), np.random.uniform(0.5, 1.0, n_samples))
         data['momentum_divergence'] = np.where(labels == 1, np.random.uniform(5, 20, n_samples), np.random.uniform(-20, 5, n_samples))
         data['volatility_skew'] = np.where(labels == 1, np.random.uniform(0.3, 1.5, n_samples), np.random.uniform(-1.5, 0.3, n_samples))
-        
+
         features_df = pd.DataFrame(data)
         labels_series = pd.Series(labels, name='target')
-        
+
         print(f"✅ AC-8.1: Dataset carregado")
         print(f"   Amostras: {features_df.shape[0]}")
         print(f"   Features: {features_df.shape[1]} (esperado 29, obteve {len(features_df.columns)})")
         print(f"   Distribuição labels: {dict(zip(*np.unique(labels, return_counts=True)))}")
-        
+
         return features_df, labels_series
 
     def prepare_data(
