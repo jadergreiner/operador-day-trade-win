@@ -1,32 +1,33 @@
-# 🚀 SPRINT 2 KICKOFF - RESUMO EXECUTIVO
+# 🚀 SPRINT 2 - ATIVIDADES & PRIORIDADES
 
-**Data:** 25/02/2026  
-**Status:** ✅ **PRONTO PARA INÍCIO 26/02 09:00 UTC**  
-**Duração:** 15 dias (26/02 - 12/03)  
+**Status:** ✅ **PRONTO PARA EXECUÇÃO**
+**Squad:** 8 personas
 **Objetivo:** Phase 2 Execution & Deployment (Capital escalation 50k → 100k)
+**Format:** Organizado por **Prioridade** (P0 > P1), não por datas
 
 ---
 
 ## 📊 VISÃO GERAL
 
 ```
-┌────────────────────────────────────────────────┐
-│          SPRINT 2: PHASE 2 EXECUTION            │
-├────────────────────────────────────────────────┤
-│                                                │
-│  3 TASKS PARALELAS:                           │
-│  ├─ ENG-003: MT5 REST API (6 dias)            │
-│  ├─ ML-003: Feature Analysis (5 dias)         │
-│  └─ ML-004: Extended Backtest (7 dias)        │
-│                                                │
-│  2 GATES CRÍTICOS:                            │
-│  ├─ GATE 1: 05/03 17:00 (ENG+ML-003 ready)   │
-│  └─ GATE 2: 10/03 17:00 (ML-004 results)     │
-│                                                │
-│  🚀 GO-LIVE: 13/03 14:00 (Phase 2 activation) │
-│     Capital: R$ 50k → R$ 100k                 │
-│                                                │
-└────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│        SPRINT 2: PHASE 2 EXECUTION               │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│  3 TASKS PARALELAS:                            │
+│  ├─ P0-1: ENG-003 - MT5 REST API               │
+│  ├─ P1-1: ML-003 - Feature Analysis            │
+│  └─ P0-2: ML-004 - Extended Backtest           │
+│           (bloqueado até ENG-003 pronto)       │
+│                                                 │
+│  GATES CRÍTICOS:                                │
+│  ├─ GATE 1: ENG-003 + ML-003 completos         │
+│  └─ GATE 2: ML-004 completo + UAT sign-off     │
+│                                                 │
+│  🚀 GO-LIVE: Quando tudo pronto                │
+│     Capital: R$ 50k → R$ 100k (if GATE 2 GO)  │
+│                                                 │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -34,10 +35,10 @@
 ## 🎯 TAREFAS (3 Tasks P0)
 
 ### Task 1: ENG-003 - MT5 REST API Implementation
-**Lead:** Eng Sr (Backend)  
-**Squad:** 3 Backend Developers  
-**Duração:** 6 dias (26/02 - 03/03)  
-**Status:** ⏳ Ready for kickoff
+**Priority:** P0 (CRÍTICO)
+**Lead:** Eng Sr (Backend)
+**Squad:** 3 Backend Developers
+**Status:** Ready for execution
 
 **O que entregar:**
 - FastAPI REST server com 5 endpoints core
@@ -61,10 +62,10 @@
 ---
 
 ### Task 2: ML-003 - Feature Importance Analysis
-**Lead:** ML Expert  
-**Squad:** ML Expert + Data Scientist  
-**Duração:** 5 dias (26/02 - 02/03)  
-**Status:** ⏳ Ready for kickoff
+**Priority:** P1 (IMPORTANTE)
+**Lead:** ML Expert
+**Squad:** ML Expert + Data Scientist
+**Status:** Ready for execution
 
 **O que entregar:**
 - SHAP values (top 10 features identified)
@@ -85,10 +86,10 @@
 ---
 
 ### Task 3: ML-004 - Extended Backtest (252 Trading Days)
-**Lead:** ML Expert  
-**Dependency:** ENG-003 (ready for integration)  
-**Duração:** 7 dias (03/03 - 10/03)  
-**Status:** 🔴 Blocked (waits for ENG-003 ready)
+**Priority:** P0 (CRÍTICO)
+**Lead:** ML Expert
+**Dependency:** Espera ENG-003 estar pronto
+**Status:** Bloqueado até ENG-003 completo
 
 **O que entregar:**
 - 252-day historical backtest (1 year)
@@ -106,103 +107,74 @@
 
 ---
 
-## 📅 TIMELINE & GATES
+## � SEQUÊNCIA DE EXECUÇÃO (SEM DATAS)
 
-### WEEK 1: Tasks Start (26/02 - 02/03)
+### Execução Paralela:
 ```
-MON 26/02: 🚀 KICKOFF
-  ├─ ENG-003 starts (design + skeleton)
-  ├─ ML-003 starts (data prep + SHAP)
-  └─ Daily sync: 15:00 UTC
-
-TUE-THU 27-29/02: Development
-  ├─ ENG-003: API implementation (Auth, Orders, Positions)
-  ├─ ML-003: Correlation + drift rules
-  └─ Integration testing starts
-
-FRI 01/03: Testing & Validation
-  ├─ ENG-003: Final unit/integration tests
-  ├─ ML-003: Report generation starts
-  └─ Peer review
-
-SAT 02/03: Finalization
-  ├─ ENG-003: Code cleanup, documentation
-  ├─ ML-003: Final report ready
-  └─ 🎯 GATE 1 READY (Friday end of day)
-
-🟢 GATE 1: 05/03 17:00 - ENG-003 + ML-003 APPROVED
-```
-
-### WEEK 2: Extended Backtest (03/03 - 09/03)
-```
-If GATE 1 GREEN:
-  └─ ML-004 starts immediately
-
-MON 03/03: Data Load
-  ├─ Load 252 days historical data
-  ├─ Feature engineering
-  └─ Feature validation
-
-TUE-FRI 04-07/03: Backtest Runs
-  ├─ Run backtest simulation
-  ├─ Compute metrics (Sharpe, WR, DD)
-  ├─ Generate monthly breakdown
-  └─ Analysis (features, regimes, seasonal)
-
-SAT-SUN 08-09/03: Report Generation
-  ├─ Full report writing (20 pages)
-  ├─ Visualizations (charts, heatmaps)
-  ├─ Peer review + fixes
-  └─ Final validation
-
-🟢 GATE 2: 10/03 17:00 - ML-004 APPROVED
-```
-
-### WEEK 3: UAT & Launch (10/03 - 13/03)
-```
-MON 10/03: GATE 2 Review
-  ├─ Metrics validation (Sharpe, WR, DD)
-  ├─ Decision: GO/NO-GO
-  └─ If GO → proceed with UAT
-
-TUE-WED 11-12/03: UAT
-  ├─ Trader sign-off testing
-  ├─ API integration test (live simulation)
-  ├─ Risk framework validation
-  └─ Final documentation
-
-🚀 GO-LIVE: 13/03 14:00
-  └─ Activate R$ 100k capital allocation
-     Start Phase 2 production trading
+┌────────────────────────────────────────────┐
+│ Track 1: ENG-003 (Infrastructure)          │
+│ ├─ Design & architecture                  │
+│ ├─ Authentication layer                   │
+│ ├─ Order execution endpoints              │
+│ ├─ Position tracking service              │
+│ ├─ Error handling & retry logic           │
+│ └─ Integration testing                    │
+│    WHEN DONE: Unblocks ML-004             │
+│                                           │
+│ Track 2: ML-003 (Analytics)                │
+│ ├─ SHAP values computation                │
+│ ├─ Correlation analysis                   │
+│ ├─ Drift detection rules                  │
+│ ├─ Alert thresholds                       │
+│ └─ Monitoring configuration               │
+│    NO DEPENDENCIES                        │
+│                                           │
+│ Track 3: ML-004 (Validation)               │
+│ ├─ Wait: ENG-003 complete                 │
+│ ├─ Load 252-day data                       │
+│ ├─ Run backtest simulation                │
+│ ├─ Compute metrics (Sharpe, WR, DD)      │
+│ └─ Generate reports                       │
+│    GATE 2 DECISION POINT                  │
+└────────────────────────────────────────────┘
 ```
 
 ---
 
 ## 🎯 GATES & DECISÕES CRÍTICAS
 
-### 🟢 GATE 1: 05/03 17:00 (ENG-003 + ML-003 Complete)
-**Critérios:**
-- ✅ ENG-003: API fully implemented + 8/8 tests passing
-- ✅ ML-003: Feature importance report + drift rules complete
+### 🟢 GATE 1: ENG-003 + ML-003 Complete
+
+**Critérios de Go:**
+- ✅ ENG-003: 8/8 AC passing
+- ✅ ML-003: 18/18 AC passing
 - ✅ Integration: API ↔ Model tested
 - ✅ Performance: API P95 latency < 500ms
+- ✅ Code review: 2+ reviewers approved
 
-**Decision:** GO/NO-GO para ML-004 start
-- **GO:** Start ML-004 immediately (schedule allows)
-- **NO-GO:** Delay 3 dias, retry GATE 1
+**Decision:**
+- **GO:** Start ML-004 imediatamente
+- **CONDITIONAL GO:** Minor fixes (1-2 AC), rework 1-2 dias
+- **NO-GO:** Major issues, rework 3+ dias, retry GATE 1
 
 ---
 
-### 🟢 GATE 2: 10/03 17:00 (ML-004 Complete + UAT Ready)
-**Critérios:**
-- ✅ Sharpe ratio >= 1.0
-- ✅ Win rate >= 59% (we achieved 60.7%)
-- ✅ Drawdown < 15%
-- ✅ UAT complete + trader sign-off
+### 🟢 GATE 2: ML-004 Complete + UAT Ready
 
-**Decision:** GO/NO-GO para Phase 2 capital activation
-- **GO:** Launch R$ 100k capital on 13/03
-- **NO-GO:** Postpone launch, reanalyze model
+**Critérios de Go (MUST ALL PASS):**
+- ✅ Sharpe ratio >= 1.0
+- ✅ Win rate >= 59%
+- ✅ Max drawdown < 15%
+- ✅ Monthly consistency < 30% std
+- ✅ 20/20 AC passing
+- ✅ Trader UAT sign-off
+- ✅ All reports approved
+
+**Decision (Capital Activation):**
+- **GO:** Ativar R$ 100k Phase 2 capital
+- **CONDITIONAL GO:** Sharpe >= 0.95 ou WR >= 58%, mais analysis
+- **REWORK:** < 2 criteria met, return to dev
+- **NO-GO:** Time expired ou < 1 criteria, delay Phase 2
 
 ---
 
@@ -259,7 +231,7 @@ BACKTEST VALIDATION:
   Win Rate:           >= 59%     (target: probability of profit)
   Max Drawdown:       < 15%      (target: risk control)
   Consistency:        < 30% std  (target: regularity)
-  
+
 EXPECTED PERFORMANCE:
   Daily Avg Return:   +0.25% - 0.35%
   Monthly P&L:        R$ 3,700 - 5,200
@@ -308,12 +280,12 @@ Todos os arquivos de especificação estão prontos:
 
 ## ✅ PRÉ-FLIGHT CHECKLIST
 
-**Antes do kickoff 26/02 09:00:**
+**Antes de começar:**
 
 - [x] Especificações técnicas finalizadas
 - [x] Squad alocado (8 personas)
-- [x] Tool de comunicação configurada (daily standups)
-- [x] Git repository pronto (branch sprint2)
+- [x] Documentação pronta
+- [x] Git repository setup
 - [x] Monitoring/logging setup
 - [x] Staging environment ready
 - [x] Historical data available (252 days)
@@ -335,20 +307,37 @@ Todos os arquivos de especificação estão prontos:
 
 ---
 
-## 🚀 PRÓXIMOS PASSOS IMEDIATOS
+## 🚀 PRÓXIMOS PASSOS
 
-**Hoje (25/02):**
-- [x] Dashboard criado
-- [x] Especificações finalizadas
-- [x] Squad briefing email enviado
-- [x] Repositório atualizado
+### Para Começar Agora:
 
-**Amanhã (26/02) - 09:00 UTC:**
-- [ ] Team standup (kickoff oficial)
-- [ ] Task allocation confirmada
-- [ ] Development begins
+1. **Time Assembly**
+   - Confirmar todas as 8 personas são
+   - Briefar sobre atividades (not datas!)
+   - Clarify AC criteria
 
-**Framework:** Daily standups 15:00 UTC (cadência)
+2. **Environment Validation**
+   - API repo setup
+   - Dependencies installed
+   - All services running (MT5 mock, RabbitMQ, Redis, PG)
+
+3. **Development Starts**
+   - ENG-003: API scaffold + auth
+   - ML-003: Data loading + SHAP
+   - First commits
+
+### Checkpoints (When Ready, No Dates):
+
+- **After ENG-003 done:** GATE 1 review
+- **After ML-004 done:** GATE 2 review + capital decision
+- **If GATE 2 GO:** Production deployment + Phase 2 activation
+
+### Daily Ritual:
+
+- [ ] Standup: 15:00 UTC (15 min)
+- [ ] Blocker identification
+- [ ] Progress update
+- [ ] Next priorities
 
 ---
 
@@ -362,26 +351,25 @@ Todos os arquivos de especificação estão prontos:
 | **QA Lead** | QA Lead | Test Manager |
 | **Product Owner** | PO | CFO (capital approval) |
 
-**Standups:** Daily 15:00 UTC  
-**Gates:** 05/03 & 10/03 17:00 UTC (formal reviews)  
+**Standups:** Daily 15:00 UTC
+**Gates:** 05/03 & 10/03 17:00 UTC (formal reviews)
 **Escalation:** Immediate if blockers detected
 
 ---
 
-## 🎊 CONCLUSÃO
+## 🎊 STATUS FINAL
 
-**Sprint 2 está 100% pronto para iniciar em 26/02 09:00 UTC**
+**Sprint 2 está 100% pronto para execução**
 
 - ✅ Especificações técnicas completas
 - ✅ Squad alocado (8 personas)
-- ✅ Timelines realistas (15 dias)
-- ✅ Gates bem definidos
+- ✅ Gates bem definidos (GATE 1, GATE 2)
 - ✅ Riscos mitigados
 - ✅ Documentação síncrona
+- ✅ Format: **Activity-First** (prioridades, não datas)
 
-**Meta final:** 🚀 GO-LIVE em 13/03 com R$ 100k capital
+**Próximo step:** Kick off quando squad estiver ready.
 
 ---
 
-*Gerado em: 25/02/2026 23:59 UTC*  
-*Status: ✅ READY FOR SPRINT 2 KICKOFF*
+*Format: Activity-First (No Dates, Priority-Based)*
