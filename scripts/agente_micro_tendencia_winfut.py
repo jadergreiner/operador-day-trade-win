@@ -2667,11 +2667,11 @@ class MicroTradingManager:
         if not opp.stop_loss or opp.stop_loss <= Decimal("0"):
             print(f"  ✗ ERRO: stop_loss inválido ou zero: {opp.stop_loss}")
             return None
-        
+
         if not opp.take_profit or opp.take_profit <= Decimal("0"):
             print(f"  ✗ ERRO: take_profit inválido ou zero: {opp.take_profit}")
             return None
-        
+
         side = OrderSide.BUY if opp.direction == "COMPRA" else OrderSide.SELL
         entry_price = Price(opp.entry)
 

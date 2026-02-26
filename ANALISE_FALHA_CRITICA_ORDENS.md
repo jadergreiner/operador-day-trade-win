@@ -1,8 +1,8 @@
 # 🚨 Análise Crítica: Falha no Envio de Stop Loss e Take Profit
 
-**Data**: 26 de fevereiro de 2026  
-**Status**: ❌ PROBLEMA CRÍTICO IDENTIFICADO  
-**Ordens Afetadas**: 2276191196, 2276191635  
+**Data**: 26 de fevereiro de 2026
+**Status**: ❌ PROBLEMA CRÍTICO IDENTIFICADO
+**Ordens Afetadas**: 2276191196, 2276191635
 **Origem**: INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
 
 ---
@@ -66,7 +66,7 @@ Isso viola a especificação obrigatória:
 
 4. agente_micro_tendencia_winfut.py :: execute_entry()
    └─→ Tenta criar Order...
-       ❌ PROBLEMA: Opportunity.stop_loss e Opportunity.take_profit 
+       ❌ PROBLEMA: Opportunity.stop_loss e Opportunity.take_profit
           podem ser zerados ou não validados antes de criar Order
 
 5. MT5Adapter.send_order()
@@ -85,7 +85,7 @@ Isso viola a especificação obrigatória:
 
 ### **Causa 1: Oportunidade não está sendo gerada com SL/TP** ❌
 
-**Localização**: `agente_micro_tendencia_winfut.py :: _generate_opportunities()`  
+**Localização**: `agente_micro_tendencia_winfut.py :: _generate_opportunities()`
 **Linha**: ~1711 até ~2100 (para VENDA, similar para COMPRA)
 
 **Evidência contra**:
@@ -95,7 +95,7 @@ Isso viola a especificação obrigatória:
 
 ### **Causa 2: Ordem não recebe SL/TP corretamente** ⚠️
 
-**Localização**: `agente_micro_tendencia_winfut.py :: execute_entry()`  
+**Localização**: `agente_micro_tendencia_winfut.py :: execute_entry()`
 **Linhas**: 2666-2677
 
 ```python
@@ -116,7 +116,7 @@ order = Order(
 
 ### **Causa 3: MT5Adapter não envia SL/TP válidos** 🔴 **PROVÁVEL**
 
-**Localização**: `src/infrastructure/adapters/mt5_adapter.py :: send_order()`  
+**Localização**: `src/infrastructure/adapters/mt5_adapter.py :: send_order()`
 **Linhas**: 685-688
 
 ```python
@@ -182,7 +182,7 @@ def execute_entry(self, opp: Opportunity) -> Optional[str]:
         take_profit=Price(opp.take_profit),  # ← PROBLEMA 2: Sem validação
     )
 
-    # ❌ FALTA: 
+    # ❌ FALTA:
     # if opp.stop_loss <= 0 or opp.take_profit <= 0:
     #     self.log("ERRO: Opportunity com SL/TP inválidos")
     #     return None
@@ -203,18 +203,18 @@ Adicionar validação ANTES de criar a Order:
 ```python
 def execute_entry(self, opp: Opportunity) -> Optional[str]:
     """Executa entrada no MT5. Retorna ticket ou None."""
-    
+
     # VALIDAÇÃO OBRIGATÓRIA
     if not opp.stop_loss or opp.stop_loss <= 0:
         print(f"  ✗ ERRO ao executar ordem: stop_loss inválido ({opp.stop_loss})")
         return None
-    
+
     if not opp.take_profit or opp.take_profit <= 0:
         print(f"  ✗ ERRO ao executar ordem: take_profit inválido ({opp.take_profit})")
         return None
-    
+
     # ... resto do código
-    
+
     order = Order(
         symbol=self.symbol,
         side=side,

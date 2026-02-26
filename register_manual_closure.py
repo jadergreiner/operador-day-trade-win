@@ -9,20 +9,20 @@ DATABASE_PATH = "data/db/trading.db"
 
 def register_manual_closure():
     """Registra o encerramento das operações manuais."""
-    
+
     try:
         conn = sqlite3.connect(DATABASE_PATH)
         cursor = conn.cursor()
-        
+
         timestamp = datetime.now().isoformat()
-        
+
         # 1. Adiciona entrada de atividade manual (se tabela existir)
         try:
             cursor.execute("""
                 INSERT INTO manual_activities (
-                    timestamp, 
-                    activity_type, 
-                    description, 
+                    timestamp,
+                    activity_type,
+                    description,
                     status
                 ) VALUES (?, ?, ?, ?)
             """, (
@@ -34,7 +34,7 @@ def register_manual_closure():
             print("✅ Atividade registrada na tabela manual_activities")
         except sqlite3.OperationalError as e:
             print(f"ℹ️ Tabela manual_activities não existe: {e}")
-        
+
         # 2. Registra na tabela de trades com status especial
         try:
             trade_id = f"MANUAL_WIN_CLOSE_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -66,7 +66,7 @@ def register_manual_closure():
             print("✅ Encerramento registrado na tabela trades")
         except sqlite3.IntegrityError as e:
             print(f"⚠️ Erro ao inserir trade: {e}")
-        
+
         # 3. Cria log estruturado em JSON
         log_entry = {
             "timestamp": timestamp,
@@ -76,7 +76,7 @@ def register_manual_closure():
             "status": "COMPLETED",
             "recorded_by": "system"
         }
-        
+
         try:
             cursor.execute("""
                 INSERT INTO trading_journal_logs (
@@ -118,10 +118,10 @@ def register_manual_closure():
             print("✅ Log estruturado registrado na tabela trading_journal_logs")
         except sqlite3.OperationalError as e:
             print(f"ℹ️ Erro ao registrar journal log: {e}")
-        
+
         # Commit de todas as transações
         conn.commit()
-        
+
         print("\n" + "="*60)
         print("✅ ENCERRAMENTO REGISTRADO COM SUCESSO")
         print("="*60)
@@ -130,13 +130,13 @@ def register_manual_closure():
         print(f"Motivo: Finalização programada de operações manuais")
         print(f"Database: {DATABASE_PATH}")
         print("="*60 + "\n")
-        
+
         return True
-        
+
     except Exception as e:
         print(f"❌ Erro ao registrar: {e}")
         return False
-        
+
     finally:
         if conn:
             conn.close()
@@ -144,20 +144,20 @@ def register_manual_closure():
 
 def verify_registration():
     """Verifica se o registro foi salvo corretamente."""
-    
+
     try:
         conn = sqlite3.connect(DATABASE_PATH)
         cursor = conn.cursor()
-        
+
         # Verifica último registro na tabela trades
         cursor.execute("""
-            SELECT trade_id, symbol, status, created_at 
-            FROM trades 
+            SELECT trade_id, symbol, status, created_at
+            FROM trades
             WHERE status = 'MANUAL_CLOSURE'
-            ORDER BY created_at DESC 
+            ORDER BY created_at DESC
             LIMIT 1
         """)
-        
+
         result = cursor.fetchone()
         if result:
             print("\n📋 ÚLTIMO REGISTRO VERIFIED:")
@@ -169,11 +169,11 @@ def verify_registration():
         else:
             print("⚠️ Nenhum registro MANUAL_CLOSURE encontrado")
             return False
-            
+
     except Exception as e:
         print(f"❌ Erro ao verificar: {e}")
         return False
-        
+
     finally:
         if conn:
             conn.close()
@@ -181,7 +181,7 @@ def verify_registration():
 
 if __name__ == "__main__":
     print("\n🔄 Registrando encerramento de operações manuais WIN...\n")
-    
+
     if register_manual_closure():
         verify_registration()
     else:
