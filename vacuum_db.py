@@ -20,17 +20,17 @@ try:
     conn.execute("VACUUM")
     conn.close()
     print("   VACUUM executado com sucesso!")
-    
+
     time.sleep(1)
     db_size_after = os.path.getsize(db_path) / (1024*1024)
     print(f"\n3. RESULTADOS")
     print(f"   Tamanho DEPOIS: {db_size_after:.2f} MB")
     print(f"   Espaco RECUPERADO: {db_size_before - db_size_after:.2f} MB")
     print(f"   Reducao: {100 * (db_size_before - db_size_after) / db_size_before:.1f}%")
-    
+
     if db_size_after < db_size_before:
         print("   [OK] Banco compactado com sucesso!")
-    
+
 except Exception as e:
     print(f"   [ERRO] {e}")
 

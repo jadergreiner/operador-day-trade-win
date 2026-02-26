@@ -1,7 +1,7 @@
 # Resultados Testes P5.2 - OAuth Endpoints ✅
 
-**Timestamp:** 2026-02-26 18:45 BRT  
-**Subtask:** PRIORITY 5.2 (OAuth JWT Endpoints)  
+**Timestamp:** 2026-02-26 18:45 BRT
+**Subtask:** PRIORITY 5.2 (OAuth JWT Endpoints)
 **Status:** ✅ **COMPLETE - ALL 5 AC VALIDATED**
 
 ## Resumo Executivo
@@ -17,10 +17,10 @@
 ## Acceptance Criteria Validadas
 
 ### ✅ AC-5.1: Login Endpoint
-**Descrição:** Endpoint POST /auth/login retorna access_token + refresh_token  
+**Descrição:** Endpoint POST /auth/login retorna access_token + refresh_token
 **Testes:**
 - `test_login_success` ✅ PASSED
-- `test_login_invalid_username` ✅ PASSED  
+- `test_login_invalid_username` ✅ PASSED
 - `test_login_invalid_password` ✅ PASSED
 
 **Estrutura da Resposta:**
@@ -36,7 +36,7 @@
 ---
 
 ### ✅ AC-5.2: Refresh Token Endpoint
-**Descrição:** Endpoint POST /auth/refresh-token renova access_token  
+**Descrição:** Endpoint POST /auth/refresh-token renova access_token
 **Testes:**
 - `test_refresh_token_success` ✅ PASSED
 - `test_refresh_token_invalid` ✅ PASSED
@@ -49,7 +49,7 @@
 ---
 
 ### ✅ AC-5.3: Logout Endpoint
-**Descrição:** Endpoint POST /auth/logout invalida token na blacklist  
+**Descrição:** Endpoint POST /auth/logout invalida token na blacklist
 **Testes:**
 - `test_logout_endpoint` ✅ PASSED
 
@@ -60,7 +60,7 @@
 ---
 
 ### ✅ AC-5.4: JWT Claims
-**Descrição:** JWT contém claims obrigatórios  
+**Descrição:** JWT contém claims obrigatórios
 **Testes:**
 - `test_protected_endpoint_with_valid_token` ✅ PASSED
 - `test_admin_user_login` ✅ PASSED
@@ -80,7 +80,7 @@
 ---
 
 ### ✅ AC-5.5: Protected Endpoints
-**Descrição:** Endpoints protegidos rejeitam requests sem token válido  
+**Descrição:** Endpoints protegidos rejeitam requests sem token válido
 **Testes:**
 - `test_protected_endpoint_without_token` ✅ PASSED (sem header → 401)
 - `test_protected_endpoint_invalid_token` ✅ PASSED (token inválido → 401)
@@ -174,8 +174,8 @@ tests/unit/test_ati2_auth_endpoints.py::TestAuthEndpoints::test_health_check    
 ## Correções Aplicadas (26/02 18:30)
 
 ### Problema 1: JWT Token Timestamps ❌ → ✅
-**Erro Original:** `JWTError` ao validar token  
-**Causa:** Usando ISO strings `'exp': expires.isoformat()` em vez de Unix timestamps  
+**Erro Original:** `JWTError` ao validar token
+**Causa:** Usando ISO strings `'exp': expires.isoformat()` em vez de Unix timestamps
 **Solução:** Alterar para `'exp': int(expires.timestamp())`
 
 **Arquivo:** `token_manager_ati2.py`
@@ -183,8 +183,8 @@ tests/unit/test_ati2_auth_endpoints.py::TestAuthEndpoints::test_health_check    
 - `create_refresh_token()`: Mesmo padrão
 
 ### Problema 2: Logout Timestamp Conversion ❌ → ✅
-**Erro Original:** `datetime fromisoformat()` falhando  
-**Causa:** Tentando converter string ISO em vez de Unix timestamp  
+**Erro Original:** `datetime fromisoformat()` falhando
+**Causa:** Tentando converter string ISO em vez de Unix timestamp
 **Solução:** Usar `datetime.fromtimestamp(exp_timestamp)`
 
 **Arquivo:** `auth_endpoints_ati2.py`

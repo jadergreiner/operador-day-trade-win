@@ -1,7 +1,7 @@
 # 📋 CHECKLIST POS-RESOLUCAO
 
-**Data:** 26/02/2026  
-**Status:** 🟢 Incidente Resolvido  
+**Data:** 26/02/2026
+**Status:** 🟢 Incidente Resolvido
 
 ## ✅ Completado
 
@@ -30,7 +30,7 @@
   ```bash
   # Execute como ADMINISTRADOR:
   agendar_limpeza.bat
-  
+
   # Verifica a tarefa foi criada:
   schtasks /query /tn "DBCleanup-Daily"
   ```
@@ -78,10 +78,10 @@ import sys
 
 def verificar_espaco_disco():
     """Verificar se ha espaco suficiente antes de rodar"""
-    result = subprocess.run([sys.executable, 'verificar_disco.py'], 
+    result = subprocess.run([sys.executable, 'verificar_disco.py'],
                           capture_output=True, text=True)
     print(result.stdout)
-    
+
     if '0.0 GB' in result.stdout:
         print("[CRITICO] Disco cheio! Executando cleanup...")
         subprocess.run([sys.executable, 'cleanup_dados_automatico.py'])
@@ -117,5 +117,5 @@ if __name__ == "__main__":
 
 ---
 
-**IMPORTANTE:** A limpeza automática já foi programada para hoje  
+**IMPORTANTE:** A limpeza automática já foi programada para hoje
 **Proxima execução:** Amanha as 04:00 AM (automático via Task Scheduler)
