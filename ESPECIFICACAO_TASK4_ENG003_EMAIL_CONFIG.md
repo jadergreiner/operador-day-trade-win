@@ -1,10 +1,10 @@
 # 🚀 TASK #4: INTEGRATION-ENG-003 - Email Configuration (SMTP)
 
-**Executor:** Eng Sr (ID 1) + DevOps (ID 7)  
-**Data Criação:** 25/02/2026 (agora)  
-**Status:** ⏳ PRONTA PARA EXECUÇÃO  
-**Squad:** 2 personas + QA (ID 12)  
-**Deliverables:** SMTP config + integration + 7 ACs + unit tests  
+**Executor:** Eng Sr (ID 1) + DevOps (ID 7)
+**Data Criação:** 25/02/2026 (agora)
+**Status:** ⏳ PRONTA PARA EXECUÇÃO
+**Squad:** 2 personas + QA (ID 12)
+**Deliverables:** SMTP config + integration + 7 ACs + unit tests
 
 ---
 
@@ -47,23 +47,23 @@ email:
     port: 587
     use_tls: true
     use_ssl: false
-  
+
   credentials:
     # Substituídos do .env em runtime
     sender_email: "${GMAIL_SENDER_EMAIL}"     # seu@gmail.com
     app_password: "${GMAIL_APP_PASSWORD}"     # 16-char password específica para app
-  
+
   settings:
     max_retries: 3
     retry_delay_sec: 5
     exponential_backoff: true
     timeout_sec: 10
-  
+
   recipients:
     alerts:
       - "${ALERT_EMAIL_RECIPIENT}"  # seu@email.com
       - "${BACKUP_EMAIL}"            # backup@email.com
-    
+
     reports:
       - "${REPORT_EMAIL_RECIPIENT}"
 
@@ -71,11 +71,11 @@ templates:
   trade_alert:
     subject: "[ALERTA] Trade {{ action }} WIN$N @ {{ price }}"
     template_file: "templates/trade_alert_email.html"
-  
+
   daily_report:
     subject: "[RELATÓRIO] {{ date }} - WIN$N Trading Results"
     template_file: "templates/daily_report_email.html"
-  
+
   error_alert:
     subject: "⚠️ [ERRO] Operador WIN - {{ error_type }}"
     template_file: "templates/error_alert_email.html"
@@ -135,7 +135,7 @@ WEBSOCKET_TIMEOUT_SEC=30
         </div>
         <div class="content">
             <p>Timestamp: <strong>{{ timestamp }}</strong></p>
-            
+
             <h3>
                 {% if action == 'BUY' %}
                     <span class="buy">📈 COMPRA</span>
@@ -143,7 +143,7 @@ WEBSOCKET_TIMEOUT_SEC=30
                     <span class="sell">📉 VENDA</span>
                 {% endif %}
             </h3>
-            
+
             <div class="metric">
                 <strong>Preço:</strong> R$ {{ price }}
             </div>
@@ -156,10 +156,10 @@ WEBSOCKET_TIMEOUT_SEC=30
             <div class="metric">
                 <strong>TP:</strong> R$ {{ take_profit }}
             </div>
-            
+
             <p><strong>Fundamentação:</strong></p>
             <p>{{ reasoning }}</p>
-            
+
             <p><strong>Fatores de Risco:</strong></p>
             <ul>
                 {% for risk in risk_factors %}
@@ -231,7 +231,7 @@ WEBSOCKET_TIMEOUT_SEC=30
                     <td>{{ sharpe_ratio }}</td>
                 </tr>
             </table>
-            
+
             <h3>Alertas Críticos</h3>
             {% if critical_alerts %}
                 <ul>
@@ -267,17 +267,17 @@ class AlertDispatcher:
     """
     Dispatcher que envia alertas via WebSocket (primário) ou Email (fallback).
     """
-    
-    def __init__(self, websocket_server: WebSocketServer, email_service: EmailService, 
+
+    def __init__(self, websocket_server: WebSocketServer, email_service: EmailService,
                  websocket_timeout_sec: int = 30):
         self.websocket_server = websocket_server
         self.email_service = email_service
         self.websocket_timeout_sec = websocket_timeout_sec
-        
+
     async def send_trade_alert(self, alert_data: Dict) -> bool:
         """
         Enviar alerta de trade via WebSocket primário ou Email fallback.
-        
+
         Args:
             alert_data: {
                 'action': 'BUY'|'SELL',
@@ -288,7 +288,7 @@ class AlertDispatcher:
                 'reasoning': str,
                 'risk_factors': List[str]
             }
-        
+
         Returns:
             bool: True se enviado com sucesso (via ws ou email)
         """
@@ -305,7 +305,7 @@ class AlertDispatcher:
                     return True
             except Exception as ws_error:
                 logger.warning(f"⚠️ WebSocket failed: {ws_error}")
-            
+
             # Fallback para Email
             logger.info("📧 Falling back to Email for trade alert...")
             email_sent = await self.email_service.send_alert_email(
@@ -318,14 +318,14 @@ class AlertDispatcher:
                 risk_factors=alert_data['risk_factors'],
                 template="trade_alert"
             )
-            
+
             if email_sent:
                 logger.info(f"✅ Trade alert sent via Email (fallback)")
                 return True
-            
+
             logger.error("❌ Failed to send trade alert via both WS and Email")
             return False
-            
+
         except Exception as e:
             logger.error(f"Unexpected error in send_trade_alert: {e}")
             return False
@@ -374,9 +374,9 @@ def test_gmail_smtp_connection(email_service):
         mock_smtp.return_value = mock_connection
         mock_connection.starttls.return_value = None
         mock_connection.login.return_value = None
-        
+
         smtp = email_service._get_smtp_connection()
-        
+
         assert smtp is not None
         mock_smtp.assert_called_once_with('smtp.gmail.com', 587)
         mock_connection.starttls.assert_called_once()
@@ -388,7 +388,7 @@ def test_credentials_security(email_service):
     # Verify credentials are loaded from .env, not hardcoded
     assert email_service.config['credentials']['app_password'] == os.getenv('GMAIL_APP_PASSWORD')
     assert email_service.config['credentials']['sender_email'] == os.getenv('GMAIL_SENDER_EMAIL')
-    
+
     # Verify config doesn't contain hardcoded passwords
     config_str = str(email_service.config)
     assert 'test_password' not in config_str
@@ -405,9 +405,9 @@ def test_template_rendering(email_service):
         'reasoning': 'Test reasoning',
         'risk_factors': ['Executar com cuidado']
     }
-    
+
     html = email_service._render_template('trade_alert_email.html', **template_data)
-    
+
     assert 'COMPRA' in html or 'BUY' in html
     assert '123.45' in html
     assert '85' in html
@@ -421,13 +421,13 @@ async def test_email_send_with_retry(email_service):
         mock_conn.send_message.return_value = None
         mock_conn.quit.return_value = None
         mock_get_conn.return_value = mock_conn
-        
+
         result = await email_service.send_email_with_retry(
             to_email='test@example.com',
             subject='Test',
             html_body='<p>Test</p>'
         )
-        
+
         assert result == True
         mock_conn.send_message.assert_called()
         mock_conn.quit.assert_called()
@@ -438,7 +438,7 @@ async def test_websocket_fallback(alert_dispatcher, email_service):
     """Should fallback to Email if WebSocket fails."""
     # Mock WebSocket to fail
     alert_dispatcher.websocket_server.broadcast = AsyncMock(side_effect=Exception("WS failed"))
-    
+
     # Mock Email success
     with patch.object(email_service, 'send_alert_email', new_callable=AsyncMock, return_value=True):
         alert_data = {
@@ -450,9 +450,9 @@ async def test_websocket_fallback(alert_dispatcher, email_service):
             'reasoning': 'Test',
             'risk_factors': []
         }
-        
+
         result = await alert_dispatcher.send_trade_alert(alert_data)
-        
+
         assert result == True
         alert_dispatcher.websocket_server.broadcast.assert_called()
 
@@ -465,7 +465,7 @@ async def test_trade_alert_email(email_service):
         mock_conn.send_message.return_value = None
         mock_conn.quit.return_value = None
         mock_get_conn.return_value = mock_conn
-        
+
         result = await email_service.send_alert_email(
             action='BUY',
             price=123.45,
@@ -476,7 +476,7 @@ async def test_trade_alert_email(email_service):
             risk_factors=['Risk 1'],
             template='trade_alert'
         )
-        
+
         assert result == True
         # Verify send_message was called
         assert mock_conn.send_message.called
@@ -488,7 +488,7 @@ def test_full_integration(alert_dispatcher, email_service):
     assert alert_dispatcher.websocket_server is not None
     assert alert_dispatcher.email_service is not None
     assert alert_dispatcher.websocket_timeout_sec > 0
-    
+
     # Verify email service config loaded
     assert 'email' in email_service.config
     assert 'templates' in email_service.config
@@ -581,7 +581,7 @@ Fallback Ativo: Email entrará em ação se WebSocket houver downtime >30sec
 
 ---
 
-**Responsável:** Eng Sr (ID 1) + DevOps (ID 7)  
-**QA:** Quality (ID 12)  
-**Timeline:** ~1-2 horas  
+**Responsável:** Eng Sr (ID 1) + DevOps (ID 7)
+**QA:** Quality (ID 12)
+**Timeline:** ~1-2 horas
 **Status:** ⏳ PRONTA PARA COMEÇAR

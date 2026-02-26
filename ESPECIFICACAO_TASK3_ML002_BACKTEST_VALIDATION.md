@@ -1,10 +1,10 @@
 # 🚀 TASK #3: INTEGRATION-ML-002 - Backtest Validation Grid Search
 
-**Executor:** ML Expert (ID 2) + Quality QA (ID 12)  
-**Data Criação:** 25/02/2026 (agora)  
-**Status:** ⏳ PRONTA PARA EXECUÇÃO  
-**Squad:** 3 personas + 2 on-call backup  
-**Deliverables:** Grid search results + 7 ACs + unit tests  
+**Executor:** ML Expert (ID 2) + Quality QA (ID 12)
+**Data Criação:** 25/02/2026 (agora)
+**Status:** ⏳ PRONTA PARA EXECUÇÃO
+**Squad:** 3 personas + 2 on-call backup
+**Deliverables:** Grid search results + 7 ACs + unit tests
 
 ---
 
@@ -60,11 +60,11 @@ thresholds = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5]
 for threshold in thresholds:
     # 1. Separar dados: train=70%, val=15%, test=15% (435*0.7=305, 65, 65)
     X_train, X_val, X_test = split_data(X, y, threshold)
-    
+
     # 2. Treinar modelo (ou usar modelo base)
     # Se usar XGBoost: treinar em X_train/y_train
     # Se usar modelo base: usar modelo pré-treinado
-    
+
     # 3. Avaliar em val set
     y_pred_val = model.predict(X_val)
     metrics_val = {
@@ -73,7 +73,7 @@ for threshold in thresholds:
         'recall': recall_score(y_val, y_pred_val),
         'accuracy': accuracy_score(y_val, y_pred_val)
     }
-    
+
     # 4. Backtest em test set (simular operações)
     trades = backtest_signal(y_test, y_pred_test, threshold)
     metrics_test = {
@@ -82,7 +82,7 @@ for threshold in thresholds:
         'sharpe_ratio': calculate_sharpe(trades),
         'max_drawdown': calculate_max_drawdown(trades)
     }
-    
+
     # 5. Salvar resultado
     results[threshold] = {
         'metrics_val': metrics_val,
@@ -148,9 +148,9 @@ def test_grid_search_execution(training_data):
     """Should execute grid search for all 8 thresholds."""
     X, y = training_data
     validator = BacktestValidator(X, y)
-    
+
     results = validator.grid_search(thresholds=[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5])
-    
+
     assert len(results) == 8
     assert all(t in results for t in [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5])
 
@@ -159,9 +159,9 @@ def test_metrics_calculation(training_data):
     """Should calculate F1, Precision, Recall, Win Rate."""
     X, y = training_data
     validator = BacktestValidator(X, y)
-    
+
     metrics = validator.calculate_metrics(y_true=y, y_pred=y)
-    
+
     assert 'f1' in metrics
     assert 'precision' in metrics
     assert 'recall' in metrics
@@ -173,9 +173,9 @@ def test_f1_threshold_validation(training_data):
     """Should have at least one threshold with F1 >= 0.65."""
     X, y = training_data
     validator = BacktestValidator(X, y)
-    
+
     results = validator.grid_search(thresholds=[1.0, 1.5, 2.0, 2.5, 3.0])
-    
+
     max_f1 = max(r['f1'] for r in results.values())
     assert max_f1 >= 0.65, f"Max F1={max_f1} < 0.65 target"
 
@@ -184,9 +184,9 @@ def test_win_rate_validation(training_data):
     """Should have at least one threshold with win_rate >= 60%."""
     X, y = training_data
     validator = BacktestValidator(X, y)
-    
+
     results = validator.grid_search(thresholds=[1.0, 1.5, 2.0, 2.5, 3.0])
-    
+
     max_wr = max(r.get('win_rate', 0) for r in results.values())
     assert max_wr >= 0.60, f"Max win_rate={max_wr} < 0.60 target"
 
@@ -195,10 +195,10 @@ def test_optimal_threshold_selection(training_data):
     """Should select best threshold by F1."""
     X, y = training_data
     validator = BacktestValidator(X, y)
-    
+
     results = validator.grid_search(thresholds=[1.0, 1.5, 2.0, 2.5, 3.0])
     optimal = validator.select_optimal_threshold(results)
-    
+
     assert optimal in [1.0, 1.5, 2.0, 2.5, 3.0]
     assert results[optimal]['f1'] == max(r['f1'] for r in results.values())
 
@@ -207,12 +207,12 @@ def test_report_generation(training_data, tmp_path):
     """Should generate backtest_final_metrics.json."""
     X, y = training_data
     validator = BacktestValidator(X, y)
-    
+
     results = validator.grid_search(thresholds=[1.0, 1.5, 2.0])
     report_path = tmp_path / "backtest_final_metrics.json"
-    
+
     validator.save_report(results, str(report_path))
-    
+
     assert report_path.exists()
     import json
     with open(report_path) as f:
@@ -225,11 +225,11 @@ def test_full_pipeline(training_data):
     """Full pipeline integration test."""
     X, y = training_data
     validator = BacktestValidator(X, y)
-    
+
     # Run full grid search
     results = validator.grid_search(thresholds=[1.0, 1.5, 2.0, 2.5, 3.0])
     optimal = validator.select_optimal_threshold(results)
-    
+
     # Verify structure
     assert len(results) == 5
     assert isinstance(optimal, float)
@@ -276,64 +276,64 @@ class BacktestValidator:
     def __init__(self, X, y):
         self.X = X
         self.y = y
-        
+
     def grid_search(self, thresholds=[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5]):
         results = {}
-        
+
         for threshold in thresholds:
             print(f"Testing threshold {threshold}...")
-            
+
             # Train model with this threshold
             model = XGBClassifier(max_depth=5, learning_rate=0.1, n_estimators=100)
-            
+
             X_train, X_val, y_train, y_val = train_test_split(
                 self.X, self.y, test_size=0.30, random_state=42
             )
             X_val2, X_test, y_val2, y_test = train_test_split(
                 X_val, y_val, test_size=0.5, random_state=42
             )
-            
+
             model.fit(X_train, y_train)
-            
+
             # Evaluate
             y_pred_val = model.predict(X_val2)
             y_pred_test = model.predict(X_test)
-            
+
             metrics_val = {
                 'f1': float(f1_score(y_val2, y_pred_val)),
                 'precision': float(precision_score(y_val2, y_pred_val)),
                 'recall': float(recall_score(y_val2, y_pred_val)),
                 'accuracy': float(accuracy_score(y_val2, y_pred_val))
             }
-            
+
             metrics_test = {
                 'f1': float(f1_score(y_test, y_pred_test)),
                 'win_rate': float((y_pred_test == y_test).sum() / len(y_test))
             }
-            
+
             results[threshold] = {
                 'metrics_val': metrics_val,
                 'metrics_test': metrics_test
             }
-        
+
         return results
-    
+
     def select_optimal_threshold(self, results):
         return max(results.keys(), key=lambda t: results[t]['metrics_val']['f1'])
-    
+
     def save_report(self, results, output_path='backtest_final_metrics.json'):
         optimal_threshold = self.select_optimal_threshold(results)
-        
+
         report = {
             'grid_search_results': results,
             'optimal_threshold': optimal_threshold,
             'optimal_metrics': results[optimal_threshold],
             'timestamp': datetime.now().isoformat()
         }
-        
+
         with open(output_path, 'w') as f:
             json.dump(report, f, indent=2)
-        
+
         print(f"✅ Report saved to {output_path}")
 ```
 
@@ -380,7 +380,7 @@ python -m pytest tests/unit/test_task3_ml002_backtest_validation.py -v --cov
 ✅ AC-1: Grid search com 8 thresholds executado
 ✅ AC-2: Métricas calculadas (F1, Precision, Recall, Win Rate)
 ✅ AC-3: F1 >= 0.65 validado ← CRÍTICO
-✅ AC-4: Win Rate >= 60% comprovado ← CRÍTICO  
+✅ AC-4: Win Rate >= 60% comprovado ← CRÍTICO
 ✅ AC-5: Threshold ótimo identificado
 ✅ AC-6: backtest_final_metrics.json persistido
 ✅ AC-7: Unit tests >90% coverage
@@ -390,7 +390,7 @@ Phase 2 Decision: GO ou NO-GO baseado em AC-3 + AC-4
 
 ---
 
-**Responsável:** ML Expert (ID 2)  
-**QA:** Quality (ID 12)  
-**Timeline:** ~2-3 horas  
+**Responsável:** ML Expert (ID 2)
+**QA:** Quality (ID 12)
+**Timeline:** ~2-3 horas
 **Status:** ⏳ PRONTA PARA COMEÇAR
