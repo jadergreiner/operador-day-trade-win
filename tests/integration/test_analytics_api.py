@@ -22,6 +22,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from analytics_collector import AnalyticsCollector
 
+try:
+    from httpx import AsyncClient
+except ImportError:
+    AsyncClient = None
+
 
 @pytest.fixture
 def analytics_db():
@@ -39,6 +44,17 @@ def analytics_db():
             os.remove(db_path)
         except:
             pass
+
+
+@pytest.fixture
+async def client():
+    """Cria mock AsyncClient para testes."""
+    if AsyncClient is None:
+        pytest.skip("httpx not installed")
+    
+    # Mock client - não precisa servidor ativo
+    mock_client = AsyncMock(spec=AsyncClient)
+    return mock_client
 
 
 class TestAnalyticsLogIntervention:

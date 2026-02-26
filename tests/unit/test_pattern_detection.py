@@ -18,7 +18,7 @@ import numpy as np
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 
-from src.application.ml_feature_engineer import MLFeatureEngineer
+from src.application.ml_feature_engineer import FeatureEngineer
 
 
 class TestDetectPatterns:

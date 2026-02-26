@@ -306,7 +306,7 @@ class AuditoriaAlertas:
         data_inicio: Optional[datetime] = None,
         data_fim: Optional[datetime] = None,
         ativo: Optional[str] = None,
-        padr ao: Optional[str] = None,
+        padrao: Optional[str] = None,
         limit: int = 100,
     ) -> List[dict]:
         """
