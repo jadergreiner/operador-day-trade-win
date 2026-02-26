@@ -18,28 +18,28 @@ def find_all_mt5_terminals():
         "FBS": "C:\\Program Files\\FBS MetaTrader 5\\terminal64.exe",
         "Zero Markets": "C:\\Program Files\\Zero Markets MetaTrader 5 Terminal\\terminal64.exe",
     }
-    
+
     found = {}
     for name, path in terminals.items():
         if Path(path).exists():
             found[name] = path
-    
+
     return found
 
 def main():
     print("\n" + "="*75)
     print("  TEST: Terminal Isolation (S2-5) Detection")
     print("="*75 + "\n")
-    
+
     # 1. Encontra terminais disponíveis
     print("🔍 Terminais MT5 disponíveis no sistema:")
     all_terminals = find_all_mt5_terminals()
-    
+
     for i, (name, path) in enumerate(all_terminals.items(), 1):
         status = "✅ CONFIGURADO" if "Clear" in name else "⚠️  RISCO ACIDENTAL"
         print(f"   {i}. [{status}] {name}")
         print(f"      └─ {path}\n")
-    
+
     # 2. Carrega configuração esperada
     print("📋 Configuração do Agente:")
     from config.settings import TradingConfig
@@ -47,7 +47,7 @@ def main():
     print(f"   ✅ Terminal esperado: {config.mt5_terminal_path}")
     print(f"   ✅ Login esperado: {config.mt5_login}")
     print(f"   ✅ Server esperado: {config.mt5_server}\n")
-    
+
     # 3. Valida que terminal configurado existe
     if Path(config.mt5_terminal_path).exists():
         print(f"   ✅ Terminal configurado EXISTE no sistema")
@@ -55,15 +55,15 @@ def main():
         print(f"   ❌ Terminal configurado NÃO EXISTE!")
         print(f"      Verifique o caminho em .env")
         return False
-    
+
     # 4. Simula validação de isolamento
     print("\n🛡️  Validação de Isolamento (S2-5):")
     print("   ┌──────────────────────────────────────────┐")
-    
+
     for name, path in all_terminals.items():
         # Verifica se é o esperado
         is_expected = config.mt5_terminal_path.lower() == path.lower()
-        
+
         if is_expected:
             print(f"   │ ✅ {name:20} → CONECTAR")
         else:
@@ -72,9 +72,9 @@ def main():
                 print(f"   │ ✅ {name:20} → CONECTAR")
             else:
                 print(f"   │ ❌ {name:20} → REJEITAR (acidental)")
-    
+
     print("   └──────────────────────────────────────────┘")
-    
+
     # 5. Resultado final
     print("\n" + "="*75)
     print("  🟢 RESULTADO: Terminal Isolation ATIVO")
@@ -85,9 +85,9 @@ def main():
     for name, path in all_terminals.items():
         if config.mt5_terminal_path.lower() != path.lower():
             print(f"   • {name}: {path}")
-    
+
     print("\n✅ Proteção contra acidental switch: ATIVA\n")
-    
+
     return True
 
 if __name__ == "__main__":

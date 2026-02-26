@@ -2663,6 +2663,15 @@ class MicroTradingManager:
 
     def execute_entry(self, opp: Opportunity) -> Optional[str]:
         """Executa entrada no MT5. Retorna ticket ou None."""
+        # Validação obrigatória de SL/TP para execução automática
+        if not opp.stop_loss or opp.stop_loss <= Decimal("0"):
+            print(f"  ✗ ERRO: stop_loss inválido ou zero: {opp.stop_loss}")
+            return None
+        
+        if not opp.take_profit or opp.take_profit <= Decimal("0"):
+            print(f"  ✗ ERRO: take_profit inválido ou zero: {opp.take_profit}")
+            return None
+        
         side = OrderSide.BUY if opp.direction == "COMPRA" else OrderSide.SELL
         entry_price = Price(opp.entry)
 
@@ -2674,6 +2683,7 @@ class MicroTradingManager:
             price=entry_price,
             stop_loss=Price(opp.stop_loss),
             take_profit=Price(opp.take_profit),
+            execution_method="automated",
         )
 
         try:

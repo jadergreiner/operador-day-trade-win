@@ -106,6 +106,7 @@ class TradeModel(Base):
     profit_loss = Column(Numeric(18, 6), nullable=True)
     return_percentage = Column(Float, nullable=True)
     notes = Column(String(1000), nullable=True)
+    execution_method = Column(String(20), default="manual", nullable=False)
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 

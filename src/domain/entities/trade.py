@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
+from typing import Literal, Optional
 from uuid import UUID, uuid4
 
 from src.domain.enums.trading_enums import OrderSide, OrderType, TradeStatus
@@ -30,6 +30,7 @@ class Order:
     order_id: UUID = field(default_factory=uuid4)
     created_at: datetime = field(default_factory=datetime.now)
     broker_order_id: Optional[str] = None
+    execution_method: Literal["manual", "automated"] = "manual"
 
     def __post_init__(self) -> None:
         """Valida ordem apos inicializacao."""
