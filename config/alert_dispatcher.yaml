@@ -8,20 +8,20 @@ dispatcher:
     timeout_seconds: 30  # Se exceder, dispara email
     broadcast_enabled: true
     max_concurrent_connections: 100
-  
+
   # Email fallback automático
   email_fallback:
     enabled: true
     use_retry: true
     max_retries: 3
     retry_delay_base: 5  # segundos
-  
+
   # Histórico de alertas
   history:
     max_size: 1000  # Manter últimos 1000 alertas
     persist_to_db: true
     cleanup_older_than_days: 30
-  
+
   # Logging (AC-5)
   logging:
     level: "INFO"
@@ -37,13 +37,13 @@ templates:
     enabled: true
     subject_pattern: "⚡ ALERTA: {symbol} {operation} | Score: {confidence_score:.0%}"
     template: "templates/alerts/trade_alert.html"
-  
+
   # Alerta de risco (circuit breakers)
   risk_alert:
     enabled: true
     subject_pattern: "⚠️  RISCO: {reason}"
     template: "templates/alerts/risk_alert.html"
-  
+
   # Relatório diário
   daily_report:
     enabled: true

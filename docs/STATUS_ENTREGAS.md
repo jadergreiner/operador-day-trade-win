@@ -673,6 +673,72 @@ DEPLOY (06/03 if GO):
 
 ---
 
+## 🎯 INTEGRATION-ML-002 - BACKTEST VALIDATION (DELIBERAÇÃO 25/02 23:58 UTC) ⏳ APROVADA
+
+### Status Deliberação
+
+| Aspecto | Resultado | Detalhes |
+|:---|:---|:---|
+| **Classificação** | 🔴 CRÍTICA (P0) | Valida modelo ML + Gate 2 decision |
+| **Decisão** | ✅ APROVADA UNÂNIME | 8/8 personas - GO |
+| **Desbloqueada por** | ✅ TASK #1 | Backtest Setup ✅ completado 25/02 21:30 |
+| **Personas** | ML Expert (Lead) + QA | Execução em paralelo possível |
+| **Timeline** | 2-3 horas | IMEDIATA - prioritária |
+| **Pré-Requisitos** | ✅ Tudo pronto | Dataset carregado ✅, ML pipeline OK ✅ |
+| **Próximo Passo** | 🟢 INICIAR IMEDIATAMENTE | Assim que ML Expert disponível |
+| **Desbloqueia** | ✅ Phase 2 Go/No-Go | ML-003, ML-004, ENG-003, Sprint 2 inteira |
+| **Branch** | `feature/integration-ml-002-backtest` | Criar antes de iniciar |
+
+### Votação Unânime (8/8 personas):
+- ✅ ML Expert (ID 4) - Lead / Implementação
+- ✅ Eng Sr (ID 3) - Architecture support
+- ✅ QA Automation (ID 12) - Testes cover
+- ✅ Doc Advocate (ID 8) - Documentação
+- ✅ Arquiteto Sistemas (ID 6) - Design review
+- ✅ Product Owner (ID 14) - Value: **CRÍTICA** (validação modelo)
+- ✅ Head Doc & Standards (ID 11) - Standards OK
+- ✅ Presidente Operacional (ID 1) - Capital decision depends on THIS
+
+### Aceite Criteria (4 Testes)
+
+| AC | Descrição | Target | Blocker |
+|:---|:---|:---|:---|
+| **AC-1** | Backtest executado com dataset completo | ✅ | Sim |
+| **AC-2** | Métricas calculadas (F1, precision, recall, ROC-AUC) | F1 > 0.65 | Sim |
+| **AC-3** | Grid search 8 thresholds sigma (1.0-3.0) | ≥8 configs | Sim |
+| **AC-4** | Win rate >= 60% em backtest histórico | >= 60% | Sim |
+
+### Entregas Esperadas
+
+| Componente | Descrição | LoC | Status |
+|:---|:---|:---|:---|
+| **backtest_results.json** | Métricas por threshold (8 configs) | - | ⏳ PENDENTE |
+| **backtest_grid_search.py** | Script grid search paralelo | ~100 | ⏳ PENDENTE |
+| **test_ml_002_backtest.py** | Unit tests (4 test cases) | ~200 | ⏳ PENDENTE |
+| **ML-002_ENTREGA.md** | Documentação formal + AC validation | ~150 | ⏳ PENDENTE |
+
+### Contexto Crítico
+
+**Por quê esta prioridade:**
+- Task #1 (dataset) ✅ liberou esta
+- Validação de modelo é **gate crítica** para decidir Phase 2
+- Resultado determina se escalamos capital ou pausamos
+- SLA: Decision precisa de 24-48h para impactar Phase 2 timeline
+
+**Se APROVADO (AC: Win rate >= 60%):**
+- ✅ Phase 2 Go confirmed
+- ✅ Capital escalation liberado (R$ 50k→100k)
+- ✅ Sprint 2+ inteira desbloqueada
+- ✅ Timeline mantido (10/04 go-live)
+
+**Se FALHA (AC: Win rate < 60%):**
+- ❌ Phase 2 No-Go
+- ❌ Retraining necessário
+- ❌ Timeline estende +1-2 semanas
+- ❌ Capital ramp-up pausado até novo modelo
+
+---
+
 ## ⏩ ITENS DESPRIORIZADOS (Sprint 3+)
 
 | ID | Task | Motivo | Status |

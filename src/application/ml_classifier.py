@@ -506,17 +506,17 @@ class GridSearchOrchestrator:
 class BacktestValidator:
     """
     Grid search validator para validar modelo ML antes de produção.
-    
+
     Executa grid search em múltiplos thresholds e valida:
     - F1 >= 0.65 (AC-3)
     - Win Rate >= 60% (AC-4)
     - Threshold ótimo selecionado (AC-5)
     """
-    
+
     def __init__(self, X: np.ndarray, y: np.ndarray, random_state: int = 42):
         """
         Inicializar validator com dados de treino/teste.
-        
+
         Args:
             X: Features array (N_samples, N_features)
             y: Labels array (N_samples,) - binary (0 ou 1)
@@ -525,27 +525,27 @@ class BacktestValidator:
         self.X = X
         self.y = y
         self.random_state = random_state
-        
+
         logger.info(f"✅ BacktestValidator initialized with X shape={X.shape}, y shape={y.shape}")
-        
+
     def grid_search(
-        self, 
+        self,
         thresholds: Optional[List[float]] = None,
         test_size: float = 0.30,
         random_state: Optional[int] = None
     ) -> Dict[float, Dict]:
         """
         Executar grid search com múltiplos thresholds.
-        
+
         AC-1: Grid Search Executado
         AC-2: Métricas Calculadas
-        
+
         Args:
             thresholds: Lista de thresholds para testar
                        Default: [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5]
             test_size: Porcentagem de dados para validação (0.30 = 30%)
             random_state: Seed (usa self.random_state se None)
-        
+
         Returns:
             Dict[float, Dict]: {
                 threshold: {
@@ -561,20 +561,20 @@ class BacktestValidator:
         except ImportError:
             logger.error("XGBoost ou sklearn não instalados")
             raise
-        
+
         if thresholds is None:
             thresholds = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5]
-        
+
         if random_state is None:
             random_state = self.random_state
-        
+
         results = {}
-        
+
         logger.info(f"🔍 Starting grid search with {len(thresholds)} thresholds...")
-        
+
         for threshold in thresholds:
             logger.info(f"  Testing threshold={threshold}")
-            
+
             # Split data: 70% train, 15% val, 15% test
             X_train, X_rest, y_train, y_rest = train_test_split(
                 self.X, self.y, test_size=test_size, random_state=random_state
@@ -582,7 +582,7 @@ class BacktestValidator:
             X_val, X_test, y_val, y_test = train_test_split(
                 X_rest, y_rest, test_size=0.5, random_state=random_state
             )
-            
+
             # Train XGBoost model
             model = XGBClassifier(
                 max_depth=5,
@@ -592,15 +592,15 @@ class BacktestValidator:
                 verbosity=0
             )
             model.fit(X_train, y_train, verbose=False)
-            
+
             # Predict on validation set
             y_pred_val = model.predict(X_val)
             y_pred_proba_val = model.predict_proba(X_val)[:, 1]
-            
+
             # Predict on test set
             y_pred_test = model.predict(X_test)
             y_pred_proba_test = model.predict_proba(X_test)[:, 1]
-            
+
             # Calculate metrics for validation set
             metrics_val = {
                 'f1': float(f1_score(y_val, y_pred_val, zero_division=0)),
@@ -608,7 +608,7 @@ class BacktestValidator:
                 'recall': float(recall_score(y_val, y_pred_val, zero_division=0)),
                 'accuracy': float(accuracy_score(y_val, y_pred_val))
             }
-            
+
             # Calculate metrics for test set
             metrics_test = {
                 'f1': float(f1_score(y_test, y_pred_test, zero_division=0)),
@@ -617,10 +617,10 @@ class BacktestValidator:
                 'accuracy': float(accuracy_score(y_test, y_pred_test)),
                 'win_rate': float((y_pred_test == y_test).sum() / len(y_test))
             }
-            
+
             # Calculate confusion matrix
             cm = confusion_matrix(y_test, y_pred_test)
-            
+
             results[threshold] = {
                 'metrics_val': metrics_val,
                 'metrics_test': metrics_test,
@@ -632,75 +632,75 @@ class BacktestValidator:
                     'test_size': len(X_test)
                 }
             }
-            
+
             logger.info(
                 f"    ✅ F1={metrics_val['f1']:.4f} (val), "
                 f"F1={metrics_test['f1']:.4f} (test), "
                 f"WR={metrics_test['win_rate']:.1%}"
             )
-        
+
         logger.info(f"✅ Grid search completed with {len(results)} thresholds")
         return results
-    
+
     def select_optimal_threshold(self, results: Dict[float, Dict]) -> float:
         """
         Selecionar threshold ótimo baseado em F1 máximo.
-        
+
         AC-5: Threshold Ótimo Selecionado
-        
+
         Args:
             results: Output do grid_search()
-        
+
         Returns:
             float: Threshold ótimo
         """
         if not results:
             raise ValueError("Results dictionary is empty")
-        
+
         # Ordenar por F1 do validation set (decrescente)
         sorted_results = sorted(
             results.items(),
             key=lambda x: x[1]['metrics_val']['f1'],
             reverse=True
         )
-        
+
         optimal_threshold = sorted_results[0][0]
         optimal_f1 = sorted_results[0][1]['metrics_val']['f1']
-        
+
         logger.info(f"🎯 Optimal threshold selected: {optimal_threshold} (F1={optimal_f1:.4f})")
-        
+
         return optimal_threshold
-    
+
     def validate_criteria(self, results: Dict[float, Dict]) -> Tuple[bool, str]:
         """
         Validar critérios GoNo-Go (F1 >= 0.65, WR >= 60%).
-        
+
         AC-3: F1 > 0.65 Validado
         AC-4: Win Rate >= 60% Validado
-        
+
         Args:
             results: Output do grid_search()
-        
+
         Returns:
             Tuple[bool, str]: (go_nogo, reason)
         """
         # Encontrar melhor F1 e WR
         max_f1 = max(r['metrics_val']['f1'] for r in results.values())
         max_wr = max(r['metrics_test']['win_rate'] for r in results.values())
-        
+
         # Validar critérios
         f1_ok = max_f1 >= 0.65
         wr_ok = max_wr >= 0.60
-        
+
         reason = f"F1={max_f1:.4f} (target 0.65) | WR={max_wr:.1%} (target 60%)"
-        
+
         if f1_ok and wr_ok:
             logger.info(f"🟢 GO DECISION: {reason}")
             return True, reason
         else:
             logger.warning(f"🔴 NO-GO DECISION: {reason}")
             return False, reason
-    
+
     def save_report(
         self,
         results: Dict[float, Dict],
@@ -708,16 +708,16 @@ class BacktestValidator:
     ) -> None:
         """
         Salvar relatório em JSON.
-        
+
         AC-6: Relatório Gerado
-        
+
         Args:
             results: Output do grid_search()
             output_path: Caminho para salvar JSON
         """
         optimal_threshold = self.select_optimal_threshold(results)
         go_nogo, reason = self.validate_criteria(results)
-        
+
         # Preparar dados para serialização (remover modelos)
         serializable_results = {}
         for threshold, data in results.items():
@@ -727,7 +727,7 @@ class BacktestValidator:
                 'confusion_matrix': data['confusion_matrix'],
                 'splits': data['splits']
             }
-        
+
         report = {
             'grid_search_results': serializable_results,
             'optimal_threshold': float(optimal_threshold),
@@ -749,38 +749,38 @@ class BacktestValidator:
                 'thresholds_tested': sorted([float(t) for t in results.keys()])
             }
         }
-        
+
         # Criar diretório se necessário
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-        
+
         # Salvar JSON
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(report, f, indent=2, ensure_ascii=False)
-        
+
         logger.info(f"✅ Report saved to {output_path}")
-    
+
     @staticmethod
     def load_from_csv(csv_path: str) -> Tuple[np.ndarray, np.ndarray]:
         """
         Carregar dados from training_dataset.csv.
-        
+
         Args:
             csv_path: Caminho para CSV (output do TODO-1)
-        
+
         Returns:
             Tuple[X, y]: Features e labels
         """
         df = pd.read_csv(csv_path)
-        
+
         # Remover window_id e label
         X = df.drop(['window_id', 'label'], axis=1).values.astype(np.float32)
         y = df['label'].values.astype(np.int32)
-        
+
         logger.info(f"✅ Data loaded from {csv_path}")
         logger.info(f"   X shape: {X.shape}")
         logger.info(f"   y shape: {y.shape}")
         logger.info(f"   Label distribution: {(y==1).sum()} BUY, {(y==0).sum()} SKIP")
-        
+
         return X, y
 
 
