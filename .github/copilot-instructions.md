@@ -15,19 +15,23 @@ Todas as ações devem seguir estas diretrizes sem exceção:
 
 ### 2. 📝 Integridade de Commits (Sem Quebra de Texto)
 - **Requisito:** Mensagens de commit devem ser legíveis e sem caracteres corrompidos
+- **Padrão:** Usar ACENTOS na documentacao/codigo, MAS SEM ACENTOS nas commit messages
 - **Problema Comum:** `docs: Sum├írio de atualiza├º├úo` (encoding incorreto) ❌
-- **Solução:** Usar UTF-8 explicitamente em todas as mensagens
+- **Solução:** Commit messages SEM ACENTOS para melhor compatibilidade universal
 - **Verificação:** Antes de fazer commit, validar que não há caracteres `├` ou `┌` nos logs
-- **Formato Correto:**
+- **Formato Correto (SEM ACENTOS):**
 
   ```bash
-  git commit -m "docs: Sumário de atualização de arquitetura"
+  git commit -m "docs: Sumario de atualizacao de arquitetura"
   git commit -m "feat: Novo sistema de trading automatizado"
-git commit -m "fix: Correção de bug no cálculo de volatilidade"
+  git commit -m "fix: Correcao de bug no calculo de volatilidade"
+  git commit -m "docs: Sprint 2 traduzido 100% para Portugues - conforme padrao projeto"
 
   ```
 
-- **Exemplo Errado:** `docs: Sum├írio de atualiza├º├úo` ❌ → Refazer com UTF-8
+- **Exemplo Errado:** `docs: Sum├írio de atualiza├º├úo` ❌ → Usar SEM ACENTOS
+- **Documentação (PODE TER ACENTOS):** Arquivos .md, .rst, docstrings devem estar em português com acentos
+- **Commits (SEM ACENTOS):** Todas mensagens commit usar forma sem acentos
 
 ### 3. 🔍 Lint de Markdown (MD013 e Outras Regras)
 - **Requisito:** Aplicar lint a TODA documentação criada ou editada
