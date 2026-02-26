@@ -291,7 +291,28 @@ Summary: 10/10 PASSED (100%) | Coverage: 100% on load_and_label()
 
 ---
 
-## 🟢 MILESTONE CRÍTICO: FASE 1 CTO SIGN-OFF (24/02 ✅ APROVADO)
+## � INTEGRATION-ML-002 - BACKTEST VALIDATION (EM DESENVOLVIMENTO - 25/02 23:58 UTC)
+
+### Status de Desenvolvimento
+
+| Aspecto | Status | Detalhes |
+|:---|:---|:---|
+| **Decisão** | ✅ APROVADA UNÂNIME | 8/8 personas votaram SIM (25/02 23:58 UTC) |
+| **Squad Alocada** | ✅ CONFIRMADA | ML Expert(ID 4) + QA(ID 12) + DocAdvocate(ID 8) |
+| **Duração ETA** | 2-3 horas | Grid search 8 thresholds em training_dataset.csv |
+| **Entrada de Dados** | ✅ READY | Dataset TODO-1 (435 × 26 + labels) ✅ |
+| **Componentes** | ✅ ESPECIFICADOS | BacktestValidator + grid_search + report_generation |
+| **Unit Tests** | 7 testes prontos | AC-1 até AC-7 com fixtures |
+| **Desbloqueia** | 4+ tasks | INTEGRATION-ML-003, ML-004, ENG-003, Sprint 2 |
+| **Blockchain Gate** | Gate 2 Decision | F1 >= 0.65 + Win Rate >= 60% → Phase 2 capital escalation |
+
+**Referência Documentação:**
+- 📄 [ESPECIFICACAO_TASK3_ML002_BACKTEST_VALIDATION.md](ESPECIFICACAO_TASK3_ML002_BACKTEST_VALIDATION.md)
+- 📄 [ANALISE_PRIORIZACAO_25FEV_SEM_DATAS.md](../ANALISE_PRIORIZACAO_25FEV_SEM_DATAS.md#task-3-integration-ml-002)
+
+---
+
+## �🟢 MILESTONE CRÍTICO: FASE 1 CTO SIGN-OFF (24/02 ✅ APROVADO)
 
 ### Status Final
 | Componente | Status | Detalhes |
