@@ -143,113 +143,113 @@
 
 ## 🎯 GATES & DECISÕES CRÍTICAS
 
-### 🟢 GATE 1: ENG-003 + ML-003 Complete
+### 🟢 GATE 1: ENG-003 + ML-003 Completos
 
-**Critérios de Go:**
-- ✅ ENG-003: 8/8 AC passing
-- ✅ ML-003: 18/18 AC passing
-- ✅ Integration: API ↔ Model tested
-- ✅ Performance: API P95 latency < 500ms
-- ✅ Code review: 2+ reviewers approved
+**Critérios de Aprovação:**
+- ✅ ENG-003: 8/8 CA passando
+- ✅ ML-003: 18/18 CA passando
+- ✅ Integração: API ↔ Modelo testado
+- ✅ Desempenho: API P95 latencia < 500ms
+- ✅ Revisão código: 2+ revisores aprovados
 
-**Decision:**
-- **GO:** Start ML-004 imediatamente
-- **CONDITIONAL GO:** Minor fixes (1-2 AC), rework 1-2 dias
-- **NO-GO:** Major issues, rework 3+ dias, retry GATE 1
-
----
-
-### 🟢 GATE 2: ML-004 Complete + UAT Ready
-
-**Critérios de Go (MUST ALL PASS):**
-- ✅ Sharpe ratio >= 1.0
-- ✅ Win rate >= 59%
-- ✅ Max drawdown < 15%
-- ✅ Monthly consistency < 30% std
-- ✅ 20/20 AC passing
-- ✅ Trader UAT sign-off
-- ✅ All reports approved
-
-**Decision (Capital Activation):**
-- **GO:** Ativar R$ 100k Phase 2 capital
-- **CONDITIONAL GO:** Sharpe >= 0.95 ou WR >= 58%, mais analysis
-- **REWORK:** < 2 criteria met, return to dev
-- **NO-GO:** Time expired ou < 1 criteria, delay Phase 2
+**Decisão:**
+- **GO:** Iniciar ML-004 imediatamente
+- **CONDICIONAL GO:** Correções menores (1-2 CA), refazer 1-2 dias
+- **NÃO-GO:** Problemas maiores, refazer 3+ dias, retentar GATE 1
 
 ---
 
-## 👥 SQUAD ALLOCATION
+### 🟢 GATE 2: ML-004 Completo + UAT Pronto
 
-| Role | Name | Hours | Tasks |
-|------|------|-------|-------|
-| **Eng Sr** | Senior Engineer | 48h | ENG-003 (design + lead) |
-| **Dev 1** | Backend Dev | 40h | ENG-003 (Auth + Orders) |
-| **Dev 2** | Backend Dev | 40h | ENG-003 (Positions + WS) |
-| **Dev 3** | Backend Dev | 40h | ENG-003 (Queue + retry) |
-| **ML Expert** | ML Lead | 48h | ML-003 + ML-004 |
-| **Data Sci** | Data Scientist | 40h | ML-003 + ML-004 |
-| **QA Lead** | Test Lead | 32h | Testing + validation |
-| **Test Eng** | Test Engineer | 32h | Test automation |
-| **DevOps** | DevOps Eng | 16h | Infrastructure |
-| **Total** | 8 personas | 336h | (21 days × 16 h/day) |
+**Critérios de Aprovação (TODOS DEVEM PASSAR):**
+- ✅ Taxa de Sharpe >= 1.0
+- ✅ Taxa de Vitória >= 59%
+- ✅ Redução Máxima < 15%
+- ✅ Consistência de redução < 30% std
+- ✅ 20/20 CA passando
+- ✅ Aprovação UAT do Operador
+- ✅ Todos os relatórios aprovados
+
+**Decisão (Ativação de Capital):**
+- **GO:** Ativar capital R$ 100k Phase 2
+- **CONDICIONAL GO:** Sharpe >= 0.95 ou Taxa >= 58%, mais análise
+- **REFAZER:** < 2 critérios atendidos, retornar ao dev
+- **NÃO-GO:** Tempo expirado ou < 1 critério, adiar Phase 2
+
+---
+
+## 👥 ALOCAÇÃO DE EQUIPE
+
+| Função | Nome | Horas | Tarefas |
+|---------|------|-------|----------|
+| **Eng Sr** | Engenheiro Sínior | 48h | ENG-003 (design + liderança) |
+| **Dev 1** | Dev Backend | 40h | ENG-003 (Auth + Ordens) |
+| **Dev 2** | Dev Backend | 40h | ENG-003 (Posições + WS) |
+| **Dev 3** | Dev Backend | 40h | ENG-003 (Fila + retry) |
+| **Especialista ML** | ML Lead | 48h | ML-003 + ML-004 |
+| **Cientista Dados** | Data Scientist | 40h | ML-003 + ML-004 |
+| **Responsável QA** | Test Lead | 32h | Testes + validação |
+| **Engenheiro Testes** | Test Engineer | 32h | Automação de testes |
+| **DevOps** | DevOps Eng | 16h | Infraestrutura |
+| **Total** | 8 personas | 336h | (21 dias × 16 h/dia) |
 
 ---
 
 ## 📊 MÉTRICAS DE SUCESSO
 
-### Sprint 2 Overall Goals
+### Metas Gerais Sprint 2
 ```
-Code Delivery:
-✅ 800 LOC API code
-✅ 400 LOC ML analysis code
-✅ 600 LOC test code
-✅ Total: 1,800 LOC novo
+Entrega de Código:
+✅ 800 linhas código API
+✅ 400 linhas código análise ML
+✅ 600 linhas código testes
+✅ Total: 1.800 linhas novo
 
-Documentation:
-✅ API specification (OpenAPI/Swagger)
-✅ Feature importance report (20 pages)
-✅ Extended backtest report (20 pages)
-✅ Monitoring config + rules
+Documentação:
+✅ Especificação API (OpenAPI/Swagger)
+✅ Relatório importância features (20 páginas)
+✅ Relatório backtest estendido (20 páginas)
+✅ Config + regras monitoramento
 
-Quality:
-✅ 100% unit test coverage
-✅ 8/8 integration tests passing
-✅ 5/5 E2E tests passing
-✅ Load test: 100 req/sec sustained
+Qualidade:
+✅ Cobertura teste unitário 100%
+✅ 8/8 testes integração passando
+✅ 5/5 testes E2E passando
+✅ Teste carga: 100 req/sec sustentado
 
-Testing:
-✅ Code review: 2+ reviewers
-✅ Performance: P95 < 200ms (API)
-✅ Reliability: 99.9% uptime
-✅ Security: HTTPS + OAuth 2.0
+Testes:
+✅ Revisão código: 2+ revisores
+✅ Desempenho: P95 < 200ms (API)
+✅ Confiabilidade: 99.9% uptime
+✅ Segurança: HTTPS + OAuth 2.0
 ```
 
-### GATE 2 Decision Metrics
+### Métricas de Decisão GATE 2
 ```
-BACKTEST VALIDATION:
-  Sharpe Ratio:       >= 1.0     (target: risk-adjusted returns)
-  Win Rate:           >= 59%     (target: probability of profit)
-  Max Drawdown:       < 15%      (target: risk control)
-  Consistency:        < 30% std  (target: regularity)
+VALIDAÇÃO DE BACKTEST:
+  Taxa de Sharpe:     >= 1.0     (alvo: retornos ajustados risco)
+  Taxa de Vitória:    >= 59%     (alvo: probabilidade lucro)
+  Redução Máxima:     < 15%      (alvo: controle risco)
+  Consistência:       < 30% std  (alvo: regularidade)
 
-EXPECTED PERFORMANCE:
-  Daily Avg Return:   +0.25% - 0.35%
-  Monthly P&L:        R$ 3,700 - 5,200
-  Annual Return:      +60% - +88%
-  Risk-Adjusted:      Sharpe 1.0+ (excellent)
+DESEMPENHO ESPERADO:
+  Retorno Médio Diário:  +0.25% - 0.35%
+  P&L Mensal:            R$ 3.700 - 5.200
+  Retorno Anual:         +60% - +88%
+  Ajustado Risco:        Sharpe 1.0+ (excelente)
 ```
 
 ---
 
 ## ⚠️ RISCOS & MITIGAÇÕES
 
-| Risk | Impact | Mitigation |
-|------|--------|-----------|
-| MT5 API unstable | P0 | Mock server, retry logic, circuit breaker |
-| Model overfitting | P0 | Out-of-sample validation, CV included |
-| Data gaps (holidays) | P1 | Validate completeness, exclude holidays |
-| Performance degradation | P1 | Load testing, monitoring alerts |
-| Token expiry during trading | P2 | Auto-refresh, long-lived cache |
+| Risco | Impacto | Mitigação |
+|-------|---------|----------|
+| MT5 API instável | P0 | Servidor mock, retry logic, circuit breaker |
+| Overfitting do modelo | P0 | Validação out-of-sample, CV incluído |
+| Lacunas dados (feriados) | P1 | Validar completude, excluir feriados |
+| Degradação desempenho | P1 | Teste carga, alertas monitoramento |
+| Expiração token trading | P2 | Auto-refresh, cache longa duração |
 
 ---
 
@@ -278,32 +278,32 @@ Todos os arquivos de especificação estão prontos:
 
 ---
 
-## ✅ PRÉ-FLIGHT CHECKLIST
+## ✅ CHECKLIST PRÉ-PARTIDA
 
 **Antes de começar:**
 
 - [x] Especificações técnicas finalizadas
 - [x] Squad alocado (8 personas)
 - [x] Documentação pronta
-- [x] Git repository setup
-- [x] Monitoring/logging setup
-- [x] Staging environment ready
-- [x] Historical data available (252 days)
-- [x] Model saved from Sprint 1 (scale_pos_weight=1.476)
-- [x] Risk framework documented
-- [x] Trader briefing agendado
+- [x] Setup repositório Git
+- [x] Setup monitoramento/logging
+- [x] Ambiente staging pronto
+- [x] Dados históricos disponíveis (252 dias)
+- [x] Modelo salvo do Sprint 1 (scale_pos_weight=1.476)
+- [x] Framework de risco documentado
+- [x] Briefing do operador agendado
 
 ---
 
-## 🎓 KEY INSIGHTS FROM SPRINT 1
+## 🎯 INSIGHTS-CHAVE DO SPRINT 1
 
 **Aplicar em Sprint 2:**
 
-1. **Model Tuning:** scale_pos_weight=1.476 é ótimo - NÃO MUDAR
-2. **Threshold:** 0.30 é well-positioned - considerar sensitivity analysis
-3. **Overfitting:** Gap de 28% é aceitável para finance - monitor via CV
-4. **CV Stability:** std=0.0233 é excelente - expect similar in backtest
-5. **Testing:** 7/7 tests passing = confiança alta no modelo
+1. **Sintonia do Modelo:** scale_pos_weight=1.476 é ótimo - NÃO MUDAR
+2. **Limiar:** 0.30 é bem posicionado - considerar análise sensibilidade
+3. **Overfitting:** Gap de 28% é aceitável para finanças - monitorar via CV
+4. **Estabilidade CV:** std=0.0233 é excelente - esperar similar no backtest
+5. **Testes:** 7/7 testes passando = confiança alta no modelo
 
 ---
 
@@ -311,49 +311,49 @@ Todos os arquivos de especificação estão prontos:
 
 ### Para Começar Agora:
 
-1. **Time Assembly**
-   - Confirmar todas as 8 personas são
-   - Briefar sobre atividades (not datas!)
-   - Clarify AC criteria
+1. **Montagem do Time**
+   - Confirmar todas as 8 personas estão disponíveis
+   - Briefar sobre atividades (não datas!)
+   - Esclarecer critérios CA
 
-2. **Environment Validation**
-   - API repo setup
-   - Dependencies installed
-   - All services running (MT5 mock, RabbitMQ, Redis, PG)
+2. **Validação do Ambiente**
+   - Setup repositório API
+   - Dependências instaladas
+   - Todos serviços rodando (mock MT5, RabbitMQ, Redis, PG)
 
-3. **Development Starts**
-   - ENG-003: API scaffold + auth
-   - ML-003: Data loading + SHAP
-   - First commits
+3. **Desenvolvimento Começa**
+   - ENG-003: Scaffold API + auth
+   - ML-003: Carregamento dados + SHAP
+   - Primeiros commits
 
-### Checkpoints (When Ready, No Dates):
+### Checkpoints (Quando Pronto, Sem Datas):
 
-- **After ENG-003 done:** GATE 1 review
-- **After ML-004 done:** GATE 2 review + capital decision
-- **If GATE 2 GO:** Production deployment + Phase 2 activation
+- **Quando ENG-003 pronto:** Revisão GATE 1
+- **Quando ML-004 pronto:** Revisão GATE 2 + decisão capital
+- **Se GATE 2 GO:** Deployment produção + ativação Phase 2
 
-### Daily Ritual:
+### Ritual Diário:
 
 - [ ] Standup: 15:00 UTC (15 min)
-- [ ] Blocker identification
-- [ ] Progress update
-- [ ] Next priorities
+- [ ] Identificação de bloqueadores
+- [ ] Atualização de progresso
+- [ ] Próximas prioridades
 
 ---
 
 ## 📞 CONTATOS & ESCALAÇÃO
 
-| Role | Contact | Escalation |
-|------|---------|-----------|
+| Função | Contato | Escalação |
+|---------|---------|--------|
 | **Sprint Lead** | Eng Sr | - |
 | **Tech Lead (API)** | Eng Sr | CTO |
-| **ML Lead** | ML Expert | Head Data |
-| **QA Lead** | QA Lead | Test Manager |
-| **Product Owner** | PO | CFO (capital approval) |
+| **ML Lead** | Especialista ML | Head de Dados |
+| **QA Lead** | Responsável QA | Test Manager |
+| **Product Owner** | PO | CFO (aprovação capital) |
 
-**Standups:** Daily 15:00 UTC
-**Gates:** 05/03 & 10/03 17:00 UTC (formal reviews)
-**Escalation:** Immediate if blockers detected
+**Standups:** Diário 15:00 UTC  
+**Gates:** 05/03 & 10/03 17:00 UTC (revisões formais)  
+**Escalação:** Imediato se bloqueadores detectados
 
 ---
 
@@ -366,10 +366,10 @@ Todos os arquivos de especificação estão prontos:
 - ✅ Gates bem definidos (GATE 1, GATE 2)
 - ✅ Riscos mitigados
 - ✅ Documentação síncrona
-- ✅ Format: **Activity-First** (prioridades, não datas)
+- ✅ Formato: **Prioridade-Primeiro** (prioridades, não datas)
 
-**Próximo step:** Kick off quando squad estiver ready.
+**Próximo passo:** Kick off quando squad estiver pronto.
 
 ---
 
-*Format: Activity-First (No Dates, Priority-Based)*
+*Formato: Prioridade-Primeiro (Sem Datas, Baseado em Prioridades)*

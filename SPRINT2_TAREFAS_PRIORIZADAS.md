@@ -1,91 +1,91 @@
 # 🚀 SPRINT 2 - TAREFAS PRIORITIZADAS (SEM DATAS)
 
-**Status:** ✅ Pronto para execução  
-**Squad:** 8 personas  
-**Formato:** Organizado por Prioridade & Atividades  
+**Situação:** ✅ Pronto para execução
+**Equipe:** 8 personas
+**Formato:** Organizado por Prioridade e Atividades
 
 ---
 
 ## 📋 TAREFAS (Ordem de Execução)
 
-### 🔴 P0-1: ENG-003 - MT5 REST API (BLOQUEADOR)
+### 🔴 P0-1: ENG-003 - API REST MT5 (BLOQUEADOR)
 
-**Lead:** Eng Sr  
-**Squad:** 3 Backend Devs (4 total)  
-**Horas:** 160 dev hours  
-**Status:** Ready to start
+**Responsável:** Eng Sr
+**Equipe:** 3 Desenvolvedores Backend (4 total)
+**Horas:** 160 horas de desenvolvimento
+**Situação:** Pronto para começar
 
-**Deliverables:**
-- 14 REST endpoints (Auth, Orders, Positions)
-- OAuth 2.0 authentication
-- RabbitMQ async queue + retry (3x exponential backoff)
-- WebSocket (< 100ms real-time)
-- Redis cache + PostgreSQL audit trail
-- 100% test coverage (unit + integration + E2E)
-- Performance: P95 < 200ms
+**Entregas:**
+- 14 endpoints API REST (Autenticação, Ordens, Posições)
+- Autenticação OAuth 2.0
+- Fila async RabbitMQ + retry (3x backoff exponencial)
+- WebSocket (< 100ms tempo real)
+- Cache Redis + rastreamento de auditoria PostgreSQL
+- 100% cobertura de testes (unitário + integração + E2E)
+- Desempenho: P95 < 200ms
 
-**AC (8):** Authentication, Token refresh, Async orders, Retry logic, Order tracking, WebSocket latency, Account updates, Health checks
+**CA (8):** Autenticação, Atualização de token, Ordens async, Lógica de retry, Rastreamento de ordens, Latência WebSocket, Atualizações de conta, Health checks
 
-**Success Criteria:**
-- ✅ 8/8 AC passing
-- ✅ P95 latency < 500ms
-- ✅ 35+ tests passing
-- ✅ Code reviewed (2+ reviewers)
+**Critérios de Sucesso:**
+- ✅ 8/8 CA aprovados
+- ✅ Latência P95 < 500ms
+- ✅ 35+ testes aprovados
+- ✅ Código revisado (2+ revisores)
 
-**Unblocks:** ML-004 can start when this is done
-
----
-
-### 🟡 P1-1: ML-003 - Feature Analysis (INDEPENDENT)
-
-**Lead:** ML Expert  
-**Squad:** ML Expert + Data Scientist (2 total)  
-**Horas:** 88 dev hours  
-**Status:** Ready to start (no dependencies)
-
-**Deliverables:**
-- SHAP values (top 10 features ranked)
-- 24×24 correlation matrix heatmap
-- Drift detection rules (3 rules):
-  - Mean shift test (µ ± 2σ)
-  - KS test (p > 0.05)
-  - Correlation shift (Δr > 0.1)
-- Alert thresholds (Green/Yellow/Orange/Red)
-- Threshold sensitivity analysis (±0.05)
-- Production monitoring config
-- 20+ page report + visualizations
-
-**AC (18):** SHAP analysis, Correlation matrix, Drift rules, Alert config, Sensitivity analysis, Monitoring setup, Reports complete
-
-**Success Criteria:**
-- ✅ 18/18 AC passing
-- ✅ All drift rules tested
-- ✅ Monitoring config ready
-- ✅ Reports approved
-
-**Dependencies:** None
+**Desbloqueia:** ML-004 pode começar quando isto estiver pronto
 
 ---
 
-### 🔴 P0-2: ML-004 - Extended Backtest (SEQUENTIAL)
+### 🟡 P1-1: ML-003 - Análise de Features (INDEPENDENTE)
 
-**Lead:** ML Expert  
-**Squad:** ML Expert + Data Scientist  
-**Horas:** 88 dev hours  
-**Status:** Blocked (waits for ENG-003)
+**Responsável:** Especialista ML
+**Equipe:** Especialista ML + Cientista de Dados (2 total)
+**Horas:** 88 horas de desenvolvimento
+**Situação:** Pronto para começar (sem dependências)
 
-**Starts When:** ENG-003 is complete
+**Entregas:**
+- Valores SHAP (top 10 features ordenadas)
+- Mapa de calor de matriz de correlação 24×24
+- Regras de detecção de drift (3 regras):
+  - Teste de mudança de média (µ ± 2σ)
+  - Teste KS (p > 0.05)
+  - Mudança de correlação (Δr > 0.1)
+- Limiares de alerta (Verde/Amarelo/Laranja/Vermelho)
+- Análise de sensibilidade de limiar (±0.05)
+- Configuração de monitoramento de produção
+- Relatório 20+ páginas + visualizações
 
-**Deliverables:**
-- 252-day historical backtest (full year)
-- Performance metrics:
-  - Sharpe ratio calculation
-  - Win rate (TP / (TP+FP))
-  - Max drawdown analysis
-  - Monthly consistency
-- Feature importance during trades
-- Market regime analysis
-- 20+ page report + equity curve + drawdown chart
+**CA (18):** Análise SHAP, Matriz de correlação, Regras de drift, Configuração de alertas, Análise de sensibilidade, Configuração de monitoramento, Relatórios completos
+
+**Critérios de Sucesso:**
+- ✅ 18/18 CA aprovados
+- ✅ Todas as regras de drift testadas
+- ✅ Configuração de monitoramento pronta
+- ✅ Relatórios aprovados
+
+**Dependências:** Nenhuma
+
+---
+
+### 🔴 P0-2: ML-004 - Backtest Estendido (SEQUENCIAL)
+
+**Responsável:** Especialista ML
+**Equipe:** Especialista ML + Cientista de Dados
+**Horas:** 88 horas de desenvolvimento
+**Situação:** Bloqueado (aguarda ENG-003)
+
+**Começa Quando:** ENG-003 estar completo
+
+**Entregas:**
+- Backtest histórico de 252 dias (ano completo)
+- Métricas de desempenho:
+  - Cálculo de razão de Sharpe
+  - Taxa de vitória (VP / (VP+FP))
+  - Análise de redução máxima
+  - Consistência mensal
+- Importância de features durante negociações
+- Análise de regime de mercado
+- Relatório 20+ páginas + curva de patrimônio + gráfico de redução
 
 **AC (20):** Data validation, Feature extraction, Backtest logic, Metrics calculation, Reports generation, Visualizations, Peer review
 
@@ -95,154 +95,155 @@
 - ✅ Drawdown < 15%
 - ✅ Consistency: Std(monthly) < 30% mean
 
-**Capital Decision:**
-- If ALL criteria PASS: Activate R$ 100k Phase 2
-- If ANY criterion FAILS: Stay with R$ 50k Phase 1
+**Decisão de Capital:**
+- Se TODOS os critérios PASSAREM: Ativar R$ 100k Fase 2
+- Se QUALQUER critério FALHAR: Mantém-se com R$ 50k Fase 1
 
 ---
 
-## 📊 EXECUTION MODEL
+## 📊 MODELO DE EXECUÇÃO
 
 ```
-PARALLEL EXECUTION:
+EXECUÇÃO PARALELA:
 ┌─────────────────────┬──────────────────┐
 │  ENG-003            │  ML-003          │
-│  (Infrastructure)   │  (Analytics)     │
-│  ✅ Ready           │  ✅ Ready        │
-│  When done          │  When done       │
-│  → Unblocks ML-004  │  → Independent   │
+│  (Infraestrutura)   │  (Análise)       │
+│  ✅ Pronto          │  ✅ Pronto       │
+│  Quando pronto      │  Quando pronto   │
+│  → Desbloqueia      │  → Independente  │
+│    ML-004           │                  │
 └─────────────────────┴──────────────────┘
                   ↓
         ┌─────────────────────┐
         │  ML-004             │
-        │  (Validation)       │
-        │  ⏳ Blocked         │
-        │  When ENG-003 done  │
-        │  → GATE 2 Decision  │
+        │  (Validação)        │
+        │  ⏳ Bloqueado       │
+        │  Quando ENG-003 ok  │
+        │  → GATE 2 Decisão   │
         └─────────────────────┘
 ```
 
-**Execution Rules:**
-1. ENG-003 and ML-003 run simultaneously (no dependencies)
-2. ML-004 waits for ENG-003 to complete
-3. All tasks must pass their AC criteria
-4. GATE reviews happen when tasks complete (not on fixed schedule)
+**Regras de Execução:**
+1. ENG-003 e ML-003 executam simultaneamente (sem dependências)
+2. ML-004 aguarda ENG-003 estar completo
+3. Todas as tarefas devem passar seus critérios CA
+4. Revisões GATE acontecem quando tarefas completam (não em cronograma)
 
 ---
 
-## 👥 SQUAD ALLOCATION
+## ᴊ ALOCAÇÃO DE EQUIPE
 
-| Role | Hours | Tasks |
-|------|-------|-------|
-| Eng Sr | 48h | ENG-003 design + lead |
-| Dev-1 | 40h | ENG-003 Auth + Orders |
-| Dev-2 | 40h | ENG-003 Positions + WS |
-| Dev-3 | 40h | ENG-003 Queue + retry |
-| ML Expert | 48h | ML-003 + ML-004 |
-| Data Scientist | 40h | ML-003 + ML-004 |
-| QA Lead | 32h | Test strategy |
-| Test Engineer | 32h | Test automation |
+| Função | Horas | Tarefas |
+|--------|-------|----------|
+| Eng Sr | 48h | Design + liderança ENG-003 |
+| Dev-1 | 40h | ENG-003 Autenticação + Ordens |
+| Dev-2 | 40h | ENG-003 Posições + WebSocket |
+| Dev-3 | 40h | ENG-003 Fila + retry |
+| Especialista ML | 48h | ML-003 + ML-004 |
+| Cientista de Dados | 40h | ML-003 + ML-004 |
+| Responsável QA | 32h | Estratégia de teste |
+| Engenheiro de Testes | 32h | Automação de testes |
 | **Total** | **320h** | — |
 
 ---
 
 ## 🎯 GATES & DECISIONS
 
-### GATE 1: ENG-003 + ML-003 Complete
+### GATE 1: ENG-003 + ML-003 Completo
 
-**Go Criteria:**
-- ENG-003: 8/8 AC done
-- ML-003: 18/18 AC done
-- Code review: 2+ reviewers
-- Tests: All passing
+**Critérios GO:**
+- ENG-003: 8/8 CA concluído
+- ML-003: 18/18 CA concluído
+- Revisão de código: 2+ revisores
+- Testes: Todos passando
 
-**Decision:**
-- ✅ GO: Start ML-004 immediately
-- ⚠️ CONDITIONAL: Minor fixes, retry in 1-2 days
-- ❌ NO-GO: Major issues, rework 3+ days
+**Decisão:**
+- ✅ GO: Iniciar ML-004 imediatamente
+- ⚠️ CONDICIONAL: Correções menores, retentar em 1-2 dias
+- ❌ NÃO-GO: Problemas maiores, refazer 3+ dias
 
 ---
 
-### GATE 2: ML-004 Complete + UAT Ready
+### GATE 2: ML-004 Completo + UAT Pronto
 
-**Go Criteria (ALL must pass):**
+**Critérios GO (TODOS devem passar):**
 - Sharpe >= 1.0 ✅
-- Win rate >= 59% ✅
-- Drawdown < 15% ✅
-- Consistency < 30% ✅
-- 20/20 AC done
-- Trader UAT sign-off
+- Taxa de vitória >= 59% ✅
+- Redução < 15% ✅
+- Consistência < 30% ✅
+- 20/20 CA concluído
+- Aprovação UAT do Operador
 
-**Decision (Capital Activation):**
-- ✅ GO: Activate R$ 100k Phase 2
-- ⚠️ CONDITIONAL: Sharpe 0.95+ or WR 58%+, more analysis
-- ❌ NO-GO: < 2 criteria met, return to dev
-- ❌ DELAY: Major issues, revisit later
-
----
-
-## ⚠️ CRITICAL PATH
-
-```
-Critical Path = ENG-003 → ML-004
-  (ML-003 is parallel, not critical path)
-
-Longest duration = ENG-003 (160h) + ML-004 (88h) = 248h
-Parallel potential = ML-003 (88h) runs alongside ENG-003
-
-If ENG-003 delays → ML-004 delays (blocker)
-If ML-003 delays → No impact (independent)
-If ML-004 delays → No impact (not blocking anything)
-```
+**Decisão (Ativação de Capital):**
+- ✅ GO: Ativar R$ 100k Fase 2
+- ⚠️ CONDICIONAL: Sharpe 0.95+ ou Taxa 58%+, análise adicional
+- ❌ NÃO-GO: < 2 critérios atendidos, retornar para dev
+- ❌ ADIAR: Problemas maiores, revisar depois
 
 ---
 
-## ✅ SUCCESS CRITERIA SUMMARY
+## ⚠️ CAMINHO CRÍTICO
 
-**MUST HAVE (All Tasks):**
-- ✅ All AC criteria passing
-- ✅ Code reviewed (2+ reviewers)
+```
+Caminho Crítico = ENG-003 → ML-004
+  (ML-003 é paralelo, não está no caminho crítico)
+
+Maior duração = ENG-003 (160h) + ML-004 (88h) = 248h
+Potencial paralelo = ML-003 (88h) executa junto com ENG-003
+
+Se ENG-003 atrasa → ML-004 atrasa (bloqueador)
+Se ML-003 atrasa → Sem impacto (independente)
+Se ML-004 atrasa → Sem impacto (não bloqueia nada)
+```
+
+---
+
+## ✅ RESUMO DE CRITÉRIOS DE SUCESSO
+
+**OBRIGATÓRIO (Todas as Tarefas):**
+- ✅ Todos os critérios CA passando
+- ✅ Código revisado (2+ revisores)
 - ✅ 100% type hints
-- ✅ Comprehensive tests (80%+ coverage)
-- ✅ Documentation complete
+- ✅ Testes abrangentes (80%+ cobertura)
+- ✅ Documentação completa
 
 **GATE 1 (ENG-003 + ML-003):**
-- ✅ 8/8 + 18/18 AC passing
-- ✅ API P95 latency < 500ms
-- ✅ Code review approved
-- ✅ Integration tested
+- ✅ 8/8 + 18/18 CA passando
+- ✅ Latência P95 da API < 500ms
+- ✅ Revisão de código aprovada
+- ✅ Integração testada
 
 **GATE 2 (ML-004 + Capital):**
 - ✅ Sharpe >= 1.0
-- ✅ Win rate >= 59%
-- ✅ Drawdown < 15%
-- ✅ Consistency validated
-- ✅ Trader UAT approved
+- ✅ Taxa de vitória >= 59%
+- ✅ Redução < 15%
+- ✅ Consistência validada
+- ✅ UAT do Operador aprovado
 
 ---
 
-## 🚀 NEXT STEPS
+## 🚀 PRÓXIMOS PASSOS
 
-### Immediate (When You're Ready):
-1. ✅ Confirm squad availability
-2. ✅ Setup environment (API repo, DB, queues)
-3. ✅ Begin development
+### Imediato (Quando Pronto):
+1. ✅ Confirmar disponibilidade da equipe
+2. ✅ Configurar ambiente (repositório API, DB, filas)
+3. ✅ Iniciar desenvolvimento
 
-### When ENG-003 Done:
-- GATE 1 review
-- If GO: Start ML-004
-- If NO-GO: Rework
+### Quando ENG-003 Completo:
+- Revisão GATE 1
+- Se GO: Iniciar ML-004
+- Se NÃO-GO: Refazer
 
-### When ML-004 Done:
-- GATE 2 review + metrics validation
-- If GO: Capital activation
-- If NO-GO: Analyze + iterate
+### Quando ML-004 Completo:
+- Revisão GATE 2 + validação de métricas
+- Se GO: Ativação de capital
+- Se NÃO-GO: Analisar + iterar
 
-### Daily Routine:
-- Standup: 15:00 UTC (15 min)
-- Progress update
-- Blocker identification
-- Next day planning
+### Rotina Diária:
+- Standup: 15:00 BRT (15 min)
+- Atualização de progresso
+- Identificação de bloqueadores
+- Planejamento do próximo dia
 
 ---
 
@@ -265,5 +266,5 @@ Próximo step: Team standup + começar quando squad tiver ready.
 
 ---
 
-*Formato: Activity-First (Prioridades, sem datas)*  
+*Formato: Activity-First (Prioridades, sem datas)*
 *Gerado: 26/02/2026*
