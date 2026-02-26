@@ -6,7 +6,7 @@ Date: 26/02/2026
 
 Objetivo: Simular carga no sistema para validar performance
 - Baseline: 100 users
-- Medium: 200 users  
+- Medium: 200 users
 - Stress: 500 users
 ==============================================================================
 
@@ -58,7 +58,7 @@ def create_jwt_token(role='user'):
     """
     import jwt
     from datetime import datetime, timedelta
-    
+
     secret = "your-secret-key"  # Same as app config
     payload = {
         "sub": f"test-user-{role}",
@@ -77,11 +77,11 @@ def on_test_start(environment, **_):
     print(f"⏰ Timestamp: {datetime.now().isoformat()}")
     print(f"🎯 Host: {HOST}")
     print(f"👥 Config: Users={environment.runner.target_user_count}, Rate={environment.runner.spawn_rate}/s")
-    
+
     # Criar tokens para usuarios diferentes
     global BEARER_TOKEN_TRADER, BEARER_TOKEN_USER, BEARER_TOKEN_ADMIN
     print("\n📝 Gerando JWT tokens para teste...")
-    
+
     try:
         BEARER_TOKEN_TRADER = create_jwt_token('trader')
         BEARER_TOKEN_USER = create_jwt_token('user')
@@ -110,10 +110,10 @@ class OperadorDayTradeUser(HttpUser):
     Usuario simulado para load testing
     Simula comportamentos realistas de traders
     """
-    
+
     # Aguardar entre 1-5 segundos entre tasks
     wait_time = between(1, 5)
-    
+
     def on_start(self):
         """Executado quando usuario inicia"""
         self.token = random.choice([BEARER_TOKEN_TRADER, BEARER_TOKEN_USER])
@@ -121,15 +121,15 @@ class OperadorDayTradeUser(HttpUser):
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json"
         }
-    
+
     def on_stop(self):
         """Executado quando usuario para"""
         pass
-    
+
     # ========================================================================
     # OAUTH ENDPOINTS - Login, refresh, logout
     # ========================================================================
-    
+
     @task(2)  # 2% das tarefas
     def task_oauth_login(self):
         """Task: Fazer login"""
@@ -148,7 +148,7 @@ class OperadorDayTradeUser(HttpUser):
                 response.success()
             else:
                 response.failure(f"Login failed: {response.status_code}")
-    
+
     @task(1)  # 1% das tarefas
     def task_oauth_refresh(self):
         """Task: Refresh token"""
@@ -163,11 +163,11 @@ class OperadorDayTradeUser(HttpUser):
                 response.success()
             else:
                 response.failure(f"Token refresh failed: {response.status_code}")
-    
+
     # ========================================================================
     # WEBSOCKET - Conectar, enviar mensagens, desconectar
     # ========================================================================
-    
+
     @task(5)  # 5% das tarefas
     def task_websocket_connect(self):
         """Task: Conectar ao WebSocket"""
@@ -184,7 +184,7 @@ class OperadorDayTradeUser(HttpUser):
                     response.failure("WebSocket status unhealthy")
             else:
                 response.failure(f"WebSocket status check failed: {response.status_code}")
-    
+
     @task(3)  # 3% das tarefas
     def task_websocket_broadcast(self):
         """Task: Enviar mensagem broadcast"""
@@ -203,23 +203,23 @@ class OperadorDayTradeUser(HttpUser):
                 response.success()
             else:
                 response.failure(f"Broadcast failed: {response.status_code}")
-    
+
     # ========================================================================
     # BACKTESTING - Predicoes, batch predictions
     # ========================================================================
-    
+
     @task(10)  # 10% das tarefas (mais frequente)
     def task_backtest_predict(self):
         """Task: Fazer predicao individual"""
         # Gerar dados mock para predicao
         features = [round(random.random(), 4) for _ in range(29)]
-        
+
         payload = {
             "close": features[0],
             "volume": features[1],
             "features": features
         }
-        
+
         with self.client.post(
             "/backtest/predict",
             json=payload,
@@ -234,7 +234,7 @@ class OperadorDayTradeUser(HttpUser):
                     response.failure("Invalid prediction response")
             else:
                 response.failure(f"Prediction failed: {response.status_code}")
-    
+
     @task(5)  # 5% das tarefas
     def task_backtest_batch_predict(self):
         """Task: Batch prediction (100 records)"""
@@ -243,9 +243,9 @@ class OperadorDayTradeUser(HttpUser):
             {"close": round(random.random(), 4), "volume": random.randint(1000, 10000)}
             for _ in range(100)
         ]
-        
+
         payload = {"data": batch_data}
-        
+
         with self.client.post(
             "/backtest/batch-predict",
             json=payload,
@@ -260,7 +260,7 @@ class OperadorDayTradeUser(HttpUser):
                     response.failure("Incomplete batch response")
             else:
                 response.failure(f"Batch prediction failed: {response.status_code}")
-    
+
     @task(2)  # 2% das tarefas
     def task_backtest_model_info(self):
         """Task: Obter info do modelo"""
@@ -277,13 +277,13 @@ class OperadorDayTradeUser(HttpUser):
                     response.failure("Invalid model info response")
             else:
                 response.failure(f"Model info failed: {response.status_code}")
-    
+
     @task(3)  # 3% das tarefas
     def task_backtest_validate(self):
         """Task: Validar dados"""
         features = [round(random.random(), 4) for _ in range(29)]
         payload = {"features": features}
-        
+
         with self.client.post(
             "/backtest/validate",
             json=payload,
@@ -294,7 +294,7 @@ class OperadorDayTradeUser(HttpUser):
                 response.success()
             else:
                 response.failure(f"Validation failed: {response.status_code}")
-    
+
     @task(2)  # 2% das tarefas
     def task_backtest_health(self):
         """Task: Health check"""
@@ -311,11 +311,11 @@ class OperadorDayTradeUser(HttpUser):
                     response.failure("Unhealthy status")
             else:
                 response.failure(f"Health check failed: {response.status_code}")
-    
+
     # ========================================================================
     # GENERAL - Health checks, status
     # ========================================================================
-    
+
     @task(5)  # 5% das tarefas
     def task_health_check(self):
         """Task: Health check geral"""
@@ -338,17 +338,17 @@ class TraderUser(OperadorDayTradeUser):
     - Mais predicoes
     - Menos login/logout
     """
-    
+
     @task(3)
     def task_backtest_predict(self):
         """Trader faz mais predicoes"""
         super().task_backtest_predict()
-    
+
     @task(2)
     def task_websocket_connect(self):
         """Trader monitora WebSocket mais"""
         super().task_websocket_connect()
-    
+
     @task(1)
     def task_oauth_login(self):
         """Trader faz menos login"""
@@ -374,7 +374,7 @@ Para executar diferentes cenarios:
      --users=500 --spawn-rate=20 --run-time=15m --headless
 
 4. INTERACTIVE UI (development):
-   locust -f locustfile.py --host=https://... 
+   locust -f locustfile.py --host=https://...
    (acessa http://localhost:8089 para controlar)
 
 Metricas importantes a monitorar:
