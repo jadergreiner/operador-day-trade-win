@@ -1,0 +1,50 @@
+{
+  "last_update": "2026-02-25T23:53:35.186220",
+  "etapa_status": {
+    "etapa_1": {
+      "status": "COMPLETE",
+      "duration_min": 15
+    },
+    "etapa_2": {
+      "status": "COMPLETE",
+      "duration_min": 85,
+      "gate": "GO"
+    },
+    "etapa_3": {
+      "status": "COMPLETE",
+      "duration_min": 45,
+      "gate": "GO"
+    },
+    "etapa_4": {
+      "status": "IN_PROGRESS",
+      "duration_min": 30
+    }
+  },
+  "deliverables": {
+    "python_scripts": [
+      "ETAPA1_ML_EXPERT_SCAFFOLD.py",
+      "ETAPA2_2_FINAL_GRID_SEARCH.py",
+      "ETAPA3_VALIDATION_TESTS.py"
+    ],
+    "json_reports": [
+      "backtest_final_metrics.json",
+      "ETAPA3_validation_report.json"
+    ],
+    "documentation": [
+      "STATUS_ENTREGAS.md",
+      "CHANGELOG.md"
+    ]
+  },
+  "gate_decisions": {
+    "gate_2": {
+      "status": "GO",
+      "f1": 0.7045,
+      "win_rate": 0.6071
+    },
+    "gate_3": {
+      "status": "GO",
+      "tests_passed": 7,
+      "cv_mean_f1": 0.6757
+    }
+  }
+}

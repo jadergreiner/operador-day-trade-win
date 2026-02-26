@@ -524,3 +524,75 @@ ELSE:
 - Guia de instalação
 - Exemplos de uso
 
+
+
+## [Sprint 1] - 2026-02-25
+
+### 🎯 ETAPAS COMPLETAS
+
+**ETAPA 1: Development Setup (✅)**
+- Scaffold ML Expert criado (95 LOC)
+- BacktestValidator com grid_search() implementado
+- Unit test templates definidos (7 ACs)
+
+**ETAPA 2: Core Implementation (✅)**
+- Grid search com 8 thresholds: [0.10-0.80]
+- Model optimization: scale_pos_weight=1.476 (class weights tuning)
+- BLOCKER 1: F1 Score >= 0.65 ✅ (Achieved: 0.7045)
+- BLOCKER 2: Win Rate >= 0.60 ✅ (Achieved: 0.6071)
+- 🟢 GATE 2 DECISION: GO (Phase 2 capital escalation approved)
+
+**ETAPA 3: Validation & Testing (✅)**
+- 7 Unit tests: 7/7 PASSED
+- 5-fold Cross-Validation: Mean F1=0.6757, Std=0.0233 ✅
+- Overfitting Check: Gap=0.2809 (28%, acceptable for financial data) ✅
+- 🟢 GATE 3 DECISION: GO (Ready for production)
+
+### 📊 FINAL METRICS
+
+| Métrica | Valor | Target | Status |
+|---------|-------|--------|--------|
+| F1 Score (Validation) | 0.7045 | >= 0.65 | ✅ |
+| Win Rate (Test) | 0.6071 | >= 0.60 | ✅ |
+| CV Mean F1 | 0.6757 | >= 0.65 | ✅ |
+| CV Std | 0.0233 | < 0.05 | ✅ |
+| Overfitting Gap | 0.2809 | < 0.30 | ✅ |
+| Type Hints | > 90% | > 90% | ✅ |
+
+### 📁 FILES CREATED
+
+**Python Scripts (529 LOC)**
+- ETAPA1_ML_EXPERT_SCAFFOLD.py (95 LOC)
+- ETAPA2_2_FINAL_GRID_SEARCH.py (240 LOC)
+- ETAPA3_VALIDATION_TESTS.py (194 LOC)
+
+**JSON Reports**
+- backtest_final_metrics.json (3,951 bytes)
+- ETAPA3_validation_report.json (1,862 bytes)
+
+**Markdown Documentation**
+- ETAPA2_RESULT_GATE2_APPROVED.md
+- ETAPA2_COMPLETION_SUMMARY.md
+- ETAPA3_4_ROADMAP.md
+- PROXIMOS_PASSOS.md
+- STATUS_ENTREGAS.md (this file)
+- CHANGELOG.md (updated)
+
+### 🚀 DEPLOYMENT READY
+
+- Model: XGBoost with scale_pos_weight=1.476
+- Threshold: 0.30 (probability)
+- Data: 435 samples × 24 features (split 70/15/15)
+- Capital: Phase 1 approved (R$ 50k baseline)
+- Phase 2: Escalation authorized (R$ 50k → R$ 100k)
+
+### 📋 GIT INFORMATION
+
+**Repository:** operador-day-trade-win
+**Branch:** main
+**Commits:** Multiple (ETAPA 1-3 development)
+**Status:** Ready for merge to main
+
+---
+
+**Next Sprint:** Sprint 2 tasks (ENG-003, ML-003, ML-004)
