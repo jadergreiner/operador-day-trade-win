@@ -1,11 +1,11 @@
 # 🛡️ BACKUP PLAN - PHASE 4 CONTINGENCY PROCEDURES
 ## Procedimentos de Contingência para Riscos e Falhas Críticas
 
-**Document:** CONTINGENCY_BACKUP_PLAN_PHASE4.md  
-**Version:** 1.0  
-**Status:** ✅ READY FOR EXECUTION  
-**Last Updated:** 27/02/2026  
-**Scope:** Phase 4 (01-05/03) + Phase 4.2 UAT (06-09/03)  
+**Document:** CONTINGENCY_BACKUP_PLAN_PHASE4.md
+**Version:** 1.0
+**Status:** ✅ READY FOR EXECUTION
+**Last Updated:** 27/02/2026
+**Scope:** Phase 4 (01-05/03) + Phase 4.2 UAT (06-09/03)
 
 ---
 
@@ -57,8 +57,8 @@
 
 ## Scenario 1: Azure Deployment Fails
 
-**When:** During Day 1 10:00-12:00 infrastructure deployment  
-**Trigger:** Status "Failed" in Azure Portal or deploymentError in logs  
+**When:** During Day 1 10:00-12:00 infrastructure deployment
+**Trigger:** Status "Failed" in Azure Portal or deploymentError in logs
 
 ### Immediate Actions (0-5 minutes)
 
@@ -185,8 +185,8 @@ az resource list --resource-group operador-dt-staging --query "[].name" -o table
 
 ### Decision Point (45 minutes)
 
-**If Fixed:** Continue with deployment, update Slack: "✅ Deployment RESUMED"  
-**If Not Fixed:** 
+**If Fixed:** Continue with deployment, update Slack: "✅ Deployment RESUMED"
+**If Not Fixed:**
 - Post in #phase4-blockers: "🔴 Unable to fix. Escalating to Azure expert."
 - Contact CTO/Eng Sr
 - Consider: Day 1 retry or request infrastructure specialist
@@ -196,8 +196,8 @@ az resource list --resource-group operador-dt-staging --query "[].name" -o table
 
 ## Scenario 2: Database Migration Fails
 
-**When:** Day 1 10:00-11:30 (after app service deployment)  
-**Trigger:** Migration errors in logs or database state inconsistency  
+**When:** Day 1 10:00-11:30 (after app service deployment)
+**Trigger:** Migration errors in logs or database state inconsistency
 
 ### Immediate Actions (0-5 minutes)
 
@@ -289,8 +289,8 @@ pg_restore -h ... < backup_operador_db_20260301.sql
 
 ### Decision Point (60 minutes)
 
-**If Fixed:** Continue deployment  
-**If Not Fixed:** 
+**If Fixed:** Continue deployment
+**If Not Fixed:**
 - Call CTO/DBA specialist
 - **Decision:** Can we use previous day's backup (potentially lose 24h data)? Or delay?
 - If using backup: Update Gate 4.1 report to flag database freshness issue
@@ -300,8 +300,8 @@ pg_restore -h ... < backup_operador_db_20260301.sql
 
 ## Scenario 3: Resource Creation Timeout
 
-**When:** During deployment, resource stuck in "Creating" state  
-**Trigger:** 30+ minutes without status change  
+**When:** During deployment, resource stuck in "Creating" state
+**Trigger:** 30+ minutes without status change
 
 ### Recovery Procedure
 
@@ -328,8 +328,8 @@ az deployment group create --resource-group operador-dt-staging \
 
 ## Scenario 4: Integration Tests Failing (Day 2)
 
-**When:** Day 2 10:00-12:00 integration test execution  
-**Trigger:** Test failures in integration_test_day2_*.log  
+**When:** Day 2 10:00-12:00 integration test execution
+**Trigger:** Test failures in integration_test_day2_*.log
 
 ### Triage (0-5 minutes)
 
@@ -437,7 +437,7 @@ python -m pytest tests/integration/ -k api -v
 
 ### Decision Point
 
-**If Fixed same-day:** Continue to next test suite  
+**If Fixed same-day:** Continue to next test suite
 **If Not Fixed by 12:00:**
 - Mark test as "Known Failure - In Investigation"
 - Continue with other tests
@@ -451,8 +451,8 @@ python -m pytest tests/integration/ -k api -v
 
 ## Scenario 5: Load Test Shows P95 > 500ms
 
-**When:** Day 3 load test execution (10:00-13:00)  
-**Trigger:** Response time P95 > 500ms threshold  
+**When:** Day 3 load test execution (10:00-13:00)
+**Trigger:** Response time P95 > 500ms threshold
 
 ### Immediate Analysis (0-10 minutes)
 
@@ -481,14 +481,14 @@ Symptom: SELECT queries taking > 100ms
 
 Fix:
 # 1. Identify slow query
-SELECT query, calls, mean_time FROM pg_stat_statements 
+SELECT query, calls, mean_time FROM pg_stat_statements
 ORDER BY mean_time DESC LIMIT 1;
 
 # 2. Analyze query plan
 EXPLAIN ANALYZE SELECT ... (the slow query);
 
 # 3. Add index if needed
-CREATE INDEX idx_trading_data_symbol_date 
+CREATE INDEX idx_trading_data_symbol_date
   ON trading_data(symbol, date);
 
 # 4. Benchmark again
@@ -506,8 +506,8 @@ Fix:
 SET log_statement = 'all';
 
 # 2. Identify N+1 pattern
-SELECT query, calls FROM pg_stat_statements 
-WHERE query LIKE '%SELECT%WHERE id=%' 
+SELECT query, calls FROM pg_stat_statements
+WHERE query LIKE '%SELECT%WHERE id=%'
 ORDER BY calls DESC LIMIT 20;
 
 # 3. Fix with eager loading / JOINs
@@ -569,8 +569,8 @@ az appservice plan update \
 
 ### Decision Point
 
-**If Fixed via scaling:** Gate 4.1 acceptable (temporary measure)  
-**If Performance still poor:** 
+**If Fixed via scaling:** Gate 4.1 acceptable (temporary measure)
+**If Performance still poor:**
 - May need architecture change
 - Flag for Phase 5 post-launch optimization
 - Can proceed to UAT IF: Meets gate criteria with caveat "Performance optimization pending Phase 5"
@@ -582,8 +582,8 @@ az appservice plan update \
 
 ## Scenario 6: Data Corruption / Inconsistency Detected
 
-**When:** During testing (any day) or UAT  
-**Trigger:** Data integrity check fails, value sanity test fails  
+**When:** During testing (any day) or UAT
+**Trigger:** Data integrity check fails, value sanity test fails
 
 ### Recovery Procedure
 
@@ -592,8 +592,8 @@ az appservice plan update \
 SELECT * FROM trading_data WHERE price < 0 OR volume < 0;
 
 # 2. Determine root cause
-SELECT created_at, action FROM audit_log 
-WHERE table_name='trading_data' 
+SELECT created_at, action FROM audit_log
+WHERE table_name='trading_data'
 ORDER BY created_at DESC LIMIT 20;
 
 # 3. Restore from backup to known good state
@@ -608,7 +608,7 @@ az postgres server restore \
 # Timeline: 20-30 minutes
 ```
 
-**Decision:** If data corruption before Day 1 tests: Restore and continue  
+**Decision:** If data corruption before Day 1 tests: Restore and continue
 If during active testing: May need to investigate root cause (bug in code/migration)
 
 ---
@@ -617,8 +617,8 @@ If during active testing: May need to investigate root cause (bug in code/migrat
 
 ## Scenario 7: Key Team Member Unavailable
 
-**When:** Any critical time (e.g., during deployment)  
-**Example:** DevOps Lead unable to access Azure console  
+**When:** Any critical time (e.g., during deployment)
+**Example:** DevOps Lead unable to access Azure console
 
 ### Escalation Matrix
 
@@ -646,8 +646,8 @@ THEN:
 
 ## Scenario 8: Slack/Communication System Down
 
-**When:** Slack server unavailable  
-**Impact:** Can't post updates, coordinate team  
+**When:** Slack server unavailable
+**Impact:** Can't post updates, coordinate team
 
 ### Fallback Procedure
 
@@ -673,7 +673,7 @@ Body: "Slack is down. Updates will be via email every 30 minutes."
 
 ## Scenario 9: Azure Service Outage
 
-**When:** During execution (rare but possible)  
+**When:** During execution (rare but possible)
 **Trigger:** Azure status shows "Service Degraded"
 
 ### Check Azure Status
@@ -846,7 +846,7 @@ Eng Sr: [Name] [Phone] [Email]
 DevOps Lead: [Name] [Phone] [Email]
 Infrastructure: [Name] [Phone] [Email]
 
-Azure Support (Premium): 
+Azure Support (Premium):
 Ticket: [Link to Azure Account]
 Support Level: Premium (24/7)
 
@@ -864,20 +864,20 @@ Backup: Email to team@operador.com
 
 This backup plan covers:
 
-✅ **9 Critical Failure Scenarios** with recovery procedures  
-✅ **Estimated Recovery Times** (5 min to 2 hours depending on severity)  
-✅ **Escalation Matrix** (who decides, who acts, timelines)  
-✅ **Rollback Procedures** (partial to full system)  
-✅ **Team Continuity** (backup roles, communication fallbacks)  
-✅ **Decision Points** (Go/No-Go criteria for each scenario)  
+✅ **9 Critical Failure Scenarios** with recovery procedures
+✅ **Estimated Recovery Times** (5 min to 2 hours depending on severity)
+✅ **Escalation Matrix** (who decides, who acts, timelines)
+✅ **Rollback Procedures** (partial to full system)
+✅ **Team Continuity** (backup roles, communication fallbacks)
+✅ **Decision Points** (Go/No-Go criteria for each scenario)
 
-**Key Principle:** 
+**Key Principle:**
 > "Plan for the worst, execute for the best. When things go wrong, we have documented procedures to recover quickly."
 
 ---
 
-*Document:* CONTINGENCY_BACKUP_PLAN_PHASE4.md  
-*Version:* 1.0  
-*Status:* ✅ READY - REVIEWED BY CTO + TEAM LEADS  
-*Next Review:* Post-execution (identify new scenarios)  
+*Document:* CONTINGENCY_BACKUP_PLAN_PHASE4.md
+*Version:* 1.0
+*Status:* ✅ READY - REVIEWED BY CTO + TEAM LEADS
+*Next Review:* Post-execution (identify new scenarios)
 *Last Updated:* 27/02/2026 14:30 BRT

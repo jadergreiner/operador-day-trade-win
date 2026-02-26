@@ -705,7 +705,7 @@ cursor.execute("""
 
 # Create indexes
 cursor.execute("""
-    CREATE INDEX IF NOT EXISTS idx_predictions_timestamp 
+    CREATE INDEX IF NOT EXISTS idx_predictions_timestamp
     ON predictions(timestamp)
 """)
 

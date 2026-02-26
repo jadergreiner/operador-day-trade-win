@@ -36,7 +36,7 @@ log_result() {
     local check_name=$1
     local status=$2
     local details=$3
-    
+
     if [ "$status" = "PASS" ]; then
         echo -e "${GREEN}✓${NC} $check_name: $status"
         echo "✓ $check_name: $status - $details" >> $REPORT_FILE
@@ -238,7 +238,7 @@ echo "--- DOCKER (Optional) ---" >> $REPORT_FILE
 if command -v docker &> /dev/null; then
     docker_version=$(docker --version)
     log_result "Docker Installation" "PASS" "$docker_version"
-    
+
     # Check if docker daemon running
     if docker ps > /dev/null 2>&1; then
         log_result "Docker Daemon" "PASS" "Docker daemon is running"

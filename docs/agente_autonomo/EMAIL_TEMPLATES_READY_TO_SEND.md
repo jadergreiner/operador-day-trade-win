@@ -60,22 +60,22 @@ Use o arquivo: **PREP_WEEK_CHECKLIST.md**
 
 Cada pessoa tem sua seção com tasks específicas. Exemplo:
 
-**DevOps Lead:** 
+**DevOps Lead:**
 ✓ Validar Azure access
 ✓ Bicep syntax check
 ✓ Environment setup
 
-**Eng Sr:** 
+**Eng Sr:**
 ✓ Revisar code Phase 3
 ✓ Setup local environment
 ✓ Prep runbook deployment
 
-**QA Lead:** 
+**QA Lead:**
 ✓ Instalar Locust
 ✓ Setup UAT environment
 ✓ CI/CD validation
 
-**ML Expert:** 
+**ML Expert:**
 ✓ Verificar models (XGBoost)
 ✓ Test inference pipeline
 ✓ Validate 24 features
