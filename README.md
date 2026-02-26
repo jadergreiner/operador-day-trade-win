@@ -1115,62 +1115,54 @@ SPRINT 4: UAT & Production Launch 🏁
 
 ---
 
-## 🚀 SPRINT 2 - IMPLEMENTATION PLAN (26/02/2026)
+## 🚀 SPRINT 2 - IMPLEMENTATION PLAN (Activity-Driven, NO Fixed Dates)
 
-**Status:** ✅ **DETAILED IMPLEMENTATION PLAN READY**  
-**Duration:** 27/02 - 05/03/2026 (7 days)  
+**Status:** ✅ **PRIORITY-BASED PLAN READY**  
 **Objective:** Transform 6 ATI skeletons → production-ready code  
 **Team:** 11 personas (SQUAD 1 Backend + SQUAD 2 ML)  
-**GATE 2 Target:** 05/03 11:00 (Framework + initial implementation)
+**Approach:** Activities by priority order (PRIORITY 1-12) - NO calendar dates
 
-### 📋 Planning Documents
+### 📋 Planning Documents (Choose your preference)
 
-| Document | Purpose | Link |
+| Document | Purpose | Type |
 |----------|---------|------|
-| **Executive Summary** | Quick reference (5-10 min read) | [SPRINT2_EXECUTIVE_SUMMARY.md](SPRINT2_EXECUTIVE_SUMMARY.md) |
-| **Detailed Plan** | 7-day implementation breakdown | [SPRINT2_DETAILED_IMPLEMENTATION_PLAN.md](SPRINT2_DETAILED_IMPLEMENTATION_PLAN.md) |
-| **Dashboard** | Real-time progress tracking | [SPRINT1_DEVELOPMENT_DASHBOARD.md](SPRINT1_DEVELOPMENT_DASHBOARD.md) |
+| **SPRINT2_EXECUTIVE_SUMMARY_PRIORITY.md** | Quick reference | 5-min read |
+| **SPRINT2_PRIORITY_ACTIVITIES.md** | Complete breakdown | Full reference |
+| **SPRINT2_DETAILED_IMPLEMENTATION_PLAN.md** | Legacy (with dates) | Reference only |
 
-### 🎯 Key Metrics
+### 🎯 12 Activities (Priority Order)
 
-| Metric | Target | Status |
-|--------|--------|--------|
-| **Code Target** | 4,000-5,000 LOC | From 3,024 skeleton LOC |
-| **Tests Execution** | 100+ AC tests green | 100+ tests designed |
-| **Completion** | 90%+ by Day 7 | Ready to measure |
-| **Critical Blockers** | 0 | Pre-identified: 0 |
-| **GATE 2 Decision** | GO (05/03 11:00) | Expected outcome |
+**PHASE 1: Preparation (3 activities)**
+1. PRIORITY 1: Environment Validation (30 min)
+2. PRIORITY 2: Team Standup (30 min)
+3. PRIORITY 3: GATE 1 Approval (15 min)
 
-### 📅 Sprint Timeline
+**PHASE 2: Backend (4 ATIs, parallel)**
+4. PRIORITY 4: ATI-1 WebSocket (4-6h)
+5. PRIORITY 5: ATI-2 OAuth (4-6h, parallel with 4)
+6. PRIORITY 6: ATI-3 RabbitMQ (6-8h, after 4 OR 5)
+7. PRIORITY 7: ATI-4 Retry Logic (6-8h, after 6)
 
-```
-27/02 09:00  → Team standup + GATE 1 review
-27/02 11:00  → GATE 1 decision (expected: GO)
-27/02 12:00  → 🚀 Development starts
+**PHASE 3: ML (2 ATIs, sequential)**
+8. PRIORITY 8: ATI-5 ML Features (8-10h)
+9. PRIORITY 9: ATI-6 Drift Detection (8-10h, after 8)
 
-28/02 EOD    → ATI-1,2,3 at 30-50%
-01/03 EOD    → All ATIs at 50-60%
-02/03 EOD    → ATI-5,6 model training
-03/03 EOD    → All ATIs at 80-90%
+**PHASE 4: Validation (3 activities)**
+10. PRIORITY 10: Integration Testing (4-6h)
+11. PRIORITY 11: Code QA & Coverage (2-3h)
+12. PRIORITY 12: GATE 2 Approval (1h)
 
-04-05/03     → Testing + GATE 2 prep
-05/03 11:00  → 🎯 GATE 2 final decision (GO expected)
+### 📊 Success Criteria (By end PRIORITY 11)
 
-→ Sprint 2 Phase 2 (06/03-12/03) begins
-```
-
-### ✅ Success Criteria
-
-**By GATE 2 (05/03 11:00):**
 - ✅ All 6 ATI implementations 85-95% complete
 - ✅ 100+ unit tests written + executed
 - ✅ 42/42 AC tests green (>90% pass target)
 - ✅ 4,000-5,000 LOC production code
-- ✅ API documentation (OpenAPI/Swagger)
+- ✅ Code coverage >80%
+- ✅ API documentation complete
 - ✅ Zero critical blockers
-- ✅ Team ready for Phase 2
 
-**See:** [SPRINT2_DETAILED_IMPLEMENTATION_PLAN.md](SPRINT2_DETAILED_IMPLEMENTATION_PLAN.md#-success-criteria-by-ati)
+**See:** [SPRINT2_PRIORITY_ACTIVITIES.md](SPRINT2_PRIORITY_ACTIVITIES.md#-success-metrics)
 
 ---
 
