@@ -1,9 +1,9 @@
 # 🚀 SUBTASK 5.2 - FastAPI OAuth Endpoints Implementation
 
-**Prioridade:** P5.2  
-**Tempo Estimado:** 1.5 horas  
-**Status:** 🟡 Pronto para Iniciar  
-**Data:** 26/02/2026  
+**Prioridade:** P5.2
+**Tempo Estimado:** 1.5 horas
+**Status:** 🟡 Pronto para Iniciar
+**Data:** 26/02/2026
 
 ---
 
@@ -40,7 +40,7 @@ class LoginRequest(BaseModel):
     """Schema para requisição de login"""
     username: str
     password: str
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -55,7 +55,7 @@ class TokenResponse(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     expires_in: int  # segundos
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -97,9 +97,9 @@ import os
 
 class TokenManager:
     """Gerenciar JWT tokens e refresh tokens"""
-    
+
     def __init__(
-        self, 
+        self,
         secret_key: str = None,
         algorithm: str = "HS256",
         access_token_expire_minutes: int = 30,
@@ -111,22 +111,22 @@ class TokenManager:
         self.refresh_token_expire = timedelta(days=refresh_token_expire_days)
         self.blacklist: Dict[str, datetime] = {}  # {token: expiry_time}
         self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    
+
     def create_access_token(
-        self, 
-        username: str, 
-        user_id: str, 
+        self,
+        username: str,
+        user_id: str,
         role: str = "user"
     ) -> tuple[str, datetime]:
         """
         Criar JWT access token
-        
+
         Returns:
             (token, expiry_datetime)
         """
         now = datetime.utcnow()
         expires = now + self.access_token_expire
-        
+
         payload = {
             'sub': username,
             'user_id': user_id,
@@ -135,19 +135,19 @@ class TokenManager:
             'iat': now,
             'type': 'access'
         }
-        
+
         token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
         return token, expires
-    
+
     def create_refresh_token(
-        self, 
-        username: str, 
+        self,
+        username: str,
         user_id: str
     ) -> tuple[str, datetime]:
         """Criar JWT refresh token"""
         now = datetime.utcnow()
         expires = now + self.refresh_token_expire
-        
+
         payload = {
             'sub': username,
             'user_id': user_id,
@@ -155,43 +155,43 @@ class TokenManager:
             'iat': now,
             'type': 'refresh'
         }
-        
+
         token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
         return token, expires
-    
+
     def verify_token(self, token: str) -> dict:
         """
         Verificar e decodificar JWT token
-        
+
         Raises:
             JWTError: Se token inválido/expirado
         """
         if self.is_blacklisted(token):
             raise JWTError("Token está na blacklist")
-        
+
         payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
         return payload
-    
+
     def add_to_blacklist(self, token: str, expiry: datetime):
         """Adicionar token à blacklist (para logout)"""
         self.blacklist[token] = expiry
-    
+
     def is_blacklisted(self, token: str) -> bool:
         """Verificar se token está na blacklist"""
         if token not in self.blacklist:
             return False
-        
+
         # Limpar tokens expirados
         if self.blacklist[token] < datetime.utcnow():
             del self.blacklist[token]
             return False
-        
+
         return True
-    
+
     def hash_password(self, password: str) -> str:
         """Hash de senha com bcrypt"""
         return self.pwd_context.hash(password)
-    
+
     def verify_password(self, plain_password: str, hashed: str) -> bool:
         """Verificar senha"""
         return self.pwd_context.verify(plain_password, hashed)
@@ -233,25 +233,25 @@ async def login(credentials: LoginRequest):
     AC-5.1: Login endpoint - retorna access + refresh tokens
     """
     user = USERS_DB.get(credentials.username)
-    
+
     if not user or not token_manager.verify_password(
-        credentials.password, 
+        credentials.password,
         user['password_hash']
     ):
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
-    
+
     # Criar tokens
     access_token, access_expires = token_manager.create_access_token(
         username=credentials.username,
         user_id=user['user_id'],
         role=user['role']
     )
-    
+
     refresh_token, refresh_expires = token_manager.create_refresh_token(
         username=credentials.username,
         user_id=user['user_id']
     )
-    
+
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -265,17 +265,17 @@ async def refresh_token(request: RefreshTokenRequest):
     """
     try:
         payload = token_manager.verify_token(request.refresh_token)
-        
+
         if payload.get('type') != 'refresh':
             raise HTTPException(status_code=401, detail="Token inválido para refresh")
-        
+
         # Criar novo access token
         access_token, expires = token_manager.create_access_token(
             username=payload['sub'],
             user_id=payload['user_id'],
             role=payload.get('role', 'user')
         )
-        
+
         return TokenResponse(
             access_token=access_token,
             refresh_token=request.refresh_token,  # Reusar refresh token
@@ -291,7 +291,7 @@ async def logout(current_user: dict = Depends(get_current_user)):
     """
     # Aqui pegamos o token do header Authorization (seria passado via Depends)
     # Por simplicidade, apenas marcamos como logout
-    
+
     return LogoutResponse(
         message=f"Logout realizado com sucesso para {current_user['sub']}",
         timestamp=datetime.utcnow()
@@ -341,31 +341,31 @@ client = TestClient(app)
 
 class TestAuthEndpoints:
     """Testes para endpoints de autenticação"""
-    
+
     def test_login_success(self):
         """AC-5.1: Login com credenciais válidas"""
         response = client.post("/auth/login", json={
             "username": "trader01",
             "password": "SecurePass123!"
         })
-        
+
         assert response.status_code == 200
         data = response.json()
         assert "access_token" in data
         assert "refresh_token" in data
         assert data["token_type"] == "bearer"
         assert data["expires_in"] > 0
-    
+
     def test_login_invalid_credentials(self):
         """AC-5.1: Login com credenciais inválidas"""
         response = client.post("/auth/login", json={
             "username": "trader01",
             "password": "WrongPassword"
         })
-        
+
         assert response.status_code == 401
         assert "Credenciais inválidas" in response.text
-    
+
     def test_refresh_token_success(self):
         """AC-5.2: Refresh token com token válido"""
         # 1. Login
@@ -374,17 +374,17 @@ class TestAuthEndpoints:
             "password": "SecurePass123!"
         })
         refresh_token = login_response.json()["refresh_token"]
-        
+
         # 2. Refresh
         response = client.post("/auth/refresh-token", json={
             "refresh_token": refresh_token
         })
-        
+
         assert response.status_code == 200
         data = response.json()
         assert "access_token" in data
         assert data["token_type"] == "bearer"
-    
+
     def test_protected_endpoint_with_valid_token(self):
         """AC-5.4 + AC-5.5: Acessar endpoint protegido com token válido"""
         # 1. Login
@@ -393,11 +393,11 @@ class TestAuthEndpoints:
             "password": "SecurePass123!"
         })
         access_token = login_response.json()["access_token"]
-        
+
         # 2. Acessar endpoint protegido
         headers = {"Authorization": f"Bearer {access_token}"}
         response = client.get("/auth/me", headers=headers)
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["username"] == "trader01"
@@ -405,18 +405,18 @@ class TestAuthEndpoints:
         assert data["role"] == "trader"
         assert "issued_at" in data
         assert "expires_at" in data
-    
+
     def test_protected_endpoint_without_token(self):
         """AC-5.5: Rejeitar requisição sem token (401)"""
         response = client.get("/auth/me")
-        
+
         assert response.status_code == 401
-    
+
     def test_protected_endpoint_invalid_token(self):
         """AC-5.5: Rejeitar requisição com token inválido (401)"""
         headers = {"Authorization": "Bearer invalid_token_here"}
         response = client.get("/auth/me", headers=headers)
-        
+
         assert response.status_code == 401
 ```
 

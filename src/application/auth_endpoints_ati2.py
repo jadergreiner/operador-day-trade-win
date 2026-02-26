@@ -33,31 +33,31 @@ USERS_DB = {
 def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
     """
     Dependency para extraído usuário autenticado do token JWT
-    
+
     Args:
         authorization: Header Authorization (Bearer token)
-        
+
     Returns:
         Dict com payload do token
-        
+
     Raises:
         HTTPException: Se token inválido/ausente
     """
     if not authorization:
         raise HTTPException(status_code=401, detail="Token ausente")
-    
+
     try:
         # Extrair token de "Bearer <token>"
         parts = authorization.split()
         if len(parts) != 2 or parts[0].lower() != "bearer":
             raise HTTPException(status_code=401, detail="Formato Authorization inválido")
-        
+
         token = parts[1]
         payload = token_manager.verify_token(token)
-        
+
         if payload.get('type') != 'access':
             raise HTTPException(status_code=401, detail="Token type inválido")
-        
+
         return payload
     except JWTError as e:
         raise HTTPException(status_code=401, detail=f"Token inválido: {str(e)}")
@@ -69,36 +69,36 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> dict:
 async def login(credentials: LoginRequest):
     """
     AC-5.1: Endpoint de login - Retorna access + refresh tokens
-    
+
     Args:
         credentials: LoginRequest com username e password
-        
+
     Returns:
         TokenResponse com access_token e refresh_token
-        
+
     Raises:
         HTTPException: Se credenciais inválidas
     """
     user = USERS_DB.get(credentials.username)
-    
+
     if not user or not token_manager.verify_password(
-        credentials.password, 
+        credentials.password,
         user['password_hash']
     ):
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
-    
+
     # Criar tokens
     access_token, access_expires = token_manager.create_access_token(
         username=credentials.username,
         user_id=user['user_id'],
         role=user['role']
     )
-    
+
     refresh_token, refresh_expires = token_manager.create_refresh_token(
         username=credentials.username,
         user_id=user['user_id']
     )
-    
+
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -110,29 +110,29 @@ async def login(credentials: LoginRequest):
 async def refresh_token_endpoint(request: RefreshTokenRequest):
     """
     AC-5.2: Endpoint de refresh token - Renova access token
-    
+
     Args:
         request: RefreshTokenRequest com refresh_token válido
-        
+
     Returns:
         TokenResponse com novo access_token
-        
+
     Raises:
         HTTPException: Se refresh token inválido/expirado
     """
     try:
         payload = token_manager.verify_token(request.refresh_token)
-        
+
         if payload.get('type') != 'refresh':
             raise HTTPException(status_code=401, detail="Token type não é refresh")
-        
+
         # Criar novo access token
         access_token, expires = token_manager.create_access_token(
             username=payload['sub'],
             user_id=payload['user_id'],
             role=payload.get('role', 'user')
         )
-        
+
         return TokenResponse(
             access_token=access_token,
             refresh_token=request.refresh_token,  # Reusar refresh token
@@ -146,11 +146,11 @@ async def refresh_token_endpoint(request: RefreshTokenRequest):
 async def logout(current_user: dict = Depends(get_current_user), authorization: Optional[str] = Header(None)):
     """
     AC-5.3: Endpoint de logout - Invalida token na blacklist
-    
+
     Args:
         current_user: Usuário extraído do token (via Depends)
         authorization: Header Authorization com token
-        
+
     Returns:
         LogoutResponse confirmando logout
     """
@@ -164,7 +164,7 @@ async def logout(current_user: dict = Depends(get_current_user), authorization: 
             token_manager.add_to_blacklist(token, expiry)
         except Exception:
             pass  # Se não conseguir extrair expiry, apenas ignora
-    
+
     return LogoutResponse(
         message=f"Logout realizado com sucesso para {current_user['sub']}",
         timestamp=datetime.utcnow()
@@ -175,17 +175,17 @@ async def logout(current_user: dict = Depends(get_current_user), authorization: 
 async def get_user_info(current_user: dict = Depends(get_current_user)):
     """
     AC-5.4 + AC-5.5: Endpoint protegido - Retorna claims do JWT
-    
+
     Demonstra:
     - AC-5.4: JWT com claims: sub, exp, iat, user_id, role
     - AC-5.5: Rejeita requisições sem token válido (401)
-    
+
     Args:
         current_user: Usuário extraído via Depends(get_current_user)
-        
+
     Returns:
         UserInfo com dados do token
-        
+
     Raises:
         HTTPException 401 se token inválido/ausente (via Depends)
     """

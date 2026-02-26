@@ -12,7 +12,7 @@ class LoginRequest(BaseModel):
     """Schema para requisição de login"""
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=8, max_length=100)
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -28,7 +28,7 @@ class TokenResponse(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     expires_in: int  # segundos
-    
+
     class Config:
         json_schema_extra = {
             "example": {

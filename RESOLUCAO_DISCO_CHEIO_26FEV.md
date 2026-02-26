@@ -1,19 +1,19 @@
 # 🎯 RESOLUCAO CRITICA - Disco Cheio + Banco de Dados Travado
 
-**data:** 26/02/2026  
-**Hora do incidente:** 11:42:31 UTC  
+**data:** 26/02/2026
+**Hora do incidente:** 11:42:31 UTC
 **Tempo de resolucao:** ~15 minutos
 
 ## Resumo Executivo
 
 **Problema:** Sistema de trading automático (RL Loop) foi **bloqueado** por erro `sqlite3.OperationalError: database or disk is full`
 
-**Causa Raiz:** 
+**Causa Raiz:**
 - Disco C: **100% cheio** (0 GB livres)
 - Banco trading.db: **163.21 MB** com 718.383 registros
 - Muito dados antigos acumulado (>30 dias)
 
-**Solucao:** 
+**Solucao:**
 1. ✅ Limpeza de cache Python (-4.7 MB)
 2. ✅ Limpeza de dados antigos (>7 dias) (-123.728 registros)
 3. ✅ VACUUM no banco (-47.94 MB)
