@@ -2,6 +2,31 @@
 
 **Head Financeiro do Maior Fundo de Investimentos da América Latina**
 
+## 🚀 SPRINT 2 - 10 ATIVIDADES CRÍTICAS (26/02/2026)
+
+**Status:** 🟢 Aprovadas + Squads Mobilizadas | **Timeline:** 6-8 semanas | **Capital:** R$ 356k
+
+### As 10 Atividades que Entregam Valor Real:
+
+| # | Atividade | Lead | Horas | Status |
+|---|-----------|------|-------|--------|
+| 1 | Dashboard de Ordens em Tempo Real | Eng Sr | 40h | 🟢 Pronto |
+| 2 | API OAuth 2.0 Multi-Operadores | Dev-Backend-1 | 40h | 🟢 Pronto |
+| 3 | Fila RabbitMQ + Confiabilidade 99.9% | Dev-Backend-2 | 40h | 🟢 Pronto |
+| 4 | WebSocket Real-time <100ms | Dev-Backend-3 | 40h | 🟢 Pronto |
+| 5 | Análise SHAP + Correlação 24x24 | ML Expert | 44h | 🟢 Pronto |
+| 6 | Drift Detection + Alertas 3-tier | Data Scientist | 44h | 🟢 Pronto |
+| 7 | Backtest 252 Dias (Sharpe≥1.0) | ML Expert | 44h | 🟡 Bloqueado |
+| 8 | Retry Logic 3x Backoff Exponencial | Dev-Backend-2 | 32h | 🟢 Pronto |
+| 9 | Position Monitoring + SL/TP Automático | Dev-Backend-3 | 32h | 🟢 Pronto |
+| 10 | Capital Decision Framework (Gate 2) | ML Expert + CFO | 40h | 🟡 Bloqueado |
+
+**Documentação:**
+- 📄 [10_ATIVIDADES_CRITICAS_SPRINT2.md](10_ATIVIDADES_CRITICAS_SPRINT2.md) - Especificação detalhada
+- 📄 [GOVERNANCA_DELIBERACAO_SPRINT2.md](GOVERNANCA_DELIBERACAO_SPRINT2.md) - Aprovações formais
+
+---
+
 ### 🏛️ Governança Arquitetural (Mandato do Board)
 1.  **Unidade de Execução:** Toda inteligência é centralizada no motor `scripts/agente_micro_tendencia_winfut.py`.
 2.  **Entrega Única:** As evoluções de execução automática (v1.2) serão entregues via atualização do operador atual (`INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`).
