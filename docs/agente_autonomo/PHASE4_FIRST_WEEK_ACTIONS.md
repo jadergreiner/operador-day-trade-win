@@ -1,7 +1,7 @@
 # 📋 PHASE 4.1 - FIRST WEEK ACTION PLAN (01-05/03/2026)
 
-**Objetivo:** Deploy completo em staging + 63+ testes PASSING + performance validated  
-**Timeline:** 5 dias  
+**Objetivo:** Deploy completo em staging + 63+ testes PASSING + performance validated
+**Timeline:** 5 dias
 **Gate Decision:** 05/03 18:00 (Gate 4.1: Staging Readiness)
 
 ---
@@ -9,7 +9,7 @@
 ## 🗓️ DAY 1 (Monday 01/03) - INFRASTRUCTURE DEPLOYMENT
 
 ### Morning Standup (09:00-09:15)
-**Location:** Video call  
+**Location:** Video call
 **Attendees:** All 9 personas
 
 **Topics:**
@@ -20,8 +20,8 @@
 
 ### Task 1.1: Azure Infrastructure Deploy (09:15-12:00)
 
-**Owner:** DevOps Lead  
-**Duration:** 2h 45m  
+**Owner:** DevOps Lead
+**Duration:** 2h 45m
 **Participants:** DevOps, Eng Sr (support)
 
 **Checklist:**
@@ -62,8 +62,8 @@ az deployment group show \
 
 ### Task 1.2: Configure Application Environment (12:00-13:00)
 
-**Owner:** Eng Sr  
-**Duration:** 1h  
+**Owner:** Eng Sr
+**Duration:** 1h
 **Participants:** Eng Sr, DevOps
 
 **Checklist:**
@@ -104,8 +104,8 @@ az webapp config connection-string set \
 
 ### Task 1.3: Deploy Application Code (14:00-16:00)
 
-**Owner:** Eng Sr + DevOps + QA  
-**Duration:** 2h  
+**Owner:** Eng Sr + DevOps + QA
+**Duration:** 2h
 **Participants:** All 6 ops people
 
 **Checklist:**
@@ -152,8 +152,8 @@ az webapp deployment source config-zip \
 
 ### Task 1.4: Load ML Models (14:00-15:00)
 
-**Owner:** ML Expert  
-**Duration:** 1h  
+**Owner:** ML Expert
+**Duration:** 1h
 **Participants:** ML Expert, Eng Sr
 
 **Checklist:**
@@ -186,8 +186,8 @@ print(f'Count: {len(feature_engineering.FEATURE_NAMES)}')
 
 ### Task 1.5: Monitoring & Verification (15:00-17:00)
 
-**Owner:** DevOps + QA  
-**Duration:** 2h  
+**Owner:** DevOps + QA
+**Duration:** 2h
 **Participants:** DevOps, QA Lead, Eng Sr
 
 **Checklist:**
@@ -218,7 +218,7 @@ python -m pytest tests/smoke/ -v
 
 ### End of Day Report (17:00-17:30)
 
-**Responsible:** Eng Sr  
+**Responsible:** Eng Sr
 **Attendees:** All 9 personas
 
 **Report Contents:**
@@ -257,8 +257,8 @@ python -m pytest tests/smoke/ -v
 
 ### Task 2.1: OAuth Integration Tests (09:15-10:30)
 
-**Owner:** QA Lead  
-**Duration:** 1h 15m  
+**Owner:** QA Lead
+**Duration:** 1h 15m
 **Participants:** QA, Integration Eng
 
 **Execution:**
@@ -284,8 +284,8 @@ python -m pytest test_oauth_integration.py -v
 
 ### Task 2.2: WebSocket Integration Tests (10:30-11:30)
 
-**Owner:** QA + Integration Eng  
-**Duration:** 1h  
+**Owner:** QA + Integration Eng
+**Duration:** 1h
 **Participants:** QA, Integration Eng, Eng Sr
 
 **Execution:**
@@ -310,8 +310,8 @@ python -m pytest test_websocket_authenticated_endpoints.py -v
 
 ### Task 2.3: XGBoost Inference Tests (11:30-13:00)
 
-**Owner:** ML Expert + QA  
-**Duration:** 1h 30m  
+**Owner:** ML Expert + QA
+**Duration:** 1h 30m
 **Participants:** ML Expert, QA, Integration Eng
 
 **Execution:**
@@ -340,8 +340,8 @@ python -m pytest test_backtest_server.py -v
 
 ### Task 2.4: Full CI/CD Pipeline Execution (14:00-16:00)
 
-**Owner:** Eng Sr + QA  
-**Duration:** 2h  
+**Owner:** Eng Sr + QA
+**Duration:** 2h
 **Participants:** All 6 ops
 
 **Execution:**
@@ -378,7 +378,7 @@ git push origin main
 
 ### Task 2.5: Database Validation (16:00-17:00)
 
-**Owner:** DevOps + Eng Sr  
+**Owner:** DevOps + Eng Sr
 **Duration:** 1h
 
 **Checklist:**
@@ -436,8 +436,8 @@ az backup protection enable-for-vm ...
 
 ### Task 3.1: Performance Baseline (09:15-12:00)
 
-**Owner:** Integration Eng + QA  
-**Duration:** 3h  
+**Owner:** Integration Eng + QA
+**Duration:** 3h
 **Participants:** Integration Eng, QA, DevOps
 
 **Execution:**
@@ -470,7 +470,7 @@ python scripts/profile_api_latency.py
 
 ### Task 3.2: Load Testing Preparation (13:00-14:00)
 
-**Owner:** QA Lead  
+**Owner:** QA Lead
 **Duration:** 1h
 
 **Checklist:**
@@ -489,7 +489,7 @@ locust -f locustfile.py --host=https://... -u 0 -r 0 --run-time=0 -H
 
 ### Task 3.3: WebSocket Concurrent Connection Test (14:00-15:30)
 
-**Owner:** Integration Eng  
+**Owner:** Integration Eng
 **Duration:** 1h 30m
 
 **Execution:**
@@ -624,5 +624,5 @@ locust -f tests/load_testing/locustfile.py \
 
 ---
 
-*Document Version: 1.0*  
+*Document Version: 1.0*
 *Ready for Execution: 01/03/2026*
