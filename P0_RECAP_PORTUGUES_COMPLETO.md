@@ -262,47 +262,40 @@ Lines of Code: ~1.500+ LOC adicionado
 
 ---
 
-## 🚀 TIMELINE ATUAL
+## 🚀 PRÓXIMOS PASSOS (POR PRIORIDADE)
 
-### HOJE (26/02)
+### P1: DESIGN REVIEWS EXECUTION (P0 #3)
+- **Lead:** Eng Sr + SQUAD 1/SQUAD 2
+- **Documento:** [P0_TASK_3_DESIGN_REVIEWS_EXECUTION.md](P0_TASK_3_DESIGN_REVIEWS_EXECUTION.md)
+- **Deliverables:** 6 ATIs reviewed + sign-off forms preenchidas
+- **Requisitos:** ATI-1 a ATI-4 (SQUAD 1) | ATI-5, ATI-6 (SQUAD 2)
+- **Status:** Pronto para execução
 
-**10:00-11:00:** ✅ **EXECUÇÃO COMPLETA** (Já feito!)
-- Corrigidos erros de coleta
-- Validados 37/37 core tests
-- Documentação criada
-- Commits realizados
+### P2: ENVIRONMENT VALIDATION COMPLETION (P0 #4)
+- **Lead:** DevOps + QA Lead
+- **Documento:** [P0_TASK_4_5_PARALLEL_EXECUTION.md](P0_TASK_4_5_PARALLEL_EXECUTION.md)
+- **Deliverables:** 
+  - Git branches (6x) + Docker image build
+  - Email config fixed + Legacy code refactor
+- **Status:** 60% complete - finalizando FASE 4+5
 
-**14:00:** Design Reviews começa
-- Usar: [P0_TASK_3_DESIGN_REVIEWS_EXECUTION.md](P0_TASK_3_DESIGN_REVIEWS_EXECUTION.md)
-- Eng Sr: ATI-1 a ATI-4 (4-5 horas)
-- ML Expert: ATI-5 e ATI-6 (2-3 horas)
-- Expected: Conclusão por 17:30-18:30
+### P3: PLATFORM CORE VALIDATION
+- **Lead:** QA Lead
+- **Documento:** [P0_TASK_4_5_PARALLEL_EXECUTION.md](P0_TASK_4_5_PARALLEL_EXECUTION.md)
+- **Deliverables:** Full test suite 90%+ passing
+- **Status:** Core tests 100% (37/37) - resolvendo legacy issues
 
-**Paralelo:** DevOps + QA finalização
-- Usar: [P0_TASK_4_5_PARALLEL_EXECUTION.md](P0_TASK_4_5_PARALLEL_EXECUTION.md)
-- DevOps: FASE 4+5 (2h)
-- QA: Problemas legados (6h)
-- Expected: Completo por EOD
+### P4: FINAL SIGN-OFFS & GATE 1 DECISION
+- **Lead:** Product Owner
+- **Documento:** [SPRINT2_P0_EXECUTION_DASHBOARD.md](SPRINT2_P0_EXECUTION_DASHBOARD.md)
+- **Deliverables:** All P0 approvals + GATE 1 GO/NO-GO decision
+- **Status:** Pendente conclusão das tarefas P1-P3
 
-### AMANHÃ (27/02)
-
-**09:00-10:00:** Validações finais
-- Todas P0 tasks última verificação
-- Resolução de bloqueadores se houver
-
-**10:00-11:00:** Sign-offs
-- P0 #3: Designs assinados
-- P0 #4: Ambiente completo
-- P0 #5: Suite de testes validada
-
-**11:00:** GATE 1 DECISION
-- 🟢 GO ou 🔴 NO-GO
-- Se GO: Desenvolvimento começa
-
-**12:00+:** DESENVOLVIMENTO KICKOFF
-- Todos squads começam ATI-1 a ATI-6
-- 356 horas de trabalho de desenvolvimento
-- Standups diários 15:00 BRT
+### P5: DEVELOPMENT KICKOFF
+- **Lead:** All Squads
+- **Deliverables:** ATI-1 a ATI-6 development iniciado
+- **Requisito:** GATE 1 decision = 🟢 GO
+- **Status:** Aguardando GATE 1
 
 ---
 
