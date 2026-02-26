@@ -1,5 +1,34 @@
 # CHANGELOG - Operador Quântico
 
+## [v1.2.7] - 2026-02-26 SPRINT 2: 10 ATIVIDADES CRÍTICAS APROVADAS
+
+### ✅ SPRINT 2: 10 ATIVIDADES CRÍTICAS - Entrega de Features com Valor Real
+
+**Status:** 🟢 **10 ATI ESPECIFICADAS + SQUADS MOBILIZADAS** (Commit 26feb01)
+
+**Deliberação Completa (Passos 1-12):**
+- ✅ 10 atividades capturadas com valor real ao operador
+- ✅ Squads mobilizadas (11 personas, 356h alocadas)
+- ✅ 3 tracks paralelos (Backend + Features + Backtest)
+- ✅ 2 gates imóveis (GATE 1: ENG-003+ML-003 | GATE 2: Sharpe≥1.0)
+- ✅ AC specifications (118 total)
+- ✅ Test automation (98+ unit tests)
+- ✅ Governança registrada em DELIBERACAO_SPRINT2.md
+
+**Atividades Aprovadas:**
+1. Dashboard de Ordens (40h) - Visibilidade operador
+2. OAuth 2.0 (40h) - Multi-operadores seguro
+3. RabbitMQ Queue (40h) - Confiabilidade 99.9%
+4. WebSocket Real-time (40h) - <100ms updates
+5. SHAP Features (44h) - Inteligência modelo
+6. Drift Detection (44h) - Monitoramento
+7. Backtest 252d (44h) - Validação Sharpe
+8. Retry Logic (32h) - Resiliência
+9. Position Monitor (32h) - SL/TP automático
+10. Gate 2 Decision (40h) - **Ativa R$ 100k Fase 2**
+
+**Timeline:** 6-8 semanas | **Total:** 356h | **Personas:** 11
+
 ## [v1.2.4] - 2026-02-25 TASK #3 (INTEGRATION-ML-002) Deliberação + Plano Execução
 
 ### ✅ TASK #3: INTEGRATION-ML-002 - Backtest Validation Pipeline Deliberação Completa
