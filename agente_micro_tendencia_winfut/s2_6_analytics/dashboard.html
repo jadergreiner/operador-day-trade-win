@@ -1,0 +1,98 @@
+
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>S2-6 Analytics Dashboard MVP Skeleton</title>
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body { 
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    padding: 20px;
+                    color: #333;
+                }
+                .container { max-width: 1400px; margin: 0 auto; }
+                h1 { color: white; text-align: center; margin-bottom: 30px; }
+                .dashboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+                .card {
+                    background: white;
+                    border-radius: 10px;
+                    padding: 20px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                }
+                .card h2 { color: #667eea; margin-bottom: 15px; }
+                .metric { 
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 10px 0;
+                    border-bottom: 1px solid #eee;
+                }
+                .metric:last-child { border-bottom: none; }
+                .metric-label { font-weight: 600; }
+                .metric-value { color: #667eea; font-weight: bold; }
+                .status-green { color: #4caf50; }
+                .status-yellow { color: #ff9800; }
+                .status-red { color: #f44336; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🚀 S2-6 Analytics Dashboard MVP Skeleton</h1>
+                <div class="dashboard">
+                    <!-- View 1: Signals -->
+                    <div class="card">
+                        <h2>📊 Signals Overview (24h)</h2>
+                        <div class="metric">
+                            <span class="metric-label">Total Signals:</span>
+                            <span class="metric-value">50</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Win Rate:</span>
+                            <span class="metric-value status-green">62.0%</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Avg Confidence:</span>
+                            <span class="metric-value">0.782</span>
+                        </div>
+                    </div>
+                    
+                    <!-- View 2: Performance -->
+                    <div class="card">
+                        <h2>📈 Performance Metrics</h2>
+                        <div class="metric">
+                            <span class="metric-label">F1 Score:</span>
+                            <span class="metric-value">0.728</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Total P&L:</span>
+                            <span class="metric-value status-green">R$ 95.640</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Sharpe Ratio:</span>
+                            <span class="metric-value">1.68</span>
+                        </div>
+                    </div>
+                    
+                    <!-- View 3: Risk -->
+                    <div class="card">
+                        <h2>⚠️ Risk Dashboard</h2>
+                        <div class="metric">
+                            <span class="metric-label">Circuit Breaker:</span>
+                            <span class="metric-value status-green">🟢 OPERATIONAL</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Current Drawdown:</span>
+                            <span class="metric-value">-1.5%</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Risk Status:</span>
+                            <span class="metric-value status-green">✅ SAFE</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        
