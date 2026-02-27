@@ -21,11 +21,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 def validate_smc_s2_3():
     """Validacao rapida de S2-3 sem dependencias de MT5"""
-    
+
     print("\n" + "="*80)
     print("🎯 S2-3 VALIDACAO RAPIDA - Confluencia SMC (M1/M5)")
     print("="*80 + "\n")
-    
+
     # STEP 1: Verificar imports
     print("[STEP 1] Verificando imports...")
     try:
@@ -40,7 +40,7 @@ def validate_smc_s2_3():
     except Exception as e:
         print(f"  ❌ Erro ao importar: {e}\n")
         return False
-    
+
     # STEP 2: Validar estruturas de dados
     print("[STEP 2] Validando estruturas de dados...")
     try:
@@ -51,20 +51,20 @@ def validate_smc_s2_3():
     except Exception as e:
         print(f"  ❌ Erro ao crear estruturas: {e}\n")
         return False
-    
+
     # STEP 3: Validar ATR Map (usado por S2-3)
     print("[STEP 3] Validando ATR Map (volatility web)...")
     try:
         price = Decimal("130000")
         atr = Decimal("200")
         result = _calc_atr_map(price, atr, multipliers=[1.0, 2.0, 3.0])
-        
+
         print(f"  Price: {price}")
         print(f"  ATR: {atr}")
         print(f"  Levels:")
         for key, val in sorted(result.items()):
             print(f"    {key}: {val}")
-        
+
         # Validar sanidade dos níveis
         assert result["up_1.0x"] > price, "up_1x deve ser maior que price"
         assert result["down_1.0x"] < price, "down_1x deve ser menor que price"
@@ -73,12 +73,12 @@ def validate_smc_s2_3():
     except Exception as e:
         print(f"  ❌ Erro ao validar ATR Map: {e}\n")
         return False
-    
+
     # STEP 4: Simular grid search de S2-3 thresholds
     print("[STEP 4] Simulando grid search de SMC thresholds...")
     thresholds = [0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
     confluence_scores = []
-    
+
     for threshold in thresholds:
         # Simular confluência baseada no threshold
         # Score maior quanto maior o threshold
@@ -88,19 +88,19 @@ def validate_smc_s2_3():
             "confluence_score": round(simulated_confluence, 2),
             "expected_win_rate": round(62.0 + (threshold - 0.5) * 5, 1)  # 62% base
         })
-    
+
     print(f"  Grid search ({len(thresholds)} configs):")
     for config in confluence_scores:
         print(f"    Threshold {config['threshold']}: Score={config['confluence_score']}, "
               f"Win rate~{config['expected_win_rate']}%")
-    
+
     print("  ✅ Grid search simulado (8 configs)")
-    
+
     # Validar que melhor config está em range esperado
     best_config = max(confluence_scores, key=lambda x: x["expected_win_rate"])
     print(f"  ✅ Melhor config: threshold={best_config['threshold']}, "
           f"win_rate~{best_config['expected_win_rate']}% (target: 64-66%)\n")
-    
+
     # STEP 5: Validar métricas de impacto
     print("[STEP 5] Validando métricas de impacto...")
     metrics = {
@@ -112,7 +112,7 @@ def validate_smc_s2_3():
         "memory_overhead": 35,  # MB
         "throughput": 145  # signals/min
     }
-    
+
     print(f"  Win rate baseline: {metrics['win_rate_baseline']}%")
     print(f"  Win rate com S2-3: {metrics['win_rate_with_s2_3']}% (↑ {metrics['win_rate_with_s2_3'] - metrics['win_rate_baseline']}%)")
     print(f"  Capture rate: {metrics['capture_rate']}% (target: ≥85%)")
@@ -120,7 +120,7 @@ def validate_smc_s2_3():
     print(f"  Performance P95: {metrics['performance_p95']}ms (target: <500ms)")
     print(f"  Memory overhead: {metrics['memory_overhead']}MB (target: <50MB)")
     print(f"  Throughput: {metrics['throughput']} signals/min (target: >100/min)")
-    
+
     # Validar gates
     gates_passed = [
         metrics['win_rate_with_s2_3'] > 62.0,  # Deve melhorar
@@ -130,10 +130,10 @@ def validate_smc_s2_3():
         metrics['memory_overhead'] < 50,
         metrics['throughput'] > 100
     ]
-    
+
     gates_status = sum(gates_passed)
     print(f"\n  ✅ Gates validados: {gates_status}/6 PASSED\n")
-    
+
     # STEP 6: Salvar resultado
     print("[STEP 6] Salvando resultado de validacao...")
     result = {
@@ -150,13 +150,13 @@ def validate_smc_s2_3():
         "performance_target_metrica": "P95 <500ms",
         "performance_result": f"{metrics['performance_p95']}ms ✅"
     }
-    
+
     output_file = Path("s2_3_validacao_resultado.json")
     with open(output_file, "w") as f:
         json.dump(result, f, indent=2)
-    
+
     print(f"  ✅ Resultado salvo em: {output_file}\n")
-    
+
     # SUMMARY
     print("="*80)
     print("📊 RESUMO FINAL")
@@ -170,7 +170,7 @@ def validate_smc_s2_3():
     print(f"✅ Memory: {metrics['memory_overhead']}MB (target: <50MB)")
     print(f"✅ Win Rate Impact: +{metrics['win_rate_with_s2_3'] - metrics['win_rate_baseline']}% (target: +2-4%)")
     print("\n🎯 S2-3 VALIDACAO: ✅ COMPLETA E PRONTA\n")
-    
+
     return True
 
 if __name__ == "__main__":
