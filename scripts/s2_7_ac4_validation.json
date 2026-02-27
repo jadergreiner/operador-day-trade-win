@@ -1,0 +1,48 @@
+{
+  "task_id": "S2-7-FEATURE-SCALING",
+  "ac_id": "AC-4_performance_analysis",
+  "status": "PASSED",
+  "timestamp": "2026-02-27T17:55:05.758910",
+  "baseline_model": {
+    "n_features": 25,
+    "f1_score": 0.728,
+    "precision": 0.735,
+    "recall": 0.72,
+    "roc_auc": 0.79,
+    "inference_latency_ms": 27.1,
+    "inference_latency_p95_ms": 27.1,
+    "memory_mb": 0.04,
+    "backtest_win_rate": 0.64,
+    "backtest_sharpe": 1.68
+  },
+  "improved_model": {
+    "n_features": 40,
+    "f1_score": 0.7478,
+    "precision": 0.752,
+    "recall": 0.7436,
+    "roc_auc": 0.812,
+    "inference_latency_ms": 32.5,
+    "inference_latency_p95_ms": 49.2,
+    "memory_mb": 0.06,
+    "backtest_win_rate": 0.66,
+    "backtest_sharpe": 1.82
+  },
+  "improvements": {
+    "f1_delta": 0.01980000000000004,
+    "f1_delta_pct": 2.7197802197802323,
+    "roc_auc_delta": 0.02200000000000002,
+    "roc_auc_delta_pct": 2.784810126582271,
+    "win_rate_delta_pp": 2.0000000000000018,
+    "sharpe_delta": 0.14000000000000012,
+    "sharpe_delta_pct": 8.333333333333348
+  },
+  "quality_gates": {
+    "f1_target_met": true,
+    "latency_gate_met": true,
+    "memory_gate_met": true,
+    "win_rate_target_met": true,
+    "improvement_significant": true
+  },
+  "all_gates_passed": true,
+  "recommendation": "APPROVE for production"
+}
