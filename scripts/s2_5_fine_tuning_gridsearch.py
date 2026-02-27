@@ -273,6 +273,23 @@ def main():
     
     # Step 5: Salvar resultados
     output_path = Path("scripts/s2_5_fine_tuning_results.json")
+    
+    # Converter numpy types para Python types
+    def convert_numpy_types(obj):
+        if isinstance(obj, np.bool_):
+            return bool(obj)
+        elif isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, dict):
+            return {k: convert_numpy_types(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [convert_numpy_types(item) for item in obj]
+        return obj
+    
+    all_results = convert_numpy_types(all_results)
+    
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(all_results, f, indent=2, ensure_ascii=False)
     
