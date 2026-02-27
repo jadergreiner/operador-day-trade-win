@@ -27,7 +27,7 @@ import sys
 import json
 from pathlib import Path
 from datetime import datetime
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 
 class S2_5_Master:
