@@ -1,5 +1,7 @@
 # 🎯 Prompt de Priorização - Operador Day Trade WIN
 
+Foco na entrega do operador `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
+
 ## Instruções para Análise de Priorização
 
 Leia os seguintes documentos de governança para extrair status, dependências e riscos:

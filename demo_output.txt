@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+======================================================================
+  File "C:\repo\operador-day-trade-win\scripts\S2-2_demo_atr_integration.py", line 225, in <module>
+    ohlc_demo, features_demo = main()
+                               ^^^^^^
+  File "C:\repo\operador-day-trade-win\scripts\S2-2_demo_atr_integration.py", line 182, in main
+    print("\U0001f3af S2-2: CALIBRADOR ATR DIN┬MICO - DEMONSTRAÃ├O")
+  File "C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\U0001f3af' in position 0: character maps to <undefined>

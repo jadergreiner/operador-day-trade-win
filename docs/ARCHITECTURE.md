@@ -491,6 +491,79 @@ performance (
 )
 ```
 
+## 📊 Data Persistence Mapping (Auditoria Crítica 27/02/2026)
+
+**ÚLTIMA ATUALIZAÇÃO:** 27/02/2026 15:00 BRT - Validação completa de arquitetura de dados
+
+### ✅ Mapeamento Oficial de Persistência
+
+| Tipo de Dado | Banco Primário | Banco Secundário | Estado Sprint 1 | Responsável |
+|---|---|---|---|---|
+| **🎯 Trades (Execução MT5)** | `data/db/trading.db` | Nenhum | ✅ ATIVO | Executor Técnico |
+| **🧠 RL Episodes** | `data/db/trading.db` | Nenhum | ✅ ATIVO | ML Expert |
+| **📊 RL Rewards** | `data/db/trading.db` | Nenhum | ✅ ATIVO | ML Expert |
+| **📈 RL Training Metrics** | `data/db/trading.db` | Nenhum | ✅ ATIVO | ML Expert |
+| **📝 Trading Journal Logs** | `data/db/trading.db` | Nenhum | ✅ ATIVO | Executor Técnico |
+| **🔔 Manual Interventions** | `data/db/trading.db` | Nenhum | ✅ ATIVO | Trader Leader |
+| **🔐 Reflection Logs** | `data/db/reflections/reflections_log.jsonl` | Nenhum | ✅ ATIVO | Head Financeiro |
+| **📉 Market Data** | `data/db/trading.db` | Nenhum | ✅ ATIVO | Data Engineer |
+| **🎛️ Features & Indicators** | `data/db/trading.db` | Nenhum | ✅ ATIVO | ML Pipeline |
+| **🔮 ML Predictions** | `data/db/trading.db` | Nenhum | ✅ ATIVO | ML Pipeline |
+| **🎲 Backtest Results** | `data/backtest_*.json` (files) | `data/db/trading.db` | ✅ ATIVO | ML Expert |
+| **🌐 WDO/WinFut Data** | `data/db/wdo_winfut.db` | Nenhum | ❓ INVESTIGAR | Data Engineer |
+| **⚠️ Simulator Data** | `data/simulator.db` | Nenhum | ✅ DEV ONLY | QA Automation |
+| **🚨 Alerts Audit** | `data/db/alertas_audit.db` (Planned) | Nenhum | 🔄 PLANEJADO | Compliance Officer |
+
+### 🔴 DEPRECATED/ORPHANED (Não Usar!)
+
+| Banco | Razão | Ação |
+|---|---|---|
+| `data/analytics.db` | Nunca usado em código produção | ❌ REMOVE |
+| `data/analytics_staging.db` | Legacy S2-6 (deprecated) | ❌ REMOVE |
+
+### 🔗 INTEGRAÇÃO NECESSÁRIA (Phase 4+)
+
+| Sistema | Banco | Status | Timeline |
+|---|---|---|---|
+| **PostgreSQL Azure** | `operador-db-staging.postgres.database.azure.com` | Cloud prod database | Phase 4 (10/04+) |
+| **Database** | `operador_db_staging` | PostgreSQL production DB | Phase 4 (10/04+) |
+
+### ✅ ARQUIVO DE CONFIGURAÇÃO OFICIAL
+
+**Path:** `config/settings.py` (Line 60-61)
+```python
+db_path: str = Field(
+    default="data/db/trading.db",  # SOURCE OF TRUTH
+    env='DB_PATH'
+)
+```
+
+**Path:** `config/rl_scheduler_config.json` (Line 61)
+```json
+{
+  "path": "data/db/trading.db"  // RL TRAINING DB
+}
+```
+
+**Path:** `.env.example`
+```
+DB_PATH=data/db/trading.db
+```
+
+### 🔐 CRITICALIDADE POR TIPO DE DADO (Risk Assessment)
+
+| Tipo | Criticidade | Validação Necessária | SLA |
+|---|---|---|---|
+| Trades | 🔴 CRÍTICA | 1:1 mapping MT5 ↔ DB | 100ms |
+| RL Episodes | 🔴 CRÍTICA | Integridade com rewards | 1s |
+| RL Rewards | 🔴 CRÍTICA | Sincronização com episodes | 1s |
+| Manual Interventions | 🔴 CRÍTICA | Audit trail completo | 500ms |
+| Journal Logs | 🟡 ALTA | Completude | 5s |
+| Market Data | 🟡 ALTA | Continuidade (sem gaps) | 100ms |
+| ML Predictions | 🟡 ALTA | Mapping com trades | 500ms |
+
+---
+
 ## Gestão de Risco
 
 1. **Position Sizing**: Kelly Criterion adaptado ou Fixed Fractional

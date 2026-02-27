@@ -48,6 +48,38 @@
         "estimativa_horas": 24,
         "impacto": "+2-3% win rate",
         "arquitetura_ref": "docs/S2-5_PROBABILIDADE_T60_ESPECIFICACAO.md"
+      },
+      {
+        "id": "S1-4-LOGGING",
+        "task": "Sistema de Logging CRÍTICO para INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat",
+        "lider": "Executor Técnico",
+        "membros_ids": [10, 11, 12, 5, 7],
+        "status": "EXECUTIVO - IMPLEMENTACAO HOJE (27/02)",
+        "data_criacao": "2026-02-27",
+        "data_aprovacao_reuniao": "2026-02-27T14:45:00Z",
+        "data_aprovacao_executiva": "2026-02-27T14:45:00Z",
+        "aprovador_executivo": "Presidente Operacional (#1)",
+        "timeline": "27/02 (09:00-15:30) - HOJE",
+        "estimativa_horas": 6,
+        "impacto": "CRÍTICO - Auditoria em tempo real + Risk compliance IMEDIATO",
+        "trigger_escalacao": "Trade #1 (26/02 13:17:37) executado SEM SL/TP. Delay não documentado. Violação potencial de risco.",
+        "criterios_aceite": [
+          "Cada execucao gera log estruturado < 100ms",
+          "Trades persistem em data/db/trading.db com timestamp exato",
+          "Risk Officer consegue auditar 100% dos trades em TEMPO REAL",
+          "Order IDs mapeados corretamente",
+          "SL/TP validados antes de execução"
+        ],
+        "note_critical": "CORRECAO 27/02 14:45: Banco primário é data/db/trading.db (não analytics.db). Auditoria realizada por scripts confirmou 25+ referências a trading.db vs 0 para analytics.db em código produção.",
+        "fases_implementacao": [
+          "09:00-09:30: Diagnóstico (Data Engineer) - Why trade #1 sem SL/TP?",
+          "09:30-10:00: Design rápido (Eng Sr)",
+          "10:00-13:00: Implementação (Executor Técnico + Data Engineer)",
+          "13:00-14:30: Testes (QA Automation)",
+          "14:30-15:00: Risk validation (Risk Officer sign-off)",
+          "15:00-15:30: Deploy produção (Executor Técnico)"
+        ],
+        "notas": "ESCALADA: Opção A aprovada por Presidente. Sacrifica 3-4h de planejamento. S2-3 e S2-5 atrasam 1-2h. Recuperação: 28/02-01/03 intensivo."
       }
     ]
   },
