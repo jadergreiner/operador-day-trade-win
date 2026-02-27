@@ -64,8 +64,8 @@ git commit -m "feat: S2-5 finalization - Grid search tuning + CV final"
 git push origin feature/s2-5-finalization
 ```
 
-**Deadline:** 28/02 23:59  
-**Blocker for:** Gate 2 (12/03)  
+**Deadline:** 28/02 23:59
+**Blocker for:** Gate 2 (12/03)
 **Status:** Estimado 2-3 horas para completar
 
 ---
@@ -91,8 +91,8 @@ git commit -m "feat: S2-6 MVP skeleton - Analytics dashboard + trader feedback"
 git push origin feature/s2-6-analytics
 ```
 
-**Deadline:** 28/02 14:00  
-**Blocker for:** Gate 2 (12/03)  
+**Deadline:** 28/02 14:00
+**Blocker for:** Gate 2 (12/03)
 **Status:** Iniciar ASAP hoje (27/02 fim do dia)
 
 ---
@@ -112,8 +112,8 @@ Sign-off document: "TASK_3_QA_APPROVAL_28FEV.md"
 Status: READY FOR GATE 2
 ```
 
-**Deadline:** 28/02 17:00  
-**Blocker for:** Gate 2 (12/03)  
+**Deadline:** 28/02 17:00
+**Blocker for:** Gate 2 (12/03)
 **Owner:** QA Lead + ML Expert
 
 ---
@@ -133,8 +133,8 @@ Output:
 "TRADER_UAT_FEEDBACK_28FEV.md" → Share with ML Expert + Eng Sr
 ```
 
-**Deadline:** 28/02 18:00  
-**Owner:** Trader / Operador  
+**Deadline:** 28/02 18:00
+**Owner:** Trader / Operador
 **Input for:** Gate 2 decision
 
 ---
@@ -160,7 +160,7 @@ Contents:
   • Timeline to Phase 1 launch
 ```
 
-**Deadline:** 10/03 (antes de Gate 2)  
+**Deadline:** 10/03 (antes de Gate 2)
 **Owner:** CTO + Finance
 
 ---
@@ -283,9 +283,9 @@ grep -A 20 "TIMELINE CRITICA" PROXIMOS_PASSOS_S2_5_TASK3_GATE2.md
 
 ---
 
-**Prepared by:** GitHub Copilot AI Agent  
-**Timestamp:** 27/02/2026 14:50 BRT  
-**Session Duration:** ~45 min (validacoes + commits)  
+**Prepared by:** GitHub Copilot AI Agent
+**Timestamp:** 27/02/2026 14:50 BRT
+**Session Duration:** ~45 min (validacoes + commits)
 **Focus:** S2-5 + TASK #3 + Gate 2 Preparation
 
 🚀 **PROXIMA SESSAO:** 28/02/2026 14:00 (S2-5 finalization + S2-6 start)
