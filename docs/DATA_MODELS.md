@@ -1,9 +1,9 @@
 # 📊 Data Models - Operador Day Trade WIN
 
-**Versão:** 1.0.0  
-**Data Criação:** 27/02/2026  
-**Responsável:** Data Engineer + Arquiteto de Sistemas  
-**Sincronização:** [ARCHITECTURE.md](ARCHITECTURE.md)  
+**Versão:** 1.0.0
+**Data Criação:** 27/02/2026
+**Responsável:** Data Engineer + Arquiteto de Sistemas
+**Sincronização:** [ARCHITECTURE.md](ARCHITECTURE.md)
 **Status:** ✅ S2-2 Complete Reference Spec
 
 ---
@@ -419,26 +419,26 @@ CREATE TABLE operation_audit (
 
 ```sql
 -- FOREIGN KEYS
-ALTER TABLE decision_audit_atr ADD CONSTRAINT fk_signal_id 
+ALTER TABLE decision_audit_atr ADD CONSTRAINT fk_signal_id
   FOREIGN KEY (signal_id) REFERENCES trading_signals(id);
 
-ALTER TABLE mt5_orders ADD CONSTRAINT fk_decision_audit 
+ALTER TABLE mt5_orders ADD CONSTRAINT fk_decision_audit
   FOREIGN KEY (decision_audit_id) REFERENCES decision_audit_atr(id);
 
-ALTER TABLE operation_audit ADD CONSTRAINT fk_audit_atr 
+ALTER TABLE operation_audit ADD CONSTRAINT fk_audit_atr
   FOREIGN KEY (decision_audit_id) REFERENCES decision_audit_atr(id);
 
 -- ÍNDICES DE PERFORMANCE
-CREATE INDEX idx_atr_timestamp_volatility 
+CREATE INDEX idx_atr_timestamp_volatility
   ON atr_historical(timestamp, volatility_state);
 
-CREATE INDEX idx_decision_audit_executed 
+CREATE INDEX idx_decision_audit_executed
   ON decision_audit_atr(timestamp, executed);
 
-CREATE INDEX idx_mt5_orders_status 
+CREATE INDEX idx_mt5_orders_status
   ON mt5_orders(timestamp_sent, status);
 
-CREATE INDEX idx_operation_audit_timestamp 
+CREATE INDEX idx_operation_audit_timestamp
   ON operation_audit(timestamp_decision, final_status);
 ```
 

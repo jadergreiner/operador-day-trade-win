@@ -30,8 +30,8 @@
 ### PARALELO 1: Core Development (Eng Sr + ML Expert)
 
 #### Task 1.1: Integração ATRCalibrator na Pipeline
-**Owner:** Eng Sr  
-**Duração:** 2h  
+**Owner:** Eng Sr
+**Duração:** 2h
 **Deliverables:**
 - [ ] Integração de `ATRCalibrator` com `DecisionEngine`
 - [ ] Hook em `request_execution()` para ajustar trailing stop dinâmico
@@ -46,7 +46,7 @@ from src.domain.services.atr_calibrator import ATRCalibrator
 class DecisionEngine:
     def __init__(self):
         self.atr_calibrator = ATRCalibrator(...)
-    
+
     def request_execution(self, signal, atr_value: Decimal):
         trailing_stop = self.atr_calibrator.calculate_trailing_stop(atr_value)
         volume = self.atr_calibrator.suggest_volume(atr_value)
@@ -56,8 +56,8 @@ class DecisionEngine:
 ---
 
 #### Task 1.2: Feature Engineering - ATR Adaptativo M1/M5
-**Owner:** ML Expert  
-**Duração:** 2.5h  
+**Owner:** ML Expert
+**Duração:** 2.5h
 **Deliverables:**
 - [ ] Cálculo de ATR 15min (15 candles M1) para M1
 - [ ] Cálculo de ATR 5min (5 candles M1) para M5
@@ -80,8 +80,8 @@ volatility_regime_state_id (LOW=1, NORMAL=2, HIGH=3, EXTREME=4)
 ### PARALELO 2: Data + Schema (Data Engineer + Arquiteto)
 
 #### Task 2.1: Criar DATA_MODELS.md - ATR Schema
-**Owner:** Data Engineer + Arquiteto  
-**Duração:** 1h  
+**Owner:** Data Engineer + Arquiteto
+**Duração:** 1h
 **Deliverables:**
 - [ ] Criar `docs/DATA_MODELS.md` (novo arquivo)
 - [ ] Seção 1: ATR Historical Table Schema
@@ -115,8 +115,8 @@ Table: decision_audit_atr
 ### PARALELO 3: Testing (QA + Doc Advocate)
 
 #### Task 3.1: Unit Tests - ATRCalibrator Expansão
-**Owner:** QA  
-**Duração:** 1h  
+**Owner:** QA
+**Duração:** 1h
 **Deliverables:**
 - [ ] Expandir `test_atr_calibrator.py` de 5 para 14 tests
 - [ ] Adicionar parametrized tests para grid de ATR values
@@ -141,8 +141,8 @@ Table: decision_audit_atr
 ---
 
 #### Task 3.2: Integration Tests
-**Owner:** QA  
-**Duração:** 0.5h  
+**Owner:** QA
+**Duração:** 0.5h
 **Deliverables:**
 - [ ] Teste de integração: DecisionEngine + ATRCalibrator
 - [ ] Teste end-to-end: Signal → ATR Calc → Trailing Stop → Persistência
@@ -153,8 +153,8 @@ Table: decision_audit_atr
 ### PARALELO 4: Documentation Sync (Doc Advocate + Governance)
 
 #### Task 4.1: Sincronizar STATUS_ENTREGAS.md e ROADMAP.md
-**Owner:** Doc Advocate + Coordenadora  
-**Duração:** 1h  
+**Owner:** Doc Advocate + Coordenadora
+**Duração:** 1h
 **Deliverables:**
 - [ ] Atualizar `[docs/STATUS_ENTREGAS.md](../docs/STATUS_ENTREGAS.md)` seção S2-2
   - Status changed from ✅ COMPLETO to 🟡 IN-PROGRESS/ENHANCEMENT
@@ -168,8 +168,8 @@ Table: decision_audit_atr
 ---
 
 #### Task 4.2: Lint de Markdown
-**Owner:** Doc Advocate  
-**Duração:** 0.5h  
+**Owner:** Doc Advocate
+**Duração:** 0.5h
 **Deliverables:**
 - [ ] Aplicar `pymarkdown` a todos os .md criados/atualizados
 - [ ] Corrigir MD013 (linha length ≤80), MD001, MD022, MD023
@@ -180,8 +180,8 @@ Table: decision_audit_atr
 ### PARALELO 5: Integração & Validação (Infra + Governance)
 
 #### Task 5.1: Validar INICIAR.BAT Não Quebrou
-**Owner:** Infra + Coordenadora  
-**Duração:** 0.5h  
+**Owner:** Infra + Coordenadora
+**Duração:** 0.5h
 **Deliverables:**
 - [ ] Executar `agente_autonomo\INICIAR.BAT` com novo código
 - [ ] Validar inicialização sem erros

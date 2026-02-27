@@ -483,8 +483,8 @@ Summary: 10/10 PASSED (100%) | Coverage: 100% on load_and_label()
 
 ### 🟡 S2-2: Enhancement Round 1 (27/02-05/03) - IN PROGRESS
 
-**Status:** 🟡 ENHANCEMENT - Integração Completa + Persistência  
-**Squad:** [SQUAD_S2-2_ATR_DINAMICO.md](SQUAD_S2-2_ATR_DINAMICO.md)  
+**Status:** 🟡 ENHANCEMENT - Integração Completa + Persistência
+**Squad:** [SQUAD_S2-2_ATR_DINAMICO.md](SQUAD_S2-2_ATR_DINAMICO.md)
 **Estimativa Total:** 8h paralelo | **Deadline Gate 1:** 05/03 17:00
 
 | SubTask | Owner | Status | Deliverable |
