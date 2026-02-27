@@ -505,11 +505,41 @@ Summary: 10/10 PASSED (100%) | Coverage: 100% on load_and_label()
 
 ---
 
-### ✅ S2-3, S2-5-ISO: Concluídas
-| ID | Task | Owner | Status |
-|:---|:---|:---|:---|
-| **S2-3** | Confluência SMC (M1/M5) | [Eng Sr](BOARD_MULTIDISCIPLINAR.json) | ✅ COMPLETO |
-| **S2-5-ISO** | MT5 Terminal Isolation | [Arq. Sistemas](BOARD_MULTIDISCIPLINAR.json) | ✅ COMPLETO |
+### 🟡 S2-3: VALIDAÇÃO + INTEGRAÇÃO FINAL (27/02 09:00-12:30)
+
+| Aspecto | Status | Detalhes |
+|:---|:---|:---|
+| **Task** | Confluência SMC (M1/M5) | ID: S2-3 |
+| **Fase Atual** | 🟡 VALIDAÇÃO + INTEGRAÇÃO | (Desktop code review + backtest grid search) |
+| **Squad Alocada** | 8 personas | Eng Sr (lead), ML, QA, Doc, DevOps, Arquiteto, Data Eng, Doc Advocate |
+| **Plano de Execução** | ✅ CRIADO | [S2-3_PLANO_EXECUCAO_SQUAD.md](../S2-3_PLANO_EXECUCAO_SQUAD.md) (500+ LOC) |
+| **Timeline** | 27/02 09:00-12:30 | 3.5 horas (4 squads paralelos) |
+| **Expected Outcome** | ✅ READY | Code review PASSED + Backtest grid 8/8 PASSED + Integration OK |
+| **Gate 2 Readiness** | 🟡 PREPARING | Validation completes 27/02 12:30 |
+| **Next Step** | → S2-5 parallel | Probabilidade T+60 + S2-6 Analytics |
+
+**STEP by STEP Execution Plan:**
+- ✅ **STEP 1** (09:00): Status verification (docs checked)
+- 🟡 **STEP 2** (09:15): Register in STATUS_ENTREGAS (this section)
+- 🟡 **STEP 3** (09:30): Architecture validation (Data Models creation)
+- 🟡 **STEP 4** (09:00-11:30): Parallel task distribution (4 squads)
+  - Squad A: Code review + Integration (Eng Sr + Arquiteto)
+  - Squad B: Backtest grid search (ML + QA)
+  - Squad C: Performance benchmark (DevOps + QA)
+  - Squad D: Docs sync (Head Doc + Doc Advocate)
+- 🟡 **STEP 5** (10:00-11:00): Unit + Integration tests (25+ test cases)
+- 🟡 **STEP 6** (11:00): Operador impact validation (zero regressions)
+- 🟡 **STEP 7** (12:00-12:15): Docs synchronization (11 arquivos .md)
+- 🟡 **STEP 8** (12:15): Coverage validation (>95%)
+- 🟡 **STEP 9** (12:15-12:30): Commit + Push (v1.3.0-s2-3-complete tag)
+
+---
+
+### ✅ S2-3 (COMPLETO - 24/02): HISTÓRICO
+| ID | Task | Owner | Status | Delivered |
+|:---|:---|:---|:---|:---|
+| **S2-3** | Confluência SMC (M1/M5) | [Eng Sr](BOARD_MULTIDISCIPLINAR.json) | ✅ IMPLEMENTADO | 24/02 18:00 |
+| **S2-5-ISO** | MT5 Terminal Isolation | [Arq. Sistemas](BOARD_MULTIDISCIPLINAR.json) | ✅ COMPLETO | 24/02 20:00 |
 
 ### 🔄 Próximas Entregas (Condicional a Gate 2 GO)
 
