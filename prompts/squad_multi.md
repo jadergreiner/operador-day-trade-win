@@ -3,7 +3,25 @@ TASK = "Calibrador ATR Dinâmico"
 
 # Desenvolver {{id}} - {{TASK}}
 
-Crie uma Squad Multidisciplinar {{docs\BOARD_MULTIDISCIPLINAR.json}}
+## REGRA_MESTRE
+"""
+Ao fim da entrega estou feliz se:
+
+1. `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` recebe evolução automaticamente
+2. `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` não regrediu ou está com erros
+3. `docs\ARCHITECTURE.md` atualizado e 100% aderente ao projeto
+4. `docs\BACKLOG_README.md` atualizado, priorizado e Status das atividades sincronizados
+5. `docs\BOAS_PRATICAS.md` forem cumpridas
+6. `docs\CHANGELOG.md` com registro das mudanças
+7. `docs\LINT_BEST_PRACTICES.md` forem cumpridas
+8. `docs\README.md` atualizado e 100% aderente ao projeto
+9. `docs\ROADMAP.md` atualizado, priorizado e Status das atividades sincronizados
+10. `docs\STATUS_ENTREGAS.md` atualizado, priorizado e Status das atividades sincronizados
+11. `docs\SYNCHRONIZATION.md` executado e vinculos de docs sincronizados
+12. Repositorio local commitado e feito push para repositório remoto
+"""
+
+Utilize uma Squad Multidisciplinar ou crie uma nova com os membros {{docs\BOARD_MULTIDISCIPLINAR.json}}
 
 [
 "id": 2,
@@ -65,6 +83,7 @@ Crie uma Squad Multidisciplinar {{docs\BOARD_MULTIDISCIPLINAR.json}}
 10. Antes de criar, isso não existe no código atual?
 11. Sempre consultar a arquitetura e documentação.
 12. Regra do escoteiro. Sempre deixo melhor que encontrei. Encontrei código legado, primeira vez comento. O sistema não quebrou, limpo.
-13. Garantir a persistência de dados.
-14. Garantir o aprendizado contínuo dos modelos
-15. Sempre que necessário execute o treinamento/retreinamento dos modelos
+13. Garantir a persistência de dados
+14. Garantir o aprendizado do modelo
+15. Retreinar o modelo sempre que necessário.
+16. SEMPRE atualizar as DOCs ao final do processo (  {{docs\STATUS_ENTREGAS.md}} e {{docs\ROADMAP.md}})

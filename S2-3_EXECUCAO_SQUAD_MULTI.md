@@ -6,7 +6,7 @@
 ## 📋 RESUMO EXECUTIVO
 
 **ID:** S2-3
-**TASK:** Confluência SMC (M1/M5)  
+**TASK:** Confluência SMC (M1/M5)
 **Sprint:** Sprint 2 (NOW - 27/02/2026)
 **Status:** 🟡 **VALIDAÇÃO + INTEGRAÇÃO FINAL** (27/02 09:00-12:30)
 **Framework:** {{prompts\squad_multi.md}} - Squad Multidisciplinar

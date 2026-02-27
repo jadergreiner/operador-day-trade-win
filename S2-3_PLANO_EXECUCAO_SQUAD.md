@@ -128,7 +128,7 @@ Seção presente em [ARCHITECTURE.md > L131-142]:
 
 **Task 3.1: Criar tabela `smc_confluence_signals`**
 - **Persona:** Data Engineer (ID 11) + Arquiteto (ID 6)
-- **Responsabilidade:** 
+- **Responsabilidade:**
   - Definir schema (timestamp, symbol, timeframe, swing_high, swing_low, confluence_score)
   - Integrar com `market_candles` (FK)
   - Documentar índices e constraints

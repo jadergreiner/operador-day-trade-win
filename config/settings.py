@@ -2,6 +2,7 @@
 
 from decimal import Decimal
 from pathlib import Path
+from typing import Optional
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -21,10 +22,11 @@ class TradingConfig(BaseSettings):
     mt5_login: int = Field(..., description="MT5 account login")
     mt5_password: str = Field(..., description="MT5 account password")
     mt5_server: str = Field(..., description="MT5 server name")
-    mt5_terminal_path: str = Field(
-        ...,
-        description="Exact path to terminal64.exe (S2-5 Terminal Isolation) — "
-                    "Required to prevent accidental connection to different MT5 terminals (FBS, XP, etc)"
+    mt5_terminal_path: Optional[str] = Field(
+        default=None,
+        description="(OPTIONAL) Exact path to terminal64.exe (S2-5 Terminal Isolation) — "
+                    "If not set, MT5 will auto-detect the terminal. "
+                    "Specify this to prevent accidental connection to different MT5 terminals (FBS, XP, etc)"
     )
 
     # Trading Parameters
