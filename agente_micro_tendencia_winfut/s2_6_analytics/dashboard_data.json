@@ -1,0 +1,580 @@
+{
+  "signals": {
+    "name": "Signals Overview (24h)",
+    "description": "Últimos 50 sinais gerados pela IA",
+    "signals_count": 50,
+    "signals_today": [
+      {
+        "id": "signal_001",
+        "timestamp": "2026-02-26T17:50:18.805293",
+        "symbol": "WINFUT",
+        "confidence_score": 0.8742930791460024,
+        "action": "HOLD",
+        "result": "WIN",
+        "pnl": 1005.2164506052106
+      },
+      {
+        "id": "signal_002",
+        "timestamp": "2026-02-26T18:20:18.805293",
+        "symbol": "WINFUT",
+        "confidence_score": 0.8571238717517469,
+        "action": "HOLD",
+        "result": "WIN",
+        "pnl": 1513.0412359084348
+      },
+      {
+        "id": "signal_003",
+        "timestamp": "2026-02-26T18:50:18.805293",
+        "symbol": "WINFUT",
+        "confidence_score": 0.6605001252635273,
+        "action": "HOLD",
+        "result": "WIN",
+        "pnl": 1907.9909293112205
+      },
+      {
+        "id": "signal_004",
+        "timestamp": "2026-02-26T19:20:18.805293",
+        "symbol": "PETR4",
+        "confidence_score": 0.8168172104800233,
+        "action": "SELL",
+        "result": "LOSS",
+        "pnl": 922.8645313918919
+      },
+      {
+        "id": "signal_005",
+        "timestamp": "2026-02-26T19:50:18.805293",
+        "symbol": "INDIV3",
+        "confidence_score": 0.7794517717437975,
+        "action": "HOLD",
+        "result": "PENDING",
+        "pnl": 1819.1678651638326
+      },
+      {
+        "id": "signal_006",
+        "timestamp": "2026-02-26T20:20:18.805293",
+        "symbol": "PETR4",
+        "confidence_score": 0.7216370522637621,
+        "action": "BUY",
+        "result": "WIN",
+        "pnl": 423.25758185753864
+      },
+      {
+        "id": "signal_007",
+        "timestamp": "2026-02-26T20:50:18.805293",
+        "symbol": "WINFUT",
+        "confidence_score": 0.9182100895883156,
+        "action": "HOLD",
+        "result": "PENDING",
+        "pnl": 622.2250547186511
+      },
+      {
+        "id": "signal_008",
+        "timestamp": "2026-02-26T21:20:18.805293",
+        "symbol": "INDIV3",
+        "confidence_score": 0.8162388003395413,
+        "action": "HOLD",
+        "result": "WIN",
+        "pnl": -209.1734070838803
+      },
+      {
+        "id": "signal_009",
+        "timestamp": "2026-02-26T21:50:18.805293",
+        "symbol": "WINFUT",
+        "confidence_score": 0.6196723641948947,
+        "action": "HOLD",
+        "result": "PENDING",
+        "pnl": -287.92278211479737
+      },
+      {
+        "id": "signal_010",
+        "timestamp": "2026-02-26T22:20:18.805293",
+        "symbol": "INDIV3",
+        "confidence_score": 0.7941944481089767,
+        "action": "BUY",
+        "result": "PENDING",
+        "pnl": 455.4380273839097
+      },
+      {
+        "id": "signal_011",
+        "timestamp": "2026-02-26T22:50:18.805293",
+        "symbol": "PETR4",
+        "confidence_score": 0.8106502440620156,
+        "action": "BUY",
+        "result": "PENDING",
+        "pnl": 123.89616995151778
+      },
+      {
+        "id": "signal_012",
+        "timestamp": "2026-02-26T23:20:18.805293",
+        "symbol": "WINFUT",
+        "confidence_score": 0.8017567360464302,
+        "action": "SELL",
+        "result": "PENDING",
+        "pnl": 86.30158640100763
+      },
+      {
+        "id": "signal_013",
+        "timestamp": "2026-02-26T23:50:18.805293",
+        "symbol": "PETR4",
+        "confidence_score": 0.6583024633490616,
+        "action": "HOLD",
+        "result": "WIN",
+        "pnl": 560.3021037925544
+      },
+      {
+        "id": "signal_014",
+        "timestamp": "2026-02-27T00:20:18.805293",
+        "symbol": "INDIV3",
+        "confidence_score": 0.8336317619739411,
+        "action": "BUY",
+        "result": "LOSS",
+        "pnl": 1180.9135693967141
+      },
+      {
+        "id": "signal_015",
+        "timestamp": "2026-02-27T00:50:18.805293",
+        "symbol": "WINFUT",
+        "confidence_score": 0.8484692903375484,
+        "action": "BUY",
+        "result": "LOSS",
+        "pnl": 413.99968574349987
+      },
+      {
+        "id": "signal_016",
+        "timestamp": "2026-02-27T01:20:18.805293",
+        "symbol": "PETR4",
+        "confidence_score": 0.8722767461871475,
+        "action": "HOLD",
+        "result": "LOSS",
+        "pnl": 809.6330939514405
+      },
+      {
+        "id": "signal_017",
+        "timestamp": "2026-02-27T01:50:18.805293",
+        "symbol": "WINFUT",
+        "confidence_score": 0.8427650505312968,
+        "action": "BUY",
+        "result": "PENDING",
+        "pnl": -443.931497150052
+      },
+      {
+        "id": "signal_018",
+        "timestamp": "2026-02-27T02:20:18.805293",
+        "symbol": "INDIV3",
+        "confidence_score": 0.8591677492373172,
+        "action": "SELL",
+        "result": "PENDING",
+        "pnl": 1292.9959656811593
+      },
+      {
+        "id": "signal_019",
+        "timestamp": "2026-02-27T02:50:18.805293",
+        "symbol": "INDIV3",
+        "confidence_score": 0.9178032862212118,
+        "action": "BUY",
+        "result": "LOSS",
+        "pnl": 160.18899149195477
+      },
+      {
+        "id": "signal_020",
+        "timestamp": "2026-02-27T03:20:18.805293",
+        "symbol": "INDIV3",
+        "confidence_score": 0.8710862267651787,
+        "action": "HOLD",
+        "result": "LOSS",
+        "pnl": -236.9646067756549
+      },
+      {
+        "id": "signal_021",
+        "timestamp": "2026-02-27T03:50:18.805293",
+        "symbol": "WINFUT",
+        "confidence_score": 0.6272163677810563,
+        "action": "SELL",
+        "result": "WIN",
+        "pnl": 681.385649128254
+      },
+      {
+        "id": "signal_022",
+        "timestamp": "2026-02-27T04:20:18.805293",
+        "symbol": "INDIV3",
+        "confidence_score": 0.7774304191640465,
+        "action": "BUY",
+        "result": "WIN",
+        "pnl": 888.588971741314
+      },
+      {
+        "id": "signal_023",
+        "timestamp": "2026-02-27T04:50:18.805293",
+        "symbol": "PETR4",
+        "confidence_score": 0.8829895349662096,
+        "action": "SELL",
+        "result": "PENDING",
+        "pnl": -279.6483528430314
+      },
+      {
+        "id": "signal_024",
+        "timestamp": "2026-02-27T05:20:18.805293",
+        "symbol": "PETR4",
+        "confidence_score": 0.8026599614806432,
+        "action": "HOLD",
+        "result": "LOSS",
+        "pnl": -381.29871948120575
+      },
+      {
+        "id": "signal_025",
+        "timestamp": "2026-02-27T05:50:18.805293",
+        "symbol": "WINFUT",
+        "confidence_score": 0.6242707784914734,
+        "action": "SELL",
+        "result": "PENDING",
+        "pnl": 1209.2563913847146
+      },
+      {
+        "id": "signal_026",
+        "timestamp": "2026-02-27T06:20:18.805293",
+        "symbol": "WINFUT",
+        "confidence_score": 0.9462458716672164,
+        "action": "HOLD",
+        "result": "WIN",
+        "pnl": 755.0847663384668
+      },
+      {
+        "id": "signal_027",
+        "timestamp": "2026-02-27T06:50:18.805293",
+        "symbol": "INDIV3",
+        "confidence_score": 0.7582703289911993,
+        "action": "SELL",
+        "result": "PENDING",
+        "pnl": 1150.914088026368
+      },
+      {
+        "id": "signal_028",
+        "timestamp": "2026-02-27T07:20:18.805293",
+        "symbol": "WINFUT",
+        "confidence_score": 0.9262633861960646,
+        "action": "HOLD",
+        "result": "PENDING",
+        "pnl": -87.97642847122768
+      },
+      {
+        "id": "signal_029",
+        "timestamp": "2026-02-27T07:50:18.805293",
+        "symbol": "PETR4",
+        "confidence_score": 0.7178470345608355,
+        "action": "HOLD",
+        "result": "LOSS",
+        "pnl": 1437.3006930342942
+      },
+      {
+        "id": "signal_030",
+        "timestamp": "2026-02-27T08:20:18.805293",
+        "symbol": "WINFUT",
+        "confidence_score": 0.8878176344103706,
+        "action": "SELL",
+        "result": "LOSS",
+        "pnl": 1586.203839966165
+      },
+      {
+        "id": "signal_031",
+        "timestamp": "2026-02-27T08:50:18.805293",
+        "symbol": "PETR4",
+        "confidence_score": 0.8936272628176601,
+        "action": "BUY",
+        "result": "WIN",
+        "pnl": -398.9265751660155
+      },
+      {
+        "id": "signal_032",
+        "timestamp": "2026-02-27T09:20:18.805293",
+        "symbol": "PETR4",
+        "confidence_score": 0.6274060757258924,
+        "action": "SELL",
+        "result": "WIN",
+        "pnl": 1722.3943245377895
+      },
+      {
+        "id": "signal_033",
+        "timestamp": "2026-02-27T09:50:18.805293",
+        "symbol": "INDIV3",
+        "confidence_score": 0.9307415185855336,
+        "action": "SELL",
+        "result": "PENDING",
+        "pnl": 579.7631647672106
+      },
+      {
+        "id": "signal_034",
+        "timestamp": "2026-02-27T10:20:18.805293",
+        "symbol": "INDIV3",
+        "confidence_score": 0.6117970269682936,
+        "action": "SELL",
+        "result": "WIN",
+        "pnl": 1378.0475729799537
+      },
+      {
+        "id": "signal_035",
+        "timestamp": "2026-02-27T10:50:18.805293",
+        "symbol": "PETR4",
+        "confidence_score": 0.7099761763593342,
+        "action": "HOLD",
+        "result": "LOSS",
+        "pnl": -331.1256834953931
+      },
+      {
+        "id": "signal_036",
+        "timestamp": "2026-02-27T11:20:18.805293",
+        "symbol": "WINFUT",
+        "confidence_score": 0.9299294224690711,
+        "action": "SELL",
+        "result": "WIN",
+        "pnl": 508.32367192867343
+      },
+      {
+        "id": "signal_037",
+        "timestamp": "2026-02-27T11:50:18.805293",
+        "symbol": "WINFUT",
+        "confidence_score": 0.8312616758694935,
+        "action": "SELL",
+        "result": "LOSS",
+        "pnl": 1415.112001020923
+      },
+      {
+        "id": "signal_038",
+        "timestamp": "2026-02-27T12:20:18.805293",
+        "symbol": "WINFUT",
+        "confidence_score": 0.729177268467754,
+        "action": "HOLD",
+        "result": "PENDING",
+        "pnl": -144.31667529310783
+      },
+      {
+        "id": "signal_039",
+        "timestamp": "2026-02-27T12:50:18.805293",
+        "symbol": "PETR4",
+        "confidence_score": 0.6216170307989053,
+        "action": "SELL",
+        "result": "PENDING",
+        "pnl": 0.22173106848060797
+      },
+      {
+        "id": "signal_040",
+        "timestamp": "2026-02-27T13:20:18.805293",
+        "symbol": "WINFUT",
+        "confidence_score": 0.6280992620722412,
+        "action": "HOLD",
+        "result": "PENDING",
+        "pnl": 423.6563126288505
+      },
+      {
+        "id": "signal_041",
+        "timestamp": "2026-02-27T13:50:18.805293",
+        "symbol": "WINFUT",
+        "confidence_score": 0.9433751139997788,
+        "action": "BUY",
+        "result": "WIN",
+        "pnl": 495.02041991904105
+      },
+      {
+        "id": "signal_042",
+        "timestamp": "2026-02-27T14:20:18.805293",
+        "symbol": "PETR4",
+        "confidence_score": 0.863247056527998,
+        "action": "HOLD",
+        "result": "WIN",
+        "pnl": 297.7094906193561
+      },
+      {
+        "id": "signal_043",
+        "timestamp": "2026-02-27T14:50:18.805293",
+        "symbol": "PETR4",
+        "confidence_score": 0.8891082809160413,
+        "action": "HOLD",
+        "result": "LOSS",
+        "pnl": -317.17155639946105
+      },
+      {
+        "id": "signal_044",
+        "timestamp": "2026-02-27T15:20:18.805293",
+        "symbol": "INDIV3",
+        "confidence_score": 0.8929312737366115,
+        "action": "HOLD",
+        "result": "PENDING",
+        "pnl": 1149.9680000978049
+      },
+      {
+        "id": "signal_045",
+        "timestamp": "2026-02-27T15:50:18.805293",
+        "symbol": "INDIV3",
+        "confidence_score": 0.8470301914858053,
+        "action": "BUY",
+        "result": "WIN",
+        "pnl": 387.29747354431845
+      },
+      {
+        "id": "signal_046",
+        "timestamp": "2026-02-27T16:20:18.805293",
+        "symbol": "PETR4",
+        "confidence_score": 0.8691194136322915,
+        "action": "BUY",
+        "result": "LOSS",
+        "pnl": 1983.1139152965607
+      },
+      {
+        "id": "signal_047",
+        "timestamp": "2026-02-27T16:50:18.805293",
+        "symbol": "PETR4",
+        "confidence_score": 0.7671196253780095,
+        "action": "SELL",
+        "result": "PENDING",
+        "pnl": -316.70532563023255
+      },
+      {
+        "id": "signal_048",
+        "timestamp": "2026-02-27T17:20:18.805293",
+        "symbol": "INDIV3",
+        "confidence_score": 0.6038190101249852,
+        "action": "BUY",
+        "result": "LOSS",
+        "pnl": -438.831463752193
+      },
+      {
+        "id": "signal_049",
+        "timestamp": "2026-02-27T17:50:18.805293",
+        "symbol": "INDIV3",
+        "confidence_score": 0.9144659418999379,
+        "action": "BUY",
+        "result": "LOSS",
+        "pnl": 412.1866931121733
+      },
+      {
+        "id": "signal_050",
+        "timestamp": "2026-02-27T18:20:18.805293",
+        "symbol": "INDIV3",
+        "confidence_score": 0.8532029104463635,
+        "action": "BUY",
+        "result": "WIN",
+        "pnl": 1438.8986121890703
+      }
+    ],
+    "metrics": {
+      "total_signals_24h": 50,
+      "win_signals": 17,
+      "loss_signals": 15,
+      "pending_signals": 18,
+      "avg_confidence": 0.8016422244716571,
+      "win_rate_24h": "34.0%"
+    }
+  },
+  "performance": {
+    "name": "Performance Dashboard",
+    "description": "Métricas de desempenho do modelo",
+    "model_metrics": {
+      "f1_score": 0.728,
+      "precision": 0.735,
+      "recall": 0.72,
+      "roc_auc": 0.79,
+      "accuracy": 0.712
+    },
+    "trading_metrics": {
+      "total_trades": 150,
+      "winning_trades": 96,
+      "losing_trades": 54,
+      "win_rate": 0.64,
+      "avg_win": 1234.5,
+      "avg_loss": -856.3,
+      "profit_factor": 1.85,
+      "sharpe_ratio": 1.68,
+      "max_drawdown": 0.125,
+      "total_pnl": 95640.0
+    },
+    "daily_performance": [
+      {
+        "date": "2026-02-27",
+        "pnl": 3352.6775767640106,
+        "trades": 7,
+        "win_rate": 0.5793310904935016
+      },
+      {
+        "date": "2026-02-26",
+        "pnl": 4972.377221250802,
+        "trades": 14,
+        "win_rate": 0.748766779201635
+      },
+      {
+        "date": "2026-02-25",
+        "pnl": 683.7831767932489,
+        "trades": 11,
+        "win_rate": 0.5871682819647089
+      },
+      {
+        "date": "2026-02-24",
+        "pnl": 1972.420580963106,
+        "trades": 18,
+        "win_rate": 0.6514580947548805
+      },
+      {
+        "date": "2026-02-23",
+        "pnl": 2028.9071999060136,
+        "trades": 19,
+        "win_rate": 0.6618158654831918
+      },
+      {
+        "date": "2026-02-22",
+        "pnl": 3984.393234293672,
+        "trades": 13,
+        "win_rate": 0.5637411004905779
+      },
+      {
+        "date": "2026-02-21",
+        "pnl": 2396.6104801383735,
+        "trades": 8,
+        "win_rate": 0.6737616832244949
+      }
+    ]
+  },
+  "risk": {
+    "name": "Risk Dashboard",
+    "description": "Análise de risco em tempo real",
+    "circuit_breakers": {
+      "status": "🟢 OPERATIONAL",
+      "level_1": {
+        "threshold": -0.03,
+        "current": -0.015,
+        "status": "⚠️ YELLOW (50% to trigger)"
+      },
+      "level_2": {
+        "threshold": -0.05,
+        "current": -0.015,
+        "status": "🟢 SAFE"
+      },
+      "level_3": {
+        "threshold": -0.08,
+        "current": -0.015,
+        "status": "🟢 SAFE"
+      }
+    },
+    "position_risk": {
+      "total_exposure": 50000.0,
+      "max_position_size": 5000.0,
+      "current_largest_position": 3200.0,
+      "correlation_check": {
+        "status": "✅ PASS",
+        "max_correlation": 0.42,
+        "threshold": 0.7
+      },
+      "volatility_bands": {
+        "current_iv": 1.45,
+        "threshold_low": 0.8,
+        "threshold_high": 3.0,
+        "status": "✅ WITHIN BANDS"
+      }
+    },
+    "alerts": [
+      {
+        "id": "alert_001",
+        "severity": "INFO",
+        "message": "System operational and ready",
+        "timestamp": "2026-02-27T17:50:18.808852"
+      }
+    ]
+  }
+}
