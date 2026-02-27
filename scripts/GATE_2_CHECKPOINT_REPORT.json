@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-02-27T18:08:24.830094",
+  "gate_id": "GATE_2_CHECKPOINT",
+  "deadline": "2026-03-12T17:00:00",
+  "blockers": {
+    "S2_5": {
+      "status": "PASSED",
+      "ac_count": 5,
+      "ac_passed": 5
+    },
+    "S2_6": {
+      "status": "PASSED",
+      "ac_count": 4,
+      "ac_passed": 4
+    },
+    "S2_7": {
+      "status": "PASSED",
+      "ac_count": 4,
+      "ac_passed": 4
+    },
+    "S2_8": {
+      "status": "PASSED",
+      "ac_count": 4,
+      "ac_passed": 4
+    }
+  },
+  "metrics": {},
+  "capital_escalation": {
+    "requested": "R$ 50k → R$ 100k",
+    "approved": true
+  },
+  "gate_decision": "APPROVED"
+}
