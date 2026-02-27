@@ -30,7 +30,8 @@ class AnalistaBDI:
 
     def __init__(self, workspace_path: str = None):
         if workspace_path is None:
-            workspace_path = r"c:\repo\operador-day-trade-win"
+            # Usar path relativo dinâmico ao invés de hardcoded
+            workspace_path = str(Path(__file__).parent.parent)
 
         self.workspace = Path(workspace_path)
         self.bdi_path = self.workspace / "data" / "BDI"

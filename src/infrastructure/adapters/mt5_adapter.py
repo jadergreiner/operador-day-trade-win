@@ -396,14 +396,35 @@ class MT5Adapter(IBrokerAdapter):
         """
         try:
             import MetaTrader5 as mt5
+            import os
 
             self._mt5 = mt5
 
-            # Inicializa conexao com MT5
-            if not mt5.initialize():
-                raise BrokerConnectionError(
-                    f"MT5 initialize failed: {mt5.last_error()}"
-                )
+            # S2-5: Validar que terminal_exe_path é válido ANTES de usar
+            # Se válido, usa o path específico. Se não, deixa MT5 auto-detectar
+            terminal_path_valid = None
+            if self.terminal_exe_path and isinstance(self.terminal_exe_path, str):
+                if os.path.isfile(self.terminal_exe_path):
+                    terminal_path_valid = self.terminal_exe_path
+                else:
+                    raise BrokerConnectionError(
+                        f"Terminal executable not found: {self.terminal_exe_path}\n"
+                        f"Verifique o MT5_TERMINAL_PATH em .env ou que o terminal está instalado"
+                    )
+
+            # Inicializa conexão ao MT5
+            # If terminal path is valid, use it. Otherwise let MT5 auto-detect ✅
+            if terminal_path_valid:
+                if not mt5.initialize(path=terminal_path_valid):
+                    raise BrokerConnectionError(
+                        f"MT5 initialize failed: {mt5.last_error()}"
+                    )
+            else:
+                # Path is None/empty - let MT5 auto-detect the terminal
+                if not mt5.initialize():
+                    raise BrokerConnectionError(
+                        f"MT5 initialize failed (auto-detect): {mt5.last_error()}"
+                    )
 
             # Login na conta
             authorized = mt5.login(

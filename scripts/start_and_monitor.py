@@ -22,8 +22,10 @@ def main():
     print()
 
     # Start trading process
-    log_file = Path(r"C:\Users\Usuario\AppData\Local\Temp\trading_live.log")
-    log_file.parent.mkdir(parents=True, exist_ok=True)
+    # Usar diretório de logs relativo ao projeto ao invés de hardcoded
+    log_dir = project_root / "data" / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / "trading_live.log"
 
     process = subprocess.Popen(
         [sys.executable, str(project_root / "scripts" / "run_automated_trading.py")],

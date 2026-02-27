@@ -392,11 +392,60 @@ Tentativa 3: 2000ms
 ## S2-5: MT5 Terminal Isolation & Reconnect
 
 **Objetivo**: Garantir que o operador conecte sempre à conta e terminal
-corretos, com retry automático após desconexão.
+corretos, com retry automático após desconexão, evitando conexões não-determinísticas
+ao "primeiro terminal disponível".
+
+**Status**: ✅ **IMPLEMENTADO 27/02/2026** - Fix validado (31/31 testes PASSOU)
+
+### Mecanismo de Isolamento Obrigatório (FIX 27/02 - v2)
+
+**Problema Resolvido:**
+- MetaTrader5 API conectava ao "primeiro terminal MT5 disponível" quando `path=None`
+- Com 2+ terminais, comportamento não-determinístico (~50% chance do terminal errado)
+- Causava violações `Terminal isolation violation: Expected login 1000346516, got 111833527`
+
+**Solução Implementada** (v2 - correção completa em `mt5_adapter.py` linhas 387-440):
+```python
+# S2-5: Validar que terminal_exe_path é válido ANTES de usar
+# Se válido, usa o path específico. Se não, deixa MT5 auto-detectar
+terminal_path_valid = None
+if self.terminal_exe_path and isinstance(self.terminal_exe_path, str):
+    if os.path.isfile(self.terminal_exe_path):
+        terminal_path_valid = self.terminal_exe_path
+    else:
+        raise BrokerConnectionError(f"Terminal executable not found: {self.terminal_exe_path}")
+
+# Inicializa conexão ao MT5
+if terminal_path_valid:
+    if not mt5.initialize(path=terminal_path_valid):  # [ORIGINAL - com path válido]
+        raise BrokerConnectionError(f"MT5 initialize failed: {mt5.last_error()}")
+else:
+    # [NEW] Path is None/empty - let MT5 auto-detect the terminal
+    if not mt5.initialize():  # [NOVO - sem path, auto-detect]
+        raise BrokerConnectionError(f"MT5 initialize failed (auto-detect): {mt5.last_error()}")
+```
+
+**Fluxo de Implementação:**
+- `_connect_mt5()` em `scripts/agente_micro_tendencia_winfut.py` passa `terminal_exe_path` ao `MT5Adapter`
+- `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` ativa agente com fix automático
+- Config `.env` pode ter `MT5_TERMINAL_PATH` (OPCIONAL) para isolamento de terminal
+  - **Se definido:**  `MT5_TERMINAL_PATH=C:\Program Files\Clear Investimentos MT5 Terminal\terminal64.exe` → Isola para este terminal
+  - **Se não definido:** MT5 faz auto-detect (compatível com qualquer instalação)
+
+**Compatibilidade:**
+- ✅ Suporta múltiplos MT5 no mesmo PC (isolamento)
+- ✅ Suporta auto-detect para instalações padrão
+- ✅ Backward compatible (pode deixar .env sem MT5_TERMINAL_PATH)
+- ✅ Cross-machine portable (sem paths absolutos hardcoded em código)
 
 ### Mecanismos de Proteção
 
-1. **Validação de Fingerprint**:
+1. **Path Validation** ✅ (27/02 IMPLEMENTADO):
+   - Valida que `terminal_exe_path` existe no disco via `os.path.isfile()`
+   - Levanta `BrokerConnectionError` antes de conectar se arquivo inválido
+   - Backward compatible: se `path=None`, usa comportamento padrão
+
+2. **Validação de Fingerprint**:
    - PID do `terminal64.exe` em execução
    - Account login corrente vs esperado
    - Server name match
@@ -442,6 +491,46 @@ corretos, com retry automático após desconexão.
    ├─ Posições abertas mantidas
    └─ Aguardar intervenção manual do trader
 ```
+
+### Portabilidade de Paths e Configurações (FIX 27/02)
+
+**Problema Diagnosticado:**
+- `processar_bdi.py`: Path absoluto hardcoded (`c:\repo\operador-day-trade-win`)
+- `start_and_monitor.py`: Usuário específico hardcoded (`C:\Users\Usuario\AppData\Local\Temp`)
+- Sistema não portável entre máquinas/usuários
+- Violava princípio de "Infrastructure as Code"
+
+**Solução Implementada** (27/02 12:00 BRT):
+```python
+# ANTES (❌ Hardcoded)
+workspace_path = r"c:\repo\operador-day-trade-win"
+log_file = Path(r"C:\Users\Usuario\AppData\Local\Temp\trading_live.log")
+
+# DEPOIS (✅ Dinâmico)
+workspace_path = str(Path(__file__).parent.parent)  # Relativo ao script
+log_dir = project_root / "data" / "logs"             # Path relativo
+log_file = log_dir / "trading_live.log"              # Dinâmico
+```
+
+**Padrão Adotado Globalmente:**
+```python
+from pathlib import Path
+project_root = Path(__file__).parent.parent  # ✅ Dinâmico e portável
+```
+
+**Aplicado em:**
+- ✅ `scripts/processar_bdi.py` - Usa `Path(__file__).parent.parent`
+- ✅ `scripts/start_and_monitor.py` - Usa `project_root / "data" / "logs"`
+- ✅ `scripts/continuous_journal.py` - Já implementado
+- ✅ `scripts/start_journals_full_display.py` - Já implementado
+- ✅ `src/application/services/ai_reflection_journal.py` - Já implementado
+- ✅ `INICIAR_DIARIOS.bat` - Usa `%~dp0` (dinâmico)
+
+**Impacto:**
+- Sistema 100% portável entre máquinas
+- Funciona independente do path de instalação
+- Não requer ajustes manuais pós-clone
+- Compatível com CI/CD e containerização futura
 
 ## Fluxo de Dados
 

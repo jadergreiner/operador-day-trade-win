@@ -72,7 +72,7 @@
 
 ```
 ============================= test session starts =============================
-collected 13 items                                                             
+collected 13 items
 
 ✅ test_atr_calibrator_initialization PASSED
 ✅ test_atr_dynamic_clustering_5_periods PASSED
@@ -88,7 +88,7 @@ collected 13 items
 ✅ test_constant_prices PASSED
 ✅ test_single_large_spike PASSED
 
-======================== 13 passed in 6.00s ============================== 
+======================== 13 passed in 6.00s ==============================
 ```
 
 ---
