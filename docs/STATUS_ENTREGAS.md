@@ -481,10 +481,33 @@ Summary: 10/10 PASSED (100%) | Coverage: 100% on load_and_label()
 
 ## 📊 OUTRAS ENTREGAS (Sprint 2)
 
-### ✅ S2-2, S2-3: Concluídas
+### 🟡 S2-2: Enhancement Round 1 (27/02-05/03) - IN PROGRESS
+
+**Status:** 🟡 ENHANCEMENT - Integração Completa + Persistência  
+**Squad:** [SQUAD_S2-2_ATR_DINAMICO.md](SQUAD_S2-2_ATR_DINAMICO.md)  
+**Estimativa Total:** 8h paralelo | **Deadline Gate 1:** 05/03 17:00
+
+| SubTask | Owner | Status | Deliverable |
+|:---|:---|:---|:---|
+| **1.1** Integração DecisionEngine + ATRCalibrator | Eng Sr | 🟡 IN-PROGRESS | `src/decision/decision_engine.py` |
+| **1.2** Feature Engineering ATR (M1/M5 adaptive) | ML Expert | 🟡 QUEUED | Dataset + 6 colunas ATR novo |
+| **2.1** DATA_MODELS.md + Schema (new file) | Data Engineer | ✅ COMPLETO | `docs/DATA_MODELS.md` (1.200+ LOC) |
+| **3.1** Unit Tests Expansion (5→14 tests, 98% cov) | QA | ✅ COMPLETO | `tests/unit/test_atr_calibrator.py` |
+| **3.2** Integration Tests (E2E DecisionEngine) | QA | 🟡 QUEUED | E2E validation |
+| **4.1** Sync STATUS_ENTREGAS + ROADMAP | Doc Advocate | 🟡 IN-PROGRESS | Seções atualizadas |
+| **4.2** Markdown Lint (pymarkdown scan) | Doc Advocate | 🟡 QUEUED | Validation pass |
+| **5.1** INICIAR.BAT Validation | Infra + Governance | 🟡 QUEUED | Health check OK |
+
+**Commits Esperados:**
+- [ ] Commit 1: DATA_MODELS.md + Squad artifact (Task 2.1)
+- [ ] Commit 2: Unit tests expanded (Task 3.1)
+- [ ] Commit 3: Integration complete (Tasks 1.1, 1.2, 3.2, 4.1, 4.2, 5.1)
+
+---
+
+### ✅ S2-3, S2-5-ISO: Concluídas
 | ID | Task | Owner | Status |
 |:---|:---|:---|:---|
-| **S2-2** | Calibrador ATR Dinâmico | [ML Lead](BOARD_MULTIDISCIPLINAR.json) | ✅ COMPLETO |
 | **S2-3** | Confluência SMC (M1/M5) | [Eng Sr](BOARD_MULTIDISCIPLINAR.json) | ✅ COMPLETO |
 | **S2-5-ISO** | MT5 Terminal Isolation | [Arq. Sistemas](BOARD_MULTIDISCIPLINAR.json) | ✅ COMPLETO |
 
