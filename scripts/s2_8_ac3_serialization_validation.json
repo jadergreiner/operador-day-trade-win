@@ -1,0 +1,43 @@
+{
+  "task_id": "S2-8-ML-MODEL-TRAINING",
+  "ac_id": "AC-3_serialization",
+  "status": "PASSED",
+  "timestamp": "2026-02-27T18:06:03.741110",
+  "pickle_serialization": {
+    "file": "models/s2_8_ensemble_final.pkl",
+    "size_mb": 9.958128929138184,
+    "gate_min_mb": 1.0,
+    "gate_passed": true,
+    "load_test": true
+  },
+  "onnx_export": {
+    "file": "models/s2_8_ensemble_final.onnx",
+    "size_kb": 2149.12109375,
+    "gate_min_kb": 100,
+    "gate_passed": true,
+    "load_test": true
+  },
+  "model_metadata": {
+    "model_type": "ensemble_weighted",
+    "components": 3,
+    "features": 40,
+    "f1_score": 0.7682,
+    "roc_auc": 0.835
+  },
+  "quality_gates": {
+    "pickle_size": {
+      "target": "≥1.0MB",
+      "achieved": "9.96MB",
+      "passed": true
+    },
+    "onnx_size": {
+      "target": "≥100KB",
+      "achieved": "2149.12KB",
+      "passed": true
+    },
+    "formats_loadable": {
+      "passed": true
+    }
+  },
+  "next_step": "AC-4: Production inference test"
+}
