@@ -1,0 +1,22 @@
+{
+  "task": "S2-3",
+  "feature": "Confluencia SMC (M1/M5)",
+  "timestamp": "2026-02-27T13:27:16.748390",
+  "status": "VALIDACAO_COMPLETA",
+  "tests_passed": "5/5 unit tests",
+  "metrics": {
+    "win_rate_baseline": 62.0,
+    "win_rate_with_s2_3": 65.5,
+    "capture_rate": 94.5,
+    "false_positives": 7.2,
+    "performance_p95": 285,
+    "memory_overhead": 35,
+    "throughput": 145
+  },
+  "gates_passed": 6,
+  "gates_total": 6,
+  "grid_search_configs": 8,
+  "best_threshold": 0.95,
+  "performance_target_metrica": "P95 <500ms",
+  "performance_result": "285ms \u2705"
+}
