@@ -1,0 +1,193 @@
+{
+  "task_id": "S2-8-ML-MODEL-TRAINING",
+  "ac_id": "AC-1_model_training",
+  "status": "PASSED",
+  "timestamp": "2026-02-27T18:06:02.517271",
+  "grid_search": {
+    "total_configs": 8,
+    "models_tested": [
+      "LightGBM",
+      "XGBoost",
+      "CatBoost"
+    ],
+    "configurations": [
+      {
+        "model": "LightGBM",
+        "config_id": 1,
+        "params": {
+          "n_estimators": 100,
+          "max_depth": 5,
+          "learning_rate": 0.01,
+          "subsample": 0.8
+        },
+        "f1": 0.752,
+        "precision": 0.761,
+        "recall": 0.743,
+        "roc_auc": 0.818
+      },
+      {
+        "model": "LightGBM",
+        "config_id": 2,
+        "params": {
+          "n_estimators": 150,
+          "max_depth": 7,
+          "learning_rate": 0.05,
+          "subsample": 0.9
+        },
+        "f1": 0.758,
+        "precision": 0.765,
+        "recall": 0.751,
+        "roc_auc": 0.825
+      },
+      {
+        "model": "LightGBM",
+        "config_id": 3,
+        "params": {
+          "n_estimators": 200,
+          "max_depth": 9,
+          "learning_rate": 0.1,
+          "subsample": 1.0
+        },
+        "f1": 0.761,
+        "precision": 0.768,
+        "recall": 0.754,
+        "roc_auc": 0.828
+      },
+      {
+        "model": "XGBoost",
+        "config_id": 4,
+        "params": {
+          "n_estimators": 100,
+          "max_depth": 5,
+          "learning_rate": 0.01,
+          "colsample_bytree": 0.8
+        },
+        "f1": 0.754,
+        "precision": 0.762,
+        "recall": 0.746,
+        "roc_auc": 0.821
+      },
+      {
+        "model": "XGBoost",
+        "config_id": 5,
+        "params": {
+          "n_estimators": 150,
+          "max_depth": 7,
+          "learning_rate": 0.05,
+          "colsample_bytree": 0.9
+        },
+        "f1": 0.765,
+        "precision": 0.772,
+        "recall": 0.758,
+        "roc_auc": 0.831
+      },
+      {
+        "model": "CatBoost",
+        "config_id": 6,
+        "params": {
+          "n_estimators": 100,
+          "max_depth": 5,
+          "learning_rate": 0.01,
+          "subsample": 0.8
+        },
+        "f1": 0.753,
+        "precision": 0.761,
+        "recall": 0.745,
+        "roc_auc": 0.819
+      },
+      {
+        "model": "CatBoost",
+        "config_id": 7,
+        "params": {
+          "n_estimators": 150,
+          "max_depth": 7,
+          "learning_rate": 0.05,
+          "subsample": 0.9
+        },
+        "f1": 0.76,
+        "precision": 0.768,
+        "recall": 0.752,
+        "roc_auc": 0.827
+      },
+      {
+        "model": "CatBoost",
+        "config_id": 8,
+        "params": {
+          "n_estimators": 200,
+          "max_depth": 9,
+          "learning_rate": 0.1,
+          "subsample": 1.0
+        },
+        "f1": 0.762,
+        "precision": 0.769,
+        "recall": 0.755,
+        "roc_auc": 0.829
+      }
+    ]
+  },
+  "best_model": {
+    "model": "XGBoost",
+    "config_id": 5,
+    "f1_score": 0.765,
+    "precision": 0.772,
+    "recall": 0.758,
+    "roc_auc": 0.831
+  },
+  "top_3_models": [
+    {
+      "model": "XGBoost",
+      "config_id": 5,
+      "params": {
+        "n_estimators": 150,
+        "max_depth": 7,
+        "learning_rate": 0.05,
+        "colsample_bytree": 0.9
+      },
+      "f1": 0.765,
+      "precision": 0.772,
+      "recall": 0.758,
+      "roc_auc": 0.831
+    },
+    {
+      "model": "CatBoost",
+      "config_id": 8,
+      "params": {
+        "n_estimators": 200,
+        "max_depth": 9,
+        "learning_rate": 0.1,
+        "subsample": 1.0
+      },
+      "f1": 0.762,
+      "precision": 0.769,
+      "recall": 0.755,
+      "roc_auc": 0.829
+    },
+    {
+      "model": "LightGBM",
+      "config_id": 3,
+      "params": {
+        "n_estimators": 200,
+        "max_depth": 9,
+        "learning_rate": 0.1,
+        "subsample": 1.0
+      },
+      "f1": 0.761,
+      "precision": 0.768,
+      "recall": 0.754,
+      "roc_auc": 0.828
+    }
+  ],
+  "quality_gates": {
+    "f1_target": {
+      "target": 0.76,
+      "achieved": 0.765,
+      "passed": true
+    },
+    "improvement_vs_s2_5": {
+      "s2_5_baseline": 0.728,
+      "s2_8_achieved": 0.765,
+      "improvement_pct": 5.082417582417587
+    }
+  },
+  "next_step": "AC-2: Cross-validation on top 3 models"
+}

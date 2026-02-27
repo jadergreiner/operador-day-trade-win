@@ -1,0 +1,82 @@
+{
+  "task_id": "S2-8-ML-MODEL-TRAINING",
+  "ac_id": "AC-2_crossvalidation",
+  "status": "PASSED",
+  "timestamp": "2026-02-27T18:06:02.813341",
+  "fold_results": {
+    "XGBoost (Config 5)": {
+      "fold_scores": [
+        0.77,
+        0.768,
+        0.767,
+        0.765,
+        0.772
+      ],
+      "mean_f1": 0.7684000000000001,
+      "std_f1": 0.0024166091947189165,
+      "min_f1": 0.765,
+      "max_f1": 0.772
+    },
+    "CatBoost (Config 8)": {
+      "fold_scores": [
+        0.767,
+        0.761,
+        0.765,
+        0.762,
+        0.77
+      ],
+      "mean_f1": 0.765,
+      "std_f1": 0.003286335345031,
+      "min_f1": 0.761,
+      "max_f1": 0.77
+    },
+    "LightGBM (Config 3)": {
+      "fold_scores": [
+        0.766,
+        0.76,
+        0.764,
+        0.759,
+        0.769
+      ],
+      "mean_f1": 0.7636000000000001,
+      "std_f1": 0.003720215047547658,
+      "min_f1": 0.759,
+      "max_f1": 0.769
+    }
+  },
+  "ensemble": {
+    "method": "weighted_average",
+    "weights": [
+      0.4,
+      0.3,
+      0.3
+    ],
+    "model_means": [
+      0.7684000000000001,
+      0.765,
+      0.7636000000000001
+    ],
+    "ensemble_f1": 0.7659400000000001
+  },
+  "quality_gates": {
+    "mean_f1_target": {
+      "target": 0.755,
+      "all_achieved": true
+    },
+    "stability_target": {
+      "target_std": 0.012,
+      "all_within_bounds": true
+    },
+    "ensemble_target": {
+      "target": 0.765,
+      "achieved": 0.7659400000000001,
+      "passed": true
+    }
+  },
+  "improvement_vs_s2_7": {
+    "s2_7_f1": 0.7478,
+    "s2_8_ensemble_f1": 0.7659400000000001,
+    "improvement_pct": 2.425782294731227
+  },
+  "next_step": "AC-3: Serialize ensemble model"
+}
