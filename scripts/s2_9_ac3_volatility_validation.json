@@ -1,0 +1,63 @@
+{
+  "task_id": "S2-9-RISK-FRAMEWORK",
+  "ac_id": "AC-3_volatility_bands",
+  "status": "PASSED",
+  "timestamp": "2026-02-27T18:14:14.048955",
+  "circuit_config": {
+    "level_1_alert_pct": -3.0,
+    "level_2_slow_pct": -5.0,
+    "level_3_halt_pct": -8.0,
+    "total_capital": 100000
+  },
+  "test_results": {
+    "scenarios_tested": 50,
+    "level_1_alerts": 5,
+    "level_2_slow_modes": 7,
+    "level_3_halts": 18,
+    "normal_operations": 20
+  },
+  "quality_gates": {
+    "level_1_triggered": true,
+    "level_2_triggered": true,
+    "level_3_triggered": true,
+    "all_levels_working": true
+  },
+  "sample_transitions": [
+    {
+      "scenario": 1,
+      "daily_pnl_pct": -15.0,
+      "daily_pnl_amount": -15000.0,
+      "circuit_state": "HALT",
+      "action": "All trading stopped"
+    },
+    {
+      "scenario": 11,
+      "daily_pnl_pct": -10.918367346938775,
+      "daily_pnl_amount": -10918.367346938774,
+      "circuit_state": "HALT",
+      "action": "All trading stopped"
+    },
+    {
+      "scenario": 21,
+      "daily_pnl_pct": -6.83673469387755,
+      "daily_pnl_amount": -6836.73469387755,
+      "circuit_state": "SLOW_MODE",
+      "action": "50% position size, 90% ML required"
+    },
+    {
+      "scenario": 31,
+      "daily_pnl_pct": -2.755102040816325,
+      "daily_pnl_amount": -2755.102040816325,
+      "circuit_state": "NORMAL",
+      "action": "No restrictions"
+    },
+    {
+      "scenario": 41,
+      "daily_pnl_pct": 1.3265306122449,
+      "daily_pnl_amount": 1326.5306122448999,
+      "circuit_state": "NORMAL",
+      "action": "No restrictions"
+    }
+  ],
+  "ready_for_production": true
+}

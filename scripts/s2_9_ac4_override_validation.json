@@ -1,0 +1,89 @@
+{
+  "task_id": "S2-9-RISK-FRAMEWORK",
+  "ac_id": "AC-4_override_framework",
+  "status": "PARTIAL",
+  "timestamp": "2026-02-27T18:14:14.398604",
+  "authorization_config": {
+    "levels": {
+      "Trader": {
+        "authority": "100% veto on any order",
+        "rank": 1
+      },
+      "CIO": {
+        "authority": "Pause program (temp halt)",
+        "rank": 2
+      },
+      "CFO": {
+        "authority": "Capital allocation (highest)",
+        "rank": 3
+      }
+    },
+    "hierarchy": [
+      "Trader",
+      "CIO",
+      "CFO"
+    ]
+  },
+  "test_results": {
+    "scenarios_tested": 20,
+    "trader_overrides": 4,
+    "cio_pauses": 5,
+    "cfο_reallocations": 3,
+    "auth_denied": 8,
+    "audit_logged": 12
+  },
+  "quality_gates": {
+    "all_types_implemented": true,
+    "auth_enforcement_working": true,
+    "audit_logging_complete": false,
+    "all_gates_passed": false
+  },
+  "sample_overrides": [
+    {
+      "scenario": 1,
+      "override_type": "invalid",
+      "user_role": "CFO",
+      "timestamp": "2026-02-27T18:14:14.396604",
+      "auth_granted": false,
+      "action": "Invalid override type",
+      "logged": false
+    },
+    {
+      "scenario": 2,
+      "override_type": "invalid",
+      "user_role": "CFO",
+      "timestamp": "2026-02-27T18:14:14.396604",
+      "auth_granted": false,
+      "action": "Invalid override type",
+      "logged": false
+    },
+    {
+      "scenario": 3,
+      "override_type": "cio_pause",
+      "user_role": "CFO",
+      "timestamp": "2026-02-27T18:14:14.396604",
+      "auth_granted": true,
+      "action": "Program paused (temporary)",
+      "logged": true
+    },
+    {
+      "scenario": 4,
+      "override_type": "cio_pause",
+      "user_role": "CIO",
+      "timestamp": "2026-02-27T18:14:14.397608",
+      "auth_granted": true,
+      "action": "Program paused (temporary)",
+      "logged": true
+    },
+    {
+      "scenario": 5,
+      "override_type": "cfο_realloc",
+      "user_role": "CFO",
+      "timestamp": "2026-02-27T18:14:14.397608",
+      "auth_granted": true,
+      "action": "Capital reallocated",
+      "logged": true
+    }
+  ],
+  "ready_for_production": false
+}
