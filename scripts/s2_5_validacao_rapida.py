@@ -16,11 +16,11 @@ from datetime import datetime
 
 def validate_s2_5_quick():
     """Validacao rapida de S2-5 sem dependencias MT5"""
-    
+
     print("\n" + "="*80)
     print("🎯 S2-5 VALIDACAO RAPIDA - Probabilidade T+60")
     print("="*80 + "\n")
-    
+
     # STEP 1: Verificar imports
     print("[STEP 1] Verificando imports de S2-5...")
     try:
@@ -30,7 +30,7 @@ def validate_s2_5_quick():
     except Exception as e:
         print(f"  ❌ Erro: {e}\n")
         return False
-    
+
     # STEP 2: Simulare dataset estatísticas
     print("[STEP 2] Simulando dataset estatísticas T+60...")
     dataset_stats = {
@@ -50,13 +50,13 @@ def validate_s2_5_quick():
             "correlation": 2    # Trend strength
         }
     }
-    
+
     print(f"  Total samples: {dataset_stats['total_samples']}")
     print(f"  Features: {dataset_stats['features']}")
     print(f"  Class distribution: Bullish {dataset_stats['class_distribution']['bullish']*100:.1f}%, "
           f"Neutral {dataset_stats['class_distribution']['neutral']*100:.1f}%")
     print(f"  ✅ Dataset simulado\n")
-    
+
     # STEP 3: Simular grid search paralelo
     print("[STEP 3] Simulando grid search paralelo (32 configs)...")
     grid_configs = [
@@ -97,11 +97,11 @@ def validate_s2_5_quick():
         {"model": "Ensemble", "voting": "hard", "include": ["LightGBM", "CatBoost"], "proportion": 0.5},
         {"model": "Ensemble", "voting": "average", "include": ["LightGBM", "XGBoost", "CatBoost"]},
     ]
-    
+
     print(f"  Grid search: 32/32 configs prepared")
     print(f"  Models tested: LightGBM (8), XGBoost (8), CatBoost (8), Ensemble (8)")
     print(f"  Parallelism: 4 cores (simulated)\n")
-    
+
     # STEP 4: Simular resultados de backtests
     print("[STEP 4] Simulando backtest results...")
     best_model_results = {
@@ -117,7 +117,7 @@ def validate_s2_5_quick():
         "sharpe_ratio": 1.65,          # Risk-adjusted (target: >1.0)
         "cross_validation_std": 0.03   # Estável
     }
-    
+
     print(f"  Best model: {best_model_results['model_type']}")
     print(f"  F1 Score: {best_model_results['f1_score']:.3f} (target: ≥0.70)")
     print(f"  Precision: {best_model_results['precision']:.3f}")
@@ -127,7 +127,7 @@ def validate_s2_5_quick():
     print(f"  Sharpe ratio: {best_model_results['sharpe_ratio']:.2f} (target: >1.0)")
     print(f"  Max drawdown: {best_model_results['max_drawdown']*100:.1f}%")
     print(f"  ✅ Backtest simulado\n")
-    
+
     # STEP 5: Integração com S2-3 (SMC Confluence)
     print("[STEP 5] Validando integração com S2-3...")
     integration_metrics = {
@@ -138,7 +138,7 @@ def validate_s2_5_quick():
         "performance_impact": "negligible",  # <50ms adicional
         "compatibility": "100% compatible"
     }
-    
+
     print(f"  S2-3 (SMC) + S2-5 (T+60) integration: {integration_metrics['smc_s2_3_combined']}")
     print(f"  Expected win rate (combined): {integration_metrics['expected_win_rate_combined']*100:.1f}%")
     print(f"  Expected capture: {integration_metrics['expected_capture']*100:.1f}%")
@@ -146,7 +146,7 @@ def validate_s2_5_quick():
     print(f"  Performance impact: {integration_metrics['performance_impact']}")
     print(f"  Compatibility: {integration_metrics['compatibility']}")
     print(f"  ✅ Integração validad\n")
-    
+
     # STEP 6: Gates de aceitação
     print("[STEP 6] Validando gates de aceitação...")
     gates = [
@@ -158,15 +158,15 @@ def validate_s2_5_quick():
         ("ROC AUC > 0.75", best_model_results['roc_auc'] > 0.75),
         ("CV stability (std < 0.05)", best_model_results['cross_validation_std'] < 0.05),
     ]
-    
+
     gates_passed = sum(1 for _, passed in gates if passed)
     print(f"  Gates de aceitacao ({gates_passed}/{len(gates)} PASSED):")
     for gate_name, passed in gates:
         status = "✅" if passed else "❌"
         print(f"    {status} {gate_name}")
-    
+
     print()
-    
+
     # STEP 7: Salvar resultado
     print("[STEP 7] Salvando resultado de validacao...")
     result = {
@@ -192,13 +192,13 @@ def validate_s2_5_quick():
             "Gate 2 decision (12/03)"
         ]
     }
-    
+
     output_file = Path("s2_5_validacao_resultado.json")
     with open(output_file, "w") as f:
         json.dump(result, f, indent=2)
-    
+
     print(f"  ✅ Resultado salvo em: {output_file}\n")
-    
+
     # SUMMARY
     print("="*80)
     print("📊 RESUMO S2-5")
@@ -214,7 +214,7 @@ def validate_s2_5_quick():
     print(f"✅ Integration S2-3: 100% compatible")
     print(f"✅ Gates: {gates_passed}/{len(gates)} PASSED")
     print(f"\n🎯 S2-5 VALIDACAO: ✅ PRONTA (85% → 100% em 2-3 horas)\n")
-    
+
     return True
 
 if __name__ == "__main__":
