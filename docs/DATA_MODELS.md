@@ -13,6 +13,26 @@
 Documentar os modelos de dados que suportam a operação do Operador Day Trade WIN,
 especialmente a integração com decisões, persistência e auditoria de operações.
 
+## 📋 PADRÕES DE CODIFICAÇÃO
+
+Todas as operações com modelos de dados devem seguir [CODING_STANDARDS.md](CODING_STANDARDS.md):
+
+**Para Schemas e Tabelas:**
+- Naming conventions: snake_case (tabelas), CamelCase (classes)
+- Type hints on all data access code (mypy --strict)
+- Repository Pattern for database access (abstraction)
+- Error handling with detailed logging
+- Audit trails for all mutations (created_at, updated_at, deleted_at)
+
+**Para Code Data Access:**
+- Use type hints on queries and results
+- Implement retry logic for transient failures
+- Log all database operations (reads, writes, deletes)
+- Validate data constraints in application layer
+- Use repositories to abstract persistence
+
+**Validação:** Code review + Schema review + Tests
+
 ---
 
 ## 1️⃣ CAMADA 1: Market Data (Dados de Mercado)

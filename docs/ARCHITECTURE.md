@@ -14,6 +14,24 @@ Sistema de trading quantitativo para Mini Índice Brasileiro (WIN) com arquitetu
 3. **Domain-Driven Design**: Modelagem centrada no domínio financeiro
 4. **SOLID Principles**: Código modular, extensível e testável
 5. **Observability First**: Logging, métricas e auditoria em todas as camadas
+
+## 📋 PADRÕES DE CÓDIGO E STANDARDS
+
+**Todos os componentes arquiteturais DEVEM ser implementados seguindo [CODING_STANDARDS.md](CODING_STANDARDS.md):**
+
+- Type hints obrigatórios (100% mypy --strict)
+- SOLID principles em design de componentes
+- Domain-Driven Design para modeling
+- Repository Pattern para data access
+- Comprehensive error handling com audit logging
+- Unit + integration tests (min 80% coverage)
+- Clean Code practices (naming, functions, organization)
+
+**Validação de Arquitetura:** Code review + Architecture review board
+**Enforcement:** Pre-commit hooks + CI/CD pipeline
+
+---
+
 6. **🔴 CRITICAL - Confirmation Closure Principle** ⭐ NEW
    - **Toda operação crítica DEVE ter ciclo fechado:**
      1. Request Layer (envio para MT5)
@@ -21,7 +39,8 @@ Sistema de trading quantitativo para Mini Índice Brasileiro (WIN) com arquitetu
      3. Verification Layer (valida 1:1 mapping)
      4. Feedback Layer (notifica sistema de aprendizado)
    - **Sem qualquer uma dessas 4 camadas, o ciclo não está fechado**
-   - ⚠️ **Status (24/02):** Camadas 1 implantada, 2-4 FALTANDO (veja P0-CAUSA_RAIZ_DADOS_DESAPARECIDOS.md)
+   - ⚠️ **Status (24/02):** Camadas 1 implantada, 2-4 FALTANDO
+   - 📋 Ver [BACKLOG_UNIFICADO.md](BACKLOG_UNIFICADO.md#-p0---críticas-bloqueadores--sprint-2-atual) para status e próximas ações
 
 ## Arquitetura em Camadas
 
@@ -204,10 +223,10 @@ class RLTradeOutcomeReceiver:
 ```
 
 **🚨 AÇÃO IMEDIATA (P0):**
-- Ver [P0-CAUSA_RAIZ_DADOS_DESAPARECIDOS.md](../P0-CAUSA_RAIZ_DADOS_DESAPARECIDOS.md) para design completo
+- 📋 Ver [BACKLOG_UNIFICADO.md](BACKLOG_UNIFICADO.md) - Seção P0-1 para design completo
 - Implementar 3 componentes (4-6 horas)
 - Validar com E2E test
-- Deploy hoje ou 25/02
+- Prioridade P0 do backlog unificado
 
 **Tecnologias**: asyncio, Event Bus, Repository Pattern, Type Safety
 
@@ -339,7 +358,7 @@ Tentativa 3: 2000ms
 - PnL feedback para aprendizado
 - Historical outcome tracking
 
-**Referência Completa:** [docs/PERSISTENCE_GUARANTEE_PROTOCOL.md](../docs/PERSISTENCE_GUARANTEE_PROTOCOL.md)
+**Referência Completa:** Ver [BACKLOG_UNIFICADO.md](BACKLOG_UNIFICADO.md#-p0---críticas-bloqueadores--sprint-2-atual) - P0-1 e P0-2 para tarefas de persistência
 
 **Tecnologias**: asyncio, Retry Pattern, SQLite ACID, Type Hints, Clean Architecture
 

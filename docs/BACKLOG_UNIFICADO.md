@@ -13,6 +13,23 @@
 
 ---
 
+## 📋 GUIAS E PADRÕES DE DESENVOLVIMENTO
+
+Todos os desenvolvedores DEVEM seguir as práticas técnicas definidas em [CODING_STANDARDS.md](CODING_STANDARDS.md):
+
+- **SOLID Principles**: Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion
+- **Clean Code**: Naming conventions, functions, error handling, formatting
+- **Type Hints Obrigatórios**: 100% de cobertura em Python (mypy --strict)
+- **Domain-Driven Design**: Modeling centered on business domain
+- **Repository Pattern**: Data access abstraction
+- **Error Handling & Logging**: Comprehensive exception handling with audit trail
+- **Testing Best Practices**: Unit, integration, and E2E tests required
+- **Code Organization**: Clear module structure, separation of concerns
+
+**Status**: OBRIGATÓRIO para todas as tarefas (P0-P4) | **Validação**: Code review + mypy
+
+---
+
 ## ✅ P0 - CRÍTICAS (Bloqueadores) — Sprint 2 Atual
 
 ### P0-1: ENG-003 API REST MT5 (Infraestrutura)
@@ -749,7 +766,65 @@ pytest tests/unit/test_persistence_task_critica_0.py -v
 
 ---
 
-### P2-6: Staging Deployment
+### P2-6: Database Consolidation & Deprecation
+
+**Status:** 🟡 Bloqueado (após P0-1, P0-2)
+**Responsável:** Data Engineer
+**Squad:** 1 pessoa
+**Horas:** 24h
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas (Phase 2):
+- Investigação propósito de `data/db/wdo_winfut.db`
+  - Validar se still em uso (logs, scripts)
+  - Documentar ou eliminar
+  - Status: DESCONHECIDO (auditoria necessária)
+
+- Deprecação formal de `analytics_staging.db`
+  - Status: LEGACY (S2-6 deprecated)
+  - Remover de .env.staging
+  - Notificar team affected
+
+- Eliminação de `analytics.db`
+  - Status: ORPHANED (nunca referenciado em código)
+  - Validar completamente orphaned
+  - Backup antes de remover
+  - Remover de repositório
+
+#### Critérios de Aceite (4):
+- [ ] CA-1: wdo_winfut.db investigado (sim/não usar)
+- [ ] CA-2: analytics_staging.db deprecado formalmente
+- [ ] CA-3: analytics.db validado orphaned + removed
+- [ ] CA-4: Auditoria consolidação concluída
+
+---
+
+### P2-7: PostgreSQL Migration Planning
+
+**Status:** 📋 Planejado (Phase 4+)
+**Responsável:** Data Engineer + DevOps
+**Squad:** 2 pessoas
+**Horas:** 32h
+**Timeline:** Phase 4 (10/04/2026+)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- [ ] Design migração SQLite → PostgreSQL Azure
+- [ ] Replicação em tempo real (dual-write strategy)
+- [ ] Validação integridade pós-migração
+- [ ] Teste failover + recovery
+- [ ] Deprecação planejada SQLite (backup only)
+- [ ] Documentação procedure
+- [ ] Playbook para rollback
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: Plano migração documentado
+- [ ] CA-2: Dual-write implementado + testado
+- [ ] CA-3: Integridade validada
+- [ ] CA-4: Failover testado com sucesso
+- [ ] CA-5: Playbook rollback assinado
+
+---
 
 ## 📋 BACKLOG FUTURO (Sprint 3+)
 
@@ -909,47 +984,300 @@ de ML para evoluir do agente heurístico para modelo supervisionado.
 
 ---
 
-### P3-3: Analytics Avançadas
+### P3-7: Implementation Tasks - Data Pipeline & Feature Engineering
 
-**Status:** 📋 Futuro
-**Prioridade:** 🟢 BAIXO
+**Status:** 📋 Planejado (Phase 2/3)
+**Responsável:** ML Expert + Dev-Backend
+**Squad:** 3 pessoas
+**Horas:** 60h
+**Prioridade:** 🟡 ESTRATÉGICO
 
-**Entregas:**
-- [ ] Dashboard analytics completo
-- [ ] Histórico operações (60+ dias)
-- [ ] Análise padrões, seasonal
-- [ ] Relatórios customizáveis
-- [ ] Export dados (Tableau, PowerBI)
-- [ ] Real-time KPIs
+#### Entregas Esperadas (ref: SOLUTION_DESIGN.md):
+- [ ] Data Pipeline implementation
+  - Processamento de candles em tempo real
+  - Feature engineering completa
+  - Indicadores técnicos integrados (RSI, MACD, Bollinger, etc)
+
+- [ ] Repository Implementations
+  - MarketDataRepository
+  - PredictionRepository
+  - DecisionRepository
+  - Trade performance tracking
+
+- [ ] Technical Indicators
+  - Bollinger Bands com múltiplos períodos
+  - MACD com sinales
+  - RSI com divergências
+  - ATR com dinâmica
+  - Suporte/Resistência detection
+  - Volume analysis
+
+#### Critérios de Aceite (6):
+- [ ] CA-1: Data Pipeline processa candles
+- [ ] CA-2: 24+ features engineered corretamente
+- [ ] CA-3: Indicadores técnicos calculados
+- [ ] CA-4: Repositórios implementados
+- [ ] CA-5: 100% testes passando
+- [ ] CA-6: Documentação completa
 
 ---
 
-### P3-3: Analytics Avançadas
+### P3-8: Implementation Tasks - ML Models Development
 
-**Status:** 📋 Futuro
-**Prioridade:** 🟢 BAIXO
+**Status:** 📋 Planejado (Phase 2/3)
+**Responsável:** ML Expert
+**Squad:** 2 pessoas
+**Horas:** 80h
+**Prioridade:** 🟡 ESTRATÉGICO
 
-**Entregas:**
-- [ ] Dashboard analytics completo
-- [ ] Histórico operações (60+ dias)
-- [ ] Análise padrões, seasonal
-- [ ] Relatórios customizáveis
-- [ ] Export dados (Tableau, PowerBI)
-- [ ] Real-time KPIs
+#### Entregas Esperadas (ref: SOLUTION_DESIGN.md):
+- [ ] Classification Model
+  - BUY/SELL/HOLD prediction
+  - Confidence scoring
+  - Feature importance analysis
+
+- [ ] Regression Model
+  - Price direction prediction (30-min horizon)
+  - Win probability scoring
+  - Confidence intervals
+
+- [ ] Volatility Model
+  - ATR prediction
+  - Volatility regimes
+  - Stop-loss sizing
+
+- [ ] Ensemble Strategy
+  - Múltiplos modelos combinados
+  - Voting mechanism
+  - Confidence weighting
+
+#### Critérios de Aceite (6):
+- [ ] CA-1: Classification F1 >0.65
+- [ ] CA-2: Regression accuracy >70%
+- [ ] CA-3: Volatility RMSE <10pts
+- [ ] CA-4: Ensemble outperforms individual
+- [ ] CA-5: Hyperparameter optimization done
+- [ ] CA-6: Models serialized para produção
 
 ---
 
-### P3-4: Mobile App
+### P3-9: Implementation Tasks - Decision Engine & Risk Management
 
-**Status:** 📋 Futuro
-**Prioridade:** 🟢 BAIXO
+**Status:** 📋 Planejado (Phase 2/3)
+**Responsável:** Eng Sr + ML Expert
+**Squad:** 3 pessoas
+**Horas:** 80h
+**Prioridade:** 🟡 ESTRATÉGICO
 
-**Entregas:**
-- [ ] App mobile (iOS/Android)
-- [ ] Notificações push
-- [ ] Dashboard mobile responsivo
-- [ ] Ordens mobile simplificadas
-- [ ] Alertas mobile
+#### Entregas Esperadas (ref: SOLUTION_DESIGN.md):
+- [ ] AI Head Financeiro
+  - Motor de decisão principal
+  - Sinais ML + técnicos combinados
+  - Condições mercado análise
+  - BUY/SELL/HOLD decisões com reasoning
+
+- [ ] Portfolio Manager
+  - Gestão alocação capital
+  - Multi-symbol support (preparação)
+  - Rebalanceamento automático
+  - Exposure tracking
+
+- [ ] Order Manager
+  - Gestão ordens pendentes
+  - Retry logic para falhas
+  - Order tracking e persistência
+  - Filling simulação
+
+- [ ] Position Monitor
+  - Monitoramento tempo real
+  - SL/TP ajuste dinâmico
+  - Trailing stop implementation
+  - P&L cálculo
+
+#### Critérios de Aceite (8):
+- [ ] CA-1: AI Head Financeiro toma decisões
+- [ ] CA-2: Portfolio gerencia múltiplas posições
+- [ ] CA-3: Order Manager envia corretamente
+- [ ] CA-4: Retry logic funciona exponencial
+- [ ] CA-5: Position Monitor atualiza tempo real
+- [ ] CA-6: Trailing stop protege lucros
+- [ ] CA-7: Risk limits respeitados 100%
+- [ ] CA-8: Auditoria trail completa
+
+---
+
+### P3-10: Implementation Tasks - CLI & Observability
+
+**Status:** 📋 Planejado (Phase 2/3)
+**Responsável:** Dev-Backend + Tech Writer
+**Squad:** 2 pessoas
+**Horas:** 40h
+**Prioridade:** 🟡 ESTRATÉGICO
+
+#### Entregas Esperadas (ref: SOLUTION_DESIGN.md):
+- [ ] Interface CLI
+  - Comando iniciar trading
+  - Comando backtesting
+  - Comando treinar modelos
+  - Dashboard status tempo real
+  - Configuração parâmetros
+
+- [ ] Logging & Observability
+  - Structured logging (JSON format)
+  - Logging levels configurável
+  - Sensitive data masking
+  - Performance metrics logging
+
+- [ ] Alerting System
+  - Trade entry alerts
+  - Risk limit alerts
+  - System health alerts
+  - Performance anomaly alerts
+
+#### Critérios de Aceite (6):
+- [ ] CA-1: CLI implementada completa
+- [ ] CA-2: 5+ comandos funcionando
+- [ ] CA-3: Logging estruturado ativo
+- [ ] CA-4: Sensitivos dados mascarados
+- [ ] CA-5: Alertas enviados corretamente
+- [ ] CA-6: Dashboard mostra métricas
+
+---
+
+### P3-11: Implementation Tasks - Advanced Analytics
+
+**Status:** 📋 Planejado (Phase 3+)
+**Responsável:** ML Expert + Data Analyst
+**Squad:** 2 pessoas
+**Horas:** 60h
+**Prioridade:** 🟢 MÉDIO
+
+#### Entregas Esperadas (ref: SOLUTION_DESIGN.md):
+- [ ] Backtesting Engine
+  - Teste em dados históricos
+  - Walk-forward analysis
+  - Validação robusta estratégias
+  - Performance metrics computation
+
+- [ ] Hyperparameter Optimization
+  - Grid search / Bayesian optimization
+  - Parameter validation
+  - Cross-validation reporting
+  - Best parameters export
+
+- [ ] Performance Analytics
+  - Análise detalhada trades
+  - Identificação padrões
+  - Seasonal analysis
+  - Equity curve visualization
+
+#### Critérios de Aceite (6):
+- [ ] CA-1: Backtesting roda 252 dias
+- [ ] CA-2: Walk-forward validation OK
+- [ ] CA-3: Grid search 50+ configs
+- [ ] CA-4: Análise padrões concluída
+- [ ] CA-5: Sazonalidade mapeada
+- [ ] CA-6: Visualizações gerando
+
+---
+
+### P3-12: Oportunidades de Melhoria - Reentrada & Validação (ref: ROADMAP.md)
+
+**Status:** 📋 Planejado (Phase 3+)
+**Responsável:** ML Expert + Eng Sr
+**Squad:** 2 pessoas
+**Horas:** 80h
+**Prioridade:** 🟢 MÉDIO
+
+#### Entregas Esperadas:
+
+1. **Reentrada Alpha (Pós-Stop)**
+   - Detectar quando mercado entra em tendência forte logo após Stop Loss
+   - Permitir reentrada com Score reduzido se volatilidade permitir
+   - Implementação: Monitor posições fechadas por SL, validar nova tendência
+   - Critério: Win rate não diminui vs sistema original
+
+2. **Hot-Reload de Pesos (Zero-Downtime)**
+   - Sistema recarrega modelos ML a cada 24h sem downtime
+   - Implementação: Background loader + atomic swap
+   - Status: ✅ JÁ IMPLEMENTADO (LIVE)
+   - Manutenção: Validar + documentar
+
+3. **Treinamento Incremental em Tempo Real**
+   - Pipeline processa aprendizados em lotes
+   - Sistema adapta <60min a novos padrões
+   - Implementação: Batch learner + modelo versioning
+   - Status: ✅ JÁ IMPLEMENTADO (LIVE)
+   - Manutenção: Validar + documentar
+
+4. **Shadow Validator de Auto-Promoção**
+   - Gate de segurança que testa automaticamente novos pesos em "Backtest Imediato"
+   - Autoriza troca apenas se ganho de eficiência > modelo ativo
+   - Implementação: Backtest wrapper + decision engine
+   - Critério: Validação backtest antes troca de pesos
+
+5. **Sincronização Dinâmica de Timezone**
+   - Substituir offset fixo (-3h) por detecção automática
+   - Eliminar descartos falsos de "Stale Data"
+   - Implementação: Heartbeat MT5 + clock sync
+   - Status: ✅ JÁ IMPLEMENTADO (GAP-02 resolvido)
+   - Manutenção: Validar + documentar
+
+6. **Jornal de Latência e Regra LKV**
+   - Persistência da defasagem (Capture vs Source Timestamp)
+   - Usar Último Dado Conhecido (LKV) em vez de descartar
+   - Modelo RL usa idade do dado como fator de desconto
+   - Implementação: Timestamp tracking + LKV logic
+   - Critério: Zero dados descartados, uso de LKV
+
+#### Critérios de Aceite (8):
+- [ ] CA-1: Reentrada Alpha testada em backtest
+- [ ] CA-2: Win rate não diminui com reentrada
+- [ ] CA-3: Hot-reload validado (>99.9% uptime)
+- [ ] CA-4: Treinamento incremental <60min ciclo
+- [ ] CA-5: Shadow validator previne pesos ruins
+- [ ] CA-6: Timezone sync 100% automática
+- [ ] CA-7: Jornal latência persistido
+- [ ] CA-8: LKV logic implementada + testada
+
+---
+
+### P3-13: Oportunidades Globais - Indicadores & Ingestão (ref: ROADMAP.md)
+
+**Status:** 📋 Planejado (Phase 3+)
+**Responsável:** ML Expert + Data Engineer
+**Squad:** 2 pessoas
+**Horas:** 100h
+**Prioridade:** 🟢 MÉDIO
+
+#### Entregas Esperadas:
+
+1. **Indicadores de Antecipação Global (Lead/Lag)**
+   - Incluir dados globais: US 10Y Yields, VIX, DXY
+   - Implementar correlação cruzada automática
+   - Identificar automaticamente quais ativos "ditam o ritmo" da abertura brasileira
+   - Critério: 4+ assets core drivers identificados
+
+2. **Ingestão de Fluxo via Streaming (Low Latency)**
+   - Transição de polling (2 min) para Event-Driven Streaming
+   - Para 10 ativos de maior peso (Core Drivers)
+   - Eliminar pontos cegos intradiários
+   - Implementação: WebSocket subscribers, event bus
+   - Critério: Latência <1s vs 2min anteriores
+
+3. **Correlação Dinâmica WDO/WINFUT**
+   - Mapa de relações: commodities, fluxo risco, juros, câmbio
+   - Score WDO (direção dólar) + Score WINFUT (direção Ibov)
+   - Sistema pontuação multi-fonte (15+ ativos)
+   - Implementação: Correlação rolling + regimes
+   - Critério: Correlação inversa validada (-0.75 a -0.90)
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: US10Y/VIX/DXY integrados
+- [ ] CA-2: Lead/Lag identificado por correlação cruzada
+- [ ] CA-3: Streaming endpoint ativo (<1s latência)
+- [ ] CA-4: 10 Core Drivers identificados e monitorados
+- [ ] CA-5: Score WDO/WINFUT computados tempo real
 
 ---
 
@@ -1040,6 +1368,67 @@ decisões de trading com análise multivariada.
 - Integrar múltiplas fontes (MT5, Yahoo, FRED, Binance, ExchangeRate)
 - Backtest correlação e acurácia
 - Documentar regras detalhadas com exemplos
+
+---
+
+### P3-14: Macro Score System Implementation (ref: MACRO_SCORE_REQUIREMENTS.md)
+
+**Status:** 📋 Planejado (Phase 3+)
+**Responsável:** ML Expert + Eng Sr + Head Finanças
+**Squad:** 3 pessoas
+**Horas:** 120h
+**Prioridade:** 🟡 ESTRATÉGICO
+
+#### Entregas Esperadas:
+
+**FASE 1: Itens Intraday via MT5 (83 items)**
+- Indices Brasil: 20 items (IBOV, SMLL, MLCX, INDX, IMOB, IMAT, IGNM, AGFS, BDRX, etc)
+  - Correlação DIRETA: subindo=+1, caindo=-1
+- Ações Brasil: 16 items (PETR4, VALE3, ITUB3, ABEV3, B3SA3, BBDC3, BOVA11, CXSE3, EGIE3, etc)
+- Dólar/Câmbio: 2 items (WDO negativo, DXY negativo) - Correlação INVERSA
+- Moedas Forex: 12 items (EUR, GBP, CAD, AUD, NZD, CNY, MXN, ZAR, TRY, CLP, CHF, JPY)
+- Commodities: 12 items (Ouro, Boi, Milho, Café, Soja, Minério Ferro, Cobre, Petróleo, etc)
+- Juros/Renda Fixa: 3 items (DI, T10 US, Tesouro Selic) - Inversas
+- Criptomoedas: 4 items (Bitcoin, Ethereum, Solana, outros)
+- Índices Globais: 4 items (S&P 500, Nasdaq, DAX, Hang Seng)
+- Volatilidade: 2 items (VXBR, VIX) - Correlação INVERSA
+- Indicadores Técnicos Intraday WIN: 8 items (Volume, Agressão, RSI, Estocástico, ADX, VWAP, MACD, OBV)
+
+**FASE 2: Dados Periódicos (9 items)**
+- Taxa Desemprego (PNAD)
+- Inflação (IPCA)
+- COPOM (Selic) + FOMC (FED)
+- PIB Brasil
+- PMI Brasil
+- Fluxo Estrangeiro B3
+- Boletim Focus
+- Risco País (CDS/EMBI+)
+
+**Funcionalidades Principais:**
+1. Pontuação por item (fórmula: score_final = SUM(pontuacao_i * peso_i))
+2. Sinal: COMPRA (score>0), VENDA (score<0), NEUTRO (score=0)
+3. Persistência completa (timestamp, preço, pontuação, peso, score_contribuição)
+4. Descoberta automática de contratos futuros com rolagem automática
+5. Validação de convenção Forex (XXXUSD vs USDXXX)
+6. Aprendizado por Reforço baseado em resultados reais (acurácia por item)
+7. Ajuste dinâmico de pesos (inicialmente 1, evoluir conforme aprendizado)
+
+#### Validações Necessárias:
+- [ ] 16 símbolos confirmados no MT5 (BGI, DAP, ETR, RIIA3, Petróleo, Minério, Cobre, VIX, DXY, Nasdaq, DAX, Hang Seng, T10)
+- [ ] APIs externas validadas (BCB, IBGE, B3, agregadores para Fase 2)
+- [ ] Contratos futuros mapeados (WDO, WSP, GLDG, IFBOI, IFMILHO, CCM, ICF, SJC, DI, DAP)
+
+#### Critérios de Aceite (10):
+- [ ] CA-1: 83 items Fase 1 implementados
+- [ ] CA-2: Persistência completa (timestamp, preço, score)
+- [ ] CA-3: Score_final calculado corretamente (SUM fórmula)
+- [ ] CA-4: Sinal COMPRA/VENDA/NEUTRO gerado
+- [ ] CA-5: 9 indicadores Fase 2 integrados
+- [ ] CA-6: Contratos futuros auto-descobertos e rolagem automática
+- [ ] CA-7: Moedas Forex com lógica correta (20 pares)
+- [ ] CA-8: RL feedback loop implementado (acurácia por item calculada)
+- [ ] CA-9: Histórico completo para auditoria (90+ dias)
+- [ ] CA-10: Backteste valida correlação items vs resultados WIN
 
 ---
 
@@ -1390,12 +1779,140 @@ prioridade)
 
 ---
 
-## 📚 DOCUMENTOS RELACIONADOS
+---
+
+## � S2 SPRINT 2 TASKS — CONSOLIDADAS (Sprint 2: 27/02-13/03)
+
+### S2-2: Calibrador ATR Dinâmico — ✅ COMPLETO
+
+**Status:** 🟢 Entregue 23/02/2026
+**Owner:** ML Lead / Eng Sr | **Impacto:** +1-2% win rate
+**Testes:** ✅ 8/8 PASSING (>95% coverage)
+
+**Deliverables:**
+- ✅ ATRCalibrator implementado
+- ✅ Integração em agente_micro_tendencia_winfut.py
+- ✅ Trailing Stop dinâmico baseado em ATR(15m)
+- ✅ Testes + Documentação completa
+
+---
+
+### S2-3: Confluência SMC (M1/M5) — ✅ COMPLETO
+
+**Status:** 🟢 Entregue 23/02/2026
+**Owner:** Eng Sr | **Impacto:** +2-3% win rate
+**Testes:** ✅ 12/12 PASSING (98% coverage)
+
+**Deliverables:**
+- ✅ SMC Confluence Engine (M1/M5)
+- ✅ Swing High/Low cálculo real
+- ✅ Supply/Demand zones identificadas
+- ✅ Integração com BDI detector
+- ✅ Multi-timeframe tests PASSING
+
+---
+
+### S2-4: Integração Phicube (Fibonacci) — 🟡 EM ANDAMENTO
+
+**Status:** 🟡 Em execução 26-27/02
+**Owner:** ML Expert | **Prioridade:** 🟠 ALTA
+**Squad:** 11 membros | **Timeline:** 2 dias
+**Impacto Esperado:** +3-5% win rate
+
+**Subtasks (8 paralelas):**
+1. Dataset Fibonacci validation (Phi Cube)
+2. Feature engineering (Leque ratios)
+3. Calibração de thresholds
+4. Integração no micro_score
+5. Backtest (últimos 10 dias)
+6. Testes unitários (target: 10/10)
+7. Code review
+8. Merge to main
+
+**Critérios de Sucesso:**
+- ✅ 10/10 testes unitários PASSING
+- ✅ Backtest validation OK
+- ✅ +3-5% win rate demonstrado
+
+---
+
+### S2-5-ISO: MT5 Terminal Isolation — ✅ COMPLETO
+
+**Status:** 🟢 Entregue 24/02/2026
+**Owner:** Arquiteto de Sistemas + Eng Sr
+**Prioridade:** 🔴 CRÍTICA | **Testes:** ✅ 15/15 PASSING (>98%)
+
+**Deliverables:**
+- ✅ PID validation do terminal64.exe
+- ✅ Fingerprint persistence (~/.mt5_operator_session.json)
+- ✅ Retry automático (backoff exponencial [5s, 10s, 20s])
+- ✅ Health check contínuo (30s)
+- ✅ Múltiplas instâncias MT5 suportadas
+
+**Risk Mitigado:** Rejeição de conexão se PID mudar
+
+---
+
+### S2-6: Analytics de Intervenção Manual — ✅ COMPLETO (P1-7)
+
+**Status:** 🟢 Entregue 24/02/2026 | **Code Review:** ✅ APROVADO
+**Owner:** Doc Advocate + ML Expert
+**Impacto:** +1-2% win rate via feedback trader-IA
+**Testes:** ✅ 31/31 PASSING (98% coverage)
+
+**Deliverables:**
+- ✅ FeedbackCollector (220 LOC)
+- ✅ 8 categorias feedback (Código 1-8)
+- ✅ SQLite DB com índices otimizados
+- ✅ REST API (registrar, histórico, análise)
+- ✅ Menu interativo no agente
+- ✅ Dataset pipeline para retreinamento
+- ✅ Guia operacional português
+
+**Próximo Passo:** Deploy em produção
+
+---
+
+## 📚 CONSOLIDAÇÃO DE FONTES
+
+Este documento unifica todas as tarefas pendentes dos seguintes arquivos de origem:
+
+| Arquivo Original | Data Consolidação | Tarefas Adicionadas |
+|---|---|---|
+| CRITERIOS_DE_ACEITE_MVP.md | 02/03/2026 | Documentação referencial (AC matrix) |
+| MONITOR_OPERADOR_INTEGRADO_GUIA.md | 02/03/2026 | Documentação operacional guia |
+| QUICKSTART.md | 02/03/2026 | Documentação Quick Start |
+| RL_TRAINING_SCHEDULER_README.md | 02/03/2026 | Documentação scheduler RL |
+| SESSAO_HEAD_OPERADOR_2026-02-13.md | 02/03/2026 | Conhecimento tático session |
+| SPRINT2_PENDENCIAS_REVISAO.md | 02/03/2026 | S2-2 até S2-6 tasks consolidadas |
+| SQUAD_S2-2_ATR_DINAMICO.md | 02/03/2026 | Tasks paralelas S2-2 consolidadas |
+| STATUS_ENTREGAS.md | 02/03/2026 | Tasks INTEGRATION-ML consolidadas |
+| SYNC_MANIFEST.json | 02/03/2026 | Metadata sincronização (referencial) |
+| SYNCHRONIZATION.md | 02/03/2026 | Histórico sincronização (audit trail) |
+| DATA_PERSISTENCE_INVENTORY.md | 02/03/2026 | Consolidação DB (P2-6), PostgreSQL Migration (P2-7) |
+| GATE2_CHECKPOINT_FRAMEWORK.md | 02/03/2026 | Backtest validation (P0-2 ML-004), S2-6 deployment |
+| PLANO_DE_SPRINTS_MVP_NOW.md | 02/03/2026 | Sprint planning (já consolidado) |
+| SOLUTION_DESIGN.md | 02/03/2026 | Implementation tasks (P3-7 a P3-11) |
+| TRADING_AUTOMATIZADO.md | 02/03/2026 | Documentação referencial |
+| ROADMAP.md | 03/03/2026 | Oportunidades melhoria (P3-12, P3-13) |
+| S1_REVIEW_SUMMARY.md | 03/03/2026 | Histórico Sprint 1 |
+| VERIFICACAO_CONSOLIDACAO_BACKLOG.md | 03/03/2026 | Auditoria consolidação |
+| VOLUME_ANALYSIS_JOURNALS.md | 03/03/2026 | Documentação técnica integrada |
+| GATE2_EXECUTION_PLAN.md | 03/03/2026 | Gate 2 execution (referencial) |
+| GOVERNANCE_SYNC_POLICY.md | 03/03/2026 | Política sincronização |
+| MACRO_SCORE_REQUIREMENTS.md | 03/03/2026 | Macro Score System (P3-14) |
+
+**Status:** ✅ CONSOLIDAÇÃO COMPLETA - Arquivos de origem processados
+**Última Atualização:** 02/03/2026
+**Proprietário:** Product Owner
+
+---
+
+## 📊 DOCUMENTOS RELACIONADOS
 
 ### Sprint 2
 - [SPRINT2_TAREFAS_PRIORIZADAS.md](../SPRINT2_TAREFAS_PRIORIZADAS.md)
 - [SPRINT2_ACTIVIDADES_PRIORIDADE.md](../SPRINT2_ACTIVIDADES_PRIORIDADE.md)
-- [PLANO_DE_SPRINTS_MVP_NOW.md](./PLANO_DE_SPRINTS_MVP_NOW.md)
 
 ### Phase 4 (Staging & Go-Live)
 - [PHASE4_STAGING_MASTERPLAN.md](./agente_autonomo/PHASE4_STAGING_MASTERPLAN.md)
