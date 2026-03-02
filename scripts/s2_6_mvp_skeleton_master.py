@@ -35,7 +35,7 @@ def executar_script(script_name: str, tempo_estimado: str) -> Tuple[bool, str]:
     print(f"Timestamp: {datetime.now().isoformat()}")
     print("=" * 100)
     print()
-    
+
     try:
         result = subprocess.run(
             [sys.executable, f"scripts/{script_name}"],
@@ -43,11 +43,11 @@ def executar_script(script_name: str, tempo_estimado: str) -> Tuple[bool, str]:
             text=True,
             timeout=300
         )
-        
+
         print(result.stdout)
         if result.stderr:
             print("STDERR:", result.stderr)
-        
+
         return result.returncode == 0, result.stdout
     except Exception as e:
         print(f"❌ Erro executando {script_name}: {e}")
@@ -62,7 +62,7 @@ def validar_arquivos_saida(ac_num: int) -> bool:
 
 def main():
     """Executa S2-6 MVP Skeleton com todas as ACs."""
-    
+
     print("=" * 100)
     print("                              🚀 S2-6 MVP SKELETON MASTER SCRIPT")
     print("=" * 100)
@@ -80,9 +80,9 @@ def main():
     print()
     print("=" * 100)
     print()
-    
+
     results = {}
-    
+
     # AC-1: Dashboard Skeleton
     print("=" * 100)
     ac1_ok, ac1_output = executar_script("s2_6_dashboard_skeleton.py", "20 minutos")
@@ -94,7 +94,7 @@ def main():
     print()
     print(f"✅ AC-1 COMPLETADO COM {'SUCESSO' if ac1_ok else 'ERRO'}")
     print()
-    
+
     # AC-2: Feedback API
     print("=" * 100)
     ac2_ok, ac2_output = executar_script("s2_6_feedback_api.py", "25 minutos")
@@ -106,7 +106,7 @@ def main():
     print()
     print(f"✅ AC-2 COMPLETADO COM {'SUCESSO' if ac2_ok else 'ERRO'}")
     print()
-    
+
     # AC-3: Signal Integration
     print("=" * 100)
     ac3_ok, ac3_output = executar_script("s2_6_signal_integration.py", "20 minutos")
@@ -118,7 +118,7 @@ def main():
     print()
     print(f"✅ AC-3 COMPLETADO COM {'SUCESSO' if ac3_ok else 'ERRO'}")
     print()
-    
+
     # AC-4: Unit Tests
     print("=" * 100)
     ac4_ok, ac4_output = executar_script("s2_6_unit_tests.py", "20 minutos")
@@ -130,43 +130,43 @@ def main():
     print()
     print(f"✅ AC-4 COMPLETADO COM {'SUCESSO' if ac4_ok else 'ERRO'}")
     print()
-    
+
     # Validar arquivos de saída
     print("=" * 100)
     print("✓ Validando arquivos de saída gerados...")
     print("=" * 100)
     print()
-    
+
     all_passed = all(
         validar_arquivos_saida(i) for i in range(1, 5)
     )
-    
+
     for i in range(1, 5):
         json_file = Path(f"scripts/s2_6_ac{i}_validation.json")
         status = "✅" if json_file.exists() else "❌"
         print(f"  {status} AC-{i}: s2_6_ac{i}_validation.json")
-    
+
     print()
     print("=" * 100)
     print("📊 RELATÓRIO FINAL")
     print("=" * 100)
     print()
-    
+
     print("Status das ACs:")
     for i in range(1, 5):
         status = results[f"AC-{i}"]["status"]
         name = results[f"AC-{i}"]["name"]
         print(f"  {status} AC-{i}: {name}")
-    
+
     print()
     print("Arquivos Gerados:")
     for i in range(1, 5):
         json_file = Path(f"scripts/s2_6_ac{i}_validation.json")
         exists = "✅" if json_file.exists() else "❌"
         print(f"  {exists} AC-{i} output file: {'EXISTS' if json_file.exists() else 'MISSING'}")
-    
+
     print()
-    
+
     if all_passed and ac1_ok and ac2_ok and ac3_ok and ac4_ok:
         print("=" * 100)
         print("✅ SUCESSO! S2-6 ESTÁ 100% PRONTO PARA COMMIT!")

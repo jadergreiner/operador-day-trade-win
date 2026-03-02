@@ -1,11 +1,11 @@
 # 🔴 TASK: S2-5 Finalization - BLOCKER #1
 
-**ID:** BLOCKER-S2-5-FINAL  
-**Responsabilidade:** ML Expert  
-**Deadline:** 28/02/2026 23:59 BRT (IMMOVABLE)  
-**Impacto:** Gate 2 Checkpoint crítico (12/03 17:00)  
-**Status Atual:** 85% pronto → Must reach 100%  
-**Time Available:** 2-3 horas  
+**ID:** BLOCKER-S2-5-FINAL
+**Responsabilidade:** ML Expert
+**Deadline:** 28/02/2026 23:59 BRT (IMMOVABLE)
+**Impacto:** Gate 2 Checkpoint crítico (12/03 17:00)
+**Status Atual:** 85% pronto → Must reach 100%
+**Time Available:** 2-3 horas
 
 ---
 
@@ -34,7 +34,7 @@ Finalizar implementação do **S2-5 (Probabilidade T+60)** modelo de classifica�
 
 ### AC-3: Model Serialization
 - **Descrição:** Serializar modelo final em 2 formatos (pickle + ONNX)
-- **Evidência:** 
+- **Evidência:**
   - `models/s2_5_ensemble_final.pkl` (pickle format)
   - `models/s2_5_ensemble_final.onnx` (ONNX format - se LightGBM/XGBoost)
 - **Gate:** Ambos arquivos criados e validados (file size > 100KB)
@@ -42,7 +42,7 @@ Finalizar implementação do **S2-5 (Probabilidade T+60)** modelo de classifica�
 ### AC-4: Production Inference Test
 - **Descrição:** Testar inferência em produção com 100 samples novos
 - **Evidência:** `scripts/s2_5_production_inference_test.json`
-- **Gate:** 
+- **Gate:**
   - Latência P95 <100ms (para inference em produção)
   - Consistência com validação anterior (F1 >0.68)
   - Memory footprint <50MB (carregamento do modelo)
@@ -213,7 +213,7 @@ git push origin main --tags
 ### Scenario: Cross-Validation Shows Overfitting
 
 **Problem:** CV mean F1 significantly lower than validation F1
-**Solution:** 
+**Solution:**
 1. Check for data leakage in preprocessing
 2. Reduce model complexity (fewer trees, lower learning rate)
 3. Increase regularization
@@ -305,8 +305,8 @@ Ao completar, você terá:
 
 ---
 
-**Status:** 🟡 READY FOR EXECUTION  
-**Deadline:** 28/02/2026 23:59 BRT  
-**Estimated Duration:** 2-3 horas (totais, steps 1-7)  
+**Status:** 🟡 READY FOR EXECUTION
+**Deadline:** 28/02/2026 23:59 BRT
+**Estimated Duration:** 2-3 horas (totais, steps 1-7)
 **Time Remaining:** Go! 🚀
 

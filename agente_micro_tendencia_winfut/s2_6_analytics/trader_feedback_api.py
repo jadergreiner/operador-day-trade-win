@@ -24,7 +24,7 @@ class TraderFeedbackAPI:
     def __init__(self, config: Optional[AnalyticsConfig] = None) -> None:
         """
         Inicializa a API de feedback
-        
+
         Args:
             config: Configuracao do modulo
         """
@@ -32,7 +32,7 @@ class TraderFeedbackAPI:
         self.clients: Set[str] = set()  # Traders conectados
         self.pending_signals: Dict[str, Signal] = {}  # Sinais aguardando aprovacao
         self.callbacks: Dict[str, Callable] = {}  # Callbacks para eventos
-        
+
     def register_callback(
         self,
         event_name: str,
@@ -40,13 +40,13 @@ class TraderFeedbackAPI:
     ) -> None:
         """
         Registra callback para um evento
-        
+
         Args:
             event_name: Nome do evento (signal_approved, signal_rejected, etc)
             callback: Funcao callback
         """
         self.callbacks[event_name] = callback
-    
+
     async def trigger_callback(
         self,
         event_name: str,
@@ -54,7 +54,7 @@ class TraderFeedbackAPI:
     ) -> None:
         """
         Dispara um callback registrado
-        
+
         Args:
             event_name: Nome do evento
             data: Dados do evento
@@ -65,7 +65,7 @@ class TraderFeedbackAPI:
                 await callback(data)
             else:
                 callback(data)
-    
+
     def submit_signal_for_approval(
         self,
         signal: Signal,
@@ -73,13 +73,13 @@ class TraderFeedbackAPI:
     ) -> None:
         """
         Submete um sinal para aprovacao do trader
-        
+
         Args:
             signal: Sinal a ser aprovado
             timeout_seconds: Timeout para decisao (None = nao expira)
         """
         self.pending_signals[signal.signal_id] = signal
-        
+
         # Callback para notificar traders conectados
         asyncio.create_task(
             self.trigger_callback(
@@ -96,13 +96,13 @@ class TraderFeedbackAPI:
                 },
             )
         )
-        
+
         # Configurar timeout se especificado
         if timeout_seconds:
             asyncio.create_task(
                 self._signal_timeout(signal.signal_id, timeout_seconds)
             )
-    
+
     async def approve_signal(
         self,
         signal_id: str,
@@ -110,22 +110,22 @@ class TraderFeedbackAPI:
     ) -> bool:
         """
         Trader aprova um sinal
-        
+
         Args:
             signal_id: ID do sinal
             trader_id: ID do trader que aprovou
-            
+
         Returns:
             True se aprovacao foi registrada
         """
         if signal_id not in self.pending_signals:
             return False
-        
+
         signal = self.pending_signals.pop(signal_id)
         signal.status = signal.status.APPROVED
         signal.approved_by = trader_id
         signal.approval_timestamp = datetime.now()
-        
+
         await self.trigger_callback(
             "signal_approved",
             {
@@ -134,9 +134,9 @@ class TraderFeedbackAPI:
                 "approval_timestamp": signal.approval_timestamp.isoformat(),
             },
         )
-        
+
         return True
-    
+
     async def reject_signal(
         self,
         signal_id: str,
@@ -145,21 +145,21 @@ class TraderFeedbackAPI:
     ) -> bool:
         """
         Trader rejeita um sinal
-        
+
         Args:
             signal_id: ID do sinal
             trader_id: ID do trader que rejeitou
             reason: Motivo da rejeicao
-            
+
         Returns:
             True se rejeicao foi registrada
         """
         if signal_id not in self.pending_signals:
             return False
-        
+
         signal = self.pending_signals.pop(signal_id)
         signal.status = signal.status.REJECTED
-        
+
         await self.trigger_callback(
             "signal_rejected",
             {
@@ -169,9 +169,9 @@ class TraderFeedbackAPI:
                 "rejection_timestamp": datetime.now().isoformat(),
             },
         )
-        
+
         return True
-    
+
     async def submit_feedback(
         self,
         signal_id: str,
@@ -183,7 +183,7 @@ class TraderFeedbackAPI:
     ) -> TraderFeedback:
         """
         Trader submete feedback sobre um sinal
-        
+
         Args:
             signal_id: ID do sinal
             trader_id: ID do trader
@@ -191,7 +191,7 @@ class TraderFeedbackAPI:
             rating: Rating (1-5)
             comment: Comentario
             suggestions: Sugestoes (opcional)
-            
+
         Returns:
             TraderFeedback registrado
         """
@@ -205,27 +205,27 @@ class TraderFeedbackAPI:
             comment=comment,
             suggestions=suggestions or {},
         )
-        
+
         await self.trigger_callback(
             "feedback_submitted",
             asdict(feedback),
         )
-        
+
         return feedback
-    
+
     async def _signal_timeout(self, signal_id: str, timeout_seconds: float) -> None:
         """
         Timeout para decisao do trader sobre sinal
-        
+
         Args:
             signal_id: ID do sinal
             timeout_seconds: Segundos de timeout
         """
         await asyncio.sleep(timeout_seconds)
-        
+
         if signal_id in self.pending_signals:
             signal = self.pending_signals.pop(signal_id)
-            
+
             # Auto-reject se timeout
             await self.trigger_callback(
                 "signal_timeout",
@@ -235,47 +235,47 @@ class TraderFeedbackAPI:
                     "timeout_seconds": timeout_seconds,
                 },
             )
-    
+
     def get_pending_signals(self) -> Dict[str, Signal]:
         """
         Obtem todos sinais pendentes de aprovacao
-        
+
         Returns:
             Dicionario de sinais pendentes
         """
         return self.pending_signals.copy()
-    
+
     def get_pending_count(self) -> int:
         """
         Obtem quantidade de sinais pendentes
-        
+
         Returns:
             Quantidade de sinais aguardando aprovacao
         """
         return len(self.pending_signals)
-    
+
     def register_trader(self, trader_id: str) -> None:
         """
         Registra trader conectado
-        
+
         Args:
             trader_id: ID do trader
         """
         self.clients.add(trader_id)
-    
+
     def unregister_trader(self, trader_id: str) -> None:
         """
         Desregistra trader desconectado
-        
+
         Args:
             trader_id: ID do trader
         """
         self.clients.discard(trader_id)
-    
+
     def get_connected_traders(self) -> Set[str]:
         """
         Obtem lista de traders conectados
-        
+
         Returns:
             Set com IDs dos traders conectados
         """

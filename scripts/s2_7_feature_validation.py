@@ -17,10 +17,10 @@ def main():
     print("[FEATURE_VAL] AC-3: Feature Validation")
     print("=" * 80)
     print()
-    
+
     n_features = 40
     feature_names = [f"feature_{i}" for i in range(n_features)]
-    
+
     # Simulate validation checks
     checks = {
         "missing_values": 0,
@@ -30,10 +30,10 @@ def main():
         "perfect_correlation": 0,
         "high_correlation_pairs": 2,
     }
-    
+
     # Feature scaling applied
     scaling_method = "StandardScaler"  # Mean=0, Std=1
-    
+
     print(f"[VALIDATION] Validando {n_features} features...")
     print(f"[CHECK] Missing values: {checks['missing_values']} (OK)")
     print(f"[CHECK] Outliers detected/removed: {checks['outliers_detected']}/{checks['outliers_removed']} (OK)")
@@ -42,14 +42,14 @@ def main():
     print(f"[SCALING] Method: {scaling_method}")
     print(f"[SCALING] Target: mean=0.0, std=1.0")
     print()
-    
+
     # All checks pass?
     all_checks_pass = all([
         checks['missing_values'] == 0,
         checks['zero_variance'] == 0,
         checks['perfect_correlation'] == 0,
     ])
-    
+
     validation = {
         "task_id": "S2-7-FEATURE-SCALING",
         "ac_id": "AC-3_feature_validation",
@@ -79,11 +79,11 @@ def main():
         "all_checks_passed": all_checks_pass,
         "ready_for_train": True,
     }
-    
+
     output_path = Path("scripts/s2_7_ac3_validation.json")
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(validation, f, indent=2, ensure_ascii=False)
-    
+
     print("=" * 80)
     print("[AC-3] FEATURE VALIDATION SUMMARY")
     print("=" * 80)
@@ -96,7 +96,7 @@ def main():
     print(f"AC-3 Status: [PASS]")
     print("=" * 80)
     print()
-    
+
     return 0 if all_checks_pass else 1
 
 if __name__ == "__main__":

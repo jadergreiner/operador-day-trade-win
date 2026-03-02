@@ -17,32 +17,32 @@ def main():
     print("[FEATURE_SEL] AC-2: Feature Selection")
     print("=" * 80)
     print()
-    
+
     # Simulate feature importance ranking
     n_total_features = 65
     feature_names = [f"feature_{i}" for i in range(n_total_features)]
-    
+
     # Simulate importance scores (0-1)
     importance_scores = np.random.uniform(0.2, 1.0, n_total_features)
     ranked_indices = np.argsort(importance_scores)[::-1]
-    
+
     # Select top 40 features
     n_selected = 40
     selected_indices = ranked_indices[:n_selected]
     selected_features = [feature_names[i] for i in selected_indices]
     selected_importance = importance_scores[selected_indices]
-    
+
     # Calculate mutual information (simulated)
     top_5_mi = np.sort(importance_scores)[-5:][::-1]
     mean_mi = np.mean(importance_scores[selected_indices])
-    
+
     print(f"[SELECTION] Ranqueando {n_total_features} features...")
     print(f"[SELECTION] Selecionando top {n_selected}...")
     print(f"[STATS] Top 5 mutual info: {[f'{m:.4f}' for m in top_5_mi]}")
     print(f"[STATS] Avg importance (selected): {mean_mi:.4f}")
     print(f"[ESTIMATE] Performance gain: +1.5-2.5% F1 esperado")
     print()
-    
+
     validation = {
         "task_id": "S2-7-FEATURE-SCALING",
         "ac_id": "AC-2_feature_selection",
@@ -69,11 +69,11 @@ def main():
             "memory_reduction_pct": 35,
         }
     }
-    
+
     output_path = Path("scripts/s2_7_ac2_validation.json")
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(validation, f, indent=2, ensure_ascii=False)
-    
+
     print("=" * 80)
     print("[AC-2] FEATURE SELECTION SUMMARY")
     print("=" * 80)
@@ -86,7 +86,7 @@ def main():
     print(f"AC-2 Status: [PASS]")
     print("=" * 80)
     print()
-    
+
     return 0
 
 if __name__ == "__main__":

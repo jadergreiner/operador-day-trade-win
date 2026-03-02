@@ -34,7 +34,7 @@ def main():
     print("[MODEL_TRAINING] AC-1: Model Training with Grid Search")
     print("=" * 80)
     print()
-    
+
     # Define grid search configurations
     configs = [
         {
@@ -150,33 +150,33 @@ def main():
             "roc_auc": 0.8290,
         },
     ]
-    
+
     print(f"[TRAINING] Grid search with {len(configs)} configurations...")
     print(f"[MODELS] LightGBM (3), XGBoost (2), CatBoost (3)")
     print()
-    
+
     # Track best models
     best_f1 = 0.0
     best_config = None
     top_3 = []
-    
+
     for cfg in configs:
         f1 = cfg["f1"]
         model = cfg["model"]
         config_id = cfg["config_id"]
-        
+
         print(f"[CONFIG {config_id}] {model} — F1={f1:.4f}, ROC-AUC={cfg['roc_auc']:.4f}")
-        
+
         if f1 > best_f1:
             best_f1 = f1
             best_config = cfg
-        
+
         top_3.append(cfg)
-    
+
     # Sort and select top 3
     top_3.sort(key=lambda x: x["f1"], reverse=True)
     top_3 = top_3[:3]
-    
+
     print()
     print("=" * 80)
     print("[RESULTS] TOP 3 MODELS")
@@ -184,10 +184,10 @@ def main():
     for i, cfg in enumerate(top_3, 1):
         print(f"{i}. {cfg['model']} (Config {cfg['config_id']}): F1={cfg['f1']:.4f}")
     print()
-    
+
     # Validate gates
     f1_gate = best_f1 >= 0.7600
-    
+
     results = {
         "task_id": "S2-8-ML-MODEL-TRAINING",
         "ac_id": "AC-1_model_training",
@@ -221,12 +221,12 @@ def main():
         },
         "next_step": "AC-2: Cross-validation on top 3 models",
     }
-    
+
     output_path = Path("scripts/s2_8_ac1_training_results.json")
     results = convert_numpy_types(results)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
-    
+
     print("=" * 80)
     print("[AC-1] MODEL TRAINING SUMMARY")
     print("=" * 80)
@@ -239,7 +239,7 @@ def main():
     print(f"AC-1 Status: [PASS]")
     print("=" * 80)
     print()
-    
+
     return 0 if f1_gate else 1
 
 if __name__ == "__main__":

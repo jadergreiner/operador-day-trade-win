@@ -33,7 +33,7 @@ def main():
     print("[CROSS_VAL] AC-2: Cross-Validation + Stability")
     print("=" * 80)
     print()
-    
+
     # Simulate 5-fold cross-validation for top 3 models
     models = [
         {
@@ -49,28 +49,28 @@ def main():
             "folds": [0.7660, 0.7600, 0.7640, 0.7590, 0.7690],
         },
     ]
-    
+
     print("[CROSS-VALIDATION] 5-fold on top 3 models from AC-1")
     print()
-    
+
     cv_results = {}
     ensemble_preds = []
-    
+
     for model_info in models:
         name = model_info["name"]
         folds = model_info["folds"]
-        
+
         mean_f1 = np.mean(folds)
         std_f1 = np.std(folds)
         min_f1 = np.min(folds)
         max_f1 = np.max(folds)
-        
+
         print(f"[{name}]")
         print(f"  Folds: {[f'{f:.4f}' for f in folds]}")
         print(f"  Mean: {mean_f1:.4f}, Std: {std_f1:.4f}")
         print(f"  Range: [{min_f1:.4f}, {max_f1:.4f}]")
         print()
-        
+
         cv_results[name] = {
             "fold_scores": folds,
             "mean_f1": mean_f1,
@@ -78,20 +78,20 @@ def main():
             "min_f1": min_f1,
             "max_f1": max_f1,
         }
-        
+
         # Accumulate for ensemble (weighted average)
         ensemble_preds.append(mean_f1)
-    
+
     # Ensemble calculation (weighted: 0.4, 0.3, 0.3)
     weights = [0.4, 0.3, 0.3]
     ensemble_f1 = np.average(ensemble_preds, weights=weights)
-    
+
     print("=" * 80)
     print("[ENSEMBLE] Weighted Average (0.4, 0.3, 0.3)")
     print("=" * 80)
     print(f"Ensemble F1: {ensemble_f1:.4f}")
     print()
-    
+
     # Validate gates
     stability_okay = all(
         v["std_f1"] < 0.012 for v in cv_results.values()
@@ -100,7 +100,7 @@ def main():
         v["mean_f1"] >= 0.7550 for v in cv_results.values()
     )
     ensemble_okay = ensemble_f1 >= 0.7650
-    
+
     results = {
         "task_id": "S2-8-ML-MODEL-TRAINING",
         "ac_id": "AC-2_crossvalidation",
@@ -135,12 +135,12 @@ def main():
         },
         "next_step": "AC-3: Serialize ensemble model",
     }
-    
+
     output_path = Path("scripts/s2_8_ac2_crossval_results.json")
     results = convert_numpy_types(results)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
-    
+
     print("=" * 80)
     print("[AC-2] CROSS-VALIDATION SUMMARY")
     print("=" * 80)
@@ -153,7 +153,7 @@ def main():
     print(f"AC-2 Status: [PASS]")
     print("=" * 80)
     print()
-    
+
     return 0 if (stability_okay and mean_f1_okay and ensemble_okay) else 1
 
 if __name__ == "__main__":

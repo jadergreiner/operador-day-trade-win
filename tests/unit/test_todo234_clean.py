@@ -219,7 +219,7 @@ async def test_position_monitoring_loop_stop_loss_trigger(executor, mt5_adapter_
     mt5_adapter_mock.close_position = AsyncMock(return_value={"success": True})
 
     await executor.monitor_positions()
-    
+
     pnl_value = executor.current_positions[0]["pnl"]
     assert pnl_value <= -1000, f"PnL should trigger SL: {pnl_value}"
 
@@ -238,7 +238,7 @@ async def test_position_monitoring_loop_take_profit_trigger(executor, mt5_adapte
     mt5_adapter_mock.close_position = AsyncMock(return_value={"success": True})
 
     await executor.monitor_positions()
-    
+
     pnl_value = executor.current_positions[0]["pnl"]
     assert pnl_value >= 5000, f"PnL should trigger TP: {pnl_value}"
 
@@ -269,7 +269,7 @@ async def test_execute_order_with_no_risk_processor(mt5_adapter_mock):
         risk_processor=Mock(),
         mt5_adapter=mt5_adapter_mock
     )
-    
+
     order = ExecutionOrder(
         order_id="test-001",
         symbol="WINFUT",
@@ -278,9 +278,9 @@ async def test_execute_order_with_no_risk_processor(mt5_adapter_mock):
         entry_price=75000
     )
     mt5_adapter_mock.send_order = AsyncMock(return_value="ticket-001")
-    
+
     result = await executor.execute_order(order)
-    
+
     assert result["status"] == "APPROVED"
     assert mt5_adapter_mock.send_order.called
 
@@ -289,9 +289,9 @@ async def test_execute_order_with_no_risk_processor(mt5_adapter_mock):
 async def test_monitor_positions_exception(executor):
     """Test monitor_positions graceful exception handling"""
     executor.mt5_adapter.get_positions = AsyncMock(side_effect=Exception("Connection lost"))
-    
+
     result = await executor.monitor_positions()
-    
+
     assert result is None
 
 
@@ -299,9 +299,9 @@ async def test_monitor_positions_exception(executor):
 async def test_execute_order_exception_in_gates(executor, sample_order):
     """Test execute_order exception during gate validation"""
     executor.risk_processor.check_capital_limits = Mock(side_effect=Exception("Processor error"))
-    
+
     result = await executor.execute_order(sample_order)
-    
+
     assert result["status"] == "ERROR"
     assert result["decision"] == "ERROR_EXCEPTION"
 
@@ -310,9 +310,9 @@ async def test_execute_order_exception_in_gates(executor, sample_order):
 async def test_position_monitoring_loop_no_positions(executor, mt5_adapter_mock):
     """Test monitoring loop with empty position list"""
     executor.mt5_adapter.get_positions = AsyncMock(return_value=[])
-    
+
     result = await executor.monitor_positions()
-    
+
     assert result["positions_count"] == 0
     assert result["total_pnl"] == 0.0
 
@@ -323,7 +323,7 @@ async def test_execute_order_short_position(executor, mt5_adapter_mock, risk_pro
     executor.risk_processor.check_capital_limits = Mock(return_value={"approved": True})
     executor.risk_processor.check_correlation = Mock(return_value={"approved": True})
     executor.risk_processor.check_volatility_bands = Mock(return_value={"approved": True})
-    
+
     order = ExecutionOrder(
         order_id="short-001",
         symbol="DOLFUT",
@@ -332,9 +332,9 @@ async def test_execute_order_short_position(executor, mt5_adapter_mock, risk_pro
         entry_price=5.50
     )
     mt5_adapter_mock.send_order = AsyncMock(return_value="ticket-short-001")
-    
+
     result = await executor.execute_order(order)
-    
+
     assert result["status"] == "APPROVED"
     assert result["mt5_response"]["ticket"] == "ticket-short-001"
 
@@ -350,9 +350,9 @@ async def test_monitor_positions_with_short(executor, mt5_adapter_mock):
     )
     mt5_adapter_mock.get_positions = AsyncMock(return_value=[pos_short])
     mt5_adapter_mock.get_current_price = AsyncMock(return_value=5.30)
-    
+
     result = await executor.monitor_positions()
-    
+
     assert result["positions"][0]["type"] == "SELL"
     assert result["positions"][0]["pnl"] == (5.50 - 5.30) * 5
 
@@ -361,16 +361,16 @@ async def test_monitor_positions_with_short(executor, mt5_adapter_mock):
 async def test_position_monitoring_loop_monitor_None_return(executor, mt5_adapter_mock):
     """Test monitoring loop when monitor_positions returns None"""
     executor.mt5_adapter.get_positions = AsyncMock(side_effect=Exception("Error"))
-    
+
     task = asyncio.create_task(executor.position_monitoring_loop())
     await asyncio.sleep(0.15)
     await executor.stop_monitoring()
-    
+
     try:
         await asyncio.wait_for(task, timeout=2.0)
     except asyncio.TimeoutError:
         pass
-    
+
     assert executor._monitoring_active is False
 
 

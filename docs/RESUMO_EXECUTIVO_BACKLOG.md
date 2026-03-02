@@ -1,8 +1,8 @@
 # Resumo Executivo — Backlog Unificado
 
-**Data:** 02/03/2026  
-**Status:** ✅ CONSOLIDAÇÃO COMPLETA  
-**Proprietário:** Product Owner (GitHub Copilot)  
+**Data:** 02/03/2026
+**Status:** ✅ CONSOLIDAÇÃO COMPLETA
+**Proprietário:** Product Owner (GitHub Copilot)
 
 ---
 
@@ -69,8 +69,8 @@ priorizado:
 | **P3** | 3 | TBD | 📋 Futuro |
 | **TOTAL** | 15 | 664h+ | — |
 
-**Squad Alocado:** 11 personas  
-**Gates:** 2 (GATE 1 + GATE 2)  
+**Squad Alocado:** 11 personas
+**Gates:** 2 (GATE 1 + GATE 2)
 
 ---
 
@@ -159,11 +159,11 @@ START → P0-1 + P1-1 (paralelos)
 
 ## 🔐 Governança
 
-**Propriedade:** Product Owner (GitHub Copilot)  
-**Versão:** 2.0  
-**Frequência de Revisão:** A cada conclusão de P0/P1  
-**Atualização:** Central em BACKLOG_UNIFICADO.md  
-**Sincronização:** Automática via CI/CD  
+**Propriedade:** Product Owner (GitHub Copilot)
+**Versão:** 2.0
+**Frequência de Revisão:** A cada conclusão de P0/P1
+**Atualização:** Central em BACKLOG_UNIFICADO.md
+**Sincronização:** Automática via CI/CD
 
 ---
 

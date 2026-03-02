@@ -1,7 +1,7 @@
 # Backlog — Operador Day Trade WIN
 
 > ⚠️ **ARQUIVO CONSOLIDADO:**
-> 
+>
 > Este arquivo foi consolidado em:
 >
 > **→ [docs/BACKLOG_UNIFICADO.md](BACKLOG_UNIFICADO.md) ←**
@@ -77,6 +77,6 @@ próxima atividade não-iniciada mais importante.
 
 ---
 
-**Última Atualização:** 02/03/2026  
-**Proprietário:** Product Owner (GitHub Copilot)  
+**Última Atualização:** 02/03/2026
+**Proprietário:** Product Owner (GitHub Copilot)
 **Versão:** 2.0

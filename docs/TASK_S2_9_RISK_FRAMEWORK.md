@@ -1,9 +1,9 @@
 # S2-9: Risk Framework Validation — Capital, Correlation, Volatility, Override Management
 
-**Task ID:** S2-9-RISK-FRAMEWORK-VALIDATION  
-**Sprint:** Sprint 2 (Execução: 13/03-16/03/2026)  
-**Owner:** Risk Engineer (120h allocated)  
-**Blocker For:** S2-10 Orders Executor (17/03 start)  
+**Task ID:** S2-9-RISK-FRAMEWORK-VALIDATION
+**Sprint:** Sprint 2 (Execução: 13/03-16/03/2026)
+**Owner:** Risk Engineer (120h allocated)
+**Blocker For:** S2-10 Orders Executor (17/03 start)
 **Capital Authorization:** Unlocked R$ 100k for Phase 1 operations
 
 ---
@@ -48,9 +48,9 @@ Order Flow:
 ## 📋 Acceptance Criteria (4 ACs)
 
 ### AC-1: Capital Limits Validator
-**Owner:** Risk Engineer  
-**Timeline:** 13/03-14/03 (16h)  
-**Inputs:** Current capital, position sizes, daily P&L  
+**Owner:** Risk Engineer
+**Timeline:** 13/03-14/03 (16h)
+**Inputs:** Current capital, position sizes, daily P&L
 **Process:**
 - Implement capital adequacy check
 - Max position: 5% of total capital per trade
@@ -72,9 +72,9 @@ Order Flow:
 ---
 
 ### AC-2: Correlation Checker
-**Owner:** Risk Engineer  
-**Timeline:** 14/03-15/03 (16h)  
-**Input:** Portfolio of 10-30 positions  
+**Owner:** Risk Engineer
+**Timeline:** 14/03-15/03 (16h)
+**Input:** Portfolio of 10-30 positions
 **Process:**
 - Calculate correlation matrix of active positions
 - Threshold: 70% max (excessive concentration risk)
@@ -96,9 +96,9 @@ Order Flow:
 ---
 
 ### AC-3: Volatility Bands (Circuit Breakers)
-**Owner:** Risk Engineer  
-**Timeline:** 15/03-16/03 (16h)  
-**Input:** Daily P&L, volatility metrics  
+**Owner:** Risk Engineer
+**Timeline:** 15/03-16/03 (16h)
+**Input:** Daily P&L, volatility metrics
 **Process:**
 - Level 1 (-3%): Alert to trader, continue trading
 - Level 2 (-5%): Slow mode (50% ticket size, 90% ML confidence req)
@@ -120,9 +120,9 @@ Order Flow:
 ---
 
 ### AC-4: Manual Override Framework
-**Owner:** Risk Engineer  
-**Timeline:** 15/03-16/03 (16h)  
-**Input:** User actions (trader/CIO/CFO)  
+**Owner:** Risk Engineer
+**Timeline:** 15/03-16/03 (16h)
+**Input:** User actions (trader/CIO/CFO)
 **Process:**
 - Layer 1 (Trader): Override any order (100% veto power)
   - Can accept/reject orders
@@ -225,6 +225,6 @@ Order Flow:
 
 ---
 
-**Next Checkpoint:** s2_9_risk_framework_master.py execution  
-**Gate Blocker:** S2-10 Orders Executor E2E (17/03 start)  
+**Next Checkpoint:** s2_9_risk_framework_master.py execution
+**Gate Blocker:** S2-10 Orders Executor E2E (17/03 start)
 **Phase 1 Target:** 10/04/2026

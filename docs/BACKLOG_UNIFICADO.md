@@ -1,10 +1,10 @@
 # Backlog Unificado - Operador Day Trade WIN
 
-**Versão:** 2.0  
-**Data Atualização:** 02/03/2026  
-**Fonte de Verdade:** Este arquivo é a única fonte de verdade para priorização de tarefas  
-**Formato:** Priority-First (sem datas fixas)  
-**Status:** Pronto para execução  
+**Versão:** 2.0
+**Data Atualização:** 02/03/2026
+**Fonte de Verdade:** Este arquivo é a única fonte de verdade para priorização de tarefas
+**Formato:** Priority-First (sem datas fixas)
+**Status:** Pronto para execução
 
 > **Instruções para Solicitação de Próxima Tarefa:**
 > Use este documento ao solicitar a próxima atividade
@@ -17,12 +17,12 @@
 
 ### P0-1: ENG-003 API REST MT5 (Infraestrutura)
 
-**Status:** 🟢 Pronto para começar  
-**Responsável:** Eng Sr  
-**Squad:** 3 Desenvolvedores Backend (4 pessoas)  
-**Horas:** 160h  
-**Desbloqueia:** P0-2 (ML-004)  
-**Prioridade:** 🔴 CRÍTICA  
+**Status:** 🟢 Pronto para começar
+**Responsável:** Eng Sr
+**Squad:** 3 Desenvolvedores Backend (4 pessoas)
+**Horas:** 160h
+**Desbloqueia:** P0-2 (ML-004)
+**Prioridade:** 🔴 CRÍTICA
 
 #### Entregas Esperadas:
 - Servidor FastAPI REST (async, alta performance)
@@ -84,13 +84,13 @@
 
 ### P0-2: ML-004 Backtest Estendido (252 Dias)
 
-**Status:** 🟡 Bloqueado (aguarda P0-1)  
-**Responsável:** Especialista ML  
-**Squad:** 2 pessoas (ML Expert + Data Scientist)  
-**Horas:** 88h  
-**Começa Quando:** P0-1 completo  
-**GATE 2 Decision Point:** Ativar R$ 100k Fase 2  
-**Prioridade:** 🔴 CRÍTICA  
+**Status:** 🟡 Bloqueado (aguarda P0-1)
+**Responsável:** Especialista ML
+**Squad:** 2 pessoas (ML Expert + Data Scientist)
+**Horas:** 88h
+**Começa Quando:** P0-1 completo
+**GATE 2 Decision Point:** Ativar R$ 100k Fase 2
+**Prioridade:** 🔴 CRÍTICA
 
 #### Entregas Esperadas:
 - Backtest histórico 252 dias (ano completo)
@@ -149,12 +149,12 @@ SE Qualquer critério = FAIL:
 
 ### P1-1: ML-003 Análise Features
 
-**Status:** 🟢 Pronto para começar  
-**Responsável:** Especialista ML  
-**Squad:** 2 pessoas (ML Expert + Data Scientist)  
-**Horas:** 88h  
-**Dependências:** Nenhuma (paralelo com P0-1)  
-**Prioridade:** 🟡 IMPORTANTE  
+**Status:** 🟢 Pronto para começar
+**Responsável:** Especialista ML
+**Squad:** 2 pessoas (ML Expert + Data Scientist)
+**Horas:** 88h
+**Dependências:** Nenhuma (paralelo com P0-1)
+**Prioridade:** 🟡 IMPORTANTE
 
 #### Entregas Esperadas:
 - Valores SHAP (top 10 features ordenadas)
@@ -190,12 +190,12 @@ SE Qualquer critério = FAIL:
 
 ### P1-2: Dashboard Ordens Real-Time
 
-**Status:** 🟢 Pronto para começar  
-**Responsável:** Eng Sr + Dev-Backend  
-**Squad:** 2-3 pessoas  
-**Horas:** 40h  
-**Dependências:** P0-1 (API REST endpoints)  
-**Prioridade:** 🟡 IMPORTANTE  
+**Status:** 🟢 Pronto para começar
+**Responsável:** Eng Sr + Dev-Backend
+**Squad:** 2-3 pessoas
+**Horas:** 40h
+**Dependências:** P0-1 (API REST endpoints)
+**Prioridade:** 🟡 IMPORTANTE
 
 #### Entregas Esperadas:
 - Dashboard integrado mostrando todas ordens tempo real
@@ -223,11 +223,11 @@ SE Qualquer critério = FAIL:
 
 ### P1-3: Autenticação OAuth 2.0
 
-**Status:** 🟢 Pronto para começar  
-**Responsável:** Dev-Backend  
-**Squad:** 2 pessoas  
-**Horas:** 40h  
-**Prioridade:** 🟡 IMPORTANTE  
+**Status:** 🟢 Pronto para começar
+**Responsável:** Dev-Backend
+**Squad:** 2 pessoas
+**Horas:** 40h
+**Prioridade:** 🟡 IMPORTANTE
 
 #### Entregas Esperadas:
 - Login OAuth 2.0 (email/password)
@@ -253,11 +253,11 @@ SE Qualquer critério = FAIL:
 
 ### P1-4: Fila Async RabbitMQ
 
-**Status:** 🟢 Pronto para começar  
-**Responsável:** Dev-Backend  
-**Squad:** 2 pessoas  
-**Horas:** 40h  
-**Prioridade:** 🟡 IMPORTANTE  
+**Status:** 🟢 Pronto para começar
+**Responsável:** Dev-Backend
+**Squad:** 2 pessoas
+**Horas:** 40h
+**Prioridade:** 🟡 IMPORTANTE
 
 #### Entregas Esperadas:
 - Producer async (envio fila)
@@ -285,11 +285,11 @@ SE Qualquer critério = FAIL:
 
 ### P1-5: WebSocket Position Monitoring
 
-**Status:** 🟢 Pronto para começar  
-**Responsável:** Dev-Backend  
-**Squad:** 1 pessoa  
-**Horas:** 40h  
-**Prioridade:** 🟡 IMPORTANTE  
+**Status:** 🟢 Pronto para começar
+**Responsável:** Dev-Backend
+**Squad:** 1 pessoa
+**Horas:** 40h
+**Prioridade:** 🟡 IMPORTANTE
 
 #### Entregas Esperadas:
 - WebSocket endpoint posições tempo real
@@ -315,11 +315,11 @@ SE Qualquer critério = FAIL:
 
 ### P1-6: Position Monitoring Automático
 
-**Status:** 🟢 Pronto para começar  
-**Responsável:** Dev-Backend  
-**Squad:** 1 pessoa  
-**Horas:** 32h  
-**Prioridade:** 🟡 IMPORTANTE  
+**Status:** 🟢 Pronto para começar
+**Responsável:** Dev-Backend
+**Squad:** 1 pessoa
+**Horas:** 32h
+**Prioridade:** 🟡 IMPORTANTE
 
 #### Entregas Esperadas:
 - Monitoramento posições abertas
@@ -346,10 +346,10 @@ SE Qualquer critério = FAIL:
 
 ### P2-1: Retry Logic Exponencial
 
-**Status:** 📋 Planejado  
-**Responsável:** Dev-Backend  
-**Horas:** 32h  
-**Prioridade:** 🟢 MÉDIO  
+**Status:** 📋 Planejado
+**Responsável:** Dev-Backend
+**Horas:** 32h
+**Prioridade:** 🟢 MÉDIO
 
 #### Entregas:
 - Retry 3x com backoff exponencial (1s, 2s, 4s)
@@ -362,10 +362,10 @@ SE Qualquer critério = FAIL:
 
 ### P2-2: Capital Decision Framework
 
-**Status:** 📋 Planejado  
-**Responsável:** CFO + ML Expert  
-**Horas:** 40h  
-**Prioridade:** 🟢 MÉDIO  
+**Status:** 📋 Planejado
+**Responsável:** CFO + ML Expert
+**Horas:** 40h
+**Prioridade:** 🟢 MÉDIO
 
 #### Entregas:
 - GATE 2 decision framework
@@ -379,10 +379,10 @@ SE Qualquer critério = FAIL:
 
 ### P2-3: Performance Benchmarking
 
-**Status:** 📋 Planejado  
-**Responsável:** Eng Sr + QA  
-**Horas:** 40h  
-**Prioridade:** 🟢 MÉDIO  
+**Status:** 📋 Planejado
+**Responsável:** Eng Sr + QA
+**Horas:** 40h
+**Prioridade:** 🟢 MÉDIO
 
 #### Entregas:
 - Load testing (carga, estresse)
@@ -396,10 +396,10 @@ SE Qualquer critério = FAIL:
 
 ### P2-4: Staging Deployment
 
-**Status:** 📋 Planejado  
-**Responsável:** DevOps  
-**Horas:** 32h  
-**Prioridade:** 🟢 MÉDIO  
+**Status:** 📋 Planejado
+**Responsável:** DevOps
+**Horas:** 32h
+**Prioridade:** 🟢 MÉDIO
 
 #### Entregas:
 - Ambiente staging idêntico produção
@@ -415,8 +415,8 @@ SE Qualquer critério = FAIL:
 
 ### P3-1: Fontes Externas (Dados Macro)
 
-**Status:** 📋 Futuro  
-**Prioridade:** 🟢 BAIXO  
+**Status:** 📋 Futuro
+**Prioridade:** 🟢 BAIXO
 
 **Entregas:**
 - [ ] Adicionar integração fontes externas
@@ -431,8 +431,8 @@ SE Qualquer critério = FAIL:
 
 ### P3-2: Analytics Avançadas
 
-**Status:** 📋 Futuro  
-**Prioridade:** 🟢 BAIXO  
+**Status:** 📋 Futuro
+**Prioridade:** 🟢 BAIXO
 
 **Entregas:**
 - [ ] Dashboard analytics completo
@@ -446,8 +446,8 @@ SE Qualquer critério = FAIL:
 
 ### P3-3: Mobile App
 
-**Status:** 📋 Futuro  
-**Prioridade:** 🟢 BAIXO  
+**Status:** 📋 Futuro
+**Prioridade:** 🟢 BAIXO
 
 **Entregas:**
 - [ ] App mobile (iOS/Android)
@@ -462,13 +462,13 @@ SE Qualquer critério = FAIL:
 
 ### P4-1: Staging Deployment (01-05/03)
 
-**Status:** 📋 Planejado (aguarda GATE 2 PASS)  
-**Responsável:** Eng Sr + DevOps  
-**Squad:** 3 pessoas (DevOps + Eng Sr + Tech Writer)  
-**Horas:** 40h  
-**Começa Quando:** GATE 2 aprovado (~26/02)  
-**Gate Decision:** Gate 4.1 (05/03 18:00) Staging Readiness  
-**Prioridade:** 🔴 CRÍTICA  
+**Status:** 📋 Planejado (aguarda GATE 2 PASS)
+**Responsável:** Eng Sr + DevOps
+**Squad:** 3 pessoas (DevOps + Eng Sr + Tech Writer)
+**Horas:** 40h
+**Começa Quando:** GATE 2 aprovado (~26/02)
+**Gate Decision:** Gate 4.1 (05/03 18:00) Staging Readiness
+**Prioridade:** 🔴 CRÍTICA
 
 #### Entregas Esperadas:
 - Azure Resource Group (8 recursos)
@@ -504,12 +504,12 @@ SE Qualquer critério = FAIL:
 
 ### P4-2: UAT & Approval (06-09/03)
 
-**Status:** 📋 Planejado (após P4-1 completo)  
-**Responsável:** Trader + CIO + CFO  
-**Squad:** 5 pessoas (Trader, CIO, CFO, Eng Sr support)  
-**Horas:** 24h  
-**Gate Decision:** Gate 4.2 (10/03 09:00) Go-Live Ready  
-**Prioridade:** 🔴 CRÍTICA  
+**Status:** 📋 Planejado (após P4-1 completo)
+**Responsável:** Trader + CIO + CFO
+**Squad:** 5 pessoas (Trader, CIO, CFO, Eng Sr support)
+**Horas:** 24h
+**Gate Decision:** Gate 4.2 (10/03 09:00) Go-Live Ready
+**Prioridade:** 🔴 CRÍTICA
 
 #### Entregas Esperadas:
 - Trader acceptance testing (6 test cases)
@@ -544,12 +544,12 @@ SE Qualquer critério = FAIL:
 
 ### P4-3: Go-Live Production (10/03)
 
-**Status:** 📋 Planejado (após P4-2 completo)  
-**Responsável:** Eng Sr + DevOps  
-**Squad:** 4 pessoas (Eng Sr, DevOps, Trader on-call)  
-**Horas:** 8h  
-**Go-Live Time:** 10/03 09:30 BRT  
-**Prioridade:** 🔴 CRÍTICA  
+**Status:** 📋 Planejado (após P4-2 completo)
+**Responsável:** Eng Sr + DevOps
+**Squad:** 4 pessoas (Eng Sr, DevOps, Trader on-call)
+**Horas:** 8h
+**Go-Live Time:** 10/03 09:30 BRT
+**Prioridade:** 🔴 CRÍTICA
 
 #### Entregas Esperadas:
 - Production infrastructure deployment
@@ -682,9 +682,9 @@ REGRAS:
 
 ### GATE 1 (Checkpoint)
 **Quando:** P0-1 + ML-003 completados (sem datas,
-prioridade)  
-**Quem:** CTO + Head Finanças + Product Owner  
-**Decisão:** GO/NO-GO para P1-x  
+prioridade)
+**Quem:** CTO + Head Finanças + Product Owner
+**Decisão:** GO/NO-GO para P1-x
 
 **Critérios:**
 - ✅ 8/8 CA de P0-1 passando
@@ -696,9 +696,9 @@ prioridade)
 ---
 
 ### GATE 2 (Capital Decision)
-**Quando:** P0-2 (ML-004) completado  
-**Quem:** CFO + Board  
-**Decisão:** Ativar Phase 4? Ativar R$ 50k → R$ 100k?  
+**Quando:** P0-2 (ML-004) completado
+**Quem:** CFO + Board
+**Decisão:** Ativar Phase 4? Ativar R$ 50k → R$ 100k?
 
 **Critérios:**
 - ✅ Sharpe ≥ 1.0
@@ -713,10 +713,10 @@ prioridade)
 ---
 
 ### GATE 4.1 (Staging Readiness)
-**Quando:** P4-1 (Staging Deploy) completado  
-**Data:** 05/03 18:00  
-**Quem:** CTO + Eng Sr + QA Lead  
-**Decisão:** Staging ambiente pronto para UAT?  
+**Quando:** P4-1 (Staging Deploy) completado
+**Data:** 05/03 18:00
+**Quem:** CTO + Eng Sr + QA Lead
+**Decisão:** Staging ambiente pronto para UAT?
 
 **Critérios:**
 - ✅ 8/8 recursos Azure healthy
@@ -731,10 +731,10 @@ prioridade)
 ---
 
 ### GATE 4.2 (Go-Live Ready)
-**Quando:** P4-2 (UAT & Approval) completado  
-**Data:** 10/03 09:00  
-**Quem:** Trader + CIO + CFO  
-**Decisão:** Go-live production?  
+**Quando:** P4-2 (UAT & Approval) completado
+**Data:** 10/03 09:00
+**Quem:** Trader + CIO + CFO
+**Decisão:** Go-live production?
 
 **Critérios:**
 - ✅ Trader APPROVA
@@ -825,9 +825,9 @@ prioridade)
 
 ---
 
-**Última Atualização:** 03/03/2026  
-**Próxima Revisão:** Quando GATE 2 completo (Phase 4 kick-off)  
-**Proprietário:** Product Owner (GitHub Copilot)  
+**Última Atualização:** 03/03/2026
+**Próxima Revisão:** Quando GATE 2 completo (Phase 4 kick-off)
+**Proprietário:** Product Owner (GitHub Copilot)
 **Status:** ✅ BACKLOG COMPLETO (Sprint 2 + Phase 4)
 
 

@@ -1,9 +1,9 @@
 # S2-8: ML Model Training — Treinar com 40 Features Otimizadas
 
-**Task ID:** S2-8-ML-MODEL-TRAINING  
-**Sprint:** Sprint 2 (Execução: 06/03-12/03/2026)  
-**Owner:** ML Expert (140h allocated)  
-**Blocker For:** GATE 2 Checkpoint (12/03 17:00 BRT)  
+**Task ID:** S2-8-ML-MODEL-TRAINING
+**Sprint:** Sprint 2 (Execução: 06/03-12/03/2026)
+**Owner:** ML Expert (140h allocated)
+**Blocker For:** GATE 2 Checkpoint (12/03 17:00 BRT)
 **Capital Escalation Unlock:** R$ 50k → R$ 100k (pending Gate 2 approval)
 
 ---
@@ -34,9 +34,9 @@ readiness para produção.
 ## 📋 Acceptance Criteria (4 ACs)
 
 ### AC-1: Model Training (Grid Search)
-**Owner:** ML Expert  
-**Timeline:** 06/03-07/03 (16h)  
-**Input:** 40 features from S2-7, labeled dataset  
+**Owner:** ML Expert
+**Timeline:** 06/03-07/03 (16h)
+**Input:** 40 features from S2-7, labeled dataset
 **Process:**
 - Load dataset with 40 features
 - Define 10-parameter grid for LightGBM, XGBoost, CatBoost
@@ -58,9 +58,9 @@ readiness para produção.
 ---
 
 ### AC-2: Cross-Validation + Stability
-**Owner:** ML Expert  
-**Timeline:** 07/03-08/03 (16h)  
-**Input:** Best 3 models from AC-1  
+**Owner:** ML Expert
+**Timeline:** 07/03-08/03 (16h)
+**Input:** Best 3 models from AC-1
 **Process:**
 - Apply 5-fold cross-validation to each top model
 - Calculate mean F1, std dev across folds
@@ -82,9 +82,9 @@ readiness para produção.
 ---
 
 ### AC-3: Model Serialization (Pickle + ONNX)
-**Owner:** ML Expert  
-**Timeline:** 08/03-09/03 (16h)  
-**Input:** Best ensemble model from AC-2  
+**Owner:** ML Expert
+**Timeline:** 08/03-09/03 (16h)
+**Input:** Best ensemble model from AC-2
 **Process:**
 - Serialize model to pickle (.pkl)
 - Export model to ONNX format
@@ -107,9 +107,9 @@ readiness para produção.
 ---
 
 ### AC-4: Production Inference Test
-**Owner:** ML Expert  
-**Timeline:** 09/03-10/03 (16h)  
-**Input:** Serialized models from AC-3  
+**Owner:** ML Expert
+**Timeline:** 09/03-10/03 (16h)
+**Input:** Serialized models from AC-3
 **Process:**
 - Load pickled model in clean environment
 - Generate 100+ random samples

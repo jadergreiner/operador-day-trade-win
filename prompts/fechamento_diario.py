@@ -262,39 +262,16 @@ def _atualizar_sync_manifest(sintese: SinteseFechamento) -> None:
     manifest = _carregar_json(CAMINHO_SYNC)
     ts = sintese.captura.timestamp
 
-    if "sync_metadata" in manifest:
-        manifest["sync_metadata"]["last_update"] = ts
-        manifest["sync_metadata"]["status"] = "SYNCHRONIZED"
+    # Atualizar timestamp de última atualização
+    manifest["last_update"] = ts
+    manifest["last_health_check"] = ts
+    manifest["status"] = "synchronized"
 
-    if "documents" in manifest:
-        backlog_chave = "AGENTE_AUTONOMO_BACKLOG.md"
-        if backlog_chave in manifest["documents"]:
-            manifest["documents"][backlog_chave]["last_modified"] = ts
-            manifest["documents"][backlog_chave]["checksum"] = _checksum_arquivo(
-                CAMINHO_BACKLOG
-            )
-
-    if "health_check" in manifest:
-        manifest["health_check"]["last_health_check"] = ts
-        manifest["health_check"]["sync_status"] = "HEALTHY"
-
-    if "validation_checklist" in manifest:
-        manifest["validation_checklist"]["last_validation"] = ts
-        manifest["validation_checklist"]["validation_status"] = "PASSED"
-
-    for nome_doc in DOCUMENTOS_FECHAMENTO:
-        caminho_doc = RAIZ / "prompts" / nome_doc
-        if "documents" not in manifest:
-            manifest["documents"] = {}
-        if nome_doc not in manifest["documents"]:
-            manifest["documents"][nome_doc] = {
-                "version": "1.0.0",
-                "checksum": _checksum_arquivo(caminho_doc),
-                "last_modified": ts,
-                "related_docs": ["AGENTE_AUTONOMO_BACKLOG.md"],
-                "status": "ACTIVE",
-                "mandatory_sync_with": ["AGENTE_AUTONOMO_BACKLOG.md"],
-            }
+    # Se documents é uma lista, não fazer mais atualizações de documento individual
+    # pois a estrutura não o suporta dessa forma
+    if "documents" in manifest and isinstance(manifest["documents"], list):
+        # Apenas garantir que o manifest tem timestamp recente
+        return
 
     _salvar_json(CAMINHO_SYNC, manifest)
 

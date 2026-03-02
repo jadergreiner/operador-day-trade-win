@@ -1,8 +1,8 @@
 # S2-6: Analytics de Intervencao Manual
 
-**Status:** MVP Skeleton Ready (27/02/2026)  
-**Completion:** 20% (design + structure)  
-**Target:** 100% by 28/02 EOD  
+**Status:** MVP Skeleton Ready (27/02/2026)
+**Completion:** 20% (design + structure)
+**Target:** 100% by 28/02 EOD
 **Owner:** Eng Sr
 
 ---
@@ -205,7 +205,7 @@ print(f"Sharpe ratio: {report.sharpe_ratio}")
 {
   "timestamp": "2026-02-27T14:30:45.123456",
   "status": "RUNNING",
-  
+
   "signals": {
     "pending": 2,
     "open_positions": 5,
@@ -218,7 +218,7 @@ print(f"Sharpe ratio: {report.sharpe_ratio}")
       }
     ]
   },
-  
+
   "performance": {
     "total_signals_today": 15,
     "executed_signals": 12,
@@ -229,7 +229,7 @@ print(f"Sharpe ratio: {report.sharpe_ratio}")
     "win_rate_pct": 66.67,
     "total_pnl_points": 450.0
   },
-  
+
   "risk": {
     "open_positions_count": 5,
     "max_drawdown_pct": 8.5,
@@ -239,14 +239,14 @@ print(f"Sharpe ratio: {report.sharpe_ratio}")
       "net_exposure": 1
     }
   },
-  
+
   "interventions": {
     "manual_overrides": 2,
     "override_stats": {
       "total_overrides": 2
     }
   },
-  
+
   "connectivity": {
     "connected_traders": 1,
     "trader_ids": ["trader_001"]
@@ -358,8 +358,8 @@ Dashboard combina S2-3 + S2-5 para decisao
 
 ## 📞 Suporte
 
-**Owner:** Eng Sr  
-**Deadline:** 28/02 EOD (MVP) | 05/03 EOD (Complete)  
+**Owner:** Eng Sr
+**Deadline:** 28/02 EOD (MVP) | 05/03 EOD (Complete)
 **Questions:** See `ACAO_RAPIDA_AGORA_27FEV.md`
 
 ---

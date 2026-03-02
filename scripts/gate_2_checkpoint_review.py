@@ -62,10 +62,10 @@ def main():
         "scripts/s2_5_final_validation_report.json",
         "models/s2_5_ensemble_final.pkl",
     ]
-    
+
     s2_5_pass = all(check_file_exists(f) for f in s2_5_files)
     s2_5_data = load_json("scripts/s2_5_final_validation_report.json")
-    
+
     print(f"  Files: {sum(1 for f in s2_5_files if check_file_exists(f))}/{len(s2_5_files)} present")
     if s2_5_data:
         print(f"  ACs passed: 5/5")
@@ -87,9 +87,9 @@ def main():
         "scripts/s2_6_ac4_validation.json",
         "data/s2_6_feedback.db",
     ]
-    
+
     s2_6_pass = all(check_file_exists(f) for f in s2_6_files)
-    
+
     print(f"  Files: {sum(1 for f in s2_6_files if check_file_exists(f))}/{len(s2_6_files)} present")
     print(f"  ACs passed: 4/4")
     print(f"  Status: {'PASS' if s2_6_pass else 'INCOMPLETE'}")
@@ -108,10 +108,10 @@ def main():
         "scripts/s2_7_ac3_validation.json",
         "scripts/s2_7_ac4_validation.json",
     ]
-    
+
     s2_7_pass = all(check_file_exists(f) for f in s2_7_files)
     s2_7_ac4 = load_json("scripts/s2_7_ac4_validation.json")
-    
+
     print(f"  Files: {sum(1 for f in s2_7_files if check_file_exists(f))}/{len(s2_7_files)} present")
     print(f"  ACs passed: 4/4")
     if s2_7_ac4:
@@ -133,11 +133,11 @@ def main():
         "scripts/s2_8_ac4_inference_test.json",
         "models/s2_8_ensemble_final.pkl",
     ]
-    
+
     s2_8_pass = all(check_file_exists(f) for f in s2_8_files)
     s2_8_ac1 = load_json("scripts/s2_8_ac1_training_results.json")
     s2_8_ac2 = load_json("scripts/s2_8_ac2_crossval_results.json")
-    
+
     print(f"  Files: {sum(1 for f in s2_8_files if check_file_exists(f))}/{len(s2_8_files)} present")
     print(f"  ACs passed: 4/4")
     if s2_8_ac1:
@@ -160,7 +160,7 @@ def main():
     all_blockers_passed = all(
         v["status"] == "PASSED" for v in checkpoint["blockers"].values()
     )
-    
+
     total_acs = sum(v["ac_count"] for v in checkpoint["blockers"].values())
     passed_acs = sum(v["ac_passed"] for v in checkpoint["blockers"].values())
 
@@ -171,7 +171,7 @@ def main():
     if all_blockers_passed and passed_acs == total_acs:
         checkpoint["gate_decision"] = "APPROVED"
         checkpoint["capital_escalation"]["approved"] = True
-        
+
         print("╔" + "═" * 98 + "╗")
         print("║" + " " * 30 + "GATE 2 CHECKPOINT: APROVADO ✅" + " " * 39 + "║")
         print("║" + " " * 98 + "║")

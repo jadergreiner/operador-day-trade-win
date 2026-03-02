@@ -32,7 +32,7 @@ from typing import List, Tuple, Dict
 
 class S2_5_Master:
     """Orquestrador de execução do S2-5 Finalization."""
-    
+
     def __init__(self):
         self.scripts = [
             ("AC-1", "scripts/s2_5_fine_tuning_gridsearch.py", 45),
@@ -44,7 +44,7 @@ class S2_5_Master:
         self.results = {}
         self.start_time = None
         self.end_time = None
-    
+
     def print_header(self):
         """Imprime header do master script."""
         print("\n")
@@ -65,11 +65,11 @@ class S2_5_Master:
         print()
         print("=" * 100)
         print()
-    
+
     def executar_ac(self, ac_nome: str, script_path: str, est_time: int) -> Tuple[bool, str]:
         """
         Executa uma AC individual.
-        
+
         Retorna:
             (sucesso: bool, output: str)
         """
@@ -79,7 +79,7 @@ class S2_5_Master:
         print(f"Tempo estimado: {est_time} minutos")
         print(f"Timestamp: {datetime.now().isoformat()}")
         print(f"{'='*100}\n")
-        
+
         try:
             # Executar script
             resultado = subprocess.run(
@@ -89,27 +89,27 @@ class S2_5_Master:
                 check=False,
                 timeout=est_time * 120,  # Timeout em segundos (2x estimate)
             )
-            
+
             sucesso = resultado.returncode == 0
-            
+
             if sucesso:
                 print(f"\n✅ {ac_nome} COMPLETADO COM SUCESSO")
             else:
                 print(f"\n❌ {ac_nome} FALHOU (exit code: {resultado.returncode})")
-            
+
             return sucesso, f"Exit code: {resultado.returncode}"
-        
+
         except subprocess.TimeoutExpired:
             print(f"\n❌ {ac_nome} TIMEOUT (excedeu {est_time*2} minutos)")
             return False, "Timeout"
         except Exception as e:
             print(f"\n❌ {ac_nome} ERRO: {str(e)}")
             return False, str(e)
-    
+
     def validar_arquivos_saida(self) -> Dict[str, bool]:
         """
         Valida que todos os arquivos de saída foram gerados.
-        
+
         Retorna:
             Dict com status de cada arquivo
         """
@@ -120,27 +120,27 @@ class S2_5_Master:
             "AC-4": Path("scripts/s2_5_production_inference_test.json"),
             "AC-5": Path("scripts/s2_5_final_validation_report.json"),
         }
-        
+
         arquivos_status = {}
         for ac, arquivo in arquivos_esperados.items():
             existe = arquivo.exists()
             arquivos_status[ac] = existe
-            
+
             icon = "✅" if existe else "❌"
             print(f"  {icon} {ac}: {arquivo.name}")
-        
+
         return arquivos_status
-    
+
     def rodar(self) -> bool:
         """
         Executa todas as ACs em sequência.
-        
+
         Retorna:
             True se todas passaram, False caso contrário
         """
         self.print_header()
         self.start_time = datetime.now()
-        
+
         # Executar cada AC
         for ac_nome, script_path, est_time in self.scripts:
             sucesso, output = self.executar_ac(ac_nome, script_path, est_time)
@@ -149,22 +149,22 @@ class S2_5_Master:
                 "output": output,
                 "timestamp": datetime.now().isoformat(),
             }
-            
+
             if not sucesso:
                 print(f"\n⚠️  {ac_nome} falhou. Continuando com próximas ACs...")
-        
+
         self.end_time = datetime.now()
-        
+
         # Validar arquivos
         print(f"\n{'='*100}")
         print("✓ Validando arquivos de saída gerados...")
         print(f"{'='*100}\n")
-        
+
         arquivos_status = self.validar_arquivos_saida()
-        
+
         # Gerar relatório final
         return self._gerar_relatorio_final(arquivos_status)
-    
+
     def _gerar_relatorio_final(self, arquivos_status: Dict[str, bool]) -> bool:
         """
         Gera relatório final e determina se tudo está pronto para git commit.
@@ -172,7 +172,7 @@ class S2_5_Master:
         print(f"\n{'='*100}")
         print("📊 RELATÓRIO FINAL")
         print(f"{'='*100}\n")
-        
+
         # Resumo de execução
         print("Status das ACs:")
         todos_passaram = True
@@ -182,24 +182,24 @@ class S2_5_Master:
             print(f"  {icon} {ac_nome}: {'PASSED' if passou else 'FAILED'}")
             if not passou:
                 todos_passaram = False
-        
+
         print()
         print("Arquivos Gerados:")
         todos_arquivos_ok = all(arquivos_status.values())
         for ac, existe in arquivos_status.items():
             icon = "✅" if existe else "❌"
             print(f"  {icon} {ac} output file: {'EXISTS' if existe else 'MISSING'}")
-        
+
         print()
-        
+
         # Duração total
         duracao = (self.end_time - self.start_time).total_seconds() / 60
         print(f"Duração total: {duracao:.1f} minutos")
         print()
-        
+
         # Status final
         pronto_para_commit = todos_passaram and todos_arquivos_ok
-        
+
         if pronto_para_commit:
             print("=" * 100)
             print("✅ SUCESSO! S2-5 ESTÁ 100% PRONTO PARA COMMIT!")
@@ -220,7 +220,7 @@ class S2_5_Master:
             print("❌ ERRO! Algunsó elemento falhou. Revisar acima.")
             print("=" * 100)
             print()
-            
+
             # Recomendações
             if not todos_passaram:
                 print("ACs que falharam:")
@@ -228,17 +228,17 @@ class S2_5_Master:
                     if not resultado["passed"]:
                         print(f"  - {ac_nome}: {resultado['output']}")
                         print(f"    Re-executar: python {[s[1] for s in self.scripts if s[0] == ac_nome][0]}")
-            
+
             if not todos_arquivos_ok:
                 print("\nArquivos faltando:")
                 for ac, existe in arquivos_status.items():
                     if not existe:
                         print(f"  - {ac}: Arquivo não foi gerado")
-        
+
         print()
         print("=" * 100)
         print()
-        
+
         return pronto_para_commit
 
 

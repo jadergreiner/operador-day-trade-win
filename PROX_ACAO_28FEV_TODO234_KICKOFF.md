@@ -1,9 +1,9 @@
 # 🚀 PRÓXIMAS AÇÕES: 28/02 - TODO-2,3,4 OrdersExecutor Kick-Off
 
-**Data:** 28/02/2026  
-**Status:** 🟢 READY FOR KICK-OFF  
-**Owner:** Eng Sr (Persona 1)  
-**Deadline:** 02/03 17:00 BRT (implementação) | 03/03 (validação)  
+**Data:** 28/02/2026
+**Status:** 🟢 READY FOR KICK-OFF
+**Owner:** Eng Sr (Persona 1)
+**Deadline:** 02/03 17:00 BRT (implementação) | 03/03 (validação)
 **Effort:** 3-4 horas
 
 ---
@@ -12,7 +12,7 @@
 
 ### Task: Implementar OrdersExecutor Core (3 TODOs)
 
-**File:** `src/application/orders_executor.py`  
+**File:** `src/application/orders_executor.py`
 **Lines:** 133 (TODO-2), 158 (TODO-3), 188 (TODO-4)
 
 ---
@@ -26,7 +26,7 @@
 python -m pytest tests/unit/test_risk_validator.py -v
 # Expectativa: 9/9 passing ✅
 
-# 2. Confirmar MT5 Adapter mock está pronto  
+# 2. Confirmar MT5 Adapter mock está pronto
 python -m pytest tests/unit/test_mt5_adapter.py -v
 # Expectativa: 6/6 passing ✅
 
@@ -66,17 +66,17 @@ async def execute_order(self, order: ExecutionOrder) -> Dict:
     [TODO-2] Valida 3 gates de risco (capital, correlation, volatility).
     Se TODOS passam: envia ordem ao MT5.
     Se QUALQUER falha: rejeita com motivo.
-    
+
     Args:
         order: ExecutionOrder { symbol, size, type, stop_loss, entry_price }
-    
+
     Returns:
         {
             "order_id": "ORD-20260228-001",
             "status": "APPROVED" | "REJECTED",
             "decision": "APPROVED_ALL_GATES" | "REJECTED_CAPITAL_LIMIT" | etc,
             "mt5_response": { ... },  # Se APPROVED
-            "rejection_reason": str,   # Se REJECTED  
+            "rejection_reason": str,   # Se REJECTED
             "timestamp": "2026-02-28T10:30:00",
             "audit_trail": [...]
         }
@@ -95,7 +95,7 @@ async def execute_order(self, order: ExecutionOrder) -> Dict:
                 "timestamp": datetime.now().isoformat(),
                 "audit_trail": [capital_check]
             }
-        
+
         correlation_check = self.risk_validator.check_correlation(
             portfolio=self.current_positions,
             new_symbol=order.symbol
@@ -104,11 +104,11 @@ async def execute_order(self, order: ExecutionOrder) -> Dict:
             return {
                 "status": "REJECTED",
                 "decision": "REJECTED_CORRELATION",
-                "rejection_reason": correlation_check["reason"],  
+                "rejection_reason": correlation_check["reason"],
                 "timestamp": datetime.now().isoformat(),
                 "audit_trail": [capital_check, correlation_check]
             }
-        
+
         volatility_check = self.risk_validator.check_volatility_bands(
             current_pnl=self.current_daily_pnl,
             thresholds=self.volatility_bands  # -3%, -5%, -8%
@@ -121,7 +121,7 @@ async def execute_order(self, order: ExecutionOrder) -> Dict:
                 "timestamp": datetime.now().isoformat(),
                 "audit_trail": [capital_check, correlation_check, volatility_check]
             }
-        
+
         # 2️⃣ All gates passed → send to MT5
         mt5_response = await self.mt5_adapter.send_order(
             symbol=order.symbol,
@@ -130,10 +130,10 @@ async def execute_order(self, order: ExecutionOrder) -> Dict:
             entry_price=order.entry_price,
             stop_loss=order.stop_loss
         )
-        
+
         # 3️⃣ Log success
         self.logger.info(f"✅ Order APPROVED & SENT: {order.symbol} {order.size}u @ {order.entry_price}")
-        
+
         return {
             "order_id": mt5_response.get("order_id"),
             "status": "APPROVED",
@@ -142,7 +142,7 @@ async def execute_order(self, order: ExecutionOrder) -> Dict:
             "timestamp": datetime.now().isoformat(),
             "audit_trail": [capital_check, correlation_check, volatility_check, mt5_response]
         }
-    
+
     except Exception as e:
         self.logger.error(f"❌ execute_order ERROR: {str(e)}")
         return {
@@ -173,7 +173,7 @@ async def monitor_positions(self) -> Optional[Dict]:
     """
     [TODO-3] Faz polling de posições abertas e calcula PnL.
     Executar em background thread a cada 100ms.
-    
+
     Returns:
         {
             "positions_count": 5,
@@ -189,27 +189,27 @@ async def monitor_positions(self) -> Optional[Dict]:
     """
     try:
         start = time.time()
-        
+
         # 1️⃣ Query positions from MT5
         positions = await self.mt5_adapter.get_positions()
-        
+
         # 2️⃣ Calculate PnL for each position
         total_pnl = 0
         positions_detail = []
-        
+
         for pos in positions:
             entry_price = pos["entry_price"]
             current_price = await self.mt5_adapter.get_current_price(pos["symbol"])
             size = pos["size"]
-            
+
             # PnL = (current - entry) * size (long) or (entry - current) * size (short)
             if pos["type"] == "LONG":
                 pnl = (current_price - entry_price) * size
             else:  # SHORT
                 pnl = (entry_price - current_price) * size
-            
+
             total_pnl += pnl
-            
+
             positions_detail.append({
                 "symbol": pos["symbol"],
                 "size": size,
@@ -218,16 +218,16 @@ async def monitor_positions(self) -> Optional[Dict]:
                 "current_price": current_price,
                 "pnl": pnl
             })
-        
+
         # 3️⃣ Measure latency
         latency_ms = (time.time() - start) * 1000
-        
+
         # 4️⃣ Update internal state for execute_order() to use
         self.current_daily_pnl = total_pnl
         self.current_positions = positions_detail
-        
+
         self.logger.debug(f"📊 Positions: {len(positions_detail)} | PnL: {total_pnl:+.2f} | Latency: {latency_ms:.1f}ms")
-        
+
         return {
             "positions_count": len(positions_detail),
             "total_pnl": total_pnl,
@@ -235,7 +235,7 @@ async def monitor_positions(self) -> Optional[Dict]:
             "latency_ms": latency_ms,
             "timestamp": datetime.now().isoformat()
         }
-    
+
     except Exception as e:
         self.logger.error(f"❌ monitor_positions ERROR: {str(e)}")
         return None
@@ -259,20 +259,20 @@ async def monitor_positions(self) -> Optional[Dict]:
 async def position_monitoring_loop(self):
     """
     [TODO-4] Background monitoring loop. Executar continuamente a 100ms.
-    
+
     Responsabilitats:
     1. Query positions a cada ciclo
     2. Checar stop loss / take profit triggers
     3. Fechar posições se triggers forem acionados
     4. Log tudo na auditoria
     5. Graceful shutdown com _monitoring_active flag
-    
+
     Stop Loss Trigger: PnL <= -1000 (absolute loss)
     Take Profit Trigger: PnL >= +5000 (absolute gain)
     """
     self._monitoring_active = True
     self.logger.info("🟢 Position monitoring loop started")
-    
+
     while self._monitoring_active:
         try:
             # 1️⃣ Monitor positions
@@ -280,44 +280,44 @@ async def position_monitoring_loop(self):
             if not monitor_result:
                 await asyncio.sleep(0.1)  # 100ms interval
                 continue
-            
+
             # 2️⃣ Check for exit triggers
             positions = monitor_result["positions"]
-            
+
             for pos in positions:
                 pnl = pos["pnl"]
-                
+
                 # Stop Loss trigger: PnL <= -1000
                 if pnl <= -1000:
                     self.logger.warning(f"🔴 STOP LOSS TRIGGERED: {pos['symbol']} PnL={pnl:.2f}")
-                    
+
                     close_result = await self.mt5_adapter.close_position(
                         symbol=pos["symbol"],
                         size=pos["size"],
                         reason="STOP_LOSS"
                     )
-                    
+
                     self.logger.info(f"✅ Position closed (SL): {pos['symbol']} result={close_result}")
-                
+
                 # Take Profit trigger: PnL >= +5000
                 elif pnl >= 5000:
                     self.logger.info(f"🟢 TAKE PROFIT TRIGGERED: {pos['symbol']} PnL={pnl:.2f}")
-                    
+
                     close_result = await self.mt5_adapter.close_position(
                         symbol=pos["symbol"],
                         size=pos["size"],
                         reason="TAKE_PROFIT"
                     )
-                    
+
                     self.logger.info(f"✅ Position closed (TP): {pos['symbol']} result={close_result}")
-            
+
             # 3️⃣ Sleep 100ms before next cycle
             await asyncio.sleep(0.1)
-        
+
         except Exception as e:
             self.logger.error(f"❌ monitoring_loop ERROR: {str(e)} - restarting...")
             await asyncio.sleep(0.1)
-    
+
     self.logger.info("🔴 Position monitoring loop stopped")
 
 async def stop_monitoring(self):
@@ -379,7 +379,7 @@ python -m mypy src/application/orders_executor.py --strict
 ### Files Modified
 - `src/application/orders_executor.py` — 3 TODOs implemented (~150 LOC novo)
 
-### Files Created  
+### Files Created
 - `tests/unit/test_orders_executor.py` — 10 unit tests (~200 LOC)
 
 ### Files Updated
@@ -423,7 +423,7 @@ git commit -m "feat: TODO-2,3,4 OrdersExecutor implementation - execute_order, m
 ## 🎯 SUCCESS METRICS
 
 - [ ] execute_order() functional with 3-gate validation
-- [ ] monitor_positions() latency < 100ms  
+- [ ] monitor_positions() latency < 100ms
 - [ ] position_monitoring_loop() stop loss & take profit working
 - [ ] All AC from S2-9 (AC-1 to AC-4) integrated & working
 - [ ] 10/10 tests passing

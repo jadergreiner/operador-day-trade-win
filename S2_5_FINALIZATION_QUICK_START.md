@@ -1,9 +1,9 @@
 # 🚀 S2-5 FINALIZATION - QUICK START GUIDE
 
-**Status:** 🟡 READY FOR EXECUTION  
-**Deadline:** 28/02/2026 23:59 BRT (IMMOVABLE)  
-**Estimated Duration:** 2-3 horas  
-**Responsibility:** ML Expert  
+**Status:** 🟡 READY FOR EXECUTION
+**Deadline:** 28/02/2026 23:59 BRT (IMMOVABLE)
+**Estimated Duration:** 2-3 horas
+**Responsibility:** ML Expert
 
 ---
 
@@ -42,36 +42,36 @@ git push origin main --tags
 ```bash
 python scripts/s2_5_fine_tuning_gridsearch.py
 ```
-**Output:** `scripts/s2_5_fine_tuning_results.json`  
-**Gate:** F1 Score ≥0.70  
+**Output:** `scripts/s2_5_fine_tuning_results.json`
+**Gate:** F1 Score ≥0.70
 **Expected:** "✅ AC-1 GATE PASSED"
 
 ### Step 2: Cross-Validation (30 min)
 ```bash
 python scripts/s2_5_cross_validation_final.py
 ```
-**Output:** `scripts/s2_5_cross_validation_results.json`  
-**Gate:** F1 mean ≥0.68, std <0.05  
+**Output:** `scripts/s2_5_cross_validation_results.json`
+**Gate:** F1 mean ≥0.68, std <0.05
 **Expected:** "✅ AC-2 GATE PASSED"
 
 ### Step 3: Model Serialization (10 min)
 ```bash
 python scripts/s2_5_model_serialization.py
 ```
-**Outputs:** 
+**Outputs:**
 - `models/s2_5_ensemble_final.pkl`
 - `models/s2_5_ensemble_final.onnx`
 - `scripts/s2_5_serialization_validation.json`
 
-**Gate:** Both files > 100KB  
+**Gate:** Both files > 100KB
 **Expected:** "✅ AC-3 GATE PASSED"
 
 ### Step 4: Production Inference Test (20 min)
 ```bash
 python scripts/s2_5_production_inference_test.py
 ```
-**Output:** `scripts/s2_5_production_inference_test.json`  
-**Gates:** 
+**Output:** `scripts/s2_5_production_inference_test.json`
+**Gates:**
 - Latência P95 <100ms
 - Memory <50MB
 
@@ -81,8 +81,8 @@ python scripts/s2_5_production_inference_test.py
 ```bash
 python scripts/s2_5_final_validation_report.py
 ```
-**Output:** `scripts/s2_5_final_validation_report.json`  
-**Consolidates:** AC-1 through AC-4  
+**Output:** `scripts/s2_5_final_validation_report.json`
+**Consolidates:** AC-1 through AC-4
 **Expected:** All 4 ACs PASSED → Ready for git commit
 
 ---
@@ -195,7 +195,7 @@ git push origin main --tags
 | AC-5 Validation Report | 10 min | 115 min (1h55m) |
 | **TOTAL** | **115 min** | **~2 horas** |
 
-**Deadline:** 28/02/2026 23:59 BRT  
+**Deadline:** 28/02/2026 23:59 BRT
 **Buffer:** ~6 horas after completion for git operations
 
 ---

@@ -23,12 +23,12 @@ from typing import List, Tuple
 
 class TestResult:
     """Representa resultado de um teste."""
-    
+
     def __init__(self, name: str, status: bool, duration_ms: float):
         self.name = name
         self.status = status
         self.duration_ms = duration_ms
-    
+
     def to_dict(self):
         return {
             "name": self.name,
@@ -39,17 +39,17 @@ class TestResult:
 
 class TestSuite:
     """Suite de testes para S2-6."""
-    
+
     def __init__(self):
         self.results = []
         self.passed = 0
         self.failed = 0
-    
+
     def run_test(self, test_func, test_name: str) -> bool:
         """Executa um teste individual."""
         import time
         start = time.time()
-        
+
         try:
             test_func()
             passed = True
@@ -59,19 +59,19 @@ class TestSuite:
         except Exception as e:
             print(f"  ❌ {test_name}: {str(e)}")
             passed = False
-        
+
         duration = (time.time() - start) * 1000
         result = TestResult(test_name, passed, duration)
         self.results.append(result)
-        
+
         if passed:
             self.passed += 1
             print(f"  ✅ {test_name} ({duration:.2f}ms)")
         else:
             self.failed += 1
-        
+
         return passed
-    
+
     def get_summary(self) -> Tuple[int, int, float]:
         """Retorna: (total, passed, pass_rate)."""
         total = len(self.results)
@@ -84,7 +84,7 @@ def test_dashboard_creation():
     try:
         dashboard_file = Path("agente_micro_tendencia_winfut/s2_6_analytics/dashboard.html")
         assert dashboard_file.exists(), "Dashboard HTML não foi criado"
-        
+
         with open(dashboard_file, "r", encoding="utf-8") as f:
             content = f.read()
             assert "Signals Overview" in content, "Signals view ausente"
@@ -99,7 +99,7 @@ def test_dashboard_data_json():
     try:
         json_file = Path("agente_micro_tendencia_winfut/s2_6_analytics/dashboard_data.json")
         assert json_file.exists(), "JSON do dashboard não foi criado"
-        
+
         with open(json_file, "r", encoding="utf-8") as f:
             data = json.load(f)
             assert "signals" in data, "Signals data ausente"
@@ -124,7 +124,7 @@ def test_feedback_validation():
     try:
         val_file = Path("scripts/s2_6_ac2_validation.json")
         assert val_file.exists(), "Validation JSON não foi criado"
-        
+
         with open(val_file, "r") as f:
             data = json.load(f)
             assert data["status"] == "PASSED", "Feedback API não passou"
@@ -138,7 +138,7 @@ def test_signal_integration():
     try:
         val_file = Path("scripts/s2_6_ac3_validation.json")
         assert val_file.exists(), "Signal integration validation não foi criado"
-        
+
         with open(val_file, "r") as f:
             data = json.load(f)
             assert data["status"] == "PASSED", "Signal integration não passou"
@@ -152,7 +152,7 @@ def test_model_serialization():
     try:
         pkl_file = Path("models/s2_5_ensemble_final.pkl")
         onnx_file = Path("models/s2_5_ensemble_final.onnx")
-        
+
         assert pkl_file.exists(), "Pickle model não existe"
         assert onnx_file.exists(), "ONNX model não existe"
         assert pkl_file.stat().st_size > 100_000, "Pickle model muito pequeno"
@@ -181,7 +181,7 @@ def test_latency_performance():
             data = json.load(f)
             gen_latency = data["signal_generation"]["latency_ms"]
             int_latency = data["integration"]["integration_latency_ms"]
-            
+
             assert gen_latency < 100, f"Signal gen latency {gen_latency}ms > 100ms"
             assert int_latency < 100, f"Integration latency {int_latency}ms > 100ms"
     except AssertionError as e:
@@ -195,7 +195,7 @@ def test_confidence_scores():
         with open(val_file, "r") as f:
             data = json.load(f)
             avg_conf = data["signal_generation"]["avg_confidence"]
-            
+
             assert 0.5 <= avg_conf <= 0.95, f"Confidence {avg_conf} fora do range"
     except AssertionError as e:
         raise AssertionError(f"Confidence scores test: {str(e)}")
@@ -209,7 +209,7 @@ def test_signal_ready_count():
             data = json.load(f)
             total = data["signal_generation"]["total_signals"]
             ready = data["signal_generation"]["ready_signals"]
-            
+
             assert total == 100, f"Total signals {total} != 100"
             assert ready > 0, "Nenhum sinal marcado como ready"
             assert ready <= total, f"Ready {ready} > Total {total}"
@@ -226,7 +226,7 @@ def test_validation_files_exist():
             Path("scripts/s2_6_ac3_validation.json"),
             Path("scripts/s2_6_ac4_validation.json"),
         ]
-        
+
         for file in files:
             assert file.exists(), f"Validation file não existe: {file.name}"
     except AssertionError as e:
@@ -235,18 +235,18 @@ def test_validation_files_exist():
 
 def main():
     """Executa suite de testes."""
-    
+
     print("=" * 80)
     print("[TESTS] S2-6 Unit Tests - AC-4")
     print("=" * 80)
     print()
-    
+
     # Create test suite
     suite = TestSuite()
-    
+
     print("[EXECUTING] Executando 11 testes unitarios...")
     print()
-    
+
     # Run tests
     suite.run_test(test_dashboard_creation, "Dashboard creation")
     suite.run_test(test_dashboard_data_json, "Dashboard JSON data")
@@ -259,15 +259,15 @@ def main():
     suite.run_test(test_confidence_scores, "Confidence scores")
     suite.run_test(test_signal_ready_count, "Signal ready count")
     suite.run_test(test_validation_files_exist, "Validation files exist")
-    
+
     print()
-    
+
     # Test summary
     total, passed, rate = suite.get_summary()
-    
+
     passed_gate = rate >= 95
     status = "✅ PASSED" if passed_gate else "⚠️  PARTIAL"
-    
+
     print("=" * 80)
     print("[SUMMARY] TEST SUMMARY")
     print("=" * 80)
@@ -277,7 +277,7 @@ def main():
     print(f"Pass Rate:      {rate:.1f}%")
     print(f"Gate (≥95%):    {status}")
     print()
-    
+
     # Validation output
     validation = {
         "task_id": "BLOCKER-S2-6-MVP",
@@ -300,15 +300,15 @@ def main():
             "models": "✅ FULL",
         }
     }
-    
+
     output_path = Path("scripts/s2_6_ac4_validation.json")
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(validation, f, indent=2, ensure_ascii=False)
-    
+
     print(f"AC-4 Status: {status}")
     print("=" * 80)
     print()
-    
+
     return 0 if passed_gate else 1
 
 

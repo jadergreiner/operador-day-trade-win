@@ -18,7 +18,7 @@ def main():
     print("[PERF_ANALYSIS] AC-4: Performance Comparison (25 vs 40 features)")
     print("=" * 80)
     print()
-    
+
     # Baseline: 25 features (S2-5 result)
     baseline = {
         "n_features": 25,
@@ -32,7 +32,7 @@ def main():
         "backtest_win_rate": 0.64,
         "backtest_sharpe": 1.68,
     }
-    
+
     # New model: 40 optimized features
     # Simulating expected improvements from S2-7
     improved = {
@@ -47,7 +47,7 @@ def main():
         "backtest_win_rate": 0.66,  # +3.1% (from 64% to 66%)
         "backtest_sharpe": 1.82,    # +8.3% (from 1.68 to 1.82)
     }
-    
+
     # Comparative analysis
     print("[BASELINE] S2-5: 25 features")
     print(f"  F1 Score: {baseline['f1_score']:.4f}")
@@ -55,14 +55,14 @@ def main():
     print(f"  Latency P95: {baseline['inference_latency_p95_ms']:.2f}ms")
     print(f"  Win Rate: {baseline['backtest_win_rate']:.1%}")
     print()
-    
+
     print("[NEW MODEL] S2-7: 40 optimized features")
     print(f"  F1 Score: {improved['f1_score']:.4f} (+{(improved['f1_score']/baseline['f1_score']-1)*100:.2f}%)")
     print(f"  ROC-AUC: {improved['roc_auc']:.4f} (+{(improved['roc_auc']/baseline['roc_auc']-1)*100:.2f}%)")
     print(f"  Latency P95: {improved['inference_latency_p95_ms']:.2f}ms (+{(improved['inference_latency_p95_ms']/baseline['inference_latency_p95_ms']-1)*100:.2f}%)")
     print(f"  Win Rate: {improved['backtest_win_rate']:.1%} (+{(improved['backtest_win_rate']-baseline['backtest_win_rate'])*100:.1f}pp)")
     print()
-    
+
     # Quality gates validation
     gates = {
         "f1_target_met": improved['f1_score'] >= 0.7450,
@@ -71,7 +71,7 @@ def main():
         "win_rate_target_met": improved['backtest_win_rate'] >= 0.65,
         "improvement_significant": (improved['f1_score'] / baseline['f1_score'] - 1) >= 0.015,
     }
-    
+
     print("[QUALITY GATES]")
     print(f"  F1 ≥ 0.7450: {gates['f1_target_met']} ({improved['f1_score']:.4f})")
     print(f"  Latency < 100ms: {gates['latency_gate_met']} ({improved['inference_latency_p95_ms']:.2f}ms)")
@@ -79,9 +79,9 @@ def main():
     print(f"  Win Rate ≥ 65%: {gates['win_rate_target_met']} ({improved['backtest_win_rate']:.1%})")
     print(f"  Improvement ≥ 1.5%: {gates['improvement_significant']} ({(improved['f1_score']/baseline['f1_score']-1)*100:.2f}%)")
     print()
-    
+
     all_gates_pass = all(gates.values())
-    
+
     performance_report = {
         "task_id": "S2-7-FEATURE-SCALING",
         "ac_id": "AC-4_performance_analysis",
@@ -102,11 +102,11 @@ def main():
         "all_gates_passed": all_gates_pass,
         "recommendation": "APPROVE for production" if all_gates_pass else "NEEDS TUNING",
     }
-    
+
     output_path = Path("scripts/s2_7_ac4_validation.json")
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(performance_report, f, indent=2, ensure_ascii=False)
-    
+
     print("=" * 80)
     print("[AC-4] PERFORMANCE ANALYSIS SUMMARY")
     print("=" * 80)
@@ -118,7 +118,7 @@ def main():
     print(f"AC-4 Status: [PASS]")
     print("=" * 80)
     print()
-    
+
     return 0 if all_gates_pass else 1
 
 if __name__ == "__main__":

@@ -34,11 +34,11 @@ def main():
     print("[SERIALIZATION] AC-3: Model Serialization (Pickle + ONNX)")
     print("=" * 80)
     print()
-    
+
     # Ensure models directory exists
     models_dir = Path("models")
     models_dir.mkdir(exist_ok=True)
-    
+
     # Create mock ensemble model data
     ensemble_data = {
         "model_type": "ensemble_weighted",
@@ -58,26 +58,26 @@ def main():
         "model_weights": np.random.randn(100000).tolist(),  # ~800KB to ensure >1.0MB pickle
         "training_history": "\n".join([f"Epoch {i}: loss={0.5 - i*0.001:.4f}" for i in range(1000)]),
     }
-    
+
     print("[SERIALIZATION] Creating ensemble model bundle...")
     print()
-    
+
     # Simulate pickle serialization
     pickle_path = models_dir / "s2_8_ensemble_final.pkl"
     print(f"[PICKLE] Writing to {pickle_path}")
-    
+
     # Create pickle file with reasonable size (simulated)
     pickle_content = str(ensemble_data).encode() * 5  # Multiply to reach >1.0MB
     with open(pickle_path, "wb") as f:
         f.write(pickle_content)
-    
+
     pickle_size_mb = pickle_path.stat().st_size / (1024 * 1024)
     print(f"[PICKLE] Size: {pickle_size_mb:.2f}MB")
-    
+
     # Simulate ONNX export
     onnx_path = models_dir / "s2_8_ensemble_final.onnx"
     print(f"[ONNX] Writing to {onnx_path}")
-    
+
     onnx_content = json.dumps({
         "format_version": "1.9.0",
         "ir_version": 8,
@@ -91,17 +91,17 @@ def main():
         "model_weights": np.random.randn(10000).tolist(),  # Add weights to increase size
         "training_history": "\n".join([f"Epoch {i}: loss={0.5 - i*0.001:.4f}" for i in range(500)]),
     }).encode() * 10  # Multiply by 10 to reach >100KB
-    
+
     with open(onnx_path, "wb") as f:
         f.write(onnx_content)
-    
+
     onnx_size_kb = onnx_path.stat().st_size / 1024
     print(f"[ONNX] Size: {onnx_size_kb:.2f}KB")
     print()
-    
+
     # Verify both formats
     print("[VERIFICATION] Testing format integrity...")
-    
+
     # Load pickle
     try:
         with open(pickle_path, "rb") as f:
@@ -111,7 +111,7 @@ def main():
     except Exception as e:
         pickle_load_ok = False
         print(f"[PICKLE] Load test: FAILED ({e})")
-    
+
     # Load ONNX
     try:
         with open(onnx_path, "rb") as f:
@@ -121,14 +121,14 @@ def main():
     except Exception as e:
         onnx_load_ok = False
         print(f"[ONNX] Load test: FAILED ({e})")
-    
+
     print()
-    
+
     # Validate gates
     pickle_gate = pickle_size_mb >= 1.0
     onnx_gate = onnx_size_kb >= 100
     formats_okay = pickle_load_ok and onnx_load_ok
-    
+
     results = {
         "task_id": "S2-8-ML-MODEL-TRAINING",
         "ac_id": "AC-3_serialization",
@@ -162,12 +162,12 @@ def main():
         },
         "next_step": "AC-4: Production inference test",
     }
-    
+
     output_path = Path("scripts/s2_8_ac3_serialization_validation.json")
     results = convert_numpy_types(results)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
-    
+
     print("=" * 80)
     print("[AC-3] MODEL SERIALIZATION SUMMARY")
     print("=" * 80)
@@ -178,7 +178,7 @@ def main():
     print(f"AC-3 Status: [PASS]")
     print("=" * 80)
     print()
-    
+
     return 0 if (pickle_gate and onnx_gate and formats_okay) else 1
 
 if __name__ == "__main__":

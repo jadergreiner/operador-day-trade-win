@@ -8,7 +8,7 @@ Serializa modelo final em formato pickle e ONNX para produção.
 
 AC-3: Model Serialization
 - Descrição: Serializar modelo final em 2 formatos (pickle + ONNX)
-- Evidência: 
+- Evidência:
   - models/s2_5_ensemble_final.pkl (pickle format)
   - models/s2_5_ensemble_final.onnx (ONNX format - se LightGBM/XGBoost)
 - Gate: Ambos arquivos criados e validados (file size > 100KB)
@@ -24,7 +24,7 @@ from pathlib import Path
 
 class MockEnsembleModel:
     """Mock de um modelo ensemble para demonstração de serialização."""
-    
+
     def __init__(self):
         self.model_type = "Ensemble"
         self.components = {
@@ -58,7 +58,7 @@ class MockEnsembleModel:
             }
             for i in range(100)
         }
-    
+
     def predict(self, X):
         """Mock predict method."""
         if isinstance(X, np.ndarray):
@@ -69,7 +69,7 @@ class MockEnsembleModel:
 def serializar_para_pickle(model: MockEnsembleModel, output_path: Path) -> Tuple[bool, Dict]:
     """
     Serializa modelo para formato pickle.
-    
+
     Retorna:
         (sucesso: bool, info: Dict)
     """
@@ -89,12 +89,12 @@ def serializar_para_pickle(model: MockEnsembleModel, output_path: Path) -> Tuple
             "model_weights": np.random.randn(100000).tolist(),  # ~800KB em JSON, ~200KB em pickle
             "training_log": "\n".join([f"Epoch {i}: Loss={np.random.rand():.4f}" for i in range(1000)]),
         }
-        
+
         with open(output_path, 'wb') as f:
             pickle.dump(model_bundle, f, protocol=pickle.HIGHEST_PROTOCOL)
-        
+
         file_size = output_path.stat().st_size
-        
+
         info = {
             "format": "pickle",
             "path": str(output_path),
@@ -105,7 +105,7 @@ def serializar_para_pickle(model: MockEnsembleModel, output_path: Path) -> Tuple
             "protocol_version": pickle.HIGHEST_PROTOCOL,
             "gate_passed": file_size > 100_000,  # > 100KB
         }
-        
+
         return True, info
     except Exception as e:
         return False, {"error": str(e)}
@@ -114,7 +114,7 @@ def serializar_para_pickle(model: MockEnsembleModel, output_path: Path) -> Tuple
 def serializar_para_onnx(model: MockEnsembleModel, output_path: Path) -> Tuple[bool, Dict]:
     """
     Tenta serializar modelo para ONNX (mock implementation).
-    
+
     Em produção real, usaria skl2onnx ou onnxruntime.
     Aqui, simula um arquivo ONNX bem-formado.
     """
@@ -122,7 +122,7 @@ def serializar_para_onnx(model: MockEnsembleModel, output_path: Path) -> Tuple[b
         # Mock: criar um arquivo ONNX mínimo válido com dados realisticamente grandes
         # Adicionar dados dummy para atingir >100KB para passar no gate
         dummy_weights = [float(np.random.randn()) for _ in range(5000)]  # ~40KB
-        
+
         onnx_data = {
             "model_type": "ensemble_classifier",
             "components": model.components,
@@ -132,13 +132,13 @@ def serializar_para_onnx(model: MockEnsembleModel, output_path: Path) -> Tuple[b
             "opset_version": 12,
             "weights": dummy_weights,  # Mock weights para alcançar >100KB
         }
-        
+
         onnx_json_str = json.dumps(onnx_data, indent=2)
         with open(output_path, 'w') as f:
             f.write(onnx_json_str)
-        
+
         file_size = output_path.stat().st_size
-        
+
         info = {
             "format": "onnx",
             "path": str(output_path),
@@ -148,7 +148,7 @@ def serializar_para_onnx(model: MockEnsembleModel, output_path: Path) -> Tuple[b
             "opset_version": 12,
             "gate_passed": file_size > 100_000,  # > 100KB
         }
-        
+
         return True, info
     except Exception as e:
         return False, {"error": str(e)}
@@ -157,7 +157,7 @@ def serializar_para_onnx(model: MockEnsembleModel, output_path: Path) -> Tuple[b
 def validar_serializacoes(pickle_info: Dict, onnx_info: Dict) -> Tuple[bool, Dict]:
     """
     Valida ambas as serializações contra gates.
-    
+
     Gates:
     - Arquivo pickle criado (> 100KB)
     - Arquivo ONNX criado (> 100KB)
@@ -165,7 +165,7 @@ def validar_serializacoes(pickle_info: Dict, onnx_info: Dict) -> Tuple[bool, Dic
     """
     pickle_ok = pickle_info.get("gate_passed", False)
     onnx_ok = onnx_info.get("gate_passed", False)
-    
+
     validation = {
         "pickle_serialization": {
             "passed": pickle_ok,
@@ -179,18 +179,18 @@ def validar_serializacoes(pickle_info: Dict, onnx_info: Dict) -> Tuple[bool, Dic
         },
         "both_formats_ready": pickle_ok and onnx_ok,
     }
-    
+
     return pickle_ok and onnx_ok, validation
 
 
 def main():
     """Executa serialização do modelo e salva resultados."""
-    
+
     print("=" * 80)
     print("💾 S2-5 Model Serialization - AC-3")
     print("=" * 80)
     print()
-    
+
     # Step 1: Criar modelo
     print("🤖 Carregando modelo ensemble...")
     model = MockEnsembleModel()
@@ -198,18 +198,18 @@ def main():
     print(f"   Versão: {model.metadata['version']}")
     print(f"   F1 Score: {model.metadata['f1_score']:.4f}")
     print()
-    
+
     # Step 2: Criar diretório de modelos
     models_dir = Path("models")
     models_dir.mkdir(exist_ok=True)
     print(f"✅ Diretório de modelos: {models_dir.absolute()}")
     print()
-    
+
     # Step 3: Serializar para pickle
     print("🔧 Serializando para Pickle...")
     pickle_path = models_dir / "s2_5_ensemble_final.pkl"
     pickle_ok, pickle_info = serializar_para_pickle(model, pickle_path)
-    
+
     if pickle_ok:
         print(f"✅ Pickle serializado com sucesso")
         print(f"   Arquivo: {pickle_path.name}")
@@ -219,12 +219,12 @@ def main():
         print(f"❌ Erro na serialização pickle: {pickle_info.get('error', 'Unknown')}")
         return 1
     print()
-    
+
     # Step 4: Serializar para ONNX
     print("🔧 Serializando para ONNX...")
     onnx_path = models_dir / "s2_5_ensemble_final.onnx"
     onnx_ok, onnx_info = serializar_para_onnx(model, onnx_path)
-    
+
     if onnx_ok:
         print(f"✅ ONNX serializado com sucesso")
         print(f"   Arquivo: {onnx_path.name}")
@@ -234,11 +234,11 @@ def main():
         print(f"⚠️  ONNX serialização com problema (fallback para pickle only)")
         onnx_info = {"gate_passed": False}
     print()
-    
+
     # Step 5: Validar ambas as serializações
     print("✓ Validando serializações...")
     passou, validation = validar_serializacoes(pickle_info, onnx_info)
-    
+
     if passou:
         print("✅ AC-3 GATE PASSED - Ambos formatos serializados e validados")
     else:
@@ -249,7 +249,7 @@ def main():
             print("❌ AC-3 GATE FAILED - Falha na serialização")
             return 1
     print()
-    
+
     # Step 6: Compilar resultados
     all_results = {
         "task_id": "BLOCKER-S2-5-FINAL",
@@ -272,15 +272,15 @@ def main():
             "onnx": str(onnx_path),
         }
     }
-    
+
     # Step 7: Salvar resultados
     output_path = Path("scripts/s2_5_serialization_validation.json")
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(all_results, f, indent=2, ensure_ascii=False)
-    
+
     print(f"✅ Resultados salvos em: {output_path}")
     print()
-    
+
     # Step 8: Summary
     print("=" * 80)
     print("📊 SERIALIZATION SUMMARY")
@@ -295,7 +295,7 @@ def main():
     print(f"AC-3 Status: {'✅ PASSED' if passou else '⚠️  PARTIAL'}")
     print("=" * 80)
     print()
-    
+
     return 0
 
 

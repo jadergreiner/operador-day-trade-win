@@ -1,10 +1,10 @@
 # 🎯 BLOCKER #1 - S2-5 FINALIZATION - READY TO EXECUTE
 
-**Status:** ✅ **SCRIPTS CRIADOS E COMMITADOS**  
-**Commit:** 797a6f1 - S2-5 finalization blocker scripts  
-**Deadline:** 28/02/2026 23:59 BRT (IMMOVABLE)  
-**Responsibility:** ML Expert  
-**All Artifacts:** origin/main synchronized  
+**Status:** ✅ **SCRIPTS CRIADOS E COMMITADOS**
+**Commit:** 797a6f1 - S2-5 finalization blocker scripts
+**Deadline:** 28/02/2026 23:59 BRT (IMMOVABLE)
+**Responsibility:** ML Expert
+**All Artifacts:** origin/main synchronized
 
 ---
 
@@ -142,7 +142,7 @@ cat S2_5_FINALIZATION_QUICK_START.md
 - **Target:** Both formats >100KB
 - **Effort:** 10 minutos
 - **Script:** `s2_5_model_serialization.py`
-- **Outputs:** 
+- **Outputs:**
   - `models/s2_5_ensemble_final.pkl`
   - `models/s2_5_ensemble_final.onnx`
   - `s2_5_serialization_validation.json`
@@ -243,11 +243,11 @@ echo "✅ S2-5 FINALIZATION COMPLETE - READY FOR GATE 2"
 
 ## 💡 DICAS
 
-✅ **NÃO INTERROMPA:** Master script leva 2-3 horas. Deixe rodar sem interrupções.  
-✅ **MONITOR CONSOLE:** Ver progresso em tempo real enquanto roda.  
-✅ **CHECK JSON FILES:** Se fizer manual, verificar que JSONs foram gerados.  
-✅ **BUFFER:** 6+ horas de buffer depois do fim das ACs até deadline 23:59.  
-✅ **GIT SOON AFTER:** Commitar com tag assim que AC-5 passar (não deixar para última hora).  
+✅ **NÃO INTERROMPA:** Master script leva 2-3 horas. Deixe rodar sem interrupções.
+✅ **MONITOR CONSOLE:** Ver progresso em tempo real enquanto roda.
+✅ **CHECK JSON FILES:** Se fizer manual, verificar que JSONs foram gerados.
+✅ **BUFFER:** 6+ horas de buffer depois do fim das ACs até deadline 23:59.
+✅ **GIT SOON AFTER:** Commitar com tag assim que AC-5 passar (não deixar para última hora).
 
 ---
 
@@ -319,14 +319,14 @@ cd c:\repo\operador-day-trade-win
 python scripts/s2_5_finalization_master.py
 ```
 
-**Estimado:** 2-3 horas  
-**Deadline:** 28/02/2026 23:59 BRT  
-**All artifacts:** Commitados em 797a6f1  
+**Estimado:** 2-3 horas
+**Deadline:** 28/02/2026 23:59 BRT
+**All artifacts:** Commitados em 797a6f1
 
 **Boa sorte! 🚀**
 
 ---
 
-*Criado: 28/02/2026*  
-*Status: ✅ PRONTO PARA EXECUÇÃO*  
+*Criado: 28/02/2026*
+*Status: ✅ PRONTO PARA EXECUÇÃO*
 *Todas as ACs com scripts, documentação, e master orchestrator preparados*

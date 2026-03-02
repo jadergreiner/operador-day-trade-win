@@ -33,19 +33,19 @@ def main():
     print("[OVERRIDE_FRAMEWORK] AC-4: Manual Override Authorization Framework")
     print("=" * 80)
     print()
-    
+
     # Authorization levels
     levels = {
         "Trader": {"authority": "100% veto on any order", "rank": 1},
         "CIO": {"authority": "Pause program (temp halt)", "rank": 2},
         "CFO": {"authority": "Capital allocation (highest)", "rank": 3},
     }
-    
+
     print("[CONFIG] Authorization Hierarchy:")
     for role, info in levels.items():
         print(f"  {role}: {info['authority']}")
     print()
-    
+
     # Test 20 override scenarios
     scenarios_tested = 0
     trader_overrides = 0
@@ -53,21 +53,21 @@ def main():
     cfο_reallocations = 0
     auth_denied = 0
     audit_logged = 0
-    
+
     override_log = []
-    
+
     print("[VALIDATION] Testing 20 override scenarios...")
-    
+
     for s in range(20):
         # Simulate random override scenario
         override_type = np.random.choice(["trader_veto", "cio_pause", "cfο_realloc", "invalid"])
         user_role = np.random.choice(["Trader", "CIO", "CFO"])
         timestamp = datetime.now().isoformat()
-        
+
         # Check authorization
         auth_ok = False
         action = None
-        
+
         if override_type == "trader_veto":
             auth_ok = user_role in ["Trader", "CIO", "CFO"]  # Anyone can delegate to trader authority
             action = "Ordre vetoed by trader override"
@@ -86,14 +86,14 @@ def main():
         else:
             auth_ok = False
             action = "Invalid override type"
-        
+
         if auth_ok:
             audit_logged += 1
         else:
             auth_denied += 1
-        
+
         scenarios_tested += 1
-        
+
         override_log.append({
             "scenario": s + 1,
             "override_type": override_type,
@@ -103,21 +103,21 @@ def main():
             "action": action,
             "logged": auth_ok,
         })
-    
+
     print(f"✅ Trader overrides: {trader_overrides}/20")
     print(f"✅ CIO pauses: {cio_pauses}/20")
     print(f"✅ CFO reallocations: {cfο_reallocations}/20")
     print(f"❌ Auth denied: {auth_denied}/20")
     print(f"📋 Audit logged: {audit_logged}/20")
     print()
-    
+
     # Validate gates
     all_types_used = trader_overrides > 0 and cio_pauses > 0 and cfο_reallocations > 0
     auth_working = auth_ok if len(override_log) > 0 else False
     audit_ok = audit_logged >= 15  # At least 75% logged
-    
+
     gates_ok = all_types_used and audit_ok
-    
+
     results = {
         "task_id": "S2-9-RISK-FRAMEWORK",
         "ac_id": "AC-4_override_framework",
@@ -144,12 +144,12 @@ def main():
         "sample_overrides": convert_numpy_types(override_log[:5]),
         "ready_for_production": gates_ok,
     }
-    
+
     output_path = Path("scripts/s2_9_ac4_override_validation.json")
     results = convert_numpy_types(results)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
-    
+
     print("=" * 80)
     print("[AC-4] OVERRIDE FRAMEWORK SUMMARY")
     print("=" * 80)
@@ -161,7 +161,7 @@ def main():
     print(f"AC-4 Status: [PASS]")
     print("=" * 80)
     print()
-    
+
     return 0 if gates_ok else 1
 
 if __name__ == "__main__":

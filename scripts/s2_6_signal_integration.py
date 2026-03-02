@@ -25,22 +25,22 @@ from typing import Dict, List, Tuple
 
 class S2_5_ModelLoader:
     """Carrega modelo S2-5 para integração com S2-6."""
-    
+
     def __init__(self, model_path: str = "models/s2_5_ensemble_final.pkl"):
         self.model_path = model_path
         self.model = None
         self.feature_names = None
         self.loaded = False
-    
+
     def load_model(self) -> bool:
         """Carrega modelo serializado."""
         try:
             with open(self.model_path, "rb") as f:
                 model_data = pickle.load(f)
-            
+
             # Mock model para testes (em produção seria o modelo real)
             self.model = MockModel(model_data)
-            self.feature_names = getattr(model_data.get("model", {}), "feature_names", 
+            self.feature_names = getattr(model_data.get("model", {}), "feature_names",
                                         [f"feature_{i}" for i in range(25)])
             self.loaded = True
             return True
@@ -50,22 +50,22 @@ class S2_5_ModelLoader:
             self.feature_names = [f"feature_{i}" for i in range(25)]
             self.loaded = True
             return True
-    
+
     def predict(self, X: np.ndarray) -> np.ndarray:
         """Faz predição com modelo."""
         if not self.loaded:
             self.load_model()
-        
+
         return self.model.predict(X)
 
 
 class MockModel:
     """Mock para modelo S2-5."""
-    
+
     def __init__(self, model_data: Dict):
         self.model_data = model_data
         self.feature_count = model_data.get("features", 25)
-    
+
     def predict(self, X: np.ndarray) -> np.ndarray:
         """Mock prediction."""
         if isinstance(X, np.ndarray):
@@ -76,25 +76,25 @@ class MockModel:
 
 class SignalGenerator:
     """Gera sinais usando modelo S2-5."""
-    
+
     def __init__(self, model_loader: S2_5_ModelLoader):
         self.model_loader = model_loader
         self.signals = []
-    
+
     def generate_random_features(self, n_samples: int = 100) -> np.ndarray:
         """Gera features aleatórias para mock."""
         return np.random.randn(n_samples, 25)
-    
+
     def generate_signals(self, n_signals: int = 100) -> List[Dict]:
         """Gera sinais usando modelo."""
         signals = []
-        
+
         # Generate features
         X = self.generate_random_features(n_signals)
-        
+
         # Get predictions from model
         predictions = self.model_loader.predict(X)
-        
+
         # Create signal objects
         for i, pred in enumerate(predictions):
             signal = {
@@ -111,9 +111,9 @@ class SignalGenerator:
                 "ready_for_execution": pred > 0.65,
             }
             signals.append(signal)
-        
+
         return signals
-    
+
     def integrate_with_dashboard_data(self, signals: List[Dict]) -> Dict:
         """Integra sinais com dados do dashboard."""
         return {
@@ -137,12 +137,12 @@ def measure_latency(func, *args, **kwargs) -> Tuple:
 
 def main():
     """Executa integração de sinais."""
-    
+
     print("=" * 80)
     print("[INTEGRATION] S2-6 Signal Integration - AC-3")
     print("=" * 80)
     print()
-    
+
     # Load S2-5 model
     print("[MODEL] Carregando modelo S2-5...")
     model_loader = S2_5_ModelLoader()
@@ -150,20 +150,20 @@ def main():
     print(f"{'✅' if loaded else '⚠️ '} Modelo carregado: {model_loader.loaded}")
     print(f"   Features: {len(model_loader.feature_names)}")
     print()
-    
+
     # Create signal generator
     print("[GENERATOR] Inicializando gerador de sinais...")
     signal_gen = SignalGenerator(model_loader)
     print("✅ Gerador pronto")
     print()
-    
+
     # Generate signals and measure latency
     print("[SIGNALS] Gerando 100 sinais em tempo real...")
     signals, latency = measure_latency(signal_gen.generate_signals, n_signals=100)
     print(f"✅ 100 sinais gerados em {latency:.2f}ms")
     print(f"   P95 Latency: {latency:.2f}ms (target <100ms)")
     print()
-    
+
     # Integrate with dashboard
     print("[INTEGRATING] Integrando sinais com dashboard...")
     integration_data, integration_latency = measure_latency(
@@ -175,7 +175,7 @@ def main():
     print(f"   Ready for Execution: {integration_data['ready_signals']}")
     print(f"   Avg Confidence: {integration_data['avg_confidence']:.4f}")
     print()
-    
+
     # Validate integration
     print("✓ Validando integração...")
     validation_passes = (
@@ -183,13 +183,13 @@ def main():
         latency < 100 and
         integration_latency < 100
     )
-    
+
     if validation_passes:
         print("✅ AC-3 GATE PASSED - Integração E2E funcionando")
     else:
         print("⚠️  AC-3 GATE PARTIAL - Revisar métricas acima")
     print()
-    
+
     # Validation output
     validation = {
         "task_id": "BLOCKER-S2-6-MVP",
@@ -222,11 +222,11 @@ def main():
             "all_gates_passed": validation_passes,
         }
     }
-    
+
     output_path = Path("scripts/s2_6_ac3_validation.json")
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(validation, f, indent=2, ensure_ascii=False)
-    
+
     print("=" * 80)
     print("[SUMMARY] SIGNAL INTEGRATION SUMMARY")
     print("=" * 80)
@@ -239,7 +239,7 @@ def main():
     print(f"AC-3 Status: {'✅ PASSED' if validation_passes else '⚠️  PARTIAL'}")
     print("=" * 80)
     print()
-    
+
     return 0 if validation_passes else 1
 
 

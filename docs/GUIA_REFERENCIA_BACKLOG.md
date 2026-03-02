@@ -1,8 +1,8 @@
 # 🚀 Guia Rápido — Backlog Unificado
 
-**Versão:** 2.0  
-**Data:** 02/03/2026  
-**Público:** PO, Squad, Agentes Autônomos  
+**Versão:** 2.0
+**Data:** 02/03/2026
+**Público:** PO, Squad, Agentes Autônomos
 
 ---
 
@@ -300,7 +300,7 @@ Depois:
 
 ---
 
-**Versão:** 2.0  
-**Data:** 02/03/2026  
-**Proprietário:** Product Owner (GitHub Copilot)  
+**Versão:** 2.0
+**Data:** 02/03/2026
+**Proprietário:** Product Owner (GitHub Copilot)
 **Última Revisão:** VERIFICACAO_CONSOLIDACAO_BACKLOG.md

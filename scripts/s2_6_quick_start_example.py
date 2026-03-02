@@ -28,18 +28,18 @@ from agente_micro_tendencia_winfut.s2_6_analytics.models import (
 
 async def main():
     """Main example flow"""
-    
+
     print("\n" + "="*80)
     print("S2-6: ANALYTICS - QUICK START EXAMPLE")
     print("="*80 + "\n")
-    
+
     # Step 1: Initialize
     print("[STEP 1] Inicializar dashboard...")
     config = AnalyticsConfig()
     dashboard = AnalyticsDashboard(config)
     print(f"  ✅ Dashboard inicializado")
     print(f"  Logs em: {config.log_dir}\n")
-    
+
     # Step 2: Create signal (from S2-3 + S2-5)
     print("[STEP 2] Criar sinal (S2-3 SMC + S2-5 T+60)...")
     signal = Signal(
@@ -62,14 +62,14 @@ async def main():
     print(f"     Direction: {signal.direction}")
     print(f"     Confidence (S2-5): {signal.confidence_score}")
     print(f"     Confluence (S2-3): {signal.smc_confluence_score}/5\n")
-    
+
     # Step 3: Register signal on dashboard
     print("[STEP 3] Registrar sinal no dashboard...")
     dashboard.register_signal(signal)
     print(f"  ✅ Sinal registrado")
     print(f"     Status: {signal.status.value}")
     print(f"     Awaiting trader approval...\n")
-    
+
     # Step 4: Get dashboard data
     print("[STEP 4] Obter dados do dashboard...")
     data = dashboard.get_dashboard_data()
@@ -77,13 +77,13 @@ async def main():
     print(f"     Pending signals: {data['signals']['pending']}")
     print(f"     Open positions: {data['signals']['open_positions']}")
     print(f"     Connected traders: {data['connectivity']['connected_traders']}\n")
-    
+
     # Step 5: Trader connects and approves
     print("[STEP 5] Trader conecta e aprova sinal...")
     dashboard.feedback_api.register_trader("trader_001")
     await dashboard.feedback_api.approve_signal(signal.signal_id, "trader_001")
     print(f"  ✅ Sinal aprovado por trader_001\n")
-    
+
     # Step 6: Execute signal
     print("[STEP 6] Executar sinal (Orders Executor)...")
     dashboard.execute_signal(signal.signal_id, execution_price=130020.0)
@@ -91,7 +91,7 @@ async def main():
     print(f"     Entry price: {signal.entry_price}")
     print(f"     Execution price: {signal.execution_price}")
     print(f"     Slippage: {signal.execution_price - signal.entry_price} points\n")
-    
+
     # Step 7: Trader gives feedback
     print("[STEP 7] Trader submete feedback...")
     feedback = await dashboard.feedback_api.submit_feedback(
@@ -103,7 +103,7 @@ async def main():
         suggestions={"next_signal": "Look for sustained confluence confirmation"},
     )
     print(f"  ✅ Feedback registrado: Rating {feedback.rating}/5\n")
-    
+
     # Step 8: Close position at take profit
     print("[STEP 8] Fechar posicao (TP atingido)...")
     dashboard.close_position(signal.signal_id, close_price=130600.0)
@@ -112,7 +112,7 @@ async def main():
     print(f"     Close price: {position.pnl_percentage:.1f}%")
     print(f"     P&L points: {position.pnl_points:+.0f}")
     print(f"     P&L percentage: {position.pnl_percentage:+.2f}%\n")
-    
+
     # Step 9: Manual override (simulated)
     print("[STEP 9] Simular intervencao manual...")
     override = dashboard.override_logger.log_override(
@@ -123,7 +123,7 @@ async def main():
         signal_id=signal.signal_id,
     )
     print(f"  ✅ Intervencao registrada com auditoria\n")
-    
+
     # Step 10: Performance report
     print("[STEP 10] Gerar relatorio de performance...")
     report = dashboard.get_performance_report(days=1)
@@ -138,7 +138,7 @@ async def main():
         print(f"     Profit factor: {report.profit_factor:.2f}x\n")
     else:
         print(f"     Profit factor: N/A (no losing trades)\n")
-    
+
     # Step 11: Final dashboard view
     print("[STEP 11] Dashboard final view...")
     final_data = dashboard.get_dashboard_data()
@@ -152,7 +152,7 @@ async def main():
     print(f"     Risk metrics:")
     print(f"       - Open positions: {final_data['risk']['open_positions_count']}")
     print(f"       - Max drawdown: {final_data['risk']['max_drawdown_pct']:.1f}%\n")
-    
+
     # Step 12: Override statistics
     print("[STEP 12] Override statistics...")
     override_stats = dashboard.override_logger.get_override_statistics(
@@ -161,18 +161,18 @@ async def main():
     print(f"  ✅ Override Statistics for trader_001:")
     print(f"     Total overrides: {override_stats['total_overrides']}")
     print(f"     By type: {override_stats.get('by_type', {})}\n")
-    
+
     print("="*80)
     print("✅ S2-6 QUICK START - EXEMPLO COMPLETO")
     print("="*80 + "\n")
-    
+
     print("📚 Next Steps:")
     print("  1. Integrate S2-3 (SMC) sinal generation")
     print("  2. Integrate S2-5 (T+60) confidence scoring")
     print("  3. Build WebSocket trader feedback UI")
     print("  4. Create real-time dashboard view")
     print("  5. Add performance metrics export\n")
-    
+
 
 if __name__ == "__main__":
     asyncio.run(main())

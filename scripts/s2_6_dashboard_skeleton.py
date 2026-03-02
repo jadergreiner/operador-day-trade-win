@@ -24,19 +24,19 @@ from typing import Dict, List
 
 class DashboardSkeleton:
     """Dashboard skeleton para S2-6 Analytics."""
-    
+
     def __init__(self):
         self.views = {
             "signals": self._gerar_signals_view(),
             "performance": self._gerar_performance_view(),
             "risk": self._gerar_risk_view(),
         }
-    
+
     def _gerar_signals_view(self) -> Dict:
         """View 1: Signals Overview (últimas 24h)."""
         signals = []
         base_time = datetime.now() - timedelta(hours=24)
-        
+
         for i in range(50):
             timestamp = base_time + timedelta(minutes=i*30)
             signals.append({
@@ -48,7 +48,7 @@ class DashboardSkeleton:
                 "result": np.random.choice(["WIN", "LOSS", "PENDING"]),
                 "pnl": float(np.random.uniform(-500, 2000)),
             })
-        
+
         return {
             "name": "Signals Overview (24h)",
             "description": "Últimos 50 sinais gerados pela IA",
@@ -63,7 +63,7 @@ class DashboardSkeleton:
                 "win_rate_24h": f"{sum(1 for s in signals if s['result'] == 'WIN') / len(signals) * 100:.1f}%",
             }
         }
-    
+
     def _gerar_performance_view(self) -> Dict:
         """View 2: Performance Metrics."""
         return {
@@ -98,7 +98,7 @@ class DashboardSkeleton:
                 for i in range(7)
             ]
         }
-    
+
     def _gerar_risk_view(self) -> Dict:
         """View 3: Risk Dashboard."""
         return {
@@ -147,7 +147,7 @@ class DashboardSkeleton:
                 },
             ]
         }
-    
+
     def gerar_html(self) -> str:
         """Gera HTML do dashboard."""
         html = """
@@ -159,7 +159,7 @@ class DashboardSkeleton:
             <title>S2-6 Analytics Dashboard MVP Skeleton</title>
             <style>
                 * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { 
+                body {
                     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     padding: 20px;
@@ -175,7 +175,7 @@ class DashboardSkeleton:
                     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
                 }
                 .card h2 { color: #667eea; margin-bottom: 15px; }
-                .metric { 
+                .metric {
                     display: flex;
                     justify-content: space-between;
                     padding: 10px 0;
@@ -209,7 +209,7 @@ class DashboardSkeleton:
                             <span class="metric-value">0.782</span>
                         </div>
                     </div>
-                    
+
                     <!-- View 2: Performance -->
                     <div class="card">
                         <h2>📈 Performance Metrics</h2>
@@ -226,7 +226,7 @@ class DashboardSkeleton:
                             <span class="metric-value">1.68</span>
                         </div>
                     </div>
-                    
+
                     <!-- View 3: Risk -->
                     <div class="card">
                         <h2>⚠️ Risk Dashboard</h2>
@@ -249,53 +249,53 @@ class DashboardSkeleton:
         </html>
         """
         return html
-    
+
     def salvar_arquivos(self):
         """Salva dashboard em HTML e JSON."""
         output_dir = Path("agente_micro_tendencia_winfut/s2_6_analytics")
         output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Salvar HTML
         html_file = output_dir / "dashboard.html"
         with open(html_file, "w", encoding="utf-8") as f:
             f.write(self.gerar_html())
-        
+
         # Salvar JSON
         json_file = output_dir / "dashboard_data.json"
         with open(json_file, "w", encoding="utf-8") as f:
             json.dump(self.views, f, indent=2, ensure_ascii=False)
-        
+
         return html_file, json_file
 
 
 def main():
     """Executa dashboard skeleton."""
-    
+
     print("=" * 80)
     print("[DASHBOARD] S2-6 Dashboard Skeleton - AC-1")
     print("=" * 80)
     print()
-    
+
     # Create dashboard
     print("[CREATING] Criando dashboard skeleton com 3 views...")
     dashboard = DashboardSkeleton()
     print("✅ Dashboard criado com sucesso")
     print()
-    
+
     # Generate views
     print("[GENERATING] Gerando 3 visualizacoes principais:")
     print(f"  1. Signals Overview: {dashboard.views['signals']['signals_count']} sinais")
     print(f"  2. Performance Metrics: F1={dashboard.views['performance']['model_metrics']['f1_score']}")
     print(f"  3. Risk Dashboard: Status={dashboard.views['risk']['circuit_breakers']['status']}")
     print()
-    
+
     # Save files
     print("[SAVING] Salvando arquivos...")
     html_file, json_file = dashboard.salvar_arquivos()
     print(f"✅ HTML: {html_file}")
     print(f"✅ JSON: {json_file}")
     print()
-    
+
     # Validation output
     validation = {
         "task_id": "BLOCKER-S2-6-MVP",
@@ -322,11 +322,11 @@ def main():
             "json": str(json_file),
         }
     }
-    
+
     output_path = Path("scripts/s2_6_ac1_validation.json")
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(validation, f, indent=2, ensure_ascii=False)
-    
+
     print("=" * 80)
     print("📊 DASHBOARD SUMMARY")
     print("=" * 80)
@@ -338,7 +338,7 @@ def main():
     print(f"AC-1 Status: ✅ PASSED")
     print("=" * 80)
     print()
-    
+
     return 0
 
 

@@ -42,7 +42,7 @@ class Signal:
     stop_loss: float
     take_profit: float
     reward_risk_ratio: float
-    
+
     status: SignalStatus = SignalStatus.GENERATED
     approved_by: Optional[str] = None
     approval_timestamp: Optional[datetime] = None
@@ -50,9 +50,9 @@ class Signal:
     execution_timestamp: Optional[datetime] = None
     pnl_points: Optional[float] = None
     pnl_percentage: Optional[float] = None
-    
+
     metadata: Dict[str, Any] = field(default_factory=dict)
-    
+
     def __post_init__(self) -> None:
         """Validacao apos inicializacao"""
         if not 0.0 <= self.confidence_score <= 1.0:
@@ -85,14 +85,14 @@ class ManualOverride:
     intervention_type: InterventionType
     trader_id: str
     reason: str  # Por que fez a intervencao?
-    
+
     signal_id: Optional[str] = None  # Se relacionado a um sinal
     previous_value: Optional[Any] = None  # Valor anterior (se override de param)
     new_value: Optional[Any] = None  # Novo valor
-    
+
     result_impact: Optional[str] = None  # Impacto da decisao
     pnl_impact: Optional[float] = None  # P&L gerado pela intervencao
-    
+
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -103,11 +103,11 @@ class TraderFeedback:
     timestamp: datetime
     trader_id: str
     signal_id: str
-    
+
     feedback_type: str  # "signal_quality", "risk_level", "system_suggestion", etc
     rating: int  # 1-5 (1=very bad, 5=excellent)
     comment: str
-    
+
     suggestions: Dict[str, Any] = field(default_factory=dict)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -117,26 +117,26 @@ class PerformanceMetrics:
     """Metricas de performance agregadas"""
     period_start: datetime
     period_end: datetime
-    
+
     total_signals: int = 0
     approved_signals: int = 0
     rejected_signals: int = 0
     executed_signals: int = 0
-    
+
     winning_trades: int = 0
     losing_trades: int = 0
     total_pnl_points: float = 0.0
     total_pnl_brl: float = 0.0
-    
+
     win_rate: float = 0.0
     avg_profit_per_trade: float = 0.0
     avg_loss_per_trade: float = 0.0
     profit_factor: float = 0.0
-    
+
     manual_interventions: int = 0
     intervention_success_rate: float = 0.0
-    
+
     max_drawdown: float = 0.0
     sharpe_ratio: float = 0.0
-    
+
     metadata: Dict[str, Any] = field(default_factory=dict)

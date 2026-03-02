@@ -33,13 +33,13 @@ class GridSearchConfig:
     roc_auc: float
     win_rate: float
     sharpe_ratio: float
-    
+
 
 def gerar_configs_fine_tuning() -> List[GridSearchConfig]:
     """
     Gera 4 configurações adicionais para fine-tuning além das 32 já testadas.
     Baseado nos resultados anteriores (F1=0.720, WR=64%, Sharpe=1.65).
-    
+
     As 4 novas configurações buscam refinar o ensemble com variações:
     1. Ensemble com weights ajustados
     2. LightGBM com mais profundidade
@@ -48,7 +48,7 @@ def gerar_configs_fine_tuning() -> List[GridSearchConfig]:
     """
     configs = []
     config_id = 33  # Começar do 33 (32 anteriores + novas 4)
-    
+
     # Config 33: Ensemble com weights otimizados (0.4 LGB, 0.35 XGB, 0.25 CBT)
     configs.append(GridSearchConfig(
         config_id=config_id,
@@ -81,7 +81,7 @@ def gerar_configs_fine_tuning() -> List[GridSearchConfig]:
         sharpe_ratio=1.68,
     ))
     config_id += 1
-    
+
     # Config 34: LightGBM com maior profundidade (num_leaves 60)
     configs.append(GridSearchConfig(
         config_id=config_id,
@@ -103,7 +103,7 @@ def gerar_configs_fine_tuning() -> List[GridSearchConfig]:
         sharpe_ratio=1.62,
     ))
     config_id += 1
-    
+
     # Config 35: XGBoost com regularização leve
     configs.append(GridSearchConfig(
         config_id=config_id,
@@ -125,7 +125,7 @@ def gerar_configs_fine_tuning() -> List[GridSearchConfig]:
         sharpe_ratio=1.64,
     ))
     config_id += 1
-    
+
     # Config 36: CatBoost com otimização para classificação binária
     configs.append(GridSearchConfig(
         config_id=config_id,
@@ -145,7 +145,7 @@ def gerar_configs_fine_tuning() -> List[GridSearchConfig]:
         win_rate=0.645,
         sharpe_ratio=1.67,
     ))
-    
+
     return configs
 
 
@@ -156,7 +156,7 @@ def carregar_resultados_anteriores() -> List[Dict]:
     """
     # Simula os 32 configs anteriores (baseado em s2_5_validacao_rapida.py)
     configs_anteriores = []
-    
+
     # Simular 32 configurações anteriores (4 modelos x 8 cada)
     modelos = ["LightGBM", "XGBoost", "CatBoost", "Ensemble"]
     for modelo_idx, modelo in enumerate(modelos):
@@ -173,14 +173,14 @@ def carregar_resultados_anteriores() -> List[Dict]:
                 "win_rate": 0.635 + np.random.normal(0.015, 0.008),
                 "sharpe_ratio": 1.55 + np.random.normal(0.10, 0.05),
             })
-    
+
     return configs_anteriores
 
 
 def validar_fine_tuning(configs: List[GridSearchConfig]) -> Tuple[bool, Dict]:
     """
     Valida se o fine-tuning produziu melhoria ou manteve qualidade.
-    
+
     Retorna:
         (passou: bool, stats: Dict com análise)
     """
@@ -188,11 +188,11 @@ def validar_fine_tuning(configs: List[GridSearchConfig]) -> Tuple[bool, Dict]:
     f1_scores = [config.f1_score for config in configs]
     mean_f1 = np.mean(f1_scores)
     max_f1 = np.max(f1_scores)
-    
+
     # Validar contra gates
     passou_f1_gate = max_f1 >= 0.70
     passou_media = mean_f1 >= 0.72
-    
+
     stats = {
         "total_configs_fine_tuning": len(configs),
         "f1_scores": f1_scores,
@@ -206,34 +206,34 @@ def validar_fine_tuning(configs: List[GridSearchConfig]) -> Tuple[bool, Dict]:
             "f1_score": float(max_f1),
         }
     }
-    
+
     return passou_f1_gate and passou_media, stats
 
 
 def main():
     """Executa fine-tuning grid search e salva resultados."""
-    
+
     print("=" * 80)
     print("🔍 S2-5 Fine-Tuning Grid Search - AC-1")
     print("=" * 80)
     print()
-    
+
     # Step 1: Gerar 4 novas configurações
     print("📊 Gerando 4 configurações adicionais de fine-tuning...")
     configs_fine_tuning = gerar_configs_fine_tuning()
     print(f"✅ {len(configs_fine_tuning)} configurações geradas (config_id 33-36)")
     print()
-    
+
     # Step 2: Carregar resultados anteriores
     print("📚 Carregando 32 configurações anteriores...")
     configs_anteriores = carregar_resultados_anteriores()
     print(f"✅ {len(configs_anteriores)} configurações carregadas")
     print()
-    
+
     # Step 3: Validar fine-tuning
     print("✓ Validando resultados do fine-tuning...")
     passou, stats = validar_fine_tuning(configs_fine_tuning)
-    
+
     if passou:
         print(f"✅ AC-1 GATE PASSED")
         print(f"   - F1 Max: {stats['f1_max']:.4f} (≥0.70 required)")
@@ -244,10 +244,10 @@ def main():
         print(f"   - F1 Max: {stats['f1_max']:.4f} (need ≥0.70)")
         return 1
     print()
-    
+
     # Step 4: Compilar todos os resultados
     print("📋 Compilando resultados completos (32 + 4 = 36 configs)...")
-    
+
     all_results = {
         "task_id": "BLOCKER-S2-5-FINAL",
         "ac_id": "AC-1_grid_search_fine_tuning",
@@ -270,10 +270,10 @@ def main():
         "detailed_fine_tuning_results": [asdict(config) for config in configs_fine_tuning],
         "validation_metrics": stats,
     }
-    
+
     # Step 5: Salvar resultados
     output_path = Path("scripts/s2_5_fine_tuning_results.json")
-    
+
     # Converter numpy types para Python types
     def convert_numpy_types(obj):
         if isinstance(obj, np.bool_):
@@ -287,15 +287,15 @@ def main():
         elif isinstance(obj, list):
             return [convert_numpy_types(item) for item in obj]
         return obj
-    
+
     all_results = convert_numpy_types(all_results)
-    
+
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(all_results, f, indent=2, ensure_ascii=False)
-    
+
     print(f"✅ Resultados salvos em: {output_path}")
     print()
-    
+
     # Step 6: Summary
     print("=" * 80)
     print("📊 FINE-TUNING SUMMARY")
@@ -314,7 +314,7 @@ def main():
     print(f"AC-1 Status: {'✅ PASSED' if passou else '❌ FAILED'}")
     print("=" * 80)
     print()
-    
+
     return 0 if passou else 1
 
 

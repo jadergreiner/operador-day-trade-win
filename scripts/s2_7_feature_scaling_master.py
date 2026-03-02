@@ -19,7 +19,7 @@ def executar_script(script_name: str, tempo_estimado: str) -> Tuple[bool, str]:
     print(f"Timestamp: {datetime.now().isoformat()}")
     print("=" * 100)
     print()
-    
+
     try:
         result = subprocess.run(
             [sys.executable, f"scripts/{script_name}"],
@@ -57,9 +57,9 @@ def main():
     print()
     print("=" * 100)
     print()
-    
+
     results = {}
-    
+
     # AC-1: Feature Engineering
     ac1_ok, _ = executar_script("s2_7_feature_engineering.py", "120 minutos")
     results["AC-1"] = {
@@ -70,7 +70,7 @@ def main():
     print()
     print(f"[RESULT] AC-1 COMPLETADO COM {'SUCESSO' if ac1_ok else 'ERRO'}")
     print()
-    
+
     # AC-2: Feature Selection
     ac2_ok, _ = executar_script("s2_7_feature_selection.py", "120 minutos")
     results["AC-2"] = {
@@ -81,7 +81,7 @@ def main():
     print()
     print(f"[RESULT] AC-2 COMPLETADO COM {'SUCESSO' if ac2_ok else 'ERRO'}")
     print()
-    
+
     # AC-3: Feature Validation
     ac3_ok, _ = executar_script("s2_7_feature_validation.py", "120 minutos")
     results["AC-3"] = {
@@ -92,7 +92,7 @@ def main():
     print()
     print(f"[RESULT] AC-3 COMPLETADO COM {'SUCESSO' if ac3_ok else 'ERRO'}")
     print()
-    
+
     # AC-4: Performance Analysis
     ac4_ok, _ = executar_script("s2_7_performance_analysis.py", "120 minutos")
     results["AC-4"] = {
@@ -103,34 +103,34 @@ def main():
     print()
     print(f"[RESULT] AC-4 COMPLETADO COM {'SUCESSO' if ac4_ok else 'ERRO'}")
     print()
-    
+
     # Summary
     print("=" * 100)
     print("[SUMMARY] Validando arquivos de saida...")
     print("=" * 100)
     print()
-    
+
     all_passed = validar_arquivos_saida() and ac1_ok and ac2_ok and ac3_ok and ac4_ok
-    
+
     for i in range(1, 5):
         json_file = Path(f"scripts/s2_7_ac{i}_validation.json")
         status = "[OK]" if json_file.exists() else "[FAIL]"
         print(f"  {status} AC-{i}: s2_7_ac{i}_validation.json")
-    
+
     print()
     print("=" * 100)
     print("[REPORT] RELATORIO FINAL")
     print("=" * 100)
     print()
-    
+
     print("Status das ACs:")
     for i in range(1, 5):
         status = "[PASS]" if results[f"AC-{i}"]["status"] == "PASSED" else "[FAIL]"
         name = results[f"AC-{i}"]["name"]
         print(f"  {status} AC-{i}: {name}")
-    
+
     print()
-    
+
     if all_passed:
         print("=" * 100)
         print("[SUCCESS] S2-7 ESTA 100% PRONTO PARA COMMIT!")

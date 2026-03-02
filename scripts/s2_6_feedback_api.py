@@ -39,19 +39,19 @@ class FeedbackEntry:
 
 class FeedbackAPI:
     """API de feedback para S2-6."""
-    
+
     def __init__(self, db_path: str = "data/s2_6_feedback.db"):
         self.db_path = db_path
         self.feedback_count = 0
         self._init_db()
-    
+
     def _init_db(self):
         """Inicializa banco de dados."""
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
-        
+
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS feedback (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -66,7 +66,7 @@ class FeedbackAPI:
                 created_at TEXT
             )
         """)
-        
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS overrides (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,10 +78,10 @@ class FeedbackAPI:
                 created_at TEXT
             )
         """)
-        
+
         conn.commit()
         conn.close()
-    
+
     def log_feedback(
         self,
         trader: str,
@@ -95,21 +95,21 @@ class FeedbackAPI:
         """Registra feedback do trader."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
+
         now = datetime.now().isoformat()
-        
+
         cursor.execute("""
-            INSERT INTO feedback 
+            INSERT INTO feedback
             (timestamp, trader, signal_id, action, reason, ml_confidence, trader_decision, result, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (now, trader, signal_id, action, reason, ml_confidence, trader_decision, result, now))
-        
+
         id = cursor.lastrowid
         self.feedback_count += 1
-        
+
         conn.commit()
         conn.close()
-        
+
         return {
             "id": id,
             "status": "✅ LOGGED",
@@ -118,7 +118,7 @@ class FeedbackAPI:
             "signal_id": signal_id,
             "action": action,
         }
-    
+
     def log_override(
         self,
         trader: str,
@@ -129,20 +129,20 @@ class FeedbackAPI:
         """Registra override manual."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
+
         now = datetime.now().isoformat()
-        
+
         cursor.execute("""
             INSERT INTO overrides
             (timestamp, trader, override_type, description, pnl, created_at)
             VALUES (?, ?, ?, ?, ?, ?)
         """, (now, trader, override_type, description, pnl, now))
-        
+
         id = cursor.lastrowid
-        
+
         conn.commit()
         conn.close()
-        
+
         return {
             "id": id,
             "status": "✅ LOGGED",
@@ -150,41 +150,41 @@ class FeedbackAPI:
             "trader": trader,
             "override_type": override_type,
         }
-    
+
     def get_stats(self) -> Dict:
         """Retorna estatísticas de feedback."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
+
         # Total feedback
         cursor.execute("SELECT COUNT(*) FROM feedback")
         total_feedback = cursor.fetchone()[0]
-        
+
         # Feedback por ação
         cursor.execute("""
             SELECT action, COUNT(*) as count FROM feedback GROUP BY action
         """)
         feedback_by_action = {row[0]: row[1] for row in cursor.fetchall()}
-        
+
         # Overrides por tipo
         cursor.execute("""
             SELECT override_type, COUNT(*) as count FROM overrides GROUP BY override_type
         """)
         overrides_by_type = {row[0]: row[1] for row in cursor.fetchall()}
-        
+
         # Total overrides
         cursor.execute("SELECT COUNT(*) FROM overrides")
         total_overrides = cursor.fetchone()[0]
-        
+
         conn.close()
-        
+
         return {
             "total_feedback": total_feedback,
             "feedback_by_action": feedback_by_action,
             "total_overrides": total_overrides,
             "overrides_by_type": overrides_by_type,
         }
-    
+
     def health_check(self) -> Dict:
         """Health check da API."""
         return {
@@ -202,18 +202,18 @@ class FeedbackAPI:
 
 def main():
     """Executa feedback API skeleton."""
-    
+
     print("=" * 80)
     print("[API] S2-6 Feedback API - AC-2")
     print("=" * 80)
     print()
-    
+
     # Create API
     print("[INITIALIZING] Inicializando Feedback API...")
     api = FeedbackAPI()
     print("✅ API inicializada")
     print()
-    
+
     # Check health
     print("[HEALTH] Verificando saude da API...")
     health = api.health_check()
@@ -221,19 +221,19 @@ def main():
     print(f"Database: {health['database']}")
     print(f"Endpoints: {len(health['endpoints'])} disponíveis")
     print()
-    
+
     # Simulate feedback entries
     print("[LOGGING] Registrando feedback de exemplo...")
     traders = ["Trader_A", "Trader_B", "Trader_C"]
     actions = ["OVERRIDE", "ACCEPT", "REJECT", "PAUSE"]
     results = ["WIN", "LOSS", "PENDING"]
-    
+
     feedback_logs = []
     for i in range(20):
         trader = traders[i % len(traders)]
         action = actions[i % len(actions)]
         result = results[i % len(results)]
-        
+
         log = api.log_feedback(
             trader=trader,
             signal_id=f"signal_{i+1:03d}",
@@ -244,19 +244,19 @@ def main():
             result=result
         )
         feedback_logs.append(log)
-    
+
     print(f"✅ {len(feedback_logs)} feedback entries registradas")
     print()
-    
+
     # Simulate override entries
     print("[OVERRIDES] Registrando overrides de exemplo...")
     override_types = ["MANUAL_CLOSE", "MANUAL_ENTRY", "RISK_OVERRIDE", "PAUSE_TRADING"]
-    
+
     override_logs = []
     for i in range(10):
         trader = traders[i % len(traders)]
         override_type = override_types[i % len(override_types)]
-        
+
         log = api.log_override(
             trader=trader,
             override_type=override_type,
@@ -264,10 +264,10 @@ def main():
             pnl=200.0 + (i % 10) * 50
         )
         override_logs.append(log)
-    
+
     print(f"✅ {len(override_logs)} override entries registradas")
     print()
-    
+
     # Get stats
     print("[STATS] Estatisticas de Feedback:")
     stats = api.get_stats()
@@ -280,7 +280,7 @@ def main():
     for override_type, count in stats['overrides_by_type'].items():
         print(f"  - {override_type}: {count}")
     print()
-    
+
     # Validation output
     validation = {
         "task_id": "BLOCKER-S2-6-MVP",
@@ -305,11 +305,11 @@ def main():
             "websocket": "✅ READY",
         }
     }
-    
+
     output_path = Path("scripts/s2_6_ac2_validation.json")
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(validation, f, indent=2, ensure_ascii=False)
-    
+
     print("=" * 80)
     print("[API_SUMMARY] API FEEDBACK SUMMARY")
     print("=" * 80)
@@ -322,7 +322,7 @@ def main():
     print(f"AC-2 Status: ✅ PASSED")
     print("=" * 80)
     print()
-    
+
     return 0
 
 

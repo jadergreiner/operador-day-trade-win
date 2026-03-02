@@ -22,17 +22,17 @@ from typing import Dict, Tuple
 def carregar_ac_resultado(ac_file: Path) -> Tuple[bool, Dict]:
     """
     Carrega resultado de um AC executado anteriormente.
-    
+
     Retorna:
         (passou: bool, data: Dict)
     """
     if not ac_file.exists():
         return False, {"error": f"Arquivo não encontrado: {ac_file}"}
-    
+
     try:
         with open(ac_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        
+
         passou = data.get("status") == "PASSED" or data.get("overall_passed", False)
         return passou, data
     except Exception as e:
@@ -42,21 +42,21 @@ def carregar_ac_resultado(ac_file: Path) -> Tuple[bool, Dict]:
 def validar_todos_acs() -> Tuple[bool, Dict]:
     """
     Valida que todos os 4 ACs foram completados com sucesso.
-    
+
     Retorna:
         (todos_passaram: bool, summary: Dict)
     """
-    
+
     ac_files = {
         1: Path("scripts/s2_5_fine_tuning_results.json"),
         2: Path("scripts/s2_5_cross_validation_results.json"),
         3: Path("scripts/s2_5_serialization_validation.json"),
         4: Path("scripts/s2_5_production_inference_test.json"),
     }
-    
+
     resultados = {}
     todos_passaram = True
-    
+
     for ac_num, ac_file in ac_files.items():
         passou, data = carregar_ac_resultado(ac_file)
         resultados[f"AC-{ac_num}"] = {
@@ -64,28 +64,28 @@ def validar_todos_acs() -> Tuple[bool, Dict]:
             "passed": passou,
             "data": data,
         }
-        
+
         if not passou:
             todos_passaram = False
-    
+
     return todos_passaram, resultados
 
 
 def gerar_relatorio_final(ac_results: Dict) -> Dict:
     """
     Gera relatório final consolidando todos os ACs.
-    
+
     Retorna:
         Dict com summary completo
     """
-    
+
     relatorio = {
         "task_id": "BLOCKER-S2-5-FINAL",
         "timestamp": datetime.now().isoformat(),
         "overall_status": "READY_FOR_GIT_COMMIT" if all(
             r.get("passed", False) for r in ac_results.values()
         ) else "INCOMPLETE",
-        
+
         "ac_summary": {
             "AC-1_grid_search": {
                 "name": "Grid Search Fine-Tuning",
@@ -118,7 +118,7 @@ def gerar_relatorio_final(ac_results: Dict) -> Dict:
                 }
             },
         },
-        
+
         "blockers_status": {
             "AC-1_PASS": ac_results.get("AC-1", {}).get("passed", False),
             "AC-2_PASS": ac_results.get("AC-2", {}).get("passed", False),
@@ -129,14 +129,14 @@ def gerar_relatorio_final(ac_results: Dict) -> Dict:
                 for i in range(1, 5)
             )
         },
-        
+
         "next_action": {
             "step": "AC-5 Git Commit & Tag",
             "command": "git add models/ scripts/ && git commit -m \"feat: S2-5 final - modelo serializado e testado em producao\" && git tag v1.3.0-s2-5-final && git push origin main --tags",
             "estimated_duration_minutes": 5,
             "deadline": "28/02/2026 23:59 BRT (IMMOVABLE)",
         },
-        
+
         "gate_2_readiness": {
             "s2_5_status": "100% READY" if all(
                 ac_results.get(f"AC-{i}", {}).get("passed", False)
@@ -151,43 +151,43 @@ def gerar_relatorio_final(ac_results: Dict) -> Dict:
             "gate_2_impact": "Capital escalation R$ 50k → R$ 100k + Phase 1 launch authorization 10/04"
         }
     }
-    
+
     return relatorio
 
 
 def main():
     """Executa validação final e gera relatório."""
-    
+
     print("=" * 80)
     print("✓ S2-5 Final Validation Report - AC Summary (1-4)")
     print("=" * 80)
     print()
-    
+
     # Step 1: Validar todos os ACs
     print("🔍 Validando todas as ACs anteriores...")
     print()
-    
+
     todos_passaram, ac_results = validar_todos_acs()
-    
+
     # Step 2: Exibir status de cada AC
     print("📋 Status das ACs:")
     print()
-    
+
     for ac_num in range(1, 5):
         ac_key = f"AC-{ac_num}"
         resultado = ac_results.get(ac_key, {})
         passou = resultado.get("passed", False)
         arquivo = resultado.get("file", "N/A")
-        
+
         status_icon = "✅" if passou else "❌"
         print(f"  {status_icon} {ac_key}: {arquivo}")
-        
+
         if not passou:
             error = resultado.get("data", {}).get("error", "Unknown error")
             print(f"     └─ Erro: {error}")
-    
+
     print()
-    
+
     # Step 3: Verificar se todos os ACs passaram
     if todos_passaram:
         print("✅ TODOS OS ACS (1-4) PASSARAM!")
@@ -206,19 +206,19 @@ def main():
                 print(f"   ❌ {ac_key} FAILED - Execute: python scripts/s2_5_*.py")
         print()
         return 1
-    
+
     # Step 4: Gerar relatório final
     print("📊 Gerando relatório final consolidado...")
     relatorio = gerar_relatorio_final(ac_results)
-    
+
     # Step 5: Salvar relatório
     output_path = Path("scripts/s2_5_final_validation_report.json")
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(relatorio, f, indent=2, ensure_ascii=False)
-    
+
     print(f"✅ Relatório salvo em: {output_path}")
     print()
-    
+
     # Step 6: Exibir próximas ações
     print("=" * 80)
     print("🚀 PRÓXIMAS AÇÕES (AC-5: Git Commit & Tag)")
@@ -231,7 +231,7 @@ def main():
     print(f"Tempo estimado: {relatorio['next_action']['estimated_duration_minutes']} minutos")
     print(f"Deadline: {relatorio['next_action']['deadline']}")
     print()
-    
+
     # Step 7: Gate 2 readiness
     print("=" * 80)
     print("🎯 GATE 2 READINESS STATUS")
@@ -249,7 +249,7 @@ def main():
     print()
     print("=" * 80)
     print()
-    
+
     return 0
 
 
