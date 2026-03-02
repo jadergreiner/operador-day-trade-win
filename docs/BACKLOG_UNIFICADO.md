@@ -342,7 +342,305 @@ SE Qualquer critério = FAIL:
 
 ---
 
-## 🟢 P2 - FUTURO (Sprint 2+)
+### P1-7: S2-6 Analytics Integration - Tests & Batch Processing
+
+**Status:** 🟢 Pronto para começar
+**Responsável:** Eng Sr + ML Expert
+**Squad:** 2 pessoas
+**Horas:** 32h
+**Dependências:** P1-1 (Integração básica completa)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- Suite de testes E2E para integração S2-6
+  (`test_agente_s2_6_integration.py`)
+- Batch processing para backtest com S2-6
+- Dashboard real-time (Grafana/Streamlit)
+- Validação sincronização (100% antes de go-live)
+- Monitoramento stats em tempo real (win rate, sharpe, drawdown)
+
+#### Critérios de Aceite (6):
+- [ ] CA-1: Testes E2E implementados (10+ testes)
+- [ ] CA-2: Testes passam 100% (10/10)
+- [ ] CA-3: Batch processing pronto
+- [ ] CA-4: Dashboard exibe stats tempo real
+- [ ] CA-5: Latência integração <500ms
+- [ ] CA-6: Sincronização validada (100%)
+
+---
+
+### P1-8: Sistema de Alertas - Testes & Deployment
+
+**Status:** 🟢 Pronto para começar
+**Responsável:** Dev-Backend + QA
+**Squad:** 2 pessoas
+**Horas:** 40h
+**Dependências:** Nenhuma (paralelo)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- Testes unitários Sistema de Alertas (8 testes)
+- Testes integração WebSocket/Email/SMS (3 testes)
+- Validação latência P95 <30s
+- Configuração para v1.1.1+ (Produção)
+- Setup deployment contínuo (CI/CD)
+- Monitoramento e alertas sistema
+
+#### Critérios de Aceite (7):
+- [ ] CA-1: 8 testes unitários PASS
+- [ ] CA-2: 3 testes integração PASS
+- [ ] CA-3: Latência P95 <30s validada
+- [ ] CA-4: Taxa captura ≥85%
+- [ ] CA-5: False positive rate <10%
+- [ ] CA-6: Taxa entrega >98%
+- [ ] CA-7: Deployment v1.1.1+ pronto
+
+---
+
+### P1-9: API REST Alertas - Histórico & SMS
+
+**Status:** 🟡 Bloqueado (v1.2 futuro)
+**Responsável:** Dev-Backend
+**Squad:** 1 pessoa
+**Horas:** 24h
+**Começa Quando:** Após P1-8 completo
+**Prioridade:** 🟡 IMPORTANTE (futuro)
+
+#### Entregas Esperadas (v1.2):
+- GET /alertas/historico endpoint
+  - Filtros (data, ativo, padrão, nível)
+  - Limit/offset paginação
+  - Response JSON com histórico
+- SMS alertas (v1.2 condicional)
+  - Ativação automática se email falha >2% em 30 dias
+  - Formato compacto SMS
+  - Suporte Twilio/AWS SNS
+- Documentação API atualizada
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: GET /alertas/historico implementado
+- [ ] CA-2: Filtros funcionando (5 tipos)
+- [ ] CA-3: Paginação OK
+- [ ] CA-4: SMS integrado (condicional)
+- [ ] CA-5: Testes API PASS (10+ testes)
+
+---
+
+### P1-10: Detection Engine - Padrões Técnicos
+
+**Status:** 🟢 Pronto para começar
+**Responsável:** ML Expert
+**Squad:** 2 pessoas (ML Expert + Data Scientist)
+**Horas:** 40h
+**Dependências:** Nenhuma (paralelo com P0-1)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- Detector Engulfing Pattern (bullish + bearish)
+  - Definição e condições
+  - Confiança 65%
+  - ~5-8 ocorrências/semana WIN$N
+- Detector Divergência RSI/Preço (bullish + bearish)
+  - Definição e condições
+  - Confiança 60%
+  - ~3-4 ocorrências/semana WIN$N
+- Detector Break Suporte/Resistência
+  - Nível identificação (últimos 5 candles)
+  - Confiança 70%
+  - ~2-3 ocorrências/semana WIN$N
+- Ensemble ranking (múltiplos padrões)
+  - Aumento confiança por padrão adicional
+  - Capped em 0.95 máximo
+- Cálculo ATR para risk:reward (2.5:1 target)
+- 11 testes (8 unitários + 3 integração)
+
+#### Critérios de Aceite (12):
+- [ ] CA-1: Engulfing bullish detectado
+- [ ] CA-2: Engulfing bearish detectado
+- [ ] CA-3: Divergência RSI validada
+- [ ] CA-4: Break S/R identificado
+- [ ] CA-5: Ensemble ranking pronto
+- [ ] CA-6: ATR calculado corretamente
+- [ ] CA-7: Risk:reward 2.5:1 validado
+- [ ] CA-8: 8 unit tests PASS
+- [ ] CA-9: 3 integration tests PASS
+- [ ] CA-10: Latência P50 <10s
+- [ ] CA-11: Taxa captura ≥85%
+- [ ] CA-12: False positive <10%
+
+---
+
+### P1-11: Trade Sync Verification (TradeSyncVerifier)
+
+**Status:** 🟡 Bloqueado (após P0-1, P1-2)
+**Responsável:** Dev-Backend
+**Squad:** 1 pessoa
+**Horas:** 10h
+**Dependências:** P0-1 (API MT5), P0-2 (Persistência)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- TradeSyncVerifier class (validação 1:1 MT5 ↔ SQLite)
+- Daily reconciliation job
+  - Comparação hash trades MT5 vs SQLite
+  - Reportar missing trades
+  - Reportar mismatches (entry price, etc)
+- Alert system para discrepâncias
+- TradeSyncReport geração
+- Discrepancy log persistência
+- 3 testes de integração
+
+#### Critérios de Aceite (6):
+- [ ] CA-1: TradeSyncVerifier implementado
+- [ ] CA-2: Daily job agendado
+- [ ] CA-3: Comparação hash OK
+- [ ] CA-4: Missing trades detectados
+- [ ] CA-5: Mismatches reportados
+- [ ] CA-6: 3 integration tests PASS
+
+---
+
+### P1-12: RL Feedback System - Resultados Reais
+
+**Status:** 🟡 Bloqueado (após P0-2, P1-2)
+**Responsável:** ML Expert + Dev-Backend
+**Squad:** 2 pessoas
+**Horas:** 15h
+**Dependências:** P0-2 (Persistência trades)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- TradeClosedEvent listener
+  - Escuta eventos Trade.close()
+  - Calcula PnL real vs previsão
+  - Feedback loop para RL model
+- RL model update pipeline
+  - Incorporar feedback histórico
+  - Retraining com novos outcomes
+  - Version control de modelos
+- Historical outcome tracking
+  - Database para armazenar resultados
+  - Análise de performance
+- 4 testes de integração
+
+#### Critérios de Aceite (6):
+- [ ] CA-1: TradeClosedEvent listener implementado
+- [ ] CA-2: PnL cálculo validado
+- [ ] CA-3: RL model update pipeline pronto
+- [ ] CA-4: Retraining automático funciona
+- [ ] CA-5: Historical tracking completo
+- [ ] CA-6: 4 integration tests PASS
+
+---
+
+## � TAREFAS COMPLEMENTARES CONSOLIDADAS
+
+### Diários Automáticos (Sistema de Feedback)
+
+**Status:** ✅ Implementado (código pronto)
+**Responsável:** Sistema (automático)
+**Horas:** 0h (já desenvolvido)
+**Prioridade:** 🟡 COMPLEMENTAR
+
+**Descrição:**
+Sistema inteligente que gera automaticamente dois tipos de diário
+durante o pregão para feedback e treinamento:
+
+1. **Diário de Trading Storytelling** (15 minutos)
+   - Narrativa do mercado (estilo jornalístico)
+   - Sentimento mercado (PANIC, GREEDY, FEARFUL, CALM)
+   - Decisão operacional (BUY/SELL/HOLD)
+   - Tags para ML
+
+2. **Diário de Reflexão da IA** (10 minutos)
+   - Auto-crítica sincera da IA
+   - Avaliação de utilidade
+   - Correlação dados x preço
+   - Feedback sobre trader
+
+**Entregas:**
+- ✅ scripts/quick_start_journals.py (inicialização)
+- ✅ scripts/start_automated_journals.py (agendado 09:00)
+- ✅ Dois tipos de diário implementados
+- ✅ Exportação dados para ML
+
+**Uso:**
+```bash
+# Iniciar automaticamente às 09:00
+python scripts/start_automated_journals.py
+
+# Ou duplo clique
+INICIAR_DIARIOS.bat
+
+# Exportar dados para ML
+python scripts/export_journal_data.py
+```
+
+**Benefícios:**
+- Narrativas para análise sentimental
+- Dados para RL feedback loop
+- Avaliação de qualidade estratégia
+- Training dataset complementar
+
+---
+
+### Task-Crítica-0: Persistence Fix (Auditoria 24/02)
+
+**Status:** ✅ IMPLEMENTADO (código pronto para execução)
+**Responsável:** Eng Sr
+**Sprint:** 2 (prerequisite)
+**Blocker:** NÃO
+**Prioridade:** 🔴 CRÍTICA
+
+**Problema Resolvido:**
+- ❌ 4 operações executadas no MT5 mas ZERO persistidas em SQLite
+- ✅ Solução: TransactionLogService + MT5SynchronizationService
+
+**Arquivos Criados:**
+- `src/infrastructure/persistence/transaction_log_service.py` (300+ LOC)
+- `src/infrastructure/persistence/mt5_synchronization_service.py` (350+ LOC)
+- `scripts/recovery_and_audit_24fev.py` (200+ LOC)
+- `tests/unit/test_persistence_task_critica_0.py` (300+ LOC)
+
+**Componentes Implementados:**
+
+1. **TransactionLogService**
+   - Log append-only imutável
+   - Estados: PENDING → COMMITTED / FAILED → DLQ
+   - Checksum SHA256 para integridade
+   - Dead-letter queue para retry
+
+2. **MT5SynchronizationService**
+   - Sincronização ORDERS, DEALS, POSITIONS
+   - Recuperação retroativa (7 dias)
+   - Recuperação especial 24/02
+   - Replay automático PENDING
+
+3. **Recovery Script**
+   - Sincronização geral (7 dias)
+   - Recuperação 24/02 especial
+   - Análise dead-letter queue
+   - Audit report CVM-compliant
+
+**Acceptance Criteria (5):**
+- ✅ AC-1: Auditoria 24/02 identificada e restaurada
+- ✅ AC-2: Persistência validada com transaction logs
+- ✅ AC-3: Compliance CVM/B3 verificado
+- ✅ AC-4: Testes integridade com replay
+- ✅ AC-5: Testes unitários >90% coverage
+
+**Próximo Passo:**
+```bash
+# Executar recovery
+python scripts/recovery_and_audit_24fev.py
+
+# Rodar testes
+pytest tests/unit/test_persistence_task_critica_0.py -v
+```
+
+---
+
+## �🟢 P2 - FUTURO (Sprint 2+)
 
 ### P2-1: Retry Logic Exponencial
 
@@ -410,6 +708,48 @@ SE Qualquer critério = FAIL:
 - Production readiness checklist
 
 ---
+
+### P2-5: Monitoring & Observability (Prometheus/Grafana)
+
+**Status:** 📋 Planejado
+**Responsável:** DevOps + Dev-Backend
+**Squad:** 2 pessoas
+**Horas:** 20h
+**Prioridade:** 🟢 MÉDIO
+
+#### Entregas Esperadas:
+- Prometheus metrics export
+  - Orders sent/persisted/confirmed counters
+  - Persistence success rate gauge
+  - Retry attempt distribution histogram
+  - Persistence latency histogram
+  - Dead-letter queue size gauge
+- Grafana dashboards
+  - Orders execution metrics (real-time)
+  - Trade sync verification status
+  - RL feedback pipeline health
+  - Database performance metrics
+  - Alert history + discrepancies
+- PagerDuty integration
+  - Critical alerts: persistence <95%
+  - Critical alerts: DLQ size >10 items
+  - Custom alert rules (trader-defined)
+- Logs aggregation (centralized)
+  - All order/trade logs in single view
+  - Debug mode para troubleshooting
+  - Retention policy (30 dias)
+
+#### Critérios de Aceite (6):
+- [ ] CA-1: Prometheus exportador implementado
+- [ ] CA-2: Grafana dashboards criados (3+)
+- [ ] CA-3: Alertas PagerDuty enviados
+- [ ] CA-4: Logs centralizados
+- [ ] CA-5: Retention policy aplicada
+- [ ] CA-6: Trader consegue ler metrics
+
+---
+
+### P2-6: Staging Deployment
 
 ## 📋 BACKLOG FUTURO (Sprint 3+)
 
