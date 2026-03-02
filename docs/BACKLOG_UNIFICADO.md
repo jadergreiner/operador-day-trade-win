@@ -458,7 +458,133 @@ SE Qualquer critério = FAIL:
 
 ---
 
-## 📊 MODELO DE EXECUÇÃO
+## � P4 - STAGING & GO-LIVE (Phase 4: 01-10/03)
+
+### P4-1: Staging Deployment (01-05/03)
+
+**Status:** 📋 Planejado (aguarda GATE 2 PASS)  
+**Responsável:** Eng Sr + DevOps  
+**Squad:** 3 pessoas (DevOps + Eng Sr + Tech Writer)  
+**Horas:** 40h  
+**Começa Quando:** GATE 2 aprovado (~26/02)  
+**Gate Decision:** Gate 4.1 (05/03 18:00) Staging Readiness  
+**Prioridade:** 🔴 CRÍTICA  
+
+#### Entregas Esperadas:
+- Azure Resource Group (8 recursos)
+- App Service + PostgreSQL + Redis + Key Vault
+- Code deployment (FastAPI + WebSocket)
+- Integration testing (25+ testes)
+- Load testing (3 cenários: 100, 200, 500 users)
+- Infrastructure documentation
+- Deployment procedures validated
+- Monitoring + alerting configurado
+- Backup strategy verified
+- Performance baseline established
+
+#### Critérios de Aceite (8):
+- [ ] CA-1: 8/8 recursos Azure criados e healthy
+- [ ] CA-2: Health check endpoint PASS
+- [ ] CA-3: 25+ testes integração PASS
+- [ ] CA-4: Load test 500 users: P95 <2s
+- [ ] CA-5: Zero critical errors em logs
+- [ ] CA-6: Auto-scaling configurado
+- [ ] CA-7: Daily backups automated
+- [ ] CA-8: AppInsights monitoring active
+
+#### Testes Necessários:
+- Infrastructure tests (Bicep validation, resource creation)
+- Integration tests (API ↔ services, E2E flows)
+- Load tests (Locust scenarios: baseline, medium, stress)
+- Smoke tests (health check, connectivity)
+- Performance tests (latency, throughput, P95)
+- Escalation tests (auto-scale on load)
+
+---
+
+### P4-2: UAT & Approval (06-09/03)
+
+**Status:** 📋 Planejado (após P4-1 completo)  
+**Responsável:** Trader + CIO + CFO  
+**Squad:** 5 pessoas (Trader, CIO, CFO, Eng Sr support)  
+**Horas:** 24h  
+**Gate Decision:** Gate 4.2 (10/03 09:00) Go-Live Ready  
+**Prioridade:** 🔴 CRÍTICA  
+
+#### Entregas Esperadas:
+- Trader acceptance testing (6 test cases)
+- CIO security validation (12 security points)
+- CFO financial approval (capital authorization)
+- Risk framework final validation
+- Sign-off documents (3: Trader, CIO, CFO)
+- Final readiness checklist (50+ items)
+- Support procedures validated
+- Emergency procedures rehearsal
+- Escalation contacts confirmed
+
+#### Critérios de Aceite (8):
+- [ ] CA-1: Trader APPROVA (signal accuracy 80%+)
+- [ ] CA-2: CIO APPROVA (security posture OK)
+- [ ] CA-3: CFO APPROVA (capital R$ 50k authorized)
+- [ ] CA-4: Zero blocking issues reported
+- [ ] CA-5: All 3 sign-offs signed (Trader/CIO/CFO)
+- [ ] CA-6: Risk framework validated
+- [ ] CA-7: Override procedures tested 100%
+- [ ] CA-8: 24/7 support contacts confirmed
+
+#### Testes Necessários:
+- UAT Trader (backtest accuracy, signal tests, override)
+- UAT CIO (JWT auth, RBAC, encryption, NSG rules)
+- UAT CFO (P&L tracking, risk framework, capital controls)
+- End-to-end integration tests (production-like)
+- Security penetration testing (light assessment)
+- Disaster recovery tests (failover procedures)
+
+---
+
+### P4-3: Go-Live Production (10/03)
+
+**Status:** 📋 Planejado (após P4-2 completo)  
+**Responsável:** Eng Sr + DevOps  
+**Squad:** 4 pessoas (Eng Sr, DevOps, Trader on-call)  
+**Horas:** 8h  
+**Go-Live Time:** 10/03 09:30 BRT  
+**Prioridade:** 🔴 CRÍTICA  
+
+#### Entregas Esperadas:
+- Production infrastructure deployment
+- Data migration (if needed)
+- Cutover execution (staging → production)
+- Capital transfer R$ 50k
+- 24/7 monitoring + alerting
+- Support team briefing
+- First trades execution
+- Post-go-live validation (1h)
+- Incident escalation procedures
+- Weekly reporting setup
+
+#### Critérios de Aceite (8):
+- [ ] CA-1: Production environment UP
+- [ ] CA-2: Trading system ONLINE
+- [ ] CA-3: Capital R$ 50k transferido
+- [ ] CA-4: First 5+ trades executed
+- [ ] CA-5: P&L tracking funcionando
+- [ ] CA-6: Alerts configurados
+- [ ] CA-7: Support team briefed
+- [ ] CA-8: Post-go-live validation PASS
+
+#### Testes Necessários:
+- Smoke tests (endpoints, connectivity, health)
+- Data migration validation (if applicable)
+- First trade execution tests
+- P&L calculation verification
+- Alert system validation
+- Monitoring dashboard verification
+- Escalation procedures test
+
+---
+
+## �📊 MODELO DE EXECUÇÃO
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -481,6 +607,19 @@ SE Qualquer critério = FAIL:
 │ └─ P0-2: ML-004 (Backtest)  [Bloqueado até P0-1]    │
 │    └─ Começa quando P0-1 ✅                           │
 │    └─ GATE 2 decision point                          │
+│    └─ Desbloqueia: P4-1 (Phase 4)                    │
+│                                                         │
+│ EXECUÇÃO SEQUENCIAL (Phase 4):                        │
+│                                                         │
+│ ├─ P4-1: Staging Deploy    [01-05/03, GATE 4.1]      │
+│ │  └─ Desbloqueia: P4-2                              │
+│ │                                                    │
+│ ├─ P4-2: UAT & Approval    [06-09/03, GATE 4.2]      │
+│ │  └─ Desbloqueia: P4-3                              │
+│ │                                                    │
+│ └─ P4-3: Go-Live Prod      [10/03, ONLINE]           │
+│    └─ Ativa capital R$ 50k                           │
+│    └─ Inicia FASE 1 Beta                             │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 
@@ -488,13 +627,16 @@ REGRAS:
 1. ENG-003 + ML-003 → Paralelos (sem dependências)
 2. P1-2 through P1-6 → Aguardam P0-1 completo
 3. P0-2 → Aguarda P0-1 completo
-4. P2-* → Começam após GATE 2 aprovado
-5. P3-* → Futuro (não começar agora)
+4. P4-1,2,3 → SEQUENCIAL após GATE 2 PASS (síncronas)
+5. P2-* → Começam após GATE 2 (podem ser paralelos)
+6. P3-* → Futuro (não começar agora)
 ```
 
 ---
 
 ## ᴊ ALOCAÇÃO DE EQUIPE
+
+### Sprint 2 Equipe (Paralela)
 
 | Função | Horas | Tarefas |
 |--------|-------|----------|
@@ -509,7 +651,30 @@ REGRAS:
 | Engenheiro QA | 32h | Automação testes |
 | DevOps | 20h | Ambiente + CI/CD |
 | Tech Writer | 15h | Documentação |
-| **Total** | **395h** | — |
+| **Sprint 2 Total** | **395h** | — |
+
+### Phase 4 Equipe (Sequencial: 01-10/03)
+
+| Função | Horas | Tarefas |
+|--------|-------|----------|
+| Eng Sr | 24h | P4-1 + P4-3 (Design + Go-Live) |
+| DevOps | 20h | P4-1 + P4-3 (Infrastructure) |
+| Trader | 12h | P4-2 (UAT acceptance) |
+| CIO | 8h | P4-2 (Security review) |
+| CFO | 8h | P4-2 (Financial approval) |
+| QA | 0h | (reusa squad Sprint 2) |
+| Support | 0h | (reusa squad Sprint 2) |
+| **Phase 4 Total** | **72h** | — |
+
+### RECAPITULAÇÃO TOTAL
+
+| Fase | Horas | Equipe | Período |
+|------|-------|--------|---------|
+| Sprint 2 | 395h | 11 personas | Iniciando |
+| Phase 4 | 72h | 5 personas + support | 01-10/03 |
+| **TOTAL** | **467h** | **16 personas max** | — |
+
+**Observação:** Phase 4 começa imediatamente após GATE 2 PASS (~26/02).
 
 ---
 
@@ -533,7 +698,7 @@ prioridade)
 ### GATE 2 (Capital Decision)
 **Quando:** P0-2 (ML-004) completado  
 **Quem:** CFO + Board  
-**Decisão:** Ativar R$ 50k → R$ 100k Fase 2?  
+**Decisão:** Ativar Phase 4? Ativar R$ 50k → R$ 100k?  
 
 **Critérios:**
 - ✅ Sharpe ≥ 1.0
@@ -542,8 +707,44 @@ prioridade)
 - ✅ Consistência < 30% std
 
 **Ação:**
-- SE PASS: Libera R$ 100k Fase 2
-- SE FAIL: Manter R$ 50k Fase 1
+- SE PASS: GO para Phase 4 + Libera R$ 100k Fase 2
+- SE FAIL: Manter R$ 50k Fase 1 (adiar Phase 4)
+
+---
+
+### GATE 4.1 (Staging Readiness)
+**Quando:** P4-1 (Staging Deploy) completado  
+**Data:** 05/03 18:00  
+**Quem:** CTO + Eng Sr + QA Lead  
+**Decisão:** Staging ambiente pronto para UAT?  
+
+**Critérios:**
+- ✅ 8/8 recursos Azure healthy
+- ✅ 25+ testes integração PASS
+- ✅ Load test P95 <2s (500 users)
+- ✅ Zero critical errors
+
+**Ação:**
+- SE PASS: GO para P4-2 (UAT)
+- SE FAIL: Fix issues e retry (atraso Phase 4)
+
+---
+
+### GATE 4.2 (Go-Live Ready)
+**Quando:** P4-2 (UAT & Approval) completado  
+**Data:** 10/03 09:00  
+**Quem:** Trader + CIO + CFO  
+**Decisão:** Go-live production?  
+
+**Critérios:**
+- ✅ Trader APPROVA
+- ✅ CIO APPROVA (security)
+- ✅ CFO APPROVA (capital)
+- ✅ Zero blocking issues
+
+**Ação:**
+- SE PASS: GO para P4-3 (Production Go-Live)
+- SE FAIL: Block go-live (atraso até xxx)
 
 ---
 
@@ -553,13 +754,17 @@ prioridade)
 |---------|-------|-------------|
 | P0-1 blocker | Eng Sr | CTO |
 | ML metrics off | ML Expert | Head Data |
-| Gate criteria fail | PO | CFO + Board |
-| Capital decision | CFO | Board |
-| Performance issue | Eng Sr | CTO |
+| GATE 1 fail | PO | CFO + Board |
+| GATE 2 fail | CFO | Board |
+| P4-1 blocker | Eng Sr | CTO |
+| P4-2 trader reject | Trader | CTO + CFO |
+| P4-2 CIO reject | CIO | CTO + CFO |
+| P4-2 CFO reject | CFO | Board |
+| P4-3 go-live issue | Eng Sr | CTO + Board |
 
 ---
 
-## ✅ CHECKLIST PRÉ-INÍCIO
+## ✅ CHECKLIST PRÉ-INÍCIO (Sprint 2)
 
 - [ ] Ambientes validados (Docker, Python, Git)
 - [ ] Squad alocado (11 personas confirmadas)
@@ -574,16 +779,55 @@ prioridade)
 
 ---
 
-## 📚 DOCUMENTOS RELACIONADOS
+## ✅ PRÉ-REQUISITOS PARA PHASE 4 (01/03)
 
-- [SPRINT2_TAREFAS_PRIORIZADAS.md](../SPRINT2_TAREFAS_PRIORIZADAS.md)
-- [SPRINT2_ACTIVIDADES_PRIORIDADE.md]
-(../SPRINT2_ACTIVIDADES_PRIORIDADE.md)
-- [PLANO_DE_SPRINTS_MVP_NOW.md](./PLANO_DE_SPRINTS_MVP_NOW.md)
-- [README.md](../README.md)
+### Documentação Phase 4
+- [ ] PHASE4_STAGING_MASTERPLAN.md revisado
+- [ ] GO_LIVE_CHECKLIST.md assinado pelos 3 signatários
+- [ ] CONTINGENCY_BACKUP_PLAN_PHASE4.md validado
+- [ ] Todos procedimentos rehearsed
+- [ ] Escalation matrix confirmada
+
+### Equipe Phase 4
+- [ ] Eng Sr disponível (24h alocadas)
+- [ ] DevOps disponível (20h alocadas)
+- [ ] Trader disponível para UAT
+- [ ] CIO disponível para review
+- [ ] CFO disponível para approval
+- [ ] Support 24/7 confirmado
+
+### Infraestrutura Phase 4
+- [ ] Azure subscription validado
+- [ ] Bicep templates testados
+- [ ] Connection strings preparadas
+- [ ] Secrets em Key Vault
+- [ ] Monitoring configurado
 
 ---
 
-**Última Atualização:** 02/03/2026  
-**Próxima Revisão:** Quando P0-1 completo  
-**Proprietário:** Product Owner (GitHub Copilot)
+## 📚 DOCUMENTOS RELACIONADOS
+
+### Sprint 2
+- [SPRINT2_TAREFAS_PRIORIZADAS.md](../SPRINT2_TAREFAS_PRIORIZADAS.md)
+- [SPRINT2_ACTIVIDADES_PRIORIDADE.md](../SPRINT2_ACTIVIDADES_PRIORIDADE.md)
+- [PLANO_DE_SPRINTS_MVP_NOW.md](./PLANO_DE_SPRINTS_MVP_NOW.md)
+
+### Phase 4 (Staging & Go-Live)
+- [PHASE4_STAGING_MASTERPLAN.md](./agente_autonomo/PHASE4_STAGING_MASTERPLAN.md)
+- [GO_LIVE_CHECKLIST.md](./agente_autonomo/GO_LIVE_CHECKLIST.md)
+- [CONTINGENCY_BACKUP_PLAN_PHASE4.md](./agente_autonomo/CONTINGENCY_BACKUP_PLAN_PHASE4.md)
+- [FINAL_READINESS_CHECKLIST_PHASE4.md](./agente_autonomo/FINAL_READINESS_CHECKLIST_PHASE4.md)
+- [PHASE4_FIRST_WEEK_ACTIONS.md](./agente_autonomo/PHASE4_FIRST_WEEK_ACTIONS.md)
+
+### Geral
+- [README.md](../README.md)
+- [ANALISE_INTEGRACAO_PHASE4_BACKLOG.md](./ANALISE_INTEGRACAO_PHASE4_BACKLOG.md)
+
+---
+
+**Última Atualização:** 03/03/2026  
+**Próxima Revisão:** Quando GATE 2 completo (Phase 4 kick-off)  
+**Proprietário:** Product Owner (GitHub Copilot)  
+**Status:** ✅ BACKLOG COMPLETO (Sprint 2 + Phase 4)
+
+
