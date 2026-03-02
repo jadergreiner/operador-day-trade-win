@@ -753,7 +753,85 @@ pytest tests/unit/test_persistence_task_critica_0.py -v
 
 ## 📋 BACKLOG FUTURO (Sprint 3+)
 
-### P3-1: Fontes Externas (Dados Macro)
+### P3-1: S3-1 Preparação Production Deployment
+
+**Status:** 📋 Planejado (Sprint 3)
+**Responsável:** DevOps + Infra
+**Horas:** 20h
+**Timeline:** 24/02-02/03 (Preparação) | 03/03+ (Execução)
+**Prioridade:** 🟠 PREPARAÇÃO
+
+**Objetivo:**
+Preparar ambiente de produção para S2-6 Analytics. 5 passos
+sequenciais de setup, replicação, monitoramento e validação.
+
+**Entregas Esperadas:**
+
+1. **Staging Environment Setup** (4h)
+   - Provisionar servidor staging (terraform)
+   - Build + push container image
+   - Deploy Kubernetes
+   - Validar health check
+
+2. **Database Replication** (4h)
+   - Backup da produção
+   - Restore em staging
+   - Validação integridade (row count)
+   - Monitorar replicação ativa
+
+3. **Monitoring & Logging** (4h)
+   - Setup Prometheus scrape config
+   - Grafana dashboards
+   - ELK logging pipeline
+   - Alertas configurado
+
+4. **Load Testing** (4h)
+   - Apache JMeter com 100 threads
+   - Validar throughput 500+ req/s
+   - P95 latency <200ms
+   - Error rate <1%
+
+5. **Disaster Recovery** (2h)
+   - Simular failover de DB
+   - Testar restart automático de serviço
+   - Validar rollback procedure
+   - Documentar procedimentos
+
+**Critérios de Aceite:**
+- [ ] CA-1: Staging 100% réplica de produção
+- [ ] CA-2: Load test PASSED (500+ req/s)
+- [ ] CA-3: Disaster recovery testado e documentado
+- [ ] CA-4: Monitoring + alertas funcionando
+- [ ] CA-5: Rollback procedure validado
+- [ ] CA-6: CTO pre-flight sign-off recebido
+
+**Go/No-Go Decision (02/03 16:00):**
+- ✅ GO se: todos testes PASS, P95<200ms, uptime>99.5%, CTO approved
+- ❌ NO-GO se: algum teste falha, P95>250ms, CTO concerns
+
+**Próximas Ações:**
+1. Confirmar disponibilidade DevOps (24/02 18:00)
+2. Iniciar Passo 1 (Staging setup)
+3. Paralelizar com S2-4 e S2-6
+4. Daily standup prep (09:00, 15:00)
+
+---
+
+### P3-1B: Fontes Externas (Dados Macro)
+
+**Status:** 📋 Futuro
+**Prioridade:** 🟢 BAIXO
+
+**Entregas:**
+- [ ] Adicionar integração fontes externas
+(risco-câmbio/juros)
+- [ ] Ingestão BACEN (swap cambial, históricos)
+- [ ] Séries IPEADATA (macro Brasil)
+- [ ] Séries Tesouro Nacional (dívida pública)
+- [ ] Posições abertas B3 (futuros)
+- [ ] Opcional: Bloomberg/Reuters (profissional)
+
+### P3-1B: Fontes Externas (Dados Macro)
 
 **Status:** 📋 Futuro
 **Prioridade:** 🟢 BAIXO
@@ -769,7 +847,69 @@ pytest tests/unit/test_persistence_task_critica_0.py -v
 
 ---
 
-### P3-2: Analytics Avançadas
+### P3-2: Estratégia ML para Agente de Trading (PLANO)
+
+**Status:** 📋 Design Document (Deliberação Completada)
+**Responsável:** ML Expert + Head de Finanças
+**Documento:** PLANO_ML_TRADING_AGENT.md
+**Prioridade:** 🟡 ESTRATÉGICO
+
+**Objetivo:**
+Documento de deliberação técnica com 20+ rodadas de Q&A entre
+Head de Finanças e Especialista em ML definindo estratégia
+de ML para evoluir do agente heurístico para modelo supervisionado.
+
+**Decisões Arquiteturais Documentadas:**
+
+1. **Supervisionado vs RL vs Híbrido:**
+   - MVP: Supervisionado (XGBoost/LightGBM)
+   - Production v1.2: Híbrido (Supervisionado + RL em cima)
+   - Nunca usar RL puro (sample-inefficient para trading)
+
+2. **Feature Engineering:**
+   - 150-200 features selecionadas
+   - Group-based reduction (85 correlações → 6-8 grupos)
+   - Lag features para padrões temporais
+   - Suporte a features categóricas (market_regime)
+
+3. **Target Specification:**
+   - Multi-output regression (reward_BUY, reward_SELL, reward_HOLD)
+   - Reward shaping sofisticado (40% reward + 20% MFE + 15% MAE + 15% direction + 10% opp_cost)
+   - Horizonte primário: 30 minutos
+
+4. **Modelo Selecionado:**
+   - **LightGBM** (3-5× mais rápido que XGBoost)
+   - max_depth=3-4, strong regularization
+   - Walk-forward validation (sem look-ahead)
+   - Purging + Embargo (60min entre train/val)
+
+5. **Deploy & Adaptação:**
+   - Inferência local (<5ms por decisão)
+   - Ramp-up gradual (shadow mode → blend → full ML)
+   - Retreino semanal (sexta) com últimos 60 dias
+   - Thompson Sampling para calibração intra-day
+
+6. **Backtesting Robusto:**
+   - 3 camadas: replay episódios, walk-forward, paper trading
+   - Incluir slippage (10pts entrada + 10 saída)
+   - Spread (5 pts) + custos B3 (R$0.65/contrato)
+   - Threshold lucrativo: >25 pts líquido
+
+**Referências no Código:**
+- Dados RL: `rl_episodes`, `rl_rewards`, `rl_correlation_scores`
+- Features técnicas: macro_score, micro_score, 150+ indicadores
+- Benchmarks: 85%+ accuracy no backtest, 65%+ win rate live
+
+**Próximos Passos (Sprint 2):**
+- [ ] Implementar feature engineering (P1-1)
+- [ ] Treinar baseline LightGBM (P0-2)
+- [ ] Validar com walk-forward (P0-2)
+- [ ] Paper trading shadow (P1-7)
+- [ ] Deploy gradual ramp-up
+
+---
+
+### P3-3: Analytics Avançadas
 
 **Status:** 📋 Futuro
 **Prioridade:** 🟢 BAIXO
@@ -784,7 +924,22 @@ pytest tests/unit/test_persistence_task_critica_0.py -v
 
 ---
 
-### P3-3: Mobile App
+### P3-3: Analytics Avançadas
+
+**Status:** 📋 Futuro
+**Prioridade:** 🟢 BAIXO
+
+**Entregas:**
+- [ ] Dashboard analytics completo
+- [ ] Histórico operações (60+ dias)
+- [ ] Análise padrões, seasonal
+- [ ] Relatórios customizáveis
+- [ ] Export dados (Tableau, PowerBI)
+- [ ] Real-time KPIs
+
+---
+
+### P3-4: Mobile App
 
 **Status:** 📋 Futuro
 **Prioridade:** 🟢 BAIXO
@@ -798,7 +953,7 @@ pytest tests/unit/test_persistence_task_critica_0.py -v
 
 ---
 
-### P3-4: WINFUT Micro Tendências Análise
+### P3-5: WINFUT Micro Tendências Análise
 
 **Status:** 📋 Futuro
 **Prioridade:** 🟢 BAIXO
@@ -839,7 +994,7 @@ em ciclos de 2 minutos.
 
 ---
 
-### P3-5: WDO Análise Correlações (Dólar Futuro)
+### P3-6: WDO Análise Correlações (Dólar Futuro)
 
 **Status:** 📋 Futuro
 **Prioridade:** 🟢 BAIXO
