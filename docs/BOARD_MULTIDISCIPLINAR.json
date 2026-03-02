@@ -47,7 +47,7 @@
         "timeline": "27/02-03/03",
         "estimativa_horas": 24,
         "impacto": "+2-3% win rate",
-        "arquitetura_ref": "docs/S2-5_PROBABILIDADE_T60_ESPECIFICACAO.md"
+        "arquitetura_ref": "docs/BACKLOG_UNIFICADO.md#-s2-sprint-2-tasks--consolidadas-sprint-2-27022-13032"
       },
       {
         "id": "S1-4-LOGGING",
@@ -108,7 +108,7 @@
       "bloco": 1,
       "responsabilidades": [
         "Facilitar decisões semanais",
-        "Registrar deliberações em STATUS_ENTREGAS",
+        "Registrar deliberações em BACKLOG_UNIFICADO.md",
         "Garantir quorum e seguimento da política",
         "Mapear dependências e riscos"
       ],
@@ -205,15 +205,15 @@
       "responsabilidades": [
         "Sincronizar os docs oficiais",
         "Auditar lint Markdown e encoding",
-        "Atualizar BEST_PRACTICES.md",
-        "Registrar syncs em SYNCHRONIZATION.md"
+        "Atualizar BACKLOG_UNIFICADO.md com novo status",
+        "Manter BACKLOG sincronizado com sprint atual"
       ],
       "perfil": "Documentation & QA Lead",
       "email": "doc@operador-day-trade-win.local",
       "voto": null,
       "doc_guidelines": {
-        "fonte_verdade": "docs/ROADMAP.md, docs/STATUS_ENTREGAS.md, docs/PLANO_DE_SPRINTS_MVP_NOW.md, docs/CRITERIOS_DE_ACEITE_MVP.md, docs/FEATURES.md, docs/CHANGELOG.md",
-        "protocolo_sync": "[SYNC] obrigatório + registro em SYNCHRONIZATION.md",
+        "fonte_verdade": "docs/BACKLOG_UNIFICADO.md (Fonte Única de Verdade)",
+        "protocolo_sync": "[SYNC] obrigatório - todas as tarefas consolidadas em BACKLOG_UNIFICADO.md",
         "markdown_lint": "Linhas <= 80 chars, UTF-8",
         "nao_fazer": "Não criar docs fora dos core; não duplicar"
       }
@@ -306,7 +306,7 @@
       "bloco": 5,
       "responsabilidades": [
         "Priorização estratégica",
-        "Sincronização com FEATURES.md",
+        "Sincronização com BACKLOG_UNIFICADO.md",
         "Alinhar negócios e backlog",
         "Criar artefatos doc relevantes"
       ],
@@ -323,7 +323,7 @@
       "responsabilidades": [
         "Garantir audit trail completo",
         "Validar requisitos legais",
-        "Sincronizar DECISIONS.md",
+        "Sincronizar com BACKLOG_UNIFICADO.md",
         "Revisar políticas internas"
       ],
       "perfil": "Compliance",
@@ -355,20 +355,20 @@
       "responsabilidades": [
         "Manter docs oficiais sincronizados",
         "Aplicar padrões Markdown",
-        "Auditar BEST_PRACTICES.md",
-        "Operar SYNCHRONIZATION.md"
+        "Auditar BACKLOG_UNIFICADO.md para práticas recomendadas",
+        "Manter sincronização em BACKLOG_UNIFICADO.md"
       ],
       "perfil": "Documentation Advocate",
       "email": "docadvocate@operador-day-trade-win.local",
       "voto": null,
       "doc_guidelines": {
-        "CRITICAL": "docs/ROADMAP.md, docs/STATUS_ENTREGAS.md, docs/PLANO_DE_SPRINTS_MVP_NOW.md, docs/FEATURES.md, docs/CRITERIOS_DE_ACEITE_MVP.md, docs/SYNCHRONIZATION.md, docs/CHANGELOG.md",
-        "protocolo_SYNC": "[SYNC] obrigatório + registro em SYNCHRONIZATION.md",
+        "CRITICAL": "docs/BACKLOG_UNIFICADO.md (Fonte Única de Verdade)",
+        "protocolo_SYNC": "[SYNC] obrigatório - atualizar BACKLOG_UNIFICADO.md",
         "tarefas_imediatas": [
-          "Atualizar links entre docs oficiais",
-          "Sincronizar STATUS_ENTREGAS com Sprint 1",
-          "Manter TRACKER e ROADMAP alinhados",
-          "Garantir encoding UTF-8"
+          "Manter BACKLOG_UNIFICADO.md como fonte única de verdade",
+          "Sincronizar tarefas com sprint atual em BACKLOG",
+          "Manter referências cruzadas em ARCHITECTURE.md alinhadas",
+          "Garantir encoding UTF-8 em BACKLOG_UNIFICADO.md"
         ],
         "nao_fazer": "Não criar docs fora dos core"
       }
@@ -536,46 +536,28 @@
     }
   },
   "docs_sync_policy": {
-    "version": "1.0.1",
-    "source_of_truth": "docs/STATUS_ENTREGAS.md",
+    "version": "2.0.0",
+    "source_of_truth": "docs/BACKLOG_UNIFICADO.md",
     "official_docs": [
-      "docs/ROADMAP.md",
-      "docs/STATUS_ENTREGAS.md",
-      "docs/PLANO_DE_SPRINTS_MVP_NOW.md",
-      "docs/CRITERIOS_DE_ACEITE_MVP.md",
-      "docs/FEATURES.md",
-      "docs/CHANGELOG.md"
+      "docs/BACKLOG_UNIFICADO.md"
     ],
     "cross_links": {
-      "docs/ROADMAP.md": [
-        "docs/STATUS_ENTREGAS.md",
-        "docs/PLANO_DE_SPRINTS_MVP_NOW.md",
-        "docs/FEATURES.md"
-      ],
-      "docs/STATUS_ENTREGAS.md": [
-        "docs/ROADMAP.md",
-        "docs/PLANO_DE_SPRINTS_MVP_NOW.md",
-        "docs/CRITERIOS_DE_ACEITE_MVP.md",
-        "docs/CHANGELOG.md"
-      ],
-      "docs/PLANO_DE_SPRINTS_MVP_NOW.md": [
-        "docs/ROADMAP.md",
-        "docs/STATUS_ENTREGAS.md",
-        "docs/CRITERIOS_DE_ACEITE_MVP.md"
+      "docs/BACKLOG_UNIFICADO.md": [
+        "docs/ARCHITECTURE.md"
       ]
     },
     "roadmap_awareness": {
-      "descricao": "Adicionar bloco Execução / Visibilidade em docs/ROADMAP.md detalhando sprint ativo, data da última atualização e progresso NOW (itens MUST concluídos/total)",
-      "campo_sprint_atual": "Sprint atual: Sprint 1",
-      "campo_data_atualizacao": "Última atualização: 2026-02-23",
-      "campo_progresso_now": "Progresso NOW: 0 de 4 MUST"
+      "descricao": "Adicionar referência para BACKLOG_UNIFICADO.md com status de sprints ativas e progresso",
+      "campo_sprint_atual": "Sprint atual: Sprint 2",
+      "campo_data_atualizacao": "Última atualização: 2026-03-02",
+      "campo_progresso_now": "Ver BACKLOG_UNIFICADO.md para progresso de todas as tarefas"
     },
-    "sync_trigger_prompt": "Sincronize os docs oficiais do projeto seguindo cruzamentos: (1) links rápidos completos; (2) atualize STATUS_ENTREGAS com itens NOW (Sprint, Issue, PR, status); (3) registre Execução / Visibilidade no ROADMAP; (4) documente o sync em SYNCHRONIZATION.md com tag [SYNC] e timestamp."
+    "sync_trigger_prompt": "[SYNC] Sincronize BACKLOG_UNIFICADO.md como fonte única de verdade: (1) Atualize status das tarefas sprint; (2) Mantenha seções consolidadas sincronizadas; (3) Valide referências cruzadas com ARCHITECTURE.md; (4) Registre todas as alterações com tag [SYNC] e timestamp."
   },
   "gates_s2_0": {
     "version": "1.0.0",
     "descricao": "QA Gates S2-0 (Data Strategy 60 símbolos)",
-    "referencia_documento": "docs/DATA_STRATEGY_QA_GATES_S2_0.md",
+    "referencia_documento": "docs/BACKLOG_UNIFICADO.md - Seção S2 SPRINT 2 TASKS",
     "status": "🟡 PLANEJANDO → 🟢 VALIDAÇÃO pronta",
     "gates": {
       "gate_1": {
@@ -666,32 +648,32 @@
           {
             "id": "D2",
             "descricao": "README data atualizado",
-            "arquivo": "docs/FEATURES.md",
+            "arquivo": "docs/BACKLOG_UNIFICADO.md",
             "criterio": "≥ 300 palavras"
           },
           {
             "id": "D3",
             "descricao": "CRITÉRIOS atualizados",
-            "arquivo": "docs/CRITERIOS_DE_ACEITE_MVP.md",
+            "arquivo": "docs/BACKLOG_UNIFICADO.md",
             "criterio": "Seção S2-0 com gates"
           },
           {
             "id": "D4",
             "descricao": "Decisions documentadas",
-            "arquivo": "docs/DECISIONS.md",
+            "arquivo": "docs/BACKLOG_UNIFICADO.md",
             "criterio": "Cache strategy + Risk"
           },
           {
             "id": "D5",
             "descricao": "Sync registrado",
-            "arquivo": "docs/SYNCHRONIZATION.md",
+            "arquivo": "docs/BACKLOG_UNIFICADO.md",
             "criterio": "Entry [SYNC] S2-0"
           },
           {
             "id": "D6",
             "descricao": "Status atualizado",
-            "arquivo": "docs/STATUS_ENTREGAS.md",
-            "criterio": "Item S2-0 marcado 🟢"
+            "arquivo": "docs/BACKLOG_UNIFICADO.md",
+            "criterio": "Item S2-0 marcado 🟢 em BACKLOG_UNIFICADO.md"
           }
         ]
       },
