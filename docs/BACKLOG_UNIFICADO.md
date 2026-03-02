@@ -1898,6 +1898,11 @@ Este documento unifica todas as tarefas pendentes dos seguintes arquivos de orig
 | S1_REVIEW_SUMMARY.md | 03/03/2026 | Histórico Sprint 1 |
 | VERIFICACAO_CONSOLIDACAO_BACKLOG.md | 03/03/2026 | Auditoria consolidação |
 | VOLUME_ANALYSIS_JOURNALS.md | 03/03/2026 | Documentação técnica integrada |
+| ⚡_GO_LIVE_APROVADO_FINAL.txt | 03/03/2026 | S2-5 go-live approval (consolidado em S2-5) |
+| ⚡_QUICK_START_AUDITORIA_S2_5.txt | 03/03/2026 | S2-5 quick reference (consolidado em S2-5) |
+| ARQUITETURA_INTEGRACAO_PHASE6.md | 03/03/2026 | Phase 6 integration tasks (BDI, WebSocket, email, staging) |
+| ATIVAR_PRODUCAO_README.md | 03/03/2026 | Phase 7 go-live activation (PowerShell, config, monitoring) |
+| CHECKLIST_EXECUTIVA_US004.md | 03/03/2026 | Sprint 3 BETA launch tasks (13/03 go-live, 27/03 gate review) |
 | GATE2_EXECUTION_PLAN.md | 03/03/2026 | Gate 2 execution (referencial) |
 | GOVERNANCE_SYNC_POLICY.md | 03/03/2026 | Política sincronização |
 | MACRO_SCORE_REQUIREMENTS.md | 03/03/2026 | Macro Score System (P3-14) |
