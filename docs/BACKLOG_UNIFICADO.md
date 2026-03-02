@@ -458,7 +458,97 @@ SE Qualquer critério = FAIL:
 
 ---
 
-## � P4 - STAGING & GO-LIVE (Phase 4: 01-10/03)
+### P3-4: WINFUT Micro Tendências Análise
+
+**Status:** 📋 Futuro
+**Prioridade:** 🟢 BAIXO
+**Responsável:** ML Expert + Data Analyst
+**Horas:** 60h
+
+**Objetivo:**
+Identificar micro tendências intraday no mini índice futuro (WINFUT),
+mapeando regiões de liquidez e detectando oportunidades de compra/venda
+em ciclos de 2 minutos.
+
+**Entregas Esperadas:**
+- Monitoramento contínuo de micro tendências (ciclo 2 min)
+- Score Macro (contexto direcional do dia)
+- Score Micro (análise estrutura SMC, VWAP, pivôs)
+- Sistema de detecção de oportunidades (continuação vs reversão)
+- Gatilhos operacionais automáticos (4 tipos definidos)
+- Regiões de interesse (confluência de suportes/resistências)
+- Análise padrões de candle (zonas de interesse)
+- Plano validação framework WINFUT
+- Documentação procedures (gatilhos, alertas, validação)
+
+**Critério de Aceite Principal:**
+- [ ] Score Micro calculado em tempo real durante pregão
+- [ ] 4+ gatilhos operacionais testados
+- [ ] Oportunidades geradas com R/R mínimo 2:1
+- [ ] Framework validado com backtest (60+ dias)
+- [ ] Confiança sinais >= 70%
+
+**Tarefas Específicas:**
+- Desenvolver engine Score Macro (15 ativos)
+- Desenvolver engine Score Micro (M5/M15 analysis)
+- Implementar detecção SMC (BOS, CHoCH, FVG)
+- Implementar cálculo VWAP + desvios
+- Criar gatilhos (entrada, reversão, continuação)
+- Validar accuracy vs mercado real
+- Documentar regras de execução
+
+---
+
+### P3-5: WDO Análise Correlações (Dólar Futuro)
+
+**Status:** 📋 Futuro
+**Prioridade:** 🟢 BAIXO
+**Responsável:** ML Expert + Data Analyst
+**Horas:** 80h
+
+**Objetivo:**
+Mapear relações e correlações entre WDO (Dólar Futuro) e WINFUT
+(Índice Futuro), desenvolvendo sistema de pontuação para auxiliar
+decisões de trading com análise multivariada.
+
+**Entregas Esperadas:**
+- Mapa de relações (commodities, fluxo risco, juros, câmbio)
+- Score WDO (direção do Dólar/USDBRL)
+- Score WINFUT (direção do Ibovespa)
+- Sistema de pontuação multi-fonte (MT5, Yahoo, FRED, etc)
+- Análise correlação inversa WDO ↔ WINFUT (-0.75 a -0.90)
+- Regras de exceção (estresse extremo, euforia global)
+- Ingestão dados de múltiplas fontes (10+ APIs)
+- Validação acurácia (backtest 6+ meses)
+- Documentação framework completa
+
+**Relações Mapeadas:**
+1. Commodities (exportações BR): ouro, petróleo, soja, minério ferro, café (5 ativos)
+2. Fluxo Risco Global: S&P 500, Euro Stoxx, China, VIX, EEM, HYG (6 ativos)
+3. Juros (Fed): US10Y, DXY, yield curve (3 ativos)
+4. Câmbio (cross): EURUSD, GBPUSD, AUDUSD (3 ativos)
+5. Taxa Brasil: DI1, taxa Selic futura (2 ativos)
+
+**Critério de Aceite Principal:**
+- [ ] Score WDO e Score WINFUT computados em tempo real
+- [ ] 5 categorias de relações mapeadas (15+ ativos)
+- [ ] Correlação validada com dados históricos
+- [ ] Acurácia >= 75% em backtest
+- [ ] Sistema pronto para integração com ML model
+
+**Tarefas Específicas:**
+- Coletar dados históricos (6+ meses)
+- Implementar Score WDO (pontuações cap 1-5)
+- Implementar Score WINFUT (pontuações cap 1-5)
+- Validar correlação inversa (expected: -0.75 a -0.90)
+- Criar regras exceção (risk-on/risk-off extremo)
+- Integrar múltiplas fontes (MT5, Yahoo, FRED, Binance, ExchangeRate)
+- Backtest correlação e acurácia
+- Documentar regras detalhadas com exemplos
+
+---
+
+## 🚀 P4 - STAGING & GO-LIVE (Phase 4: 01-10/03)
 
 ### P4-1: Staging Deployment (01-05/03)
 
