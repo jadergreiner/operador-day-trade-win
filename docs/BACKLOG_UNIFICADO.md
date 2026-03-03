@@ -6150,6 +6150,133 @@ Conforme instruções consolidadas, **TODOS os outputs devem ser salvos em `outp
 
 ---
 
+## 📋 Lote 11 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P29 - 03/03/2026)
+
+**Origem:** 1 arquivo script pendente analisado
+**Data Consolidacao:** 03/03/2026
+
+#### P29-1: Demo Terminal Isolation Scenario (demo_terminal_isolation_scenario.py)
+
+**Status:** ✅ MOVIDO para `scripts/demo_terminal_isolation_scenario.py`
+**Arquivo Origem:** demo_terminal_isolation_scenario.py (SCRIPT Python - 150 linhas)
+**Tipo:** Script de Demonstração/Validação (Demo/Test)
+**Linguagem:** Python 3.8+
+
+**Propósito:**
+- Simula cenário de múltiplos terminais MT5 abertos (FBS, Clear, Zero)
+- Demonstra como o sistema garante isolamento de terminal
+- Valida que apenas o terminal configurado (Clear) é conectado
+- Mostra proteção contra switching acidental entre terminais
+
+**Funcionalidades:**
+1. **Simula terminais disponíveis:**
+   - FBS MT5 (PID 12345, conta 1234567)
+   - Clear MT5 (PID 67890, conta 1000346516)
+   - Zero MT5 (PID 11111, conta 9999999)
+
+2. **Valida algoritmo de seleção:**
+   - Compara exe path com MT5_TERMINAL_PATH do .env
+   - Match exato → Conecta + valida login
+   - Mismatch → Ignora completamente
+
+3. **Demonstra segurança:**
+   - Ignora FBS mesmo que aberto
+   - Conecta APENAS ao Clear (caminho + login)
+   - Redeploy a cada ciclo (previne switch acidental)
+   - Risco de acidente: ZERO
+
+**Dependências:**
+- config.settings.TradingConfig
+- pathlib.Path
+- sys
+
+**Aceita Critérios (Demo/Validation - Não Bloqueador):**
+- [ ] AC1: Simula múltiplos terminais com sucesso
+- [ ] AC2: Valida isolamento de terminal (não conecta a FBS)
+- [ ] AC3: Valida seleção correta (conecta a Clear)
+- [ ] AC4: Mostra garantias de segurança na saída
+- [ ] AC5: Roda sem exceções Python
+
+**Uso:**
+```bash
+python scripts/demo_terminal_isolation_scenario.py
+```
+
+**Output Esperado:**
+```
+SIMULAÇÃO: Terminal Isolation com FBS + Clear Abertos
+📡 Terminais MT5 Available (Abertos): [lista]
+🎯 Configuração Esperada: [config]
+🔍 Algoritmo de Verificação: [steps]
+⚙️  Validação Passo a Passo: [details]
+📊 Resultado da Proteção: [security guarantees]
+✅ Você pode rodar o operador com FBS aberto com SEGURANÇA TOTAL!
+```
+
+**Tarefas Relacionadas:**
+- [ ] T1: Usar este script em testes de CI/CD para validação de isolamento
+- [ ] T2: Estender script para testar failover scenarios
+- [ ] T3: Integrar saída em relatório de segurança automatizado
+
+**Padrão de Organização de Scripts (🎯 OBS IMPORTANTE):**
+
+Conforme instruções consolidadas, **TODOS os scripts Python devem ser salvos em `scripts/`**:
+- Novos scripts de feature: scripts/
+- Utilitários/helpers: scripts/
+- CIdemos/validação: scripts/
+- Scripts de treinamento ML: scripts/
+- Nunca deixar scripts Python na raiz do projeto
+
+**Localização Consolidada:** `scripts/demo_terminal_isolation_scenario.py` (padrão estabelecido)
+
+---
+
+### Status da Consolidação P29:
+
+- ✅ 1 arquivo processado (1 script Python de demo)
+- ✅ Script MOVIDO para pasta padrão `scripts/`
+- ✅ Simulação e validação documentadas em BACKLOG
+- ✅ Padrão de organização reforçado (scripts/ é obrigatório)
+
+#### Consolidação Total Acumulada (INCLUINDO P29):
+
+| Fase | Arquivos | Scripts | Docs | .bat | JSON | Outputs | Tarefas | Status |
+|------|----------|---------|------|------|------|---------|---------|--------|
+| P0-P4 | 24 | 3 | 21 | 0 | 0 | 0 | 27 | ✅ |
+| P8-P11 | 12 | 0 | 12 | 0 | 0 | 0 | 11 | ✅ |
+| P19-P20 | 10 | 0 | 10 | 0 | 0 | 0 | 12 | ✅ |
+| P21-P22 | 10 | 4 | 5 | 2 | 0 | 0 | 10 | ✅ |
+| P23 Lote 5 | 7 | 1 | 5 | 1 | 0 | 0 | 7 | ✅ |
+| P24 Lote 6 | 5 | 1 | 3 | 1 | 0 | 0 | 5 | ✅ |
+| P25 Lote 7 | 3 | 1 | 2 | 0 | 0 | 0 | 3 | ✅ |
+| P26 Lote 8 | 1 | 0 | 1 | 0 | 0 | 0 | 1 | ✅ |
+| P27 Lote 9 | 1 | 0 | 1 | 0 | 0 | 0 | 3 | ✅ |
+| P28 Lote 10 | 1 | 0 | 0 | 0 | 0 | 1 | 1 | ✅ |
+| **P29 Lote 11** | **1** | **1** | **0** | **0** | **0** | **0** | **1** | **✅** |
+| **TOTAL GERAL** | **108** | **22** | **78** | **6** | **1** | **1** | **104 TAREFAS** | **✅** |
+
+### ESTATÍSTICAS FINAIS (P29 - CONSOLIDAÇÃO PARCIAL):
+
+**Total Consolidado (Phases 1-7 + P19-P29):**
+- **Arquivos:** 108 (22 scripts, 78 docs, 6 .bat, 1 JSON, 1 output)
+- **Tarefas Rastreadas:** 104 (P0-P4, P8-P29)
+- **Linhas de Código:** ~7.700+ LOC scripts (150 novos)
+- **Documentação:** ~8.100+ linhas de docs consolidadas
+- **Scripts em Padrão:** 100% (22/22 em scripts/) ✅
+- **.bat em Padrão:** 100% (6/6 em BAT/) ✅
+- **Outputs em Padrão:** 100% (1/1 em outputs/) ✅
+- **Documentação em Padrão:** 100% (78/78 em BACKLOG) ✅
+- **Project Root Cleanup:** 100% ✅
+- **Padrão de Pastas:** 100% aderente ✅
+
+**Status Geral:** 🟢 **BACKLOG CONSOLIDAÇÃO P29 COMPLETA (LOTE 11)**
+
+**Timestamp:** 03/03/2026 (consolidação Lote 11 - P29)
+**Proprietário:** GitHub Copilot
+**Git Status:** 1 file modified (BACKLOG_UNIFICADO.md), 2 files modified (copilot-instructions.md), 1 file moved (demo_terminal_isolation_scenario.py → scripts/demo_terminal_isolation_scenario.py)
+
+---
+
 ## 📋 Lote 5 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P23 - 03/03/2026)
 
 **Origem:** 7 arquivos pendentes analisados (1 script Python + 5 documentos + 1 arquivo .bat)

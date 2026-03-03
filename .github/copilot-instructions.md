@@ -662,6 +662,44 @@ Padrão estabelecido 03/03/2026 para TODAS consolidações futuras:
 **Status:** ✅ BACKLOG CONSOLIDAÇÃO FINAL COMPLETA - 107 ARQUIVOS, 103 TAREFAS
 
 ---
+
+### Lote 11 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P29 - 03/03/2026)
+
+**Origem:** 1 arquivo script pendente analisado
+
+#### P29 - Arquivo Consolidado:
+
+1. **demo_terminal_isolation_scenario.py** (Script Python)
+   - Status: ✅ MOVIDO para `scripts/demo_terminal_isolation_scenario.py`
+   - Conteúdo: Demo de isolamento de terminal MT5 (150 LOC)
+   - Funcionalidades: Simula FBS + Clear + Zero abertos, valida que apenas Clear conecta
+   - Segurança: Risco de acidente = ZERO, proteção ativa em cada ciclo
+   - Uso: `python scripts/demo_terminal_isolation_scenario.py`
+   - Localização: `scripts/demo_terminal_isolation_scenario.py`
+
+#### Status da Consolidação P29:
+
+- ✅ 1 arquivo processado (1 script Python de demo)
+- ✅ Script MOVIDO para `scripts/` (padrão obrigatório)
+- ✅ Terminal isolation documentada em BACKLOG P29
+- ✅ Padrão de organização reforçado com exemplo prático
+- ✅ 108 arquivos totais consolidados (22 scripts, 78 docs, 6 .bat, 1 JSON, 1 output)
+
+#### Consolidação Total Acumulada (FINAL - P29):
+
+- **Total Geral:** 108 arquivos (22 scripts, 78 docs, 6 .bat, 1 JSON, 1 output)
+- **Tarefas Rastreadas:** 104 (P0-P4, P8-P29)
+- **Código Consolidado:** ~7.700 LOC scripts
+- **Scripts em Padrão:** 100% (22/22) ✅
+- **.bat em Padrão:** 100% (6/6) ✅
+- **Outputs em Padrão:** 100% (1/1) ✅
+- **Project Root Cleanup:** 100% ✅
+- **Padrão de Pasta:** 100% aderente ✅
+
+**Timestamp:** 03/03/2026 (Consolidação Lote 11 - P29)
+**Status:** ✅ BACKLOG CONSOLIDAÇÃO P29 COMPLETA - 108 ARQUIVOS, 104 TAREFAS
+
+---
    - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-4
 
 #### Processo de Consolidação
