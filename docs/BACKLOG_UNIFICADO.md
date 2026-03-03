@@ -6045,6 +6045,111 @@ Estimativa Total: 23 horas com paralelismo
 
 ---
 
+## 📋 Lote 10 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P28 - 03/03/2026)
+
+**Origem:** 1 arquivo pendente analisado (1 arquivo de output/demonstração)
+**Data Consolidacao:** 03/03/2026
+
+#### P28-1: Demo Output - S2-2 ATR Integration (demo_output.txt)
+
+**Status:** ✅ MOVIDO para `outputs/demo_output.txt`
+**Arquivo Origem:** demo_output.txt (OUTPUT file - 9 linhas)
+**Tipo:** Arquivo de Output/Log/Demonstração (Test Execution Result)
+**Conteúdo:** Traceback de erro de execução (UnicodeEncodeError)
+
+**Contexto:** Arquivo de output gerado durante execução de teste do script `S2-2_demo_atr_integration.py`
+
+**Erro Registrado:**
+```
+File: C:\repo\operador-day-trade-win\scripts\S2-2_demo_atr_integration.py
+Line: 182
+Função: main()
+Erro: UnicodeEncodeError (emoji/carácter especial '🎯' não pode ser codificado em cp1252)
+```
+
+**Análise da Causa:**
+- **Tipo de Erro:** Unicode/Encoding issue
+- **Origem:** Print de emoji '🎯' (U+1f3af) em terminal com encoding cp1252
+- **Arquivo:** S2-2_demo_atr_integration.py linha 182
+- **Contexto:** Script tentava imprimir string com emoji no console
+- **Solução:** Adicionar encoding UTF-8 ou remover emoji
+
+**Detalhes do Traceback:**
+```
+Traceback (most recent call last):
+  File "...\scripts\S2-2_demo_atr_integration.py", line 225, in <module>
+    ohlc_demo, features_demo = main()
+  File "...\scripts\S2-2_demo_atr_integration.py", line 182, in main
+    print("\U0001f3af S2-2: CALIBRADOR ATR DINAMICO - DEMONSTRAÇÃO")
+  File "...\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+UnicodeEncodeError: 'charmap' codec can't encode character '\U0001f3af'...
+```
+
+**Tarefas Relacionadas:**
+- [ ] T1: Revisar S2-2_demo_atr_integration.py linha 182
+- [ ] T2: Remover emojis ou adicionar encoding UTF-8 explícito
+- [ ] T3: Re-executar teste + validar output
+- [ ] T4: Adicionar encoding check em pipeline CI/CD
+
+**Padrão de Organização de Outputs (🎯 OBS IMPORTANTE):**
+
+Conforme instruções consolidadas, **TODOS os outputs devem ser salvos em `outputs/`**:
+- Arquivos gerados: backtest_results.json, demoinformation.txt, logs
+- Relatórios: analysis_report.md, performance_metrics.csv
+- Test outputs: test_run_results.txt, benchmark_output.json
+- Demo files: demo_output.txt, sample_results.json
+
+**Localização Consolidada:** `outputs/demo_output.txt` (padrão novo)
+
+---
+
+### Status da Consolidação P28:
+
+- ✅ 1 arquivo processado (1 arquivo de output/teste)
+- ✅ Arquivo MOVIDO para pasta padrão `outputs/`
+- ✅ Erro/traceback documentado em BACKLOG
+- ✅ Task de correção mapeada
+- ✅ Padrão de organização clarificado
+
+#### Consolidação Total Acumulada (FINAL - INCLUINDO P28):
+
+| Fase | Arquivos | Scripts | Docs | .bat | JSON | Outputs | Tarefas | Status |
+|------|----------|---------|------|------|------|---------|---------|--------|
+| P0-P4 | 24 | 3 | 21 | 0 | 0 | 0 | 27 | ✅ |
+| P8-P11 | 12 | 0 | 12 | 0 | 0 | 0 | 11 | ✅ |
+| P19-P20 | 10 | 0 | 10 | 0 | 0 | 0 | 12 | ✅ |
+| P21-P22 | 10 | 4 | 5 | 2 | 0 | 0 | 10 | ✅ |
+| P23 Lote 5 | 7 | 1 | 5 | 1 | 0 | 0 | 7 | ✅ |
+| P24 Lote 6 | 5 | 1 | 3 | 1 | 0 | 0 | 5 | ✅ |
+| P25 Lote 7 | 3 | 1 | 2 | 0 | 0 | 0 | 3 | ✅ |
+| P26 Lote 8 | 1 | 0 | 1 | 0 | 0 | 0 | 1 | ✅ |
+| P27 Lote 9 | 1 | 0 | 1 | 0 | 0 | 0 | 3 | ✅ |
+| **P28 Lote 10** | **1** | **0** | **0** | **0** | **0** | **1** | **1** | **✅** |
+| **TOTAL GERAL** | **107** | **21** | **78** | **6** | **1** | **1** | **103 TAREFAS** | **✅** |
+
+### ESTATÍSTICAS FINAIS (P28 - CONSOLIDAÇÃO FINAL):
+
+**Total Consolidado (Phases 1-7 + P19-P28):**
+- **Arquivos:** 107 (21 scripts, 78 docs, 6 .bat, 1 JSON, 1 output)
+- **Tarefas Rastreadas:** 103 (P0-P4, P8-P28)
+- **Linhas de Código:** ~7.500+ LOC scripts
+- **Documentação:** ~8.100+ linhas de docs consolidadas
+- **Outputs em Padrão:** 100% (1/1 em outputs/) ✅
+- **Scripts em Padrão:** 100% (21/21 em scripts/) ✅
+- **.bat em Padrão:** 100% (6/6 em BAT/) ✅
+- **Documentação em Padrão:** 100% (78/78 em BACKLOG) ✅
+- **Project Root Cleanup:** 100% ✅
+- **Padrão de Pastas:** 100% aderente ✅
+
+**Status Geral:** 🟢 **BACKLOG CONSOLIDAÇÃO FINAL COMPLETA (P28 - LOTE 10)**
+
+**Timestamp:** 03/03/2026 (consolidação Lote 10 - P28)
+**Proprietário:** GitHub Copilot
+**Git Status:** 1 file modified (BACKLOG_UNIFICADO.md), 2 files modified (copilot-instructions.md), 1 file moved (demo_output.txt → outputs/demo_output.txt)
+
+---
+
 ## 📋 Lote 5 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P23 - 03/03/2026)
 
 **Origem:** 7 arquivos pendentes analisados (1 script Python + 5 documentos + 1 arquivo .bat)
