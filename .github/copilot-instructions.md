@@ -163,41 +163,107 @@ rm c:\repo\projeto\analisa_gap_precificacao.py
 ```
 
 **Status Consolidação (03/03/2026):**
-- ✅ 2 scripts novos movidos: `check_episode_ids.py`, `check_interseção.py`
-- ✅ Documentado em `docs/BACKLOG_UNIFICADO.md` seção P19-4
+- ✅ 2 scripts novos movidos: `check_episode_ids.py`, `check_interseção.py` (P19)
+- ✅ 1 script novo movido: `cleanup_dados_automatico.py` (P20)
+- ✅ Documentado em `docs/BACKLOG_UNIFICADO.md` seções P19-4 + P20-1
 - ✅ Padrão reforçado: scripts SEMPRE em `scripts/`, NUNCA na raiz
 - ✅ Padrão reforçado: outputs SEMPRE em `outputs/`, NUNCA na raiz
-- ✅ 6 scripts totais consolidados desde 03/03/2026
+- ✅ 7 scripts totais consolidados desde 03/03/2026
+- ✅ 9 documentos consolidados em P19 + P20
 
 ---
 
-## 📋 CONSOLIDAÇÃO DE DOCUMENTAÇÃO (03/03/2026)
+## 📋 CONSOLIDAÇÃO DE DOCUMENTAÇÃO (03/03/2026) - LOTE 1 & 2
 
-### Tarefas Consolidadas em BACKLOG_UNIFICADO.md (Seção P19)
+### Lote 1 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P19)
 
-**Origem:** 5 arquivos foram analisados, suas tarefas consolidadas em documentação unificada
+**Origem:** 5 arquivos analisados, tarefas consolidadas em BACKLOG
 
-#### Arquivos Consolidados (Seguro deletar após backup):
+#### P19 - Arquivos Consolidados:
 
 1. **BOARD_SIGN_OFF_GO_LIVE_27FEV.txt**
    - Status: ✅ CONSOLIDADO em P19-1
-   - Conteúdo: Aprovação board (6/6 unânime), 31/31 testes passando
+   - Conteúdo: Aprovação board (6/6 unânime), 31/31 testes
    - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-1
 
 2. **CHECKLIST_EXECUTIVA_US004.md**
    - Status: ✅ CONSOLIDADO em P19-2
-   - Conteúdo: US-004 alertas (11 arquivos código, 100% completo)
+   - Conteúdo: US-004 alertas (11 arquivos código)
    - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-2
 
 3. **CHECKLIST_INTEGRACAO_PHASE6.md**
    - Status: ✅ CONSOLIDADO em P19-3
-   - Conteúdo: 4 integration tasks (BDI, WebSocket, Email, Deploy)
+   - Conteúdo: 4 integration tasks (BDI, WebSocket, Email)
    - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-3
 
 4. **check_episode_ids.py** (Script)
    - Status: ✅ MOVIDO para `scripts/check_episode_ids.py`
    - Conteúdo: Validação episode IDs em SQLite
    - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-4
+
+5. **check_interseção.py** (Script)
+   - Status: ✅ MOVIDO para `scripts/check_interseção.py`
+   - Conteúdo: Validação reward ↔ episode intersection
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-4
+
+### Lote 2 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P20)
+
+**Origem:** 5 arquivos analisados, tarefas consolidadas em BACKLOG
+
+#### P20 - Arquivos Consolidados:
+
+1. **cleanup_dados_automatico.py** (Script)
+   - Status: ✅ MOVIDO para `scripts/cleanup_dados_automatico.py`
+   - Conteúdo: Cleanup automático de dados antigos (Task Scheduler/Cron)
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P20-1
+
+2. **COMECE_DEPLOYMENT_AGORA.md**
+   - Status: ✅ CONSOLIDADO em P20-2
+   - Conteúdo: Instruções Stage 1 deployment (23/02, ~2 horas)
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P20-2
+
+3. **COMO_SISTEMA_VAI_APRENDER.md**
+   - Status: ✅ CONSOLIDADO em P20-3
+   - Conteúdo: Estratégia ML learning em 3 fases (histórica, online, feedback)
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P20-3
+
+4. **COMUNICADO_FINAL_GO_LIVE.txt**
+   - Status: ✅ CONSOLIDADO em P20-4
+   - Conteúdo: Comunicado GO-LIVE (31/31 testes, 6/6 board)
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P20-4
+
+5. **COMECE_AQUI.md**
+   - Status: ✅ CONSOLIDADO em P20-5
+   - Conteúdo: Guia navegação para 5 personas (CFO, Eng Sr, ML, Operador, Stakeholder)
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P20-5
+
+#### Processo de Consolidação
+- **Fase 1:** Análise de 10 arquivos (5 em P19 + 5 em P20)
+- **Fase 2:** Scripts Python movidos para `scripts/` (3 scripts: check_*.py, cleanup_*)
+- **Fase 3:** Tarefas+conteúdo incorporado em BACKLOG_UNIFICADO.md
+- **Fase 4:** Arquivos origem deletados após consolidação
+
+#### Instrução para Próximas Consolidações
+
+Padrão estabelecido 03/03/2026 para TODAS consolidações futuras:
+
+1. **Scripts Python:**
+   - Localização OBRIGATÓRIA: `scripts/` (usar `git mv`)
+   - Nunca na raiz do projeto
+   - Documentar em seção P(N) do BACKLOG
+
+2. **Outputs/Resultados:**
+   - Localização OBRIGATÓRIA: `outputs/` (usar `git mv`)
+   - JSON, CSV, TXT, MD (resultados) → `outputs/`
+   - Nunca na raiz do projeto
+   - Documentar em seção P(N) do BACKLOG
+
+3. **Consolidação Final:**
+   - Criar seção P(N) em BACKLOG_UNIFICADO.md
+   - Deletar arquivo origem após confirmar consolidação
+   - Commitar com mensagem: `docs: Consolidacao PN - tasks de X arquivos movidos para BACKLOG`
+
+---
 
 5. **check_interseção.py** (Script)
    - Status: ✅ MOVIDO para `scripts/check_interseção.py`

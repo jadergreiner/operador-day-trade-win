@@ -4624,5 +4624,369 @@ python scripts/check_interseção.py > outputs/intersection_validation.txt
 
 **Status Geral:** ✅ BACKLOG ATUALIZADO (P0-P4 + P9 + P19 = 78 tarefas rastreadas)
 
+---
+
+## 📌 P20: CONSOLIDAÇÃO DE DEPLOYMENT & APRENDIZADO (03/03/2026)
+
+### P20-1: Cleanup Automático de Dados - Script Agendado
+
+**Status:** ✅ SCRIPT PRONTO - MOVIDO PARA `scripts/`
+**Responsável:** DevOps / Backend Engineer
+**Squad:** 1 persona
+**Horas:** 1-2h (implementação + agendamento)
+**Origem:** `cleanup_dados_automatico.py` (MOVIDO PARA `scripts/`)
+**Prioridade:** 🟠 Média (manutenção recorrente)
+
+#### Objetivo:
+- Manter banco de dados limpo removendo registros antigos
+- Prevenir acumulo de dados + performance degradation
+- Executar como tarefa agendada (Task Scheduler/Cron) a cada 6-12 horas
+
+#### Implementação:
+```python
+def cleanup_old_data(db_path, days_to_keep=7):
+    """Remove registros antigos do banco de dados."""
+    - Cutoff date: (datetime.now() - timedelta(days=N))
+    - Tabelas limpas: 8+ tabelas (RL, journal, AI, health)
+    - Column mapping: timestamp, created_at (detect automaticamente)
+    - VACUUM: Recupera espaço pós-delete
+    - Logging: Total deletado + novo tamanho DB
+```
+
+#### Tabelas Alvo:
+1. `rl_training_metrics` (timestamp)
+2. `rl_correlation_scores` (timestamp)
+3. `rl_episodes` (created_at)
+4. `rl_rewards` (timestamp)
+5. `rl_indicator_values` (timestamp)
+6. `trading_journal_logs` (created_at)
+7. `ai_reflection_logs` (created_at)
+8. `system_health_logs` (timestamp)
+
+#### Agendamento (Exemplo):
+
+**Windows (Task Scheduler):**
+```bash
+# Task: Cleanup dados antigos
+# Trigger: Daily at 06:00 e 18:00
+# Action: python scripts/cleanup_dados_automatico.py
+# Properties: Run whether user logged in or not
+```
+
+**Linux/Mac (Cron):**
+```bash
+# Crontab: Duas vezes ao dia
+0 6,18 * * * python scripts/cleanup_dados_automatico.py
+```
+
+#### Critérios de Aceite (4):
+- [ ] CA-1: Script executa sem erros (dry-run)
+- [ ] CA-2: Registros antigos deletados corretamente
+- [ ] CA-3: VACUUM recupera espaço (~30-50% redução esperada)
+- [ ] CA-4: Agendamento funcionando (validate cron/scheduler)
+
+---
+
+### P20-2: Instruções de Deployment Stage 1 (23/02 - 24/02)
+
+**Status:** ✅ GUIA COMPLETO - PRONTO PARA EXECUÇÃO
+**Responsável:** Eng Sr + QA Lead + DevOps
+**Squad:** 3-4 personas
+**Horas:** 2-3h (execução + monitoramento)
+**Origem:** `COMECE_DEPLOYMENT_AGORA.md`
+**Prioridade:** 🔴 CRÍTICA (infraestrutura)
+
+#### Timeline Deployment:
+- **20:00 BRT (23/02):** Setup inicial (5 min)
+- **20:30 BRT:** Deploy Stage 1 LIVE (~2 horas)
+- **22:30-03:00 BRT:** Monitoramento 24/7 + TODO-1 Labels paralelo
+- **09:00 BRT (24/02):** Verificação + próximas ações
+
+#### Setup Inicial (5 min):
+1. Terminal 1: `cd c:\repo\operador-day-trade-win` (Deploy)
+2. Terminal 2: Todo-1 Labels script (ML Expert paralelo)
+3. Validação: Python 3.11+, FastAPI, WebSockets
+4. Verificar arquivos críticos: backtest, src/, tests/, config/, scripts/
+
+#### Fase Deployment (2 horas com 4 estágios):
+
+**Estágio 1: PRÉ-DEPLOYMENT VALIDATION** (15 min)
+- [ ] Ambiente verificado
+- [ ] Dependências instaladas
+- [ ] Banco de dados acessível
+- [ ] Porta 8765 disponível
+
+**Estágio 2: TESTES COMPONENTES** (30 min)
+- [ ] Unit tests running (15+ tests)
+- [ ] Integration tests passing
+- [ ] Risk validators OK
+
+**Estágio 3: CONFIGURAÇÃO AMBIENTES** (30 min)
+- [ ] .env criado/validado
+- [ ] Diretórios logs criados
+- [ ] Config files carregados
+
+**Estágio 4: DEPLOYMENT & VALIDATION** (45 min)
+- [ ] WebSocket server LISTEN 0.0.0.0:8765
+- [ ] Risk validator gates ativa (3/3)
+- [ ] BDI detector monitoring spikes
+- [ ] Features: 17.280 candles loaded
+- [ ] Health checks PASS
+
+#### Saída Esperada:
+```
+✅ ESTÁGIO 1 LIVE & MONITORING
+├─ WebSocket Server: ✓ LISTEN 0.0.0.0:8765
+├─ Risk Validator: ✓ GUARDS 3 GATES
+├─ BDI Detector: ✓ MONITORING SPIKES
+├─ Feature Pipeline: ✓ READY 17.280 CANDLES
+└─ Health checks: ✓ Todos PASS
+```
+
+#### Monitoramento (durante + pós-deploy):
+- Dashboard: `logs/deployment_status.txt` (auto-update)
+- Real-time logs: websocket.log, risk_validator.log, bdi_detector.log
+- Acceptance criteria: WebSocket <500ms, 3 gates ativa, 0 erros críticos
+
+#### Critérios de Aceite (8):
+- [ ] CA-1: PRÉ-DEPLOYMENT VALIDATION PASSED
+- [ ] CA-2: Todos 15+ testes passando
+- [ ] CA-3: Ambiente configurado corretamente
+- [ ] CA-4: WebSocket server listening
+- [ ] CA-5: Risk validator ativa (3 gates)
+- [ ] CA-6: BDI detector operational
+- [ ] CA-7: Features loaded (17.280 candles)
+- [ ] CA-8: Zero erros críticos em logs
+
+---
+
+### P20-3: Estratégia de Aprendizado ML - 3 Fases
+
+**Status:** ✅ PLANO COMPLETO - PRONTO PARA EXECUÇÃO
+**Responsável:** ML Expert + Data Scientist
+**Squad:** 2+ personas
+**Horas:** Contínuo (FASE 1: 5h, FASE 2-3: paralelo com operação)
+**Origem:** `COMO_SISTEMA_VAI_APRENDER.md`
+**Prioridade:** 🟠 Alta (core learning loop)
+
+#### Problema Identificado:
+- Ordens históricas incompletas (no SL/TP no banco)
+- ML não conseguia aprender pattern de risco management
+- Novo execute_entry() valida SL/TP → garante qualidade dados
+
+#### Estratégia em 3 Fases:
+
+**FASE 1: Análise Histórica** (AGORA - 5h)
+```python
+def analyze_historical_data():
+    # Calcular com dados que TEMOS:
+    - win_rate global
+    - avg_profit por trade
+    - drawdown máximo
+    - Agrupar: manual vs automated
+    - Comparar: manual_avg vs auto_avg
+    - Identificar correlações: horário, direção, volume
+    
+# Saída: baseline_metrics.json
+```
+
+**FASE 2: Aprendizado Online** (27/02+)
+```python
+def continuous_learning_loop():
+    # À medida que novas ordens chegam COM SL/TP completo:
+    while True:
+        new_trade = await get_closed_trade()
+        if new_trade.execution_method == 'automated':
+            # SL/TP garantidos
+            metrics = {
+                'risk_taken': entry - stop_loss,
+                'reward_target': take_profit - entry,
+                'actual_reward': exit - entry,
+                'hit_percentage': actual / target
+            }
+            model.update(metrics)
+            if model.performance_declining():
+                retune_strategy()
+```
+
+**FASE 3: Feedback Loop Automático** (Contínuo)
+```
+Nova Ordem → Executa MT5 → SL/TP Validado ✅
+    ↓
+Sincroniza BD + Calcula Métricas
+    ↓
+ML Analisa (Risk/Reward ratio, Hit rate, Performance)
+    ↓
+Ajusta Parâmetros Próxima Oportunidade
+    ↓
+Loop reinicia...
+```
+
+#### Dados Agora Disponíveis:
+| Campo | Antes | Depois |
+|-------|-------|--------|
+| entry_price | ✅ | ✅ |
+| exit_price | ✅ | ✅ |
+| entry_time | ✅ | ✅ |
+| exit_time | ✅ | ✅ |
+| profit_loss | ✅ | ✅ |
+| **stop_loss** | ❌ | ✅ AGORA |
+| **take_profit** | ❌ | ✅ AGORA |
+| execution_method | ✅ | ✅ |
+
+#### Timeline Aprendizado:
+- **26/02:** Validação implementada em execute_entry()
+- **27/02:** Primeira ordem automática com dados limpos
+- **02/03:** 5-10 ordens acumuladas → padrões observáveis
+- **06/03:** 30-50 ordens → ML refina parâmetros
+- **13/03:** Modelo re-treinado com dados reais → BETA launch
+- **20/03:** Performance melhora visivelmente (win rate +5-10%)
+
+#### Scripts Relacionados:
+1. `analyze_historical_patterns.py` (NEW - Fase 1 baseline)
+2. `agente_micro_tendencia_winfut.py` (UPDATE - Fase 2 online learning)
+3. `ml_model_retraining.py` (NEW - Fase 3 continuous tuning)
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: Baseline metrics calculados (Fase 1)
+- [ ] CA-2: Continuous learning loop implementado (Fase 2)
+- [ ] CA-3: Modelo re-trainável diariamente (Fase 3)
+- [ ] CA-4: Performance monitorado (win rate trending)
+- [ ] CA-5: Alert se degradação detectada (< baseline)
+
+---
+
+### P20-4: Comunicado Final GO-LIVE (27/02 11:30 BRT)
+
+**Status:** ✅ APROVAÇÃO DOCUMENTADA & EXECUTADA
+**Responsável:** Board Multidisciplinar (6 personas)
+**Squad:** Todas as disciplinas (votação + execução)
+**Horas:** 0.5h (comunicado + confirmação)
+**Origem:** `COMUNICADO_FINAL_GO_LIVE.txt`
+**Prioridade:** 🔴 CRÍTICA (executivo)
+
+#### Resumo Executivo:
+```
+Problema:   Terminal MT5 errado conectava 50% das vezes
+Solução:    4 linhas código + validação arquivo
+Resultado:  31/31 testes PASSOU
+GO-LIVE:    ✅ APROVADO 14:00 BRT (27/02)
+```
+
+#### Testes Executados (11:00-11:30 BRT):
+| Teste | Status | Resultado | Tempo |
+|-------|--------|-----------|-------|
+| **T1: Code Review** | ✅ | 3/3 validações | 5 min |
+| **T2: Unit Tests** | ✅ | 15/15 tests | 15 min |
+| **T3: Integration** | ✅ | 5/5 validações | 30 min |
+| **T4-T5: Edge Cases** | ✅ | 8/8 checks | 15 min |
+| **TOTAL** | ✅ | **31/31 ✅** | **75 min** |
+
+#### Votação Board (6/6 Unânime):
+- ✅ Presidente Operacional
+- ✅ Coordenadora Governança
+- ✅ Eng Sr
+- ✅ Risk Officer
+- ✅ Arquiteto Sistemas
+- ✅ DevOps/Infra
+
+#### Timeline GO-LIVE:
+- **11:30 BRT:** Testes + relatório completo
+- **14:00 BRT:** 🚀 Deploy em produção
+- **14:00-16:00:** Monitoramento 24/7
+- **16:00 BRT:** Confirmação uptime + zero violações
+
+#### Impacto Mensurável:
+| Métrica | Antes | Depois | Ganho |
+|---------|-------|--------|-------|
+| Violações/hora | 0.5-1 | 0 | **-100%** |
+| Terminal correto | 50% | 100% | **+50%** |
+| Uptime | 75-80% | 99%+ | **+24%** |
+| P&L | Rejeições | Consistente | **+INFINITO%** |
+
+#### Risco & Segurança:
+- 🟢 Técnico: MÍNIMO (4 linhas, API oficial)
+- 🟢 Operacional: ZERO (validação ANTES conectar)
+- 🟢 Financeiro: POSITIVO (+R$ 150-250k/mês)
+- 🟢 Regressão: ZERO (100% test coverage)
+
+#### Critérios de Aceite (5):
+- ✅ CA-1: Código correto + 15/15 unit tests
+- ✅ CA-2: Integration tests passing
+- ✅ CA-3: Edge cases covered
+- ✅ CA-4: Zero breaking changes
+- ✅ CA-5: 6/6 Board aprovação unânime
+
+---
+
+### P20-5: Guia de Navegação US-004 para Stakeholders
+
+**Status:** ✅ DOCUMENTAÇÃO COMPLETA - PRONTO PARA DISTRIBUIÇÃO
+**Responsável:** Product Owner + Doc Advocate
+**Squad:** 1+ personas
+**Horas:** 0.5h (distribuição + confirmação)
+**Origem:** `COMECE_AQUI.md`
+**Prioridade:** 🟡 Média (navegação)
+
+#### Objetivo:
+- Servir como entry point para diferentes personas
+- Direcionar cada pessoa para documentação específica de seu papel
+- Identificar próximas ações por persona
+
+#### Personas Atendidas:
+
+**1. CFO / Head Financeiro (30 min)**
+- Leia: [ANALISE_FINANCEIRA_US004.md](ANALISE_FINANCEIRA_US004.md)
+- Pontos-chave: Break-even (1 trade/mês), ROI (60-130%/ano), Capital BETA (R$ 400k)
+- Decisão: GO ou HOLD?
+
+**2. Eng Sr / CTO (1h)**
+- Leia: [PROXIMOS_PASSOS_INTEGRACAO.md](PROXIMOS_PASSOS_INTEGRACAO.md)
+- Pontos-chave: Timeline (15 dias), Checklist dia-a-dia, Dependencies
+- Ação: Começar integração (27/02)
+
+**3. ML Expert / Data Scientist (45 min)**
+- Leia: [DETECTION_ENGINE_SPEC.md](docs/alertas/DETECTION_ENGINE_SPEC.md)
+- Pontos-chave: Algoritmos (z-score, padrões), Backtest (88% captura, 12% FP)
+- Ação: Validar código + rodar testes
+
+**4. Operador / Head Trading (20 min)**
+- Leia: [ALERTAS_README.md](docs/alertas/ALERTAS_README.md)
+- Pontos-chave: Quick-start, Troubleshooting, WebSocket + Email API
+- Ação: Treinar durante BETA (13/03)
+
+**5. Stakeholder / Executif (15 min)**
+- Leia: [CONCLUSAO_IMPLEMENTACAO.md](CONCLUSAO_IMPLEMENTACAO.md)
+- Pontos-chave: Status final, Arquivos entregues, Timeline & gates
+
+#### Documentos Disponíveis:
+- **Ejecutivos:** QUICK_REFERENCE (1p), CHECKLIST_EXECUTIVA (imprimível), CONCLUSAO
+- **Técnico:** IMPLEMENTACAO_SUMARIO, PROXIMOS_PASSOS_INTEGRACAO, DIAGRAMA_VISUAL
+- **Operacional:** ALERTAS_README, ALERTAS_API, config/alertas.yaml
+- **Análise:** DETECTION_ENGINE_SPEC, ANALISE_FINANCEIRA_US004, RELATORIO_EXECUTIVO
+- **Índice:** INDEX_DOCUMENTACAO_COMPLETA (tudo!)
+
+#### Próximas Datas Críticas:
+- **20/02 (HOJE):** Leia este documento
+- **27/02:** Integração começa (Eng Sr)
+- **13/03:** 🚀 BETA LAUNCH
+- **27/03:** 🎯 GATE REVIEW (win rate ≥60%)
+
+#### Critérios de Aceite (3):
+- ✅ CA-1: Guia distribuído a all stakeholders
+- ✅ CA-2: Cada persona identifica seu next step
+- ✅ CA-3: Documentação cross-linked + navegável
+
+---
+
+**Consolidação P20 (03/03/2026):**
+- ✅ P20-1: Script cleanup movido → `scripts/cleanup_dados_automatico.py`
+- ✅ P20-2: Deployment guide documentado (Stage 1 pronto 23/02)
+- ✅ P20-3: ML learning strategy completa (3 fases, contínuo)
+- ✅ P20-4: GO-LIVE comunicado (executado 27/02 14:00 BRT)
+- ✅ P20-5: Navegação para stakeholders consolidada
+
+**Status Geral:** ✅ BACKLOG ATUALIZADO (P0-P4 + P9 + P19 + P20 = +83 tarefas rastreadas)
+
 
 
