@@ -1,0 +1,10 @@
+# Pasta para scripts batch (.bat) de automação Windows
+# Padrão de organização do projeto: todos .bat salvos em BAT/
+
+# Exemplos:
+# - INICIAR_PHASE6.bat
+# - INICIAR_RL_SCHEDULER.bat
+# - MONITOR_OPERADOR.bat
+# - setup_environment.bat
+
+# Nunca salvar .bat na raiz do projeto!
