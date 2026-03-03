@@ -5,13 +5,13 @@
 # Purpose: Full-featured PowerShell activation script for Phase 7 production
 # Created: 20/02/2026
 # Status: Production-ready (Phase 7 go-live)
-# 
+#
 # USAGE:
 #   .\ativar_producao.ps1              # Menu interativo completo
 #   .\ativar_producao.ps1 -Force       # Iniciar direto (sem confirmação)
 #   .\ativar_producao.ps1 -TestOnly    # Apenas validação (sem ativar)
 #   .\ativar_producao.ps1 -Force -TestOnly  # Testar e sair
-# 
+#
 # FLOW (6 Etapas Sequenciais):
 #   1. VALIDATION PHASE (10-step validation)
 #      - Python + Git detection
@@ -39,7 +39,7 @@
 #   - Logs: logs/producao/ folder
 #   - Dashboard: http://localhost:8765/dashboard
 #   - WebSocket: ws://localhost:8765/ws
-#   
+#
 # PROPERTIES:
 #   - Color-coded output (Cyan for headers, Green for success, Red for errors)
 #   - 10-step validation process
@@ -50,14 +50,14 @@
 #   - 3-second delays between launches
 #   - Kill switch support (Ctrl+C in any terminal)
 #   - Auto-dashboard opening
-#   
+#
 # DEPENDENCIES:
 #   - Python 3.8+ (httpx, pytest, pytest-asyncio, pytest-cov, pyyaml, pandas, numpy)
 #   - Git 2.0+
 #   - Windows PowerShell 5.0+ or PowerShell Core
 #   - Project structure: src/ + tests/ + config/ folders
 #   - MT5 Gateway running on localhost:8000
-#   
+#
 # DIFFERENCES FROM OTHER VERSIONS:
 #   - ativar_producao_simples.bat: Batch version, 6-option menu, fallback script
 #   - ativar_simples.ps1: This PowerShell condensed (52% size), inline logic

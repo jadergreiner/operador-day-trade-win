@@ -5,13 +5,13 @@
 # Purpose: Simplified PowerShell activation script (52% size, condensed inline logic)
 # Created: 20/02/2026
 # Status: Production-ready simplified variant
-# 
+#
 # USAGE:
 #   .\ativar_simples.ps1              # Menu interativo simplificado
 #   .\ativar_simples.ps1 -Force       # Iniciar direto (sem confirmação)
 #   .\ativar_simples.ps1 -TestOnly    # Apenas validação (sem ativar)
 #   .\ativar_simples.ps1 -Force -TestOnly  # Testar e sair
-# 
+#
 # FLOW (5 Etapas Simplificadas):
 #   1. VALIDATION PHASE (7-step validation - vs 10 steps in full version)
 #      - Python + Git detection
@@ -36,7 +36,7 @@
 #   - Config: config/producao_20feb_v1.yaml (shorter, 400 bytes vs 501)
 #   - Logs: logs/producao/ folder
 #   - Dashboard: http://localhost:8765/dashboard
-#   
+#
 # PROPERTIES:
 #   - Condensed output (same colors, less decorations)
 #   - 7-step validation (vs 10 in full version)
@@ -47,13 +47,13 @@
 #   - 3-second delays between launches
 #   - Inline logic (no function encapsulation)
 #   - Auto-dashboard opening
-#   
+#
 # DEPENDENCIES:
 #   - Python 3.8+ (httpx, pytest, pytest-asyncio, pytest-cov, pyyaml, pandas, numpy)
 #   - Git 2.0+
 #   - Windows PowerShell 5.0+ or PowerShell Core
 #   - Project structure: src/ + tests/ + config/ folders
-#   
+#
 # DIFFERENCES FROM OTHER VERSIONS:
 #   - ativar_producao.ps1 (Full): 361 lines, 3 functions, comprehensive
 #   - ativar_producao_simples.bat: Batch version, 6-option menu
