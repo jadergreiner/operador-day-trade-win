@@ -9661,3 +9661,235 @@ python scripts/enviar_ordem_agora.py
 **Timestamp:** 03/03/2026 (Consolidacao P42)
 **Status:** ✅ CONSOLIDACAO P42 COMPLETA - 120 ARQUIVOS, 160+ TAREFAS
 
+---
+
+## 🚀 LOTE 17 - TAREFAS CONSOLIDADAS EM docs/BACKLOG_UNIFICADO.md (SECAO P43 - 03/03/2026)
+
+**Origem:** 3 arquivos de documentação consolidados (resumo executivo, finalização e fix)
+
+### P43 - Arquivos Consolidados:
+
+#### P43-1: EXECUTIVE_SUMMARY_FINAL.md (Documento Executivo)
+
+**Status:** ✅ CONSOLIDADO em BACKLOG P43-1 | **Deletado da raiz**
+**Conteudo:** Resumo executivo final para produção (252 LOC)
+**Foco:** Decisão GO FOR PRODUCTION com aprovação unânime
+
+**Números Finais de Produção:**
+- **96/96 AC PASSED** (100% taxa de sucesso)
+- **4 FASES COMPLETAS** + 3 Gates aprovadas
+- **1200+ TESTES PASSANDO** em produção
+- **94.2% COBERTURA** de código
+- **0 VULNERABILIDADES CRÍTICAS**
+- **5/5 COMPLIANCE FRAMEWORKS** certificados (PCI-DSS, HIPAA, LGPD, GDPR, SOC2-Type2)
+- **6/6 STAKEHOLDERS** assinaram aprovação
+- **9.2/10 TRADER APPROVAL** score
+
+**Infraestrutura Pronta:**
+- Azure Resource Group (eastus2) operacional
+- PostgreSQL HA com backups geo-redundantes
+- App Service autoscaling (2-5 instâncias)
+- 12 alert rules + 4 notification channels
+- RTO 3.2 min, SLO 99.95%
+
+**Aplicação v4.2.1:**
+- 1250 LOC Python (100% type hints)
+- MT5 integrado com heartbeat ativo
+- WebSocket (30+ clientes simultâneos)
+- Email service (5 templates, 100% delivery)
+- Redis cache (sub-10ms latency)
+
+**Sistema de Trading:**
+- BDI Processor (62% win rate em backtest)
+- Detector de padrões (85.52% captura)
+- 3 risk validators (98.4% eficiência)
+- 8 canais de alerta (WebSocket/Email/SMS/Teams)
+- Dashboard trader (5 displays, 20 widgets)
+
+**Segurança & Compliance:**
+- TLS 1.3 em todas conexões
+- AES-256 para credenciais
+- PCI-DSS, HIPAA, LGPD, GDPR, SOC2-Type2
+- 100% audit logging (365-day retention)
+- 0 critical / 0 high vulnerabilities
+
+**Decisão Stakeholders (6/6 Aprovações):**
+- CTO: ✅ GO (TECHNICAL EXCELLENCE)
+- CFO: ✅ GO (FINANCIAL CASE STRONG)
+- Product Owner: ✅ GO (FEATURES COMPLETE)
+- CEO/Founder: ✅ GO (BUSINESS READY)
+- Head Trader: ✅ GO (9.2/10 OPERACIONAL CONFIDENCE)
+- Compliance: ✅ GO (REGULATORY CERTIFIED)
+
+**Phase 1 Beta (Imediato):**
+- Capital: R$ 50.000
+- Expected ROI: +R$ 100-150k (90 dias)
+- Win Rate Target: 60-65% vs 62% backtest
+- Drawdown Limit: 15% com circuit breakers
+
+**Circuit Breakers Active:**
+- 🟡 -3%: Alerta (trader continua)
+- 🟠 -5%: Slow mode (50% ticket, 90% ML)
+- 🔴 -8%: Halt (tudo para)
+
+**Override Capabilities:**
+- Trader: 100% veto (sempre disponível)
+- CIO: Pause programa
+- CFO: Capital allocation control
+
+**Próximas Ações Imediatas:**
+1. Head Trader revisa final checklist (30 min)
+2. Cut-over monitoring → production dashboards (15 min)
+3. Enable real trading mode (from dry-run)
+4. Activate R$ 50k capital allocation
+5. Start 24/7 monitoring + on-call rotation
+
+**Localização:** `docs/BACKLOG_UNIFICADO.md` → P43-1
+
+---
+
+#### P43-2: FINALIZACAO_PIPELINE_TASK3.md (Documento Governança)
+
+**Status:** ✅ CONSOLIDADO em BACKLOG P43-2 | **Deletado da raiz**
+**Conteudo:** Finalização de pipeline Task #3 (INTEGRATION-ML-002) (182 LOC)
+**Timestamp:** 25/02/2026 23:58-24:00 UTC
+**Foco:** Conclusão com aprovação unânime 8/8 personas
+
+**Task #3: INTEGRATION-ML-002 (Backtest Validation Grid Search)**
+
+**Documentação Sincronizada (6 documentos):**
+1. ✅ DELIBERACAO_TASK3_ML002_25FEV - Decisão oficial
+2. ✅ ESPECIFICACAO_TASK3_ML002_BACKTEST_VALIDATION - Especificação técnica
+3. ✅ TESTES_TASK3_ML002_ESPECIFICACAO - Testes especificados
+4. ✅ RESUMO_PIPELINE_TASK3_25FEV - Resumo executivo
+5. ✅ docs/STATUS_ENTREGAS.md - Fonte verdade atualizado
+6. ✅ docs/SYNC_MANIFEST.json - Sincronização atualizada
+
+**Governança Consolidada:**
+- ✅ Deliberação: Coordenadora Governança - Votação 8/8 unânime
+- ✅ Especificação: Arquiteto Sistemas - 7 AC bloqueadores definidos
+- ✅ Testes: QA Automation - 7 unit + 1 E2E especificados
+- ✅ Documentação: Doc Advocate - 6 docs + SYNC_MANIFEST sincronizados
+- ✅ Commits: Git - 2 commits → origin/main
+- ✅ Standards: Head Docs & Standards - UTF-8 + Português 100% validado
+
+**Checklist de Governança (21 passos - Todos Completos):**
+- Passos 1-7: Análise & Decisão ✅ (Board carregado, task identificada, checks completos)
+- Passos 8-13: Entrega & Documentação ✅ (Task entregue, specs completos, testes definidos)
+- Passos 14-16: Aprovação Usuário ✅ (Pergunta fechada, resposta: SIM)
+- Passos 17-21: Commit & Sincronização ✅ (2 commits, docs sincronizados, finalização)
+
+**Commits Realizados:**
+1. Commit 4ba87a5: docs Task #3 + Especificação testes + Resumo (3 files, +624 linhas)
+2. Commit 2ae755b: Sincronização Task #3 - Status + SYNC_MANIFEST (2 files, +108 linhas)
+- Total: 5 arquivos, +732 linhas
+
+**AC Bloqueadores Definidos (7):**
+1. Dataset 252 dias carregado
+2. Labels validados (consistency checks)
+3. Features extraídas (24 features)
+4. Train/val/test splits (70/15/15)
+5. Estatísticas computadas
+6. Feature names persistidos
+7. Quality gates passando
+
+**Status Final Task #3:**
+- Prioridade: 🔴 P0-CRÍTICO
+- Persona Lead: ML Expert (ID 4)
+- Squad: QA (12) + Doc Advocate (8)
+- Duração: ~2-3 horas estimada
+- Status: ✅ APROVADA UNÂNIME (8/8)
+- Votação: 100% SIM
+- Próximo: Execução IMEDIATA
+- Desbloqueador: F1 >= 0.65 + Win Rate >= 60%
+- Desbloqueia: 5+ tasks + Phase 2 decision
+
+**Localização:** `docs/BACKLOG_UNIFICADO.md` → P43-2
+
+---
+
+#### P43-3: FIX_INICIAR_PHASE6_v1.0.1.txt (Documento Técnico - Fix/Troubleshooting)
+
+**Status:** ✅ CONSOLIDADO em BACKLOG P43-3 | **Deletado da raiz**
+**Conteudo:** Fix v1.0.1 para INICIAR_PHASE6.bat (192 LOC)
+**Foco:** Resolução de problema de caracteres UTF-8 em batch script
+
+**Problema Identificado (v1.0.0):**
+- Arquivo INICIAR_PHASE6.bat fechava inesperadamente ao clicar para abrir
+- Windows Command Prompt não conseguia processar caracteres UTF-8
+
+**Causa Raiz:**
+Caracteres especiais UTF-8 e emojis causam issues:
+- Caracteres de box-drawing (╔, ║, ╚, ═)
+- Emojis (🚀, ✅, ❌, ⚠️, 📅, etc)
+- Acentos em algumas posições
+- Caracteres especiais em loops for/echo
+- Windows Command Prompt não processar corretamente → erro não intuitivo
+
+**Solução Implementada (v1.0.1):**
+1. ✅ Removidos TODOS os caracteres especiais UTF-8
+2. ✅ Usados apenas caracteres ASCII básicos (letras, números, *, /, -, =)
+3. ✅ Mantida estrutura visual com asteriscos (*) em vez de box-drawing
+4. ✅ Mantido "OK" e "ERRO" em vez de ✅ e ❌
+5. ✅ Simplificado tratamento de loops em for/echo
+6. ✅ Adicionado melhor error handling
+7. ✅ Verifica diretório correto PRIMEIRO (antes de outras validações)
+
+**Como Testar (v1.0.1):**
+```
+Windows + R
+  → cmd
+  → Enter
+cd c:\repo\operador-day-trade-win
+  → Enter
+INICIAR_PHASE6.bat
+  → Enter
+```
+SEM FECHAR! Agora deve funcionar perfeitamente.
+
+**Fluxo Esperado:**
+1. Validação de pré-requisitos [01/08] - Python 3.9+, Git, estrutura
+2. Instalação de dependências [04/08] - fastapi, uvicorn, pytest, mypy (2-3 min)
+3. Validação de código [05/08] - Importações, testes
+4. Preparação de BDI Processor [07/08] - Cria se não existir
+5. Menu de opções (4 escolhas)
+
+**Opções Disponíveis:**
+1. **INICIAR AGORA** - 3 terminais paralelo, 3-4h, Terminal 1: BDI, Terminal 2: Backtest, Terminal 3: Git Monitor
+2. **AGENDAR SEGUNDA 27/02** - Valida hoje, kickoff segunda 9:00 AM, 7 dias prep, 15 dias estruturados
+3. **APENAS PREPARAR** - Valida ambiente, roda testes, NAO inicia agentes, ~10 minutos
+4. **SAIR** - Fecha o launcher
+
+**Status Esperado ao Executar:**
+- [OK] Python X.X encontrado
+- [OK] Git instalado
+- [OK] Estrutura do projeto validada
+- [OK] Dependências instaladas
+- [OK] Testes passando
+- Menu interativo com 4 opções
+
+**Localização:** `docs/BACKLOG_UNIFICADO.md` → P43-3
+
+---
+
+#### Status da Consolidacao P43:
+
+- ✅ 3 arquivos processados (3 documentos de status/governança/fix)
+- ✅ EXECUTIVE_SUMMARY_FINAL.md consolidado em P43-1
+- ✅ FINALIZACAO_PIPELINE_TASK3.md consolidado em P43-2
+- ✅ FIX_INICIAR_PHASE6_v1.0.1.txt consolidado em P43-3
+- ✅ 3 arquivos origem serão deletados (padrão consolidação)
+- ✅ Consolidação total: 3 executivos + 1 governança + 1 fix = 5 decisões + 1 processo + 1 solução
+
+#### Consolidacao Total Acumulada (FINAL - P43):
+
+- **Total Geral:** 121 arquivos consolidados (26 scripts, 88 docs, 7 .bat, 1 JSON, 1 output, 1 notebook)
+- **Tarefas Rastreadas:** 163+ (P0-P4, P8-P43)
+- **Scripts em Padrao:** 100% (26/26 em scripts/) ✅
+- **.bat em Padrao:** 100% (7/7 em BAT/) ✅
+- **Outputs em Padrao:** 100% (1/1 em outputs/) ✅
+- **Project Root Cleanup:** 100% ✅
+
+**Timestamp:** 03/03/2026 (Consolidacao P43)
+**Status:** ✅ CONSOLIDACAO P43 COMPLETA - 121 ARQUIVOS, 163+ TAREFAS
+
