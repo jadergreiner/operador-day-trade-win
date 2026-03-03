@@ -6616,6 +6616,292 @@ Conforme instruções consolidadas, **TODOS os scripts Python devem ser salvos e
 
 ---
 
+## 📋 Lote 14 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P36 - 03/03/2026)
+
+**Origem:** 2 arquivos pendentes analisados (1 documento completo + 1 guia passo-a-passo)
+**Data Consolidacao:** 03/03/2026
+
+#### P36-1: Email Service Implementation - Complete (EMAIL_CONFIG_IMPLEMENTATION_COMPLETE.md)
+
+**Status:** ✅ CONSOLIDADO em P36-1
+**Arquivo Origem:** EMAIL_CONFIG_IMPLEMENTATION_COMPLETE.md (237 LOC)
+**Tipo:** Documento Markdown (Relatório de Implementação/Conclusão)
+**Timestamp:** 23/02/2026 14:00-16:00 BRT
+**Squad Executor:** Eng Sr
+
+**Implementação Realizada: 961 LOC de código novo**
+
+**5 Componentes Implementados:**
+
+**1. SMTP Configuration (30 min) - AC-1 ✅**
+- Arquivo: `config/alertas_email.yaml`
+- Status: ✅ VERIFICADO (SMTP connectivity test OK)
+- Conteúdo:
+  - SMTP Host: smtp.gmail.com
+  - Port: 587 (TLS)
+  - From Email: ${FROM_EMAIL} (env var)
+  - Password: ${PASSWORD} (env var - sem hardcode)
+  - Timeout: 10 segundos
+  - Rate limit: 60 emails/minuto
+
+**2. HTML Email Template (15 min) - AC-2 ✅**
+- Arquivo: `templates/alert_email.html` (161 LOC)
+- Status: ✅ RENDERIZA corretamente
+- Conteúdo:
+  - 13 Jinja2 variables: action, symbol, price, timestamp, pattern_type, confidence, volatility, rsi, volume, signal_strength, recommendation, timestamp_iso, alert_class
+  - Responsive design: CSS media queries para mobile
+  - Styling: Gradientes profissionais, layout limpo
+  - Alert types: Success (verde), Info (azul), Default (vermelho)
+
+**3. Email Service + Retry Logic (20 min) - AC-3 ✅**
+- Arquivo: `src/application/services/email_service.py` (340 LOC)
+- Status: ✅ ASYNC service implementado + testado
+- Métodos:
+  - `__init__()`: Load YAML config + env var substitution
+  - `_get_smtp_connection()`: Create SMTP (TLS/SSL)
+  - `_render_template()`: Jinja2 rendering
+  - `send_email_with_retry()`: Async com retry 3x
+  - `send_alert_email()`: Convenience wrapper
+- Retry Logic:
+  - Tentativa 1: 1 segundo delay
+  - Tentativa 2: 2 segundos delay
+  - Tentativa 3: 4 segundos delay
+  - Logging em cada tentativa (warning/info/error)
+- Type Hints: 100% em todas funções/métodos
+- Docstrings: Google-style com Args/Returns/Raises
+
+**4. Unit Tests (30 min) - AC-4 ✅**
+- Arquivo: `tests/test_email_service.py` (340 LOC)
+- Status: ✅ 5/5 testes passando
+- Test Cases:
+  - test_email_send_success: Email enviado com sucesso
+  - test_email_retry_on_failure: Retry logic com exponential backoff
+  - test_invalid_smtp_credentials: Error handling para auth failure
+  - test_template_rendering: Template renderiza com todas variáveis
+  - test_config_from_env: Config carregado de env vars
+- Coverage: >90% (estimado 92-95%)
+- Fixtures: Mock SMTP, test data, EmailService instance
+
+**5. Code Quality Validation (5 min) - AC-5 ✅**
+- Status: ✅ 100% type hints verified
+- Validações:
+  - ✅ Type hints 100% (py_compile passed)
+  - ✅ PEP 8 compliant
+  - ✅ UTF-8 encoding verified
+  - ✅ Module import successful
+  - ✅ Syntax validated with py_compile
+
+**Configuration Files:**
+- `.env.test` (10 LOC): Test environment variables (sem credenciais reais)
+
+**Total Deliverables:**
+- 5 arquivos código criados (961 LOC)
+- 5 AC (Acceptance Criteria) todos COMPLETOS
+- UTF-8 compliant + zero encoding issues
+- Production-ready (async, retry, logging, type-safe)
+
+**Acceptance Criteria Status:**
+
+| AC | Description | Status | Evidence |
+|:--:|:------------|:------:|:--------:|
+| AC-1 | SMTP Configuration com env vars | ✅ | config/alertas_email.yaml (verified) |
+| AC-2 | Email Template (Jinja2, responsive) | ✅ | templates/alert_email.html (161 LOC) |
+| AC-3 | Retry Mechanism (3x, exponential) | ✅ | email_service.py: send_email_with_retry() |
+| AC-4 | Unit Tests (5 test cases) | ✅ | tests/test_email_service.py (5 tests) |
+| AC-5 | Code Quality (100% type hints) | ✅ | All functions have type annotations |
+
+**Overall Status:** ✅ **5/5 AC REQUIREMENTS MET - PRODUCTION READY**
+
+**Next Steps:** Integração com AlertDispatcher (Phase 6), implementação fallback WebSocket → Email
+
+**Tarefas Associadas:**
+- [ ] T1: Run pytest para confirmed 5/5 tests passing
+- [ ] T2: Integrar email_service em AlertDispatcher
+- [ ] T3: Test fallback WebSocket → Email
+- [ ] T4: Monitoramento produção (uptime, delivery rate)
+
+**Localização Consolidada:** `docs/BACKLOG_UNIFICADO.md` → P36-1
+
+---
+
+#### P36-2: Email Configuration Step-by-Step Guide (EMAIL_CONFIG_PASSO_A_PASSO.md)
+
+**Status:** ✅ CONSOLIDADO em P36-2
+**Arquivo Origem:** EMAIL_CONFIG_PASSO_A_PASSO.md (515 LOC)
+**Tipo:** Documento Markdown (Implementação Guia - Passo-a-Passo)
+**Deadline:** 23/02 17:00 BRT (completado on-time)
+**Owner:** Eng Sr
+**Esforço:** 1h50min (implementação real)
+
+**5-Phase Implementation Plan (1-2 horas total):**
+
+**Fase 1: SMTP Configuration (30 min)**
+- Arquivo: `config/alertas_email.yaml`
+- Conteúdo YAML:
+  ```yaml
+  email:
+    smtp:
+      host: ${SMTP_HOST}        # env var
+      port: ${SMTP_PORT}        # 587 ou 465
+      from_email: ${FROM_EMAIL} # env var
+      password: ${PASSWORD}     # env var (never hardcode!)
+      use_tls: true            # para port 587
+    retry:
+      max_attempts: 3
+      backoff_seconds: [1, 2, 4]
+    rate_limit:
+      max_per_minute: 60
+  ```
+- AC-1 Requirements:
+  - ✅ Todas chaves presentes
+  - ✅ Env var references (sem hardcode)
+  - ✅ SMTP connectivity test OK
+
+**Fase 2: HTML Template (15 min)**
+- Arquivo: `templates/alert_email.html` (161 LOC)
+- Conteúdo:
+  - HTML com embedded CSS
+  - Jinja2 variables: {{ action }}, {{ symbol }}, {{ price }}, {{ timestamp }}, etc (13 total)
+  - Responsive design: CSS media queries
+  - Color coding:
+    - BUY alert: Verde (#51cf66)
+    - SELL alert: Vermelho (#ff6b6b)
+    - DEFAULT: Azul (#4c6ef5)
+- AC-2 Requirements:
+  - ✅ Jinja2 template
+  - ✅ Todas 13 variáveis
+  - ✅ Responsive mobile design
+  - ✅ Professional styling
+
+**Fase 3: Email Service + Retry (20 min)**
+- Arquivo: `src/application/services/email_service.py` (340 LOC)
+- Class: `EmailService` (async)
+- Métodos:
+  - `_get_smtp_connection()`: Create SMTP com TLS/SSL
+  - `_render_template()`: Jinja2 rendering
+  - `send_email_with_retry()`: Main async method + 3x retry
+  - `send_alert_email()`: Wrapper para alerts
+- Retry Logic:
+  - Exponential backoff: 1s → 2s → 4s
+  - Configurable from YAML (backoff_seconds array)
+  - Logging a cada tentativa (info/warning/error)
+  - SMTP connection management (starttls, login, quit)
+- AC-3 Requirements:
+  - ✅ Async service class
+  - ✅ send_email_with_retry() implemented
+  - ✅ 3x exponential backoff
+  - ✅ Logging at each attempt
+  - ✅ 100% type hints
+
+**Fase 4: Unit Tests (30 min)**
+- Arquivo: `tests/test_email_service.py` (340 LOC)
+- Framework: pytest com fixtures
+- Test Cases (5):
+  1. test_email_send_success: Email enviado ✅
+  2. test_email_retry_on_failure: Retry logic funciona
+  3. test_invalid_smtp_credentials: Error handling
+  4. test_template_rendering: Template renderiza corretamente
+  5. test_config_from_env: Config de env vars
+- Coverage: >90% target
+- AC-4 Requirements:
+  - ✅ 5 comprehensive test cases
+  - ✅ Pytest fixtures
+  - ✅ Mock SMTP
+  - ✅ Coverage >90%
+
+**Fase 5: Code Review & Merge (10 min)**
+- Pull Request:
+  - Title: "feat: Email service implementation com SMTP + retry + templates"
+  - Peer review: 2+ aprovadores
+  - CI/CD checks: All pass
+    - Linting (pymarkdown, pylint)
+    - Type checking (mypy --strict)
+    - Tests (pytest, all pass)
+    - Coverage (>90%)
+- Commit Message (SEM ACENTOS):
+  ```
+  feat: Email configuration para alertas automaticos - SMTP + template + retry logic + tests
+  
+  - SMTP configuration with env vars (no hardcoded credentials)
+  - HTML Jinja2 template for alert delivery
+  - Retry mechanism with exponential backoff (3x, 1s-2s-4s)
+  - 5 unit tests with >90% coverage
+  - 100% type hints + mypy --strict OK
+  - Desbloqueia Beta 13/03
+  ```
+- AC-5 Requirements:
+  - ✅ PR created + peer reviewed
+  - ✅ CI/CD checks passing
+  - ✅ Tests 5/5 passing
+  - ✅ Code review approved
+  - ✅ Merged to main
+
+**Success Criteria (Pré-Implementação Checklist):**
+
+| AC | Critério | Status |
+|----|----------|--------|
+| AC-1 | SMTP config criado + validado | ⏳ Pronto |
+| AC-2 | Template renderiza sem erros | ⏳ Pronto |
+| AC-3 | Retry logic 3x + exponential backoff | ⏳ Pronto |
+| AC-4 | 5 unit tests + >90% coverage | ⏳ Pronto |
+| AC-5 | Type hints 100% + PR merged | ⏳ Pronto |
+
+**Timeline Estimated (1h50min):**
+```
+00:00-00:30 ... PHASE 1 (SMTP Config)
+00:30-00:45 ... PHASE 2 (HTML Template)
+00:45-01:05 ... PHASE 3 (Email Service)
+01:05-01:35 ... PHASE 4 (Unit Tests)
+01:35-01:50 ... PHASE 5 (Code Review & Merge)
+```
+
+**Blocker Status:** 
+- ✅ Email Config = BLOCKER DESBLOQUEIA Beta 13/03
+- ✅ Quando AC 1-5 passarem: Beta pode lançar
+
+**Tarefas Associadas:**
+- [ ] T1: PHASE 1 - SMTP configuration (30 min)
+- [ ] T2: PHASE 2 - HTML template (15 min)
+- [ ] T3: PHASE 3 - Email service (20 min)
+- [ ] T4: PHASE 4 - Unit tests (30 min)
+- [ ] T5: PHASE 5 - Code review & merge (10 min)
+- [ ] T6: Run pytest para validar todos 5 tests
+- [ ] T7: Integração com AlertDispatcher em Phase 6
+
+**Localização Consolidada:** `docs/BACKLOG_UNIFICADO.md` → P36-2
+
+---
+
+### Status da Consolidação P36:
+
+- ✅ 2 arquivos processados (1 documento completo + 1 guia passo-a-passo)
+- ✅ 2 documentos consolidados em BACKLOG
+- ✅ 961 LOC de código consolidado (5 componentes)
+- ✅ AC 1-5 mapeados e testáveis
+- ✅ Padrão de pasta reforçado: documentação → BACKLOG consolidada
+
+#### Consolidação Total Acumulada (FINAL - P36 EMAIL_CONFIG):
+
+**Total Consolidado (Phases 1-7 + P19-P36):**
+- **Arquivos:** 113 (23 scripts, 81 docs, 6 .bat, 1 JSON, 2 outputs)
+- **Tarefas Rastreadas:** 118 (P0-P4, P8-P36)
+- **Linhas de Código:** ~7.500+ LOC scripts + 961 LOC email
+- **Linhas de Documentação:** ~9.400+ linhas
+- **Scripts em Padrão:** 100% (23/23 em scripts/) ✅
+- **.bat em Padrão:** 100% (6/6 em BAT/) ✅
+- **Outputs em Padrão:** 100% (2/2 em outputs/) ✅
+- **Documentação em Padrão:** 100% (81/81 em docs/ + BACKLOG) ✅
+- **Project Root Cleanup:** 100% ✅
+- **Padrão de Pastas:** 100% aderente ✅
+
+**Status Geral:** 🟢 **BACKLOG CONSOLIDAÇÃO FINAL P36 COMPLETA - EMAIL CONFIG INTEGRADA**
+
+**Timestamp:** 03/03/2026 (consolidação Lote 14 - P36 EMAIL_CONFIG)
+**Proprietário:** GitHub Copilot
+**Git Status:** 2 files deleted (EMAIL_CONFIG_IMPLEMENTATION_COMPLETE.md + EMAIL_CONFIG_PASSO_A_PASSO.md), 1 file modified (BACKLOG_UNIFICADO.md)
+
+---
+
 ## 📋 Lote 5 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P23 - 03/03/2026)
 
 **Origem:** 7 arquivos pendentes analisados (1 script Python + 5 documentos + 1 arquivo .bat)
@@ -7912,7 +8198,7 @@ Agente (2min) → PredictionTracker.register() → AIReflection (10min)
    - Origem: Sistema de alertas em tempo real para oportunidades de trading
    - Tipo: Architecture + Delivery Specification
    - Tarefas Consolidadas: 5 componentes principais + testes + métricas
-   
+
    **Componentes Especificados (11 arquivos código):**
    - Detection Engine: Volatilidade + Padrões Técnicos (2 arquivos: detector.py, patterns.py)
    - Fila Inteligente: Rate Limiting + Deduplication (1 arquivo: smart_queue.py)
@@ -7921,18 +8207,18 @@ Agente (2min) → PredictionTracker.register() → AIReflection (10min)
    - API REST: Histórico de alertas + webhooks (1 arquivo: api_routes.py)
    - Database: Models + migrations (2 arquivos: models.py, migrations.py)
    - Utils: Formatters, validators, helpers (2 arquivos: utils.py, validators.py)
-   
+
    **Testes Especificados (11 testes: 8 unit + 3 integration):**
    - Unit: test_detector, test_queue, test_delivery, test_audit, test_api, test_models, test_validators
    - Integration: test_full_pipeline_volatility, test_email_flow, test_latency
    - Coverage Target: 100%
-   
+
    **Documentação Especificada (4 docs):**
    - API.md (OpenAPI spec, 150 LOC)
    - DEPLOYMENT.md (Staging + Production, 120 LOC)
    - MONITORING.md (Prometheus + Grafana, 100 LOC)
    - USER_GUIDE.md (Operador manual, 80 LOC)
-   
+
    **Métricas de Produção Mapeadas (9 KPIs):**
    - Latência P95: <30 segundos ✅
    - Taxa Captura: ≥85% (atual 88%) ✅
@@ -7943,13 +8229,13 @@ Agente (2min) → PredictionTracker.register() → AIReflection (10min)
    - Type Coverage: 100% ✅
    - Test Pass Rate: 100% ✅
    - Production Ready: ✅
-   
+
    **Análise Financeira Mapeada:**
    - Investimento: R$ 121k (já pago, P&L positivo)
    - Capital Operacional BETA: R$ 1-2M (per-trade R$ 50k, máximo/dia R$ 400k)
    - Cenários Receita: R$ 98M-217M/ano (60-130% ROI)
    - Payback: <2 dias operação
-   
+
    **Timeline de Integração Mapeada (15 dias):**
    - 20-27 Feb: Review, decisão, code review ✅ COMPLETO
    - 27 Feb-06 Mar: Integração staging ⏳ EM ANDAMENTO
@@ -7957,8 +8243,8 @@ Agente (2min) → PredictionTracker.register() → AIReflection (10min)
    - 13 Mar: 🚀 BETA launch
    - 13-27 Mar: BETA produção 14 dias
    - 27 Mar+: Gate review (win rate ≥60%?)
-   
-   **Localização (após consolidação):** 
+
+   **Localização (após consolidação):**
    - Original: deletado (consolidado em BACKLOG)
    - Referência: `docs/BACKLOG_UNIFICADO.md` → P35
    - Código gerado: Será em `src/application/alerts/` após merge
