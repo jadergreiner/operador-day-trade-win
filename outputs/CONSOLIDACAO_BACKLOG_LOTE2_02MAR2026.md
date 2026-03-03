@@ -290,7 +290,7 @@ Conforme `scripts/README_SCRIPTS_PATTERN.md` (criado em consolidação anterior)
 | Tarefas identificadas | 20+ |
 | Cobertura no Backlog | **100%** ✅ |
 | Pendências encontradas | **0** ✅ |
-| Scripts movidos | 1 | 
+| Scripts movidos | 1 |
 | Arquivos deletados | 4 |
 | Linhas consolidadas | 1.361 (269+219+222+510+141) |
 

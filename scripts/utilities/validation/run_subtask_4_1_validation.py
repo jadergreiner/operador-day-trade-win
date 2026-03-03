@@ -43,10 +43,10 @@ Troubleshooting:
 
 Versionamento:
     - v1.0.0 (02/03/2026): Versão inicial (movido de raiz)
-    
+
 Localização no repositório:
     - scripts/utilities/validation/run_subtask_4_1_validation.py
-    
+
 Referência em Backlog:
     - INTEGRATION-ENG-002: WebSocket Server (PRIORITY 4)
     - Subtask 4.1: Validação ConnectionManager
