@@ -1,6 +1,6 @@
 # Documentação - Índice Geral
 
-**Projeto:** Operador Day Trade WIN  
+**Projeto:** Operador Day Trade WIN
 **Organização:** Estrutura hierárquica por tipo/feature
 
 ---
@@ -56,8 +56,8 @@ Então consulte:
 ## 📋 Features Documentadas
 
 ### IntraDayLearner
-**Localização:** `docs/features/intraday-learner/`  
-**Status:** ✅ Implementado  
+**Localização:** `docs/features/intraday-learner/`
+**Status:** ✅ Implementado
 **Data:** 03/03/2026
 
 Desenvolvimento de aprendizado em tempo real (intraday) para análise de padrões HOLD.
@@ -105,7 +105,29 @@ docs/features/feature-x/
 
 ---
 
-## 🔗 Links Rápidos
+## � Documentação Arquitetural (Complementar a ARCHITECTURE.md)
+
+### Diagramas e Modelagem
+
+| Documento | Propósito | Público |
+|-----------|-----------|---------|
+| [DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md) | Arquitetura orientada a objetos: 10 classes principais com relacionamentos, responsabilidades e padrões de design | 👨‍💻 Developer, Tech Lead |
+| [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) | Formalização de 13 regras de negócio: 6 críticas (P0), 4 de risco (P1) e 3 de otimização (P2) com criticidade e mapeamento a código | 👨‍💼 Operador, 👨‍💻 Developer |
+| [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md) | Modelo de dados visual (ER): 10 entidades, 11 relacionamentos, integridade referencial e fluxo de dados | 👨‍💻 Developer, 🏗️ Tech Lead |
+| [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) | Schema implementado: DDL completo com 10 tabelas, indices, triggers, views e constrains (CVM/B3 audit-ready) | 👨‍💻 Developer, 🔧 DevOps |
+| [ADRs.md](ADRs.md) | Architecture Decision Records: 7 decisões arquiteturais com contexto, consequências, estatuto e próximas ações | 🏗️ Tech Lead, 👨‍💻 Senior Developer |
+
+**Recomendação:** Leia nesta ordem:
+1. Comece com [ARCHITECTURE.md](ARCHITECTURE.md) (visão geral)
+2. [DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md) (como funciona: classes & padrões)
+3. [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) (o que não pode falhar: regras críticas)
+4. [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md) (fluxo de dados: entidades e relacionamentos)
+5. [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) (implementação: schema SQL)
+6. [ADRs.md](ADRs.md) (por quê: decisões e trade-offs)
+
+---
+
+## �🔗 Links Rápidos
 
 ### By Role
 - 👨‍💼 [Operador: Comece aqui](features/intraday-learner/APRENDIZADO_TRANSPARENTE_GUIA.md)
