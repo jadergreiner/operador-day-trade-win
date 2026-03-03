@@ -205,6 +205,6 @@ projeto/
 
 ---
 
-**Gerado em:** 2026-03-03T10:35:00Z  
-**Formato:** Markdown consolidado  
+**Gerado em:** 2026-03-03T10:35:00Z
+**Formato:** Markdown consolidado
 **Próxima Ação:** Integrar ao BACKLOG_UNIFICADO.md
