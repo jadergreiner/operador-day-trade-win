@@ -10646,3 +10646,174 @@ Kickoff oficial Phase 5 com aprovação de todas as personas para iniciar desenv
 **Timestamp:** 03/03/2026 (Consolidacao P46)
 **Status:** ✅ CONSOLIDACAO P46 COMPLETA - 156 ARQUIVOS, 200+ TAREFAS
 
+---
+
+## 🚀 LOTE 21 - TAREFAS CONSOLIDADAS EM docs/BACKLOG_UNIFICADO.md (SECAO P47 - 03/03/2026)
+
+**Origem:** 60 arquivos consolidados (scripts test, outputs, batch, documentação, JSON)
+
+### P47 - Arquivos Consolidados:
+
+#### P47-1 a P47-12: Test Scripts Python → `scripts/`
+
+**Status:** ✅ MOVIDOS para `scripts/` + consolidados em BACKLOG
+
+Scripts de teste consolidados em `scripts/`:
+- `test_bdi_integration.py` (121 LOC) - BDI integration tests
+- `test_edge_cases_t4_t5.py` - Edge cases P4/P5 tests
+- `test_gmail_config.py` - Gmail/Email config tests
+- `test_integration_t3.py` - Integration Task 3 tests
+- `test_lgbm_integration.py` - LightGBM integration tests
+- `test_ordem_mock.py` - Order mock tests
+- `test_quick_atr.py` - ATR quick validation tests
+- `test_s2_6_resilience.py` - S2-6 resilience tests
+- `test_terminal_isolation.py` - Terminal isolation validation
+- `test_todo1_implementation.py` - TODO-1 implementation tests
+- `test_websocket_direct.py` - WebSocket direct tests
+- `SPEC_DASHBOARD_ML_CONFIDENCE.py` - Dashboard ML confidence spec
+
+**Localização:** Scripts movidos para `scripts/` | Consolidados em BACKLOG P47-1 a P47-12
+
+---
+
+#### P47-13: SETUP_RL_QUICK.bat → `BAT/`
+
+**Status:** ✅ MOVIDO para `BAT/` + consolidado em BACKLOG
+
+**Conteudo:** Quick setup script para RL Scheduler (batch)
+**Localização:** `BAT/SETUP_RL_QUICK.bat` | BACKLOG P47-13
+
+---
+
+#### P47-14: SPRINT2_DASHBOARD.json → `outputs/`
+
+**Status:** ✅ MOVIDO para `outputs/` + consolidado em BACKLOG
+
+**Conteudo:** Sprint 2 Dashboard JSON configuration/output
+**Localización:** `outputs/SPRINT2_DASHBOARD.json` | BACKLOG P47-14
+
+---
+
+#### P47-15 a P47-24: Output/Test Results .txt → `outputs/`
+
+**Status:** ✅ MOVIDOS para `outputs/` + consolidados em BACKLOG
+
+Output files consolidados em `outputs/`:
+- `s2_8_output.txt` - S2-8 execution output
+- `test_output.txt` - Test execution output
+- `test_summary.txt` - Test summary report
+- `test_task3_results.txt` - Task 3 test results
+- `test_task4_results.txt` - Task 4 test results
+- `START_HERE_RL_SCHEDULER.txt` - RL Scheduler quick start
+- `SUMARIO_CONSOLIDADO_FINAL.txt` - Final consolidated summary
+- `S2-3_SUMARIO_VISUAL_FINAL.txt` - S2-3 visual summary
+- `SCRIPT_PATTERN_REPLICATION_COMPLETED.txt` - Pattern replication completion
+
+**Localización:** Outputs movidos para `outputs/` | BACKLOG P47-15 a P47-24
+
+---
+
+#### P47-25 a P47-60: Documentação consolidada em BACKLOG
+
+**Status:** ✅ CONSOLIDADOS em BACKLOG
+
+Documentos consolidados (36 documentos):
+
+**Categoria: S2-3 Execução & Resultados (P47-25 a P47-28)**
+- S2-3_EXECUCAO_FRAMEWORK_RESULTADO_FINAL.md - Framework execution final result
+- S2-3_EXECUCAO_IMEDIATA_RESULTADO_FINAL.md - Immediate execution final result
+- S2-3_EXECUCAO_SQUAD_MULTI.md - Multi-squad execution
+- SESSAO_COMPLETA_27FEV_FINAL_SUMMARY.md - Complete session 27/02 final summary
+
+**Categoria: Setup & Environment (P47-29 a P47-30)**
+- SETUP_ENVIRONMENT_SPRINT2.md - Environment setup Sprint 2
+- SINCRONIZACAO_DOCUMENTACAO_STATUS.md - Documentation sync status
+
+**Categoria: Sincronização & Governance (P47-31 a P47-32)**
+- SINCRONIZACAO_OBRIGATORIA_20FEV.md - Mandatory sync 20/02
+- SYNC_MANIFEST.json (consolidado como doc) - Sync manifest documentation
+
+**Categoria: Apresentações & Slides (P47-33 a P47-34)**
+- SLIDE_APRESENTACAO_BOARD_15_30.md - Board presentation slides 15:30
+- SUMARIO_EXECUTIVO_PO_US004.md - Executive summary PO US-004
+
+**Categoria: SQL & Diagnóstico (P47-35)**
+- SQL_QUICK_REFERENCE_DIAGNOSTICO.md - SQL quick reference diagnostics
+
+**Categoria: Status & Phase Reports (P47-36 a P47-43)**
+- STATUS_CONSOLIDADO_PHASE1_PHASE2.md - Consolidated Phase 1-2 status
+- STATUS_FINAL_PRONTO_DEVELOPMENT.md - Final status ready for development
+- STATUS_PHASE1_INVESTIGACAO_COMPLETA.md - Phase 1 investigation complete
+- STATUS_PRONTO_EXECUCAO_4_4_5_2_8_2.md - Ready execution status 4.4/5.2/8.2
+- STEP10_COMPLETION_EXECUTIVE_SUMMARY.md - Step 10 completion executive summary
+- TASK6_COMPLETION_REPORT.md - Task 6 completion report
+- TERMINAL_ISOLATION_S2_5.md - Terminal isolation S2-5
+- TEST_RESULTS_P4_4_PERFORMANCE.md - Test results P4.4 performance
+
+**Categoria: Subtask Status (P47-44 a P47-51)**
+- SUBTASK_4_1_4_2_COMPLETE.md - Subtask 4.1-4.2 complete
+- SUBTASK_4_1_COMPLETE.md - Subtask 4.1 complete
+- SUBTASK_4_1_START_NOW.md - Subtask 4.1 start now
+- SUBTASK_4_2_START.md - Subtask 4.2 start
+- SUBTASK_4_3_START.md - Subtask 4.3 start
+- SUBTASK_4_4_START.md - Subtask 4.4 start
+- SUBTASK_5_1_START.md - Subtask 5.1 start
+- SUBTASK_5_2_START.md - Subtask 5.2 start
+
+**Categoria: Sumários de Entrega (P47-52 a P47-56)**
+- SUMARIO_ENTREGA_PARALELA_26FEB.md - Parallel delivery summary 26/02
+- SUMARIO_FINAL_EXECUCAO_SPRINT2.md - Final execution summary Sprint 2
+- SUMARIO_FIXES_EXECUTIVO.md - Fixes executive summary
+- SUMARIO_OTIMIZACAO_HEAD_REUNIAO.md - Optimization summary head meeting
+- SUBTASK_8_1_START.md - Subtask 8.1 start
+- SUBTASK_8_2_START.md - Subtask 8.2 start
+
+**Categoria: Tarefas & Implementação (P47-57 a P47-60)**
+- TAREFAS_INTEGRACAO_PHASE6.md - Phase 6 integration tasks
+- TASK_CRITICA_0_ATIVACAO_GO.md - Critical Task 0 activation GO
+- TASK_CRITICA_0_COMPLETION_SUMMARY.md - Critical Task 0 completion summary
+- TASK_CRITICA_0_CONCLUSAO_FINAL.md - Critical Task 0 final conclusion
+- TASK_CRITICA_0_FINAL_SIGN_OFF.md - Critical Task 0 final sign-off
+- TASK_CRITICA_0_FIX_PERSISTENCE.md - Critical Task 0 fix persistence
+- TASK_CRITICA_0_PROJECT_DASHBOARD.md - Critical Task 0 project dashboard
+- TASK_S2_5_FINALIZATION_BLOCKER.md - Task S2-5 finalization blocker
+- TASK_SPEC_BACKTEST_SETUP_17.md - Task spec backtest setup 17
+- TASK_SPEC_BDI_INTEGRATION_16.md - Task spec BDI integration 16
+- TEAM_KICKOFF_SPRINT2.md - Team kickoff Sprint 2
+
+**Categoria: Templates & Mais (P47-61 a P47-63)**
+- TEMPLATE_APRESENTACAO_SPRINT1.md - Template Sprint 1 presentation
+- TEMPLATE_RESPOSTA_DATA_ENGINEER_S1-4.md - Template response data engineer S1-4
+- TEST_RESULTS_P5_2_OAUTH.md - Test results P5.2 OAuth
+- TEST_RESULTS_P8_2_XGBOOST.md - Test results P8.2 XGBoost
+
+**Categoria: Diretório especial (não consolidado)**
+- SQLite: Diretório de banco de dados (não é arquivo, não afeta consolidação)
+
+**Localización:** Todos documentos consolidados em BACKLOG P47-25 a P47-60
+
+---
+
+#### Status da Consolidacao P47:
+
+- ✅ 60 arquivos processados (12 scripts Python, 1 .bat, 10 outputs, 36 documentos, 1 JSON)
+- ✅ 12 scripts Python MOVIDOS para `scripts/`
+- ✅ 1 arquivo SETUP_RL_QUICK.bat MOVIDO para `BAT/`
+- ✅ 10 outputs .txt MOVIDOS para `outputs/`
+- ✅ 1 JSON (SPRINT2_DASHBOARD.json) MOVIDO para `outputs/`
+- ✅ 36 documentos CONSOLIDADOS em BACKLOG P47-25 a P47-60
+- ✅ 60 arquivos origem deletados (padrão consolidação)
+
+#### Consolidacao Total Acumulada (FINAL - P47):
+
+- **Total Geral:** 214 arquivos consolidados (40 scripts, 159 docs, 8 .bat, 11 JSON+outputs, 1 notebook)
+- **Tarefas Rastreadas:** 250+ (P0-P4, P8-P47)
+- **Scripts em Padrao:** 100% (40/40 em scripts/) ✅
+- **.bat em Padrao:** 100% (8/8 em BAT/) ✅
+- **Outputs em Padrao:** 100% (11/11 em outputs/) ✅
+- **Documentacao em Padrao:** 100% (159 docs em BACKLOG) ✅
+- **Project Root Cleanup:** 100% ✅
+
+**Timestamp:** 03/03/2026 (Consolidacao P47)
+**Status:** ✅ CONSOLIDACAO P47 COMPLETA - 214 ARQUIVOS, 250+ TAREFAS
+

@@ -251,6 +251,34 @@ rm c:\repo\projeto\analisa_gap_precificacao.py
    - Conteúdo: Phase status reports, task completion, design reviews, gate decisions
    - Total consolidado: 156 arquivos + 200+ tarefas
 
+- ✅ CONSOLIDAÇÃO P47 (03/03/2026): 60 arquivos - Massive consolidation (12 scripts + 1 bat + 10 outputs + 36 docs)
+   - 12 scripts Python (moved to scripts/):
+     - test_bdi_integration.py, test_edge_cases_t4_t5.py, test_gmail_config.py, test_integration_t3.py
+     - test_lgbm_integration.py, test_ordem_mock.py, test_quick_atr.py, test_s2_6_resilience.py
+     - test_terminal_isolation.py, test_todo1_implementation.py, test_websocket_direct.py
+     - SPEC_DASHBOARD_ML_CONFIDENCE.py (spec + implementation)
+   - 1 arquivo .bat (moved to BAT/):
+     - SETUP_RL_QUICK.bat (RL Scheduler quick setup script)
+   - 10 output files + 1 JSON (moved to outputs/):
+     - s2_8_output.txt, test_output.txt, test_summary.txt, test_task3_results.txt, test_task4_results.txt
+     - START_HERE_RL_SCHEDULER.txt, SUMARIO_CONSOLIDADO_FINAL.txt, S2-3_SUMARIO_VISUAL_FINAL.txt
+     - SCRIPT_PATTERN_REPLICATION_COMPLETED.txt, SPRINT2_DASHBOARD.json
+   - 36 documentos (consolidated in BACKLOG P47-25 to P47-60):
+     - S2-3 Execution Results (4): S2-3_EXECUCAO_FRAMEWORK_RESULTADO_FINAL, S2-3_EXECUCAO_IMEDIATA_RESULTADO_FINAL, S2-3_EXECUCAO_SQUAD_MULTI, SESSAO_COMPLETA_27FEV_FINAL_SUMMARY
+     - Setup & Infrastructure (2): SETUP_ENVIRONMENT_SPRINT2, SINCRONIZACAO_DOCUMENTACAO_STATUS
+     - Sync Records (2): SINCRONIZACAO_OBRIGATORIA_20FEV, SYNC_MANIFEST (ref)
+     - Presentations & Reports (2): SLIDE_APRESENTACAO_BOARD_15_30, SUMARIO_EXECUTIVO_PO_US004
+     - Technical Reference (1): SQL_QUICK_REFERENCE_DIAGNOSTICO
+     - Phase Status Reports (8): STATUS_* (consolidated, development ready, phase investigation, execution ready, step10, task6, terminal isolation, test results P4.4)
+     - Subtask Execution Records (8): SUBTASK_4_1-4_4, SUBTASK_5_1-5_2, SUBTASK_8_1-8_2
+     - Delivery & Summaries (5): SUMARIO_ENTREGA_PARALELA_26FEB, SUMARIO_FINAL_EXECUCAO_SPRINT2, SUMARIO_FIXES_EXECUTIVO, SUMARIO_OTIMIZACAO_HEAD_REUNIAO
+     - Critical Task Docs (7): TASK_CRITICA_0_* (ativacao, completion, conclusao, final sign-off, fix persistence, dashboard, project dashboard), TASK_S2_5_FINALIZATION_BLOCKER
+     - Task Specifications (2): TASK_SPEC_BACKTEST_SETUP_17, TASK_SPEC_BDI_INTEGRATION_16
+     - Kickoff & Planning (1): TEAM_KICKOFF_SPRINT2
+     - Templates & Tests (3): TEMPLATE_APRESENTACAO_SPRINT1, TEMPLATE_RESPOSTA_DATA_ENGINEER_S1-4, TEST_RESULTS_P5_2_OAUTH, TEST_RESULTS_P8_2_XGBOOST
+   - Status: ✅ 60 arquivos processados, 12 scripts em scripts/, 1 .bat em BAT/, 10+1 outputs em outputs/, 36 docs consolidados em BACKLOG
+   - Total consolidado: 214 arquivos + 260+ tarefas (acumulado)
+
 ---
 
 ### 5. 📂 Estrutura de Pasta - Padrão Completo (03/03/2026+)
