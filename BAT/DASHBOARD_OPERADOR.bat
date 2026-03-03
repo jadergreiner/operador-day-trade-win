@@ -187,4 +187,3 @@ echo.
 echo Saindo do Dashboard...
 timeout /t 2
 exit /b
-

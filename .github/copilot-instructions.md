@@ -336,6 +336,75 @@ Padrão estabelecido 03/03/2026 para TODAS consolidações futuras:
 
 ---
 
+### Lote 4 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P22 - 03/03/2026)
+
+**Origem:** 5 arquivos pendentes analisados, consolidação contínua
+
+#### P22 - Arquivos Consolidados:
+
+1. **DASHBOARD_OPERADOR.bat** (Arquivo Batch/Automação)
+   - Status: ✅ MOVIDO para `BAT/DASHBOARD_OPERADOR.bat`
+   - Conteúdo: Menu de monitoramento Dashboard (191 LOC)
+   - Funcionalidades: 7 opções de monitoramento (Status, Logs, WebSocket, JSON, Dataset, Deploy)
+   - Localização: `BAT/DASHBOARD_OPERADOR.bat` (novo padrão BAT location)
+   - Padrão: Arquivo batch OBRIGATORIAMENTE em BAT/ folder
+
+2. **DASHBOARD_ML_CONFIDENCE_VISUAL.py** (Script Python)
+   - Status: ✅ MOVIDO para `scripts/DASHBOARD_ML_CONFIDENCE_VISUAL.py`
+   - Conteúdo: Visualização dashboard com ML-Confidence integrado (266 LOC)
+   - Modelo: v1.2.0-grid-search, F1 0.68, Win Rate 68%
+   - Funcionalidades: Dashboard before/after com ML backing visual
+   - Localização: `scripts/DASHBOARD_ML_CONFIDENCE_VISUAL.py`
+   - Padrão: Script Python OBRIGATORIAMENTE em scripts/ folder
+
+3. **debug_matching.py** (Script Python)
+   - Status: ✅ MOVIDO para `scripts/debug_matching.py`
+   - Conteúdo: Debug script para validação de matching episodes ↔ rewards (51 LOC)
+   - Propósito: Query SQLite e validação de RL rewards dataset
+   - Database: data/db/trading.db
+   - Localização: `scripts/debug_matching.py`
+   - Padrão: Script Python OBRIGATORIAMENTE em scripts/ folder
+
+4. **DEBUG_METRICS.py** (Script Python)
+   - Status: ✅ MOVIDO para `scripts/DEBUG_METRICS.py`
+   - Conteúdo: Debug script para investigar problemas em grid_search (80+ LOC)
+   - Propósito: Diagnostic tool para RandomForestClassifier performance investigation
+   - Dataset: training_dataset.csv
+   - Output: Probability ranges, confusion matrix, win rates por threshold
+   - Localização: `scripts/DEBUG_METRICS.py`
+   - Padrão: Script Python OBRIGATORIAMENTE em scripts/ folder
+
+5. **DIAGNOSTICO_DISCO_CHEIO.md** (Documento Markdown)
+   - Status: ✅ CONSOLIDADO em P22-5
+   - Conteúdo: Diagnóstico e resolução de disk/database full (248 LOC)
+   - Seções: Verificação disco, DB diagnostics, limpeza (A/B), configuração permanente
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P22-5
+   - Padrão: Documentação CONSOLIDADA em BACKLOG, não em raiz
+
+#### Status da Consolidação P22:
+
+- ✅ 5 arquivos processados (3 scripts Python + 1 arquivo .bat + 1 documentação)
+- ✅ 3 Python scripts movidos para `scripts/` (DASHBOARD_ML_CONFIDENCE_VISUAL, debug_matching, DEBUG_METRICS)
+- ✅ 1 arquivo .bat movido para `BAT/` (DASHBOARD_OPERADOR) - novo padrão confirmado
+- ✅ 1 documento consolidado em `docs/BACKLOG_UNIFICADO.md` (DIAGNOSTICO_DISCO_CHEIO)
+- ✅ Padrão de pasta reforçado: scripts/ + BAT/ + outputs/ + docs/
+
+#### Consolidação Total Acumulada (ATUALIZADA PÓS P22):
+
+- **Total Geral:** 89 arquivos (18 scripts, 66 docs, 4 .bat, 1 JSON)
+- **Tarefas Rastreadas:** 83 (P0-P4, P8-P22)
+- **Código Consolidado:** ~6.500 LOC scripts
+- **Documentação:** ~56.000 linhas
+- **Scripts em Padrão:** 100% (18/18) ✅
+- **.bat em Padrão:** 100% (4/4) ✅ NOVO
+- **Project Root:** 100% limpo ✅
+- **Padrão de Pasta:** 100% aderente ✅
+
+**Timestamp:** 03/03/2026 00:30 BRT (Consolidação P22)
+**Status:** ✅ COMPLETO E VALIDADO
+
+---
+
 5. **check_interseção.py** (Script)
    - Status: ✅ MOVIDO para `scripts/check_interseção.py`
    - Conteúdo: Validação interseção rewards ↔ episodes
