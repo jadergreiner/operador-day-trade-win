@@ -4,6 +4,8 @@
 **Status**: ✅ COMPLETO
 **Referência**: [ARCHITECTURE.md](ARCHITECTURE.md) | [DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md) | [ADRs.md](ADRs.md)
 
+⭐ **CORE DO PRODUTO**: [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) → [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat) na raiz implementam TODAS estas regras.
+
 ---
 
 ## 📋 Classificação de Regras

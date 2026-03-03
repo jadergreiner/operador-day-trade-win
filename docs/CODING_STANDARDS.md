@@ -3,6 +3,8 @@
 
 # Guia de Boas Práticas e Clean Code
 
+⭐ **CORE DO PRODUTO**: Todos os scripts importados/chamados por [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) e [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat) DEVEM seguir 100% destes padrões.
+
 ## Princípios Fundamentais
 
 ### 1. SOLID Principles

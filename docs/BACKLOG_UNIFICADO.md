@@ -5,6 +5,10 @@
 **Foco:** Valor de negócio + Viabilidade técnica
 **Status:** Pronto para execução
 
+⭐ **CORE DO PRODUTO**: Todo o backlog foi priorizado para entregar dois operadores na raiz do projeto:
+- [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) - Startup diário (09:30 BRT)
+- [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat) - Engine automático de trading
+
 ## 👥 Avaliação Dupla - Personas
 
 - **Product Owner:** Alinhamento com necessidades do negócio, user stories, priorização

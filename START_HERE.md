@@ -38,7 +38,7 @@ Aguarde ✅ "Auto Trading Ativado"
 
 O sistema agora:
 - ✅ Monitora continuamente o mercado
-- ✅ Analisa setups de entrada automaticamente  
+- ✅ Analisa setups de entrada automaticamente
 - ✅ Envia ordens quando critérios confirmados
 - ✅ Gerencia posições (Stop Loss / Take Profit)
 - ✅ Registra todas as operações em logs
@@ -100,6 +100,6 @@ Quando o pregão fecha (17:00 BRT):
 
 ---
 
-**Status:** ✅ Production-Ready  
-**Última Atualização:** 03/03/2026  
+**Status:** ✅ Production-Ready
+**Última Atualização:** 03/03/2026
 **Contato:** Documentação em `docs/`

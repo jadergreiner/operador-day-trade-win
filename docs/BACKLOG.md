@@ -1,5 +1,7 @@
 # Backlog — Operador Day Trade WIN
-
+⭐ **CORE DO PRODUTO**: Todas as tarefas neste backlog convergem para entregar dois operadores principais:
+- [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) - Inicializa sistemas
+- [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat) - Engine de trading automático
 > ⚠️ **ARQUIVO CONSOLIDADO:**
 >
 > Este arquivo foi consolidado em:

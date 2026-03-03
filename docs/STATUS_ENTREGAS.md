@@ -3,7 +3,9 @@
 **[SYNC] ÚLTIMA ATUALIZAÇÃO:** 2026-03-03T09:09:31Z
 **Status Geral:** 🟢 **OPERACIONAL**
 **Versão:** v1.2.8
-
+⚖️ **Métrica Principal de Entrega**: Ambos os operadores core funcionando:
+- ✅ [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) - Startup diário
+- ✅ [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat) - Auto trading engine
 ---
 
 ## 🎯 RESUMO EXECUTIVO

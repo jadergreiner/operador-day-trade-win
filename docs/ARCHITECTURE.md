@@ -3,6 +3,14 @@
 
 # Arquitetura do Sistema - Operador Quantitativo WIN
 
+## ⭐ CORE DO PRODUTO
+
+**IMPORTANTE:** Este sistema foi construído para que você execute dois arquivos .bat no início do pregão:
+1. **INICIAR_DIARIOS.bat** - Inicializa sistemas (09:30 BRT)
+2. **INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat** - Ativa engine automático
+
+Estes dois arquivos na raiz do projeto são o **CORE** de toda a arquitetura.
+
 ## Visão Geral
 
 Sistema de trading quantitativo para Mini Índice Brasileiro (WIN) com arquitetura em camadas, integrando análise de machine learning, decisão automatizada e execução via MetaTrader 5.

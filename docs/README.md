@@ -3,6 +3,8 @@
 **Projeto:** Operador Day Trade WIN
 **Organização:** Estrutura hierárquica por tipo/feature
 
+⚠️ **CORE DO PRODUTO:** Veja [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) e [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat) na **raiz do projeto** - estes são os dois entry points principais que o sistema foi construído ao redor.
+
 ---
 
 ## 📚 Estrutura de Documentação

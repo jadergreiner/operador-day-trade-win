@@ -4,6 +4,8 @@
 **Status**: ✅ COMPLETO
 **Referência**: [ARCHITECTURE.md](ARCHITECTURE.md) | [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) | [DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md)
 
+⭐ **CORE DO PRODUTO**: As decisões arquiteturais aqui registradas foram tomadas para suportar a execução eficiente de [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) e [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat).
+
 ---
 
 ## 📖 O que é ADR?

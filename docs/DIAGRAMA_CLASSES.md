@@ -1,5 +1,9 @@
 # Diagrama de Classes - Operador Day Trade WIN
 
+⭐ **CORE DO PRODUTO**: As classes aqui descritas são instanciadas/utilizadas pelos dois operadores na raiz:
+- [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat)
+- [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat)
+
 **Data**: 03/03/2026
 **Status**: ✅ COMPLETO
 **Referência**: [ARCHITECTURE.md](ARCHITECTURE.md) | [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md)

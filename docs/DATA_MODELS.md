@@ -7,6 +7,8 @@
 **Sincronização:** [ARCHITECTURE.md](ARCHITECTURE.md) | [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) | [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md)
 **Status:** ✅ Sincronizado com 5 documentos arquiteturais
 
+⭐ **CORE DO PRODUTO**: Os modelos aqui descritos são populados/utilizados por [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) e [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat).
+
 ---
 
 ## 🎯 Objetivo

@@ -1,5 +1,7 @@
 # Modelagem de Dados - Operador Day Trade WIN
 
+⭐ **CORE DO PRODUTO**: O schema SQLite aqui definido é criado/utilizado por [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) e [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat).
+
 **Data**: 03/03/2026
 **Status**: ✅ COMPLETO
 **Referência**: [ARCHITECTURE.md](ARCHITECTURE.md) | [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md) | [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md)
