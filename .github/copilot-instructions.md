@@ -419,6 +419,16 @@ Padrão estabelecido 03/03/2026 para TODAS consolidações futuras:
    - Scripts Windows automation → BAT/
    - Nunca deixar na raiz do projeto
 
+4.1 **Wrapper Files (.bat - Subdivisão):**
+   - Tipo Especial de Batch File para ambiente setup
+   - Exemplos: eng_sr_wrapper.bat, ml_expert_wrapper.bat, git_monitor_wrapper.bat
+   - Localização: `BAT/` folder (mesmo padrão de .bat regular)
+   - Propósito: Set PYTHONPATH, validar imports, chamar scripts de execução
+   - Padrão de Nomeação: {PERSONA/FUNCAO}_wrapper.bat
+   - Integração: Frequentemente chamados por master launchers (ex: INICIAR_PHASE6.bat)
+   - Guideline: Wrapper files devem ser pequenos (<50 LOC), sem lógica de negócio
+   - Função Principal: Environment setup + next-step guidance para usuário
+
 5. **Consolidação Final:**
    - Criar seção P(N) em BACKLOG_UNIFICADO.md
    - Deletar arquivo origem após confirmar consolidação
