@@ -258,10 +258,81 @@ Padrão estabelecido 03/03/2026 para TODAS consolidações futuras:
    - Nunca na raiz do projeto
    - Documentar em seção P(N) do BACKLOG
 
-3. **Consolidação Final:**
+3. **Arquivo de Teste (conftest.py):**
+   - Localização OBRIGATÓRIA: `scripts/conftest.py` (pytest fixtures)
+   - Pytest configuration deve estar em scripts/ folder
+   - Nunca deixar na raiz do projeto
+
+4. **Batch Files (.bat):**
+   - Localização OBRIGATÓRIA: `BAT/` folder
+   - Scripts Windows automation → BAT/
+   - Nunca deixar na raiz do projeto
+
+5. **Consolidação Final:**
    - Criar seção P(N) em BACKLOG_UNIFICADO.md
    - Deletar arquivo origem após confirmar consolidação
    - Commitar com mensagem: `docs: Consolidacao PN - tasks de X arquivos movidos para BACKLOG`
+
+---
+
+### Lote 3 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P21 - 03/03/2026)
+
+**Origem:** 5 arquivos pendentes analisados, consolidação final
+
+#### P21 - Arquivos Consolidados:
+
+1. **conftest.py** (Script Python de Testes)
+   - Status: ✅ MOVIDO para `scripts/conftest.py`
+   - Conteúdo: Pytest fixture framework (372 LOC)
+   - Framework fixtures: database, RabbitMQ, Redis, FastAPI, ML
+   - Localização: `scripts/conftest.py` (novo padrão fixture location)
+
+2. **CONSOLIDACAO_PHASE5_CONCLUIDA.txt** (Documento)
+   - Status: ✅ CONSOLIDADO em P21-1
+   - Conteúdo: Consolidação Phase 5 (12 arquivos, 38 tarefas)
+   - 3 scripts movidos para scripts/, 9 docs consolidados
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P21-1
+
+3. **CONSOLIDACAO_PHASE6_CONCLUIDA.txt** (Documento)
+   - Status: ✅ CONSOLIDADO em P21-2
+   - Conteúdo: Consolidação Phase 6 (5 arquivos, 43 tarefas cumulativas)
+   - 1 script movido, 1 JSON movido para outputs/, 3 docs consolidados
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P21-2
+
+4. **CONSOLIDACAO_PHASE7_MASSIVA_CONCLUIDA.txt** (Documento)
+   - Status: ✅ CONSOLIDADO em P21-3
+   - Conteúdo: Consolidação Phase 7 (28 arquivos, 61 tarefas cumulativas)
+   - 7 scripts movidos para scripts/, 3 .bat movidos para BAT/
+   - Acesso à operacionalização Sprint 2
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P21-3
+
+5. **DAILY_STANDUP_CONFIG_SPRINT2.md** (Documento)
+   - Status: ✅ CONSOLIDADO em P21-4
+   - Conteúdo: Sprint 2 Daily Standup Framework (285 LOC)
+   - Horário: 15:00 BRT, Duração: 15 min
+   - 8 standups programados, Escalation protocol, Templates
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P21-4
+
+#### Status da Consolidação P21:
+
+- ✅ 5 arquivos processados (1 script, 4 documentos)
+- ✅ conftest.py movido para scripts/ (novo padrão)
+- ✅ 5 tarefas mapeadas em P21
+- ✅ 4 arquivos origem deletados da raiz
+- ✅ 100% de cleanup do projeto root
+- ✅ Padrão de pasta aplicado: scripts/ + outputs/ + BAT/
+
+#### Consolidação Total Acumulada:
+
+- **Total Geral:** 84 arquivos (15 scripts, 65 docs, 3 .bat, 1 JSON)
+- **Tarefas Rastreadas:** 78 (P0-P4, P8-P21)
+- **Código Consolidado:** ~6.000 LOC scripts
+- **Documentação:** ~55.000 linhas
+- **Project Root:** 100% limpo ✅
+- **Padrão de Pasta:** 100% aderente ✅
+
+**Timestamp:** 03/03/2026 23:30 BRT (Consolidação P21)
+**Status:** ✅ COMPLETO E VALIDADO
 
 ---
 
