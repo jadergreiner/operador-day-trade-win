@@ -1,33 +1,15 @@
 # Backlog Priorizado - Operador Day Trade WIN
 
-**Versão:** 3.1
+**Versão:** 4.0 (Prioridade-Only, Sem Datas)
 **Formato:** Tarefas Entregáveis Independentes
-**Foco:** Valor de Negócio + Viabilidade Técnica
-**Status:** Pronto para Execução
+**Foco:** Valor de Negócio (PO) + ROI Financeiro (CFO)
+**Status:** Pronto para Execução Paralela
+
+> **Como Usar:** Cada tarefa é **independentemente entregável**. Prioridades absolutas: P0 > P1 > P2 > P3 > P4. ZERO datas/timelines. Comece por P0.
 
 ---
 
-## 👥 Avaliação Dupla - Personas Decisoras
-
-- **Product Owner (PO):** Alinhamento com necessidades do negócio, user stories, priorização
-- **Head de Finanças (CFO):** ROI, risco operacional, capital allocation, gates de decisão
-
-> **Como Usar:** Cada tarefa é **independentemente entregável**. Prioridades são absolutas: P0 > P1 > P2 > P3 > P4. Comece sempre por P0.
-
----
-
-## 📋 Padrões de Desenvolvimento Obrigatórios
-
-Todos os desenvolvedores DEVEM cumprir:
-- [ARCHITECTURE.md](ARCHITECTURE.md) - Estrutura 7-camadas
-- [CODING_STANDARDS.md](CODING_STANDARDS.md) - SOLID, DDD, Clean Code
-- [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) - 6 regras críticas P0
-- 100% type hints (mypy --strict)
-- Testes: unitário + integração + E2E
-
----
-
-## ✅ P0 - CRÍTICAS (Bloqueadores de Valor)
+## P0 - CRÍTICAS (Bloqueadores Valor)
 
 Tarefas que definem caminho crítico. Sem estas, nada avança.
 
@@ -37,7 +19,7 @@ Tarefas que definem caminho crítico. Sem estas, nada avança.
 - **ROI:** Habilita trading automático + reduz latência manual (2-5 seg → <200ms)
 - **Risco Operacional:** API instável = falha de execução = drawdown capital
   Mitigação: timeout + circuit breaker + retry exponencial
-- **Bloqueador para:** P0-2, P1-2, P1-3, P1-4, P1-5, P1-6, P1-11, P1-12
+- **Bloqueador para:** P0-2, P1-*, P4-1
 - **Estimativa:** 160h
 - **Equipe:** Eng Sr (lead) + 3 Dev-Backend
 
@@ -83,8 +65,7 @@ Tarefas que definem caminho crítico. Sem estas, nada avança.
 - **ROI:** Validação modelo com dados reais = confiança para ativar R$ 100k+ (Fase 2)
 - **Risco Técnico:** Backtest com look-ahead bias = validação falsa = capital perdido
   Mitigação: walk-forward validation, purging, embargo 60min
-- **Bloqueador para:** P4-1 (staging deployment), decisão capital Fase 2
-- **Pré-requisito:** P0-1 completo
+- **Bloqueador para:** P4-1, decisão capital Fase 2
 - **Estimativa:** 88h
 - **Equipe:** ML Expert + Data Scientist
 
@@ -122,7 +103,6 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 - **ROI:** Explainabilidade ML = trader toma decisões informadas = risco reduzido
 - **Risco Operacional:** Modelo drift não-detectado = execuções ruins sem awareness
   Mitigação: SHAP analysis + 3 drift rules + limiares alerta
-- **Independente de:** P0-1 (pode começar em paralelo)
 - **Estimativa:** 88h
 - **Equipe:** ML Expert + Data Scientist
 
@@ -152,7 +132,6 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 - **ROI:** Visibilidade tempo real = trader monitora automação = confiança operação
 - **Risco:** CEO/CIO sem visibility = perda confiança no sistema
   Mitigação: audit trail completo, timestamp em tudo
-- **Dependência:** P0-1 (endpoints /orders, /positions)
 - **Estimativa:** 40h
 - **Equipe:** Eng Sr + 1 Dev-Backend
 
@@ -186,7 +165,6 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 - **ROI:** Autenticação segura = compliance CVM/B3 (obrigatório produção)
 - **Risco:** Sem autenticação = risco regulatório + dados expostos + auditoria falha
   Mitigação: bcrypt hashing + rate limiting + audit logging
-- **Dependência:** P0-1 (mesmo servidor FastAPI)
 - **Estimativa:** 40h
 - **Equipe:** 2 Dev-Backend
 
@@ -218,7 +196,6 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 - **ROI:** Async orders = API não bloqueia = trader pode cancelar rápido
 - **Risco:** Síncrono = timeout = ordem perdida
   Mitigação: DLQ + retry 3× + idempotência garantida
-- **Dependência:** P0-1 (no mesmo servidor/infraestrutura)
 - **Estimativa:** 40h
 - **Equipe:** 2 Dev-Backend
 
@@ -252,7 +229,6 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 - **ROI:** Latência <100ms = trader reage rápido
 - **Risco:** Dados stale = decisões informadas ruins
   Mitigação: heartbeat 30s, auto-reconnect, zero message loss
-- **Dependência:** P0-1
 - **Estimativa:** 40h
 - **Equipe:** 1 Dev-Backend
 
@@ -284,7 +260,6 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 - **ROI:** SL/TP automático = nenhuma posição descoberta
 - **Risco:** Esquecimento = grandes perdas acidentais
   Mitigação: trailing stop + alertas + log completo
-- **Dependência:** P0-1
 - **Estimativa:** 32h
 - **Equipe:** 1 Dev-Backend
 
@@ -315,7 +290,6 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 - **ROI:** Validação integração = confiança antes de produção
 - **Risco:** Integração falha = trading parado em produção
   Mitigação: E2E tests + batch processing + validação 100%
-- **Dependência:** P1-1 (análise básica completa)
 - **Estimativa:** 32h
 - **Equipe:** Eng Sr + ML Expert
 
@@ -342,7 +316,6 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 - **ROI:** Alertas confiáveis = nenhuma oportunidade perdida
 - **Risco:** Alertas perdidos = trader não sabe oportunidades
   Mitigação: webhook + retry + fallback SMS
-- **Dependência:** Nenhuma (paralelo)
 - **Estimativa:** 40h
 - **Equipe:** Dev-Backend + QA
 
@@ -371,7 +344,6 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 - **ROI:** Reconciliação MT5 ↔ SQLite = auditoria CVM/B3 completa
 - **Risco:** Mismatch trades = perdas não-localizadas + auditoria falha
   Mitigação: daily reconciliation + alertas + DLQ
-- **Dependência:** P0-1 (API MT5), P1-2 (persistência)
 - **Estimativa:** 10h
 - **Equipe:** 1 Dev-Backend
 
@@ -401,7 +373,6 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 - **ROI:** Feedback RL = modelo melhora com dados reais
 - **Risco:** RL sem feedback = modelo não evolui
   Mitigação: historical outcome tracking + A/B testing
-- **Dependência:** P0-2 (persistência trades)
 - **Estimativa:** 15h
 - **Equipe:** ML Expert + Dev-Backend
 
@@ -476,7 +447,7 @@ Históricos, compilados para referência.
 
 ## 🚀 P4 - STAGING & GO-LIVE
 
-### P4-1: Staging Deployment (Após P0-2 PASS todos gates)
+## 🎯 Gates de Decisão (Checkpoints, Não Datas)
 
 **Estimativa:** 40h | **Equipe:** Eng Sr + DevOps + QA
 
@@ -512,7 +483,7 @@ Gates para prosseguir a P4-2:
 
 ---
 
-### P4-2: UAT & Approval (Após P4-1 PASS)
+### P4-2: UAT & Approval
 
 **Estimativa:** 24h | **Equipe:** Trader + CIO + CFO
 
@@ -541,11 +512,9 @@ Gates para Go-Live:
 
 ---
 
-### P4-3: Go-Live Production (Após P4-2 PASS)
+### P4-3: Go-Live Production
 
-**Estimativa:** 8h (durante go-live) | **Equipe:** Eng Sr + DevOps + Trader
-
-Go-Live Time: Determinado após P4-2 aprovação
+**Estimativa:** 8h | **Equipe:** Eng Sr + DevOps + Trader
 
 Entregas:
 - Production infrastructure deployment
@@ -600,61 +569,21 @@ python scripts/recovery_and_audit.py
 
 ---
 
-## 📊 Modelo de Execução Paralelizado
+## 🎯 Resumo Final
 
-```
-FASE 1: P0 + P1 Paralelos (Início)
-├─ P0-1 ENG-003         [BLOQUEADOR CENTRAL]
-│  └─ Desbloqueia: P0-2, P1-2, P1-3, P1-4, P1-5, P1-6
-├─ P1-1 ML-003          [PARALELO - sem depend P0]
-├─ P1-7 S2-6 Tests      [APÓS P1-1]
-├─ P1-8 Alertas         [PARALELO]
-├─ P1-9 TradeSyncVerifier [APÓS P0-1]
-└─ P1-10 RL Feedback    [APÓS P0-2]
+**P0:** 2 tarefas críticas bloqueadoras
+**P1:** 10 tarefas suporte
+**P2:** 3 tarefas otimização
+**P3:** 4 tarefas análise mercado
+**P4:** 3 tarefas produção
 
-FASE 2: P0-2 Validação (Após P0-1)
-└─ P0-2 ML-004 Backtest [BLOQUEADOR CAPITAL]
-   └─ Desbloqueia: P4-1 (Staging)
-
-FASE 3: P2 + P3 Otimizações (Após P0-P1)
-├─ P2-1 Performance
-├─ P2-2 Monitoring
-└─ P2-3 Staging
-
-FASE 4: Go-Live (Após P0-2 PASS)
-├─ P4-1 Staging Deploy     [SEQUENCIAL]
-├─ P4-2 UAT & Approval     [SEQUENCIAL]
-└─ P4-3 Production Go-Live [SEQUENCIAL]
-
-REGRA CRÍTICA: P0-2 backtest DEVE PASSAR todos 4 gates:
-  ✅ Sharpe ≥ 1.0
-  ✅ Win-rate ≥ 59%
-  ✅ Drawdown < 15%
-  ✅ Consistência < 30% std (mensal)
-Sem isto: BLOQUEADO para produção
-```
+Execução: Prioridade absoluta P0 > P1 > P2 > P3 > P4.
+Sem datas. Cada tarefa é independentemente entregável.
 
 ---
 
-## 🎯 Alinhamento PO + Head Finanças
-
-| Aspecto | PO | Head Finanças |
-|---------|----|----|
-| **P0-1 ROI** | Automação = velocidade | Execução = sem slippage |
-| **P0-2 Gate** | Modelo robusto | Capital liberado (R$ 100k) |
-| **P1-1 Drift** | Trader informado | Risco mitigado |
-| **P1-2 Dashboard** | Visibilidade = confiança | Auditoria CVM/B3 |
-| **P4-1,2,3** | Features = LIVE | Capital = gerido |
-
----
-
-## 📞 Próximos Passos
-
-1. Selecione P0-1 ou P1-1 para começar
-2. Aloque equipe conforme tabela
-3. Execute critérios de aceite
-4.  Marque como ✅ quando completo
-5. Prossiga para próxima tarefa (respeitando dependências)
-
-**Perguntas?** Consulte ARCHITECTURE.md ou CODING_STANDARDS.md.
+**Versão:** 4.0 (Prioridade-Only, Sem Datas)
+**Última atualização:** 03/03/2026
+**Única fonte de verdade:** Este arquivo
+**Execução:** Comece por P0. GATE 1/2/3 conforme conclusão das tarefas bloqueadoras.
 
