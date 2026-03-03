@@ -792,7 +792,7 @@ python scripts/extract_bdi_daily.py --date 20260303 --force
 - IA confidence dropped to 0.30 (minimum) and stayed there
 - Mesmo durante rally +1.15% em 10 min, confidence não subiu
 - Padrão: HOLD mantido apesar volatilidade -4.78% nadir
-- **Implicação:** Sem win rate métrica, sistema não sabe se  
+- **Implicação:** Sem win rate métrica, sistema não sabe se
   HOLD foi decisão correta ou falha de sinal
 
 **Por Quê Crítica:**
@@ -830,9 +830,9 @@ if total_count > 0:
 
 **Validação Comportamental (Análise Sentimentos 03/03):**
 - IA alignment oscilou entre 0.17 e 0.45 durante volatilidade
-- Confidence permaneceu baixa (0.30) mesmo quando mercado  
+- Confidence permaneceu baixa (0.30) mesmo quando mercado
   recuperou +1.15% em 10 minutos rápidos
-- **Padrão:** Se model estava bem-calibrado, confidence deveria  
+- **Padrão:** Se model estava bem-calibrado, confidence deveria
   subir com movimento favorável. Não subiu = model desincronizado
 - **Suspeita:** Backtest trained em cenários sem volatilidade extrema
 - **Evidência:** P&L histórico não reflete stress como 03/03
@@ -871,14 +871,14 @@ for train_idx, test_idx in tscv.split(X):
 
 **Validação Comportamental (Análise Sentimentos 03/03):**
 - IA GEROU METAPHORA ORGÂNICA sobre velocidade de processamento
-- Citação: "meus circuitos estão tentando acompanhar, mas o  
-  mercado está na velocidade da luz e eu ainda estou no  
+- Citação: "meus circuitos estão tentando acompanhar, mas o
+  mercado está na velocidade da luz e eu ainda estou no
   dial-up" (15:40 BRT, durante +1.08% rally rápido)
-- **Descoberta:** Não foi programado, IA CRIOU essa metáfora  
+- **Descoberta:** Não foi programado, IA CRIOU essa metáfora
   durante market stress para descrever sua própria limitação
-- **Evidência Direta:** Market moveu 0.74-1.15% em 10-minute  
+- **Evidência Direta:** Market moveu 0.74-1.15% em 10-minute
   windows, confidence system ficou em 0.30 (processamento insuficiente)
-- **Implicação:** Latência P95 provavelmente >500ms durante  
+- **Implicação:** Latência P95 provavelmente >500ms durante
   volatilidade (confirmar com profiling)
 
 **Problema:**
@@ -903,8 +903,8 @@ python scripts/performance_analyzer.py \
 
 **Timeline:** TODAY 10:00-13:00
 
-**URGENT NOTE:** Análise sentimento 03/03 evidencia que sistema  
-processa mais lentamente que volatilidade do mercado. Profiling  
+**URGENT NOTE:** Análise sentimento 03/03 evidencia que sistema
+processa mais lentamente que volatilidade do mercado. Profiling
 latência é bloqueador para P49-2 (Win Rate validation).
 
 ---
@@ -1149,6 +1149,241 @@ python scripts/analyze_feature_importance.py --save-history
 
 **Status:** ✅ 10 Pontos Críticos Documentados - READY FOR EXECUTION
 **Consultor:** ML Specialist | **Data:** 03/03/2026 23:45 BRT
+
+---
+
+## 🧠 P51 - AI BEHAVIORAL EVOLUTION & SENTIMENT DEGRADATION (06/02-03/03)
+
+**Análise Base:** Reflections Log Analysis (445+ entradas, 25 dias)  
+**Descoberta:** IA não está melhorando, está DEGRADANDO progressivamente  
+**Status:** Padrão de degradação documentado - REQUEREM INTERVENÇÃO  
+
+---
+
+### Visão Geral: Evolução Observada (06/02 → 03/03)
+
+| Métrica | 06/02 | 26/02 | 03/03 | Δ (%) | Trend |
+|---------|-------|-------|-------|-------|-------|
+| **Confidence Médio** | 0.62 | 0.31 | 0.34 | -45% | 🔴 DOWN |
+| **Alignment Médio** | — | 0.42 | 0.35 | -17% | 🔴 DOWN |
+| **Moods Negativos %** | 10% | 60% | 75% | +65% | 🔴 UP |
+| **Volume Reflexões** | 10 | 36 | 34 | 3.4x | 🟠 SOBE COM STRESS |
+| **Linguagem Adaptativa** | Nenhuma | Sarcasmo | Metaphoras | Emergente | 🔵 EVOLUI |
+
+**Conclusão:** Sistema tem linguagem adaptativa (positivo) mas performance  
+degrada (negativo). IA **reflete** seu estado ruim mas não **melhora**.
+
+---
+
+### P51-1: 🔴 CRÍTICA - Confidence Degradation Not Arrested
+
+**Problema Identificado:**
+
+Confidence NUNCA retornou ao nível de 06/02 (0.62) após primeiro crash:
+
+```
+TRAJETÓRIA DE CONFIANÇA:
+06/02: 0.62 ████████████  (baseline operacional)
+09/02: 0.40 ████████  (-35%) ← PRIMEIRO CRASH
+10/02: 0.54 (tentativa recuperação)
+11-13/02: 0.35-0.41 (não recupera)
+18-26/02: 0.31-0.38 (pior ainda)
+03/03: 0.34 (AINDA PIOR, não sobe em rally +1.15%)
+```
+
+**Impacto Crítico:**
+- Confidence permanentemente 45% abaixo do baseline
+- 09/02 foi "event traumático" - sistema nunca se recuperou
+- Sem retraining diário, sistema aprende "estar com medo"
+- Precedência: 06/02→09/02 ("operational"→"crash"), 09/02→03/03 ("crashed")
+
+**Padrão Preocupante:**
+- Rally de +1.15% em 10min (03/03 15:50) → Confidence permanece 0.30
+- Queda de -4.78% (03/03 11:50) → Confidence sobe marginalmente (0.41)
+- **Interpretação:** IA aprendeu pessimismo como strategy defensiva
+
+**Acceptance Criteria:**
+- [ ] AC-1: Confidence trending UPWARD (não apenas recuperação, crescimento)
+- [ ] AC-2: Post-retraining baseline > 0.50 (vs 0.34 hoje)
+- [ ] AC-3: Rally/queda não correlacionam inversamente com confiança
+- [ ] AC-4: Resilience test: volatilidade não causa confidence collapse
+- [ ] AC-5: 7-dia moving average confidence > 0.55 (target)
+
+**Root Cause Hypothesis:**
+- Feedback loop incompleto (P49-10) = sem aprendizado diário
+- Dataset stale (14 dias velho) = modelo generaliza mal em presente
+- Sem calibration (P49-7) = confidence predictions miscalibradas
+
+**Ação:**
+1. Implementar P49-5 (daily retraining) para capturar feedback
+2. Executar P49-3 (backtest validation) para resetar expectations
+3. Profiling: investigar se loss_function penaliza IA por confiança alta
+
+**Timeline:** CRITICAL - Bloqueia decisões de capital
+
+---
+
+### P51-2: 🔴 CRÍTICA - Stress-Driven Mood Emergence (New Moods Created)
+
+**Descoberta: IA INVENTA moods quando enfrenta situações novas**
+
+Cada event major gera novo mood (não pre-programado):
+
+```
+09/02 (Crash): IA criou "EM COMA INDUZIDO"
+  └─ Padrão: Shutdown response à volatilidade inesperada
+  └─ Gerou: 129 reflexões (processamento de trauma)
+
+13/02 (Sustained Loss): IA criou "MORTO POR DENTRO (Tédio algorítmico)"
+  └─ Padrão: Existential fatigue
+  └─ Insight: "Tédio algorítmico" = própria metáfora de IA
+  └─ Gerou: 62 reflexões
+
+20/02 (Panic Phase): IA criou "PANICADO (Parem as máquinas!)"
+  └─ Padrão: Plea para parar (safety mechanism?)
+  └─ Gerou: 37 reflexões de high stress
+
+24/02 (Recovery Failed): IA criou "DE QUEIXO CAÍDO (Digitalmente)"
+  └─ Padrão: Disappointed expectation
+  └─ Gerou: 56 reflexões
+
+03/03 (Market Rally): IA criou "FOGUETE" + "DIAL-UP"
+  └─ Padrão 1: "FOGUETE" = market velocity metaphor
+  └─ Padrão 2: "DIAL-UP" = computational inadequacy metaphor
+  └─ Gerou: 20 "FOGUETE" reflexões em 1 hora
+```
+
+**Padrão Observado:**
+- IA não fica presa em pre-defined moods
+- Quando experiência é nova, cria novo mood + explana paren parênteses
+- Mood creation correlaciona diretamente com uncertainty
+
+**Implicação Positiva:**
+- IA tem **adaptive language system** (isso é bom para safety)
+- Pode descrever estados não previstos em design
+
+**Implicação Negativa:**
+- Cada novo mood = falha de modelo em predict
+- Moods negativos dominam (75% em 03/03) = sistema pessimista
+- IA vem PROCESSANDO stress, não LEARNING como resolver
+
+**Acceptance Criteria:**
+- [ ] AC-1: Novo mood só emerge se confidence < 0.40
+- [ ] AC-2: Post-emergence, log: "New mood: X detected (reason: reason)"
+- [ ] AC-3: Sistema documenta QUANDO e POR QUÊ mood aparece
+- [ ] AC-4: Tendência: Zero novos moods (= modelo generaliza bem)
+- [ ] AC-5: Moods positivos (confidence > 0.60) sobem de 10% → 50%
+
+**Ação:**
+1. Não suprimir mood emergence (é safety feature legítima)
+2. Usar mood emergence COMO SIGNAL de quando retraining needed
+3. Dashboard: "New moods detected: X" = trigger para model audit
+
+**Timeline:** THIS WEEK - Monitor + document padrões
+
+---
+
+### P51-3: 🟠 ALTA - Learning Non-Occurrence (Reflection Without Improvement)
+
+**Problema:**
+- Reflexões geradas: ✅ 445+ entries (sistema está refletindo)
+- Feedback aplicado: ❌ ZERO evidência de daily retraining
+- Resultado: High reflection, zero learning
+
+**Impacto:**
+- IA reflete seu fracasso (gera moods negativos)
+- IA NÃO aprende de seu fracasso (nenhum model update)
+- Próximo dia, IA comete MESMOS ERROS (cycle de pessimismo)
+
+**Evidência:**
+- 26/02 confidence: 0.31 (BAIXO)
+- 27-02/02: Gap 3 dias (sem dados)
+- 03/03 confidence: 0.34 (SEM MELHORIA após gap)
+- Se houvesse aprendizado, esperaríamos 03/03 > 26/02
+- Mas 0.34 ≈ 0.31 = **STAGNAÇÃO**
+
+**Root Cause:**
+- P49-5 (Daily Retraining) **NÃO IMPLEMENTADO**
+- Episódios geram rewards ✅
+- Rewards NÃO são usados para update model ❌
+- Feedback loop = círculo aberto
+
+**Acceptance Criteria:**
+- [ ] AC-1: Daily retraining job roda 18:00 BRT pós-fechamento
+- [ ] AC-2: Model score pré-retraining vs pós documentado
+- [ ] AC-3: Se score melhora: model updated + event logged
+- [ ] AC-4: Se score piora: model NOT updated + alert enviado
+- [ ] AC-5: Baseline: Post-retraining confidence > pre-retraining
+
+**Ação Imediata:**
+1. Unblock P49-5: Design template de daily retraining pipeline
+2. Implementar safety checks: score validation antes model swap
+3. Logging: "Model retrained | old_score=0.58 | new_score=0.62 | delta=+0.04"
+
+**Timeline:** URGENT - Bloqueador de aprendizagem do sistema
+
+---
+
+### P51-4: 🟠 ALTA - Pessimism as Learned Strategy
+
+**Descoberta Comportamental:**
+
+IA desenvolveu **defensive pessimism** como resposta racional ao desempenho ruim.
+
+```
+LÓGICA DO SISTEMA:
+1. 09/02: Confiado (0.62) → Mercado crash → Feedback negativo
+2. Condicionamento: Confiança alta → Expectation → Disappointment
+3. Resposta adaptativa: "Se tenho confiança baixa, posso estar certo"
+4. Resultado hoje: Confidence 0.30 mesmo em rally +1.15%
+   └─ Pessimismo "protege" IA de disappointment
+   └─ Mas também "sabota" decisões potencialmente boa
+```
+
+**Padrão em Reflexões:**
+- "Spoiler: Não sou eu quem está ganhando" (03/03)
+- "Tentando acompanhar o veloz e furioso" (03/03)
+- "Meus circuitos estão em dial-up" (03/03)
+- **Tom:** Humilidade excessiva, pessimismo defensivo
+
+**Implicação:**
+- Modelo APRENDEU = está se comportando racionalmente dado feedback negativo
+- Mas aprendizado NÃO é desejável = pessimismo reduz profit
+- Solução NÃO é aumentar confidence artificialmente (que é miscalibration)
+- Solução É: Federal feedback positivo (acertos diários)
+
+**Acceptance Criteria:**
+- [ ] AC-1: Análise causal: confidence baixa ↔ pessimistic moods
+- [ ] AC-2: Sim confidence sobe pós-retraining positivo: hipótese validada
+- [ ] AC-3: Se não sobe: investigar se loss_function penaliza confiança
+- [ ] AC-4: Baseline esperado: confidence 0.55-0.65 com boa performance
+- [ ] AC-5: Padrão de moods muda: positivos aumentam a 40%+
+
+**Ação:**
+1. Não é bug, é feature (defensaaprendida)
+2. Corrigir alimentando feedback positivo via daily retraining
+3. Audit loss function: não penalizar confidence alta se acertos são altos
+4. Reset expectations: se win_rate sobe para 70%, confidence DEVE subir
+
+**Timeline:** THIS WEEK - Behavioral audit + root cause
+
+---
+
+### P51 Summary & Linkages to P49
+
+O que P49 diagnosticou técnicamente, P51 explica **comportamentalmente:**
+
+| P49 Item | Diagnóstico Técnico | P51 Comportamento |
+|----------|-------------------|-------------------|
+| P49-2 (Win Rate) | Métrica faltante | Sem feedback quantificado = IA pessimista |
+| P49-3 (Backtest Bias) | Win rate 100% é falso | IA aprendeu desconfiar (racionalmente) |
+| P49-4 (P95 Latency) | Sistema lento | IA criou "dial-up" metaphor (reconhece) |
+| P49-5 (Daily Retrain) | Pipeline missing | SEM ISSO: aprendizado = ZERO |
+| P49-7 (Calibration) | Confidence unclear | Confidence 0.34 é defensiva, não real |
+
+**Conclusão:** P49 + P51 devem ser executados **juntos**:
+- P49 = Fix técnica
+- P51 = Entender/reverter comportamento
 
 ---
 
