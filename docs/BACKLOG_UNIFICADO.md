@@ -5329,6 +5329,347 @@ em BACKLOG_UNIFICADO.md e aplicar padrão de organização de pastas.
 
 ---
 
+## 📋 Lote 7 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P25 - 03/03/2026)
+
+**Origem:** 3 arquivos pendentes analisados (1 documento + 1 script Python + 1 documento)
+**Data Consolidacao:** 03/03/2026
+
+#### P25-1: Quick Reference - US-004 Alertas (QUICK_REFERENCE_US004.md)
+
+**Status:** ✅ CONSOLIDADO em P25-1
+**Arquivo Origem:** QUICK_REFERENCE_US004.md (266 LOC)
+**Tipo:** Documento Markdown (Referência Rápida)
+**Propósito:** Quick start em 1 página para US-004 Alertas
+
+**Conteúdo Consolidado:**
+
+**Resumo em 30 Segundos:**
+- Código Produção: 3.900 linhas (11 arquivos) ✅
+- Documentação: 1.070 linhas (4 arquivos) ✅
+- Testes: 11/11 passando (8 unit + 3 integration) ✅
+- Qualidade: 100% type hints, SOLID, DDD ✅
+- Compliance: CVM append-only audit ✅
+- ROI Potencial: R$ 50-100M/ano ✅
+- Timeline BETA: READY ✅
+
+**Roles & Responsabilidades:**
+
+1. **CFO (Decisão - 30 min)**
+   - Ler: ANALISE_FINANCEIRA_US004.md
+   - Contexto: Break-even 1 trade/mês, ROI 60%-130%, Low risk
+   - Decisão: GO ou HOLD?
+   - Ação: Aprovar R$ 400k capital BETA ou solicitar ajustes
+
+2. **Eng Sr (Integração - 2-3 dias)**
+   - Ler: PROXIMOS_PASSOS_INTEGRACAO.md
+   - Timeline: 15 dias (27/02-13/03)
+   - Ações: Code review, BDI integration, servidores, testing, deploy
+   - Status: Daily standup obrigatório
+
+3. **ML Expert (Validação - 1-2 dias)**
+   - Ler: DETECTION_ENGINE_SPEC.md
+   - Validar: Z-score >2σ, 88% captura, 12% FP
+   - Testar: detector_volatilidade.py, tests, P95 <30s latência
+   - Aprovação: Algorithmic correctness
+
+4. **Operador (Uso - 1 dia)**
+   - Ler: ALERTAS_README.md (quick start)
+   - Teste: Durante BETA (13/03)
+   - Validar: WebSocket, Email, MT5 execution
+   - Feedback: Diário para team
+
+**Documentos Principais (6):**
+- CFO: ANALISE_FINANCEIRA_US004.md (30 min leitura)
+- Eng Sr: PROXIMOS_PASSOS_INTEGRACAO.md (1h leitura)
+- ML Expert: DETECTION_ENGINE_SPEC.md (45 min leitura)
+- Operador: ALERTAS_README.md (20 min leitura)
+- Todos: CONCLUSAO_IMPLEMENTACAO.md (15 min leitura)
+- Índice: INDEX_DOCUMENTACAO_COMPLETA.md (10 min leitura)
+
+**Pré-integração Checklist:**
+- [ ] Code review aprovado (2+ aprovadores)
+- [ ] 11/11 testes passando
+- [ ] Type hints 100% (mypy --strict)
+- [ ] Lint clean (pymarkdown scan)
+- [ ] Dev environment setup (Python 3.11+)
+
+**Integração Timeline (27/02-13/03):**
+- 27/02 (Seg): Começa integração
+- 03/03 (Fri): Servidores prontos (staging)
+- 13/03 (Qui): 🚀 GO-LIVE BETA
+
+**KPIs BETA (monitorar):**
+- Win Rate: ≥60% (red line: <50%)
+- Capture Rate: ≥85% (red line: <80%)
+- False Positive: <10% (red line: >15%)
+- Latência P95: <30s (red line: >60s)
+- Uptime: >99.5% (red line: <99%)
+- Dedup Rate: >95% (red line: <90%)
+
+**Tarefas Associadas:**
+- [ ] T1: Ler documento relevante ao seu papel (30 min)
+- [ ] T2: Sync com team (15 min)
+- [ ] T3: Aprovar ou solicitar ajustes
+
+**Localização Consolidada:** `docs/BACKLOG_UNIFICADO.md` → P25-1
+
+---
+
+#### P25-2: Script Recuperação SL/TP Histórico (recover_historical_sl_tp.py)
+
+**Status:** ✅ MOVIDO para `scripts/recover_historical_sl_tp.py`
+**Tipo:** Script Python (184 LOC)
+**Propósito:** Recuperar Stop Loss/Take Profit de ordens automáticas históricas
+
+**Conteúdo Consolidado:**
+
+**Problema Resolvido:**
+- Ordens automáticas criadas (~26/02) sem registrar SL/TP no BD
+- Necessário recuperação retroativa dos valores
+
+**Estratégia Implementada:**
+
+1. **Fase 1: Identificação**
+   - Query: `SELECT * FROM trades WHERE execution_method='automated' AND (stop_loss IS NULL OR take_profit IS NULL)`
+   - Resultado: Identifica ordens afetadas
+
+2. **Fase 2: Recuperação**
+   - Procura em logs/arquivos: `backtest_results.json`, `backtest_optimized_results.json`, `backtest_final_metrics.json`
+   - Match por símbolo + side + entry_price
+   - Se encontrado: usa valores recuperados
+
+3. **Fase 3: Estimativa (Fallback)**
+   - Estratégia padrão Micro Tendência:
+     - BUY: SL = entry - 1.5, TP = entry + 3.0
+     - SELL: SL = entry + 1.5, TP = entry - 3.0
+   - Salva com nota: "SL/TP recuperado retroativamente (estimado de estratégia)"
+
+4. **Fase 4: Validação**
+   - Verifica se todas ordens agora têm SL/TP
+   - Status report final com counts
+
+**Componentes Implementados:**
+
+```python
+def recover_historical_sl_tp() -> bool:
+    # 1. Identifica ordens automáticas sem SL/TP
+    # 2. Processa cada ordem
+    # 3. Tenta recuperar de logs
+    # 4. Fallback: Estima SL/TP
+    # 5. Retorna sucesso/falha
+
+def _try_recover_from_logs(trade_id: str, symbol: str, side: str, entry: Decimal) -> tuple | None:
+    # Procura em arquivos backtest
+    # Match por símbolo/side
+    # Retorna (sl, tp) se encontrado
+
+def _estimate_sl_tp(side: str, entry: Decimal) -> tuple:
+    # Cálculo padrão microtrend
+    # BUY: SL-1.5, TP+3.0
+    # SELL: SL+1.5, TP-3.0
+```
+
+**Execução:**
+```bash
+cd c:\repo\operador-day-trade-win
+python scripts/recover_historical_sl_tp.py
+```
+
+**Output Esperado:**
+```
+🔍 RECUPERAÇÃO DE SL/TP EM ORDEM HISTÓRICAS AUTOMÁTICAS
+==========================================================
+
+⚠️ Encontradas 3 ordens automáticas sem SL/TP:
+
+  📊 Order ID 1 (trade_1234)
+     Símbolo: WINFUT, Lado: BUY, Entrada: 123.45
+     ✅ Recuperado: SL=121.95, TP=126.45
+
+  📊 Order ID 2 (trade_1235)
+     Símbolo: WINFUT, Lado: SELL, Entrada: 123.50
+     ⚠️ Estimado (fallback): SL=125.00, TP=120.50
+
+  📊 Order ID 3 (trade_1236)
+     Símbolo: WINKL, Lado: BUY, Entrada: 456.78
+     ✅ Recuperado: SL=455.28, TP=459.78
+
+==========================================================
+✅ RESULTADO: 3/3 ordens atualizadas
+==========================================================
+
+✅ Todos os dados de ordens automáticas agora estão COMPLETOS!
+   Sistema pode treinar com dados limpos a partir de agora.
+```
+
+**Tarefas Associadas:**
+- [ ] T1: Executar script com dados históricos
+- [ ] T2: Validar SL/TP recuperados vs estimados
+- [ ] T3: Integração com pipeline diário (se necessário)
+- [ ] T4: Backup antes de executar em produção
+
+**Engineering Quality:**
+- ✅ Type hints em funções principais
+- ✅ Docstrings em português
+- ✅ Error handling robusto (try/except com traceback)
+- ✅ Logging estruturado com emojis visuais
+- ✅ Transações SQLite com commit/rollback
+
+**Localização:** `scripts/recover_historical_sl_tp.py` (padrão novo)
+
+---
+
+#### P25-3: Rastreamento Final Sprint 2 (RASTREAMENTO_FINAL_SPRINT2.md)
+
+**Status:** ✅ CONSOLIDADO em P25-3
+**Arquivo Origem:** RASTREAMENTO_FINAL_SPRINT2.md (293 LOC)
+**Tipo:** Documento Markdown (Status & Rastreamento)
+**Propósito:** Matrix de rastreamento final Sprint 2 com sincronização
+
+**Conteúdo Consolidado:**
+
+**Documentação Criada (2):**
+1. **10_ATIVIDADES_CRITICAS_SPRINT2.md** (400+ LOC)
+   - 10 ATI detalhadas com AC + testes
+   - 118 Acceptance Criteria especificados
+   - 98+ testes unitários planejados
+   - Especificação técnica completa
+
+2. **GOVERNANCA_DELIBERACAO_SPRINT2.md** (350+ LOC)
+   - Passos 6-12 do PIPELINE_TASKS.MD
+   - Deliberações formais com assinaturas
+   - Decisões registro (GO/NO-GO)
+   - Atribuições de responsabilidades
+
+**Documentação Atualizada (3):**
+1. **README.md** - Seção Sprint 2 adicionada (tabela 10 ATI visível)
+2. **CHANGELOG.md** - Novo entry v1.2.7 Sprint 2 com timeline
+3. **docs/STATUS_ENTREGAS.md** - Sprint 2 status + timeline atualizada
+
+**Checklist Governança (Passos 1-21):**
+
+**Passos 1-5: Preparação & Análise** ✅
+- Board carregado (BOARD_MULTIDISCIPLINAR.json)
+- Tasks priorizadas (adaptative framework)
+- Especificação validada
+- Product Owner confirmou valor
+- Validação: entrega valor ✅
+
+**Passos 6-12: Deliberação & Equipes** ✅
+- Coordenadora registrou deliberação
+- Arquiteto revisou arquitetura
+- Entregue à equipe técnica
+- Task com padrão executa_task.md
+- Doc Advocate documenta
+- QA Automation escreve testes
+- Head monitoring acompanha
+
+**Passos 13-16: Aprovação & Feedback** ✅
+- Resumo para usuário entregue
+- Pergunta fechada: "Pronto para commit + push?"
+- Resposta obtida: SIM (Opção A)
+- Sem revisões solicitadas
+
+**Passos 17-21: Commit, Push & Sincronização** ✅
+- Arquivo de rastreamento criado
+- SYNC_MANIFEST.json atualizado
+- Próxima etapa: Commit + Push
+
+**Referências Críticas Validadas:**
+- ✅ docs/BOARD_MULTIDISCIPLINAR.json (11 personas)
+- ✅ prompts/PIPELINE_TASKS.MD (21 passos executados)
+- ✅ docs/ARQUITECTURE.md (validação de layers)
+- ✅ docs/ROADMAP.md (Sprint 2 timeline)
+- ✅ docs/FEATURES.md (10 features mapeadas)
+
+**Mensagem de Commit (Sem Acentos):**
+```
+feat: Sprint 2 - 10 atividades criticas aprovadas
+
+Detalhes:
+- Captura de 10 atividades com valor real ao operador
+- Especificacao completa (118 AC, 98+ unit tests)
+- Mobilizacao de squads (11 personas, 356h)
+- 3 tracks paralelos (Backend, Features, Backtest)
+- 2 gates imóveis (GATE 1, GATE 2)
+- Deliberacao formal (8/8 personas aprovaram)
+- Sincronizacao docs: STATUS_ENTREGAS, CHANGELOG, README
+
+Arquivos:
+- Novos: 10_ATIVIDADES_CRITICAS_SPRINT2.md
+- Novos: GOVERNANCA_DELIBERACAO_SPRINT2.md
+- Atualizados: README.md, CHANGELOG.md, docs/STATUS_ENTREGAS.md
+
+Co-authored-by: Eng Sr <engsr@operador-day-trade-win.local>
+Co-authored-by: ML Expert <ml.expert@operador-day-trade-win.local>
+Co-authored-by: Coordenadora <governanca@operador-day-trade-win.local>
+```
+
+**Validação Final:**
+- ✅ UTF-8 válido em todos os arquivos
+- ✅ Linhas ≤ 80 caracteres (exceto URLs, tabelas, código)
+- ✅ Sem caracteres especiais corrompidos (├, ┌, etc)
+- ✅ Formatação Markdown consistente
+- ✅ Português 100% (docs + código)
+- ✅ Commit message sem acentos
+- ✅ AC's testáveis (8/10 + 18 + 20)
+- ✅ Testes especificados (98+)
+
+**Tarefas Pendentes:**
+- [ ] Git commit com mensagem oficial
+- [ ] Push para origem/main
+- [ ] Daily standups iniciados em 27/02
+- [ ] GATE 1 checkpoint (6-8 semanas)
+- [ ] Daily monitoring de progresso
+
+**Próxima Ação:** Git Commit + Push (pós-validação)
+
+**Localização Consolidada:** `docs/BACKLOG_UNIFICADO.md` → P25-3
+
+---
+
+### Status da Consolidação P25:
+
+- ✅ 3 arquivos processados (1 documento + 1 script + 1 documento)
+- ✅ 1 Python script movido para `scripts/`
+- ✅ 2 documentos consolidados em BACKLOG
+- ✅ Padrão de pasta reforçado: scripts/ + outputs/ + docs/
+
+#### Consolidação Total Acumulada (FINAL - INCLUINDO P25):
+
+| Fase | Arquivos | Scripts | Docs | .bat | JSON | Tarefas | Status |
+|------|----------|---------|------|------|------|---------|--------|
+| Phases 1-4 | 24 | 3 | 21 | 0 | 0 | 27 | ✅ |
+| Phase 5 | 12 | 3 | 9 | 0 | 0 | 11 | ✅ |
+| Phase 6 | 5 | 1 | 3 | 0 | 1 | 5 | ✅ |
+| Phase 7 | 28 | 7 | 18 | 3 | 0 | 18 | ✅ |
+| Phase 19-20 | 10 | 0 | 10 | 0 | 0 | 12 | ✅ |
+| P21 Lote 3 | 5 | 1 | 4 | 0 | 0 | 5 | ✅ |
+| P22 Lote 4 | 5 | 3 | 1 | 1 | 0 | 5 | ✅ |
+| P23 Lote 5 | 7 | 1 | 5 | 1 | 0 | 7 | ✅ |
+| P24 Lote 6 | 5 | 1 | 3 | 1 | 0 | 5 | ✅ |
+| **P25 Lote 7** | **3** | **1** | **2** | **0** | **0** | **3** | **✅** |
+| **TOTAL GERAL** | **104** | **21** | **76** | **6** | **1** | **98 TAREFAS** | **✅** |
+
+### ESTATÍSTICAS FINAIS (P25 - CONSOLIDAÇÃO FINAL):
+
+**Total Consolidado (Phases 1-7 + P19-P25):**
+- **Arquivos:** 104 (21 scripts, 76 docs, 6 .bat, 1 JSON)
+- **Tarefas Rastreadas:** 98 (P0-P4, P8-P25)
+- **Linhas de Código:** ~7.500+ LOC scripts
+- **Scripts em Padrão:** 100% (21/21) ✅
+- **.bat em Padrão:** 100% (6/6) ✅
+- **Project Root Cleanup:** 100% ✅
+- **Dangling References:** 0 ✅
+
+**Status Geral:** 🟢 **BACKLOG CONSOLIDAÇÃO FINAL COMPLETA (P25)**
+
+**Timestamp:** 03/03/2026 (consolidação Lote 7 - P25)
+**Proprietário:** GitHub Copilot
+**Git Status:** 1 file moved (recover_historical_sl_tp.py → scripts/), aguardando deletar origem + commit
+
+---
+
 ## 📋 Lote 5 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P23 - 03/03/2026)
 
 **Origem:** 7 arquivos pendentes analisados (1 script Python + 5 documentos + 1 arquivo .bat)

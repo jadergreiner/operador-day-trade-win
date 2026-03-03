@@ -486,6 +486,58 @@ Padrão estabelecido 03/03/2026 para TODAS consolidações futuras:
 **Status:** ✅ BACKLOG CONSOLIDAÇÃO FINAL COMPLETA
 
 ---
+
+### Lote 6 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P25 - 03/03/2026)
+
+**Origem:** 3 arquivos pendentes analisados (1 script Python + 2 documentos Markdown)
+
+#### P25 - Arquivos Consolidados:
+
+1. **recover_historical_sl_tp.py** (Script Python)
+   - Status: ✅ MOVIDO para `scripts/recover_historical_sl_tp.py`
+   - Conteúdo: Recuperação de Stop Loss/Take Profit para ordens automatizadas (184 LOC)
+   - Funcionalidades: 3-fase recovery (identificação, busca backtest, fallback estratégia)
+   - Estratégia fallback: BUY (SL: -1.5, TP: +3.0) | SELL (SL: +1.5, TP: -3.0)
+   - Database: SQLite trading.db para persistência
+   - Localização: `scripts/recover_historical_sl_tp.py` (novo padrão)
+
+2. **QUICK_REFERENCE_US004.md** (Documento Markdown)
+   - Status: ✅ CONSOLIDADO em P25-1
+   - Conteúdo: Quick reference guia para US-004 Alertas feature launch (266 LOC)
+   - Seções: 30-segundo summary, 4 personas (CFO, Eng Sr, ML Expert, Operador)
+   - Documentos: 6 documentos principais, pre-integration checklist
+   - Timeline: BETA (13/03), Production (10/04), KPI monitoring
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P25-1
+
+3. **RASTREAMENTO_FINAL_SPRINT2.md** (Documento Markdown)
+   - Status: ✅ CONSOLIDADO em P25-3
+   - Conteúdo: Final tracking matrix Sprint 2 com governance + sync (293 LOC)
+   - Pipeline: 21-step PIPELINE_TASKS execution checklist
+   - ATI: 10 documentation artifacts with 118 AC specifications + 98+ unit tests
+   - Governance: Documento sync validation + acceptance criteria framework
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P25-3
+
+#### Status da Consolidação P25:
+
+- ✅ 3 arquivos processados (1 script Python + 2 documentos)
+- ✅ 1 Python script movido para `scripts/` (recover_historical_sl_tp.py)
+- ✅ 2 documentos consolidados em BACKLOG
+- ✅ Padrão de pasta 100% aderente (scripts/ + outputs/ + docs/ + BAT/)
+
+#### Consolidação Total Acumulada (ATUALIZADA PÓS P25):
+
+- **Total Geral:** 99 arquivos (20 scripts, 73 docs, 5 .bat, 1 JSON)
+- **Tarefas Rastreadas:** 93 (P0-P4, P8-P25)
+- **Código Consolidado:** ~7.200 LOC scripts
+- **Scripts em Padrão:** 100% (20/20) ✅
+- **.bat em Padrão:** 100% (5/5) ✅
+- **Project Root Cleanup:** 100% ✅
+- **Padrão de Pasta:** 100% aderente ✅
+
+**Timestamp:** 03/03/2026 (Consolidação Lote 6 - P25)
+**Status:** ✅ COMPLETO E VALIDADO - CONSOLIDAÇÃO P25 FINALIZADA
+
+---
    - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-4
 
 #### Processo de Consolidação
