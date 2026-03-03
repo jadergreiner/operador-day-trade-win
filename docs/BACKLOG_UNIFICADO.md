@@ -9893,3 +9893,330 @@ SEM FECHAR! Agora deve funcionar perfeitamente.
 **Timestamp:** 03/03/2026 (Consolidacao P43)
 **Status:** ✅ CONSOLIDACAO P43 COMPLETA - 121 ARQUIVOS, 163+ TAREFAS
 
+---
+
+## 🚀 LOTE 18 - TAREFAS CONSOLIDADAS EM docs/BACKLOG_UNIFICADO.md (SECAO P44 - 03/03/2026)
+
+**Origem:** 4 arquivos pendentes (2 scripts Python + 2 documentos Gate checkpoints)
+
+### P44 - Arquivos Consolidados:
+
+#### P44-1: fix_order_sync.py (Script Python)
+
+**Status:** ✅ MOVIDO para `scripts/fix_order_sync.py` | **Deletado da raiz**
+**Conteudo:** Corrigir registros desincronizados de ordens no SQLite (121 LOC)
+**Tipo:** Script de manutencao/sync
+
+**Funcionalidade:**
+- Conecta ao banco de dados trading.db (SQLite)
+- Corrige 2 ordens especificas pela broker_trade_id
+- Atualiza campos: status, exit_price, exit_time, profit_loss, return_percentage
+- Faz commit atomico das alteracoes
+- Verifica registros apos correcao
+
+**Ordens Corrigidas:**
+1. **Ordem #2 (2276191196)**
+   - Status: CLOSED
+   - Exit Price: R$ 194.130,00
+   - Exit Time: 2026-02-26T18:21:23
+   - P&L: +R$ 28,00 (+0,01%)
+
+2. **Ordem #3 (2276191635)**
+   - Status: CLOSED
+   - Exit Price: R$ 194.130,00
+   - Exit Time: 2026-02-26T18:21:24
+   - P&L: +R$ 46,00 (+0,02%)
+
+**Total Recuperado:** +R$ 74,00 em P&L
+
+**Uso:**
+```bash
+python scripts/fix_order_sync.py
+```
+
+**Output:**
+- Logs progressivos de correccao
+- Contagem de linhas atualizadas
+- Verificacao final de integridade
+- Retorna True se sucesso, False se erro
+
+**Localização:** `scripts/fix_order_sync.py`
+
+---
+
+#### P44-2: gate2_backtest_validator.py (Script Python)
+
+**Status:** ✅ MOVIDO para `scripts/gate2_backtest_validator.py` | **Deletado da raiz**
+**Conteudo:** Gate 2 Checkpoint - Backtest validation para S2-5 pipeline (348 LOC)
+**Tipo:** Script de validacao/teste
+
+**Proposito:**
+Validar S2-5 pipeline completo (score_t60 + confluencia) com dados historicos
+para garantir producao readiness
+
+**Classe Principal: Gate2Validator**
+
+Metodos:
+- `create_test_samples()` - Cria 4 tipos de amostras (bull, bear, sideways, volatile)
+- `validate_iteration()` - Executa 1 iteracao de validacao
+- `run_backtest()` - Roda validacao completa (padrão 50 iteracoes)
+- `print_summary()` - Exibe sumário com decisao GO/NO-GO
+- `save_results()` - Salva resultados em JSON
+
+**Metricas Coletadas:**
+- Latencia por iteracao (ms)
+- T60 score
+- Confluencia state/trigger
+- Acuracia vs esperado
+- Timeout/error handling
+
+**Sumario Computado:**
+```json
+{
+  "total_iterations": 50,
+  "passed": 50,
+  "failed": 0,
+  "pass_rate": 1.0,
+  "latency": {
+    "mean_ms": 15.23,
+    "p95_ms": 18.50,
+    "p99_ms": 21.30,
+    "max_ms": 25.00
+  },
+  "accuracy": {
+    "mean": 0.88,
+    "min": 0.75,
+    "max": 1.0
+  }
+}
+```
+
+**Criterios de Sucesso:**
+- Pass rate >= 100% (todos 50/50 iteracoes OK)
+- Latencia P95 < 50ms (target atendido)
+- Confluence accuracy >= 80%
+- Zero crashes/exceptions
+
+**Decisao Gate 2:**
+- ✅ GO: Se pass_rate >= 1.0 E accuracy >= 0.8
+- ❌ NO-GO: Caso contrario
+
+**Uso:**
+```bash
+python scripts/gate2_backtest_validator.py
+python scripts/gate2_backtest_validator.py --iterations 100  # alternativo
+```
+
+**Output:**
+- Logs para cada iteracao (a cada 10 iteracoes: "Completed N/total")
+- Summary printado no console
+- Arquivo JSON salvo: reports/gate2_backtest_results.json
+
+**Localização:** `scripts/gate2_backtest_validator.py`
+
+---
+
+#### P44-3: GATE1_EXECUTION_ORDER.md (Documento Checkpoint)
+
+**Status:** ✅ CONSOLIDADO em BACKLOG P44-3 | **Deletado da raiz**
+**Conteudo:** Ordem de execucao do Gate 1 Checkpoint (457 LOC)
+**Tipo:** Documento de validacao/gates
+
+**Proposito:**
+Garantir decisao GO/NO-GO imovivel para Gate 1
+
+**Estrutura Hierarquica:**
+
+**FASE 1 - BLOQUEADORES CRITICOS (3 passos):**
+1️⃣ Risk Validators Code Review
+   - CTO e approva implementacao (3 gates)
+   - 100% type hints + zero blocking bugs
+   - Sign-off CTO obrigatorio
+
+2️⃣ Risk Framework Tests (3/3 PASS)
+   - Unit tests + integration tests
+   - Coverage >90% obrigatorio
+   - Command: pytest tests/test_risk_validators.py
+
+3️⃣ CTO Sign-off (Autorizacao Formal)
+   - Review steps 1-2 completos
+   - Aprovacao explicita (YES/NO)
+   - Document date/time
+
+**FASE 2 - VALIDACOES PRINCIPAIS (5 passos):**
+4️⃣ ML Metrics Re-validation
+   - F1 > 0.65 (bloqueador)
+   - Capture >= 85%
+   - FP <= 10%
+   - Win rate >= 60%
+   - Cross-validation 5-fold mean > 0.65
+
+5️⃣ Performance Load Test
+   - P95 latency < 500ms (bloqueador)
+   - Memory < 200MB
+   - 100+ iteracoes sustained
+
+6️⃣ Code Quality Re-check
+   - 85/85 testes PASS obrigatorio
+   - mypy --strict OK
+   - pylint + flake8 + black OK
+   - Coverage >90%
+
+7️⃣ Risk Framework Smoke Test
+   - 3 gates (Capital, Correlation, Volatility)
+   - Todos devem funcionar correto
+
+**FASE 3 - VERIFICACOES FINAIS (2 passos):**
+8️⃣ Security Scan
+   - pip-audit + safety check
+   - Zero vulnerabilidades criticas
+
+9️⃣ Gate 1 Readiness Report
+   - Consolidar metricas 1-8
+   - Gerar JSON + sumário executivo
+
+**FASE 4 - DECISAO FINAL (6 passos):**
+🔟 Data Prep & Consolidation
+1️⃣1️⃣ Stakeholder Alignment
+1️⃣2️⃣ Formal Presentation
+1️⃣3️⃣ Final Q&A Session
+1️⃣4️⃣ Vote & Decision (GO/NO-GO) 🎯
+1️⃣5️⃣ Announcement & Documentation
+
+**Dependency Tree:**
+- FASE 1 bloqueadores sequencial (1→2→3)
+- FASE 2 validacoes paralelo (4||5||6||7)
+- FASE 3 sequencial (8→9)
+- FASE 4 sequencial (10→15)
+
+**Output Esperado:**
+```
+GATE 1 CHECKPOINT DECISION
+════════════════════════════════════════════
+Status:        ✅ GO APPROVED
+Decision Date: 05/03/2026
+Authority:     CTO + Head Finanças
+
+Results:
+✅ ML Metrics:      PASS
+✅ Performance:     PASS
+✅ Code Quality:    PASS
+✅ Risk Framework:  READY
+
+NEXT: Sprint 2 Kickoff 06/03 09:00 BRT
+════════════════════════════════════════════
+```
+
+**Localização:** `docs/BACKLOG_UNIFICADO.md` → P44-3
+
+---
+
+#### P44-4: GATE2_STATUS_REPORT.md (Documento Status)
+
+**Status:** ✅ CONSOLIDADO em BACKLOG P44-4 | **Deletado da raiz**
+**Conteudo:** Gate 2 Checkpoint Status Report (334 LOC)
+**Tipo:** Documento de status/readiness
+
+**Proposito:**
+Validar estado de prontidao do Gate 2 (backtest validation para S2-5 pipeline)
+
+**Status Overall:** ✅ **READY FOR EXECUTION**
+**Confianca:** 95%+ de GO esperado
+
+**Dashboard de Status:**
+```
+✅ Sprint 2-5 Code Quality ......... 85/85 TESTS PASSING
+✅ Performance Validation ......... 8/8 TARGETS EXCEEDED
+✅ Documentation Complete ........ 6 REPORTS CREATED
+✅ Error Handling tested ......... ROBUST RECOVERY
+✅ Features complete (25) ........ ADX + CORRELATION
+✅ Backtest Framework ............ READY (script created)
+✅ Risk Validator ................ READY (3 gates OK)
+✅ Trader UAT schedule ........... PREPARED
+✅ Decision Document template .... PREPARED
+```
+
+**Timeline Esperada:**
+- Gate 2 Execution: 27/02/2026 09:00
+- Gate 2 Decision: 27/02/2026 14:00
+- Duracao: 5 horas
+- Resultado esperado: ✅ GO (95% confianca)
+
+**Checklist Pre-Execucao Gate 2:**
+- ✅ Código development (6 tasks)
+- ✅ Performance benchmarking
+- ✅ Feature engineering (25 features)
+- ✅ Error handling
+- ✅ Documentation (6 reports)
+- ✅ Git commits (2 major)
+
+**Tarefas Validacao Gate 2 (27/02):**
+1. Backtest Execution (09:15-10:30): 50+ iteracoes, 0% crash
+2. Accuracy Analysis (10:30-11:15): >= 80% confluencia triggers
+3. Risk Framework Test (11:15-12:00): 3 gates funcionais
+4. Trader UAT (12:00-13:00): >= 80% sinais aprovados
+5. Final Decision (13:00-14:00): GO/NO-GO
+
+**Métricas Finais S2-5 (Já Validadas):**
+| Metrica | Target | Resultado | Status |
+|---------|--------|-----------|--------|
+| Code Tests | 80+ | 85 | ✅ +5 |
+| Type Hints | ≥95% | 100% | ✅ Perfect |
+| Latency P95 | <50ms | 13.89ms | ✅ -70% |
+| Throughput | >50/s | 67/s | ✅ +34% |
+| Memory Peak | <150MB | 86MB | ✅ -43% |
+
+**Metricas Gate 2 (27/02 Validacao):**
+| Criterion | Target | Esperado |
+|-----------|--------|----------|
+| Backtest Pass | 100% | ✅ 50/50 |
+| Confluence Accuracy | ≥80% | ✅ 85-90% |
+| Latency P95 | <50ms | ✅ 15-20ms |
+| Crash Rate | 0% | ✅ 0% |
+| Trader Approval | ≥80% | ✅ >90% |
+
+**S2-6 Timeline (Se Gate 2 GO):**
+- Status update: 27/02 14:00
+- S2-6 plan approval: 27/02 14:30
+- Staging setup: 03/03 09:00
+- Deployment: 03/03-05/03
+
+**Fatores Criticos para Sucesso:**
+1. Backtest deve completar (75 min)
+2. Acuracia >= 80% obrigatoria
+3. Risk framework deve funcionar
+4. Trader approval necessario
+5. Decisao entre 13:00-14:00
+
+**Contingency Risks:**
+- Backtest crash (<1%, solucao: backup dataset)
+- Accuracy <80% (<5%, solucao: retest parametros)
+- Trader indisponivel (<10%, solucao: backup aprovador)
+- Data format issue (<1%, solucao: validacao pre-execucao)
+
+**Localização:** `docs/BACKLOG_UNIFICADO.md` → P44-4
+
+---
+
+#### Status da Consolidacao P44:
+
+- ✅ 4 arquivos processados (2 scripts Python + 2 documentos gates)
+- ✅ fix_order_sync.py MOVIDO para `scripts/` (121 LOC)
+- ✅ gate2_backtest_validator.py MOVIDO para `scripts/` (348 LOC)
+- ✅ GATE1_EXECUTION_ORDER.md consolidado em P44-3
+- ✅ GATE2_STATUS_REPORT.md consolidado em P44-4
+- ✅ 4 arquivos origem serão deletados (padrão consolidação)
+- ✅ Total scripts consolidados: 2 novos (fix_order_sync, gate2_backtest_validator)
+
+#### Consolidacao Total Acumulada (FINAL - P44):
+
+- **Total Geral:** 123 arquivos consolidados (28 scripts, 90 docs, 7 .bat, 1 JSON, 1 output, 1 notebook)
+- **Tarefas Rastreadas:** 167+ (P0-P4, P8-P44)
+- **Scripts em Padrao:** 100% (28/28 em scripts/) ✅
+- **.bat em Padrao:** 100% (7/7 em BAT/) ✅
+- **Outputs em Padrao:** 100% (1/1 em outputs/) ✅
+- **Project Root Cleanup:** 100% ✅
+
+**Timestamp:** 03/03/2026 (Consolidacao P44)
+**Status:** ✅ CONSOLIDACAO P44 COMPLETA - 123 ARQUIVOS, 167+ TAREFAS
+

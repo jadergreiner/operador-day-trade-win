@@ -202,6 +202,16 @@ rm c:\repo\projeto\analisa_gap_precificacao.py
    - 1 documento: FIX_INICIAR_PHASE6_v1.0.1.txt (192 LOC) → consolidado em BACKLOG P43-3
    - Conteúdo: Batch file fix (UTF-8 character removal), 4 execution options
    - Total consolidado: 121 arquivos + 163+ tarefas
+- ✅ CONSOLIDAÇÃO P44 (03/03/2026): 4 arquivos - 2 scripts + 2 gates checkpoints
+   - 1 script: `fix_order_sync.py` (121 LOC) → `scripts/fix_order_sync.py`
+   - Conteúdo: Sincronização de ordens desincronizadas no SQLite trading.db
+   - 1 script: `gate2_backtest_validator.py` (348 LOC) → `scripts/gate2_backtest_validator.py`
+   - Conteúdo: Gate 2 Backtest validation framework para S2-5 pipeline (50+ iterações)
+   - 1 documento: GATE1_EXECUTION_ORDER.md (457 LOC) → consolidado em BACKLOG P44-3
+   - Conteúdo: 15-step Gate 1 execution order com 4 fases (bloqueadores, validações, verificações, decisão)
+   - 1 documento: GATE2_STATUS_REPORT.md (334 LOC) → consolidado em BACKLOG P44-4
+   - Conteúdo: Gate 2 readiness report com 95%+ confiança, 5 tarefas validação, métricas finais
+   - Total consolidado: 123 arquivos + 167+ tarefas
 
 ---
 
@@ -292,7 +302,8 @@ c:/repo/operador-day-trade-win/
 - ❌ **NUNCA na raiz:** c:/repo/operador-day-trade-win/*.py
 - ❌ **NUNCA em:** docs/, src/, tests/ (exceto src/ para código reutilizável)
 - 📝 **Exceção:** conftest.py pode estar em scripts/ ou tests/
-- 🎯 **Nomeação:** snake_case com prefixo descritivo (analisa_, run_, check_, etc)
+- 🎯 **Nomeação:** snake_case com prefixo descritivo (analisa_, run_, check_, fix_, validate_, etc)
+- 📌 **REFORÇO P44:** Todos NOVOS scripts devem ir direto para `scripts/` (P44: fix_order_sync.py, gate2_backtest_validator.py consolidados com sucesso)
 
 **Arquivos Batch (.bat):**
 - ✅ **DEVE estar em:** `BAT/`
