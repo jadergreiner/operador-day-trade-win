@@ -35,6 +35,20 @@ Todas as operações com modelos de dados devem seguir [CODING_STANDARDS.md](COD
 
 ---
 
+## 📚 Padrão de Scripts - Localização Obrigatória
+
+**Todos os scripts Python de análise, auditoria e utilidade devem estar em `scripts/`**
+
+Ver [CODING_STANDARDS.md - Scripts](CODING_STANDARDS.md#11-scripts---padrão-de-localização-obrigatório-) para estrutura completa.
+
+**Exemplos de scripts relacionados a data models:**
+- `scripts/analise_sqlite.py` - Auditoria banco trading.db
+- `scripts/verify_schema_integrity.py` - Validação de schemas
+- `scripts/extract_data_export.py` - Exportação de dados
+- `scripts/check_data_consistency.py` - Verificação de consistência
+
+---
+
 ## 1️⃣ CAMADA 1: Market Data (Dados de Mercado)
 
 ### 1.1 Tabela: `market_candles` (Dados OHLCV)

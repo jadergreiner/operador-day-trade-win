@@ -1913,7 +1913,354 @@ Este documento unifica todas as tarefas pendentes dos seguintes arquivos de orig
 
 ---
 
-## 📊 DOCUMENTOS RELACIONADOS
+## � TAREFAS CONSOLIDADAS DOS ARQUIVOS DESENVOLVIMENTO_* E ETAPA*
+
+### Framework de Implementação (ATI - Acceptance Criteria Implementation)
+
+#### ATI-1: WebSocket Real-time Orders (Consolidado)
+
+**Source:** `DESENVOLVIMENTO_SPRINT1_SESSAO_26FEV.md`, `DESENVOLVIMENTO_SPRINT1_SESSAO_26FEV_FINAL.md`
+**Status:** ✅ Skeleton Completo (80%)
+**LOC:** 340 (código) + 180 (testes)
+**AC Mapeados:** 6/6 ✅
+
+**Tarefas Pendentes:**
+- [ ] Implementar FastAPI WebSocket endpoints
+- [ ] Integrar ConnectionManager com rotas
+- [ ] Testes E2E com cliente real
+- [ ] Validação performance P95 <100ms
+
+---
+
+#### ATI-2: OAuth 2.0 Authentication (Consolidado)
+
+**Source:** `DESENVOLVIMENTO_SPRINT1_SESSAO_26FEV.md`, `DESENVOLVIMENTO_SPRINT1_SESSAO_26FEV_FINAL.md`
+**Status:** ✅ Skeleton Completo (80%)
+**LOC:** 244 (código) + Testes pendentes
+**AC Mapeados:** 8/8 ✅
+
+**Componentes:**
+- JWTManager (token generation + validation)
+- PasswordManager (bcrypt hashing)
+- RateLimiter (10 tentativas/5min)
+- AuthenticationManager
+
+**Tarefas Pendentes:**
+- [ ] Implementar test fixtures (test_ati2_oauth.py)
+- [ ] Testes unitários (8 test methods)
+- [ ] Integração com endpoints FastAPI
+- [ ] Session management para múltiplos devices
+
+---
+
+#### ATI-3: RabbitMQ Async Queue (Consolidado)
+
+**Source:** `DESENVOLVIMENTO_SPRINT1_SESSAO_26FEV.md`, `DESENVOLVIMENTO_SPRINT1_SESSAO_26FEV_FINAL.md`
+**Status:** ✅ Skeleton Completo (80%)
+**LOC:** 640+ (código) + 400+ (testes)
+**AC Mapeados:** 7/7 ✅
+
+**Componentes:**
+- ProducerConnection (ordem → fila)
+- ConsumerConnection (processamento sequencial)
+- MessageRouter (retry + DLQ)
+- ErrorHandler (audit trail)
+- HealthMonitor (health checks)
+
+**Tarefas Pendentes:**
+- [ ] Integração com Orders Executor
+- [ ] Teste stress (1.000 mensagens/min)
+- [ ] DLQ routing validation
+- [ ] Performance validation P95 <500ms
+
+---
+
+#### ATI-4: Retry Logic + Error Handling (Consolidado)
+
+**Source:** `DESENVOLVIMENTO_SPRINT1_SESSAO_26FEV.md`, `DESENVOLVIMENTO_SPRINT1_SESSAO_26FEV_FINAL.md`
+**Status:** ✅ Skeleton Completo (80%)
+**LOC:** 530+ (código) + 500+ (testes)
+**AC Mapeados:** 8/8 ✅
+
+**Componentes:**
+- BackoffCalculator (delays: 1s, 2s, 4s)
+- ErrorClassifier (network/timeout/API)
+- CircuitBreaker (Open → HalfOpen → Closed)
+- TraderAlertHandler (manual intervention)
+- RetryExecutor (orchestration)
+
+**Tarefas Pendentes:**
+- [ ] Integração com Orders Executor
+- [ ] Teste circuit breaker auto-reset
+- [ ] Validação trader alerts
+- [ ] Audit log validation
+
+---
+
+#### ATI-5: ML Feature Engineering (Consolidado)
+
+**Source:** `DESENVOLVIMENTO_SPRINT1_SESSAO_26FEV_FINAL.md`
+**Status:** ✅ Skeleton Completo (80%)
+**LOC:** 620+ (código) + 450+ (testes)
+**AC Mapeados:** 8/8 ✅
+
+**Componentes:**
+- FeatureEngineer (24 features em 6 grupos)
+- DataPipeline (load → preprocess → split)
+- ModelTrainer (grid search 8 configs)
+- ExplainabilityEngine (SHAP analysis)
+
+**Tarefas Pendentes:**
+- [ ] Feature extraction integration
+- [ ] Grid search execution (8 thresholds)
+- [ ] SHAP visualization
+- [ ] Performance validation P95 <500ms
+
+---
+
+#### ATI-6: Drift Detection (Consolidado)
+
+**Source:** `DESENVOLVIMENTO_SPRINT1_SESSAO_26FEV_FINAL.md`
+**Status:** ✅ Skeleton Completo (80%)
+**LOC:** 650+ (código) + 550+ (testes)
+**AC Mapeados:** 8/8 ✅
+
+**Componentes:**
+- DriftDetector (KS test + drift types)
+- PerformanceMonitor (metrics tracking)
+- AlertEngine (WARNING/CRITICAL)
+- AutoRetrainEngine (trigger + circuit breaker)
+- DriftMonitoringOrchestrator (E2E coordination)
+
+**Tarefas Pendentes:**
+- [ ] Monitoring integration
+- [ ] Auto-retrain trigger validation
+- [ ] Alert notification system
+- [ ] Performance dashboard
+
+---
+
+### ETAPA de Desenvolvimento (ML Training Pipeline)
+
+#### ETAPA 1: Development Setup (✅ COMPLETA - 25/02)
+
+**Source:** `ETAPA1_COMPLETA.md`
+**Status:** ✅ **100% CONCLUÍDA**
+**Entrega:** 525 LOC (scaffolds prontos)
+
+**Arquivos Criados:**
+- ✅ ETAPA1_ML_EXPERT_SCAFFOLD.py (95 LOC)
+- ✅ ETAPA1_QA_TEST_TEMPLATES.py (280 LOC)
+- ✅ ETAPA1_DOCUMENTATION_UPDATE.md (150 LOC)
+
+**Próxima:** ETAPA 2
+
+---
+
+#### ETAPA 2: Core Implementation (✅ COMPLETA - 25/02)
+
+**Source:** `ETAPA2_COMPLETION_SUMMARY.md`, `ETAPA2_RESULT_GATE2_APPROVED.md`
+**Status:** ✅ **100% CONCLUÍDA - GATE 2: GO**
+**Duração:** 85 min
+**Entrega:** 814 LOC código + resultados
+
+**Acceptance Criteria - TODOS PASSARAM:**
+- ✅ AC-1: Grid Search Execution (8 thresholds)
+- ✅ AC-2: Metrics Calculation (F1, WR, Precision, Recall)
+- ✅ **AC-3: F1 >= 0.65** [BLOCKER] → **0.7045 PASS**
+- ✅ **AC-4: Win Rate >= 60%** [BLOCKER] → **0.6071 PASS**
+- ✅ AC-5: Optimal Threshold Selection → **0.30 selected**
+- ✅ AC-6: Report Generation → `backtest_final_metrics.json`
+- ✅ AC-7: Full Pipeline (AC-3 ✅ AND AC-4 ✅)
+
+**Arquivos Gerados:**
+- ✅ backtest_final_metrics.json (results + grid search)
+- ✅ ETAPA1_ML_EXPERT_SCAFFOLD.py + ETAPA2 variations
+- ✅ Documentação consolidada
+
+**Próxima:** ETAPA 3
+
+---
+
+#### ETAPA 3: Validation & Testing (⏳ PENDENTE - 26/02)
+
+**Source:** `ETAPA3_4_ROADMAP.md`
+**Status:** ⏳ **PRONTO PARA INICIAR**
+**Duração Estimada:** 45 min
+
+**Tarefas:**
+- [ ] Task 1: QA Pytest Execution (20 min)
+  - [ ] Executar 7 unit tests com coverage >90%
+  - [ ] Validar AC-3, AC-4 BLOCKERS passam em tests
+  - [ ] Capturar output pytest completo
+- [ ] Task 2: ML Expert Cross-Validation (15 min)
+  - [ ] Implementar 5-fold stratified cross-validation
+  - [ ] Validar Mean F1 >= 0.65
+  - [ ] Verificar std dev < 0.05
+- [ ] Task 3: No Overfitting Check (10 min)
+  - [ ] Calcular train F1 score
+  - [ ] Validar train/test gap < 5%
+  - [ ] Confirmar class balance mantida
+
+---
+
+#### ETAPA 4: Finalization & Commit (⏳ PENDENTE - 26/02)
+
+**Source:** `ETAPA3_4_ROADMAP.md`
+**Status:** ⏳ **PRONTO PARA INICIAR**
+**Duração Estimada:** 30 min
+
+**Tarefas:**
+- [ ] Code review (all ETAPA files)
+- [ ] Git commit (UTF-8 validated)
+- [ ] Push to origin/main
+- [ ] Update SYNC_MANIFEST (v1.3.3+)
+- [ ] Final documentation sync
+
+---
+
+### TODO Tasks (Tarefas do Framework executa_task.md)
+
+#### TODO-1: load_and_label() - Dataset Labeling (⏳ PENDENTE)
+
+**Source:** `DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md`
+**Persona:** ML Expert
+**Esforço:** 2-3 horas
+**Deadline:** 25/02 12:00
+
+**O Que Fazer:**
+Carregar backtest_optimized_results.json e gerar training_dataset.csv com labels
+- Entrada: backtest_optimized_results.json (1.000 registros)
+- Processo: Load → Extract 24 features → Generate labels → Validate
+- Saída: training_dataset.csv (1.000 rows × 26 cols: 24 features + label + window_id)
+
+**Acceptance Criteria (7):**
+- [ ] AC-1: Carregar JSON com validação
+- [ ] AC-2: Extrair exatamente 24 features
+- [ ] AC-3: Gerar labels (0=SKIP, 1=BUY)
+- [ ] AC-4: Validar imbalance (20-80% BUY)
+- [ ] AC-5: Zero NaN values em output
+- [ ] AC-6: Performance <500ms (load+label+save)
+- [ ] AC-7: Unit tests >90% coverage (7/7 PASS)
+
+**Função a Implementar:**
+```python
+def load_and_label(
+    results_path: str = "backtest_optimized_results.json",
+    output_path: str = "training_dataset.csv"
+) -> pd.DataFrame:
+    # FASE 1: Load & Validate
+    # FASE 2: Extract 24 features
+    # FASE 3: Generate labels
+    # FASE 4: Validate imbalance
+    # FASE 5: Save
+    return output_df
+```
+
+---
+
+#### TODO-2,3,4: OrdersExecutor Framework (⏳ PENDENTE)
+
+**Source:** `DESENVOLVIMENTO_DE_TASKS_PRIORIZADAS_SPRINT1.md`
+**Persona:** Eng Sr
+**Esforço:** 4 horas
+**Deadline:** 02/03 14:00
+
+**O Que Fazer:**
+Implementar 3 funções: execute_order() + monitor_positions() + position_monitoring_loop()
+
+**Acceptance Criteria (10):**
+- [ ] AC-1: MT5 connection estabelecida + autenticada
+- [ ] AC-2: Ordens enviadas async (fila)
+- [ ] AC-3: Posições rastreadas tempo real
+- [ ] AC-4: Retry mechanism (3x exponential backoff)
+- [ ] AC-5: Error recovery + circuit breakers
+- [ ] AC-6: Audit logging completo
+- [ ] AC-7: Risk gates validados (3 validators)
+- [ ] AC-8: Message queue estável (zero loss)
+- [ ] AC-9: Performance P95 <500ms
+- [ ] AC-10: Testes integração PASS (10/10)
+
+---
+
+### Additional Tasks from DESENVOLVIMENTO_SPRINT1_TASKS_PRIORIZADAS.md
+
+#### TASK #1: Email Configuration (✅ PRONTA - Prazo 23/02)
+
+**Status:** ⏳ **PRONTO PARA COMEÇAR**
+**Duração:** 1-2 horas
+**Deadline:** 23/02 17:00 BRT
+
+**Tarefas:**
+- [ ] ETAPA 1 (30 min): SMTP Configuration
+  - [ ] Criar config/alertas_email.yaml
+  - [ ] Variáveis: SMTP_HOST, SMTP_PORT, FROM_EMAIL, SMTP_PASSWORD
+  - [ ] Setup smtplib com SSL/TLS + connection pooling
+- [ ] ETAPA 2 (15 min): Template HTML
+  - [ ] Criar templates/alert_email.html
+  - [ ] Layout: Header + Body (symbol/action/price) + CTA + Footer
+- [ ] ETAPA 3 (20 min): Retry + Error Handling
+  - [ ] Arquivo: src/application/services/email_service.py
+  - [ ] Implementar retry decorator (backoff exponencial)
+  - [ ] Try/except + logging
+- [ ] ETAPA 4 (30 min): Unit Tests
+  - [ ] tests/test_email_service.py (5 testes)
+  - [ ] test_email_send_success, retry_on_failure, template_rendering, etc
+  - [ ] Coverage >90%
+- [ ] ETAPA 5 (15 min): Code Review + Merge
+  - [ ] PR + peer review
+  - [ ] Todos CI/CD checks PASS
+  - [ ] Commit message em português
+
+**Acceptance Criteria (5):**
+- [ ] SMTP Configuration validado
+- [ ] Template HTML renderizado
+- [ ] Retry logic 3x exponencial
+- [ ] 5/5 email delivery tests PASS
+- [ ] Coverage >90%
+
+---
+
+#### TASK #2: GitHub Issues Creation (⏳ PRONTO - Prazo 24/02)
+
+**Status:** ⏳ **PRONTO PARA COMEÇAR**
+**Duração:** 1-2 horas
+**Deadline:** 24/02 09:00 BRT
+
+**Issues a Criar (4 total):**
+
+**ISSUE #1:** [SPRINT-1] Load & Label backtest_optimized_results
+- **File:** src/application/ml_feature_engineer.py:447-448
+- **Priority:** 🔴 CRÍTICA (Blocker Sprint 1)
+- **Persona:** ML Expert
+- **Effort:** 2-3 horas
+- **Status:** ⏳ NOT STARTED - READY TO START
+- **Description:** Map window_id → labels (win/loss) de backtest_optimized_results.json
+
+**ISSUE #2:** [SPRINT-1] Grid Search + Threshold Optimization
+- **File:** src/application/ml_feature_engineer.py
+- **Priority:** 🔴 CRÍTICA (Blocker GATE 2)
+- **Persona:** ML Expert
+- **Effort:** 3-4 horas
+- **Acceptance Criteria:** F1 >= 0.65, Win Rate >= 60%
+
+**ISSUE #3:** [SPRINT-1] MT5 API REST Server
+- **File:** TBD (new)
+- **Priority:** 🔴 CRÍTICA (Blocker P0-1)
+- **Persona:** Eng Sr
+- **Effort:** 160 horas
+- **Acceptance Criteria:** 8/8 endpoints implemented
+
+**ISSUE #4:** [SPRINT-1] WebSocket Real-time Orders
+- **File:** TBD (new)
+- **Priority:** 🔴 CRÍTICA (Blocker WebSocket)
+- **Persona:** Eng Sr
+- **Effort:** 40 horas
+- **Acceptance Criteria:** 6/6 AC passing
+
+---
+
+## �📊 DOCUMENTOS RELACIONADOS
 
 ### Sprint 2
 - [SPRINT2_TAREFAS_PRIORIZADAS.md](../SPRINT2_TAREFAS_PRIORIZADAS.md)
@@ -1932,9 +2279,1105 @@ Este documento unifica todas as tarefas pendentes dos seguintes arquivos de orig
 
 ---
 
-**Última Atualização:** 03/03/2026
+## 📊 PHASES & INTEGRATION CONSOLIDADAS (02/03/2026)
+
+Este backlog consolida todas as PHASES e INTEGRATION de desenvolvimento do projeto
+Operador Day Trade WIN. As tarefas estão organizadas por fase e status.
+
+### ✅ PHASE 1: INVESTIGAÇÃO (Concluída 25/02)
+
+**Arquivo Original:** PHASE1_INVESTIGACAO_CONCLUIDA.md
+**Status:** 🟢 **CONCLUÍDA**
+**Responsável:** Eng Sr (Investigação)
+**Duração:** 24/02-25/02 (~2 horas)
+
+**Objetivo:** Investigação da persistência de dados (Task-Crítica-0)
+
+**AC Validadas:**
+- ✅ AC-1: 4 operações reais confirmadas (tickets 2276014161-2276016015)
+- ✅ AC-2: Causa raiz identificada (SendToMT5Command.execute() skeleton não implementado)
+- ✅ AC-3: Documentação técnica criada (CAUSA_RAIZ_PERSISTENCIA_DOCUMENTO_TECNICO.md)
+- ✅ AC-4: Plano de fix detalhado (TASK_CRITICA_0_FIX_PERSISTENCE.md)
+- ✅ AC-5: Status report gerado (STATUS_PHASE1_INVESTIGACAO_COMPLETA.md)
+
+**Decision:** GO para PHASE 2 ✅
+
+---
+
+### ✅ PHASE 2: IMPLEMENTATION (Concluída 25/02)
+
+**Arquivo Original:** PHASE2_IMPLEMENTATION_CONCLUIDA.md
+**Status:** 🟢 **CONCLUÍDA**
+**Responsável:** Eng Sr (Implementação)
+**Duração:** 25/02 (~20 minutos)
+
+**Objetivo:** Implementar fix SendToMT5Command.execute() com persistência ACID
+
+**AC Validadas:**
+- ✅ AC-2: SendToMT5Command.execute() implementado completamente (140+ LOC)
+- ✅ AC-2a: ExecutionOrder.to_trade() mapeamento domain
+- ✅ AC-2b: Retry logic implementada (3x com exponential backoff)
+- ✅ AC-2c: Audit trail completa
+- ✅ AC-2d: Testes unitários passando (pronto para Phase 3)
+
+**Deliverables:**
+- ✅ src/domain/commands/send_to_mt5_command.py (140+ LOC)
+- ✅ Documentação atualizada
+
+**Decision:** GO para PHASE 3 ✅
+
+---
+
+### ✅ PHASE 3: INTEGRATION & VALIDATION (Concluída 26/02)
+
+**Arquivos Originais:**
+- PHASE3_EXECUTIVE_SUMMARY.md
+- PHASE3_STATUS_26FEV_SESSION.md
+- PHASE3_VALIDATION_COMPLETE.md
+- PHASE3_VALIDATION_PLAN.md
+
+**Status:** 🟢 **CONCLUÍDA** (3.1 + 3.2 + 3.3/3.4 prontas)
+**Responsável:** Eng Sr + ML Expert + QA Lead
+**Duração:** 26/02 (~1.5 horas)
+
+**Objetivo:** Integrar componentes (WebSocket, Backtest) e validar E2E
+
+**Phase 3.1: WebSocket Authentication** ✅
+- ✅ AC-1: ConnectionManager com JWT validation (175 LOC)
+- ✅ AC-2: FastAPI endpoints (380 LOC)
+- ✅ AC-3: Role-based access control (trader/admin/user)
+- ✅ AC-4: Token expiration checking
+- ✅ AC-5: Message broadcast + unicast
+- ✅ AC-6: 7 integration tests + 13 endpoint tests PASSING
+- **Commits:** a95de90
+
+**Phase 3.2: Backtesting Server** ✅
+- ✅ AC-1: XGBoost integration (320 LOC)
+- ✅ AC-2: 5 FastAPI endpoints (backtest, predict, health)
+- ✅ AC-3: Win rate / Sharpe / Drawdown calculations
+- ✅ AC-4: Test coverage (20/20 PASSING in 14.17s)
+- ✅ AC-5: Model metadata endpoint
+- **Commits:** d6223a5
+
+**Phase 3.3: CI/CD Pipeline** ⏳ READY (não iniciado)
+- Entrega: `.github/workflows/tests.yml`
+- Status: Design pronto, aguardando execução
+
+**Phase 3.4: README & Documentation** ⏳ READY (não iniciado)
+- Entrega: API documentation, WebSocket guide, Backtest tutorial
+- Status: Design pronto, aguardando escrita
+
+**Phase 3 E2E Validation Tests:** ✅ 9/9 PASSING
+- ✅ test_execute_sends_to_mt5_and_persists
+- ✅ test_audit_log_contains_all_checkpoints
+- ✅ test_retry_on_persistence_failure
+- ✅ test_all_retries_exhausted_returns_false
+- ✅ test_to_trade_creates_valid_trade_entity
+- ✅ test_to_trade_sell_order
+- ✅ test_full_execution_pipeline
+- ✅ test_mt5_connection_error_handling
+- ✅ test_24feb_trades_now_persist
+
+**Decision:** GO para PHASE 4 ✅
+
+---
+
+### ✅ PHASE 4: STAGING & GO-LIVE PREP (Simulado 01/03, Real TBD)
+
+**Arquivo Original:** PHASE4_COMPLETION_DASHBOARD.md
+**Status:** 🟡 **PLANEJADO** (simulação completa)
+**Responsável:** Eng Sr + DevOps
+**Timeline:** 01-10/03/2026
+**Total LOC Documentação:** 14,650+
+
+**Objetivo:** Deploy staging + UAT + Go-Live produção
+
+**Subtarefas:**
+1. **P4-1: Staging Deployment** (01-05/03)
+   - 8 recursos Azure (App Service, PostgreSQL, Redis, Key Vault, etc)
+   - CI/CD pipeline com automated tests (25+)
+   - Load testing (500 users, P95 <2s)
+   - Performance baseline established
+   - Status: DESIGN COMPLETO ✅
+
+2. **P4-2: UAT & Approval** (06-09/03)
+   - Trader acceptance testing (6 test cases)
+   - CIO security validation (12 security points)
+   - CFO financial approval (capital authorization)
+   - Status: DESIGN COMPLETO ✅
+
+3. **P4-3: Go-Live Production** (10/03 09:30)
+   - Production deployment
+   - Capital transfer R$ 50k
+   - First trades execution
+   - 24/7 monitoring + alerting
+   - Status: DESIGN COMPLETO ✅
+
+**Gate 4.1 Checkpoint:** 05/03 18:00 (Staging Readiness)
+**Gate 4.2 Checkpoint:** 10/03 09:00 (Go-Live Ready)
+
+**Decision Points Documentados:**
+- GATE 1: GO (Phase 3 concluída) ✅
+- GATE 2: TBD (ML-004 backtest validation)
+- GATE 4.1: TBD (Staging readiness)
+- GATE 4.2: TBD (UAT approval)
+
+---
+
+### ⏳ PHASE 6: INTEGRATION TASKS (Em Andamento)
+
+**Arquivos Originais:**
+- PHASE6_DELIVERY_SUMMARY.md
+- PHASE6_INTEGRATION_ROADMAP.md
+
+**Status:** ⏳ **EM ANDAMENTO**
+**Timeline:** 27/02-07/03 (9 dias)
+**Responsáveis:** Eng Sr + ML Expert
+**Parallelization:** 2 caminhos paralelos
+
+**Objetivo:** Integrar BDI detector, WebSocket, email config, staging deploy
+
+**CAMINHO A - Eng Sr (8-12h total):**
+
+1. **INTEGRATION-ENG-001: BDI Integration** ✅ APROVADO
+   - 🎯 **Status:** ✅ GO (4/4 stakeholders approved)
+   - ⏳ **Timeline:** 27-28/02 (3-4 horas)
+   - 📊 **Impacto:** Crítico (desbloqueia 6 tasks cascata)
+   - ✅ **AC's:** 7 AC's com testes (processador_bdi.py, detectors, message broker Redis)
+
+   **Deliverables:**
+   - BDI detector processador integrado
+   - 4 tipos de detector (SMA, volatility, padrão, custom)
+   - Message queue Redis (productores+consumidores)
+   - Latência P50 <100ms, P95 <300ms
+   - Zero message loss
+   - 7 unit tests + 3 integration tests PASSING
+
+2. **INTEGRATION-ENG-002: WebSocket Server** ⏳ PRONTO
+   - Status: DESIGN COMPLETO (src/interfaces/websocket_server.py 270 LOC)
+   - Timeline: 28/02-01/03 (2-3 hours)
+   - Dependencies: ZERO ✅
+   - Unblocks: ML workflows + E2E pipeline
+   - Deliverables: ConnectionManager, 5+ endpoints, 6+ integration tests
+
+3. **INTEGRATION-ENG-003: Email Configuration** ⏳ PRONTO
+   - Status: DESIGN COMPLETO
+   - Timeline: 02/03 (2 horas)
+   - Dependencies: INTEGRATION-ENG-002 (WebSocket alerts)
+   - Deliverables: Gmail SMTP authenticated, template system
+
+4. **INTEGRATION-ENG-004: Staging Deployment** ⏳ PRONTO
+   - Status: DESIGN COMPLETO (mappado para P4-1)
+   - Timeline: 06-07/03 (3-4 horas)
+   - Dependencies: ENG-002 + ENG-003
+   - Deliverables: Azure App Service, PostgreSQL, Redis, monitoring
+
+**CAMINHO B - ML Expert (7-11h total):**
+
+1. **INTEGRATION-ML-001: Dataset Loading & Labeling** ✅ COMPLETO
+   - Status: ✅ **MERGED TO MAIN** (v1.2.3 tag)
+   - Duration: 25/02 (25 minutos total execution)
+   - Phase 1: Implementation (15 min) → 6/7 AC PASS
+   - Phase 2: Testing (6.73s) → 14/14 tests PASSING ✅
+   - Phase 3: Merging (10 min) → Git history clean ✅
+
+   **Deliverables (COMPLETE):**
+   - ✅ src/application/data_loader.py (245 LOC, 100% type hints)
+   - ✅ tests/unit/test_load_and_label.py (280 LOC)
+   - ✅ Feature extraction (24 engineered features)
+   - ✅ Data splitting (70/15/15)
+   - ✅ Statistics persistence (mean, std, skewness)
+   - ✅ Feature names export (production-ready)
+   - ✅ Coverage: 94% (target: >90%)
+   - ✅ Performance: 111.6ms (target: <500ms)
+
+   **7 AC - ALL VALIDATED:**
+   - ✅ AC-1: Dataset loaded (≥1000 samples)
+   - ✅ AC-2: Labels valid (0/1 only, balanced)
+   - ✅ AC-3: 24 features extracted
+   - ✅ AC-4: 70/15/15 splits validated
+   - ✅ AC-5: Zero NaN values
+   - ✅ AC-6: Feature names persisted
+   - ✅ AC-7: Unit tests >90% coverage (94% achieved)
+
+   **Git Status:**
+   - ✅ Commit tag: v1.2.3
+   - ✅ PR #20 merged (squash strategy)
+   - ✅ Main branch synchronized
+   - ✅ Feature branch cleaned
+   - ✅ CHANGELOG.md updated
+
+2. **INTEGRATION-ML-002: Backtest Validation** ⏳ PRONTO
+   - Status: DESIGN COMPLETO + AC's formalizadas
+   - Timeline: 27-28/02 (2-3 horas)
+   - Dependencies: ZERO ✅ (pode rodar em paralelo com ML-001)
+   - Desbloqueia: GATE 2 decision (sharpe >1.0, win rate >60%)
+
+   **7 AC Specifications (from INTEGRATION_ML001_KICKOFF_OFICIAL.md):**
+   - AC-1: Dataset carregado (≥1000 amostras)
+   - AC-2: Labels validadas (consistency checks)
+   - AC-3: 24 features engineered
+   - AC-4: Train/val/test splits (70/15/15)
+   - AC-5: Estatísticas computadas
+   - AC-6: Feature names persistidos
+   - AC-7: Unit tests >90% coverage
+
+   **Deliverables Expected:**
+   - Backtest com grid search (8 threshold configs)
+   - Win rate calculado (target: ≥85%)
+   - Sharpe ratio validado (target: >1.0)
+   - False positive rate checked (target: ≤10%)
+   - backtest_optimized_results.json gerado
+
+3. **INTEGRATION-ML-003: Performance Benchmarking** ⏳ PRONTO
+   - Status: DESIGN COMPLETO
+   - Timeline: 04-05/03 (2-3 horas)
+   - Dependencies: ML-002 (backtest results)
+   - Deliverables: Latency profiling, memory analysis, scalability report
+
+4. **INTEGRATION-ML-004: Final Validation** ⏳ PRONTO
+   - Status: DESIGN COMPLETO
+   - Timeline: 06-07/03 (2 horas)
+   - Dependencies: ML-002 + ML-003
+   - Deliverables: Cross-validation report, production readiness sign-off
+
+**Phase 6 GATE 1 Checkpoint:** 05/03 17:00
+- Must complete: BDI-001 ✅ + ML-001 ✅ + ML-002 ⏳
+- Decision: Continue Phase 2 ou rollback
+
+---
+
+### ✅ TASKS PARALELAS SPRINT 1 (Consolidadas)
+
+**Source:** DESENVOLVIMENTO_* e ETAPA* files
+
+#### ATI-1: WebSocket Real-time Orders
+- Status: ✅ Skeleton (340 LOC), 80% ready
+- AC: 6/6 mapeados ✅
+- Pendente: Implementação final, E2E testes
+
+#### ATI-2: OAuth 2.0 Authentication
+- Status: ✅ Skeleton (244 LOC), 80% ready
+- AC: 8/8 mapeados ✅
+- Pendente: Test fixtures, session management
+
+#### ATI-3: RabbitMQ Async Queue
+- Status: ✅ Skeleton (640+ LOC), 80% ready
+- AC: 7/7 mapeados ✅
+- Pendente: Integração Orders Executor, stress test
+
+#### ATI-4: Retry Logic + Error Handling
+- Status: ✅ Skeleton (530+ LOC), 80% ready
+- AC: 8/8 mapeados ✅
+- Pendente: Integração, circuit breaker test
+
+#### ATI-5: ML Feature Engineering
+- Status: ✅ Skeleton (620+ LOC), 80% ready
+- AC: 8/8 mapeados ✅
+- Pendente: Feature extraction, grid search
+
+#### ATI-6: Drift Detection
+- Status: ✅ Skeleton (650+ LOC), 80% ready
+- AC: 8/8 mapeados ✅
+- Pendente: Monitoring integration, auto-retrain
+
+**ETAPA Development Pipeline:**
+- ✅ ETAPA 1: Setup (525 LOC) - COMPLETA
+- ✅ ETAPA 2: Core ML (814 LOC) - COMPLETA + GATE 2 GO
+- ⏳ ETAPA 3: Validation - PENDENTE (45 min)
+- ⏳ ETAPA 4: Production Ready - PENDENTE
+
+---
+
+## � P3 - OPERACIONAIS (Tarefas de Manutenção & Monitoramento)
+
+### P3-1: RL Training Loop - Restart & Health Check
+
+**Status:** 🟡 Pendente
+**Responsável:** DevOps + Dev Sistema
+**Squad:** 1 pessoa
+**Horas:** 4h
+**Origem:** `CHECKLIST_POS_RESOLUCAO.md` (26/02/2026)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- [x] Disco liberado: 0.0 GB → 3.6 GB
+- [x] Banco compactado: 163 MB → 105 MB
+- [x] Dados antigos removidos: 123.728 registros
+- [x] Integridade verificada: OK
+- [ ] Reiniciar RL Loop/Trading System
+- [ ] Verificar logs de conexão (confirmar sem erros "disk full")
+
+#### Critérios de Aceite (4):
+- [ ] CA-1: RL system starts sem erros
+- [ ] CA-2: Trade logs verificados (sem "disk full" errors)
+- [ ] CA-3: System roda por 24h sem erros
+- [ ] CA-4: Health check retorna OK
+
+---
+
+### P3-2: Monitoramento Automático de Disco & Banco
+
+**Status:** 🟡 Pendente
+**Responsável:** DevOps
+**Squad:** 1 pessoa
+**Horas:** 6h
+**Origem:** `CHECKLIST_POS_RESOLUCAO.md` (26/02/2026)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- [ ] Agendar limpeza automática diária (script: `agendar_limpeza.bat`)
+- [ ] Verificar tarefa agendada: `schtasks /query /tn "DBCleanup-Daily"`
+- [ ] Adicionar monitoramento disco (executar `verificar_disco.py` diariamente)
+- [ ] Implementar alerta no código:
+  - [x] Adicionar `session.rollback()` em try/except
+  - [x] Trigger cleanup se disco < 1GB
+  - [ ] Trigger alerta email se disco < 500MB
+
+#### Critérios de Aceite (4):
+- [ ] CA-1: Tarefa agendada "DBCleanup-Daily" criada e validada
+- [ ] CA-2: Script `verify_disk.py` rodando daily (logs criados)
+- [ ] CA-3: Alerta acionado quando disco < 500MB
+- [ ] CA-4: Cleanup automático executado diariamente com sucesso
+
+---
+
+### P3-3: Backup Regular & Restore Testing
+
+**Status:** 🟡 Pendente
+**Responsável:** DevOps + Data Engineer
+**Squad:** 2 pessoas
+**Horas:** 8h
+**Origem:** `CHECKLIST_POS_RESOLUCAO.md` (26/02/2026)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- [ ] Fazer backup regular do `trading.db` (daily 23:00)
+- [ ] Testar restauração de backup (1x por semana)
+- [ ] Documentar procedimento restore
+- [ ] Revisar logs para identificar por que disco ficou 100% cheio
+- [ ] Identificar outros arquivos grandes que precisam limpeza
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: Backup script criado + agendado
+- [ ] CA-2: Backup testado com sucesso
+- [ ] CA-3: Restore procedure documentado
+- [ ] CA-4: Restore testado com sucesso
+- [ ] CA-5: Root cause analysis completo (relatório)
+
+---
+
+### P3-4: S1-4 LOGGING Implementation (Sprint 2)
+
+**Status:** 🔴 Crítico - Em Andamento
+**Responsável:** Executor Técnico
+**Squad:** 2 pessoas (Executor + Dev-A)
+**Horas:** 12h
+**Origem:** `COMUNICADO_BOARD_POS_REUNIAO.md` (27/02/2026)
+**Prioridade:** 🔴 CRÍTICA
+**Timeline:** 27/02 16:00-18:30 BRT (Board Approval Pending)
+
+#### Entregas Esperadas:
+- [ ] Implementação logging em produção
+- [ ] 6 fases de implementação (Phases 2-6):
+  - Phase 2: Logging infrastructure setup
+  - Phase 3: Core logging integrations
+  - Phase 4: Error handlers logging
+  - Phase 5: Audit trail logging
+  - Phase 6: Production validation
+- [ ] Todos endpoints incluindo logging
+- [ ] Audit trail para todas operações
+- [ ] Log rotation + compression
+
+#### Critérios de Aceite (6):
+- [ ] CA-1: Logging infrastructure pronta
+- [ ] CA-2: Core endpoints com logging
+- [ ] CA-3: Error handlers logging
+- [ ] CA-4: Audit trail completo
+- [ ] CA-5: Log rotation configurado
+- [ ] CA-6: Production tests OK
+
+---
+
+### P3-5: Board Decisões Follow-up (Sprint 2)
+
+**Status:** 🟡 Pendente
+**Responsável:** Facilitador + CTO
+**Squad:** 5+ pessoas (multidisciplinar)
+**Horas:** 16h
+**Origem:** `COMUNICADO_BOARD_POS_REUNIAO.md` (27/02/2026)
+**Prioridade:** 🟡 IMPORTANTE
+**Timeline:** 27/02-28/02
+
+#### Entregas Esperadas:
+- [ ] Data Engineer: Completar diagnóstico (15:30 27/02)
+  - [ ] 4 questões críticas respondidas
+  - [ ] Entrega: `docs/DIAGNOSTICO_DELAY_PERSISTENCIA_26FEV.md`
+  - [ ] Output: SIM/NÃO/DEIXAR_PENDENTE para S1-4
+- [ ] Board: Votação final SIM/NÃO/PENDENTE (15:40)
+- [ ] Executor: Confirmação implementação S1-4 (15:45)
+- [ ] CTO: Monitoramento progresso real-time
+- [ ] Facilitador: Agendar próxima reunião (28/02 09:00)
+- [ ] Data Engineer: Backup analytics.db + análise custos
+- [ ] Arquiteto: Clarificar propósito `wdo_winfut.db` (Compliance)
+- [ ] Risk Officer: Sign-off no SL/TP issue Trade#1
+
+#### Critérios de Aceite (7):
+- [ ] CA-1: Diagnóstico data engineer completo
+- [ ] CA-2: Board votou (decisão registrada)
+- [ ] CA-3: S1-4 implementação autorizada (se SIM)
+- [ ] CA-4: CTO monitoramento ativo (logs criados)
+- [ ] CA-5: Analytics.db backup realizado
+- [ ] CA-6: wdo_winfut.db propósito documentado
+- [ ] CA-7: Risk Officer sign-off recebido
+
+---
+
+### P3-6: RL Training Scheduler Deployment
+
+**Status:** ✅ Completo (Consolidado)
+**Responsável:** DevOps
+**Squad:** 1 pessoa
+**Horas:** N/A (já completado 23/02)
+**Origem:** `CHECKLIST_RL_TRAINING_SCHEDULER.md` (23/02/2026)
+**Prioridade:** ✅ COMPLETO
+
+#### Entregas Já Completadas:
+- ✅ `scripts/rl_training_loop_v3.py` (210 linhas) - TESTADO
+- ✅ `scripts/rl_training_scheduler.py` (370 linhas) - OPERACIONAL
+- ✅ `scripts/rl_health_monitor.py` (130 linhas) - OPERACIONAL
+- ✅ `scripts/rl_training_integration.py` (280 linhas) - ROBUSTO
+- ✅ `INICIAR_RL_SCHEDULER.ps1` - TESTADO
+- ✅ `INICIAR_RL_SCHEDULER.bat` - VALIDADO
+- ✅ `SETUP_RL_QUICK.bat` - OPERACIONAL
+
+#### Status:
+- ✅ 990 linhas Python código
+- ✅ Windows launchers completos
+- ✅ 420+ linhas documentação
+- ✅ Todos componentes testados e validados
+- **Ação necessária:** Apenas manutenção contínua
+
+---
+
+### P3-7: Contratos & Configuração de Trading
+
+**Status:** ✅ Documentado (Consolidado)
+**Responsável:** Dev-Sistema
+**Squad:** N/A (referência de configuração)
+**Horas:** N/A (apenas documentação)
+**Origem:** `CONFIGURACAO_CONTRATOS.txt`
+**Prioridade:** 📖 REFERÊNCIA
+
+#### Configurações Documentadas:
+- MAX_POSITIONS: Número máximo operações simultâneas
+- CONTRACTS_PER_TRADE: Contratos por operação
+- RISK_PER_TRADE: Risco por trade (default 2%)
+- MIN_CONFIDENCE: Confiança mínima para entrar (75%)
+- MIN_ALIGNMENT: Alinhamento mínimo (75%)
+- TRAILING_STOP: Stop móvel configurável
+- ANALYSIS_INTERVAL: Intervalo análise (default 30s)
+
+#### Cenários Pré-configurados:
+- Cenário 1 (Conservador): MAX_POSITIONS=5, CONTRACTS=1
+- Cenário 2 (Moderado): MAX_POSITIONS=5, CONTRACTS=5
+- Cenários customizáveis para diferentes estratégias
+
+#### Status: ✅ REFERÊNCIA DISPONÍVEL (em `scripts/run_automated_trading.py` linhas 158-179)
+
+---
+
+## �📋 ARQUIVOS DE ORIGEM CONSOLIDADOS (02/03/2026)
+
+Os seguintes arquivos foram consolidados neste BACKLOG_UNIFICADO.md
+e podem ser deletados após validação:
+
+### PHASE Files:
+- PHASE1_INVESTIGACAO_CONCLUIDA.md
+- PHASE2_IMPLEMENTATION_CONCLUIDA.md
+- PHASE3_EXECUTIVE_SUMMARY.md
+- PHASE3_STATUS_26FEV_SESSION.md
+- PHASE3_VALIDATION_COMPLETE.md
+- PHASE3_VALIDATION_PLAN.md
+- PHASE4_COMPLETION_DASHBOARD.md
+- PHASE6_DELIVERY_SUMMARY.md
+- PHASE6_INTEGRATION_ROADMAP.md
+
+### INTEGRATION Files:
+- INTEGRATION_ML001_DELIVERY_COMPLETE.md
+- INTEGRATION_ML001_KICKOFF_OFICIAL.md
+- INTEGRATION_ML001_PHASE1_COMPLETION.md
+- INTEGRATION_ML001_PHASE2_COMPLETION.md
+- INTEGRATION_ML001_PHASE3_COMPLETE_EXECUTION.md
+- INTEGRATION_ML001_PHASE3_READINESS.md
+
+### DESENVOLVIMENTO & ETAPA Files:
+- DESENVOLVIMENTO_SPRINT1_SESSAO_26FEV.md
+- DESENVOLVIMENTO_SPRINT1_SESSAO_26FEV_FINAL.md
+- ETAPA1_COMPLETA.md
+- ETAPA2_COMPLETION_SUMMARY.md
+- ETAPA2_RESULT_GATE2_APPROVED.md
+- ETAPA3_4_ROADMAP.md
+
+---
+
+## 🔴 P5 - EM PROGRESSO (Sprint 2 Atual: 28/02-02/03)
+
+### P5-1: S2-5 Fine-tuning & Finalization
+
+**Status:** 🟢 Pronto
+**Responsável:** ML Expert
+**Squad:** 1 pessoa
+**Horas:** 3h
+**Deadline:** 28/02 23:59 BRT
+**Prioridade:** 🔴 CRÍTICA
+
+#### Entregas Esperadas:
+- Grid search (4 configs threshold)
+- 5-fold cross-validation
+- Model serialization (pickling)
+- Performance metrics final
+
+#### Critérios de Aceite (4):
+- [ ] CA-1: Grid search 4 configs completado
+- [ ] CA-2: CV fold 5/5 validado
+- [ ] CA-3: F1 >= 0.65 validado (atual: 0.7045)
+- [ ] CA-4: Modelo serializado pronto
+
+---
+
+### P5-2: S2-6 Analytics MVP - Dashboard & Override Logging
+
+**Status:** 🟢 Pronto
+**Responsável:** Eng Sr + Analytics
+**Squad:** 2 pessoas
+**Horas:** 4h
+**Deadline:** 28/02 23:59 BRT
+**Prioridade:** 🔴 CRÍTICA
+
+#### Entregas Esperadas:
+- 3 dashboard views (trades, analytics, feedback)
+- Trader feedback API (POST /feedback)
+- Override logging (todas intervenções humanas)
+- Dados para retreinamento ML
+
+#### Critérios de Aceite (4):
+- [ ] CA-1: Dashboard 3 views funcionando
+- [ ] CA-2: API feedback recebendo dados
+- [ ] CA-3: Override logging persistido
+- [ ] CA-4: Dataset ML updates pronto
+
+---
+
+### P5-3: Email Configuration - SMTP + Template + Retry
+
+**Status:** 🟡 Bloqueado (Prazo 23/02 passou)
+**Responsável:** Dev-Backend
+**Squad:** 1 pessoa
+**Horas:** 1.5h
+**Deadline:** 02/03 (Reprogramado)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- SMTP Google setup (SSL/TLS)
+- Jinja2 HTML template
+- Async retry (backoff exponencial: 1s, 2s, 4s)
+- Unit tests (5 testes)
+
+#### Fases de Implementação:
+1. Design SMTP config (5 min)
+2. Impl template HTML (40-50 min)
+3. Impl async retry (15 min)
+4. Validation + testes (15 min)
+5. Code review + merge (10 min)
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: SMTP autenticado
+- [ ] CA-2: Template renderiza
+- [ ] CA-3: Retry 3x exponencial OK
+- [ ] CA-4: 5/5 testes passando
+- [ ] CA-5: Coverage >90%
+
+---
+
+### P5-4: Agendamento Limpeza Automática
+
+**Status:** 🟡 Pronto para Deploy
+**Responsável:** DevOps
+**Squad:** 1 pessoa
+**Horas:** 0.5h
+**Deadline:** 28/02
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entrega:
+- Arquivo: `agendar_limpeza.bat` (~80 LOC)
+- Comando: `schtasks /create /tn "DBCleanup-Daily" /tr "python cleanup_dados_automatico.py" /sc daily /st 04:00`
+- Executa: Daily 04:00 AM
+
+#### Critério de Aceite (2):
+- [ ] CA-1: Tarefa Windows criada
+- [ ] CA-2: Executa sem erros diariamente
+
+---
+
+## 💥 P6 - BUGS CRÍTICOS (Análises & Fixes Pendentes)
+
+### P6-1: SL/TP Missing Bug - CRITICAL
+
+**Status:** 🔴 BLOQUEADOR
+**Responsável:** Eng Sr + QA
+**Squad:** 2 pessoas
+**Horas:** 2-3h
+**Origem:** `ANALISE_FALHA_CRITICA_ORDENS.md`
+**Prioridade:** 🔴 CRÍTICA
+
+#### Problema:
+Orders 2276191196, 2276191635 criadas SEM Stop Loss e Take Profit.
+
+**Gerado por:**
+```
+launch_agent_with_ml_v1_2_3.py -> agente_micro_tendencia_winfut.py --auto-trade mode
+```
+
+**Fluxo Esperado:**
+```
+_generate_opportunities() -> execute_entry() -> MT5Adapter.send_order()
+```
+
+**Causa Provável:**
+`MT5Adapter.send_order()` (linhas 685-688) não validando/enviando SL/TP.
+
+#### Entregas Esperadas:
+- Fix validação SL/TP pré-order
+- Logging em cada etapa
+- Unit tests com mandatory SL/TP
+- Audit trail completo
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: Bug reproduzido + ROOT CAUSE identificada
+- [ ] CA-2: SL/TP validação implementada
+- [ ] CA-3: Logging em todas etapas
+- [ ] CA-4: 3+ unit tests PASS (SL/TP mandatory)
+- [ ] CA-5: Audit trail zero ordens sem SL/TP
+
+---
+
+### P6-2: Data Persistence - Auditoria 24/02 (FIXED)
+
+**Status:** ✅ RESOLVIDO (Commit 7c176d1)
+**Responsável:** Eng Sr
+**Origem:** `ANALISE_LOGS_ROADMAP_INSIGHTS.md`
+**Prioridade:** 🔴 CRÍTICA
+
+#### Problema Resolvido:
+❌ 4 trades executadas 24/02 (09:34-09:55) zeradas em simulated_trades SQLite
+✅ Auditoria identificou root cause
+✅ TransactionLogService + MT5SynchronizationService implementados
+
+#### Solução Deployada:
+- `src/infrastructure/persistence/transaction_log_service.py` (300+ LOC)
+- `src/infrastructure/persistence/mt5_synchronization_service.py` (350+ LOC)
+- `scripts/recovery_and_audit_24fev.py` (200+ LOC)
+- Recovery script validado OK
+
+#### Status: ✅ COMPLETO
+
+---
+
+### P6-3: AI Learning Loop - Feedback 1-way (ACTIVE)
+
+**Status:** 🔴 BLOQUEADOR
+**Responsável:** ML Expert + Dev-Backend
+**Squad:** 2 pessoas
+**Horas:** 3-4h
+**Origem:** `ANALISE_LOGS_ROADMAP_INSIGHTS.md`
+**Prioridade:** 🔴 CRÍTICA
+
+#### Problema:
+- 239 RL episodes (simuladas) vs 0 results (reais)
+- AI sugerir -> Head overrider -> Zero feedback para RL
+- Learning loop é **1-way** (AI->Human, sem Human->AI)
+
+#### Entregas Esperadas:
+- TradeClosedEvent listener
+- Realizeed P&L feedback closure
+- RL model update pipeline
+- Historical outcome tracking
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: TradeClosedEvent listener impl
+- [ ] CA-2: PnL calc vs previsão validado
+- [ ] CA-3: RL model update pronto
+- [ ] CA-4: Retraining automático OK
+- [ ] CA-5: Historical tracking pronto
+
+---
+
+### P6-4: Error Logging Missing (ACTIVE)
+
+**Status:** 🟠 IMPORTANTE
+**Responsável:** Dev-Sys
+**Squad:** 1 pessoa
+**Horas:** 2h
+**Origem:** `ANALISE_LOGS_ROADMAP_INSIGHTS.md`
+**Prioridade:** 🟠 IMPORTANTE
+
+#### Problema:
+`INICIAR_DIARIOS.bat` chama `start_journals_full_display.py` COM **ZERO** stderr/stdout capture.
+Se falhar: **ZERO diagnostics**.
+
+#### Entregas Esperadas:
+- Redirect logs: `> logs/diarios_%DATE%.log 2>&1`
+- Log rotation (max 100MB)
+- Health check alerts
+
+#### Critérios de Aceite (4):
+- [ ] CA-1: Logs capturam stderr+stdout
+- [ ] CA-2: Rotation funcionando
+- [ ] CA-3: Alertas acionados on fail
+- [ ] CA-4: Histórico 30 dias persistido
+
+---
+
+### P6-5: Order Flow + Feature Engineering Gap (ACTIVE)
+
+**Status:** 🟡 IMPORTANTE
+**Responsável:** ML Expert + Data Analyst
+**Squad:** 2 pessoas
+**Horas:** 4-5h
+**Origem:** `ANALISE_LOGS_ROADMAP_INSIGHTS.md`
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Problema:
+Head Financeiro detecta:
+- Volume exhaustion (-55%)
+- S&P500 acceleration
+
+AI nunca detecta esses patterns -> Feedback loop asymmetry.
+
+#### Entregas Esperadas:
+- Bid-ask imbalance detector
+- 5-min volume exhaustion detector
+- S&P500 real-time correlation
+- Integration com ML model
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: Bid-ask imbalance calculado
+- [ ] CA-2: Volume exhaustion detector pronto
+- [ ] CA-3: S&P500 correlation real-time
+- [ ] CA-4: Features integradas ao model
+- [ ] CA-5: Win rate +1-2% validado
+
+---
+
+## 📊 P7 - RL TRAINING & ANALYSIS TASKS (Análise de Scripts)
+
+### P7-1: RL Training Loop Implementation
+
+**Status:** 🟡 Análise Completa
+**Responsável:** ML Expert + Dev-Backend
+**Squad:** 2 pessoas
+**Horas:** 8-10h
+**Origem:** `scripts/analise_rl_training.py`
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- Script `scripts/rl_training_loop.py` (240+ LOC)
+- Lê dados de RL_EPISODES incrementalmente
+- Treina modelo XGBoost/LightGBM
+- Atualiza RL_TRAINING_METRICS
+- Model checkpointing (save/load)
+
+#### Critérios de Aceite (6):
+- [ ] CA-1: Loop lê episódios corretamente (100+ min)
+- [ ] CA-2: Modelo treinado incrementalmente
+- [ ] CA-3: XGBoost/LightGBM integrado
+- [ ] CA-4: Métricas persistidas em RL_TRAINING_METRICS
+- [ ] CA-5: Checkpoints salvos (versioning)
+- [ ] CA-6: Intervalo retraining configurável (24h default)
+
+---
+
+### P7-2: RL Reward Strategy Definition
+
+**Status:** 🟡 Design Needed
+**Responsável:** ML Expert + Head Finanças
+**Squad:** 2 pessoas
+**Horas:** 4h
+**Origem:** `scripts/analise_rl_training.py`
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- Documento: `docs/RL_REWARD_STRATEGY.md`
+- 3 estratégias de recompensa:
+  1. P&L (pontos ganhos/perdidos)
+  2. Sharpe Ratio do episódio
+  3. Win Rate target (ex: 60%)
+
+#### Critérios de Aceite (4):
+- [ ] CA-1: Estratégia 1 (P&L) especificada
+- [ ] CA-2: Estratégia 2 (Sharpe) especificada
+- [ ] CA-3: Estratégia 3 (Win Rate) especificada
+- [ ] CA-4: Documento aprovado por Head Finanças
+
+---
+
+### P7-3: RL Feature Engineering from Indicators
+
+**Status:** 🟡 Análise Completa
+**Responsável:** ML Expert + Data Analyst
+**Squad:** 2 pessoas
+**Horas:** 6h
+**Origem:** `scripts/analise_rl_training.py`
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- Função `extract_rl_features()` (RL_INDICATOR_VALUES → matrix)
+- Correlação matrix: RL_CORRELATION_SCORES → features
+- 24+ engineered features para XGBoost
+- Feature validation (zero NaN, zero infinity)
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: RL_INDICATOR_VALUES lidos corretamente
+- [ ] CA-2: RL_CORRELATION_SCORES incorporados
+- [ ] CA-3: 24+ features extraídas
+- [ ] CA-4: Feature matrix validada (zero NaN/inf)
+- [ ] CA-5: Performance <500ms para 1000 episódios
+
+---
+
+### P7-4: RL Model Validation (Cross-Validation)
+
+**Status:** 🟡 Análise Completa
+**Responsável:** ML Expert + QA
+**Squad:** 2 pessoas
+**Horas:** 5h
+**Origem:** `scripts/analise_rl_training.py`
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- 5-fold stratified cross-validation
+- Hold-out test set validation
+- Degradação monitoring (retraining trigger @N days)
+- Relatório de performance
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: 5-fold CV implementada
+- [ ] CA-2: CV scores reportados (mean/std)
+- [ ] CA-3: Hold-out test set validado
+- [ ] CA-4: Degradação detectada automaticamente
+- [ ] CA-5: Retraining triggered @N days
+
+---
+
+### P7-5: SQLite Data Persistence Validation
+
+**Status:** 🟡 Análise Completa
+**Responsável:** Data Engineer
+**Squad:** 1 pessoa
+**Horas:** 4h
+**Origem:** `scripts/analise_sqlite.py`
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- Auditoria completa do `trading.db`
+- Validação de tabelas RL (episodes, rewards, transitions)
+- Verificação de integridade referencial
+- Relatório de dados persistidos
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: Todas tabelas RL presentes (episodes, rewards)
+- [ ] CA-2: Registros >100 em RL_EPISODES
+- [ ] CA-3: Registros >500 em RL_REWARDS
+- [ ] CA-4: Integridade referencial OK (FK checks)
+- [ ] CA-5: Relatório gerado (data_persistence_audit.md)
+
+---
+
+### P7-6: RL Persistence Service Implementation
+
+**Status:** 🟡 Análise Completa
+**Responsável:** Dev-Backend
+**Squad:** 1 pessoa
+**Horas:** 6h
+**Origem:** `scripts/analise_sqlite.py`
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- `src/application/services/rl_persistence_service.py` (200+ LOC)
+- Save/load episódios
+- Save/load recompensas
+- Transaction management
+- Error handling
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: Save episódio implementado
+- [ ] CA-2: Load episódios batch
+- [ ] CA-3: Save recompensas
+- [ ] CA-4: Transações ACID
+- [ ] CA-5: 8+ unit tests PASS
+
+---
+
+### P7-7: RL Repository Implementation
+
+**Status:** 🟡 Análise Completa
+**Responsável:** Dev-Backend
+**Squad:** 1 pessoa
+**Horas:** 5h
+**Origem:** `scripts/analise_sqlite.py`
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- `src/infrastructure/repositories/rl_repository.py` (150+ LOC)
+- RLEpisodeRepository (CRUD)
+- RLRewardRepository (append-only)
+- RLTransitionRepository (state transitions)
+- Query methods
+
+#### Critérios de Aceite (4):
+- [ ] CA-1: RLEpisodeRepository CRUD OK
+- [ ] CA-2: RLRewardRepository append-only
+- [ ] CA-3: RLTransitionRepository queries
+- [ ] CA-4: 6+ unit tests PASS
+
+---
+
+### P7-8: RL Database Schema Implementation
+
+**Status:** 🟡 Análise Completa
+**Responsável:** Data Engineer
+**Squad:** 1 pessoa
+**Horas:** 3h
+**Origem:** `scripts/analise_sqlite.py`
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- `src/infrastructure/database/rl_schema.py` (80+ LOC)
+- CREATE TABLE rl_episodes
+- CREATE TABLE rl_rewards
+- CREATE TABLE rl_transitions
+- Índices otimizados
+- Constraints
+
+#### Critérios de Aceite (4):
+- [ ] CA-1: Schema SQL validado
+- [ ] CA-2: Índices criados (performance)
+- [ ] CA-3: Foreign keys definidas
+- [ ] CA-4: Migrations script completo
+
+---
+
+### P7-9: RL Policy Update Pipeline
+
+**Status:** 🟡 Análise Completa
+**Responsável:** ML Expert + Dev-Backend
+**Squad:** 2 pessoas
+**Horas:** 6h
+**Origem:** `scripts/analise_sqlite.py`
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- Policy update logic
+- Integração com modelo treinado
+- A/B testing (nova vs antiga policy)
+- Metrics tracking
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: Nova policy carregada
+- [ ] CA-2: A/B testing implementado
+- [ ] CA-3: Métricas comparadas
+- [ ] CA-4: Rollback automático se performance <threshold
+- [ ] CA-5: Logging completo
+
+---
+
+### P7-10: RL Model Performance Monitoring
+
+**Status:** 🟡 Análise Completa
+**Responsável:** Dev-Backend + Analytics
+**Squad:** 2 pessoas
+**Horas:** 5h
+**Origem:** `scripts/analise_sqlite.py`
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- Dashboard Grafana (RL metrics)
+- Historical performance tracking
+- Degradação alerts
+- Model age counter
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: Dashboard exibe train loss
+- [ ] CA-2: Historical performance grafado
+- [ ] CA-3: Alertas degradação >5%
+- [ ] CA-4: Model age counter
+- [ ] CA-5: Retraining metrics exportados
+
+---
+
+## 📚 PADRÃO DE LOCALIZAÇÃO: SCRIPTS
+
+### Convenção Padrão Adotada (02/03/2026):
+
+**Todos os scripts Python análise, utilitários e execução devem estar em:**
+```
+scripts/
+├── analise_*.py          (Scripts de análise - consultoria)
+├── analyze_*.py          (Scripts de análise - diagnóstico)
+├── run_*.py              (Scripts de execução - main)
+├── launch_*.py           (Scripts de inicialização)
+├── check_*.py            (Scripts de verificação)
+├── cleanup_*.py          (Scripts de limpeza)
+├── verify_*.py           (Scripts de validação)
+└── README.md             (Documentação scripts)
+```
+
+**Scripts consolidados nesta sessão:**
+- ✅ `scripts/analise_rl_training.py` (Análise RL - 142 LOC)
+- ✅ `scripts/analise_sqlite.py` (Análise BD - 70 LOC)
+- ✅ `scripts/analyze_critical_failure.py` (Análise falha - 115 LOC)
+
+**Benefícios:**
+- Fácil localização de scripts
+- Sem poluição da raiz do projeto
+- Padrão consistente com SCP (Single Responsibility)
+- Facilita CI/CD (só precisa escanear `scripts/`)
+
+---
+
+### OPERACIONAIS & CHECKLIST Files (Consolidados 02/03/2026):
+- ✅ CHECKLIST_POS_RESOLUCAO.md (26/02) → **P3-1 + P3-2 + P3-3**
+- ✅ CHECKLIST_RL_TRAINING_SCHEDULER.md (23/02) → **P3-6 (Completo)**
+- ✅ COMUNICADO_BOARD_POS_REUNIAO.md (27/02) → **P3-4 + P3-5**
+- ✅ CONCLUSAO_PIPELINE_TASKS_EXECUTION_25FEV.md (25/02) → **Registro histórico**
+- ✅ CONFIGURACAO_CONTRATOS.txt → **P3-7 (Referência)**
+
+### SPRINT 2 TAREFAS Files (Consolidados 02/03/2026):
+- ✅ 10_ATIVIDADES_CRITICAS_SPRINT2.md (Atividades ATI-1 a ATI-10)
+- ✅ ACAO_RAPIDA_AGORA_27FEV.md → **P5-1 + P5-2**
+- ✅ ACAO_RAPIDA_EMAIL_CHECKPOINT.md → **P5-3**
+- ✅ agendar_limpeza.bat → **P5-4**
+- ✅ ANALISE_FALHA_CRITICA_ORDENS.md → **P6-1 (SL/TP Bug)**
+- ✅ ANALISE_LOGS_ROADMAP_INSIGHTS.md → **P6-2 + P6-3 + P6-4 + P6-5**
+- ✅ analise_operacao_encerramento_26fev.py → **Análise histórica (manter)**
+- ✅ ANALISE_PRIORIZACAO_24FEV.md → **Histórico priorização**
+- ✅ ANALISE_PRIORIZACAO_25FEV_SEM_DATAS.md → **Histórico Sprint 1**
+
+### ANALYSIS SCRIPTS Files (Consolidados 02/03/2026 - Movidos para scripts/):
+- ✅ analise_rl_training.py → **P7-1 até P7-4 (RL Training)**
+- ✅ analise_sqlite.py → **P7-5 até P7-10 (RL Persistence)**
+- ✅ analyze_critical_failure.py → **P6-1 (SL/TP Bug - complementar)**
+
+**Localização:** Todos movidos para `scripts/` conforme padrão adotado
+**Safe to Delete:** YES - 3 scripts podem ser deletados (consolidados em P7)
+
+---
+
+**Última Atualização:** 02/03/2026 (P7 + SCRIPT PATTERN replicado em 6 docs)
 **Próxima Revisão:** Quando GATE 2 completo (Phase 4 kick-off)
 **Proprietário:** Product Owner (GitHub Copilot)
-**Status:** ✅ BACKLOG COMPLETO (Sprint 2 + Phase 4)
+**Status:** ✅ BACKLOG COMPLETO (P0-P7 + Padrão de Scripts em todas docs)
+
 
 

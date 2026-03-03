@@ -30,6 +30,22 @@ Sistema de trading quantitativo para Mini Índice Brasileiro (WIN) com arquitetu
 **Validação de Arquitetura:** Code review + Architecture review board
 **Enforcement:** Pre-commit hooks + CI/CD pipeline
 
+### 📚 Padrão de Scripts - Localização Obrigatória
+
+**Todos os scripts Python (análise, utilitários, execução, verificação) DEVEM estar em `scripts/`**
+
+Ver [CODING_STANDARDS.md](CODING_STANDARDS.md#11-scripts---padrão-de-localização-obrigatório-) para:
+- Estrutura de diretórios
+- Convenção de naming
+- Benefícios arquiteturais
+
+**Exemplos arquiteturais:**
+- `scripts/analise_*.py` - Scripts de análise (consultoria)
+- `scripts/run_*.py` - Entry points de execução
+- `scripts/verify_*.py` - Validação de integridade
+
+**Objetivo:** Manter arquitetura limpa, sem poluição de scripts na raiz do projeto.
+
 ---
 
 6. **🔴 CRITICAL - Confirmation Closure Principle** ⭐ NEW

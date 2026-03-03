@@ -527,6 +527,38 @@ src/
     └── cli/
 ```
 
+### 11. Scripts - Padrão de Localização Obrigatório ⭐
+
+**TODOS os scripts Python (análise, utilitários, execução) DEVEM estar em `scripts/`**
+
+```
+scripts/
+├── analise_*.py          # Scripts de análise (consultoria/diagnóstico)
+├── analyze_*.py          # Scripts de análise detalhada
+├── run_*.py              # Scripts de execução (main entry points)
+├── launch_*.py           # Scripts de inicialização de agentes
+├── check_*.py            # Scripts de verificação/validação
+├── cleanup_*.py          # Scripts de limpeza de dados/logs
+├── verify_*.py           # Scripts de auditoria/verificação
+├── extract_*.py          # Scripts de extração de dados
+├── sync_*.py             # Scripts de sincronização
+├── monitor_*.py          # Scripts de monitoramento
+└── README.md             # Documentação dos scripts disponíveis
+```
+
+**Benefícios:**
+- ✅ Evita poluição da raiz do projeto
+- ✅ Fácil localização de scripts (CI/CD escaneia `scripts/`)
+- ✅ Padrão consistente com Single Responsibility Principle
+- ✅ Clareza de propósito (nome começa com ação clara)
+- ✅ Organização por categoria (analise, run, check, etc)
+
+**Convenção de Naming:**
+- Sempre use **snake_case** (ex: `analise_rl_training.py`)
+- Comece com **verbo/ação** (analise, run, check, verify, cleanup)
+- Inclua **contexto** (rl, sqlite, critical_failure)
+- NUNCA coloque scripts na raiz (exceto se temporário com justificativa em PR)
+
 ## Code Review Checklist
 
 - [ ] Código segue princípios SOLID

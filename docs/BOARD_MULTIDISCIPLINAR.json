@@ -541,6 +541,36 @@
     "official_docs": [
       "docs/BACKLOG_UNIFICADO.md"
     ],
+    "script_standards": {
+      "descricao": "Padrão obrigatório de localização de scripts",
+      "diretorio": "scripts/",
+      "estrutura": {
+        "analise_*.py": "Scripts de análise (consultoria/diagnóstico)",
+        "analyze_*.py": "Scripts de análise detalhada",
+        "run_*.py": "Scripts de execução (main entry points)",
+        "launch_*.py": "Scripts de inicialização de agentes",
+        "check_*.py": "Scripts de verificação/validação",
+        "cleanup_*.py": "Scripts de limpeza de dados/logs",
+        "verify_*.py": "Scripts de auditoria/verificação",
+        "extract_*.py": "Scripts de extração de dados",
+        "sync_*.py": "Scripts de sincronização",
+        "monitor_*.py": "Scripts de monitoramento"
+      },
+      "beneficios": [
+        "Evita poluição da raiz do projeto",
+        "Fácil localização (CI/CD escaneia scripts/)",
+        "Padrão consistente com Single Responsibility",
+        "Clareza de propósito (nome começa com ação clara)",
+        "Organização por categoria (analise, run, check, etc)"
+      ],
+      "regras_naming": [
+        "Sempre use snake_case (ex: analise_rl_training.py)",
+        "Comece com verbo/ação (analise, run, check, verify, cleanup)",
+        "Inclua contexto (rl, sqlite, critical_failure)",
+        "NUNCA coloque scripts na raiz (exceto se temporário com justificativa em PR)"
+      ],
+      "enforcement": "OBRIGATÓRIO - Revisor deve rejeitar PRs com scripts na raiz"
+    },
     "cross_links": {
       "docs/BACKLOG_UNIFICADO.md": [
         "docs/ARCHITECTURE.md"

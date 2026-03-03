@@ -163,6 +163,28 @@ class NewEntity:
         return hash(self.id)
 ```
 
+### Localização de Scripts - Padrão Obrigatório
+
+**Qualquer script Python (utilitário, análise, execução) DEVE estar em `scripts/`**
+
+```bash
+# ✅ CORRETO: Script em scripts/
+scripts/analise_rl_training.py
+scripts/run_automated_trading.py
+scripts/check_database_integrity.py
+
+# ❌ ERRADO: Script na raiz
+analise_rl_training.py  # REMOVER e mover para scripts/
+```
+
+**Ao criar novo script:**
+
+1. Coloque em `scripts/` com nome descritivo
+2. Comece com ação clara: `analise_`, `run_`, `check_`, `verify_`, `cleanup_`, etc
+3. Use snake_case e inclua contexto
+4. Documente propósito no docstring e `scripts/README.md`
+5. Atualize este padrão em `docs/CONTRIBUTING.md`
+
 ### Repository
 
 ```python

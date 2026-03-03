@@ -11,7 +11,15 @@
 
 ---
 
-## 🎯 Uso
+## 📚 Padrão de Scripts
+
+**Todos os scripts Python devem estar em `scripts/`**
+
+Ver [CODING_STANDARDS.md - Padrão de Localização](CODING_STANDARDS.md#11-scripts---padrão-de-localização-obrigatório-) para diretrizes completas.
+
+---
+
+## 🎯 Como Usar
 
 Para solicitar a próxima atividade prioritária, consulte:
 
