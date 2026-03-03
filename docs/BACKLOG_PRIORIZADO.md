@@ -1,8 +1,8 @@
 # Backlog Priorizado - Operador Day Trade WIN
 
-**Versão:** 3.1  
-**Formato:** Tarefas Entregáveis Independentes  
-**Foco:** Valor de Negócio + Viabilidade Técnica  
+**Versão:** 3.1
+**Formato:** Tarefas Entregáveis Independentes
+**Foco:** Valor de Negócio + Viabilidade Técnica
 **Status:** Pronto para Execução
 
 ---
@@ -20,7 +20,7 @@
 
 Todos os desenvolvedores DEVEM cumprir:
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Estrutura 7-camadas
-- [CODING_STANDARDS.md](CODING_STANDARDS.md) - SOLID, DDD, Clean Code  
+- [CODING_STANDARDS.md](CODING_STANDARDS.md) - SOLID, DDD, Clean Code
 - [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) - 6 regras críticas P0
 - 100% type hints (mypy --strict)
 - Testes: unitário + integração + E2E
@@ -35,7 +35,7 @@ Tarefas que definem caminho crítico. Sem estas, nada avança.
 
 **Impacto de Negócio (PO + Head Finanças):**
 - **ROI:** Habilita trading automático + reduz latência manual (2-5 seg → <200ms)
-- **Risco Operacional:** API instável = falha de execução = drawdown capital  
+- **Risco Operacional:** API instável = falha de execução = drawdown capital
   Mitigação: timeout + circuit breaker + retry exponencial
 - **Bloqueador para:** P0-2, P1-2, P1-3, P1-4, P1-5, P1-6, P1-11, P1-12
 - **Estimativa:** 160h
@@ -81,7 +81,7 @@ Tarefas que definem caminho crítico. Sem estas, nada avança.
 
 **Impacto de Negócio (PO + Head Finanças):**
 - **ROI:** Validação modelo com dados reais = confiança para ativar R$ 100k+ (Fase 2)
-- **Risco Técnico:** Backtest com look-ahead bias = validação falsa = capital perdido  
+- **Risco Técnico:** Backtest com look-ahead bias = validação falsa = capital perdido
   Mitigação: walk-forward validation, purging, embargo 60min
 - **Bloqueador para:** P4-1 (staging deployment), decisão capital Fase 2
 - **Pré-requisito:** P0-1 completo
@@ -120,7 +120,7 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 
 **Impacto de Negócio (PO + Head Finanças):**
 - **ROI:** Explainabilidade ML = trader toma decisões informadas = risco reduzido
-- **Risco Operacional:** Modelo drift não-detectado = execuções ruins sem awareness  
+- **Risco Operacional:** Modelo drift não-detectado = execuções ruins sem awareness
   Mitigação: SHAP analysis + 3 drift rules + limiares alerta
 - **Independente de:** P0-1 (pode começar em paralelo)
 - **Estimativa:** 88h
@@ -150,7 +150,7 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 
 **Impacto de Negócio (PO + Head Finanças):**
 - **ROI:** Visibilidade tempo real = trader monitora automação = confiança operação
-- **Risco:** CEO/CIO sem visibility = perda confiança no sistema  
+- **Risco:** CEO/CIO sem visibility = perda confiança no sistema
   Mitigação: audit trail completo, timestamp em tudo
 - **Dependência:** P0-1 (endpoints /orders, /positions)
 - **Estimativa:** 40h
@@ -184,7 +184,7 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 
 **Impacto de Negócio (PO + Head Finanças):**
 - **ROI:** Autenticação segura = compliance CVM/B3 (obrigatório produção)
-- **Risco:** Sem autenticação = risco regulatório + dados expostos + auditoria falha  
+- **Risco:** Sem autenticação = risco regulatório + dados expostos + auditoria falha
   Mitigação: bcrypt hashing + rate limiting + audit logging
 - **Dependência:** P0-1 (mesmo servidor FastAPI)
 - **Estimativa:** 40h
@@ -216,7 +216,7 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 
 **Impacto de Negócio (PO + Head Finanças):**
 - **ROI:** Async orders = API não bloqueia = trader pode cancelar rápido
-- **Risco:** Síncrono = timeout = ordem perdida  
+- **Risco:** Síncrono = timeout = ordem perdida
   Mitigação: DLQ + retry 3× + idempotência garantida
 - **Dependência:** P0-1 (no mesmo servidor/infraestrutura)
 - **Estimativa:** 40h
@@ -250,7 +250,7 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 
 **Impacto:**
 - **ROI:** Latência <100ms = trader reage rápido
-- **Risco:** Dados stale = decisões informadas ruins  
+- **Risco:** Dados stale = decisões informadas ruins
   Mitigação: heartbeat 30s, auto-reconnect, zero message loss
 - **Dependência:** P0-1
 - **Estimativa:** 40h
@@ -258,7 +258,7 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 
 **Entregas:**
 - WebSocket endpoint posições tempo real
-- Heartbeat 30s (ping/pong)  
+- Heartbeat 30s (ping/pong)
 - Auto-disconnect missed heartbeats (após 90s)
 - Reconnection logic automática
 - Message format OHLCV + Orders
@@ -282,7 +282,7 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 
 **Impacto:**
 - **ROI:** SL/TP automático = nenhuma posição descoberta
-- **Risco:** Esquecimento = grandes perdas acidentais  
+- **Risco:** Esquecimento = grandes perdas acidentais
   Mitigação: trailing stop + alertas + log completo
 - **Dependência:** P0-1
 - **Estimativa:** 32h
@@ -313,7 +313,7 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 
 **Impacto:**
 - **ROI:** Validação integração = confiança antes de produção
-- **Risco:** Integração falha = trading parado em produção  
+- **Risco:** Integração falha = trading parado em produção
   Mitigação: E2E tests + batch processing + validação 100%
 - **Dependência:** P1-1 (análise básica completa)
 - **Estimativa:** 32h
@@ -340,7 +340,7 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 
 **Impacto:**
 - **ROI:** Alertas confiáveis = nenhuma oportunidade perdida
-- **Risco:** Alertas perdidos = trader não sabe oportunidades  
+- **Risco:** Alertas perdidos = trader não sabe oportunidades
   Mitigação: webhook + retry + fallback SMS
 - **Dependência:** Nenhuma (paralelo)
 - **Estimativa:** 40h
@@ -369,7 +369,7 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 
 **Impacto:**
 - **ROI:** Reconciliação MT5 ↔ SQLite = auditoria CVM/B3 completa
-- **Risco:** Mismatch trades = perdas não-localizadas + auditoria falha  
+- **Risco:** Mismatch trades = perdas não-localizadas + auditoria falha
   Mitigação: daily reconciliation + alertas + DLQ
 - **Dependência:** P0-1 (API MT5), P1-2 (persistência)
 - **Estimativa:** 10h
@@ -399,7 +399,7 @@ Tarefas que habilitam infraestrutura P0. Muitas rodam em paralelo com P0.
 
 **Impacto:**
 - **ROI:** Feedback RL = modelo melhora com dados reais
-- **Risco:** RL sem feedback = modelo não evolui  
+- **Risco:** RL sem feedback = modelo não evolui
   Mitigação: historical outcome tracking + A/B testing
 - **Dependência:** P0-2 (persistência trades)
 - **Estimativa:** 15h
@@ -496,7 +496,7 @@ Entregas:
 
 Critérios de Aceite (8 - TODOS DEVEM PASSAR):
 - [ ] CA-1: 8/8 recursos Azure healthy
-- [ ] CA-2: Health check endpoint PASS  
+- [ ] CA-2: Health check endpoint PASS
 - [ ] CA-3: 25+ testes integração PASS
 - [ ] CA-4: Load test 500 users: P95 <2s
 - [ ] CA-5: Zero critical errors logs

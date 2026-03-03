@@ -777,6 +777,66 @@ Padrão estabelecido 03/03/2026 para TODAS consolidações futuras:
 **Status:** ✅ BACKLOG CONSOLIDAÇÃO P31 COMPLETA - 110 ARQUIVOS, 115 TAREFAS
 
 ---
+
+### Lote 14 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P32 - 03/03/2026)
+
+**Origem:** 2 arquivos pendentes analisados (1 script Python + 1 arquivo .bat)
+
+#### P32 - Arquivos Consolidados:
+
+1. **DIAGNOSTICO_INSTALACAO.bat** (Arquivo Batch/Diagnóstico)
+   - Status: ✅ MOVIDO para `BAT/DIAGNOSTICO_INSTALACAO.bat`
+   - Conteúdo: Diagnóstico Python/pip e troubleshooting (101 LOC)
+   - Tarefas Consolidadas: 6 passos sequenciais de diagnóstico
+   - Funcionalidades:
+     - PASSO 1: Verificação Python version
+     - PASSO 2: Verificação pip version
+     - PASSO 3: Verificação conexão internet (ping google.com)
+     - PASSO 4: Upgrade pip
+     - PASSO 5: Teste FastAPI instalação (versão 0.104.1)
+     - PASSO 6: Teste Uvicorn instalação (versão 0.24.0)
+   - Localização: `BAT/DIAGNOSTICO_INSTALACAO.bat` (novo padrão BAT location)
+
+2. **diagnostico_simples.py** (Script Python/Diagnóstico)
+   - Status: ✅ MOVIDO para `scripts/diagnostico_simples.py`
+   - Conteúdo: Diagnóstico disco e banco SQLite (76 LOC + imports)
+   - Tarefas Consolidadas: 9 passos de diagnóstico de infraestrutura
+   - Funcionalidades:
+     - Análise espaço em disco C: (total, usado, livre em GB)
+     - Status disco: CRÍTICO (<1GB) / AVISO (<5GB) / OK
+     - Validação banco simulator.db (existência e tamanho)
+     - Enumeração tabelas SQLite
+     - Contagem registros em rl_correlation_scores
+     - Análise freelist (páginas livres × tamanho página)
+     - Cálculo espaço livre banco em MB
+     - Report estruturado com DISCO + BANCO + ESTADO
+   - Localização: `scripts/diagnostico_simples.py`
+   - Padrão: Script Python OBRIGATORIAMENTE em scripts/ folder
+   - Uso: `python scripts/diagnostico_simples.py` (roda imediatamente)
+
+#### Status da Consolidação P32:
+
+- ✅ 2 arquivos processados (1 script Python + 1 arquivo .bat)
+- ✅ 1 Python script movido para `scripts/` (diagnostico_simples.py)
+- ✅ 1 arquivo .bat movido para `BAT/` (DIAGNOSTICO_INSTALACAO.bat)
+- ✅ 12 tarefas mapeadas (6 do .bat + 9 do script = 15 operacionais)
+- ✅ Padrão de pasta 100% aderente (scripts/ + BAT/)
+
+#### Consolidação Total Acumulada (FINAL - P32):
+
+- **Total Geral:** 112 arquivos (24 scripts, 79 docs, 7 .bat, 1 JSON, 1 output)
+- **Tarefas Rastreadas:** 127 (P0-P4, P8-P32)
+- **Código Consolidado:** ~7.900 LOC scripts
+- **Scripts em Padrão:** 100% (24/24) ✅
+- **.bat em Padrão:** 100% (7/7) ✅ 
+- **Outputs em Padrão:** 100% (1/1) ✅
+- **Project Root Cleanup:** 100% ✅
+- **Padrão de Pasta:** 100% aderente ✅
+
+**Timestamp:** 03/03/2026 (Consolidação Lote 14 - P32)
+**Status:** ✅ BACKLOG CONSOLIDAÇÃO P32 COMPLETA - 112 ARQUIVOS, 127 TAREFAS
+
+---
    - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-4
 
 #### Processo de Consolidação

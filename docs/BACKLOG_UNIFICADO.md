@@ -1,15 +1,19 @@
-# Backlog Unificado - Operador Day Trade WIN
+# Backlog Operacional - Operador Day Trade WIN
 
-**Versão:** 2.0
-**Data Atualização:** 02/03/2026
-**Fonte de Verdade:** Este arquivo é a única fonte de verdade para priorização de tarefas
-**Formato:** Priority-First (sem datas fixas)
+**Versão:** 3.0
+**Formato:** Backlog Priorizado (entregáveis independentes)
+**Foco:** Valor de negócio + Viabilidade técnica
 **Status:** Pronto para execução
 
-> **Instruções para Solicitação de Próxima Tarefa:**
-> Use este documento ao solicitar a próxima atividade
-> prioritária. O backlog está ordenado por impacto e
-> dependências.
+## 👥 Avaliação Dupla - Personas
+
+- **Product Owner:** Alinhamento com necessidades do negócio, user stories, priorização
+- **Head de Finanças:** ROI, risco, capital allocation, gates de decisão financeira
+
+> **Como Usar Este Documento:**
+> Cada tarefa é **independentemente entregável**. Não há datas fixas.
+> Prioridades são absoluas: P0 > P1 > P2 > P3.
+> Comece sempre por P0 (bloqueadores de valor).
 
 ---
 
@@ -48,16 +52,20 @@ Todos os desenvolvedores DEVEM seguir as práticas técnicas definidas em [CODIN
 
 ---
 
-## ✅ P0 - CRÍTICAS (Bloqueadores) — Sprint 2 Atual
+## ✅ P0 - CRÍTICAS (Bloqueadores de Valor)
 
-### P0-1: ENG-003 API REST MT5 (Infraestrutura)
+Tarefas que definem o caminho crítico. Sem estas, nada mais avança.
+**Análise Dupla (PO + Head Finanças):** Cada tarefa habilita múltiplos O-Ks e desbloqueadores de capital
 
-**Status:** 🟢 Pronto para começar
-**Responsável:** Eng Sr
-**Squad:** 3 Desenvolvedores Backend (4 pessoas)
-**Horas:** 160h
-**Desbloqueia:** P0-2 (ML-004)
-**Prioridade:** 🔴 CRÍTICA
+### P0-1: ENG-003 API REST MT5 - Infraestrutura de Execução
+
+**Impacto de Negócio (PO + Head Finanças):**
+- **ROI:** Habilita trading automático + reduz latência manual de 2-5 seg → <200ms
+- **Risco Operacional:** API instável = falha de execução = drawdown capital (mítigado com timeout + circuit breaker)
+- **Bloqueador para:** P0-2, P1-2, P1-11, P1-12
+- **Estimativa Técnica:** 160h
+- **Equipe:** Eng Sr + 3 Dev-Backend
+- **Entregável:** Servidor FastAPI REST com 14 endpoints produção-ready
 
 #### Entregas Esperadas:
 - Servidor FastAPI REST (async, alta performance)
@@ -117,15 +125,16 @@ Todos os desenvolvedores DEVEM seguir as práticas técnicas definidas em [CODIN
 
 ---
 
-### P0-2: ML-004 Backtest Estendido (252 Dias)
+### P0-2: ML-004 Backtest Validação Estendida (12 Meses Histórico)
 
-**Status:** 🟡 Bloqueado (aguarda P0-1)
-**Responsável:** Especialista ML
-**Squad:** 2 pessoas (ML Expert + Data Scientist)
-**Horas:** 88h
-**Começa Quando:** P0-1 completo
-**GATE 2 Decision Point:** Ativar R$ 100k Fase 2
-**Prioridade:** 🔴 CRÍTICA
+**Impacto de Negócio (PO + Head Finanças):**
+- **ROI:** Validação modelo com dados reais = confiança para ativar capital Fase 2 (R$ 100k+)
+- **Risco Técnico:** Backtest com look-ahead bias = validação falsa = capital perdido (mítigado com walk-forward validation)
+- **Bloqueador para:** P4-1 (deployment staging) + decisão capital
+- **Pré-requisito:** P0-1 completo
+- **Estimativa Técnica:** 88h
+- **Equipe:** ML Expert + Data Scientist
+- **Entregável:** Relatório backtest 252-dias com métricas Sharpe/Win-rate/Drawdown
 
 #### Entregas Esperadas:
 - Backtest histórico 252 dias (ano completo)
@@ -182,14 +191,15 @@ SE Qualquer critério = FAIL:
 
 ## 🟡 P1 - IMPORTANTES (Não-Bloqueadores) — Sprint 2
 
-### P1-1: ML-003 Análise Features
+### P1-1: ML-003 Análise Features & Drift Detection
 
-**Status:** 🟢 Pronto para começar
-**Responsável:** Especialista ML
-**Squad:** 2 pessoas (ML Expert + Data Scientist)
-**Horas:** 88h
-**Dependências:** Nenhuma (paralelo com P0-1)
-**Prioridade:** 🟡 IMPORTANTE
+**Impacto de Negócio (PO + Head Finanças):**
+- **ROI:** Explainabilidade ML = trader toma decisões informadas = risco reduzido em execuções
+- **Risco Operacional:** Modelo drift não detectado = execuções ruins sem awareness (mítigado com SHAP + limiares alerta)
+- **Independente de:** P0-1 (pode começar em paralelo)
+- **Estimativa Técnica:** 88h
+- **Equipe:** ML Expert + Data Scientist
+- **Entregável:** Análise SHAP completa + 3 regras drift + limiares alerta
 
 #### Entregas Esperadas:
 - Valores SHAP (top 10 features ordenadas)
@@ -225,12 +235,13 @@ SE Qualquer critério = FAIL:
 
 ### P1-2: Dashboard Ordens Real-Time
 
-**Status:** 🟢 Pronto para começar
-**Responsável:** Eng Sr + Dev-Backend
-**Squad:** 2-3 pessoas
-**Horas:** 40h
-**Dependências:** P0-1 (API REST endpoints)
-**Prioridade:** 🟡 IMPORTANTE
+**Impacto de Negócio (PO + Head Finanças):**
+- **ROI:** Visibilidade tempo real = trader monitora automação = confiança operação
+- **Risco:** CEO/CIO sem visibility = perda de confiança no sistema (mítigado com audit trail completo)
+- **Dependência:** P0-1 (endpoints /orders, /positions)
+- **Estimativa Técnica:** 40h
+- **Equipe:** Eng Sr + 1 Dev-Backend
+- **Entregável:** Dashboard websocket + export CSV/JSON + filtros
 
 #### Entregas Esperadas:
 - Dashboard integrado mostrando todas ordens tempo real
