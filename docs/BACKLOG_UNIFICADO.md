@@ -446,8 +446,336 @@ Valide AGORA:
 
 ---
 
-**Versão Final:** v4.0 Refatorada
+## 📊 ANÁLISE DE DEPENDÊNCIAS
+
+### Camada 1: P0 - Bloqueadores Críticos (SEM paralelo)
+
+```
+P0-1: API REST (160h)
+  └─ Bloqueador para: [P0-2, P1-2 até P1-6, P4-1]
+  
+P0-2: Backtest Validação (88h)
+  └─ Pré-requisito: P0-1 completo
+  └─ Desbloqueia: P4-1 Staging + GATE 2 (capital scale)
+
+P1-1: ML Features (40h)
+  └─ Independente de P0-1 (paralelo OK)
+  └─ Alimenta P0-2 (dados para backtest)
+```
+
+### Camada 2: P1 - Paralelo (Após P0-1 completo)
+
+```
+P1-2, P1-3, P1-4, P1-5, P1-6 (5 tarefas, 40-50h cada)
+  └─ Pré-requisito: P0-1 completo
+  └─ Podem rodar 100% paralelo entre si
+  └─ Não bloqueiam uns aos outros
+```
+
+### Camada 3: P4 - Sequencial (Produção Rígida)
+
+```
+P4-1 Staging (25h) → GATE 4.1 ✓
+  └─ Pré-requisito: GATE 2 PASS
+  
+P4-2 UAT (15h) → GATE 4.2 ✓
+  └─ Pré-requisito: P4-1 AC 8/8
+  
+P4-3 Go-Live (10h) → LIVE ✓✓✓
+  └─ Pré-requisito: P4-2 3 sign-offs (Trader, CIO, CFO)
+```
+
+### Matriz de Dependências (Referência)
+
+| Tarefa | Pré-Req | Desbloqueia | Effort | Status |
+|--------|---------|-------------|--------|--------|
+| P0-1 | Nenhum | P0-2,P1-2-6,P4-1 | 160h |  🟡 Ready |
+| P0-2 | P0-1 ✅ | P4-1 | 88h | 🟡 Ready |
+| P1-1 | Nenhum (paralelo) | P0-2 (dados) | 40h | 🟡 Ready |
+| P1-2 a P1-6 | P0-1 ✅ | Nenhum | 40-50h ea | 🟡 Ready |
+| P4-1 | GATE 2 ✅ | P4-2 | 25h | 🔴 Blocked |
+| P4-2 | P4-1 ✅ | P4-3 | 15h | 🔴 Blocked |
+| P4-3 | P4-2 ✅ | Capital ativo | 10h | 🔴 Blocked |
+
+---
+
+## 📋 GUIA DE TRANSIÇÃO (v3.0 → v4.0)
+
+### ❌ O Que Mudou (Removido)
+- ❌ 100+ referências a datas (27/02, 01-05/03, 10/04, etc)
+- ❌ Timeline narrativa ("Sprint 1", "Sprint 2", "FASE 1-7")
+- ❌ Urgência artificial por calendário
+- ❌ Seções duplicadas (P3, P9-P20 consolidadas)
+
+### ✅ O Que Mudou (Adicionado)
+- ✅ Dependencies matriz (quem bloqueia quem logicamente)
+- ✅ 4 GATEs formalizados com critérios explícitos
+- ✅ Dupla PO + CFO decisão
+- ✅ Diagrama execução visual
+- ✅ Q&A frequentes
+- ✅ Próximos passos por persona
+
+### 3 Passos: Como Começar
+
+**Passo 1: Escolha Seu Papel**
+```
+PO/Eng Sr:  → Leia seção P0 + GATE 1
+CFO/Head: → Leia seção P0-2 + GATE 2
+ML Expert: → Comece P1-1 (paralelo)
+```
+
+**Passo 2: Leia MODELO DE EXECUÇÃO**
+```
+○ Que roda em PARALELO? (P0-1 + P1-1)
+○ Que aguarda dependência? (P1-2-6 espera P0-1)
+○ Que é SEQUENCIAL? (P4: staging → UAT → live)
+```
+
+**Passo 3: Execute Conforme Prioridade**
+```
+P0-1 → GATE 1 ativação
+P1-1 + P0-2 → paralelo após P0-1
+P4-1 → após GATE 2 PASS
+```
+
+### Reglas de Ouro
+
+**PARALELO OK:**
+- P0-1 + P1-1 (zero dependência)
+- P1-2 a P1-6 entre si (todos dependem P0-1 só)
+- P2-x (após GATE 2)
+
+**SEQUENCIAL OBRIGATÓRIO:**
+- P4-1 → P4-2 → P4-3 (produção rígida)
+- P0-1 → P0-2 (validação)
+
+---
+
+## ❓ PERGUNTAS FREQUENTES
+
+**P: Quando começa P0-1?**
+A: HOJE. Não há datas fixas. Comece assim que PO aprove alocação. Não espera calendário.
+
+**P: P0-1 e P1-1 rodam paralelo?**
+A: SIM. Não dependem uma da outra. P1-1 (ML features) rodacontinuamente, P0-1 roda ao mesmo tempo.
+
+**P: E se P0-1 atrasa?**
+A: Tudo atrasa, mas sem surpresa. GATE 1 atrasa, P0-2 atrasa, P4 atrasa. Sem datas = sem pânico, apenas realidade.
+
+**P: Quando é GATE 2?**
+A: Quando P0-2 ✅. Se atrasar semanas, GATE 2 atrasa semanas. Lógico, não data.
+
+**P: P1-2 a P1-6 bloqueiam um ao outro?**
+A: NÃO. Todos dependem P0-1 mas podem rodar 100% paralelo entre si (zero dependência mútua).
+
+**P: E se ML backtest (P0-2) FALHA no GATE 2?**
+A: Replan ML. Volta P1-1, adjust features, tenta novamente. P4-1 não começa até GATE 2 PASS. Isso é correto.
+
+**P: Qual documento devo ler primeiro?**
+A: Leia esta seção de "COMO USAR ESTE DOCUMENTO" até fim (30 minutos). Escolha seu caminho por persona.
+
+**P: Quem aloca recursos?**
+A: Product Owner + CFO. Eles decidem: começa P0-1? Aloca 3 devs? Aprova capital?
+
+---
+
+## 🎯 EXECUÇÃO POR PERSONA
+
+### Product Owner
+```
+✓ Leia P0 até P0-2 (20 min)
+✓ Leia "GATES & DECISÕES" (10 min)
+✓ Decida: começamos P0-1 HOJE?
+  SIM? → Aloque 3 devs, Eng Sr tech lead
+  NÃO? → Identifique bloqueador (falta recurso?)
+✓ Schedule GATE 1 check (5 dias min)
+✓ Prepare GATE 2 board (CFO + você + CTO)
+```
+
+### Eng Sr (Technical Lead)
+```
+✓ Leia P0-1 COMPLETAMENTE (30 min)
+✓ Leia "MODELO DE EXECUÇÃO" (10 min)
+✓ Comece design FastAPI (2h):
+  - 14 endpoints spec
+  - Auth flow (OAuth)
+  - Async queue (RabbitMQ)
+  - Error handling
+  - Retry logic
+✓ Crie skeleton 3 endpoints (1h)
+✓ Aloque 3 dev-backend
+✓ Coordinate com ML Expert (dados P1-1)
+```
+
+### ML Expert
+```
+✓ Comece P1-1 HOJE (não espera P0-1)
+✓ Extraia 24 features (2-3h)
+✓ SHAP analysis (1-2h)
+✓ Drift detection setup (1-2h)
+✓ Prepare dados para P0-2 backtest
+✓ Paralelo: roda sem bloquear ninguém
+```
+
+### CFO / Head Finanças
+```
+✓ Leia P0-2 GATE 2 (15 min extreme)
+✓ Entenda critérios (Sharpe, Win, Drawdown)
+✓ Prepare aprovação capital R$ 50k assinada
+✓ Coordene board para GATE 2 (após P0-2)
+✓ Defina circuit breakers (-5%, -8%)
+✓ Decida: R$ 100k Fase 2 se GATE 2 PASS?
+```
+
+### QA Lead
+```
+✓ Leia "GATES & DECISÕES" (5 min)
+✓ Entenda critérios qualidade
+✓ Prepare teste matrix P0-1 (8 AC)
+✓ Prepare teste coverage >90%
+✓ Coordene com Eng Sr para AC testáveis
+```
+
+---
+
+## 🚀 TIMELINE REALISTA (SEM DATAS FIXAS)
+
+```
+Semana 1 (P0-1 Design):
+  Mon-Weds: Architecture + skeleton 8/14 endpoints
+  Thu: Full endpoints implementação
+  Fri: Testes basics + revisão
+  → GATE 1 CHECK (Friday ou Monday)
+
+Semana 2-3 (P0-2 Validation + P1-x):
+  A partir de P0-1: P0-2 backtest (88h = 2-3 semanas)
+  Paralelo: P1-1 a P1-6 development (5 tarefas, paralelo)
+  → GATE 2 DECISION (fim semana 3-4)
+
+Semana 4-5 (P4 Sequencial):
+  Após GATE 2 PASS: P4-1 staging (25h = 3 dias)
+  Depois P4-1: P4-2 UAT (15h = 2 dias)
+  Depois P4-2: P4-3 Go-Live (10h = 1 dia)
+  → ✓✓✓ LIVE ✓✓✓
+```
+
+**IMPORTANTE:** Sem datas fixas = flexibilidade. Focus em AC, não em data.
+
+---
+
+## 📞 ESCALATION (Emergency Contacts)
+
+| Problema | Escalate Para |
+|----------|---------------|
+| P0-1 blocker técnico | CTO |
+| P0-2 ML off target | ML Expert Lead |
+| GATE 1 FAIL | CTO + PO (replan) |
+| GATE 2 FAIL (capital) | CFO + Board (replan ML) |
+| P1-x paralelo conflict | Eng Sr (coordena) |
+| P4-1 staging falha | DevOps + Eng Sr (critical) |
+| P4-2 trader rejeita | CTO + Product Owner + Trader |
+| P4-3 go-live down | CTO + CEO (SEV-1 incident) |
+
+---
+
+## 📊 P50 - FECHAMENTO PÓS-MERCADO 03/03/2026
+
+**Documento:** [RELATORIO_FECHAMENTO_20260303.md](../outputs/RELATORIO_FECHAMENTO_20260303.md)  
+**Status:** ✅ CONSOLIDADO em BACKLOG P50  
+**Timestamp:** 2026-03-03T16:45:00Z  
+**Responsável:** Head of Trading & Senior Automation Engineer  
+
+### P50-1: Análise de Fechamento Operacional (10 Pontos)
+
+**Conteúdo:** Checklist completo de fechamento pós-mercado do script `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` v1.2.3
+
+**Resultados Principais:**
+1. **Aderência ao Sinal:** ✅ 100% | Sem discrepâncias detectadas
+2. **Slippage & Latência:** ✅ <10s P95 | Dentro do esperado pré-operacional
+3. **Gestão de Drawdown:** ✅ Ativo | 3 circuit breakers configurados (-3%, -5%, -8%)
+4. **Win/Loss:** 📊 ML 62% baseline | Target 65-68% em Sprint 1
+5. **Exposição VWAP:** 🟢 Monitorado | BB_largura normal (4.26%)
+6. **Custo Operacional:** 📈 7.5 pts/dia máximo (0 ops hoje)
+7. **Comportamento Notícias:** ⚠️ Zero críticas | Operação normal
+8. **Concentração Volume:** 📊 Não aplicável (zero operações hoje)
+9. **Análise Logs:** 🟢 Limpo | Zero erros técnicos registrados
+10. **Escalabilidade:** 🟡 Adequada P1 | 10-50 trades/dia viável
+
+**Métricas Consolidadas:**
+- Uptime: 100%
+- Erros: 0
+- Gates validados: 3/3
+- Status: SAUDÁVEL
+
+---
+
+### P50-2: 3 Oportunidades de Evolução Técnica
+
+**OPT-FECHAMENTO-2026-03-001: Sistema de Medição de Latência Real**
+- **Prioridade:** 🔴 ALTA
+- **Descrição:** Instrumentar latência ponta-a-ponta em tempo real
+- **Justificativa:** Detecção antecipada de degradação para Phase 2
+- **AC:** P95 latência <1s após implementação
+- **Sprint:** 1 (dependência zero, alto valor)
+
+**OPT-FECHAMENTO-2026-03-002: Dashboard em Tempo Real (Telnet UI)**
+- **Prioridade:** 🟡 MÉDIA
+- **Descrição:** Terminal UI para monitoramento DURANTE execução (não pós)
+- **Justificativa:** Visibilidade operacional = menor risco trader blind
+- **AC:** UI atualiza com latência <2s
+- **Sprint:** 2 (design primeiro, implementação depois)
+
+**OPT-FECHAMENTO-2026-03-003: Auditororia BDI end-to-end**
+- **Prioridade:** 🟡 MÉDIA
+- **Descrição:** Log estruturado de QUAL lição BDI foi aplicada em cada ciclo
+- **Justificativa:** Rastreabilidade regulatória + auditoria futura + performance
+- **AC:** 100% das lições devem estar documentadas em JSON
+- **Sprint:** 1 (pré-requisito compliance)
+
+---
+
+### P50-3: Recomendações Executivas
+
+**Curto Prazo (This Week):**
+- ✅ Implementar OPT-1 (latência, sem dependências)
+- ✅ Auditar BDI (OPT-3, compliance)
+- ✅ Começar design UI (OPT-2)
+
+**Status:** ✅ Script v1.2.3 operacional e saudável para Phase Beta (10/04)  
+**Próximo Checkpoint:** 05/03 17:00 (GATE 1)
+
+---
+
+## ✅ PRÉ-REQUISITOS ANTES DE COMEÇAR
+
+Valide AGORA:
+
+**Infraestrutura:**
+- [ ] Python 3.11+
+- [ ] Docker (PostgreSQL, Redis, RabbitMQ local)
+- [ ] Git com branches (feature/ pattern)
+- [ ] VS Code + Python/Pylance extensions
+
+**Acesso & Configuração:**
+- [ ] MT5 acesso (paper ou live)
+- [ ] Slack configurado (build notifications)
+- [ ] Jira board (se usar)
+- [ ] AWS/Azure credentials (para P4)
+
+**Conhecimento:**
+- [ ] ARCHITECTURE.md lido (7 camadas)
+- [ ] CODING_STANDARDS.md (SOLID + DDD)
+- [ ] REGRAS_NEGOCIO.md (6 regras críticas P0)
+
+**Alinhamento:**
+- [ ] PO + Eng Sr + CFO alinhados
+- [ ] Personas designadas
+- [ ] GATE 1 agenda preliminar
+
+---
+
+**Versão Final:** v4.0 Refatorada - SINGLE SOURCE OF TRUTH
 **Data Atualização:** 03/03/2026
 **Status:** ✅ Pronto para Execução
-**Próxima Revisão:** Quando GATE 1 PASS ou quando houver mudanças estratégicas
+**Próxima Revisão:** Quando GATE 1 PASS ou mudanças estratégicas
 
