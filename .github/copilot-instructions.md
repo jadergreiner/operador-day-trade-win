@@ -162,10 +162,71 @@ mv c:\repo\projeto\analisa_gap_precificacao.py \
 rm c:\repo\projeto\analisa_gap_precificacao.py
 ```
 
-**Status:** 4 scripts consolidados em 03/03/2026 (ver
-docs/BACKLOG_UNIFICADO.md seção P3 - ANÁLISES DE MERCADO)
+**Status Consolidação (03/03/2026):**
+- ✅ 2 scripts novos movidos: `check_episode_ids.py`, `check_interseção.py`
+- ✅ Documentado em `docs/BACKLOG_UNIFICADO.md` seção P19-4
+- ✅ Padrão reforçado: scripts SEMPRE em `scripts/`, NUNCA na raiz
+- ✅ Padrão reforçado: outputs SEMPRE em `outputs/`, NUNCA na raiz
+- ✅ 6 scripts totais consolidados desde 03/03/2026
 
-## 🤖 Agente Autônomo - Governança e Sincronização
+---
+
+## 📋 CONSOLIDAÇÃO DE DOCUMENTAÇÃO (03/03/2026)
+
+### Tarefas Consolidadas em BACKLOG_UNIFICADO.md (Seção P19)
+
+**Origem:** 5 arquivos foram analisados, suas tarefas consolidadas em documentação unificada
+
+#### Arquivos Consolidados (Seguro deletar após backup):
+
+1. **BOARD_SIGN_OFF_GO_LIVE_27FEV.txt**
+   - Status: ✅ CONSOLIDADO em P19-1
+   - Conteúdo: Aprovação board (6/6 unânime), 31/31 testes passando
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-1
+
+2. **CHECKLIST_EXECUTIVA_US004.md**
+   - Status: ✅ CONSOLIDADO em P19-2
+   - Conteúdo: US-004 alertas (11 arquivos código, 100% completo)
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-2
+
+3. **CHECKLIST_INTEGRACAO_PHASE6.md**
+   - Status: ✅ CONSOLIDADO em P19-3
+   - Conteúdo: 4 integration tasks (BDI, WebSocket, Email, Deploy)
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-3
+
+4. **check_episode_ids.py** (Script)
+   - Status: ✅ MOVIDO para `scripts/check_episode_ids.py`
+   - Conteúdo: Validação episode IDs em SQLite
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-4
+
+5. **check_interseção.py** (Script)
+   - Status: ✅ MOVIDO para `scripts/check_interseção.py`
+   - Conteúdo: Validação interseção rewards ↔ episodes
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-4
+
+#### Processo de Consolidação
+
+**Fase 1 (Análise):** Scripts e documentação foram analisados
+**Fase 2 (Movimentação):** Scripts Python movidos de raiz → `scripts/`
+**Fase 3 (Consolidação):** Tarefas incorporadas em BACKLOG_UNIFICADO.md P19
+**Fase 4 (Limpeza):** Arquivos origem podem ser deletados (backup feito em BACKLOG)
+
+#### Instrução para Próximas Consolidações
+
+Sempre que houver um arquivo ".txt", ".md" ou ".py" na RAIZ que contenha tarefas:
+
+1. **Extrair todas as tarefas** do arquivo
+2. **Criar seção P(N+1)** no BACKLOG_UNIFICADO.md
+3. **Para scripts Python:**
+   - Mover para `scripts/` usando `git mv`
+   - Atualizar `.github/copilot-instructions.md`
+4. **Para outputs/resultados:**
+   - Mover para `outputs/` usando `git mv`
+5. **Depois de consolidado:**
+   - Commitar com mensagem: `docs: Consolidacao P19 - tasks de 5 arquivos movidos para BACKLOG`
+   - Deletar arquivo origem após confirmar consolidação em BACKLOG
+
+---
 
 A partir de 20/02/2026, o projeto implementa um **sistema obrigatório de sincronização de documentação** para manter a integridade do Agente Autônomo.
 

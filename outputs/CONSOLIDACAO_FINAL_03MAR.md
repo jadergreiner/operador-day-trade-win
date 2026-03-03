@@ -67,7 +67,7 @@ Todos os seguintes arquivos foram movidos **da raiz do projeto para `outputs/`**
 2. **R2:** Validar path antes de conectar (15 min)
 3. **R3:** Monitor feedback isolamento (20 min)
 
-**Timeline:** 27/02 09:00-09:45 (antes GATE 1)  
+**Timeline:** 27/02 09:00-09:45 (antes GATE 1)
 **Impacto:** Elimina HALT cíclicos, Uptime → 100%
 
 ---
@@ -202,7 +202,7 @@ Todos os seguintes arquivos foram movidos **da raiz do projeto para `outputs/`**
 
 ---
 
-**Próxima Ação:** Revisar P4-1 + P4-2 com time e iniciar implementação  
-**Escalação:** Nenhuma - tudo conforme padrão documentado  
+**Próxima Ação:** Revisar P4-1 + P4-2 com time e iniciar implementação
+**Escalação:** Nenhuma - tudo conforme padrão documentado
 **Status Geral:** ✅ **CONSOLIDAÇÃO 100% COMPLETA**
 
