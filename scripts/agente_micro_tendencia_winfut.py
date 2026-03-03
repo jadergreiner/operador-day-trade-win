@@ -3763,27 +3763,27 @@ def _persist_cycle(db_path: str, result: CycleResult) -> int:
 
 def _preflight_check_mt5(config) -> bool:
     """Verificação pré-voo: Garante que CLEAR terminal está configurado corretamente.
-    
+
     Returns: True if OK, False if erro crítico.
     """
     print("\n  [PRE-FLIGHT] Verificando configuração de terminal MT5...")
-    
+
     # 1. Verificar path
     if not config.mt5_terminal_path:
         print(f"  ❌ mt5_terminal_path não configurado no .env")
         return False
-    
+
     # 2. Verificar se é CLEAR
     if "CLEAR" not in config.mt5_terminal_path.upper():
         print(f"  ❌ Terminal não é CLEAR: {config.mt5_terminal_path}")
         return False
-    
+
     # 3. Verificar se arquivo existe
     import os
     if not os.path.exists(config.mt5_terminal_path):
         print(f"  ❌ Arquivo não existe: {config.mt5_terminal_path}")
         return False
-    
+
     # 4. Tentar conectar (timeout rápido para pre-flight)
     print(f"  [PRE-FLIGHT] Testando conexão com CLEAR terminal...")
     try:
@@ -3796,13 +3796,13 @@ def _preflight_check_mt5(config) -> bool:
         if not mt5_test.connect():
             print(f"  ❌ Falha ao conectar: Verifique credenciais")
             return False
-        
+
         # Validar isolamento
         if not mt5_test._validate_terminal_isolation():
             print(f"  ❌ Terminal isolamento falhou: Verifique que APENAS CLEAR está aberto")
             mt5_test.disconnect()
             return False
-        
+
         mt5_test.disconnect()
         print(f"  ✅ Terminal CLEAR pronto. Path: {config.mt5_terminal_path}")
         return True
