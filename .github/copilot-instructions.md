@@ -162,7 +162,7 @@ mv c:\repo\projeto\analisa_gap_precificacao.py \
 rm c:\repo\projeto\analisa_gap_precificacao.py
 ```
 
-**Status Consolidação (03/03/2026) - ATUALIZADO P38:**
+**Status Consolidação (03/03/2026+) - ATUALIZADO P40:**
 - ✅ 2 scripts novos movidos: `check_episode_ids.py`, `check_interseção.py` (P19)
 - ✅ 1 script novo movido: `cleanup_dados_automatico.py` (P20)
 - ✅ Documentado em `docs/BACKLOG_UNIFICADO.md` seções P19-4 + P20-1
@@ -170,17 +170,26 @@ rm c:\repo\projeto\analisa_gap_precificacao.py
 - ✅ Padrão reforçado: outputs SEMPRE em `outputs/`, NUNCA na raiz
 - ✅ Padrão reforçado: .bat SEMPRE em `BAT/`, NUNCA na raiz
 - ✅ 25 scripts totais consolidados desde 03/03/2026 (incluindo P38)
-- ✅ 80 documentos consolidados em P19 + P20 + P22 + P23 + P24 + P38
+- ✅ 82 documentos consolidados em P19 + P20 + P22 + P23 + P24 + P38 + P39 + P40
 - ✅ 7 .bat arquivos consolidados em BAT/ (P21 + P22 + P23 + P24 + P32)
 - ✅ CONSOLIDAÇÃO P38 (03/03/2026): 2 scripts novos
    - 2 scripts: `enviar_ordem_mt5.py`, `enviar_ordem_real.py` → `scripts/`
    - 16 tarefas pendentes mapeadas (audit trail, retry logic, tests)
    - 8 AC por script (16 AC total) para implementação
    - Total consolidado: 115 arquivos, 133 tarefas
+- ✅ CONSOLIDAÇÃO P39 (03/03/2026): 2 arquivos paralelos
+   - 1 documento: ENTREGA_PARALELA_10_FEATURES_SQUAD_MULTI.md (1.003 LOC)
+   - 1 script: ENVIAR_ORDEM_AGORA.py → `scripts/enviar_ordem_agora.py`
+   - Total: 2 arquivos consolidados
+- ✅ CONSOLIDAÇÃO P40 (03/03/2026+): 1 especificação técnica TODO-1
+   - 1 documento: ESPECIFICACAO_TODO1_ENTREGA_TECNICA.md (366 LOC) → DELETADO
+   - 7 AC testáveis mapeados (dataset, labels, features, splits, stats, names, tests)
+   - Squad multidisciplinar 4 personas designada (3.75h total)
+   - Total consolidado: 116 arquivos + 148+ tarefas
 
 ---
 
-### 5. 📂 Estrutura de Pasta - Padrão Completo (03/03/2026)
+### 5. 📂 Estrutura de Pasta - Padrão Completo (03/03/2026+)
 
 **OBRIGATÓRIO:** Todos os arquivos do projeto DEVEM seguir a estrutura abaixo:
 

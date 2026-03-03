@@ -9117,7 +9117,7 @@ Week 8:    100% progresso TRACK 3 (GATE 2 = GO)
 
 **Funcionalidades (5 Passos):**
 
-1. **Conectar MT5** 
+1. **Conectar MT5**
    - Inicializa conexão MetaTrader5
    - Verifica credenciais
    - Retorna erro se falha
@@ -9291,4 +9291,101 @@ python scripts/enviar_ordem_agora.py
 
 **Timestamp:** 03/03/2026 (Consolidação P39)
 **Status:** ✅ CONSOLIDAÇÃO P39 COMPLETA - 10 FEATURES OPERACIONALIZADAS
+
+
+---
+
+### Lote 17 - Consolidacao em docs/BACKLOG_UNIFICADO.md (Seccao P40 - TODO-1 Specification)
+
+**Origem:** 1 arquivo documento Markdown - ESPECIFICACAO_TODO1_ENTREGA_TECNICA.md
+**Data Consolidacao:** 03/03/2026+
+
+#### P40-1: TODO-1 Load & Label Specification (ESPECIFICACAO_TODO1_ENTREGA_TECNICA.md)
+
+**Status:** \\\CONSOLIDADO em P40`\ + \\\DELETADO da raiz\\\
+**Arquivo:** ESPECIFICACAO_TODO1_ENTREGA_TECNICA.md (366 LOC)
+**Data Criação:** 24/02/2026
+**Tipo:** Especificação Técnica (Markdown)
+
+**Contexto Consolidado:**
+- **Projeto:** Operador Day Trade WIN v1.2 (Execução Automática)
+- **Task:** Load backtest_optimized_results.json e gerar training dataset com 24 features
+- **Função:** \load_and_label_backtest_results(filepath: str) -> pd.DataFrame\
+- **Squad:** 4 personas (ML Expert, QA, Doc Advocate, Governance) = 3.75h total
+- **Timeline:** 24/02-27/02 desbloqueia Sprint 2 (Grid Search 140h)
+- **Crítica:** P0 - desbloqueia Sprint 2 inteira
+
+**7 Acceptance Criteria Consolidados:**
+
+| AC | Descrição | Critério de Sucesso |
+|----|-----------|-------------------|
+| AC-1 | Dataset >= 1000 amostras | \df.shape[0] >= 1000\ |
+| AC-2 | Labels validados (0/1) | Labels ∈ [0,1], sem NaN, imbalance 40-60% |
+| AC-3 | 24 Features Engineered | \df.shape[1] == 24\, nomes únicos, sem NaN |
+| AC-4 | Train/Val/Test 70/15/15 | Proporcoes exatas, zero leakage, stratified |
+| AC-5 | Estatísticas (mean, std, skew) | mean ∈ [-5,5], std ∈ [0.1,2.0], skew ∈ [-2,2] |
+| AC-6 | Feature Names Persistidos | 24 nomes em feature_names.txt |
+| AC-7 | Quality Gates (7/7 testes) | pytest --cov >= 90%, all PASS |
+
+**Input & Output Consolidados:**
+- INPUT: backtest_optimized_results.json (~1500 trades)
+- OUTPUT-1: training_dataset.csv (1000+ rows, 25 cols)
+- OUTPUT-2: feature_names.txt (24 feature names)
+- OUTPUT-3: stats.json (mean, std, skewness per feature)
+- OUTPUT-4: test_report.html (pytest results, cobertura >= 90%)
+- OUTPUT-5: ml_manifest.json (versionamento + reproducibilidade)
+
+**Squad Multidisciplinar Designada (3.75h):**
+- **ML Expert (Lead):** 2-3h - Implementar load_and_label, validar AC-1 a AC-5, garantir P95 < 500ms
+- **QA Automation:** 1-2h - Escrever 7 testes unitários, validar AC-6 e AC-7
+- **Doc Advocate:** 0.5-1h - Sincronizar docs, SYNC_MANIFEST, lint markdown
+- **Governança:** 0.25h - Monitoramento async, bloqueadores, sign-off final
+
+**Tarefas Desbloqueadas Após TODO-1:**
+- TODO-2: OrdersExecutor Risk Validator (1-2h, Eng Sr)
+- TODO-3: OrdersExecutor Orders Executor (1-2h, Eng Sr)
+- TODO-4: OrdersExecutor Position Monitor (1-2h, Eng Sr)
+- Sprint 2 Grid Search ML (40-50h, ML Expert) - DESBLOQUEIA
+
+**Cronograma Consolidado:**
+- 24/02 EOD: Implementacao + testes LOCAL (realizado)
+- 25/02 09:00: Code review + merge to main (realizado)
+- 25/02 17:00: Validacao final + Go/No-Go (realizado)
+- 26/02 09:00: FINAL SIGN-OFF Sprint 2 start (realizado)
+- 27/02 09:00: Sprint 2 kickoff oficial
+
+**Riscos & Mitigacoes (5 Riscos Identificados):**
+- JSON inválido/faltando: 10% prob → Validar formato antes
+- Dataset < 1000 amostras: 15% prob → Re-executar backtest
+- Class imbalance > 70%: 25% prob → Stratified split
+- Feature correlation alta: 20% prob → PCA/feature selection
+- Performance > 500ms: 5% prob → Otimizar pipeline
+
+**Status da Consolidacao P40:**
+- v CONSOLIDADO: ESPECIFICACAO_TODO1_ENTREGA_TECNICA.md (366 LOC)
+- v 7 AC testáveis mapeados com criterios de sucesso
+- v Squad 4-personas designada (3.75h total)
+- v Input/Output completos especificados
+- v Timeline formalizada (24/02-27/02)
+- v 5 riscos documentados com mitigacoes
+- v Pronto para execucao imediata (desbloqueia Sprint 2)
+
+#### Status Final da Consolidacao P40:
+
+- v 1 arquivo processado (ESPECIFICACAO_TODO1_ENTREGA_TECNICA.md)
+- v Conteúdo 100% consolidado em BACKLOG P40
+- v Arquivo origem sera deletado (padrão P35+)
+- v TODO-1 task completa e rastreável
+
+#### Consolidacao Total Acumulada (POS P40):
+
+- **Total Geral:** 117 arquivos consolidados (25 scripts, 82 docs, 7 .bat, 1 JSON, 1 output, 1 notebook)
+- **Tarefas Rastreadas:** 148+ (P0-P4, P8-P40)
+- **Scripts em Padrao:** 100% (25/25 em scripts/) ✅
+- **.bat em Padrao:** 100% (7/7 em BAT/) ✅
+- **Outputs em Padrao:** 100% (1/1 em outputs/) ✅
+- **Project Root Cleanup:** 100% ✅
+
+**Timestamp:** 03/03/2026+ (Consolidacao P40)
+**Status:** v CONSOLIDACAO P40 COMPLETA - ESPECIFICACAO_TODO1 CONSOLIDATED
 
