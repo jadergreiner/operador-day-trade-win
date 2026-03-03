@@ -5670,6 +5670,195 @@ Co-authored-by: Coordenadora <governanca@operador-day-trade-win.local>
 
 ---
 
+## 📋 Lote 8 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P26 - 03/03/2026)
+
+**Origem:** 1 arquivo pendente analisado (1 documento Markdown)
+**Data Consolidacao:** 03/03/2026
+
+#### P26-1: Deliberação Oficial Task #3 ML-002 (DELIBERACAO_TASK3_ML002_25FEV.md)
+
+**Status:** ✅ CONSOLIDADO em P26-1
+**Arquivo Origem:** DELIBERACAO_TASK3_ML002_25FEV.md (172 LOC)
+**Tipo:** Documento Markdown (Deliberação Formal/Governance)
+**Data Deliberação:** 25/02/2026 23:58 UTC
+
+**Decisão Aprovada:**
+✅ **INTEGRATION-ML-002 APROVADO UNÂNIME** (8/8 personas votaram SIM)
+
+**Votação Detalhada:**
+- Persona 1 (Presidente Operacional): ✅ SIM - Capital OK
+- Persona 2 (Coordenadora Governança): ✅ SIM - Registrada
+- Persona 3 (Eng Sr): ✅ SIM - Tech Lead
+- Persona 4 (ML Expert): ✅ SIM - ML Lead
+- Persona 5 (Risk Officer): ✅ SIM - Risk mandated
+- Persona 6 (Arquiteto Sistemas): ✅ SIM - Architecture OK
+- Persona 8 (Head Doc & Standards): ✅ SIM - Standards OK
+- Persona 12 (QA Automation): ✅ SIM - Tests ready
+- **Total: 8/8 = 100% UNÂNIME** ✅
+
+**Task Aprovada:**
+
+```
+Task ID: INTEGRATION-ML-002
+Nome: Backtest Validation Grid Search
+Status: ✅ APROVADA - EXECUTA AGORA
+Prioridade: 🔴 CRÍTICA (P0 - Gate 2)
+Squad Alocada: ML Expert (Lead) + QA (12) + Doc Advocate (8)
+Duração Estimada: 2-3 horas
+Sprint: 1
+Autorização: IMEDIATA (25/02 23:58 UTC)
+```
+
+**7 Acceptance Criteria Definidos e Testáveis:**
+
+| AC | Critério | Status |
+|----|----------|--------|
+| AC-1 | Grid Search 8 thresholds [1.0-3.0] | ✅ Definido |
+| AC-2 | Métricas: F1, Precision, Recall, ROC-AUC | ✅ Validável |
+| AC-3 | F1 >= 0.65 em best threshold | ✅ Testável |
+| AC-4 | Win Rate >= 60% | ✅ Validável |
+| AC-5 | Threshold ótimo identificado e salvo | ✅ Testável |
+| AC-6 | Relatório JSON: backtest_final_metrics.json | ✅ Verificável |
+| AC-7 | Unit tests > 90% coverage | ✅ Automatizado |
+
+**Squad Confirmada (3 personas):**
+
+1. **Persona 4 (ML Expert)** - LEAD IMPLEMENTAÇÃO
+   - Responsável: Design grid search + execução backtest
+   - Duração: 2.5h
+   - Entrega: backtest_final_metrics.json + código
+
+2. **Persona 12 (QA Automation)** - TESTES + VALIDAÇÃO
+   - Responsável: Testing strategy + validation
+   - Duração: 1.5h
+   - Entrega: 7 unit tests com >90% coverage
+
+3. **Persona 8 (Doc Advocate)** - DOCUMENTAÇÃO + SYNC
+   - Responsável: Synchronization + documentation updates
+   - Duração: 1h
+   - Entrega: SYNC_MANIFEST.json atualizado
+
+**Tech Stack Confirmado:**
+
+- **Linguagem:** Python 3.11+
+- **Bibliotecas:** xgboost, pandas, sklearn, pytest
+- **Dataset:** training_dataset.csv (Task #1 ✅ pré-requisito satisfeito)
+- **Framework:** Grid search com scikit-learn/xgboost
+- **Output:** backtest_final_metrics.json
+- **Database:** SQLite trading.db
+
+**Métricas Esperadas (Target):**
+
+- F1 Score: >= 0.65 (BLOQUEADOR - Gate 2)
+- Precision: > 0.60 (desejável)
+- Recall: > 0.65 (desejável)
+- Win Rate: >= 60% (BLOQUEADOR - escalação Phase 2)
+- AUC-ROC: > 0.70 (opcional)
+
+**Pré-requisitos Validados (Todos ✅):**
+
+- ✅ Dataset pronto (Task #1 completado)
+- ✅ Squad confirmada (8/8 personas votaram)
+- ✅ 7 AC bloqueadores bem-definidos e testáveis
+- ✅ Tech stack disponível
+- ✅ Dependencies installadas
+- ✅ Test framework pronto
+- ✅ Reference implementation (ESPECIFICACAO_TASK3_ML002_BACKTEST_VALIDATION.md - 397 LOC)
+
+**Desbloqueia (Critical Path):**
+
+```
+Após INTEGRATION-ML-002 ✅:
+├─ INTEGRATION-ML-003 (Performance Benchmarking)
+├─ INTEGRATION-ML-004 (Final Validation)
+├─ Phase 2 Go/No-Go decision (capital escalation)
+└─ Sprint 2 inteira (40+ horas liberadas para nova feature)
+```
+
+**Decisão Final:**
+
+🟢 **GO - EXECUTE AGORA**
+
+- ✅ Todos pré-requisitos satisfeitos
+- ✅ Dataset pronto (Task #1 ✅)
+- ✅ Squad confirmada (8/8 personas)
+- ✅ 7 AC bloqueadores definidos e testáveis
+- ✅ Personas votaram UNÂNIME (100%)
+- ✅ Autorização IMEDIATA (25/02 23:58 UTC)
+- ✅ Critical path não bloqueado
+
+**Deliverables Esperados:**
+
+1. backtest_final_metrics.json (relatório grid search com 8 configs)
+2. Unit tests 7/7 passando (coverage > 90%, pytest assertions)
+3. Documentação sincronizada (SYNC_MANIFEST.json atualizado com novo estado)
+4. Code commit assinado com AC validadas
+
+**Próximas Ações Registradas:**
+
+1. ✅ Deliberação registrada neste documento
+2. ⏳ ML Expert inicia implementação (agora)
+3. ⏳ QA Automation prepara testes + asserts
+4. ⏳ Doc Advocate sincroniza docs + SYNC_MANIFEST
+5. ⏳ Status updates em docs/STATUS_ENTREGAS.md
+6. ⏳ Final commit + push após 100% conclusão AC
+
+**Referências Externas:**
+
+- Especificação: ESPECIFICACAO_TASK3_ML002_BACKTEST_VALIDATION.md (397 LOC)
+- Board Decision: BOARD_MULTIDISCIPLINAR.json (8/8 personas)
+- Status Tracking: docs/STATUS_ENTREGAS.md
+- Framework: prompts/executa_task.md
+- Grid Search Reference: Task #2 output (dataset pronto)
+
+**Localização Consolidada:** `docs/BACKLOG_UNIFICADO.md` → P26-1
+
+---
+
+### Status da Consolidação P26:
+
+- ✅ 1 arquivo processado (1 documento Markdown)
+- ✅ Deliberação formal consolidada com todas as 8 votações
+- ✅ 7 AC mapeados e testáveis
+- ✅ Squad Alocada: 3 personas (ML Expert, QA, Doc)
+- ✅ Decisão GO registrada formalmente + autorização IMEDIATA
+
+#### Consolidação Total Acumulada (FINAL - INCLUINDO P26):
+
+| Fase | Arquivos | Scripts | Docs | .bat | JSON | Tarefas | Status |
+|------|----------|---------|------|------|------|---------|--------|
+| P0-P4 | 24 | 3 | 21 | 0 | 0 | 27 | ✅ |
+| P8-P11 | 12 | 0 | 12 | 0 | 0 | 11 | ✅ |
+| P19-P20 | 10 | 0 | 10 | 0 | 0 | 12 | ✅ |
+| P21 Lote 3 | 5 | 1 | 4 | 0 | 0 | 5 | ✅ |
+| P22 Lote 4 | 5 | 3 | 1 | 1 | 0 | 5 | ✅ |
+| P23 Lote 5 | 7 | 1 | 5 | 1 | 0 | 7 | ✅ |
+| P24 Lote 6 | 5 | 1 | 3 | 1 | 0 | 5 | ✅ |
+| P25 Lote 7 | 3 | 1 | 2 | 0 | 0 | 3 | ✅ |
+| **P26 Lote 8** | **1** | **0** | **1** | **0** | **0** | **1** | **✅** |
+| **TOTAL GERAL** | **105** | **21** | **77** | **6** | **1** | **99 TAREFAS** | **✅** |
+
+### ESTATÍSTICAS FINAIS (P26 - CONSOLIDAÇÃO PROGRESSIVA):
+
+**Total Consolidado (Phases 1-7 + P19-P26):**
+- **Arquivos:** 105 (21 scripts, 77 docs, 6 .bat, 1 JSON)
+- **Tarefas Rastreadas:** 99 (P0-P4, P8-P26)
+- **Linhas de Código:** ~7.500+ LOC scripts
+- **Documentação:** ~7.800+ linhas de docs consolidadas
+- **Scripts em Padrão:** 100% (21/21) ✅
+- **.bat em Padrão:** 100% (6/6) ✅
+- **Documentação em Padrão:** 100% (77/77 em BACKLOG) ✅
+- **Project Root Cleanup:** 100% ✅
+- **Dangling References:** 0 ✅
+
+**Status Geral:** 🟢 **BACKLOG CONSOLIDAÇÃO PROGRESSIVA (P26 - LOTE 8)**
+
+**Timestamp:** 03/03/2026 (consolidação Lote 8 - P26)
+**Proprietário:** GitHub Copilot
+**Git Status:** 1 file modified (BACKLOG_UNIFICADO.md), 2 files modified (copilot-instructions.md added P26), 1 file deleted (DELIBERACAO_TASK3_ML002_25FEV.md)
+
+---
+
 ## 📋 Lote 5 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P23 - 03/03/2026)
 
 **Origem:** 7 arquivos pendentes analisados (1 script Python + 5 documentos + 1 arquivo .bat)
