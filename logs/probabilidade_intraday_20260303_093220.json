@@ -1,0 +1,41 @@
+{
+  "timestamp": "2026-03-03T09:32:20.370627",
+  "recomendacao": "NEUTRAL / HOLD",
+  "prob_compra": 0.5488298823263182,
+  "prob_venda": 0.5590760353021045,
+  "retorno_esperado_compra": 0.28814956676531217,
+  "retorno_esperado_venda": 0.22308353556024263,
+  "indicadores": {
+    "rsi": 20.02715546503734,
+    "close": 187790.0,
+    "high": 188105.0,
+    "low": 187760.0,
+    "bb_superior": 194976.9678704954,
+    "bb_media": 190722.0,
+    "bb_inferior": 186467.0321295046,
+    "atr": 698.2142857142857,
+    "atr_pct": 0.3718058926003971
+  },
+  "setup_compra": {
+    "preco_entrada": 187790.0,
+    "target": 189186.42857142858,
+    "stop": 186742.67857142858,
+    "retorno_pct": 0.7436117852007986,
+    "risco_pct": 0.5577088389005913,
+    "risk_reward": 1.3333333333333517,
+    "retorno_esperado": 0.28814956676531217,
+    "pontos_lucro": 1396.4285714285797,
+    "pontos_perda": 1047.3214285714203
+  },
+  "setup_venda": {
+    "preco_entrada": 187790.0,
+    "target": 186393.57142857142,
+    "stop": 188837.32142857142,
+    "retorno_pct": 0.7436117852007986,
+    "risco_pct": 0.5577088389005913,
+    "risk_reward": 1.3333333333333517,
+    "retorno_esperado": 0.22308353556024263,
+    "pontos_lucro": 1396.4285714285797,
+    "pontos_perda": 1047.3214285714203
+  }
+}

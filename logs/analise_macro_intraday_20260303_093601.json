@@ -1,0 +1,94 @@
+{
+  "timestamp": "2026-03-03T09:36:01.189197",
+  "recomendacao": "HOLD / AGUARDAR",
+  "probabilidades": {
+    "prob_compra_original": 0.5686602649743933,
+    "prob_venda_original": 0.5531269205076821,
+    "prob_compra_com_macro": 0.5686602649743933,
+    "prob_venda_com_macro": 0.5531269205076821,
+    "delta_compra": 0.0,
+    "delta_venda": 0.0
+  },
+  "analise_macro": {
+    "sentimento_macro": "NEUTRAL",
+    "pontuacao_compra": 0,
+    "pontuacao_venda": 1,
+    "boost_compra": 0.0,
+    "boost_venda": 0.0,
+    "tendencias": {
+      "mini_indice": {
+        "nome": "Mini Índice",
+        "preco_atual": 187540.0,
+        "media_10d": 192373.0,
+        "tendencia_pct": -2.512306820603723,
+        "momentum": -0.14549579253299139,
+        "volatilidade_retorno": 1.1155365597385847,
+        "dias_positivos": 4,
+        "dias_negativos": 6,
+        "sentimento": "BAIXA"
+      },
+      "ibovespa": {
+        "nome": "Índice Bovespa",
+        "preco_atual": 189307.0,
+        "media_10d": 189223.9,
+        "tendencia_pct": 0.04391622834113757,
+        "momentum": 0.0855620354288722,
+        "volatilidade_retorno": 0.8720744933429571,
+        "dias_positivos": 4,
+        "dias_negativos": 6,
+        "sentimento": "NEUTRO"
+      },
+      "taxa_curta": {
+        "nome": "Taxa DI",
+        "preco_atual": 13.945,
+        "media_10d": 13.86,
+        "tendencia_pct": 0.6132756132756194,
+        "momentum": 0.032600589431474036,
+        "volatilidade_retorno": 0.2340989556858014,
+        "dias_positivos": 3,
+        "dias_negativos": 5,
+        "sentimento": "NEUTRO"
+      }
+    },
+    "correlacoes": {
+      "mini_vs_ibov": 0.9889661548118369,
+      "mini_vs_taxa": -0.6227258682817252,
+      "ibov_vs_taxa": -0.4243392326813852
+    }
+  },
+  "tendencias": {
+    "mini_indice": {
+      "nome": "Mini Índice",
+      "preco_atual": 187540.0,
+      "media_10d": 192373.0,
+      "tendencia_pct": -2.512306820603723,
+      "momentum": -0.14549579253299139,
+      "volatilidade_retorno": 1.1155365597385847,
+      "dias_positivos": 4,
+      "dias_negativos": 6,
+      "sentimento": "BAIXA"
+    },
+    "ibovespa": {
+      "nome": "Índice Bovespa",
+      "preco_atual": 189307.0,
+      "media_10d": 189223.9,
+      "tendencia_pct": 0.04391622834113757,
+      "momentum": 0.0855620354288722,
+      "volatilidade_retorno": 0.8720744933429571,
+      "dias_positivos": 4,
+      "dias_negativos": 6,
+      "sentimento": "NEUTRO"
+    },
+    "taxa_curta": {
+      "nome": "Taxa DI",
+      "preco_atual": 13.945,
+      "media_10d": 13.86,
+      "tendencia_pct": 0.6132756132756194,
+      "momentum": 0.032600589431474036,
+      "volatilidade_retorno": 0.2340989556858014,
+      "dias_positivos": 3,
+      "dias_negativos": 5,
+      "sentimento": "NEUTRO"
+    }
+  }
+}

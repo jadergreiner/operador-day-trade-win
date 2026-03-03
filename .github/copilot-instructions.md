@@ -65,6 +65,106 @@ python -m pymarkdown scan docs/arquivo.md
   - ✓ Espaço branco correto?
   - ✓ Sem caracteres de encoding incorreto?
 
+### 4. 📁 Padrão de Organização de Scripts e Outputs
+
+**OBRIGATÓRIO desde 03/03/2026:**
+
+Todos os scripts de análise, dados e utilitários DEVEM estar organizados
+conforme a estrutura de pastas do projeto:
+
+#### Estrutura Correta:
+
+```
+projeto/
+├── scripts/              ← TODOS scripts .py estão AQUI
+│   ├── analisa_gap_precificacao.py
+│   ├── analisa_risco_compra_gap.py
+│   ├── analise_direcional_mini_indice.py
+│   ├── analise_macro_contexto_mercado.py
+│   ├── backtest_optimizer.py
+│   ├── model_trainer.py
+│   └── ... outros scripts
+│
+├── outputs/              ← TODOS outputs/resultados estão AQUI
+│   ├── backtest_results.json
+│   ├── CONSOLIDACAO_ANALISES_03MAR.md
+│   ├── model_performance.json
+│   └── ... arquivos gerados
+│
+├── src/                  ← CÓDIGO PRINCIPAL (pacotes importáveis)
+│   ├── __init__.py
+│   ├── processors/
+│   ├── models/
+│   └── utils/
+│
+├── tests/                ← TESTES UNITÁRIOS
+│   ├── unit/
+│   ├── integration/
+│   └── e2e/
+│
+└── docs/                 ← DOCUMENTAÇÃO
+    ├── BACKLOG_UNIFICADO.md
+    ├── ARCHITECTURE.md
+    └── ...
+```
+
+#### Regras Obrigatórias:
+
+1. **Localização:**
+   - Novo script Python? → `scripts/`
+   - Resultado/Output? → `outputs/`
+   - Código reutilizável? → `src/`
+   - Teste? → `tests/`
+
+2. **Nomeação:**
+   - Scripts: snake_case (ex: `analisa_gap_precificacao.py`)
+   - Outputs: descritivo_timestamp (ex: `backtest_results_20260303.json`)
+   - Nunca salvar scripts na raiz do projeto
+
+3. **Verificação:**
+   - Antes de criar arquivo: verificar se pasta correta existe
+   - Se não existir: criar com `mkdir -p scripts/` ou `mkdir -p outputs/`
+   - Sempre validar após: arquivo em pasta correta? ✓
+
+4. **Exemplos:**
+
+   ```bash
+   # ❌ ERRADO: Script na raiz
+   c:\repo\projeto\meu_script.py
+
+   # ✅ CORRETO: Script em scripts/
+   c:\repo\projeto\scripts\meu_script.py
+
+   # ❌ ERRADO: Output na raiz
+   c:\repo\projeto\resultado.json
+
+   # ✅ CORRETO: Output em outputs/
+   c:\repo\projeto\outputs\resultado_analysis.json
+   ```
+
+5. **Consolidação de Scripts:**
+   - Quando multiple scripts relacionados: manter em `scripts/`
+   - Documentar relacionamento em `docs/BACKLOG_UNIFICADO.md`
+   - Exemplo: análises de market → all in `scripts/`
+
+#### Migração de Projetos Existentes:
+
+Scripts encontrados fora de `scripts/` devem ser movidos:
+
+```bash
+# Mover script
+mv c:\repo\projeto\analisa_gap_precificacao.py \
+   c:\repo\projeto\scripts\analisa_gap_precificacao.py
+
+# Documentar no BACKLOG_UNIFICADO.md (quando aplicável)
+
+# Deletar arquivo original
+rm c:\repo\projeto\analisa_gap_precificacao.py
+```
+
+**Status:** 4 scripts consolidados em 03/03/2026 (ver
+docs/BACKLOG_UNIFICADO.md seção P3 - ANÁLISES DE MERCADO)
+
 ## 🤖 Agente Autônomo - Governança e Sincronização
 
 A partir de 20/02/2026, o projeto implementa um **sistema obrigatório de sincronização de documentação** para manter a integridade do Agente Autônomo.

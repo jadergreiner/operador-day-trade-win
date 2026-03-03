@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-03-03T09:27:24.791358",
+  "simbolo": "WINJ26",
+  "preco_atual": 188130.0,
+  "recomendacao": "HOLD",
+  "confianca_tecnica": 0.16666666666666666,
+  "gates_ok": true,
+  "sinal_tecnico": "HOLD",
+  "motivo": "Sem multiconfirmação técnica. Aguardando setup melhor.",
+  "indicadores": {
+    "rsi": 20.951704545454547,
+    "macd_histogram": -437.0234891566529,
+    "atr_pct": 0.36353074729772317,
+    "bb_largura_pct": 4.257448200070886,
+    "bb_superior": 195010.20287643318,
+    "bb_media": 190945.5,
+    "bb_inferior": 186880.79712356682
+  },
+  "gates": {
+    "gate1_ok": 

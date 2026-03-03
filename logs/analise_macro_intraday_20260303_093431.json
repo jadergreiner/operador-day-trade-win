@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-03-03T09:34:31.412944",
+  "recomendacao": "HOLD / AGUARDAR",
+  "probabilidades": {
+    "prob_compra_original": 0.5497139639639639,
+    "prob_venda_original": 0.5588108108108107,
+    "prob_compra_com_macro": 0.5497139639639639,
+    "prob_venda_com_macro": 0.5588108108108107,
+    "delta_compra": 0.0,
+    "delta_venda": 0.0
+  },
+  "analise_macro": {
+    "sentimento_macro": "NEUTRAL",
+    "pontuacao_compra": 0,
+    "pontuacao_venda": 1,
+    "boost_compra": 0.0,
+    "boost_venda": 0.0,
+    "tendencias": {
+      "mini_indice": {
+        "nome": "Mini Índice",
+        "preco_atual": 187760.0,
+        "media_10d": 192395.0,
+        "tendencia_pct": -2.409106265755347,
+        "momentum": -0.1340612810984798,
+        "volatilidade_retorno": 1.0914023221008915,
+        "dias_positivos": 4,
+        "dias_negativos": 6,
+        "sentimento": "BAIXA"
+      }
+    },
+    "correlacoes": {}
+  },
+  "tendencias": {
+    "mini_indice": {
+      "nome": "Mini Índice",
+      "preco_atual": 187760.0,
+      "media_10d": 192395.0,
+      "tendencia_pct": -2.409106265755347,
+      "momentum": -0.1340612810984798,
+      "volatilidade_retorno": 1.0914023221008915,
+      "dias_positivos": 4,
+      "dias_negativos": 6,
+      "sentimento": "BAIXA"
+    }
+  }
+}

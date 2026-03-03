@@ -826,7 +826,182 @@ pytest tests/unit/test_persistence_task_critica_0.py -v
 
 ---
 
-## 📋 BACKLOG FUTURO (Sprint 3+)
+## � P3 - ANÁLISES DE MERCADO (Sprint 2+)
+
+### P3-A: Análise de GAP de Precificação
+
+**Status:** 🟢 Scripts Prontos (255 LOC)
+**Responsável:** ML Expert + Quant Analyst
+**Squad:** 2 pessoas
+**Horas:** 24h (implementação + integração)
+**Prioridade:** 🟡 IMPORTANTE
+**Origem:** scripts/analisa_gap_precificacao.py (código produção)
+
+#### Descrição:
+Análise do GAP não precificado - impacto na estratégia de venda.
+Verifica se o GAP de abertura afeta as probabilidades de venda.
+
+#### Funcionalidades Implementadas:
+- Análise histórica de 5 dias para padrões de GAP
+- Cálculo de GAP de abertura (abertura - fechamento anterior)
+- Classificação: GAP de alta, GAP de baixa, sem GAP significativo
+- Análise de precificação (rejeitado, parcial, confirmado)
+- Impacto nas probabilidades de venda (boosts de +/- 10-15pp)
+- Setup de venda customizado com base no GAP
+
+#### Tarefas Pendentes (5):
+
+| # | Tarefa | Estimativa | Blocker |
+|---|--------|-----------|--------|
+| P3-A-1 | Parametrizar thresholds de GAP (arquivo config) | 4h | Não |
+| P3-A-2 | Validar análise com histórico 252 dias | 8h | Sim |
+| P3-A-3 | Integração com sistema de alertas | 6h | Sim |
+| P3-A-4 | Persistência de resultados em DB | 4h | Não |
+| P3-A-5 | Adicionar análise de volume durante GAP | 5h | Não |
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: Thresholds configuráveis em arquivo config.yaml
+- [ ] CA-2: Análise validada para 252 dias históricos
+- [ ] CA-3: Alertas enviados corretamente (email/SMS)
+- [ ] CA-4: Resultados persistidos em PostgreSQL
+- [ ] CA-5: E2E test OK - gapcalc → alert → banco
+
+---
+
+### P3-B: Análise de Risco de Compra (Força Fechamento GAP)
+
+**Status:** 🟢 Scripts Prontos (268 LOC)
+**Responsável:** ML Expert + Quant Analyst
+**Squad:** 2 pessoas
+**Horas:** 28h (implementação + integração)
+**Prioridade:** 🟡 IMPORTANTE
+**Origem:** scripts/analisa_risco_compra_gap.py (código produção)
+
+#### Descrição:
+Análise de risco - força compradora para fechar o GAP.
+Avalia probabilidade de reversão de compra forte durante o dia.
+
+#### Funcionalidades Implementadas:
+- Coleta de candles 5min (6 horas pregão)
+- Cálculo de movimento intraday (máxima, mínima, atual)
+- Análise força compradora vs vendedora
+- Cálculo de volume médio e padrão
+- Dois cenários: fechamento GAP vs continuação queda
+- Análise crítica de risco com probabilidades
+
+#### Tarefas Pendentes (5):
+
+| # | Tarefa | Estimativa | Blocker |
+|---|--------|-----------|--------|
+| P3-B-1 | Implementar cálculo força via volume ponderado | 6h | Não |
+| P3-B-2 | Adicionar análise padrões candles (engulfing) | 8h | Não |
+| P3-B-3 | Criar scoring probabilístico multi-fatores | 8h | Sim |
+| P3-B-4 | Integração com análise macro (P3-D) | 4h | Não |
+| P3-B-5 | Persistência de análise em histórico | 4h | Não |
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: Força compradora calculada com volume ponderado
+- [ ] CA-2: Padrões candles detectados (3+ padrões)
+- [ ] CA-3: Scoring probabilístico implementado (0-100%)
+- [ ] CA-4: Score correlacionado com macro context
+- [ ] CA-5: E2E test - candles → score → decisão
+
+---
+
+### P3-C: Análise Direcional Mini Índice Tempo Real
+
+**Status:** 🟢 Scripts Prontos (369 LOC)
+**Responsável:** Quant Analyst + Dev-Backend
+**Squad:** 3 pessoas
+**Horas:** 40h (persistência + monitoramento + integração)
+**Prioridade:** 🟠 ALTA
+**Origem:** scripts/analise_direcional_mini_indice.py (código produção)
+
+#### Descrição:
+Análise direcional em tempo real com recomendações HOLD/BUY/VENDA.
+Baseado em 62-68% win rate com 3 gates de risco validados.
+
+#### Funcionalidades Implementadas:
+- Conexão automática MT5 com autenticação
+- Coleta 100 candles 5min (500 minutos de histórico)
+- Indicadores: Bollinger Bands, ATR, RSI, MACD
+- 3 Gates de risco:
+  - Gate 1: Capital Adequacy (volatilidade vs margens)
+  - Gate 2: Volatility Band Check (largura banda)
+  - Gate 3: Margin Safety (margens disponíveis ≥50%)
+- Geração sinal técnico com confiança (COMPRA/VENDA/HOLD)
+- Decisão final HEAD FINANCEIRO com justificativa
+- Salvamento resultado JSON com timestamp
+
+#### Tarefas Pendentes (6):
+
+| # | Tarefa | Estimativa | Blocker |
+|---|--------|-----------|--------|
+| P3-C-1 | Persistência de análises em PostgreSQL | 6h | Sim |
+| P3-C-2 | Monitoramento contínuo (loop + interval config) | 5h | Sim |
+| P3-C-3 | Integração com sistema de ordens (auto-trade) | 10h | Sim |
+| P3-C-4 | Dashboard tempo real (WebSocket + React) | 16h | Não |
+| P3-C-5 | Alertas customizados (email/Slack/app) | 6h | Não |
+| P3-C-6 | Backtesting integrado (validar sinais hist) | 8h | Não |
+
+#### Critérios de Aceite (6):
+- [ ] CA-1: Análises persistidas em PostgreSQL com timestamp
+- [ ] CA-2: Loop monitoramento rodando a cada 5min
+- [ ] CA-3: Ordens enviadas automático via P0-1 API
+- [ ] CA-4: Dashboard mostra análises em tempo real
+- [ ] CA-5: Alertas recebidos corretamente
+- [ ] CA-6: Backtest valida 85%+ acurácia sinais
+
+---
+
+### P3-D: Análise Macro - Contexto de Mercado
+
+**Status:** 🟢 Scripts Prontos (473 LOC)
+**Responsável:** Quant Analyst + ML Expert
+**Squad:** 2 pessoas
+**Horas:** 36h (análise avançada + persistência + ML)
+**Prioridade:** 🟠 ALTA
+**Origem:** scripts/analise_macro_contexto_mercado.py (código produção)
+
+#### Descrição:
+Análise macro consolidada - correlações entre Mini Índice, Bovespa,
+Dólar e Curva de Juros. Recalcula probabilidades incorporando
+contexto macroeconômico.
+
+#### Funcionalidades Implementadas:
+- Coleta cotações atuais multi-ativos
+- Análise tendência para cada ativo:
+  - Posição relativa à média 10 dias
+  - Momentum e volatilidade retorno
+  - Sentimento (ALTA/BAIXA/NEUTRO)
+- Cálculo correlações inter-ativos
+- Análise cenários macro consolidados
+- Pontuação compra vs venda (0-6 pontos)
+- Recálculo probabilidades com boosts macro
+- Recomendação final (COMPRA/VENDA/HOLD)
+
+#### Tarefas Pendentes (6):
+
+| # | Tarefa | Estimativa | Blocker |
+|---|--------|-----------|--------|
+| P3-D-1 | Adicionar mais ativos (commodities, cripto) | 6h | Não |
+| P3-D-2 | Implementar ML previsão contexual | 16h | Não |
+| P3-D-3 | Persistência de análises em histórico | 4h | Sim |
+| P3-D-4 | Análise de regimes mercado (3+ regimes) | 10h | Não |
+| P3-D-5 | Dashboard macro tempo real | 12h | Não |
+| P3-D-6 | Integração com sistema risco (validar expo) | 8h | Sim |
+
+#### Critérios de Aceite (6):
+- [ ] CA-1: 10+ ativos coletados e analisados
+- [ ] CA-2: ML model F1 ≥0.70 para previsão contexto
+- [ ] CA-3: Análises persistidas com histórico revisável
+- [ ] CA-4: Regimes identificados com >80% acurácia
+- [ ] CA-5: Dashboard mostra correlações e boosts
+- [ ] CA-6: Risk system integrado e testado
+
+---
+
+## �📋 BACKLOG FUTURO (Sprint 3+)
 
 ### P3-1: S3-1 Preparação Production Deployment
 
