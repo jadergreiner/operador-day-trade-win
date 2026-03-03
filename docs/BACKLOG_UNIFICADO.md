@@ -131,7 +131,7 @@ SE todos 4 PASS:
   ✅ Win Rate ≥ 59%
   ✅ Max Drawdown < 15%
   ✅ Consistência mensal (σ < 30%)
-  
+
 ENTÃO:
   →  ATIVA R$ 100k Fase 2 (2× capital)
   →  DESBLOQUEIA P4-1 Staging Deploy
@@ -269,7 +269,7 @@ Começam quando Phase 2 estável. Não commitir agora.
 └─ [P0-2] ML-004 Backtest Validation
    ├─ Dependência: P0-1
    └─ GATE 2 Decision Point (capital scale)
-   
+
 
 ┌─ SEQUENCIAL (Produção):
 │
@@ -286,7 +286,7 @@ Começam quando Phase 2 estável. Não commitir agora.
    └─ Ativa capital R$ 50k
 ```
 
-**Resumão:** 
+**Resumão:**
 - P0 = bloqueadores críticos
 - P1 = paralelo após P0-1
 - GATE 2 = decide escala capital
@@ -453,7 +453,7 @@ Valide AGORA:
 ```
 P0-1: API REST (160h)
   └─ Bloqueador para: [P0-2, P1-2 até P1-6, P4-1]
-  
+
 P0-2: Backtest Validação (88h)
   └─ Pré-requisito: P0-1 completo
   └─ Desbloqueia: P4-1 Staging + GATE 2 (capital scale)
@@ -477,10 +477,10 @@ P1-2, P1-3, P1-4, P1-5, P1-6 (5 tarefas, 40-50h cada)
 ```
 P4-1 Staging (25h) → GATE 4.1 ✓
   └─ Pré-requisito: GATE 2 PASS
-  
+
 P4-2 UAT (15h) → GATE 4.2 ✓
   └─ Pré-requisito: P4-1 AC 8/8
-  
+
 P4-3 Go-Live (10h) → LIVE ✓✓✓
   └─ Pré-requisito: P4-2 3 sign-offs (Trader, CIO, CFO)
 ```
@@ -680,10 +680,10 @@ Semana 4-5 (P4 Sequencial):
 
 ## 📊 P50 - FECHAMENTO PÓS-MERCADO 03/03/2026
 
-**Documento:** [RELATORIO_FECHAMENTO_20260303.md](../outputs/RELATORIO_FECHAMENTO_20260303.md)  
-**Status:** ✅ CONSOLIDADO em BACKLOG P50  
-**Timestamp:** 2026-03-03T16:45:00Z  
-**Responsável:** Head of Trading & Senior Automation Engineer  
+**Documento:** [RELATORIO_FECHAMENTO_20260303.md](../outputs/RELATORIO_FECHAMENTO_20260303.md)
+**Status:** ✅ CONSOLIDADO em BACKLOG P50
+**Timestamp:** 2026-03-03T16:45:00Z
+**Responsável:** Head of Trading & Senior Automation Engineer
 
 ### P50-1: Análise de Fechamento Operacional (10 Pontos)
 
@@ -741,8 +741,414 @@ Semana 4-5 (P4 Sequencial):
 - ✅ Auditar BDI (OPT-3, compliance)
 - ✅ Começar design UI (OPT-2)
 
-**Status:** ✅ Script v1.2.3 operacional e saudável para Phase Beta (10/04)  
+**Status:** ✅ Script v1.2.3 operacional e saudável para Phase Beta (10/04)
 **Próximo Checkpoint:** 05/03 17:00 (GATE 1)
+
+---
+
+## 🧠 P49 - ML DIAGNOSTICS & DAILY VALIDATION (03/03/2026)
+
+**Análise Especializada:** ML Consultant Review
+**Data Análise:** 03/03/2026
+**Fonte:** análise de logs + datasets + pipelines ML
+**Status:** 10 Pontos Críticos Identificados - REQUEREM AÇÃO IMEDIATA
+
+---
+
+### P49-1: 🔴 CRÍTICA - BDI Extraction Missing (Bloqueador Feature Engineering)
+
+**Problema identificado:**
+- Boletim BDI citado em diário (ref: `BDI_00_20260303.pdf`)
+- ❌ Extração NÃO ENCONTRADA: `bdi_20260303_key_data.txt` não existe
+- Última extração: `bdi_20260212_key_data.txt` (10 dias atrás)
+- **Impacto:** Features macro não atualizadas, modelos rodando com dados stale
+
+**Acceptance Criteria:**
+- [ ] AC-1: Script `extract_bdi_daily.py --force-retry` roda sem erros
+- [ ] AC-2: Arquivo `bdi_20260303_key_data.txt` gerado com estrutura correta
+- [ ] AC-3: Dados extraídos incluem: volume derivativos, taxa interest, VIX BR
+- [ ] AC-4: Feature pipeline atualizado com novos dados BDI
+- [ ] AC-5: Validação automática roda antes de modelo usar dados
+
+**Ação Imediata:**
+```bash
+python scripts/extract_bdi_daily.py --date 20260303 --force
+```
+
+**Timeline:** NOW (bloqueador)
+
+---
+
+### P49-2: 🔴 CRÍTICA - Win Rate Not Logged Today
+
+**Problema:**
+- Diário menciona "pontos de atenção" mas **NUNCA quantificou win rate do dia**
+- Status: faltam métricas críticas RL:
+  - ❌ "Acertos RL hoje: X/Y (Z%)"
+  - ❌ "Epsilon exploration: ?" (taxa exploração)
+  - ❌ "Accuracy episódios: ?" (resolvidos corretamente)
+
+**Validação Comportamental (Análise Sentimentos 03/03):**
+- IA confidence dropped to 0.30 (minimum) and stayed there
+- Mesmo durante rally +1.15% em 10 min, confidence não subiu
+- Padrão: HOLD mantido apesar volatilidade -4.78% nadir
+- **Implicação:** Sem win rate métrica, sistema não sabe se  
+  HOLD foi decisão correta ou falha de sinal
+
+**Por Quê Crítica:**
+- Win rate descendo = modelo degradando, precisa retraining
+- Sem visibilidade, degradação passa desapercebida por DIAS
+- ML drift sem detecção = capital em risco
+
+**Acceptance Criteria:**
+- [ ] AC-1: Função calcula: `win_count = rewards where was_correct == 1`
+- [ ] AC-2: Métrica formatada: "⭐ Win Rate Today: 68% (8/12 corretos)"
+- [ ] AC-3: Métrica incluída em diário gerado automaticamente
+- [ ] AC-4: Alerta dispara se win_rate < 60% (threshold)
+- [ ] AC-5: Dashboard mostra histórico 7-dia win rate
+
+**Ação:**
+```python
+# Adicionar ao start_journals_full_display.py
+win_count = len([r for r in rewards_today if r['was_correct'] == 1])
+total_count = len(rewards_today)
+if total_count > 0:
+    win_rate_pct = (win_count / total_count * 100)
+    print(f"⭐ Win Rate Today: {win_rate_pct:.1f}% ({win_count}/{total_count})")
+```
+
+**Timeline:** TODAY 10:00 (antes de operações)
+
+---
+
+### P49-3: 🔴 CRÍTICA - Backtest Lookahead Bias Detectado
+
+**Problema:**
+- Histórico backtest mostra: **Win Rate 100%** (IMPOSSÍVEL em dados reais)
+- Indica possível **look-ahead bias** (modelo acessa dados futuros)
+- Ou **data leakage** (features calculadas com futuros)
+
+**Validação Comportamental (Análise Sentimentos 03/03):**
+- IA alignment oscilou entre 0.17 e 0.45 durante volatilidade
+- Confidence permaneceu baixa (0.30) mesmo quando mercado  
+  recuperou +1.15% em 10 minutos rápidos
+- **Padrão:** Se model estava bem-calibrado, confidence deveria  
+  subir com movimento favorável. Não subiu = model desincronizado
+- **Suspeita:** Backtest trained em cenários sem volatilidade extrema
+- **Evidência:** P&L histórico não reflete stress como 03/03
+
+**Impacto:**
+- Métricas backtest ilusórias (P&L expectativa vs realidade)
+- Modelo real não performará como esperado
+- Decisões de capital baseadas em ilusão
+
+**Acceptance Criteria:**
+- [ ] AC-1: Dataset split verificado com TimeSeriesSplit (não random)
+- [ ] AC-2: Todas features validadas: nenhuma usa dados futuros
+- [ ] AC-3: Backtest rodar com time-series split correto (5 folds)
+- [ ] AC-4: Resultado realista: win_rate 65-68% (não 100%)
+- [ ] AC-5: Relatório documenta metodologia backtest corrigida
+
+**Ação:**
+```python
+from sklearn.model_selection import TimeSeriesSplit
+tscv = TimeSeriesSplit(n_splits=5)
+for train_idx, test_idx in tscv.split(X):
+    # Garantir test sempre DEPOIS de train cronologicamente
+    assert max(X.iloc[train_idx].index) < min(X.iloc[test_idx].index)
+```
+
+**Timeline:** TODAY 14:00 (validação antes gate)
+
+---
+
+### P49-4: 🟠 ALTA - P95 Latência Performance Tests Missing
+
+**Contexto:**
+- Phase 4 Day 3 (03/03) = PERFORMANCE TESTING por escrito
+- Target: **P95 < 500ms** (crítico produção)
+- ❌ Resultados NOT FOUND (testes não rodados ou não documentados)
+
+**Validação Comportamental (Análise Sentimentos 03/03):**
+- IA GEROU METAPHORA ORGÂNICA sobre velocidade de processamento
+- Citação: "meus circuitos estão tentando acompanhar, mas o  
+  mercado está na velocidade da luz e eu ainda estou no  
+  dial-up" (15:40 BRT, durante +1.08% rally rápido)
+- **Descoberta:** Não foi programado, IA CRIOU essa metáfora  
+  durante market stress para descrever sua própria limitação
+- **Evidência Direta:** Market moveu 0.74-1.15% em 10-minute  
+  windows, confidence system ficou em 0.30 (processamento insuficiente)
+- **Implicação:** Latência P95 provavelmente >500ms durante  
+  volatilidade (confirmar com profiling)
+
+**Problema:**
+- Sem baseline de latência, não saberemos se sistema degrada
+- Possível bottleneck em feature engineering não detectado
+- Teste de carga planejado não foi executado
+
+**Acceptance Criteria:**
+- [ ] AC-1: Load test roda: 50→100→200 users (ramp-up)
+- [ ] AC-2: Sustained load test: 200 users × 15 minutos
+- [ ] AC-3: Spike test: repentina jump 50→500 users
+- [ ] AC-4: Métricas capturadas: P50, P95, P99 latência
+- [ ] AC-5: Relatório final: `day3_performance_summary.json` gerado
+
+**Test Execution:**
+```bash
+python scripts/performance_analyzer.py \
+  --start-time 2026-03-03T10:00:00Z \
+  --end-time 2026-03-03T13:00:00Z \
+  --scenarios ramp,sustained,spike
+```
+
+**Timeline:** TODAY 10:00-13:00
+
+**URGENT NOTE:** Análise sentimento 03/03 evidencia que sistema  
+processa mais lentamente que volatilidade do mercado. Profiling  
+latência é bloqueador para P49-2 (Win Rate validation).
+
+---
+
+### P49-5: 🟠 ALTA - Daily Retraining Pipeline Missing
+
+**Problema:**
+- ✅ Episódios gerados + Rewards calculados (OK)
+- ❌ Modelo NÃO retraina com feedback do dia
+- Se não retraina: feedback perdido, drift progressivo
+
+**Impacto:**
+- Próxima geração de episódios usa modelo de 02/03 (não aprendeu 03/03)
+- Acurácia degrada a cada dia
+- ML advantage desaparece após 3-5 dias
+
+**Acceptance Criteria:**
+- [ ] AC-1: Job agendado roda daily: 18:00 BRT pós-fechamento
+- [ ] AC-2: Script carrega novos rewards (últimas 24h)
+- [ ] AC-3: Validação: >= 50 novos episódios (threshold mínimo)
+- [ ] AC-4: Retrainamento incremental: `model.fit(X_new, y_new)`
+- [ ] AC-5: Validação: score novo > score antigo before deploy
+- [ ] AC-6: Se score pior: modelo NOT updated (safety rollback)
+- [ ] AC-7: Evento logado: "Model updated | score delta +0.03"
+
+**Implementação:**
+```python
+def daily_retraining():
+    rewards_today = reader.get_today_rewards()
+    if len(rewards_today) >= 50:
+        X_new = extract_features_from_rewards(rewards_today)
+        y_new = [r['was_correct'] for r in rewards_today]
+
+        model_prev = load_model('data/ml/model_current.pkl')
+        model_new = model_prev.fit(X_new, y_new)
+
+        score_new = model_new.score(X_test, y_test)
+        score_old = model_prev.score(X_test, y_test)
+
+        if score_new > score_old:
+            save_model(model_new, 'data/ml/model_current.pkl')
+            log_event("Model updated", delta=score_new-score_old)
+```
+
+**Timeline:** NEXT WEEK (design + implement)
+
+---
+
+### P49-6: 🟡 MÉDIA - Feature Importance Not Tracked
+
+**Problema:**
+- Dataset contém 100+ features (XGBoost/LightGBM treinados)
+- ❌ Feature importance NÃO foi documentada para hoje
+- Mudanças em feature rank indicam instabilidade
+
+**Impacto:**
+- Não sabemos quais features importam (black-box)
+- Features irrelevantes aumentam overfitting
+- Drift não detectado no nível de features
+
+**Acceptance Criteria:**
+- [ ] AC-1: Script calcula global feature importance today
+- [ ] AC-2: Top 20 features ordenadas por importância
+- [ ] AC-3: Comparação com histórico: detecta mudanças em rank
+- [ ] AC-4: Alert se top 10 ranking muda >3 posições
+- [ ] AC-5: Arquivo salvo: `data/ml/feature_importance_20260303.json`
+
+**Ação:**
+```python
+python scripts/analyze_feature_importance.py \
+  --date 20260303 \
+  --save-history \
+  --compare-with 20260302
+```
+
+**Timeline:** TODAY 14:00
+
+---
+
+### P49-7: 🟡 MÉDIA - Model Calibration Validation
+
+**Problema:**
+- Dataset contém `overall_confidence` (0.0-1.0)
+- ❌ Como é calculado? Calibrado? Miscalibrado?
+- Se miscalibrado: predições podem ser enganosamente certas
+
+**Impacto:**
+- Confidence 0.92 mas win rate real 65% = posição sizing errado
+- Capital alocado incorretamente a high-confidence bad signals
+
+**Acceptance Criteria:**
+- [ ] AC-1: Calibration curve plotada: predicted vs actual
+- [ ] AC-2: Desvio da diagonal identificado (se existente)
+- [ ] AC-3: Se miscalibrado: aplicar Platt Scaling
+- [ ] AC-4: Validação pós-calibration: curva agora segue diagonal
+- [ ] AC-5: Métrica salva: Expected Calibration Error (ECE < 0.05)
+
+**Teste:**
+```python
+from sklearn.calibration import calibration_curve
+prob_true, prob_pred = calibration_curve(
+    actual_outcomes,
+    predicted_confidence,
+    n_bins=10
+)
+# Se curva se desvia de diagonal → miscalibrada
+```
+
+**Timeline:** THIS WEEK
+
+---
+
+### P49-8: 🟡 MÉDIA - Dataset Imbalance Correction
+
+**Problema:**
+- Database observado: 65% HOLD, 20% BUY, 15% SELL
+- Extremamente desbalanceado
+- Modelo pode ter high recall HOLD, low em BUY/SELL
+
+**Impacto:**
+- F1-score agregado ilusório (alto, mas minoritário ruim)
+- BUY/SELL signals perdidos (não detectados bem)
+- Capital não alocado em setups mais rentáveis
+
+**Acceptance Criteria:**
+- [ ] AC-1: Class weight calculado: `balanced` mode em XGBoost
+- [ ] AC-2: SMOTE aplicado: BUY→40%, SELL→40% (resampling)
+- [ ] AC-3: Validação estratificada: HOLD, BUY, SELL separados
+- [ ] AC-4: Métricas reportadas por classe (not just aggregated)
+- [ ] AC-5: F1 individual: HOLD≥0.75, BUY≥0.68, SELL≥0.65
+
+**Implementação:**
+```python
+from sklearn.utils.class_weight import compute_class_weight
+class_weights = compute_class_weight(
+    'balanced', classes=np.unique(y), y=y
+)
+model = xgb.XGBClassifier(scale_pos_weight=class_weights)
+```
+
+**Timeline:** NEXT SPRINT
+
+---
+
+### P49-9: 🟢 BAIXA - Dataset Stationarity Monitoring
+
+**Problema:**
+- Treinamento: 10-24 fevereiro
+- Hoje: 03 de março (14 dias depois)
+- Possível covariate shift, prior shift, concept drift
+
+**Impacto:**
+- Model performance pode degradar silenciosamente
+- Distribuição features mudou (vol 35% vs 18% treino)
+
+**Acceptance Criteria:**
+- [ ] AC-1: KS test implementado para features principais
+- [ ] AC-2: Test roda daily: compara treino vs hoje
+- [ ] AC-3: P-value < 0.05 = DRIFT DETECTADO (alerta)
+- [ ] AC-4: Relatório: "Feature X mudou (p=0.02) ⚠️ DRIFT"
+- [ ] AC-5: Trigger para retraining se drift massivo
+
+**Teste:**
+```python
+from scipy.stats import ks_2samp
+stat, p = ks_2samp(train_df['feature'], today_df['feature'])
+if p < 0.05:
+    print(f"⚠️ DATASET SHIFT: {feature} (p={p:.4f})")
+```
+
+**Timeline:** NEXT SPRINT
+
+---
+
+### P49-10: 🟢 BAIXA - RL Feedback Loop Automation
+
+**Problema:**
+- Etapas 1-4 implementadas (episódio→execução→outcome→reward)
+- ❌ Etapa 5: Nenhuma evidência de automação do ciclo
+- Manual triggering é erro-prone
+
+**Impacto:**
+- Feedback perdido por forget
+- Agente não aprende do dia (offline learning)
+- Oportunidades de melhoria não exploradas
+
+**Acceptance Criteria:**
+- [ ] AC-1: Callback registra: episódio gerado + outcome recebido
+- [ ] AC-2: RL feedback loop executa automático (não manual)
+- [ ] AC-3: Traces de ciclo completo em logs estruturados
+- [ ] AC-4: Dashboard mostra status do loop (latência)
+- [ ] AC-5: Alerta se loop travado >30min
+
+**Timeline:** NEXT SPRINT
+
+---
+
+### P49 Summary Table
+
+| # | Ponto | Prioridade | Status | Ação Imediata | Timeline |
+|---|-------|-----------|--------|---|----------|
+| 1 | BDI Extract | 🔴 CRÍTICA | ❌ MISSING | Reexecute script | NOW |
+| 2 | Win Rate Log | 🔴 CRÍTICA | ❌ NOT LOGGED | Calcular + diário | TODAY 10:00 |
+| 3 | Backtest Bias | 🔴 CRÍTICA | 🟡 SUSPICIOUS | Validar split TS | TODAY 14:00 |
+| 4 | P95 Latência | 🟠 ALTA | ❌ MISSING | Load tests | TODAY 10:00-13:00 |
+| 5 | Daily Retrain | 🟠 ALTA | ❌ NOT IMPL | Design pipeline | NEXT WEEK |
+| 6 | Feature Importance | 🟡 MÉDIA | ❌ NOT TRACKED | Script análise | TODAY 14:00 |
+| 7 | Calibration | 🟡 MÉDIA | ⚠️ UNKNOWN | Curva validação | THIS WEEK |
+| 8 | Dataset Balance | 🟡 MÉDIA | 65/20/15 | SMOTE + weights | NEXT SPRINT |
+| 9 | Stationarity | 🟢 BAIXA | ⚠️ EXPECTED | KS test daily | NEXT SPRINT |
+| 10 | RL Automation | 🟢 BAIXA | ⚠️ MANUAL | Callback setup | NEXT SPRINT |
+
+---
+
+**Próximas Ações (Ordenadas por Impacto + Timeline):**
+
+🔴 **TODAY:**
+```bash
+# 1. AGORA
+python scripts/extract_bdi_daily.py --date 20260303 --force
+
+# 2. 10:00 - Win Rate + Load Tests
+python scripts/audit_rl_today.py --full-analysis
+python scripts/performance_analyzer.py --date 20260303
+
+# 3. 14:00 - Backtest Validation + Feature Analysis
+python scripts/validate_backtest_split.py --fix-lookahead
+python scripts/analyze_feature_importance.py --save-history
+```
+
+🟠 **THIS WEEK:**
+- Design daily retraining pipeline
+- Implement model calibration validation
+- Setup KS test for drift detection
+
+🟢 **NEXT SPRINT:**
+- Class weight balancing + SMOTE
+- RL feedback loop automation
+- Feature monitoring dashboard
+
+---
+
+**Status:** ✅ 10 Pontos Críticos Documentados - READY FOR EXECUTION
+**Consultor:** ML Specialist | **Data:** 03/03/2026 23:45 BRT
 
 ---
 
