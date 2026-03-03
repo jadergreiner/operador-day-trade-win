@@ -7853,6 +7853,147 @@ Agente (2min) → PredictionTracker.register() → AIReflection (10min)
 
 ---
 
+### Lote 15 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P34 - 03/03/2026)
+
+**Origem:** 1 arquivo pendente analisado (1 script Python de diagnóstico)
+
+#### P34 - Arquivo Consolidado:
+
+1. **diagnostico_trading_db.py** (Script Python/Diagnóstico)
+   - Status: ✅ MOVIDO para `scripts/diagnostico_trading_db.py`
+   - Conteúdo: Diagnóstico disco e banco SQLite (76 LOC + imports)
+   - Tarefas Consolidadas: 9 passos de diagnóstico de infraestrutura
+   - Funcionalidades:
+     - Análise espaço em disco C: (total, usado, livre em GB)
+     - Status disco: CRÍTICO (<1GB) / AVISO (<5GB) / OK
+     - Validação banco simulator.db (existência e tamanho)
+     - Enumeração tabelas SQLite
+     - Contagem registros em rl_correlation_scores
+     - Análise freelist (páginas livres × tamanho página)
+     - Cálculo espaço livre banco em MB
+     - Report estruturado com DISCO + BANCO + ESTADO
+   - Localização: `scripts/diagnostico_trading_db.py`
+   - Padrão: Script Python OBRIGATORIAMENTE em scripts/ folder
+   - Uso: `python scripts/diagnostico_trading_db.py` (roda imediatamente)
+
+#### Status da Consolidação P34:
+
+- ✅ 1 arquivo processado (1 script Python de diagnóstico)
+- ✅ Script MOVIDO para `scripts/` (padrão obrigatório)
+- ✅ Diagnóstico banco documentado em BACKLOG P34
+- ✅ Padrão de organização reforçado com exemplo prático
+- ✅ 113 arquivos totais consolidados (24 scripts, 80 docs, 6 .bat, 1 JSON, 1 output, 1 notebook)
+
+#### Consolidação Total Acumulada (FINAL - P34):
+
+- **Total Geral:** 113 arquivos (24 scripts, 80 docs, 6 .bat, 1 JSON, 1 output, 1 notebook)
+- **Tarefas Rastreadas:** 118 (P0-P4, P8-P34)
+- **Código Consolidado:** ~7.900 LOC scripts
+- **Scripts em Padrão:** 100% (24/24) ✅
+- **.bat em Padrão:** 100% (6/6) ✅
+- **Outputs em Padrão:** 100% (1/1) ✅
+- **Project Root Cleanup:** 100% ✅
+- **Padrão de Pasta:** 100% aderente ✅
+
+**Timestamp:** 03/03/2026 (Consolidação Lote 15 - P34)
+**Status:** ✅ BACKLOG CONSOLIDAÇÃO P34 COMPLETA - 113 ARQUIVOS, 118 TAREFAS
+
+---
+
+### Lote 16 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P35 - 03/03/2026)
+
+**Origem:** 1 arquivo pendente analisado (1 documento Markdown / Especificação Arquitetura)
+
+#### P35 - Arquivo Consolidado:
+
+1. **DIAGRAMA_VISUAL_US004.md** (Documento Markdown / Especificação)
+   - Status: ✅ CONSOLIDADO em BACKLOG P35 + DELETADO de raiz
+   - Conteúdo: Especificação completa US-004 Alertas Automáticos (430 LOC)
+   - Origem: Sistema de alertas em tempo real para oportunidades de trading
+   - Tipo: Architecture + Delivery Specification
+   - Tarefas Consolidadas: 5 componentes principais + testes + métricas
+   
+   **Componentes Especificados (11 arquivos código):**
+   - Detection Engine: Volatilidade + Padrões Técnicos (2 arquivos: detector.py, patterns.py)
+   - Fila Inteligente: Rate Limiting + Deduplication (1 arquivo: smart_queue.py)
+   - Delivery Manager: WebSocket, Email, SMS (1 arquivo: delivery_manager.py)
+   - Auditoria: CVM Compliant Append-only (2 arquivos: audit.py, audit_models.py)
+   - API REST: Histórico de alertas + webhooks (1 arquivo: api_routes.py)
+   - Database: Models + migrations (2 arquivos: models.py, migrations.py)
+   - Utils: Formatters, validators, helpers (2 arquivos: utils.py, validators.py)
+   
+   **Testes Especificados (11 testes: 8 unit + 3 integration):**
+   - Unit: test_detector, test_queue, test_delivery, test_audit, test_api, test_models, test_validators
+   - Integration: test_full_pipeline_volatility, test_email_flow, test_latency
+   - Coverage Target: 100%
+   
+   **Documentação Especificada (4 docs):**
+   - API.md (OpenAPI spec, 150 LOC)
+   - DEPLOYMENT.md (Staging + Production, 120 LOC)
+   - MONITORING.md (Prometheus + Grafana, 100 LOC)
+   - USER_GUIDE.md (Operador manual, 80 LOC)
+   
+   **Métricas de Produção Mapeadas (9 KPIs):**
+   - Latência P95: <30 segundos ✅
+   - Taxa Captura: ≥85% (atual 88%) ✅
+   - False Positives: <10% (atual 12%) ⚠️
+   - Deduplicação: >95% ✅
+   - WebSocket Latência: <500ms ✅
+   - Email Latência: 2-8 segundos ✅
+   - Type Coverage: 100% ✅
+   - Test Pass Rate: 100% ✅
+   - Production Ready: ✅
+   
+   **Análise Financeira Mapeada:**
+   - Investimento: R$ 121k (já pago, P&L positivo)
+   - Capital Operacional BETA: R$ 1-2M (per-trade R$ 50k, máximo/dia R$ 400k)
+   - Cenários Receita: R$ 98M-217M/ano (60-130% ROI)
+   - Payback: <2 dias operação
+   
+   **Timeline de Integração Mapeada (15 dias):**
+   - 20-27 Feb: Review, decisão, code review ✅ COMPLETO
+   - 27 Feb-06 Mar: Integração staging ⏳ EM ANDAMENTO
+   - 06 Mar-13 Mar: Testes staging ⏳ PENDENTE
+   - 13 Mar: 🚀 BETA launch
+   - 13-27 Mar: BETA produção 14 dias
+   - 27 Mar+: Gate review (win rate ≥60%?)
+   
+   **Localização (após consolidação):** 
+   - Original: deletado (consolidado em BACKLOG)
+   - Referência: `docs/BACKLOG_UNIFICADO.md` → P35
+   - Código gerado: Será em `src/application/alerts/` após merge
+   - Testes: Será em `tests/integration/test_us004_*.py` após merge
+
+#### Status da Consolidação P35:
+
+- ✅ 1 arquivo processado (1 documento Markdown de especificação)
+- ✅ Conteúdo consolidado em BACKLOG_UNIFICADO.md P35 (completo)
+- ✅ 11 arquivos código especificados
+- ✅ 11 testes especificados (8+3)
+- ✅ 4 documentos pós-integração mapeados
+- ✅ 9 métricas de produção documentadas
+- ✅ Timeline BETA 13/03 formalizado
+- ✅ Arquivo origem DELETADO após consolidação
+- ✅ 114 arquivos totais consolidados (projeto root limpo)
+
+#### Consolidação Total Acumulada (FINAL - P35):
+
+- **Total Geral:** 114 arquivos (24 scripts, 81 docs, 6 .bat, 1 JSON, 1 output, 1 notebook)
+- **Tarefas Rastreadas:** 123 (P0-P4, P8-P35)
+- **Código Consolidado:** ~7.900 LOC scripts
+- **Scripts em Padrão:** 100% (24/24) ✅
+- **.bat em Padrão:** 100% (6/6) ✅
+- **Outputs em Padrão:** 100% (1/1) ✅
+- **Documentação em Padrão:** 100% (81 docs em BACKLOG) ✅
+- **Project Root Cleanup:** 100% ✅
+- **Padrão de Pasta:** 100% aderente ✅
+- **US-004 Alertas:** Especificação integrada (11 files, 11 tests, 15-day timeline)
+
+**Timestamp:** 03/03/2026 (Consolidação Lote 16 - P35)
+**Status:** ✅ BACKLOG CONSOLIDAÇÃO P35 COMPLETA - 114 ARQUIVOS, 123 TAREFAS
+
+---
+
 
 
 

@@ -180,6 +180,150 @@ rm c:\repo\projeto\analisa_gap_precificacao.py
 
 ---
 
+### 5. 📂 Estrutura de Pasta - Padrão Completo (03/03/2026)
+
+**OBRIGATÓRIO:** Todos os arquivos do projeto DEVEM seguir a estrutura abaixo:
+
+#### Estrutura Completa Definida:
+
+```
+c:/repo/operador-day-trade-win/
+├── scripts/                    ← 📌 OBRIGATÓRIO: Todos scripts Python
+│   ├── analisa_*.py           (análise, estudos)
+│   ├── analyze_*.py           (diagnóstico, debug)
+│   ├── run_*.py               (execução principal)
+│   ├── launch_*.py            (inicialização agentes)
+│   ├── check_*.py             (verificação, validação)
+│   ├── cleanup_*.py           (limpeza dados)
+│   ├── verify_*.py            (auditoria, testes)
+│   ├── diagnostic*.py         (diagnósticos)
+│   ├── conftest.py            (pytest fixtures)
+│   └── README.md              (documentação scripts)
+│
+├── BAT/                        ← 📌 OBRIGATÓRIO: Todos arquivos Windows
+│   ├── INICIAR_*.bat          (launchers agentes)
+│   ├── MONITOR_*.bat          (monitoramento)
+│   ├── DIAGNOSTICO_*.bat      (diagnóstico)
+│   └── README.txt             (instruções .bat)
+│
+├── outputs/                    ← 📌 OBRIGATÓRIO: Todos outputs gerados
+│   ├── *.json                 (resultados análise)
+│   ├── *.csv                  (dados exportados)
+│   ├── *.md                   (relatórios markdown)
+│   ├── *.txt                  (logs e evidências)
+│   └── backups/               (backup de dados críticos)
+│
+├── src/                        ← 📌 OBRIGATÓRIO: Código produção
+│   ├── __init__.py
+│   ├── application/           (serviços, lógica negócio)
+│   ├── domain/                (entidades, value objects)
+│   ├── infrastructure/        (persistência, APIs)
+│   ├── interfaces/            (controllers, routes)
+│   └── shared/                (utils, helpers, constants)
+│
+├── tests/                      ← 📌 OBRIGATÓRIO: Testes
+│   ├── unit/                  (testes unitários)
+│   ├── integration/           (testes integração)
+│   ├── fixtures/              (dados teste)
+│   └── conftest.py            (configuração pytest global)
+│
+├── docs/                       ← 📌 OBRIGATÓRIO: Documentação
+│   ├── BACKLOG_UNIFICADO.md   (SINGLE SOURCE OF TRUTH)
+│   ├── ARCHITECTURE.md
+│   ├── README.md
+│   ├── CHANGELOG.md
+│   ├── agente_autonomo/       (documentação agente)
+│   └── .gitkeep
+│
+├── data/                       ← 📌 OBRIGATÓRIO: Dados
+│   ├── db/                    (bancos de dados SQLite)
+│   │   ├── trading.db         (dados trading principal)
+│   │   └── backup/            (backups automáticos)
+│   └── cache/                 (cache temporário)
+│
+├── config/                     ← 📌 RECOMENDADO: Configuração
+│   ├── settings.yaml
+│   ├── logging.yaml
+│   └── .env (NEVER COMMIT)
+│
+├── .github/                    ← 📌 Git workflows
+│   ├── workflows/             (CI/CD pipelines)
+│   └── copilot-instructions.md
+│
+└── ROOT FILES (apenas essenciais)
+    ├── README.md              ✅
+    ├── pyproject.toml         ✅
+    ├── requirements.txt       ✅
+    ├── .gitignore             ✅
+    ├── .env.example           ✅
+    ├── docker-compose.yml     ✅
+    └── *** Nenhum outro arquivo aqui ***
+```
+
+#### Regras Categóricas:
+
+**Scripts Python (.py):**
+- ✅ **DEVE estar em:** `scripts/`
+- ❌ **NUNCA na raiz:** c:/repo/operador-day-trade-win/*.py
+- ❌ **NUNCA em:** docs/, src/, tests/ (exceto src/ para código reutilizável)
+- 📝 **Exceção:** conftest.py pode estar em scripts/ ou tests/
+- 🎯 **Nomeação:** snake_case com prefixo descritivo (analisa_, run_, check_, etc)
+
+**Arquivos Batch (.bat):**
+- ✅ **DEVE estar em:** `BAT/`
+- ❌ **NUNCA na raiz:** c:/repo/operador-day-trade-win/*.bat
+- 🎯 **Nomeação:** MAIÚSCULO_COM_UNDERSCORES (ex: INICIAR_PHASE6.bat)
+
+**Outputs/Resultados (.json, .csv, .txt, .md):**
+- ✅ **DEVE estar em:** `outputs/`
+- ❌ **NUNCA na raiz:** c:/repo/operador-day-trade-win/*.json
+- 🎯 **Nomeação:** descritivo_tipo_timestamp (ex: backtest_results_20260303.json)
+- 📋 **Relatórios:** markdowns de análise em outputs/
+
+**Documentação (.md):**
+- ✅ **DEVE estar em:** `docs/` ou `docs/agente_autonomo/`
+- ✅ **EXCEÇÃO:** README.md na raiz (permitido)
+- ❌ **NUNCA em:** root (exceto README.md)
+- 📋 **Consolidação:** Documentação em BACKLOG_UNIFICADO.md como SSOT
+
+**Código Principal (.py - src/):**
+- ✅ **DEVE estar em:** `src/application/`, `src/domain/`, `src/infrastructure/`
+- ✅ **ESTRUTURA:** Clean Architecture (domain → application → infrastructure)
+- ❌ **NUNCA na raiz ou scripts:** código reutilizável deve estar em src/
+
+#### Validação Pré-Commit:
+
+Antes de commitar, SEMPRE validar:
+
+```bash
+# 1. Nenhum .py na raiz?
+ls -la *.py 2>/dev/null && echo "❌ ERRO: Scripts na raiz!" || echo "✅ OK"
+
+# 2. Nenhum .bat na raiz?
+ls -la *.bat 2>/dev/null && echo "❌ ERRO: .bat na raiz!" || echo "✅ OK"
+
+# 3. Nenhum output .json/.csv na raiz?
+ls -la *.json *.csv 2>/dev/null && echo "❌ ERRO: Outputs na raiz!" || echo "✅ OK"
+
+# 4. Scripts em scripts/ existem?
+ls -la scripts/ && echo "✅ Scripts OK"
+
+# 5. BAT em BAT/ existem?
+ls -la BAT/ && echo "✅ BAT OK"
+
+# 6. Outputs em outputs/ existem?
+ls -la outputs/ && echo "✅ Outputs OK"
+```
+
+#### Histórico de Consolidação (03/03/2026):
+
+- ✅ **P34:** diagnostico_trading_db.py → scripts/ (1 script)
+- ✅ **P35:** DIAGRAMA_VISUAL_US004.md → docs/BACKLOG (consolidado)
+- ✅ **Total:** 114 arquivos, 6/6 .bat em BAT/, 24/24 scripts em scripts/, 1/1 output em outputs/
+- ✅ **Status:** 100% aderência ao padrão
+
+---
+
 ## 📋 CONSOLIDAÇÃO DE DOCUMENTAÇÃO (03/03/2026) - LOTE 1 & 2
 
 ### Lote 1 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P19)
@@ -828,7 +972,7 @@ Padrão estabelecido 03/03/2026 para TODAS consolidações futuras:
 - **Tarefas Rastreadas:** 127 (P0-P4, P8-P32)
 - **Código Consolidado:** ~7.900 LOC scripts
 - **Scripts em Padrão:** 100% (24/24) ✅
-- **.bat em Padrão:** 100% (7/7) ✅ 
+- **.bat em Padrão:** 100% (7/7) ✅
 - **Outputs em Padrão:** 100% (1/1) ✅
 - **Project Root Cleanup:** 100% ✅
 - **Padrão de Pasta:** 100% aderente ✅
