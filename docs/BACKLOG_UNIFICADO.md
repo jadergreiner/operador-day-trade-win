@@ -4109,7 +4109,7 @@ scripts/
 - 14:00-15:30: Testes unitários
 - 15:30-17:00: Validação integração
 
-#### Critérios de Aceite (10): 
+#### Critérios de Aceite (10):
 - [ ] CA-1: execute_order() complete + 4 unit tests
 - [ ] CA-2: execute_async_queue() complete + 3 unit tests
 - [ ] CA-3: monitor_positions() complete + 3 unit tests
