@@ -6277,6 +6277,180 @@ Conforme instruções consolidadas, **TODOS os scripts Python devem ser salvos e
 
 ---
 
+## 📋 Lote 12 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P30 - 03/03/2026)
+
+**Origem:** 1 arquivo documento pendente analisado
+**Data Consolidacao:** 03/03/2026
+
+#### P30-1: Deployment Checklist - Phase 3 to Phase 4 (DEPLOYMENT_CHECKLIST.md)
+
+**Status:** ✅ CONSOLIDADO em BACKLOG (documento de referência)
+**Arquivo Origem:** DEPLOYMENT_CHECKLIST.md (DOCUMENTO Markdown - 421 linhas)
+**Tipo:** Checklist de Deployment/Validação (Operational Reference)
+**Data Criação:** 26/02/2026
+**Escopo:** Validação pré-deployment + steps de deployment faseado
+
+**Seções Consolidadas:**
+
+**1. Pre-Deployment Validation Checklist (✅ COMPLETO):**
+- Code Quality: 100% type hints, Clean Arch, SOLID, sem secrets, docstrings
+- Testing: 40+ unit, 23+ integration, 6 performance, 3 security, 20+ E2E = 63+ tests (100% pass)
+- Security: JWT, token expiry, bcrypt, blacklist, RBAC, TLS/SSL, SQL injection protection, XSS protection
+- Documentation: README, ARCHITECTURE_GUIDE_PHASE3, API docs, WebSocket guide, Backtesting guide
+- Performance: OAuth <100ms, WebSocket <50ms, XGBoost <500ms, Throughput 500K+ msg/s, Concurrent 500+, Memory <100MB
+- Infrastructure: GitHub Actions workflow, tests on push, artifacts, reports
+
+**2. Deployment Package Contents (📦 8 Components):**
+
+**Production Code (8 files - ~1.185 LOC):**
+- application/token_manager_ati2.py (120 LOC) ✅
+- application/oauth_schemas_ati2.py (60 LOC) ✅
+- application/auth_endpoints_ati2.py (140 LOC) ✅
+- application/websocket_auth_integration.py (175 LOC) ✅
+- application/websocket_endpoints_ati_integration.py (380 LOC) ✅
+- ml/backtest_server_xgboost.py (320 LOC) ✅
+- ml/dataset_loader_ati8.py (100 LOC) ✅
+- ml/model_trainer_ati8.py (150 LOC) ✅
+- ml/train_xgboost_ati8.py (60 LOC) ✅
+
+**Test Code (6 files - ~1.340 LOC):**
+- tests/unit/test_ati2_auth_endpoints.py (180 LOC) ✅
+- tests/unit/test_ati8_xgboost_training.py (160 LOC) ✅
+- tests/unit/test_backtest_server.py (350 LOC) ✅
+- tests/integration/test_websocket_oauth_integration.py (280 LOC) ✅
+- tests/integration/test_websocket_authenticated_endpoints.py (370 LOC) ✅
+- tests/performance/test_websocket_load.py (140 LOC) ✅
+
+**Configuration & Documentation:**
+- .github/workflows/tests.yml (CI/CD) ✅
+- .env.example (Template) ✅
+- requirements.txt (Updated) ✅
+- ARCHITECTURE_GUIDE_PHASE3.md (500 LOC) ✅
+- INTEGRACAO_P5_2_P4_4_RESULTADOS.md (250 LOC) ✅
+- PHASE3_STATUS_26FEV_SESSION.md (200 LOC) ✅
+- README.md (Updated) ✅
+
+**3. Deployment Steps (7-Step Process):**
+
+| Step | Data | Atividade | Status |
+|------|------|-----------|--------|
+| Step 1 | 01/03 | Setup staging environment (RG, App Service B2) | 🟡 PENDING |
+| Step 2 | 02/03 | Deploy code (docker ou zip) | 🟡 PENDING |
+| Step 3 | 02/03 | Run integration tests (63+, must pass) | 🟡 PENDING |
+| Step 4 | 03/03 | Load testing (locust, >500K msg/s target) | 🟡 PENDING |
+| Step 5 | 04-05/03 | Staging validation (health check, OAuth, backtest, WebSocket) | 🟡 PENDING |
+| Step 6 | 06-10/03 | UAT sign-off (trader + CIO/CFO) | 🟡 PENDING |
+| Step 7 | 10/03 | Production deployment (RG, App Service P1V2, monitoring) | 🟡 PENDING |
+
+**4. Monitoring & Alerting:**
+- Availability: >99.5% target, alert <99.0%
+- Response Time: OAuth <100ms, WebSocket <50ms, Prediction <500ms, alert >1000ms
+- Throughput: 500K+ msg/s, alert <500 msg/s
+- Error Rate: <0.1% target, alert >1.0%
+- Resource: CPU <70%, Memory <80%, alert >85%
+
+**5. Security Pre-Flight (11 checks):**
+- [x] JWT HS256 secret rotated
+- [x] Passwords bcrypt hashed
+- [x] HTTPS/TLS enforced
+- [x] CORS configured
+- [x] Rate limiting enabled
+- [x] Input validation everywhere
+- [x] SQL injection protected
+- [x] XSS protected
+- [x] CSRF tokens (if needed)
+- [x] Security headers set
+- [x] Logging/monitoring active
+
+**6. Support & Escalation:**
+- On-call schedule: Week 1-2 (10-24/03) - Eng Sr + ML Expert, escalation to CTO → Head of Ops
+- Runbooks: Service down, High latency, Failed predictions, WebSocket disconnections, Auth failures
+
+**Aceita Critérios (Checklist Reference - Info Purpose):**
+- [ ] AC1: All 63+ tests passing before deployment
+- [ ] AC2: Performance metrics validated (latency, throughput)
+- [ ] AC3: Security checks all green
+- [ ] AC4: Staging UAT passed (trader + CIO/CFO)
+- [ ] AC5: Runbooks documented + team trained
+- [ ] AC6: Go-live authorization signed (all personas)
+- [ ] AC7: Monitoring/alerting configured + tested
+
+**Tarefas Relacionadas (Execution Checklist):**
+- [ ] T1: Execute Step 1 - Staging environment setup (01/03)
+- [ ] T2: Execute Step 2 - Code deployment (02/03)
+- [ ] T3: Execute Step 3 - Integration testing (02/03)
+- [ ] T4: Execute Step 4 - Load testing (03/03)
+- [ ] T5: Execute Step 5 - Staging validation (04-05/03)
+- [ ] T6: Execute Step 6 - UAT sign-off (06-10/03)
+- [ ] T7: Execute Step 7 - Production deployment (10/03)
+- [ ] T8: Monitor metrics post-deployment (weekly)
+- [ ] T9: On-call support Week 1-2 (Eng Sr + ML Expert)
+- [ ] T10: Post-mortem on any incidents
+
+**Padrão de Organização de Documentação (🎯 OBS IMPORTANTE):**
+
+Conforme instruções consolidadas, **TODOS os documentos de referência devem ser consolidados em `docs/BACKLOG_UNIFICADO.md`**:
+- Checklists: deployment, testing, validation
+- Guias operacionais: runbooks, procedures
+- Relatórios de status: fase tracking, milestones
+- Documentação técnica: arquitetura, design
+- Mas manter em `docs/` para acesso rápido se complexo+extenso
+
+**Localização Consolidada:** `docs/BACKLOG_UNIFICADO.md` → P30-1 (referência única)
+**Arquivo suportando:** Pode ser mantido em `docs/DEPLOYMENT_CHECKLIST.md` para acesso prático
+
+**Status:** ✅ DOCUMENTADO em BACKLOG (serve como reference guide)
+
+---
+
+### Status da Consolidação P30:
+
+- ✅ 1 arquivo processado (1 documento Markdown de checklist/deployment)
+- ✅ Conteúdo consolidado em BACKLOG_UNIFICADO.md P30-1
+- ✅ Arquivo removido da raiz (documentação deve estar em docs/ ou consolidada)
+- ✅ 10 tarefas mapeadas (7 deployment steps + 3 support/monitoring)
+- ✅ Padrão de organização clarificado (documentação importante em docs/ + consolidada em BACKLOG)
+
+#### Consolidação Total Acumulada (INCLUINDO P30):
+
+| Fase | Arquivos | Scripts | Docs | .bat | JSON | Outputs | Tarefas | Status |
+|------|----------|---------|------|------|------|---------|---------|--------|
+| P0-P4 | 24 | 3 | 21 | 0 | 0 | 0 | 27 | ✅ |
+| P8-P11 | 12 | 0 | 12 | 0 | 0 | 0 | 11 | ✅ |
+| P19-P20 | 10 | 0 | 10 | 0 | 0 | 0 | 12 | ✅ |
+| P21-P22 | 10 | 4 | 5 | 2 | 0 | 0 | 10 | ✅ |
+| P23 Lote 5 | 7 | 1 | 5 | 1 | 0 | 0 | 7 | ✅ |
+| P24 Lote 6 | 5 | 1 | 3 | 1 | 0 | 0 | 5 | ✅ |
+| P25 Lote 7 | 3 | 1 | 2 | 0 | 0 | 0 | 3 | ✅ |
+| P26 Lote 8 | 1 | 0 | 1 | 0 | 0 | 0 | 1 | ✅ |
+| P27 Lote 9 | 1 | 0 | 1 | 0 | 0 | 0 | 3 | ✅ |
+| P28 Lote 10 | 1 | 0 | 0 | 0 | 0 | 1 | 1 | ✅ |
+| P29 Lote 11 | 1 | 1 | 0 | 0 | 0 | 0 | 1 | ✅ |
+| **P30 Lote 12** | **0** | **0** | **1** | **0** | **0** | **0** | **10** | **✅** |
+| **TOTAL GERAL** | **109** | **22** | **79** | **6** | **1** | **1** | **114 TAREFAS** | **✅** |
+
+### ESTATÍSTICAS FINAIS (P30 - CONSOLIDAÇÃO COMPLETA):
+
+**Total Consolidado (Phases 1-7 + P19-P30):**
+- **Arquivos:** 109 (22 scripts, 79 docs, 6 .bat, 1 JSON, 1 output)
+- **Tarefas Rastreadas:** 114 (P0-P4, P8-P30)
+- **Linhas de Código:** ~7.700+ LOC scripts
+- **Linhas de Documentação:** ~9.200+ (incluindo P30 deployment + tests)
+- **Scripts em Padrão:** 100% (22/22 em scripts/) ✅
+- **.bat em Padrão:** 100% (6/6 em BAT/) ✅
+- **Outputs em Padrão:** 100% (1/1 em outputs/) ✅
+- **Documentação em Padrão:** 100% (79/79 em docs/ + BACKLOG) ✅
+- **Project Root Cleanup:** 100% ✅
+- **Padrão de Pastas:** 100% aderente ✅
+
+**Status Geral:** 🟢 **BACKLOG CONSOLIDAÇÃO FINAL P30 COMPLETA**
+
+**Timestamp:** 03/03/2026 (consolidação Lote 12 - P30)
+**Proprietário:** GitHub Copilot
+**Git Status:** 1 file modified (BACKLOG_UNIFICADO.md), 1 file deleted (DEPLOYMENT_CHECKLIST.md), 1 file updated (copilot-instructions.md)
+
+---
+
 ## 📋 Lote 5 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P23 - 03/03/2026)
 
 **Origem:** 7 arquivos pendentes analisados (1 script Python + 5 documentos + 1 arquivo .bat)
