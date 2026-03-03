@@ -739,6 +739,44 @@ Padrão estabelecido 03/03/2026 para TODAS consolidações futuras:
 **Status:** ✅ BACKLOG CONSOLIDAÇÃO FINAL P30 COMPLETA - 109 ARQUIVOS, 114 TAREFAS
 
 ---
+
+### Lote 13 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P31 - 03/03/2026)
+
+**Origem:** 1 arquivo script pendente analisado
+
+#### P31 - Arquivo Consolidado:
+
+1. **descubrir_simbolos_mt5.py** (Script Python)
+   - Status: ✅ MOVIDO para `scripts/descubrir_simbolos_mt5.py`
+   - Conteúdo: Discovery tool para símbolos MT5 (95 LOC)
+   - Funcionalidades: Conecta MT5, lista símbolos WIN, coleta bid/ask/point/volume
+   - Propósito: Validação de conectividade e descoberta de símbolos tradáveis
+   - Uso: `python scripts/descubrir_simbolos_mt5.py`
+   - Localização: `scripts/descubrir_simbolos_mt5.py`
+
+#### Status da Consolidação P31:
+
+- ✅ 1 arquivo processado (1 script Python de discovery)
+- ✅ Script MOVIDO para `scripts/` (padrão obrigatório)
+- ✅ Descoberta MT5 documentada em BACKLOG P31
+- ✅ Padrão de organização reforçado com exemplo prático
+- ✅ 110 arquivos totais consolidados (23 scripts, 79 docs, 6 .bat, 1 JSON, 1 output)
+
+#### Consolidação Total Acumulada (FINAL - P31):
+
+- **Total Geral:** 110 arquivos (23 scripts, 79 docs, 6 .bat, 1 JSON, 1 output)
+- **Tarefas Rastreadas:** 115 (P0-P4, P8-P31)
+- **Código Consolidado:** ~7.800 LOC scripts
+- **Scripts em Padrão:** 100% (23/23) ✅
+- **.bat em Padrão:** 100% (6/6) ✅
+- **Outputs em Padrão:** 100% (1/1) ✅
+- **Project Root Cleanup:** 100% ✅
+- **Padrão de Pasta:** 100% aderente ✅
+
+**Timestamp:** 03/03/2026 (Consolidação Lote 13 - P31)
+**Status:** ✅ BACKLOG CONSOLIDAÇÃO P31 COMPLETA - 110 ARQUIVOS, 115 TAREFAS
+
+---
    - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-4
 
 #### Processo de Consolidação

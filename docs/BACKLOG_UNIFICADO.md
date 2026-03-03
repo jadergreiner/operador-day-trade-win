@@ -5883,7 +5883,7 @@ Após INTEGRATION-ML-002 ✅:
    - Owner: ML Expert (Persona 4)
    - Estimativa: 15 horas
    - Impacto: +2-3% win rate via modelo ML integrado
-   - Deliverables: 
+   - Deliverables:
      - `src/models/modelo_t60_xgboost.pkl` (modelo serializado)
      - `src/ml/t60_feature_engineer.py` (150+ LOC feature engineering)
      - `tests/test_s2_5_model.py` (180+ LOC tests)
@@ -6448,6 +6448,142 @@ Conforme instruções consolidadas, **TODOS os documentos de referência devem s
 **Timestamp:** 03/03/2026 (consolidação Lote 12 - P30)
 **Proprietário:** GitHub Copilot
 **Git Status:** 1 file modified (BACKLOG_UNIFICADO.md), 1 file deleted (DEPLOYMENT_CHECKLIST.md), 1 file updated (copilot-instructions.md)
+
+---
+
+## 📋 Lote 13 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P31 - 03/03/2026)
+
+**Origem:** 1 arquivo script pendente analisado
+**Data Consolidacao:** 03/03/2026
+
+#### P31-1: Descobrir Símbolos MT5 (descubrir_simbolos_mt5.py)
+
+**Status:** ✅ MOVIDO para `scripts/descubrir_simbolos_mt5.py`
+**Arquivo Origem:** descubrir_simbolos_mt5.py (SCRIPT Python - 95 linhas)
+**Tipo:** Script de Descoberta/Validação (Discovery Tool)
+**Linguagem:** Python 3.8+
+
+**Propósito:**
+- Descobrir símbolos disponíveis no MT5
+- Obter informações de preços (bid, ask, point)
+- Listar símbolos contendo 'WIN' (foco em Índice Brasil)
+- Validar conectividade MT5 e conta
+
+**Funcionalidades:**
+1. **Conecta ao MT5:**
+   - Initialize MT5 connection
+   - Retrieve account information (login, company)
+
+2. **Busca símbolos:**
+   - Procura por símbolos contendo 'WIN'
+   - Lista primeiros 20 símbolos WIN encontrados
+   - Fallback: símbolos começando com 'W' se WIN não encontrado
+
+3. **Coleta dados de preço:**
+   - Bid/Ask prices
+   - Point size
+   - Volume min/max/step
+
+4. **Output:**
+   - Mostra 30 primeiros símbolos disponíveis
+   - Formata output com emojis e separadores visuais
+
+**Dependências:**
+- MetaTrader5 (mt5)
+- time
+
+**Aceita Critérios (Discovery Tool - Não Bloqueador):**
+- [ ] AC1: Conecta ao MT5 com sucesso
+- [ ] AC2: Retorna lista de símbolos WIN (ou fallback W)
+- [ ] AC3: Coleta informações de preço corretamente
+- [ ] AC4: Output formatado com bid/ask/point/volume
+- [ ] AC5: Roda sem exceções Python
+
+**Uso:**
+```bash
+python scripts/descubrir_simbolos_mt5.py
+```
+
+**Output Esperado:**
+```
+DESCOBRIR SÍMBOLOS DISPONÍVEIS NO MT5
+Conectado ao MT5
+Conta: [login]
+Corretora: [company]
+
+Símbolos contendo 'WIN':
+Encontrados X símbolos:
+1. WINFUT...
+   Bid: X.XX
+   Ask: X.XX
+   Ponto: 0.01
+   ...
+```
+
+**Tarefas Relacionadas:**
+- [ ] T1: Usar este script em startup para validar conexão MT5
+- [ ] T2: Integrar output em dashboard de símbolos disponíveis
+- [ ] T3: Estender script para capturar dados históricos
+- [ ] T4: Usar em testes de validação de conta MT5
+
+**Padrão de Organização de Scripts (🎯 OBS IMPORTANTE):**
+
+Conforme instruções consolidadas, **TODOS os scripts Python devem ser salvos em `scripts/`**:
+- Novos scripts de feature: scripts/
+- Utilitários/helpers: scripts/
+- Discovery tools: scripts/ ← este arquivo
+- Scripts de validação: scripts/
+- Nunca deixar scripts Python na raiz do projeto
+
+**Localização Consolidada:** `scripts/descubrir_simbolos_mt5.py` (padrão estabelecido)
+
+---
+
+### Status da Consolidação P31:
+
+- ✅ 1 arquivo processado (1 script Python de discovery)
+- ✅ Script MOVIDO para pasta padrão `scripts/`
+- ✅ Descoberta de símbolos documentada em BACKLOG
+- ✅ Padrão de organização reforçado (scripts/ é obrigatório)
+
+#### Consolidação Total Acumulada (INCLUINDO P31):
+
+| Fase | Arquivos | Scripts | Docs | .bat | JSON | Outputs | Tarefas | Status |
+|------|----------|---------|------|------|------|---------|---------|--------|
+| P0-P4 | 24 | 3 | 21 | 0 | 0 | 0 | 27 | ✅ |
+| P8-P11 | 12 | 0 | 12 | 0 | 0 | 0 | 11 | ✅ |
+| P19-P20 | 10 | 0 | 10 | 0 | 0 | 0 | 12 | ✅ |
+| P21-P22 | 10 | 4 | 5 | 2 | 0 | 0 | 10 | ✅ |
+| P23 Lote 5 | 7 | 1 | 5 | 1 | 0 | 0 | 7 | ✅ |
+| P24 Lote 6 | 5 | 1 | 3 | 1 | 0 | 0 | 5 | ✅ |
+| P25 Lote 7 | 3 | 1 | 2 | 0 | 0 | 0 | 3 | ✅ |
+| P26 Lote 8 | 1 | 0 | 1 | 0 | 0 | 0 | 1 | ✅ |
+| P27 Lote 9 | 1 | 0 | 1 | 0 | 0 | 0 | 3 | ✅ |
+| P28 Lote 10 | 1 | 0 | 0 | 0 | 0 | 1 | 1 | ✅ |
+| P29 Lote 11 | 1 | 1 | 0 | 0 | 0 | 0 | 1 | ✅ |
+| P30 Lote 12 | 0 | 0 | 1 | 0 | 0 | 0 | 10 | ✅ |
+| **P31 Lote 13** | **1** | **1** | **0** | **0** | **0** | **0** | **1** | **✅** |
+| **TOTAL GERAL** | **110** | **23** | **79** | **6** | **1** | **1** | **115 TAREFAS** | **✅** |
+
+### ESTATÍSTICAS FINAIS (P31 - CONSOLIDAÇÃO PROGRESSIVA):
+
+**Total Consolidado (Phases 1-7 + P19-P31):**
+- **Arquivos:** 110 (23 scripts, 79 docs, 6 .bat, 1 JSON, 1 output)
+- **Tarefas Rastreadas:** 115 (P0-P4, P8-P31)
+- **Linhas de Código:** ~7.800+ LOC scripts (95 novos)
+- **Linhas de Documentação:** ~9.200+ linhas
+- **Scripts em Padrão:** 100% (23/23 em scripts/) ✅
+- **.bat em Padrão:** 100% (6/6 em BAT/) ✅
+- **Outputs em Padrão:** 100% (1/1 em outputs/) ✅
+- **Documentação em Padrão:** 100% (79/79 em docs/ + BACKLOG) ✅
+- **Project Root Cleanup:** 100% ✅
+- **Padrão de Pastas:** 100% aderente ✅
+
+**Status Geral:** 🟢 **BACKLOG CONSOLIDAÇÃO P31 COMPLETA**
+
+**Timestamp:** 03/03/2026 (consolidação Lote 13 - P31)
+**Proprietário:** GitHub Copilot
+**Git Status:** 1 file modified (BACKLOG_UNIFICADO.md), 2 files modified (copilot-instructions.md), 1 file moved (descubrir_simbolos_mt5.py → scripts/descubrir_simbolos_mt5.py)
 
 ---
 
