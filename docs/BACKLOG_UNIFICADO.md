@@ -6821,7 +6821,7 @@ Conforme instruções consolidadas, **TODOS os scripts Python devem ser salvos e
 - Commit Message (SEM ACENTOS):
   ```
   feat: Email configuration para alertas automaticos - SMTP + template + retry logic + tests
-  
+
   - SMTP configuration with env vars (no hardcoded credentials)
   - HTML Jinja2 template for alert delivery
   - Retry mechanism with exponential backoff (3x, 1s-2s-4s)
@@ -6855,7 +6855,7 @@ Conforme instruções consolidadas, **TODOS os scripts Python devem ser salvos e
 01:35-01:50 ... PHASE 5 (Code Review & Merge)
 ```
 
-**Blocker Status:** 
+**Blocker Status:**
 - ✅ Email Config = BLOCKER DESBLOQUEIA Beta 13/03
 - ✅ Quando AC 1-5 passarem: Beta pode lançar
 
@@ -8297,16 +8297,16 @@ Agente (2min) → PredictionTracker.register() → AIReflection (10min)
    - Conteúdo: Encerramento de reunião virtual multidisciplinar (347 LOC)
    - Data: 27/02/2026 14:45-15:40 BRT (55 minutos)
    - Status da Reunião: ✅ ENCERRADA com decisões aprovadas
-   
+
    **Decisões Principais (3 BLOCKERs):**
    - ✅ BLOCKER #1: S1-4-LOGGING Implementation aprovado
    - ✅ BLOCKER #2: Persistence Architecture consolidada (trading.db como SOURCE_OF_TRUTH)
    - 🔄 CONTINGENTE: Data Engineer Diagnosis (4 questões críticas)
-   
+
    **Artefatos Gerados:** 15 documentos (diagnóstico, material apresentação, slides)
    **Critical Actions:** 5 tasks com timeline e responsáveis definidos
    **Próxima Reunião:** 28/02/2026 09:00 BRT
-   
+
    - Localização: docs/BACKLOG_UNIFICADO.md → P37-1
 
 2. **eng_sr_wrapper.bat** (Arquivo Batch/Automation)
@@ -8315,7 +8315,7 @@ Agente (2min) → PredictionTracker.register() → AIReflection (10min)
    - Propósito: Set Python environment + execute import validation
    - Integração: Part of INICIAR_PHASE6.bat (master launcher paralelo)
    - Funcionalidades: PYTHONPATH config, import test, next steps guidance
-   
+
    **Localização:** BAT/eng_sr_wrapper.bat (novo padrão)
 
 #### Status da Consolidação P37:
@@ -8716,4 +8716,419 @@ Status: 🟢 **GO-LIVE APROVADO** ✅
 
 **Timestamp:** 03/03/2026 (Consolidação P38)
 **Status:** ✅ CONSOLIDAÇÃO P38 COMPLETA - 2 ENTREGAS DOCUMENTADAS
+
+
+---
+
+## 📋 Lote 16 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P39 - 03/03/2026)
+
+**Origem:** 2 arquivos pendentes analisados (1 documento de entrega + 1 script Python)
+**Data Consolidacao:** 03/03/2026
+
+### P39-1: Entrega Paralela 10 Features - Squads Multidisciplinares (ENTREGA_PARALELA_10_FEATURES_SQUAD_MULTI.md)
+
+**Status:** ✅ CONSOLIDADO em P39-1
+**Arquivo Origem:** ENTREGA_PARALELA_10_FEATURES_SQUAD_MULTI.md (1.003 LOC)
+**Tipo:** Documento Markdown (Relatório de Entrega/Operacionalização)
+**Data Criação:** 26/02/2026
+**Proprietário:** Coordenadora de Governança + Agente Autônomo
+
+**Objetivo Alcançado: Operacionalizar estrutura de 3 squads paralelos para entregar 10 features críticas com 2 gates imóveis ✅**
+
+**Escopo Completo (10 Features - ATI-1 a ATI-10):**
+
+| Track | Squad Lead | Features | Personas | Horas | AC | Status |
+|-------|-----------|----------|----------|-------|----|----|
+| **TRACK 1** | Eng Sr | ATI-1,2,3,4,8,9 (6 feat) | Eng Sr + 3 Dev Backend + Arquiteto + DevOps + QA | 224h | 48 AC | Dev |
+| **TRACK 2** | ML Expert | ATI-5,6 (2 feat) | ML Expert + Data Scientist + Data Engineer | 88h | 16 AC | Dev |
+| **TRACK 3** | ML Expert | ATI-7,10 (2 feat) | ML Expert + CFO + PO + Trader | 84h | 30 AC | Blocked |
+| **TOTAL** | — | **10 Features** | **11 Personas** | **356h** | **118 AC** | — |
+
+**Detalhes por Track:**
+
+**TRACK 1 - Backend Infrastructure (224h, 48 AC):**
+- ATI-1: Dashboard Ordens Real-Time (40h, 8 AC)
+- ATI-2: OAuth 2.0 Auth API (40h, 8 AC)
+- ATI-3: RabbitMQ Queue (40h, 8 AC)
+- ATI-4: WebSocket Real-time (40h, 8 AC)
+- ATI-8: Retry 3x Exponencial (40h, 8 AC)
+- ATI-9: Position Monitor SL/TP (40h, 8 AC)
+
+**TRACK 2 - ML Analysis (88h, 16 AC):**
+- ATI-5: SHAP + Features (44h, 8 AC)
+- ATI-6: Drift + Alerts (44h, 8 AC)
+
+**TRACK 3 - Validation & Capital Decision (84h, 30 AC) - Bloqueado por GATE 1:**
+- ATI-7: Backtest 252 dias (44h, 20 AC)
+- ATI-10: Gate 2 Decision Framework (40h, 10 AC)
+
+**3 Squads Paralelos:**
+
+**SQUAD 1 (TRACK 1) - Backend Infrastructure:**
+- **Lead:** Eng Sr (40h)
+- **Composição:** Dev-Backend-1,2,3 + Arquiteto de Sistemas + Infra DevOps + QA Automation
+- **Features:** 6 (ATI-1,2,3,4,8,9)
+- **Horas:** 224h total
+- **AC:** 48 (8 por feature)
+- **Tests:** 48+ unit tests (pytest, >90% coverage)
+
+**SQUAD 2 (TRACK 2) - ML Analysis:**
+- **Lead:** ML Expert (44h)
+- **Composição:** Data Scientist + Data Engineer
+- **Features:** 2 (ATI-5,6)
+- **Horas:** 88h total
+- **AC:** 16 (8 por feature)
+- **Tests:** 16+ unit tests (pytest, >90% coverage)
+
+**SQUAD 3 (TRACK 3) - Validation & Capital:**
+- **Lead:** ML Expert (44h)
+- **Composição:** CFO + Product Owner + Trader Líder
+- **Features:** 2 (ATI-7,10)
+- **Horas:** 84h total (executado após GATE 1 GO)
+- **AC:** 30 (20 para ATI-7 backtest, 10 para ATI-10)
+- **Tests:** 24+ unit tests (pytest)
+- **Status:** ⏳ BLOQUEADO - aguardando GATE 1 PASS
+
+**Timeline de Execução (6-8 semanas):**
+
+`
+FASE 1 (Week 1-2): Ramp Up
+├─ SQUAD 1: Design review (ATI-1,2,3,4) + Architecture + TDD setup
+├─ SQUAD 2: Dataset loading + Feature engineering + SHAP planning
+└─ SQUAD 3: Bloqueado (aguarda GATE 1)
+
+FASE 2 (Week 2-3): Desenvolvimento
+├─ SQUAD 1: Dev ATI-1,2,3,4 em paralelo + integration tests 30%
+├─ SQUAD 2: SHAP + Drift analysis + correlation study
+└─ SQUAD 3: Bloqueado
+
+FASE 3 (Week 3-4): Aceleração
+├─ SQUAD 1: Dev ATI-8,9 + integration tests 70% + performance validation
+├─ SQUAD 2: Drift rules + alert configuration + monitoring setup
+└─ SQUAD 3: Bloqueado
+
+FASE 4 (Week 4-5): Finalização & GATE 1
+├─ SQUAD 1: Final tests + fixes + documentation + GATE 1 validation
+├─ SQUAD 2: Final tests + tuning + GATE 1 validation
+└─ SQUAD 3: 🎯 GATE 1 DECISION CHECKPOINT
+
+FASE 5 (Week 6-7): TRACK 3 Execução (após GATE 1 GO)
+├─ SQUAD 3: Backtest 252 dias (full run) + Sharpe/WR/DD calculation
+├─ SQUAD 1+2: Support role (bug fixes, monitoring)
+└─ 🎯 GATE 2 DECISION preparing
+
+FASE 6 (Week 8): GATE 2 Final Decision
+├─ 🎯 GATE 2 DECISION CHECKPOINT
+├─ Resultado: ALL PASS (R$ 100k) ou ANY FAIL (R$ 50k refactor)
+└─ Capital activation ou refactor decision
+`
+
+**2 Checkpoints Imóveis (Unmovable Gates):**
+
+**GATE 1 - (Week 5, ~27/03/2026 17:00 BRT):**
+`
+Bloqueador: TRACK 3 não inicia até GATE 1 = GO
+
+Validação Obrigatória (64/64 AC):
+├─ ✅ ATI-1: Dashboard (8/8 AC)
+├─ ✅ ATI-2: OAuth (8/8 AC)
+├─ ✅ ATI-3: Queue (8/8 AC)
+├─ ✅ ATI-4: WebSocket (8/8 AC)
+├─ ✅ ATI-5: SHAP (8/8 AC)
+├─ ✅ ATI-6: Drift (8/8 AC)
+├─ ✅ ATI-8: Retry (8/8 AC)
+├─ ✅ ATI-9: Position (8/8 AC)
+├─ ✅ Tests: 64+ tests (≥98% coverage)
+├─ ✅ Code: 2 reviewers approval
+├─ ✅ Docs: Sincronizadas (STATUS, CHANGELOG, SYNC_MANIFEST)
+└─ ✅ Operator: INICIAR.BAT funcional
+
+Decisão:
+├─ GO: TRACK 3 inicia Week 6 (05/04)
+└─ NO-GO: 3-day refactor → retry Week 6
+`
+
+**GATE 2 - (Week 8, ~20/04/2026 17:00 BRT):**
+`
+Capital Activation Decision
+
+Validação Obrigatória (50/50 AC):
+├─ ✅ ATI-7: Backtest (20/20 AC)
+│  ├─ Sharpe ≥ 1.0
+│  ├─ Win Rate ≥ 59%
+│  ├─ Drawdown ≤ 15%
+│  └─ Consistency ≤ 30%
+├─ ✅ ATI-10: Gate 2 Framework (10/10 AC)
+├─ ✅ Tests: 24+ tests (≥98% coverage)
+├─ ✅ Code: 2 reviewers approval
+├─ ✅ Docs: Sincronizadas
+└─ ✅ CFO: Approval signed
+
+Decisão:
+├─ ALL PASS: R$ 100k capital ativado 🚀 (Phase 2 inicia 20/04)
+└─ ANY FAIL: Continua R$ 50k (3-week refactor)
+`
+
+**12 Passos de Execução (squad_multi.md framework):**
+
+1. **Verificar Detalhes da Entrega** - consultar STATUS_ENTREGAS.md + ROADMAP + SYNC_MANIFEST
+2. **Registrar Estado PRIORIZADO/ANDAMENTO** - atualizar STATUS_ENTREGAS.md com 10 ATI
+3. **Verificar/Atualizar Arquitetura** - sincronizar ARQUITETURA_MT5_v1.2.md com TRACK details
+4. **Distribuir Tasks Paralelamente** - SQUAD 1,2,3 tasks async iniciando Week 1
+5. **Validar Impactos no Operador** - INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat integration weekly
+6. **Executar Testes Unitários e Integração** - 98+ tests em pytest com >90% coverage
+7. **Atualizar Documentação** - Weekly sync (Tuesday 18:00) + STATUS_ENTREGAS + CHANGELOG
+8. **Completar Atualizações de Status** - Daily standups (15:00) + weekly cycle
+9. **Atualizar INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat** - integração progressiva (8 features)
+10. **Teste Mínimo do Operador** - daily + GATE 1 + GATE 2 validations
+11. **Aplicar Lint em Arquivos Criados** - pycodestyle + pylint + mypy --strict + pymarkdown
+12. **Preparar Commit e Push** - weekly commits com pattern (sem acentos)
+
+**Regras de Qualidade (11 rules):**
+
+1. **Testes Unitários** - CASE-THEN-WHEN pattern em Português
+2. **Cobertura de Testes** - ≥98% obrigatório
+3. **Clean Code** - PEP 8 + Google Style Guide
+4. **Type Hints** - 100% em todas funções
+5. **Documentação em Português** - Docstrings + comentários
+6. **Commits em Português (SEM ACENTOS)** - "feat: ATI-# description"
+7. **Design Patterns** - Factory, Strategy, etc obrigatórios
+8. **Comece Simples** - Week 1 design, Week 2-4 MVP + features
+9. **Ótimo é Inimigo do Bom** - 98% coverage + <500ms latency é suficiente
+10. **Arquitetura sem Refactor Preguioso** - refactor se há duplicação/smell
+11. **Lint Obrigatório** - ≤80 caracteres por linha em markdown
+
+**RACI Matrix (10 Features):**
+
+| Task | SQUAD Lead | Executor | Revisor | Aprovador |
+|------|-----------|----------|---------|-----------|
+| ATI-1 (Dashboard) | Eng Sr | Dev-Backend-1 | Arquiteto | PO |
+| ATI-2 (OAuth) | Eng Sr | Dev-Backend-1 | Eng Sr | PO |
+| ATI-3 (Queue) | Eng Sr | Dev-Backend-2 | Infra | PO |
+| ATI-4 (WebSocket) | Eng Sr | Eng Sr | Arquiteto | PO |
+| ATI-5 (SHAP) | ML Expert | ML Expert | Data Scientist | PO |
+| ATI-6 (Drift) | ML Expert | Data Scientist | ML Expert | PO |
+| ATI-8 (Retry) | Eng Sr | Dev-Backend-2 | Eng Sr | PO |
+| ATI-9 (Position) | Eng Sr | Dev-Backend-3 | Eng Sr | PO |
+| ATI-7 (Backtest) | ML Expert | ML Expert | Trader | CFO |
+| ATI-10 (Gate 2) | CFO | CFO | ML Expert | CEO |
+
+**Dashboard de Monitoramento:**
+
+`
+Week 1-2:  30% progresso (design + setup)
+Week 2-3:  60% progresso (development)
+Week 3-4:  80% progresso (integration)
+Week 4-5:  95% progresso (GATE 1 ready)
+Week 5:    100% progresso TRACK 1+2 (GATE 1 = GO)
+Week 6-7:  50% progresso TRACK 3 (backtest)
+Week 8:    100% progresso TRACK 3 (GATE 2 = GO)
+`
+
+**Success Metrics:**
+
+| Métrica | Target |
+|---------|--------|
+| Type Hints | 100% |
+| Test Coverage | ≥98% |
+| Code Duplication | <3% |
+| Cyclomatic Complexity | <10 per function |
+| Lint Score | A (pycodestyle + pylint) |
+| GATE 1 Pass | Week 5 (27/03) |
+| GATE 2 Pass | Week 8 (20/04) |
+| Sharpe Ratio | ≥1.0 |
+| Win Rate | ≥59% |
+| Drawdown | ≤15% |
+| Capital | R$ 100k (if GATE 2 ALL PASS) |
+
+**Status:** ✅ ENTREGA OPERACIONALIZADA - PRONTO PARA EXECUÇÃO
+
+---
+
+### P39-2: Script Python - Enviar Ordem em MT5 (ENVIAR_ORDEM_AGORA.py)
+
+**Status:** ✅ MOVIDO para scripts/enviar_ordem_agora.py
+**Arquivo Origem:** ENVIAR_ORDEM_AGORA.py (130 LOC)
+**Tipo:** Script Python Executável (Ordem Real MT5)
+**Data Criação:** (origem desconhecida, consolidado 03/03/2026)
+**Proprietário:** Agente Autônomo / Operador
+
+**Propósito: Executável que envia ordem real BUY em WINJ26 via MT5 com SL/TP automáticos**
+
+**Funcionalidades (5 Passos):**
+
+1. **Conectar MT5** 
+   - Inicializa conexão MetaTrader5
+   - Verifica credenciais
+   - Retorna erro se falha
+
+2. **Verificar Conta**
+   - Obtem account_info() (login, corretora, saldo, margem)
+   - Valida disponibilidade de capital
+   - Exibe status para operador
+
+3. **Selecionar Símbolo WINJ26**
+   - symbol_select("WINJ26", True)
+   - Obtém info de mercado (bid, ask, point/tick)
+   - Valida existência do contrato
+
+4. **Preparar Ordem BUY**
+   - Usa preço Ask para entrada
+   - SL automático: -100 pontos
+   - TP automático: +300 pontos
+   - Volume: 1 contrato
+
+5. **Enviar Ordem & Confirmar**
+   - order_send(request) com TRADE_ACTION_DEAL
+   - Validação de retcode (DONE ou PLACED)
+   - Confirmação de posição aberta
+
+**Código Estrutura (5 Módulos):**
+
+`python
+import MetaTrader5 as mt5
+import time
+
+# Módulo 1: Header + Conexão
+if not mt5.initialize():
+    print("Erro ao conectar MT5")
+    exit(1)
+
+# Módulo 2: Verificação de Conta
+account = mt5.account_info()
+print(f"Conta: {account.login}, Saldo: {account.balance:.2f}")
+
+# Módulo 3: Seleção de Símbolo
+symbol = "WINJ26"
+info = mt5.symbol_info(symbol)
+print(f"Bid: {info.bid}, Ask: {info.ask}")
+
+# Módulo 4: Preparação de Ordem
+request = {
+    "action": mt5.TRADE_ACTION_DEAL,
+    "symbol": symbol,
+    "volume": 1.0,
+    "type": mt5.ORDER_TYPE_BUY,
+    "price": entry_price,
+    "sl": sl_price,
+    "tp": tp_price,
+}
+
+# Módulo 5: Envio & Confirmação
+result = mt5.order_send(request)
+if result.retcode == mt5.TRADE_RETCODE_DONE:
+    print("✅ ORDEM ENVIADA COM SUCESSO!")
+`
+
+**Parâmetros de Ordem:**
+
+| Parâmetro | Valor | Descrição |
+|-----------|-------|-----------|
+| action | TRADE_ACTION_DEAL | Execução imediata |
+| symbol | WINJ26 | Mini Índice B3 |
+| volume | 1.0 | 1 contrato |
+| type | ORDER_TYPE_BUY | Posição comprada |
+| price | Ask | Entrada no melhor Ask |
+| sl | -100 pontos | Stop Loss automático |
+| tp | +300 pontos | Take Profit automático |
+| deviation | 20 | Desvio permitido (+/- 20 pontos) |
+| magic | 20260220 | ID mágica (rastreamento) |
+| type_time | ORDER_TIME_GTC | Good-Til-Cancelled |
+| type_filling | ORDER_FILLING_IOC | Immediate or Cancel |
+
+**Output do Script:**
+
+`
+[1/5] Verificando conta...
+      Conta: 12345678
+      Corretora: CLEAR
+      Saldo: R$ 50,000.00
+      Margem disponível: R$ 48,000.00
+
+[2/5] Selecionando contrato WINJ26...
+      ✅ Símbolo: WINJ26
+      Bid: 131250.50
+      Ask: 131251.00
+      Ponto (tick): 0.01
+
+[3/5] Preparando ordem BUY...
+      Entrada (Ask): 131251.00
+      Stop Loss: 131151.00 (-100 pontos)
+      Take Profit: 131551.00 (+300 pontos)
+
+[4/5] ENVIANDO ORDEM...
+      📊 Enviando para servidor CLEAR...
+      Resultado do servidor:
+         Retcode: 10009
+         Ordem: 123456789
+         Ticket: 123456789
+         Volume: 1.0
+         Preço: 131251.00
+
+      ✅ ORDEM ENVIADA COM SUCESSO!
+
+[5/5] Confirmando posição aberta...
+      ✅ POSIÇÃO ABERTA NA CORRETORA:
+         Ticket: 123456789
+         Símbolo: WINJ26
+         Tipo: BUY
+         Volume: 1
+         Entrada: 131251.00
+         SL: 131151.00
+         TP: 131551.00
+         P&L: R$ 125.00
+
+Próximos passos:
+  1. Monitor dashboard: http://localhost:8765/dashboard
+  2. Acompanhe em tempo real no MT5
+  3. SL será executado em: 131151.00
+  4. TP será executado em: 131551.00
+`
+
+**Uso do Script:**
+
+`ash
+# Executar script diretamente
+python scripts/enviar_ordem_agora.py
+
+# Output esperado: ordem enviada + ticket + confirmação posição aberta
+`
+
+**Integração com Operador:**
+
+- Pode ser chamado via INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
+- Envia ordem real com validação de conta/saldo
+- SL/TP automáticos garantem risco controlado
+- Magic ID (20260220) permite rastreamento em logs
+
+**Dependências:**
+
+- MetaTrader5 Python package (mt5)
+- Python 3.8+
+- Conexão ativa com servidor CLEAR
+
+**Status:** ✅ MOVIDO PARA scripts/enviar_ordem_agora.py - PRONTO PARA USO
+
+---
+
+### Status da Consolidação P39:
+
+- ✅ 2 arquivos processados (1 documento + 1 script)
+- ✅ ENTREGA_PARALELA_10_FEATURES_SQUAD_MULTI.md consolidado em P39-1 (1.003 LOC)
+- ✅ ENVIAR_ORDEM_AGORA.py movido para scripts/enviar_ordem_agora.py (130 LOC)
+- ✅ Padrão de pasta: Documento em BACKLOG, Script em scripts/
+
+### Consolidação Total Acumulada (ATUALIZADA PÓS P39):
+
+- **Total Geral:** 117 arquivos (24 scripts, 82 docs, 7 .bat, 1 JSON, 1 output, 1 notebook)
+- **Tarefas Rastreadas:** 121 (P0-P4, P8-P39)
+- **Scripts em Padrão:** 100% (24/24 em scripts/) ✅
+- **.bat em Padrão:** 100% (7/7 em BAT/) ✅
+- **Outputs em Padrão:** 100% (1/1 em outputs/) ✅
+- **Documentação em Padrão:** 100% (82/82 em docs/ + BACKLOG) ✅
+- **Project Root Cleanup:** 100% ✅
+- **Padrão de Pasta:** 100% aderente ✅
+
+**Timestamp:** 03/03/2026 (Consolidação P39)
+**Status:** ✅ CONSOLIDAÇÃO P39 COMPLETA - 10 FEATURES OPERACIONALIZADAS
 
