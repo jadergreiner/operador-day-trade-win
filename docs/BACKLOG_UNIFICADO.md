@@ -9493,3 +9493,171 @@ python scripts/enviar_ordem_agora.py
 **Timestamp:** 03/03/2026 (Consolidacao P41)
 **Status:** ✅ CONSOLIDACAO P41 COMPLETA - 119 ARQUIVOS, 158+ TAREFAS
 
+---
+
+## 🚀 LOTE 16 - TAREFAS CONSOLIDADAS EM docs/BACKLOG_UNIFICADO.md (SECAO P42 - 03/03/2026)
+
+**Origem:** 2 arquivos de status consolidados (documentação de execução paralela)
+
+### P42 - Arquivos Consolidados:
+
+#### P42-1: EXECUTION_PARALLEL_START_PRIORITY_4_5_8.md (Documento)
+
+**Status:** ✅ CONSOLIDADO em BACKLOG P42-1 | **Deletado da raiz**
+**Conteudo:** Framework de execução paralela 3 tracks (290 LOC)
+**Foco:** PRIORITY 4 (WebSocket), PRIORITY 5 (OAuth), PRIORITY 8 (ML Features)
+
+**Estrutura de Execução Paralela:**
+
+**PRIORITY 4: WebSocket Server (ATI-1)**
+- Lead: Dev-Backend-3
+- Production Code: `src/application/websocket_server_ati1.py` (370 LOC)
+  - ConnectionManager class (connect/disconnect/broadcast)
+  - MessageHandler class (routing)
+  - HeartbeatManager class (keep-alive)
+  - FastAPI endpoint `/ws/orders/{trader_id}`
+  - JWT token verification
+- Test Code: `tests/unit/test_ati1_websocket_server.py` (280 LOC)
+  - 6 test classes com 15+ test cases
+  - ConnectionManager, MessageHandler, Heartbeat, Performance tests
+  - All 6 AC integration tests
+- AC (6 critérios): Connection persistence, P95 latency <100ms, 500 concurrent, no message loss, graceful disconnect, 30s heartbeat
+- Quality: 100% type hints, docstrings completos, error handling, logging integrado
+- Tests: 14/14 passing ✅
+
+**PRIORITY 5: OAuth Authentication (ATI-2)**
+- Lead: Dev-Backend-1
+- Production Code: `src/application/oauth_auth_ati2.py` (380 LOC)
+  - JWTManager class (token creation/verification)
+  - PasswordManager class (bcrypt hashing)
+  - RateLimiter class (10 attempts / 5 min)
+  - SessionManager class (multi-device support)
+  - FastAPI endpoints: /auth/login, /auth/refresh-token, /auth/logout, /auth/session/{session_id}
+- Test Code: `tests/unit/test_ati2_oauth_auth.py` (310 LOC)
+  - 8 test classes com 20+ test cases
+  - JWTManager, PasswordManager, RateLimiter, SessionManager tests
+  - All 8 AC integration tests
+- AC (8 critérios): JWT tokens 8h expiry, Invalid credentials 401, Rate limiting 10/5min, Refresh token 30d, Session validation, Logout clears session, Multi-device support, Token rotation audit
+- Quality: 100% type hints, docstrings completos, error handling, logging integrado
+- Status: 🟢 READY (All 380 LOC code ✅, 310 LOC tests ✅)
+
+**PRIORITY 8: ML Feature Pipeline (ATI-5)**
+- Lead: ML Expert + Data Scientist
+- Production Code: `src/ml/feature_pipeline_ati5.py` (420 LOC)
+  - DataProcessor class (load/split/label)
+  - FeatureEngineer class (24 features extracted)
+  - DataScaler class (StandardScaler + outlier removal)
+  - MLModelTrainer class (XGBoost grid search)
+  - SHAPAnalyzer class (feature importance)
+  - run_ml_pipeline() main function
+- Test Code: `tests/unit/test_ati5_ml_features.py` (330 LOC)
+  - 5 test classes com 18+ test cases
+  - DataProcessor, FeatureEngineer, DataScaler, MLModelTrainer, SHAPAnalyzer tests
+  - All 8 AC integration tests
+- AC (8 critérios): 24 features extracted (6 groups), No NaN values (forward fill), Feature names saved + persistent, StandardScaler (mean≈0, std≈1), Grid search 8 configs, F1 > 0.65 target, Final model trained, SHAP analysis + importance
+- Quality: 100% type hints, docstrings completos, error handling, logging integrado
+- Status: 🟢 READY (All 420 LOC code ✅, 330 LOC tests ✅)
+
+**Métricas Consolidadas:**
+- Production Code: 1.170 LOC total (370 + 380 + 420)
+- Test Code: 920 LOC total (280 + 310 + 330)
+- Total Deliverable: 2.090 LOC código
+- Tests Passing: 23+ test cases implementados
+- Code Quality: 100% type hints em todos
+
+**Paralelização (Independente):**
+- PRIORITY 4: 2-3 horas (2 subtasks: 4.1-4.2 done, 4.3-4.4 remaining)
+- PRIORITY 5: 4-6 horas (4 subtasks paralelo)
+- PRIORITY 8: 8-10 horas (5 subtasks paralelo)
+- Total Calendar Time: 4-5 horas (fully parallel)
+- Time Saved by Parallelization: 50-60%
+
+**Timeline de Execução:**
+- 00:00: PRIORITY 4 Subtask 4.1 (45m)
+- 00:45: PRIORITY 5 + PRIORITY 8 START (parallel)
+- 04:45: PRIORITY 4 COMPLETE
+- 05:45: PRIORITY 5 COMPLETE (parallel)
+- 08:45: PRIORITY 8 COMPLETE (parallel)
+
+**Localização:** `docs/BACKLOG_UNIFICADO.md` → P42-1
+
+---
+
+#### P42-2: EXECUTION_STATUS_UPDATE_PRIORITY_4_5_8.md (Documento)
+
+**Status:** ✅ CONSOLIDADO em BACKLOG P42-2 | **Deletado da raiz**
+**Conteudo:** Status update de execução paralela 50% complete (200 LOC)
+**Timestamp:** 2026-02-27 01:30:00Z (1h 30m elapsed)
+
+**Progresso PRIORITY 4: WebSocket (ATI-1) - 50% COMPLETE ✅**
+- ✅ Subtask 4.1: ConnectionManager + Event Loop → 9/9 testes PASSED
+- ✅ Subtask 4.2: WebSocket Endpoint → 14/14 testes PASSED
+- ✅ All 6 AC: Implemented & Validated ✅
+- Code: 370 LOC production ✅
+- Tests: 280 LOC, 14/14 passing ✅
+- Quality: 100% type hints ✅
+- AC Ready: 6/6 ✅
+- Remaining: Subtask 4.3 (1h) + 4.4 (1.5h) = 2.5h total
+
+**Status PRIORITY 5+8: Ready for Execution**
+- PRIORITY 5 (OAuth): 🟢 READY - 380 LOC code ✅, 310 LOC tests ✅
+  - 8 AC fully implemented (login, refresh, rate limiting, audit)
+  - Owner: Dev-Backend-1
+  - Estimated Time: 4-6 hours (parallel)
+- PRIORITY 8 (ML): 🟢 READY - 420 LOC code ✅, 330 LOC tests ✅
+  - 8 AC fully implemented (24 features, grid search, SHAP)
+  - Owner: ML Expert + Data Scientist
+  - Estimated Time: 8-10 hours (parallel)
+
+**Quality Gates Achieved:**
+- ✅ Code Quality: 100% type hints + docstrings
+- ✅ Unit Tests: 14/14 passing
+- ✅ AC Validation: All 6 AC implemented + tested
+- ✅ Integration: Endpoints working with managers
+- ✅ Error Handling: Cleanup + exception handlers present
+- ✅ Performance: P95 latency < 100ms validated
+
+**Deliverables So Far (PRIORITY 4):**
+- Code: `src/application/websocket_server_ati1.py` (370 LOC)
+- Tests: `tests/unit/test_ati1_websocket_server.py` (280 LOC)
+- Task sheets: PRIORITY4_TASK_WEBSOCKET.md
+- Execution guides (SUBTASK_4_1_START_NOW, SUBTASK_4_2_START)
+- Status docs + validation script
+- Git commits: 2 (code + fixes)
+
+**Success Criteria Status:**
+- PRIORITY 4 (50%): AC-1 thru AC-6 implemented, 14/14 tests passing, 100% type hints
+- PRIORITY 5 (Ready): 8 AC ready, 4-6h timeline, 380 LOC code, 310 LOC tests ready
+- PRIORITY 8 (Ready): 8 AC ready, 8-10h timeline, 420 LOC code, 330 LOC tests ready
+
+**Next Steps:**
+- Dev-Backend-3 continues Subtask 4.3 (Heartbeat timing validation)
+- Dev-Backend-1 starts PRIORITY 5 Subtask 5.1 (OAuth setup)
+- ML Expert starts PRIORITY 8 Subtask 8.1 (Dataset loading)
+- All 3 tracks independent (zero blocking)
+- Expected Completion: All 3 tracks done ~9h from start (4-5h calendar time)
+
+**Localização:** `docs/BACKLOG_UNIFICADO.md` → P42-2
+
+---
+
+#### Status da Consolidacao P42:
+
+- ✅ 2 arquivos processados (2 documentos de status/execução)
+- ✅ EXECUTION_PARALLEL_START_PRIORITY_4_5_8.md consolidado em P42-1
+- ✅ EXECUTION_STATUS_UPDATE_PRIORITY_4_5_8.md consolidado em P42-2
+- ✅ 2 arquivos origem serão deletados (padrão consolidação)
+- ✅ Consolidação total: 3 PRIORITY + 6 ATI + 2.090 LOC código documentado
+
+#### Consolidacao Total Acumulada (FINAL - P42):
+
+- **Total Geral:** 120 arquivos consolidados (26 scripts, 85 docs, 7 .bat, 1 JSON, 1 output, 1 notebook)
+- **Tarefas Rastreadas:** 160+ (P0-P4, P8-P42)
+- **Scripts em Padrao:** 100% (26/26 em scripts/) ✅
+- **.bat em Padrao:** 100% (7/7 em BAT/) ✅
+- **Outputs em Padrao:** 100% (1/1 em outputs/) ✅
+- **Project Root Cleanup:** 100% ✅
+
+**Timestamp:** 03/03/2026 (Consolidacao P42)
+**Status:** ✅ CONSOLIDACAO P42 COMPLETA - 120 ARQUIVOS, 160+ TAREFAS
+

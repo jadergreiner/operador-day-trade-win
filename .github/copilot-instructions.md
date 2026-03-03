@@ -162,7 +162,7 @@ mv c:\repo\projeto\analisa_gap_precificacao.py \
 rm c:\repo\projeto\analisa_gap_precificacao.py
 ```
 
-**Status Consolidação (03/03/2026+) - ATUALIZADO P41:**
+**Status Consolidação (03/03/2026+) - ATUALIZADO P42:**
 - ✅ 2 scripts novos movidos: `check_episode_ids.py`, `check_interseção.py` (P19)
 - ✅ 1 script novo movido: `cleanup_dados_automatico.py` (P20)
 - ✅ Documentado em `docs/BACKLOG_UNIFICADO.md` seções P19-4 + P20-1
@@ -170,12 +170,10 @@ rm c:\repo\projeto\analisa_gap_precificacao.py
 - ✅ Padrão reforçado: outputs SEMPRE em `outputs/`, NUNCA na raiz
 - ✅ Padrão reforçado: .bat SEMPRE em `BAT/`, NUNCA na raiz
 - ✅ 26 scripts totais consolidados desde 03/03/2026 (incluindo P38-P41)
-- ✅ 83 documentos consolidados em P19 + P20 + P22 + P23 + P24 + P38 + P39 + P40 + P41
+- ✅ 85 documentos consolidados em P19 + P20 + P22 + P23 + P24 + P38 + P39 + P40 + P41 + P42
 - ✅ 7 .bat arquivos consolidados em BAT/ (P21 + P22 + P23 + P24 + P32)
 - ✅ CONSOLIDAÇÃO P38 (03/03/2026): 2 scripts novos
    - 2 scripts: `enviar_ordem_mt5.py`, `enviar_ordem_real.py` → `scripts/`
-   - 16 tarefas pendentes mapeadas (audit trail, retry logic, tests)
-   - 8 AC por script (16 AC total) para implementação
    - Total consolidado: 115 arquivos, 133 tarefas
 - ✅ CONSOLIDAÇÃO P39 (03/03/2026): 2 arquivos paralelos
    - 1 documento: ENTREGA_PARALELA_10_FEATURES_SQUAD_MULTI.md (1.003 LOC)
@@ -183,15 +181,19 @@ rm c:\repo\projeto\analisa_gap_precificacao.py
    - Total: 2 arquivos consolidados
 - ✅ CONSOLIDAÇÃO P40 (03/03/2026+): 1 especificação técnica TODO-1
    - 1 documento: ESPECIFICACAO_TODO1_ENTREGA_TECNICA.md (366 LOC) → DELETADO
-   - 7 AC testáveis mapeados (dataset, labels, features, splits, stats, names, tests)
-   - Squad multidisciplinar 4 personas designada (3.75h total)
    - Total consolidado: 116 arquivos + 148+ tarefas
 - ✅ CONSOLIDAÇÃO P41 (03/03/2026): 2 arquivos - 10 ATI + 1 script
    - 1 documento: EXECUCAO_10_ATIVIDADES_SPRINT2_FRAMEWORK.md (1.000+ LOC) → consolidado em BACKLOG P41-1
    - 1 script: `execute_head_financeiro_buy.py` (135 LOC) → `scripts/execute_head_financeiro_buy.py`
-   - 10 atividades (ATI-1 thru ATI-10) com 66 AC + 98+ testes + 356h alocadas
-   - 6-8 semanas timeline, 2 GATE checkpoints, R$ 100k capital ativação
    - Total consolidado: 119 arquivos + 158+ tarefas
+- ✅ CONSOLIDAÇÃO P42 (03/03/2026): 2 arquivos - 3 PRIORITY + 2.090 LOC código
+   - 1 documento: EXECUTION_PARALLEL_START_PRIORITY_4_5_8.md (290 LOC) → consolidado em BACKLOG P42-1
+   - 1 documento: EXECUTION_STATUS_UPDATE_PRIORITY_4_5_8.md (200 LOC) → consolidado em BACKLOG P42-2
+   - PRIORITY 4: WebSocket Server (ATI-1) - 370 LOC code + 280 LOC tests
+   - PRIORITY 5: OAuth Authentication (ATI-2) - 380 LOC code + 310 LOC tests
+   - PRIORITY 8: ML Feature Pipeline (ATI-5) - 420 LOC code + 330 LOC tests
+   - Total código: 1.170 LOC production + 920 LOC tests = 2.090 LOC
+   - Total consolidado: 120 arquivos + 160+ tarefas
 
 ---
 
