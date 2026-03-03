@@ -167,7 +167,7 @@ Dependências (pip install):
     - APScheduler
     - SQLite (built-in)
     - scikit-learn
-    
+
 Dependências (internas):
     - src/application/services/rl_training_loop.py
     - src/infrastructure/database/ (SQLite)
@@ -187,7 +187,7 @@ Troubleshooting:
 
 Versionamento:
     - v1.0.0 (02/03/2026): Versão inicial
-    
+
 Localização no repositório:
     - scripts/[categoria]/[nome].py
 """

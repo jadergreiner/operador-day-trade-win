@@ -44,7 +44,7 @@ Analisamos 3 arquivos de origem para listar tarefas pendentes:
 
 #### **Script Movido:**
 
-- **De:** `RODAR_TASK_PHASE6.bat` (raiz)  
+- **De:** `RODAR_TASK_PHASE6.bat` (raiz)
 - **Para:** `scripts/execution/rodar_task_phase6.bat`
 - **Versão:** 1.0.0
 - **Status:** ✅ Movido com sucesso

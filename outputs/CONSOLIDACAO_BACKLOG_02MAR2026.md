@@ -216,7 +216,7 @@ Menu interativo para executar tasks individuais com 32 opções
 - **Status em Backlog:** ✅ LISTADO com CA detalhados
 - **Horas:** 2-3h
 - **Gates:**
-  - Capture: 85%+ 
+  - Capture: 85%+
   - False Positives: ≤10%
   - Win Rate: 60%+
 

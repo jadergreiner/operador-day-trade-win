@@ -1,8 +1,55 @@
 """
-PRIORITY 4: Subtask 4.1 - Quick Validation Script
-Run this to validate ConnectionManager is working
+Operador Quantum - Subtask 4.1 Validation Script
 
-Usage: python run_subtask_4_1_validation.py
+Versão: 1.0.0
+Data: 02 de Março de 2026
+Propósito: Quick validation script para testar ConnectionManager (AC-1, AC-2)
+e MessageHandler (AC-5) sem necessidade de pytest framework
+
+Uso:
+    python scripts/utilities/validation/run_subtask_4_1_validation.py
+
+Exemplo:
+    python scripts/utilities/validation/run_subtask_4_1_validation.py
+
+Entrada:
+    - Requer: src/application/websocket_server_ati1.py (ConnectionManager, MessageHandler)
+    - Mock objects via unittest.mock
+
+Saída:
+    - STDOUT: Logs estruturados com status de cada teste
+    - Exemplo: ✅ Test 1: CONNECT passed
+    - Exit code: 0 (sucesso) ou 1 (falha)
+
+Dependências (pip install):
+    - loguru
+    - asyncio (built-in)
+    - unittest.mock (built-in)
+
+Dependências (internas):
+    - src/application/websocket_server_ati1.py
+
+Configuração:
+    - Nenhuma. Script auto-configurável com loguru
+
+Saída esperada:
+    ✅ Sucesso: 9 testes PASSED, SUBTASK 4.1 STATUS: COMPLETE
+    ❌ Erro: 1+ testes FAILED, SUBTASK 4.1 STATUS: NEEDS FIXES
+
+Troubleshooting:
+    - Erro de import: Verificar se src/ tem websocket_server_ati1.py
+    - Erro de async: Python 3.7+ requerido
+    - Erro de loguru: pip install loguru
+
+Versionamento:
+    - v1.0.0 (02/03/2026): Versão inicial (movido de raiz)
+    
+Localização no repositório:
+    - scripts/utilities/validation/run_subtask_4_1_validation.py
+    
+Referência em Backlog:
+    - INTEGRATION-ENG-002: WebSocket Server (PRIORITY 4)
+    - Subtask 4.1: Validação ConnectionManager
 """
 
 import asyncio
