@@ -429,10 +429,40 @@ Padrão estabelecido 03/03/2026 para TODAS consolidações futuras:
    - Guideline: Wrapper files devem ser pequenos (<50 LOC), sem lógica de negócio
    - Função Principal: Environment setup + next-step guidance para usuário
 
-5. **Consolidação Final:**
-   - Criar seção P(N) em BACKLOG_UNIFICADO.md
+5. **Output/Resultado Files (.json, .csv, .txt, .md gerados):**
+   - Localização OBRIGATÓRIA: `outputs/` (usar `git mv`)
+   - Tipos: Backtest results, analytics, análises, relatórios gerados
+   - Nomeação: descritivo_tipo_timestamp (ex: backtest_results_20260303.json)
+   - Convenção: Se arquivo é RESULTADO/SAÍDA de script → `outputs/`
+   - Exemplo CORRETO:
+     - Análise executada: `scripts/analisa_risco.py` → resultado: `outputs/analise_risco_20260303.md`
+     - Backtest rodado: `scripts/backtest_optimizer.py` → arquivo: `outputs/backtest_results.json`
+   - Nunca salvar outputs na raiz do projeto
+   - Documentar em seção P(N) do BACKLOG se consolidar
+
+6. **Documentação de Entrega/Consolidação (.md consolidados):**
+   - Localização OBRIGATÓRIA: Consolidar em `docs/BACKLOG_UNIFICADO.md`
+   - Tipo: Relatórios de entrega, auditorias, consolidações de tarefas
+   - Padrão: Criar seção P(N) em BACKLOG com conteúdo resumido
+   - Fonte de Verdade: BACKLOG_UNIFICADO.md é o SOUTH (Single Source of Truth)
+   - Nunca deixar documentos de consolidação na raiz (ex: ENTREGA_*.md)
+   - Após consolidação:
+     1. Ler arquivo origem completamente
+     2. Consolidar em nova seção P(N) do BACKLOG
+     3. Estruturar com Status, Conteúdo, Métricas, Padrão
+     4. Deletar arquivo origem com `git rm`
+     5. Commitar: `docs: Consolidacao PN - nome_arquivo consolidado em BACKLOG`
+   - Exemplo Consolidação (P38):
+     - Origem: ENTREGA_CONSOLIDACAO_BACKLOG.md (373 LOC) + ENTREGA_FINAL_AUDITORIA_S2_5_27FEV.md (262 LOC)
+     - Resultado: P38-1 (consolidação backlog) + P38-2 (auditoria final) em BACKLOG
+     - Deletados: Ambos os arquivos orfãos removidos após consolidação
+     - Commit: `docs: Consolidacao P38 - ENTREGA_CONSOLIDACAO_BACKLOG e ENTREGA_FINAL_AUDITORIA consolidadas`
+
+7. **Consolidação Final (Workflow Geral):**
+   - Criar seção P(N) em BACKLOG_UNIFICADO.md com TODO conteúdo relevante
    - Deletar arquivo origem após confirmar consolidação
    - Commitar com mensagem: `docs: Consolidacao PN - tasks de X arquivos movidos para BACKLOG`
+   - Validar: Arquivo origem não deve existir na raiz após commit
 
 ---
 

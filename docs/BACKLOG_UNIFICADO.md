@@ -8335,3 +8335,385 @@ Agente (2min) → PredictionTracker.register() → AIReflection (10min)
 
 **Timestamp:** 03/03/2026 (Consolidação P37)
 **Status:** ✅ CONSOLIDAÇÃO P37 FINALIZADA
+
+---
+
+## 📋 Lote 15 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P38 - 03/03/2026)
+
+**Origem:** 2 arquivos de entrega analisados (relatórios de consolidação e auditoria)
+**Data Consolidacao:** 03/03/2026
+
+### P38-1: Consolidação Unificada de Backlog (ENTREGA_CONSOLIDACAO_BACKLOG.md)
+
+**Status:** ✅ CONSOLIDADO em P38-1
+**Arquivo Origem:** ENTREGA_CONSOLIDACAO_BACKLOG.md (373 LOC)
+**Tipo:** Documento Markdown (Relatório de Entrega/Consolidação)
+**Data Execução:** 02/03/2026 (~2 horas)
+**Proprietário:** Product Owner (GitHub Copilot)
+
+**Objetivo Alcançado: Consolidar todo o backlog do projeto em UMA ÚNICA lista priorizada ✅**
+
+**5 Documentos de Suporte Criados:**
+
+**1. docs/BACKLOG_UNIFICADO.md** 🔴 PRINCIPAL
+- Status: ✅ CRIADO (fonte de verdade central)
+- Tamanho: 3.500+ linhas de documentação
+- Conteúdo:
+  - P0 (Bloqueadores): 2 tarefas
+  - P1 (Importantes): 6 tarefas
+  - P2 (Futuro): 4 tarefas
+  - P3 (Backlog): 3 tarefas
+  - **Total:** 15 tarefas com 82 Critérios de Aceite
+- Squad Alocado: 11 personas
+- Gates Definidos: 2 (GATE 1 + GATE 2)
+- Modelo de Execução: Paralelos com dependências mapeadas
+- Timeline: Sprint 2 (semanas 1-4, com checkpoints)
+
+**2. docs/BACKLOG.md** 📌 ÍNDICE
+- Status: ✅ CRIADO (redireciona ao BACKLOG_UNIFICADO.md)
+- Propósito: Navegação rápida, links de referência
+- Integridade: Única fonte de verdade (SSOT) explícita
+
+**3. docs/RESUMO_EXECUTIVO_BACKLOG.md** 📊 PARA PO
+- Status: ✅ CRIADO
+- Conteúdo: Overview consolidação, métricas chave, estrutura priorização
+- Audience: Product Owner + C-level executivos
+- Tamanho: ~1.200 linhas
+
+**4. docs/VERIFICACAO_CONSOLIDACAO_BACKLOG.md** ✅ VALIDAÇÃO
+- Status: ✅ CRIADO
+- Conteúdo: Checklist 10 seções de verificação
+- Validação: Todos CA testáveis, squad validado, gates documentados
+- Status Final: PRONTO PARA PRODUÇÃO
+
+**5. docs/GUIA_REFERENCIA_BACKLOG.md** 🚀 GUIA RÁPIDO
+- Status: ✅ CRIADO
+- Conteúdo: Referência rápida por papel, próxima tarefa, timeline, checklist daily
+- Audience: Toda a equipe (engenheiros, analistas, liderança)
+- Tamanho: ~800 linhas
+
+**Consolidação de Fontes (7 → 1):**
+
+**Arquivos Unificados:**
+1. SPRINT2_TAREFAS_PRIORIZADAS.md → Consolidado ✅
+2. SPRINT2_ACTIVIDADES_PRIORIDADE.md → Consolidado ✅
+3. 10_ATIVIDADES_CRITICAS_SPRINT2.md → Consolidado ✅
+4. SPRINT2_PRIORITY_ACTIVITIES.md → Consolidado ✅
+5. PLANO_DE_SPRINTS_MVP_NOW.md → Consolidado ✅
+6. PROXIMAS_ACOES_24FEV.md → Consolidado ✅
+7. DESENVOLVIMENTO_SPRINT1_TASKS_PRIORIZADAS.md → Consolidado ✅
+
+**Resultado Final:** 1 arquivo centralizado (BACKLOG_UNIFICADO.md) como SSOT ✅
+
+**Métricas de Entrega:**
+- Tarefas Consolidadas: 15
+- Critérios de Aceite: 82
+- Testes Definidos: 100+
+- Squad Personas: 11
+- Horas Estimadas: 664h+
+- Linhas Documentação: 3.500+
+- Arquivos Criados: 5
+- Git Commits: 3 (e952af4, 031f10e, 61fb8ad)
+
+**Padrão de Priorização (P0-P3):**
+
+**P0 — CRÍTICAS (Bloqueadores):**
+- P0-1: ENG-003 API REST MT5 (160h, Eng Sr Lead, 8 CA, 35+ testes) 🟢 Pronto
+- P0-2: ML-004 Backtest 252d (88h, ML Expert Lead, 20 CA) 🟡 Aguarda P0-1
+
+**P1 — IMPORTANTES (Não-Bloqueadores):**
+- P1-1: ML-003 Feature Analysis (88h)
+- P1-2: Dashboard Ordens (40h)
+- P1-3: OAuth 2.0 (40h)
+- P1-4: RabbitMQ Queue (40h)
+- P1-5: WebSocket (40h)
+- P1-6: Position Monitoring (32h)
+- Total P1: 280h (paralelos após P0-1 ≈30%)
+
+**P2 — FUTURO:**
+- P2-1: Retry Logic (32h)
+- P2-2: Capital Framework (40h)
+- P2-3: Performance Bench (40h)
+- P2-4: Staging (32h)
+- Total P2: 144h (após GATE 2 GO)
+
+**P3 — BACKLOG:**
+- P3-1: Fontes Externas
+- P3-2: Analytics
+- P3-3: Mobile App
+- Status: Futuro (não iniciar agora)
+
+**Gates Definidos:**
+- GATE 1: P0-1 + P1-1 100% completos → Decision: GO/NO-GO para P1-2 a P1-6
+- GATE 2: P0-2 100% (Backtest validation) → Decision: Ativar R$ 100k Fase 2?
+
+**Modelo de Execução (Sprint 2 Timeline):**
+- **Kickoff (Dia 1):** P0-1 + P1-1 paralelos
+- **Week 1-2:** P0-1 ramp up, P1-1 independent
+- **Week 2-3:** P0-1 continua (30-70%), P1-2 a P1-6 iniciam (quando P0-1 ≈30%)
+- **GATE 1:** P0-1 + P1-1 100% → GO/NO-GO Decision
+- **Week 3-4:** P0-2 starts, P1-2 a P1-6 finalizam
+- **GATE 2:** P0-2 100% (backtest validation) → R$ 100k Fase 2 decision?
+- **Sprint 3+:** P2-x (if GO), P3-x (futuro)
+
+**Benefícios da Consolidação:**
+
+| Aspecto | Antes | Depois |
+|---------|-------|--------|
+| Fontes de Verdade | 7 arquivos | 1 arquivo ✅ |
+| Priorização | Inconsistente | Clara (P0-P3) ✅ |
+| Navegação | Confusa | Intuitiva ✅ |
+| CA Testáveis | Espalhados | 82 consolidados ✅ |
+| Testes | Indefinido | 100+ especificados ✅ |
+| Squad Aloc. | Vaga | 11 personas definidas ✅ |
+| Gates | Desconexos | 2 bem definidos ✅ |
+| Escalação | Manual | Mapeada ✅ |
+| Atualização | Duplicada | Centralizada ✅ |
+
+**Próximos Passos Documentados:**
+1. Comunicar ao squad (11 personas)
+2. Confirmar alocação
+3. Iniciar P0-1 + P1-1
+4. Daily standups (15:00 BRT)
+5. Monitorar progresso P0-1
+6. Parallelizar P1-x quando P0-1 ≈30%
+7. Validar GATE 1 quando P0-1 + P1-1 completos
+8. Iniciar P0-2 após P0-1 ✅
+
+**Status:** ✅ ENTREGA COMPLETA - BACKLOG CONSOLIDAÇÃO PRONTO PARA EXECUÇÃO
+
+---
+
+### P38-2: Auditoria Final - Resolução Isolamento Terminal (ENTREGA_FINAL_AUDITORIA_S2_5_27FEV.md)
+
+**Status:** ✅ CONSOLIDADO em P38-2
+**Arquivo Origem:** ENTREGA_FINAL_AUDITORIA_S2_5_27FEV.md (262 LOC)
+**Tipo:** Documento Markdown (Relatório de Auditoria/Conclusão)
+**Data Execução:** 27/02/2026 10:00-11:30 BRT (~1.5 horas)
+**Squad Executor:** QA Lead + Eng Sr + DevOps
+**Status Final:** 🟢 **PRONTO PARA GO-LIVE (14:00 BRT)**
+
+**Resumo Executivo:**
+- **Problema:** Terminal MT5 errado conectava 50% das vezes (aleatório)
+- **Root Cause:** mt5.initialize() sem path parameter
+- **Solução:** 4 linhas de código em mt5_adapter.py
+- **Implementação:** 20/02 14:47 BRT ✅
+- **Testing:** 27/02 10:00-11:30 BRT ✅
+- **Aprovação Board:** 6/6 unânime ✅
+- **Resultado Testes:** **31/31 PASSED (100%)** ✅
+- **Status Produção:** 🟢 **PRONTO PARA DEPLOY**
+- **GO-LIVE Timeline:** 14:00 BRT 27/02/2026 🚀
+
+**18 Documentos Entregues Nesta Sessão e Anterior:**
+
+**Executados/Testados em 27/02 (7 docs + 1 código):**
+
+1. ✅ **verify_fix_s2_5_windows.py** (Script de Code Review)
+   - Tipo: Python script (Windows-compatible)
+   - T1: Code Review task
+   - Resultado: 3/3 validações ✅
+
+2. ✅ **test_integration_t3.py** (Script de Testes)
+   - Tipo: Python script (integration testing)
+   - T3: Integration test task
+   - Resultado: 5/5 validações ✅
+
+3. ✅ **test_edge_cases_t4_t5.py** (Script de Validação)
+   - Tipo: Python script (edge case testing)
+   - T4-T5: Edge cases validation tasks
+   - Resultado: 8/8 validações ✅
+
+4. ✅ **RELATORIO_EXECUCAO_TESTES_T1_T5.md** (Relatório)
+   - Tipo: Markdown (test execution report)
+   - Conteúdo: 31 validações, 100% sucesso
+   - Status: ✅ CONSOLIDADO
+
+5. ✅ **CHECKLIST_IMPLEMENTACAO_COMPLETA.md** (Checklist)
+   - Tipo: Markdown (implementation checklist)
+   - Conteúdo: Final implementation checklist
+   - Status: Tudo pronto para go-live ✅
+
+6. ✅ **BOARD_SIGN_OFF_GO_LIVE_27FEV.txt** (Aprovação Board)
+   - Tipo: Text (board sign-off)
+   - Conteúdo: Aprovação para go-live
+   - Assinaturas: 6/6 unânime ✅
+
+7. ✅ **RESUMO_FINAL_AUDITORIA_S2_5.txt** (Ultra-Resumo)
+   - Tipo: Text (executive summary)
+   - Tamanho: 2 minutos de leitura
+   - Status: ✅ CONSOLIDADO
+
+8. ✅ **VISUALIZACAO_AUDITORIA_RESOLUCAO_27FEV.txt** (Infográfico)
+   - Tipo: Text (ASCII visual infographic)
+   - Propósito: Apresentações rápidas
+   - Status: ✅ CONSOLIDADO
+
+9. ✅ **⚡_QUICK_START_AUDITORIA_S2_5.txt** (Quick Start)
+   - Tipo: Text (5-minute quick reference)
+   - Conteúdo: Tabela de referência rápida
+   - Status: ✅ CONSOLIDADO
+
+10. ✅ **INDICE_COMPLETO_AUDITORIA_S2_5.md** (Índice)
+    - Tipo: Markdown (navigation index)
+    - Conteúdo: Matriz de referência navegacional
+    - Status: ✅ CONSOLIDADO
+
+**Criados em Sessão Anterior (20/02) - Ainda Válidos (11 docs):**
+
+11. ✅ **AUDITORIA_CRITICA_ISOLAMENTO_TERMINAL_27FEV.md** (Deep Investigation)
+    - Tamanho: 5.200+ palavras
+    - Conteúdo: Root cause analysis linha-por-linha
+    - Status: ✅ CONSOLIDADO
+
+12. ✅ **TESTE_VALIDACAO_FIX_S2_5_27FEV.md** (Test Plan)
+    - Tamanho: 3.500+ palavras
+    - Conteúdo: T1-T5 definidos em detalhe
+    - Status: ✅ CONSOLIDADO
+
+13. ✅ **RESOLUCAO_EXECUTIVA_ISOLAMENTO_S2_5_27FEV.md** (Executive Resolution)
+    - Tamanho: 3.000+ palavras
+    - Conteúdo: Aprovações + timeline + risco
+    - Status: ✅ CONSOLIDADO
+
+14. ✅ **GUIA_EXECUTIVO_FIX_S2_5_27FEV.md** (Operational Guide)
+    - Tamanho: 2.500+ palavras
+    - Conteúdo: Passo-a-passo operacional com comandos
+    - Status: ✅ CONSOLIDADO
+
+15. ✅ **BOARD_MULITIDISCIPLINAR_CONVOCACAO_URGENTE_27FEV.md** (Official Convocation)
+    - Tamanho: 2.800+ palavras
+    - Conteúdo: Moção + votação + assinaturas
+    - Status: ✅ CONSOLIDADO
+
+16. ✅ **RESUMO_EXECUTIVO_FIX_S2_5.txt** (One-Pager)
+    - Tamanho: 5 minutos de leitura
+    - Conteúdo: Para C-level rápido
+    - Status: ✅ CONSOLIDADO
+
+17. ✅ **RELATORIO_FINAL_ENTREGA_AUDITORIA_27FEV.md** (Final Report)
+    - Tamanho: 2.500+ palavras
+    - Conteúdo: Conclusões e métricas
+    - Status: ✅ CONSOLIDADO
+
+**Código Modificado:**
+
+18. ✅ **src/infrastructure/adapters/mt5_adapter.py** (Fixed Code)
+    - Linhas 387-405 modificadas
+    - 4 linhas adicionadas:
+      - import os
+      - Validação os.path.isfile()
+      - path=self.terminal_exe_path em initialize()
+      - Mensagem de erro apropriada
+    - Status: ✅ CONSOLIDADO
+
+**Estatísticas Finais de Auditoria:**
+
+**Documentação:**
+- Total de Documentos: 18 (7 executados em 27/02 + 11 da sessão 20/02)
+- Total de Palavras: 17.700+
+- Idioma: 100% Português (correto)
+- Encoding: UTF-8 (sem caracteres corrompidos) ✅
+- Lint Status: ✅ Pymarkdown compliant
+
+**Testes Executados:**
+- Total de Validações: 31
+- Taxa de Sucesso: 100% (31/31 PASSOU) ✅
+- Unit Tests: 15/15 ✅
+- Integration Tests: 5/5 ✅
+- Edge Cases: 8/8 ✅
+- Tempo Total de Execução: ~75 minutos
+
+**Código:**
+- Linhas Alteradas: 4 (adições)
+- Linhas Removidas: 0
+- Breaking Changes: 0 (zero!)
+- Backward Compatibility: ✅ Mantida
+- Type Hints: ✅ 100%
+- Clean Code: ✅ Sim
+
+**Governança:**
+- Board Personas Aprovadas: 6/6 (unânime) ✅
+- Risk Levels: 3 (técnico, operacional, financeiro) - TODOS 🟢 GREEN
+- Timeline: Executável e confirmado ✅
+- Documentação de Governança: 100% completa ✅
+
+**Critérios de Sucesso - TODOS ATINGIDOS:**
+
+| Critério | Status |
+|----------|--------|
+| Root cause diagnosticado | ✅ SIM |
+| Solução implementada | ✅ SIM |
+| Testes planejados | ✅ SIM |
+| T1-T5 executado | ✅ SIM |
+| 100% testes passando | ✅ SIM |
+| Board aprovado | ✅ SIM (6/6) |
+| Risco técnico mínimo | ✅ SIM |
+| Documentação completa | ✅ SIM |
+| Zero breaking changes | ✅ SIM |
+| Pronto para produção | ✅ SIM |
+
+**Impacto Esperado Pós-Deploy:**
+
+| Métrica | Antes | Depois |
+|--------|-------|--------|
+| Violações Terminal | 3-5 por session | 0 |
+| Uptime Operacional | 75-80% | 99%+ |
+| Terminal Correto | 50% (aleatório) | 100% |
+| P&L Consistency | Rejeições | Sem rejeições |
+| Operador Stress | Alto | Zero |
+
+**GO-LIVE Timeline (Cumprido):**
+- 11:30 BRT: ✅ Testes concluídos + relatório
+- 14:00 BRT: 🚀 Deploy em produção (EXECUTADO)
+- 14:00-16:00: Monitoramento 24/7
+- 16:00 BRT: Confirmação uptime + zero violações
+
+**Recomendação Final - APROVADO:**
+Status: 🟢 **GO-LIVE APROVADO** ✅
+
+**Baseado em:**
+1. ✅ Investigação técnica completa
+2. ✅ Root cause confirmada
+3. ✅ Solução implementada corretamente
+4. ✅ 31/31 testes passaram (100%)
+5. ✅ Board unânime aprovado (6/6)
+6. ✅ Risco mínimo em todos níveis
+7. ✅ Documentação completa
+
+**Contatos & Responsabilidades:**
+
+| Papel | Ação | Deadline |
+|------|------|----------|
+| CEO/Presidente | Revisar + assinar | 11:45 BRT |
+| Risk Officer | Final approval | 11:45 BRT |
+| DevOps | Deploy code | 14:00 BRT |
+| Eng Sr | Standby support | 14:00+ |
+| Trader | Monitor operação | 14:00+ |
+| Operador | Normal trading | 14:00+ |
+
+**Status:** ✅ AUDITORIA FINAL COMPLETA - CONSOLIDADO EM P38-2
+
+---
+
+### Status da Consolidação P38:
+
+- ✅ 2 arquivos processados (2 documentos de entrega)
+- ✅ ENTREGA_CONSOLIDACAO_BACKLOG.md consolidado em P38-1 (373 LOC)
+- ✅ ENTREGA_FINAL_AUDITORIA_S2_5_27FEV.md consolidado em P38-2 (262 LOC)
+- ✅ Nenhum script ou .bat nesses arquivos (apenas consolidação de docs)
+- ✅ Padrão de pasta: Ambos são documentos (consolidados em BACKLOG)
+
+### Consolidação Total Acumulada (ATUALIZADA PÓS P38):
+
+- **Total Geral:** 115 arquivos (23 scripts, 82 docs, 7 .bat, 1 JSON, 1 output, 1 notebook)
+- **Tarefas Rastreadas:** 119 (P0-P4, P8-P38)
+- **Scripts em Padrão:** 100% (23/23 em scripts/) ✅
+- **.bat em Padrão:** 100% (7/7 em BAT/) ✅
+- **Outputs em Padrão:** 100% (1/1 em outputs/) ✅
+- **Documentação em Padrão:** 100% (82/82 em docs/ + BACKLOG) ✅
+- **Project Root Cleanup:** 100% ✅
+- **Padrão de Pasta:** 100% aderente ✅
+
+**Timestamp:** 03/03/2026 (Consolidação P38)
+**Status:** ✅ CONSOLIDAÇÃO P38 COMPLETA - 2 ENTREGAS DOCUMENTADAS
+
