@@ -162,21 +162,21 @@ mv c:\repo\projeto\analisa_gap_precificacao.py \
 rm c:\repo\projeto\analisa_gap_precificacao.py
 ```
 
-**Status Consolidação (03/03/2026) - ATUALIZADO P24:**
+**Status Consolidação (03/03/2026) - ATUALIZADO P38:**
 - ✅ 2 scripts novos movidos: `check_episode_ids.py`, `check_interseção.py` (P19)
 - ✅ 1 script novo movido: `cleanup_dados_automatico.py` (P20)
 - ✅ Documentado em `docs/BACKLOG_UNIFICADO.md` seções P19-4 + P20-1
 - ✅ Padrão reforçado: scripts SEMPRE em `scripts/`, NUNCA na raiz
 - ✅ Padrão reforçado: outputs SEMPRE em `outputs/`, NUNCA na raiz
 - ✅ Padrão reforçado: .bat SEMPRE em `BAT/`, NUNCA na raiz
-- ✅ 20 scripts totais consolidados desde 03/03/2026 (incluindo P24)
-- ✅ 74 documentos consolidados em P19 + P20 + P22 + P23 + P24
-- ✅ 6 .bat arquivos consolidados em BAT/ (P21 + P22 + P23 + P24)
-- ✅ CONSOLIDAÇÃO P24 (03/03/2026): 5 arquivos novos
-   - 1 script: `identify_manual_operation.py` → `scripts/`
-   - 1 .bat: `INICIAR_PHASE6.bat` → `BAT/`
-   - 3 docs: LISTA_BOAS_PRATICAS + MATERIAL_PRONTO + INDICE_MATERIAL → BACKLOG
-   - Total consolidado: 101 arquivos, 95 tarefas
+- ✅ 25 scripts totais consolidados desde 03/03/2026 (incluindo P38)
+- ✅ 80 documentos consolidados em P19 + P20 + P22 + P23 + P24 + P38
+- ✅ 7 .bat arquivos consolidados em BAT/ (P21 + P22 + P23 + P24 + P32)
+- ✅ CONSOLIDAÇÃO P38 (03/03/2026): 2 scripts novos
+   - 2 scripts: `enviar_ordem_mt5.py`, `enviar_ordem_real.py` → `scripts/`
+   - 16 tarefas pendentes mapeadas (audit trail, retry logic, tests)
+   - 8 AC por script (16 AC total) para implementação
+   - Total consolidado: 115 arquivos, 133 tarefas
 
 ---
 

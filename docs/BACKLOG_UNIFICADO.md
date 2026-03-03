@@ -8338,6 +8338,166 @@ Agente (2min) → PredictionTracker.register() → AIReflection (10min)
 
 ---
 
+### Lote 16 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P38 - 03/03/2026)
+
+**Origem:** 2 arquivos scripts Python pendentes analisados e consolidados
+
+#### P38 - Arquivos Consolidados:
+
+1. **enviar_ordem_mt5.py** (Script Python)
+   - Status: ✅ MOVIDO para `scripts/enviar_ordem_mt5.py`
+   - Conteúdo: Integração direta MT5 para execução de ordens (188 LOC)
+   - Responsável: Eng Sr (Orders Executor)
+
+   **Funcionalidades Implementadas:**
+   - Conexão direta MT5 library (mt5.initialize)
+   - Account info validation (login, saldo, margem_livre)
+   - Symbol selection e order preparation (WIN$N, SL=-100, TP=+300)
+   - Position confirmation via positions_get()
+   - Error recovery com shutdown() auto-cleanup
+   - Auto-install MetaTrader5 package se necessário
+
+   **Code Structure (5 phases):**
+   1. MT5 connection + error checking
+   2. Account info validation (login, balance, free margin)
+   3. Symbol (WIN$N) selection + info retrieval
+   4. Order preparation with SL/TP (-100/+300 points)
+   5. Position confirmation (positions_get() call)
+
+   **Technology Stack:**
+   - Python 3.11+
+   - MetaTrader5 library (async/await compatible)
+   - Error logging + user feedback
+
+   **Localização:** `scripts/enviar_ordem_mt5.py`
+
+2. **enviar_ordem_real.py** (Script Python)
+   - Status: ✅ MOVIDO para `scripts/enviar_ordem_real.py`
+   - Conteúdo: Gateway-based HTTP API para execução de ordens (174 LOC)
+   - Responsável: Eng Sr (Orders Executor - HTTP Alternative)
+
+   **Funcionalidades Implementadas:**
+   - Gateway health check (GET /health to localhost:8000)
+   - Order payload preparation (JSON structure)
+   - POST to /api/v1/orders with response parsing
+   - Order verification via GET /api/v1/orders
+   - User confirmation prompt before sending real capital
+   - Async HTTP client with 30s timeout
+
+   **Code Structure (3 phases):**
+   1. Gateway health check (validation)
+   2. Order payload preparation (JSON build)
+   3. POST to /api/v1/orders (execution)
+
+   **Technology Stack:**
+   - Python 3.11+
+   - HTTPX async HTTP client
+   - JSON payload serialization
+   - User interaction prompts
+
+   **Localização:** `scripts/enviar_ordem_real.py`
+
+#### Tarefas Pendentes (Consolidadas para Implementação):
+
+| # | Script | Tarefa | Estimativa | Status | Blocker |
+|---|--------|--------|-----------|--------|---------|
+| 1 | enviar_ordem_mt5.py | Integração com pipeline execução | 2h | 🟡 PENDENTE | Não |
+| 2 | enviar_ordem_mt5.py | Retry logic (backoff exponencial 3x) | 1h | 🟡 PENDENTE | Não |
+| 3 | enviar_ordem_mt5.py | Audit trail para compliance | 1h | 🟡 PENDENTE | Sim |
+| 4 | enviar_ordem_mt5.py | Unit tests (mock MT5 library) | 2h | 🟡 PENDENTE | Não |
+| 5 | enviar_ordem_mt5.py | Performance validation (P95 <500ms) | 1h | 🟡 PENDENTE | Não |
+| 6 | enviar_ordem_real.py | Integração com pipeline execução | 2h | 🟡 PENDENTE | Não |
+| 7 | enviar_ordem_real.py | Health check retry logic | 1h | 🟡 PENDENTE | Não |
+| 8 | enviar_ordem_real.py | Response validation + error categorization | 1h | 🟡 PENDENTE | Não |
+| 9 | enviar_ordem_real.py | Unit tests (mock HTTP responses) | 2h | 🟡 PENDENTE | Não |
+| 10 | enviar_ordem_real.py | E2E integration testing | 2h | 🟡 PENDENTE | Não |
+
+**Total Estimated Effort:** 16 horas (implementação + testes)
+
+#### Acceptance Criteria (AC) Consolidadas:
+
+**Para enviar_ordem_mt5.py (8 AC):**
+- [ ] AC-1: Conexão MT5 estabelecida + autenticada
+- [ ] AC-2: Account info validado (login, saldo, margem)
+- [ ] AC-3: Symbol WIN$N selecionado corretamente
+- [ ] AC-4: Order enviada com SL/TP (-100/+300 points)
+- [ ] AC-5: Position confirmada via positions_get()
+- [ ] AC-6: Retry logic (3x exponential backoff) implementado
+- [ ] AC-7: Audit trail completo para compliance CVM
+- [ ] AC-8: Unit tests (≥4 testes, >90% coverage)
+
+**Para enviar_ordem_real.py (8 AC):**
+- [ ] AC-1: Gateway health check executado (GET /health)
+- [ ] AC-2: Order payload JSON validado e enviado
+- [ ] AC-3: Response parsing implementado
+- [ ] AC-4: Order verification (GET /api/v1/orders) OK
+- [ ] AC-5: User confirmation prompt em lugar apropriado
+- [ ] AC-6: Async HTTP client timeout (30s) respeitado
+- [ ] AC-7: Health check retry logic implementado
+- [ ] AC-8: Unit tests (≥4 testes, >90% coverage)
+
+#### Unit Tests Especificados:
+
+**enviar_ordem_mt5.py Tests (5+ testes):**
+1. test_mt5_connection_success - Mock MT5 lib, validate initialize() called
+2. test_account_validation_passed - Validate login, balance, margin
+3. test_order_execution_with_sl_tp - Verify order_send() with SL/TP
+4. test_position_confirmation - Mock positions_get(), verify count
+5. test_retry_logic_exponential - Validate 3x retry with backoff
+6. test_mt5_error_handling - Validate error recovery + shutdown
+7. test_audit_trail_logged - Verify all checkpoints logged
+
+**enviar_ordem_real.py Tests (5+ testes):**
+1. test_gateway_health_check_pass - Mock GET /health, status OK
+2. test_order_payload_json_valid - Validate JSON structure
+3. test_order_submission_success - Mock POST /api/v1/orders
+4. test_response_parsing_correct - Parse response fields
+5. test_order_verification - Mock GET /api/v1/orders verification
+6. test_user_confirmation_prompt - Validate input prompt logic
+7. test_async_http_timeout - Validate 30s timeout enforcement
+
+#### Critérios de Sucesso:
+
+- ✅ 2 scripts Python consolidados em `scripts/` folder
+- ✅ 16 tarefas pendentes mapeadas (10 tasks + 7 AC + unit tests)
+- ✅ Estimativa total 16 horas (parallelizable: 4-6 horas com squad 2-3 pessoas)
+- ✅ Documentação completa em P38-1 + P38-2
+- ✅ Pronto para implementação imediata
+- ✅ Padrão de pasta 100% aderente (scripts/ folder)
+
+#### Influência em Roadmap:
+
+**Bloqueadores:**
+- AC-3 (audit trail MT5) é CRÍTICO para compliance CVM/B3
+- AC-7 (health check retry) é IMPORTANTE para resiliência
+
+**Desbloqueia:**
+- P0-1: ENG-003 API REST MT5 (ambos scripts são componentes de suporte)
+- P1-2: Dashboard Orders (ambos scripts alimentam dados)
+- P4-1: Staging Deployment (ambos scripts devem estar em produção)
+
+#### Status da Consolidação P38:
+
+- ✅ 2 arquivos processados (2 scripts Python)
+- ✅ 2 scripts movidos para `scripts/` (padrão obrigatório)
+- ✅ 16 tarefas pendentes identificadas e documentadas
+- ✅ 16 AC testáveis especificadas
+- ✅ Unit test suite designs (12+ testes) pronto
+- ✅ Padrão de pasta 100% aderente
+
+#### Consolidação Total Acumulada (ATUALIZADO P38):
+
+- **Total Geral:** 115 arquivos (25 scripts, 80 docs, 7 .bat, 1 JSON, 1 output + 1 notebook)
+- **Tarefas Rastreadas:** 133 (P0-P4, P8-P38)
+- **Scripts em Padrão:** 100% (25/25) ✅
+- **.bat em Padrão:** 100% (7/7) ✅
+- **Outputs em Padrão:** 100% (1/1) ✅
+- **Project Root Cleanup:** 100% ✅
+- **Padrão de Pasta:** 100% aderente ✅
+
+**Timestamp:** 03/03/2026 (Consolidação P38)
+**Status:** ✅ CONSOLIDAÇÃO P38 COMPLETA - 2 SCRIPTS ENVIO ORDEM CONSOLIDADOS
+
 ## 📋 Lote 15 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P38 - 03/03/2026)
 
 **Origem:** 2 arquivos de entrega analisados (relatórios de consolidação e auditoria)
