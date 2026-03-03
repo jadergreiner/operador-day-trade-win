@@ -580,6 +580,48 @@ Padrão estabelecido 03/03/2026 para TODAS consolidações futuras:
 **Status:** ✅ COMPLETO E VALIDADO - CONSOLIDAÇÃO P26 FINALIZADA
 
 ---
+
+### Lote 8 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P27 - 03/03/2026)
+
+**Origem:** 1 arquivo pendente analisado (1 documento Markdown)
+
+#### P27 - Arquivo Consolidado:
+
+1. **DELIBERACAO_TASKS_PARALELAS_24FEV_CORRIGIDO.md** (Documento Markdown)
+   - Status: ✅ CONSOLIDADO em P27-1
+   - Conteúdo: Deliberação strategica 3 tasks paralelas (382 LOC)
+   - Tasks: S2-5 (Probab. T+60), S2-7 (Telegram v2), S2-8 (Hot-Reload Pesos)
+   - Validação: Product Owner aprova execução paralela
+   - Squad: 4 personas designadas (ML Expert lead + 3 Support)
+   - Tarefas: 3 tasks com 19 AC totais definidos e testáveis
+   - Estimativa: 23 horas com paralelismo (15h + 3h + 5h paralelo)
+   - Impacto: +2-3% win rate + UX melhorada + tunning operacional
+   - Risk: 🟢 BAIXO (designs prontos, código modular)
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P27-1
+
+#### Status da Consolidação P27:
+
+- ✅ 1 arquivo processado (1 documento Markdown estratégico)
+- ✅ Deliberação formally consolidada com PO approval
+- ✅ 3 tasks paralelas documentadas com AC completos
+- ✅ Squad multidisciplinar designada
+- ✅ 19 acceptance criteria mapeados e testáveis
+
+#### Consolidação Total Acumulada (ATUALIZADA PÓS P27):
+
+- **Total Geral:** 106 arquivos (21 scripts, 78 docs, 6 .bat, 1 JSON)
+- **Tarefas Rastreadas:** 102 (P0-P4, P8-P27)
+- **Código Consolidado:** ~7.500 LOC scripts
+- **Scripts em Padrão:** 100% (21/21) ✅
+- **.bat em Padrão:** 100% (6/6) ✅
+- **Documentação em Padrão:** 100% (78 docs em BACKLOG) ✅
+- **Project Root Cleanup:** 100% ✅
+- **Padrão de Pasta:** 100% aderente ✅
+
+**Timestamp:** 03/03/2026 (Consolidação Lote 8 - P27)
+**Status:** ✅ COMPLETO E VALIDADO - CONSOLIDAÇÃO P27 FINALIZADA
+
+---
    - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-4
 
 #### Processo de Consolidação

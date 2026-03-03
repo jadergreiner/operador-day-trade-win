@@ -5859,6 +5859,192 @@ Após INTEGRATION-ML-002 ✅:
 
 ---
 
+## 📋 Lote 9 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P27 - 03/03/2026)
+
+**Origem:** 1 arquivo pendente analisado (1 documento Markdown)
+**Data Consolidacao:** 03/03/2026
+
+#### P27-1: Deliberação Tasks Paralelas Prioritárias (DELIBERACAO_TASKS_PARALELAS_24FEV_CORRIGIDO.md)
+
+**Status:** ✅ CONSOLIDADO em P27-1
+**Arquivo Origem:** DELIBERACAO_TASKS_PARALELAS_24FEV_CORRIGIDO.md (382 LOC)
+**Tipo:** Documento Markdown (Deliberação Estratégica/Business)
+**Data Deliberação:** 24/02/2026 (CORRIGIDO)
+
+**Contexto:** Priorização corrigida de 3 tasks paralelas que entregam valor DIRETO no operador v1.1 AGORA
+
+**Decisão Aprovada:**
+✅ **3 TASKS PARALELAS APROVADAS** para execução imediata + concomitante
+
+**3 Tasks Prioritárias Identificadas:**
+
+1. **S2-5: Probabilidade T+60 (Previsão Direcional 1h)**
+   - Status: ✅ PRONTA para execução
+   - Owner: ML Expert (Persona 4)
+   - Estimativa: 15 horas
+   - Impacto: +2-3% win rate via modelo ML integrado
+   - Deliverables: 
+     - `src/models/modelo_t60_xgboost.pkl` (modelo serializado)
+     - `src/ml/t60_feature_engineer.py` (150+ LOC feature engineering)
+     - `tests/test_s2_5_model.py` (180+ LOC tests)
+   - AC: 7 critérios (dataset, features, labels, treinamento, CV, integração, backtest)
+   - Como agrega valor: Filtro ML que melhora win rate ao confirmar direção T+60
+   - Bloqueadores: NENHUM ✅
+
+2. **S2-7: Telegram Integration v2 (Better UX)**
+   - Status: ✅ PRONTA para execução
+   - Owner: Eng Sr (Persona 3)
+   - Estimativa: 3 horas
+   - Impacto: Melhor UX para trader (menos spam, mais organizado)
+   - Deliverables:
+     - `src/integrations/telegram_bot_v2.py` (150-180 LOC atualizado)
+     - `src/integrations/telegram_message_formatter.py` (80+ LOC templates)
+     - `tests/test_telegram_v2.py` (100+ LOC integração tests)
+   - AC: 6 critérios (bot ativo, threads/topics, deduplicação, buttons, formatting, tests)
+   - Como agrega valor: Notificações organizadas em 3 tópicos (Sinais/Posições/Macro)
+   - Bloqueadores: NENHUM ✅
+
+3. **S2-8: Hot-Reload de Pesos (Live Tuning)**
+   - Status: ✅ PRONTA para execução
+   - Owner: Eng Sr (Persona 3)
+   - Estimativa: 5 horas
+   - Impacto: Ajustes operacionais ao vivo sem downtime
+   - Deliverables:
+     - `src/config/hot_reload_config.py` (120-150 LOC ConfigManager)
+     - `config/pesos_atr_smc.yaml` (template com comentários)
+     - `tests/test_hot_reload.py` (100+ LOC file watcher tests)
+   - AC: 6 critérios (config YAML, file watcher, reload sem parar, validação, rollback, tests)
+   - Como agrega valor: Recarregar pesos ATR/SMC em <2 segundos, sem parar operador
+   - Bloqueadores: NENHUM ✅
+
+**Validação de Negócio (PO Approval):**
+
+✅ **Product Owner (Persona 14)** valida:
+- Essas 3 tasks entregam valor DIRETO no operador v1.1? **SIM** ✅
+- Alinha com roadmap? **SIM** ✅
+- Impacto operador? **SIM** (P&L +2-3%, UX+15%, Tunning operacional) ✅
+- Aprovação: **GO - Executar as 3 em paralelo**
+
+**Squad Multidisciplinar Designada (12 personas):**
+
+```
+TASK 1 (S2-5 - 15h):
+  • Lead: Persona 4 (ML Expert)
+  • Support: Persona 6 (Arquiteto), Persona 12 (QA), Persona 17 (Doc)
+
+TASK 2 (S2-7 - 3h) PARALELO:
+  • Lead: Persona 3 (Eng Sr)
+  • Support: Persona 6 (Arquiteto), Persona 12 (QA), Persona 17 (Doc)
+
+TASK 3 (S2-8 - 5h) PARALELO:
+  • Lead: Persona 3 (Eng Sr)
+  • Support: Persona 6 (Arquiteto), Persona 12 (QA), Persona 17 (Doc)
+
+Total Squad: 4 personas core (tempo paralelo)
+Estimativa Total: 23 horas com paralelismo
+```
+
+**Sequência de Execução:**
+
+1. **Priority Order:**
+   - TASK 1 (S2-5) → PRIMEIRA (entrega valor +2-3% win rate)
+   - TASK 2 (S2-7) → PARALELO com TASK 1 (UX improvement)
+   - TASK 3 (S2-8) → PARALELO com TASK 1+2 (operational tuning)
+
+2. **Timeline:** Sem datas específicas (apenas prioridade de ordem)
+   - S2-5 início imediato
+   - S2-7/8 podem começar concomitantly
+
+**Documentação Técnica Referenciada:**
+
+- S2-5 Spec: 267 LOC (design document completo)
+- Dataset T+60: 43.200 velas M1 (3 meses últimos)
+- Features: 25 engineered (RSI, MACD, ATR, Bollinger, CCI, ROC, Slope, STD)
+- Model: XGBoost com F1 ≥ 0.62 em test set
+- CV: 5-fold time-series (zero data leakage)
+
+**Pré-requisitos Validados (Todos ✅):**
+
+- ✅ 3 designs PRONTOS (telegram bot existe, config file-watcher design ready)
+- ✅ Code base PREPARADO (integração Telegram ativa, config system em lugar)
+- ✅ Dataset T+60 PRONTO (43K velas carregadas)
+- ✅ Squad DESIGNADA (4 personas, roles claros)
+- ✅ 19 AC DEFINIDOS (todos testáveis)
+- ✅ Risco BAIXO (designs prontos, código modular, baixa complexidade)
+
+**Risk Management:**
+
+- **Architectural Risk:** 🟢 BAIXO
+  - ML Model: Validação via CV testada
+  - Telegram: API v1.0 já funciona, apenas UX melhoria
+  - Hot-Reload: File watcher pattern simples + rollback automático
+
+- **Integration Risk:** 🟢 BAIXO
+  - Todas tasks integram em existing code
+  - Zero breaking changes esperado
+  - Dependencies já installadas
+
+- **Timeline Risk:** 🟢 BAIXO
+  - Tasks pequenas (15h, 3h, 5h com paralelismo)
+  - Nenhum bloqueador externo
+  - Squad disponível paralelo
+
+**Métricas de Sucesso:**
+
+- S2-5: Win rate +2-3% validado em backtest (Sharpe > 0.9)
+- S2-7: UX feedback positivo de trader (confiança +15%)
+- S2-8: Hot-reload <2 seg, uptime 99.9% mantido
+- Todas: Coverage >90%, zero regressions
+
+**Localização Consolidada:** `docs/BACKLOG_UNIFICADO.md` → P27-1
+
+---
+
+### Status da Consolidação P27:
+
+- ✅ 1 arquivo processado (1 documento Markdown estratégico)
+- ✅ Deliberação formally consolidada com PO approval
+- ✅ 3 tasks paralelas documentadas com AC completos
+- ✅ Squad multidisciplinar designada (4 personas)
+- ✅ 19 acceptance criteria totais mapeados e testáveis
+- ✅ Sequência de execução clara + risk assessment
+
+#### Consolidação Total Acumulada (FINAL - INCLUINDO P27):
+
+| Fase | Arquivos | Scripts | Docs | .bat | JSON | Tarefas | Status |
+|------|----------|---------|------|------|------|---------|--------|
+| P0-P4 | 24 | 3 | 21 | 0 | 0 | 27 | ✅ |
+| P8-P11 | 12 | 0 | 12 | 0 | 0 | 11 | ✅ |
+| P19-P20 | 10 | 0 | 10 | 0 | 0 | 12 | ✅ |
+| P21-P22 | 10 | 4 | 5 | 2 | 0 | 10 | ✅ |
+| P23 Lote 5 | 7 | 1 | 5 | 1 | 0 | 7 | ✅ |
+| P24 Lote 6 | 5 | 1 | 3 | 1 | 0 | 5 | ✅ |
+| P25 Lote 7 | 3 | 1 | 2 | 0 | 0 | 3 | ✅ |
+| P26 Lote 8 | 1 | 0 | 1 | 0 | 0 | 1 | ✅ |
+| **P27 Lote 9** | **1** | **0** | **1** | **0** | **0** | **3** | **✅** |
+| **TOTAL GERAL** | **106** | **21** | **78** | **6** | **1** | **102 TAREFAS** | **✅** |
+
+### ESTATÍSTICAS FINAIS (P27 - CONSOLIDAÇÃO PROGRESSIVA):
+
+**Total Consolidado (Phases 1-7 + P19-P27):**
+- **Arquivos:** 106 (21 scripts, 78 docs, 6 .bat, 1 JSON)
+- **Tarefas Rastreadas:** 102 (P0-P4, P8-P27)
+- **Linhas de Código:** ~7.500+ LOC scripts
+- **Documentação:** ~8.100+ linhas de docs consolidadas
+- **Scripts em Padrão:** 100% (21/21) ✅
+- **.bat em Padrão:** 100% (6/6) ✅
+- **Documentação em Padrão:** 100% (78/78 em BACKLOG) ✅
+- **Project Root Cleanup:** 100% ✅
+- **Tasks Estratégicas:** 3 paralelas (S2-5/7/8) com PO approval ✅
+
+**Status Geral:** 🟢 **BACKLOG CONSOLIDAÇÃO PROGRESSIVA (P27 - LOTE 9)**
+
+**Timestamp:** 03/03/2026 (consolidação Lote 9 - P27)
+**Proprietário:** GitHub Copilot
+**Git Status:** 1 file modified (BACKLOG_UNIFICADO.md), 2 files modified (copilot-instructions.md), 1 file deleted (DELIBERACAO_TASKS_PARALELAS_24FEV_CORRIGIDO.md)
+
+---
+
 ## 📋 Lote 5 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P23 - 03/03/2026)
 
 **Origem:** 7 arquivos pendentes analisados (1 script Python + 5 documentos + 1 arquivo .bat)
