@@ -2511,6 +2511,15 @@ class IntraDayLearner:
         self.confidence_adjustments = {}  # pattern → delta
         self.last_adjustment_time = {}  # pattern → timestamp (evita spam)
         self.adjustment_cooldown = timedelta(minutes=5)  # Não ajusta 2x em 5min
+        self._audit_log = []  # Log interno para auditoria
+    
+    def _log_audit(self, event: str) -> None:
+        """Registra evento em log interno (para auditoria sem print)."""
+        timestamp = datetime.now().isoformat()
+        self._audit_log.append(f"{timestamp} | {event}")
+        # Mantém últimas 100 linhas
+        if len(self._audit_log) > 100:
+            self._audit_log = self._audit_log[-100:]
     
     def record_rejection(self, rejection_reasons: list[str]) -> str:
         """Registra um HOLD com seus motivos de rejeição.
@@ -2526,8 +2535,10 @@ class IntraDayLearner:
         if pattern not in self.rejection_patterns:
             self.rejection_patterns[pattern] = 0
             self.validation_results[pattern] = (0, 0)
+            self._log_audit(f"NEW_PATTERN: {pattern}")
         
         self.rejection_patterns[pattern] += 1
+        self._log_audit(f"REJECTION: {pattern}")
         return pattern
     
     def validate_hold(self, pattern: tuple, acertou: bool) -> tuple[Optional[float], str]:
@@ -2553,6 +2564,7 @@ class IntraDayLearner:
         now = datetime.now()
         if pattern in self.last_adjustment_time:
             if now - self.last_adjustment_time[pattern] < self.adjustment_cooldown:
+                self._log_audit(f"VALIDATE: {pattern} = {acertou} ({hits}/{total}) COOLDOWN")
                 return None, f"COOLDOWN: {hit_rate:.0f}% ({hits}/{total})"
         
         # Lógica de ajuste
@@ -2565,11 +2577,15 @@ class IntraDayLearner:
                 adjustment = -self.CONFIDENCE_BOOST  # Negativo = threshold menor = mais agressivo
                 reason = f"BOOST: {hit_rate:.0f}% ({hits}/{total}) - padrão confiável!"
                 self.last_adjustment_time[pattern] = now
+                self._log_audit(f"BOOST: {pattern} = {hit_rate:.1f}% ({hits}/{total})")
             elif hit_rate <= self.LOW_HIT_THRESHOLD:
                 # Pattern está falhando → reduzir confiança
                 adjustment = self.CONFIDENCE_PENALTY  # Positivo = threshold maior = mais conservador
                 reason = f"PENALTY: {hit_rate:.0f}% ({hits}/{total}) - padrão arriscado!"
                 self.last_adjustment_time[pattern] = now
+                self._log_audit(f"PENALTY: {pattern} = {hit_rate:.1f}% ({hits}/{total})")
+        else:
+            self._log_audit(f"VALIDATE: {pattern} = {acertou} ({hits}/{total})")
         
         if adjustment is None:
             return None, f"MONITORING: {hit_rate:.0f}% ({hits}/{total})"
@@ -2580,6 +2596,52 @@ class IntraDayLearner:
     def get_current_adjustments(self) -> float:
         """Retorna soma de todos ajustes ativos."""
         return sum(self.confidence_adjustments.values())
+    
+    def summary_with_actions(self) -> str:
+        """Resumo APENAS de padrões com ajustes reais (BOOST/PENALTY).
+        
+        Aprendizado transparente: Exibe somente quando há ação real.
+        Retorna string vazia se apenas monitorando (sem ajuste ainda).
+        """
+        if not self.confidence_adjustments:
+            return ""  # Sem ajustes - aprendizado transparente
+        
+        lines = []
+        total_adjustment = self.get_current_adjustments()
+        
+        # Separa boosts e penalties
+        boosts = {p: v for p, v in self.confidence_adjustments.items() if v < 0}
+        penalties = {p: v for p, v in self.confidence_adjustments.items() if v > 0}
+        
+        if boosts:
+            lines.append(f"  ⚡ APRENDIZADO ATIVO: Boosting confiança {total_adjustment:.0f}%")
+            for pattern, delta in boosts.items():
+                hits, total = self.validation_results.get(pattern, (0, 0))
+                if total > 0:
+                    hit_rate = hits / total * 100
+                    lines.append(f"     🟢 {pattern}: {hit_rate:.0f}% hit rate ({hits}/{total}) → +agressivo")
+        
+        if penalties:
+            if boosts:
+                lines.append(f"  ")
+            lines.append(f"  ⚡ APRENDIZADO ATIVO: Reduzindo confiança {total_adjustment:.0f}%")
+            for pattern, delta in penalties.items():
+                hits, total = self.validation_results.get(pattern, (0, 0))
+                if total > 0:
+                    hit_rate = hits / total * 100
+                    lines.append(f"     🔴 {pattern}: {hit_rate:.0f}% hit rate ({hits}/{total}) → +conservador")
+        
+        return "\n".join(lines) if lines else ""
+    
+    def export_audit_log(self, filepath: str) -> None:
+        """Exporta log de auditoria para arquivo (sem impacto na tela)."""
+        try:
+            with open(filepath, 'a', encoding='utf-8') as f:
+                f.write(f"\n=== IntraDay Audit Log ===\n")
+                for line in self._audit_log:
+                    f.write(f"{line}\n")
+        except Exception as e:
+            pass  # Falha silenciosa - não afeta trading
     
     def summary(self) -> str:
         """Resumo status do IntraDay learner."""
@@ -4403,8 +4465,7 @@ def main():
             # ⚡ IntraDayLearner: Registra motivos de rejeição de HOLDs
             if _intraday_learner and result._rejection_reasons:
                 pattern = _intraday_learner.record_rejection(result._rejection_reasons)
-                if len(result._rejection_reasons) <= 3:
-                    print(f"  📝 IntraDay: HOLD registrado ({', '.join(result._rejection_reasons)})")
+                # (Registra silenciosamente - sem print)
 
             # ⚙️ Calibração Dinâmica ATR (S2-2)
             if result.atr_15 > 0:
@@ -4491,11 +4552,10 @@ def main():
 
             # ⚡ IntraDayLearner: Valida HOLDs a cada 5 ciclos (~10 minutos)
             if _intraday_learner and cycle_count % 5 == 0:
-                # Simula validação de último HOLD (em produção viria de PredictionTracker)
-                # Por enquanto, apenas exibe resumo de padrões aprendidos
-                summary = _intraday_learner.summary()
-                if summary and "Pattern" not in summary:  # Tem dados relevantes
-                    print(summary)
+                # Exibe apenas se houver ajustes (boost/penalty) - senão fica transparente
+                summary = _intraday_learner.summary_with_actions()
+                if summary:
+                    print(f"  {summary}")
 
             # Exibe status do trading
             _display_trading_status(trading_mgr if AUTO_TRADING_ENABLED else None)
@@ -4571,6 +4631,11 @@ def main():
                 print(f"\n  ════ RESUMO DO DIA ════")
                 print(f"  Trades: {summary['trades']} │ W/L: {summary['wins']}/{summary['losses']}")
                 print(f"  Win Rate: {summary['win_rate']:.0f}% │ PnL: {summary['daily_pnl']:+.0f} pts")
+
+            # ── Exporta audit log do IntraDay Learner (silenciosamente) ──
+            if _intraday_learner:
+                audit_path = f"outputs/intraday_audit_{_session_id}.log"
+                _intraday_learner.export_audit_log(audit_path)
 
             # ── Auditoria de Sessão (Fim) ──
             _end_session(DB_PATH, _session_id)
