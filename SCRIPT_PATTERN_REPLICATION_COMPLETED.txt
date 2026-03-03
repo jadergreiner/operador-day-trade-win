@@ -1,0 +1,117 @@
+================================================================================
+  ✅ SCRIPT LOCATION PATTERN - REPLICATION COMPLETED (02/03/2026)
+================================================================================
+
+SESSION OBJECTIVE:
+  Replicate script location standard across all developer-facing documentation
+  to codify the practice of storing Python scripts in scripts/ directory only.
+
+PATTERN SOURCE:
+  docs/BACKLOG_UNIFICADO.md (lines 3319-3345)
+  Section: "## 📚 PADRÃO DE LOCALIZAÇÃO: SCRIPTS"
+
+REPLICATION TARGETS (7 documentation files):
+  ✅ docs/ARCHITECTURE.md               [Added to section "Padrão de Scripts"]
+  ✅ docs/BACKLOG_UNIFICADO.md          [Already contained pattern - updated status]
+  ✅ docs/BACKLOG.md                    [Added reference with pattern guidance]
+  ✅ docs/BOARD_MULTIDISCIPLINAR.json   [Added script_standards as JSON config]
+  ✅ docs/CODING_STANDARDS.md           [Added new section #11 - Scripts Standard]
+  ✅ docs/CONTRIBUTING.md               [Added to Module Structure section]
+  ✅ docs/DATA_MODELS.md                [Added reference in Padrões de Codificação]
+
+PATTERN REPLICATED:
+  Folder Structure:
+  ├── scripts/
+  │   ├── analise_*.py          (Analysis scripts - consultancy)
+  │   ├── analyze_*.py          (Analysis scripts - diagnostics)
+  │   ├── run_*.py              (Execution scripts - main)
+  │   ├── launch_*.py           (Initialization scripts)
+  │   ├── check_*.py            (Verification scripts)
+  │   ├── cleanup_*.py          (Cleanup scripts)
+  │   ├── verify_*.py           (Validation/audit scripts)
+  │   ├── extract_*.py          (Data extraction scripts)
+  │   ├── sync_*.py             (Synchronization scripts)
+  │   ├── monitor_*.py          (Monitoring scripts)
+  │   └── README.md             (Scripts documentation)
+
+Benefits Documented:
+  ✅ Avoids polluting project root
+  ✅ Easy location (CI/CD scans scripts/)
+  ✅ Consistent with Single Responsibility Principle
+  ✅ Clear purpose (name starts with clear action)
+  ✅ Organization by category (analise, run, check, etc)
+
+Naming Conventions Documented:
+  ✅ Always use snake_case (ex: analise_rl_training.py)
+  ✅ Start with verb/action (analise, run, check, verify, cleanup)
+  ✅ Include context (rl, sqlite, critical_failure)
+  ✅ NEVER place scripts in root (except if temporary with PR justification)
+
+CONSOLIDATION SUMMARY:
+  This completes the 3-phase consolidation effort:
+
+  PHASE 1: Consolidated 5 files into BACKLOG_UNIFICADO.md (P3 section, 7 tasks)
+  PHASE 2: Consolidated 9 files into BACKLOG_UNIFICADO.md (P5-P6 sections, 10 tasks)
+  PHASE 3: Consolidated 3 scripts into BACKLOG_UNIFICADO.md (P7 section, 10 tasks)
+           + established scripts/ location standard (documented in BACKLOG_UNIFICADO.md)
+
+  PHASE 4 (CURRENT): Replicated pattern across 7 documentation files
+           ✅ ARCHITECTURE.md
+           ✅ BACKLOG_UNIFICADO.md (already had pattern)
+           ✅ BACKLOG.md
+           ✅ BOARD_MULTIDISCIPLINAR.json
+           ✅ CODING_STANDARDS.md
+           ✅ CONTRIBUTING.md
+           ✅ DATA_MODELS.md
+
+CONSOLIDATION STATISTICS:
+  - Total files consolidated: 17 (5 + 9 + 3 in previous phases)
+  - Total backlog tasks added: 27 (7 + 10 + 10)
+  - Pattern replication targets: 7 documentation files ✅ ALL COMPLETE
+  - Scripts moved to scripts/: 3 (analise_rl_training.py, analise_sqlite.py, 
+    analyze_critical_failure.py)
+  - Source files deleted: 17 (consolidation complete, zero dangling references)
+
+GIT COMMIT:
+  Commit Hash: 5bf07a1
+  Message: "docs: Replicate script location standard across all documentation
+            files - Scripts must be in scripts/ directory"
+  Files Changed: 7
+  Insertions: +1569
+  Deletions: -4
+  Branch: main
+
+VERIFICATION:
+  ✅ All 7 target files successfully updated
+  ✅ Pattern text replicated consistently across all files
+  ✅ Enforcement rule added to BOARD_MULTIDISCIPLINAR.json
+  ✅ Cross-references validated (all docs link correctly)
+  ✅ Commit created successfully
+  ✅ No conflicts or warnings
+
+ENFORCEMENT POINTS:
+  1. CODING_STANDARDS.md - Section 11 defines structure and naming conventions
+  2. CONTRIBUTING.md - Module Structure section enforces placement rules
+  3. BOARD_MULTIDISCIPLINAR.json - Review enforcement: "OBRIGATÓRIO - Revisor
+     deve rejeitar PRs com scripts na raiz"
+  4. ARCHITECTURE.md - Architecture principle: "Manter arquitetura limpa, sem
+     poluição de scripts na raiz do projeto"
+
+NEXT STEPS:
+  1. All developers must reference docs/CODING_STANDARDS.md section 11 for
+     script placement guidelines
+  2. Code reviewers enforce rule: REJECT any PR attempting to add scripts
+     to project root
+  3. CI/CD pipeline should validate scripts/ location as part of pre-commit
+  4. Update team handbook/onboarding docs to reference this standard
+  5. Existing scripts in root (if any remain) should be migrated during
+     next code consolidation pass
+
+STATUS: ✅ COMPLETE - Pattern is now standardized across entire documentation
+         codebase. All developers have single source of truth for script
+         organization practices.
+
+Generated: 02/03/2026 23:45 BRT
+By: GitHub Copilot
+Session: Script Location Pattern Replication & Consolidation Phase 4
+================================================================================
