@@ -9389,3 +9389,107 @@ python scripts/enviar_ordem_agora.py
 **Timestamp:** 03/03/2026+ (Consolidacao P40)
 **Status:** v CONSOLIDACAO P40 COMPLETA - ESPECIFICACAO_TODO1 CONSOLIDATED
 
+---
+
+## 🚀 LOTE 15 - TAREFAS CONSOLIDADAS EM docs/BACKLOG_UNIFICADO.md (SECAO P41 - 03/03/2026)
+
+**Origem:** 2 arquivos pendentes analisados (1 documento Markdown + 1 script Python)
+
+### P41 - Arquivos Consolidados:
+
+#### P41-1: EXECUCAO_10_ATIVIDADES_SPRINT2_FRAMEWORK.md (Documento)
+
+**Status:** ✅ CONSOLIDADO em BACKLOG P41-1 | **Deletado da raiz**
+**Conteudo:** Framework de execução para 10 atividades Sprint 2 (1.000+ LOC)
+**Foco:** 3 tracks paralelos, 11 personas, 356 horas, GATE1 + GATE2 imóveis
+
+**10 Atividades Consolidadas:**
+
+1. **ATI-1: Dashboard de Ordens em Tempo Real**
+   - Prioridade: 🔴 P0-CRÍTICO
+   - Lead: Eng Sr (40h)
+   - AC: 8 critérios (load ordens, WebSocket <100ms, filtros, audit trail, export, UI responsivo, persistencia, alertas)
+
+2. **ATI-2: API de Autenticação OAuth 2.0**
+   - Prioridade: 🔴 P0-CRÍTICO
+   - Lead: Dev-Backend-1 (40h)
+   - AC: 8 critérios (login, JWT token, refresh, password hash bcrypt, rate limit, logout, session, auditoria)
+
+3. **ATI-3: Fila Async de Ordens (RabbitMQ)**
+   - Prioridade: 🔴 P0-CRÍTICO
+   - Lead: Dev-Backend-2 (40h)
+   - AC: 8 critérios (fila async, consumer ACK, DLQ, rastreamento, persistencia, workers 5+, monitoring, health)
+
+4. **ATI-4: WebSocket Real-Time Positions**
+   - Prioridade: 🔴 P0-CRÍTICO
+   - Lead: Dev-Backend-3 (40h)
+   - AC: 8 critérios (conecta, updates <100ms, P&L real-time, SL/TP, reconexão, múltiplas conexões, filtragem, TLS)
+
+5. **ATI-5: Análise de Features SHAP + Correlação**
+   - Prioridade: 🟡 P1-IMPORTANTE (Independente)
+   - Lead: ML Expert (44h)
+   - AC: 8 critérios (SHAP values, Top 10 features, waterfall, dependence, correlation matrix, VIF, importância, relatório)
+
+6. **ATI-6: Regras de Drift + Alertas**
+   - Prioridade: 🟡 P1-IMPORTANTE (Independente)
+   - Lead: Data Scientist (44h)
+   - AC: 8 critérios (mudança média, teste KS, correlação change, 4 níveis alerta, hourly, histórico, config, relatório semanal)
+
+7. **ATI-7: Backtest de 252 Dias Completo [BLOQUEADO]**
+   - Prioridade: 🔴 P0-CRÍTICO (Sequencial - Aguarda GATE 1)
+   - Lead: ML Expert (44h)
+   - AC: 20 critérios (dataset 252d, validação datas, Sharpe, win rate, drawdown, regime, features, equity curve, etc)
+   - GATE2 Criterios: Sharpe >=1.0, Win Rate >=59%, Drawdown <15%
+
+8. **ATI-8: Retry Logic (3x Backoff Exponencial)**
+   - Prioridade: 🔴 P0-CRÍTICO
+   - Lead: Dev-Backend-2 (32h)
+   - AC: 8 critérios (retry 3x, backoff 1s→2s→4s, erro transitório, logging, DLQ, notificação, histórico, monitoramento)
+
+9. **ATI-9: Position Monitoring + SL/TP Automático**
+   - Prioridade: 🔴 P0-CRÍTICO
+   - Lead: Dev-Backend-3 (32h)
+   - AC: 8 critérios (GET /positions, GET {id}, PUT {id}/sl-tp, histórico, monitoramento contínuo, auto SL, auto TP, notificação)
+
+10. **ATI-10: Capital Decision Framework (GATE 2) [BLOQUEADO]**
+    - Prioridade: 🔴 P0-CRÍTICO (Sequencial - Aguarda GATE 1)
+    - Lead: ML Expert + CFO (40h total)
+    - AC: 10 critérios (Sharpe >=1.0, Win Rate >=59%, Drawdown <15%, dashboard, relatório GO/NO-GO, aprovação CFO, ativação capital)
+    - **RESULTADO:** Ativa R$ 100k Fase 2 se GO
+
+**Estrutura Paralela (6-8 semanas):**
+- TRACK 1: INFRAESTRUTURA (ATI-1,2,3,4,8,9) = 224h
+- TRACK 2: ANÁLISE (ATI-5,6) = 88h
+- TRACK 3: VALIDAÇÃO (ATI-7,10) = 84h [SEQUENCIAL após GATE1]
+
+**Total Consolidado:** 10 ATI + 66 AC + 98+ testes + ~2.300 LOC código + 356h + 6-8 semanas + R$ 100k ativação
+
+**Localização:** `docs/BACKLOG_UNIFICADO.md` → P41-1
+
+---
+
+#### P41-2: execute_head_financeiro_buy.py (Script Python)
+
+**Status:** ✅ MOVIDO para `scripts/execute_head_financeiro_buy.py`
+**Conteudo:** Script de execução de ordem BUY automática (135 LOC)
+**Propósito:** Teste MT5 com AI Reflection Journal para operação estratégica manual
+
+**Funcionalidades:** Conexão MT5, query preço/abertura, cálculo SL/TP, envio ordem BUY, registro no Diário
+
+**Parâmetros:** symbol_code="WING26", SL=-250pts, TP=+500pts, magic=234000
+
+**Localização Nova:** `scripts/execute_head_financeiro_buy.py`
+
+---
+
+#### Status da Consolidacao P41:
+
+- ✅ 2 arquivos processados (1 documento + 1 script)
+- ✅ EXECUCAO_10_ATIVIDADES_SPRINT2_FRAMEWORK.md consolidado em P41-1
+- ✅ execute_head_financeiro_buy.py movido para `scripts/`
+- ✅ Total: 119 arquivos consolidados (26 scripts, 83 docs, 7 .bat, 1 JSON, 1 output, 1 notebook)
+- ✅ Tarefas rastreadas: 158+ (P0-P4, P8-P41)
+
+**Timestamp:** 03/03/2026 (Consolidacao P41)
+**Status:** ✅ CONSOLIDACAO P41 COMPLETA - 119 ARQUIVOS, 158+ TAREFAS
+

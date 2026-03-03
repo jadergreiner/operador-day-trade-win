@@ -162,15 +162,15 @@ mv c:\repo\projeto\analisa_gap_precificacao.py \
 rm c:\repo\projeto\analisa_gap_precificacao.py
 ```
 
-**Status Consolidação (03/03/2026+) - ATUALIZADO P40:**
+**Status Consolidação (03/03/2026+) - ATUALIZADO P41:**
 - ✅ 2 scripts novos movidos: `check_episode_ids.py`, `check_interseção.py` (P19)
 - ✅ 1 script novo movido: `cleanup_dados_automatico.py` (P20)
 - ✅ Documentado em `docs/BACKLOG_UNIFICADO.md` seções P19-4 + P20-1
 - ✅ Padrão reforçado: scripts SEMPRE em `scripts/`, NUNCA na raiz
 - ✅ Padrão reforçado: outputs SEMPRE em `outputs/`, NUNCA na raiz
 - ✅ Padrão reforçado: .bat SEMPRE em `BAT/`, NUNCA na raiz
-- ✅ 25 scripts totais consolidados desde 03/03/2026 (incluindo P38)
-- ✅ 82 documentos consolidados em P19 + P20 + P22 + P23 + P24 + P38 + P39 + P40
+- ✅ 26 scripts totais consolidados desde 03/03/2026 (incluindo P38-P41)
+- ✅ 83 documentos consolidados em P19 + P20 + P22 + P23 + P24 + P38 + P39 + P40 + P41
 - ✅ 7 .bat arquivos consolidados em BAT/ (P21 + P22 + P23 + P24 + P32)
 - ✅ CONSOLIDAÇÃO P38 (03/03/2026): 2 scripts novos
    - 2 scripts: `enviar_ordem_mt5.py`, `enviar_ordem_real.py` → `scripts/`
@@ -186,6 +186,12 @@ rm c:\repo\projeto\analisa_gap_precificacao.py
    - 7 AC testáveis mapeados (dataset, labels, features, splits, stats, names, tests)
    - Squad multidisciplinar 4 personas designada (3.75h total)
    - Total consolidado: 116 arquivos + 148+ tarefas
+- ✅ CONSOLIDAÇÃO P41 (03/03/2026): 2 arquivos - 10 ATI + 1 script
+   - 1 documento: EXECUCAO_10_ATIVIDADES_SPRINT2_FRAMEWORK.md (1.000+ LOC) → consolidado em BACKLOG P41-1
+   - 1 script: `execute_head_financeiro_buy.py` (135 LOC) → `scripts/execute_head_financeiro_buy.py`
+   - 10 atividades (ATI-1 thru ATI-10) com 66 AC + 98+ testes + 356h alocadas
+   - 6-8 semanas timeline, 2 GATE checkpoints, R$ 100k capital ativação
+   - Total consolidado: 119 arquivos + 158+ tarefas
 
 ---
 
