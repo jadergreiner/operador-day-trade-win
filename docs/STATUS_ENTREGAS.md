@@ -225,11 +225,11 @@ Aprendizado em tempo real (intraday) de padrões operacionais durante trading se
 1. **Silent Registration** (linha 4407-4409)
    - HOLD rejections registradas sem output na tela
    - Categorização: volatility, capital, correlation, custom
-   
+
 2. **Hit Rate Tracking** (contínuo)
    - Calcula % de acertos do padrão desde início de sessão
    - Mínimo 5 ocorrências para disparar ajuste
-   
+
 3. **Action-based Display** (a cada 5 ciclos)
    - Mostra APENAS sumário se boost (+5%) ou penalty (-10%) aplicado
    - Modo transparente: operador não vê poluição de logs
@@ -239,12 +239,12 @@ Aprendizado em tempo real (intraday) de padrões operacionais durante trading se
    - `_preflight_check_mt5()` valida terminal path antes de trading iniciar
    - Testa conexão com valida isolamento
    - Bloqueia startup se falha
-   
+
 2. **Path Validation** (connection)
    - `os.path.isfile()` verifica arquivo terminal executable
    - CLEAR terminal path required ou auto-detect
    - BrokerConnectionError se path inválido
-   
+
 3. **Runtime Isolation Monitoring** (a cada ~30s ciclo)
    - `mt5._validate_terminal_isolation()` em cada Decision
    - Detecta desconexões automáticas

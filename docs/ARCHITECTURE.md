@@ -15,6 +15,33 @@ Sistema de trading quantitativo para Mini Índice Brasileiro (WIN) com arquitetu
 4. **SOLID Principles**: Código modular, extensível e testável
 5. **Observability First**: Logging, métricas e auditoria em todas as camadas
 
+---
+
+## 📚 Documentação Complementar (Arquitetura Detalhada)
+
+Este documento é uma **visão geral de alto nível**. Para detalhes implementação:
+
+| Documento | Propósito | Público |
+|-----------|----------|---------|
+| **[DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md)** | Arquitetura orientada a objetos: 10 classes, relacionamentos, padrões | 👨‍💻 Developer |
+| **[REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md)** | 13 regras de negócio formalizadas (6 críticas P0, 4 risco, 3 otimização) | Todos |
+| **[DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md)** | Modelo de dados visual: 10 entidades, relacionamentos, integridade | 👨‍💻 Developer |
+| **[MODELAGEM_DADOS.md](MODELAGEM_DADOS.md)** | Schema SQLite implementado: DDL, indices, triggers, views | 👨‍💻 Developer |
+| **[ADRs.md](ADRs.md)** | 7 decisões arquiteturais com contexto e consequências | 🏗️ Tech Lead |
+| **[CODING_STANDARDS.md](CODING_STANDARDS.md)** | Padrões de código obrigatórios (SOLID, clean code) | 👨‍💻 Developer |
+| **[DATA_MODELS.md](DATA_MODELS.md)** | Descrição dos modelos de dados principais | 👨‍💻 Developer |
+| **[CONTRIBUTING.md](CONTRIBUTING.md)** | Como contribuir ao projeto | Todos |
+
+**Fluxo de Leitura Recomendado:**
+1. Este arquivo (visão geral)
+2. [DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md) (como funciona: classes e padrões)
+3. [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) (o que não pode falhar: regras)
+4. [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md) (fluxo de dados)
+5. [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) (implementação)
+6. [ADRs.md](ADRs.md) (por que cada decisão)
+
+---
+
 ## 📋 PADRÕES DE CÓDIGO E STANDARDS
 
 **Todos os componentes arquiteturais DEVEM ser implementados seguindo [CODING_STANDARDS.md](CODING_STANDARDS.md):**
@@ -973,3 +1000,63 @@ Contém:
 | **P34 SQLite Ready** | ⏳ 05/03 | TBD | Persistence + recovery |
 | **P35 Dynamic Adjust Ready** | ⏳ 06/03 | TBD | Apply boost/penalty |
 | **P36 Dashboard Ready** | ⏳ 07-09/03 | TBD | Real-time visualization |
+
+---
+
+## 🔗 Referências Cruzadas (Integridade Arquitetural)
+
+### Relacionamentos Entre Documentos
+
+```
+ARCHITECTURE.md (visão geral)
+├── DIAGRAMA_CLASSES.md (classes e padrões)
+│   ├── REGRAS_NEGOCIO.md (regras em classes)
+│   ├── ADRs.md#ADR-007 (event-driven pattern)
+│   └── CODING_STANDARDS.md (implementação)
+├── DIAGRAMA_DADOS.md (entidades e ER)
+│   ├── MODELAGEM_DADOS.md (DDL schema)
+│   ├── REGRAS_NEGOCIO.md (validações em dados)
+│   └── DATA_MODELS.md (descrição de modelos)
+├── REGRAS_NEGOCIO.md (a que não falha)
+│   ├── ADRs.md (decisões por trás das regras)
+│   ├── DIAGRAMA_CLASSES.md (implementação)
+│   └── MODELAGEM_DADOS.md (restrições em DB)
+├── ADRs.md (por que cada decisão)
+│   ├── REGRAS_NEGOCIO.md (regras decorrentes)
+│   ├── DIAGRAMA_CLASSES.md (implementação)
+│   └── MODELAGEM_DADOS.md (schema decorrente)
+├── CODING_STANDARDS.md (como implementar)
+│   ├── DIAGRAMA_CLASSES.md (padrões aplicados)
+│   └── CONTRIBUTING.md (como contribuir)
+└── DATA_MODELS.md (descrição de modelos)
+    ├── DIAGRAMA_DADOS.md (visão ER)
+    └── MODELAGEM_DADOS.md (implementação SQL)
+```
+
+### Matriz de Rastreamento (Qual documento para qual dúvida?)
+
+| Dúvida | Documento Principal | Documentos Relacionados |
+|--------|-------------------|------------------------|
+| **Como o sistema é estruturado?** | ARCHITECTURE.md | DIAGRAMA_CLASSES.md |
+| **Quais classes existem?** | DIAGRAMA_CLASSES.md | DIAGRAMA_DADOS.md, REGRAS_NEGOCIO.md |
+| **O que não pode falhar?** | REGRAS_NEGOCIO.md | ADRs.md, DIAGRAMA_CLASSES.md |
+| **Por que cada decisão?** | ADRs.md | REGRAS_NEGOCIO.md, MODELAGEM_DADOS.md |
+| **Como são os dados?** | DIAGRAMA_DADOS.md | MODELAGEM_DADOS.md, DATA_MODELS.md |
+| **Qual é o schema SQL?** | MODELAGEM_DADOS.md | DIAGRAMA_DADOS.md, REGRAS_NEGOCIO.md |
+| **Como implementar?** | CODING_STANDARDS.md | ARCHITECTURE.md, CONTRIBUTING.md |
+| **Como contribuir?** | CONTRIBUTING.md | CODING_STANDARDS.md, ARCHITECTURE.md |
+
+### Sincronização (Última atualização: 03/03/2026)
+
+- ✅ ARCHITECTURE.md: Referências aos documentos complementares agregadas
+- ✅ DIAGRAMA_CLASSES.md: 347 linhas, 10 classes mapeadas
+- ✅ REGRAS_NEGOCIO.md: 413 linhas, 13 regras com criticidade
+- ✅ DIAGRAMA_DADOS.md: 447 linhas, 10 entidades com ER
+- ✅ MODELAGEM_DADOS.md: 623 linhas, DDL completo
+- ✅ ADRs.md: 565 linhas, 7 decisões formalizadas
+- ✅ CODING_STANDARDS.md: Referências agregadas
+- ✅ DATA_MODELS.md: Será sincronizado
+- ✅ CONTRIBUTING.md: Será sincronizado
+- ✅ BACKLOG_UNIFICADO.md: Será sincronizado
+- ✅ BOARD_MULTIDISCIPLINAR.json: Será sincronizado
+- ✅ README.md: Já atualizado com tabela de documentação

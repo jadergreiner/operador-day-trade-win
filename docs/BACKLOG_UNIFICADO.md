@@ -15,6 +15,23 @@
 
 ## 📋 GUIAS E PADRÕES DE DESENVOLVIMENTO
 
+**LEITURA OBRIGATÓRIA ANTES DE INICIAR QUALQUER TAREFA:**
+
+1. **[ARCHITECTURE.md](ARCHITECTURE.md)** - Visão geral do sistema (estrutura em 7 camadas)
+2. **[CODING_STANDARDS.md](CODING_STANDARDS.md)** - Padrões de código OBRIGATÓRIOS
+3. **[REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md)** - 13 regras que NÃO podem ser violadas (6 críticas P0)
+4. **[DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md)** - 10 classes principais e seus padrões
+5. **[DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md) + [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md)** - Modelo de dados
+
+**Segunda Leitura (arquitetura detalhada):**
+6. **[ADRs.md](ADRs.md)** - 7 decisões arquiteturais com contexto e consequências
+7. **[DATA_MODELS.md](DATA_MODELS.md)** - Descrição dos modelos de dados
+8. **[CONTRIBUTING.md](CONTRIBUTING.md)** - Processo de contribuição
+
+**Tempo de Leitura Estimado:** 2-3h (primeira vez) | 15min (referência rápida)
+
+---
+
 Todos os desenvolvedores DEVEM seguir as práticas técnicas definidas em [CODING_STANDARDS.md](CODING_STANDARDS.md):
 
 - **SOLID Principles**: Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion
@@ -25,8 +42,9 @@ Todos os desenvolvedores DEVEM seguir as práticas técnicas definidas em [CODIN
 - **Error Handling & Logging**: Comprehensive exception handling with audit trail
 - **Testing Best Practices**: Unit, integration, and E2E tests required
 - **Code Organization**: Clear module structure, separation of concerns
+- **Business Rules Compliance**: Validar contra [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) - 6 regras críticas P0
 
-**Status**: OBRIGATÓRIO para todas as tarefas (P0-P4) | **Validação**: Code review + mypy
+**Status**: OBRIGATÓRIO para todas as tarefas (P0-P4) | **Validação**: Code review + mypy + REGRAS_NEGOCIO check
 
 ---
 

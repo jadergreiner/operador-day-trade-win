@@ -1,10 +1,11 @@
 # 📊 Data Models - Operador Day Trade WIN
 
-**Versão:** 1.0.0
+**Versão:** 1.0.1
 **Data Criação:** 27/02/2026
+**Última Atualização:** 03/03/2026
 **Responsável:** Data Engineer + Arquiteto de Sistemas
-**Sincronização:** [ARCHITECTURE.md](ARCHITECTURE.md)
-**Status:** ✅ S2-2 Complete Reference Spec
+**Sincronização:** [ARCHITECTURE.md](ARCHITECTURE.md) | [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) | [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md)
+**Status:** ✅ Sincronizado com 5 documentos arquiteturais
 
 ---
 
@@ -12,6 +13,22 @@
 
 Documentar os modelos de dados que suportam a operação do Operador Day Trade WIN,
 especialmente a integração com decisões, persistência e auditoria de operações.
+
+## 📚 Documentação Relacionada (Ler Junto)
+
+| Documento | Propósito | Quando Ler |
+|-----------|----------|-----------|
+| **[MODELAGEM_DADOS.md](MODELAGEM_DADOS.md)** | Schema SQL completo (DDL) com 10 tabelas, indices e triggers | Quando implementar BD |
+| **[DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md)** | Modelo ER visual com 10 entidades e relacionamentos | Quando entender fluxo de dados |
+| **[ARCHITECTURE.md](ARCHITECTURE.md)** | Visão arquitetural geral do sistema | Primeiro (contexto) |
+| **[REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md)** | Regras que devem ser validadas nos dados | Quando definir validações |
+
+**Fluxo de Leitura:**
+1. ARCHITECTURE.md (contexto geral)
+2. DIAGRAMA_DADOS.md (visão ER)
+3. DATA_MODELS.md (descrição dos modelos - este arquivo)
+4. MODELAGEM_DADOS.md (implementação SQL completa)
+5. REGRAS_NEGOCIO.md (validações aplicáveis)
 
 ## 📋 PADRÕES DE CODIFICAÇÃO
 
@@ -489,6 +506,27 @@ CREATE INDEX idx_operation_audit_timestamp
 
 ---
 
-**Última Atualização:** 27/02/2026 14:45 UTC
-**Próximo Review:** Após S2-2 completo (05/03)
+**Última Atualização:** 03/03/2026 (Sincronização com MODELAGEM_DADOS.md, DIAGRAMA_DADOS.md, REGRAS_NEGOCIO.md)
+**Próximo Review:** Após implementação em P35 (06/03)
 
+---
+
+## 🔗 Referências Cruzadas
+
+### Relacionamento com Outros Documentos
+
+- **MODELAGEM_DADOS.md**: Contém DDL SQL completo para todas as tabelas descritas aqui
+- **DIAGRAMA_DADOS.md**: Contém ER diagram visual mostrando relacionamentos entre entidades
+- **ARCHITECTURE.md**: Contém contexto geral de como dados fluem no sistema
+- **REGRAS_NEGOCIO.md**: Contém validações que devem ser aplicadas aos dados
+- **DIAGRAMA_CLASSES.md**: Contém classes que acessam esses modelos
+
+### Tipos de Teste Relacionados
+
+Para validar integridade dos data models:
+1. **Unit Tests**: Validar constraints em código (ver CODING_STANDARDS.md)
+2. **Integration Tests**: Validar relacionamentos entre tabelas (FK constraints)
+3. **Schema Tests**: Validar DDL contra MODELAGEM_DADOS.md
+4. **Data Quality Tests**: Validar regras em REGRAS_NEGOCIO.md
+
+Ver [CONTRIBUTING.md](CONTRIBUTING.md) para padrão de testes.

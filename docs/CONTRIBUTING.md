@@ -6,6 +6,21 @@
 
 Este guia ajuda desenvolvedores a contribuir para o projeto seguindo os padrões estabelecidos.
 
+## 📚 Documentação Obrigatória de Leitura
+
+Antes de contribuir, leia (nesta ordem):
+
+1. **[ARCHITECTURE.md](ARCHITECTURE.md)** - Entender a estrutura geral do sistema
+2. **[CODING_STANDARDS.md](CODING_STANDARDS.md)** - Padrões de código obrigatórios
+3. **[DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md)** - Entender as 10 classes principais
+4. **[REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md)** - O que não pode falhar (6 regras críticas P0)
+5. **[DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md)** - Modelo de dados (10 entidades)
+6. **[MODELAGEM_DADOS.md](MODELAGEM_DADOS.md)** - Schema SQL para implementação
+7. **[ADRs.md](ADRs.md)** - Entender por que cada decisão foi tomada
+8. **[DATA_MODELS.md](DATA_MODELS.md)** - Descrição dos modelos de dados
+
+**Tempo estimado:** 1-2h (primeira leitura)
+
 ## Workflow de Desenvolvimento
 
 ### 1. Setup do Ambiente
@@ -275,7 +290,41 @@ Aumentar cobertura de testes:
 
 - [Documentação de Arquitetura](ARCHITECTURE.md)
 - [Padrões de Código](CODING_STANDARDS.md)
+- [Diagrama de Classes](DIAGRAMA_CLASSES.md)
+- [Regras de Negócio](REGRAS_NEGOCIO.md)
+- [Diagrama de Dados (ER)](DIAGRAMA_DADOS.md)
+- [Modelagem de Dados (DDL)](MODELAGEM_DADOS.md)
+- [Architecture Decision Records](ADRs.md)
+- [Modelos de Dados](DATA_MODELS.md)
 - [Desenho de Solução](SOLUTION_DESIGN.md)
+
+---
+
+## 🔗 Referências Cruzadas (Arquitetura)
+
+### Processo de Contribuição com Checklist
+
+Antes de fazer commit:
+
+- [ ] Leu [CODING_STANDARDS.md](CODING_STANDARDS.md)
+- [ ] Leu a documentação da camada que está modificando
+- [ ] 100% type hints (mypy --strict OK)
+- [ ] Seguiu SOLID principles
+- [ ] Adicionou testes (min 80% coverage)
+- [ ] Validou contra [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md)
+- [ ] Commit message em Conventional Commits
+- [ ] Sem acentos na commit message (compatibilidade)
+- [ ] Documentação atualizada se aplicável
+
+### Para Mudanças Arquiteturais
+
+Se sua contribuição alterará:
+- Estrutura de classes → atualizar [DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md)
+- Schema de dados → atualizar [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) + [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md)
+- Regras críticas → atualizar [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md)
+- Decisão fundamental → criar novo ADR em [ADRs.md](ADRs.md)
+
+**Importante:** Manter integridade referencial entre todos os documentos.
 
 ## Dúvidas
 

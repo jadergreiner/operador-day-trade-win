@@ -1,4 +1,18 @@
 {
+  "documentation_references": {
+    "architecture": "docs/ARCHITECTURE.md",
+    "coding_standards": "docs/CODING_STANDARDS.md",
+    "business_rules": "docs/REGRAS_NEGOCIO.md",
+    "class_diagram": "docs/DIAGRAMA_CLASSES.md",
+    "data_diagram": "docs/DIAGRAMA_DADOS.md",
+    "data_model": "docs/MODELAGEM_DADOS.md",
+    "adr": "docs/ADRs.md",
+    "data_models_description": "docs/DATA_MODELS.md",
+    "contributing": "docs/CONTRIBUTING.md",
+    "backlog": "docs/BACKLOG_UNIFICADO.md",
+    "readme": "docs/README.md",
+    "status_entregas": "docs/STATUS_ENTREGAS.md"
+  },
   "board_config": {
     "total_members": 17,
     "quorum_required": 12,

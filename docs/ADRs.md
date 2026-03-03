@@ -1,7 +1,7 @@
 # Architecture Decision Records (ADRs) - Operador Day Trade WIN
 
-**Data**: 03/03/2026  
-**Status**: ✅ COMPLETO  
+**Data**: 03/03/2026
+**Status**: ✅ COMPLETO
 **Referência**: [ARCHITECTURE.md](ARCHITECTURE.md) | [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) | [DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md)
 
 ---
@@ -18,7 +18,7 @@
 
 ## ADR-001: Por que SQLite vs PostgreSQL como BD Primário?
 
-**Status**: ✅ ACCEPTED  
+**Status**: ✅ ACCEPTED
 **Data**: 27/02/2026
 
 ### Contexto
@@ -52,7 +52,7 @@ Sistema precisa de persistência de trading com baixa latência. Trade decisions
 
 ## ADR-002: Por que 3 Gates de Risco Sequenciais?
 
-**Status**: ✅ ACCEPTED  
+**Status**: ✅ ACCEPTED
 **Data**: 20/02/2026
 
 ### Contexto
@@ -107,7 +107,7 @@ return APPROVED(order)
 
 ## ADR-003: Por que MT5 REST Adapter vs Direct DLL?
 
-**Status**: ✅ ACCEPTED  
+**Status**: ✅ ACCEPTED
 **Data**: 15/02/2026
 
 ### Contexto
@@ -157,7 +157,7 @@ response = mt5_adapter._validate_terminal_isolation():
 
 ## ADR-004: Por que IntraDayLearner em Memória vs SQLite Imediato?
 
-**Status**: ✅ ACCEPTED  
+**Status**: ✅ ACCEPTED
 **Date**: 03/03/2026
 
 ### Contexto
@@ -172,10 +172,10 @@ class IntraDayLearner:
     rejection_patterns: Dict[str, List]  # Em memória
     hit_rate_history: Dict[str, float]   # Calculado em tempo real
     session_start: datetime               # Marca início sessão
-    
+
     def record_rejection(...):
         # Log silencioso em memória (TRANSPARENTE)
-        
+
     def validate_hold(...):
         # Calcula hit_rate desde session_start
         # Se hit_rate > 80% ou < 40% → boost/penalty
@@ -230,7 +230,7 @@ P36 (07-09/03): Dashboard operacional
 
 ## ADR-005: Por que 3 Camadas de MT5 CLEAR Protection?
 
-**Status**: ✅ ACCEPTED  
+**Status**: ✅ ACCEPTED
 **Date**: 03/03/2026
 
 ### Contexto
@@ -246,7 +246,7 @@ def _preflight_check_mt5(config):
     terminal_path_valid = os.path.isfile(config.mt5_terminal_path)
     if not terminal_path_valid:
         raise BrokerConnectionError(f"Terminal not found: {config.mt5_terminal_path}")
-    
+
     # Testar conexão com isolamento check
     # Se falha → BLOQUEIA startup
 ```
@@ -257,11 +257,11 @@ def _validate_terminal_isolation(self):
     # Validar que path contém "CLEAR"
     if "CLEAR" not in self.terminal_exe_path:
         raise BrokerConnectionError("Wrong terminal: not CLEAR")
-    
+
     # Validar arquivo existe
     if not os.path.isfile(self.terminal_exe_path):
         raise BrokerConnectionError("Terminal exe not found")
-    
+
     # Check PID + account_login + server_name
     return self._check_fingerprint()
 ```
@@ -317,7 +317,7 @@ terminal_path = "C:\Program Files\FBS MT5\terminal64.exe"
 
 ## ADR-006: Circuit Breaker Strategy (Drawdown Management)
 
-**Status**: ✅ ACCEPTED  
+**Status**: ✅ ACCEPTED
 **Date**: 20/02/2026
 
 ### Contexto
@@ -359,7 +359,7 @@ Drawdown: -8%  → 🔴 HALT AUTOMÁTICO
 ```python
 def check_circuit_breaker(current_balance, session_start_balance):
     drawdown_percent = (current_balance - session_start_balance) / session_start_balance * 100
-    
+
     if drawdown_percent <= -8:
         return HALT  # 🔴
     elif drawdown_percent <= -5:
@@ -377,7 +377,7 @@ def check_circuit_breaker(current_balance, session_start_balance):
 
 ## ADR-007: Event-Driven Architecture vs Polling
 
-**Status**: ✅ ACCEPTED  
+**Status**: ✅ ACCEPTED
 **Date**: 15/02/2026
 
 ### Contexto
@@ -390,9 +390,9 @@ Market Data Stream (websocket)
     ├─ NewCandleEvent
     ├─ TickEvent
     └─ MT5FillEvent
-    
+
     → EventBus (pub/sub)
-    
+
     subscribers:
     ├─ FeatureEngineer: calcula features
     ├─ MLPredictor: prediz direção
@@ -437,8 +437,8 @@ Market Data Stream (websocket)
 ```markdown
 ## ADR-XXX: Título da Decisão
 
-**Status**: PROPOSED / ACCEPTED / DEPRECATED / SUPERSEDED  
-**Date**: DD/MM/YYYY  
+**Status**: PROPOSED / ACCEPTED / DEPRECATED / SUPERSEDED
+**Date**: DD/MM/YYYY
 **Supercedes**: (se aplicável)
 
 ### Contexto
@@ -448,7 +448,7 @@ Por que essa decisão era necessária?
 Qual foi a escolha exacta?
 
 ### Consequências
-✅ Prós  
+✅ Prós
 ❌ Contras
 
 ### Alternativas Consideradas
