@@ -1,0 +1,483 @@
+# Architecture Decision Records (ADRs) - Operador Day Trade WIN
+
+**Data**: 03/03/2026  
+**Status**: ✅ COMPLETO  
+**Referência**: [ARCHITECTURE.md](ARCHITECTURE.md) | [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) | [DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md)
+
+---
+
+## 📖 O que é ADR?
+
+**ADR (Architecture Decision Record)** é um documento que captura uma decisão arquitetural importante junto com:
+- **Contexto**: Por que a decisão foi necessária?
+- **Decisão**: Qual foi a escolha?
+- **Consequências**: Quais são os trade-offs?
+- **Status**: PROPOSED, ACCEPTED, DEPRECATED, SUPERSEDED
+
+---
+
+## ADR-001: Por que SQLite vs PostgreSQL como BD Primário?
+
+**Status**: ✅ ACCEPTED  
+**Data**: 27/02/2026
+
+### Contexto
+Sistema precisa de persistência de trading com baixa latência. Trade decisions ocorrem em ~500ms P95, logo storage não pode ser bottleneck.
+
+### Decisão
+**Usar SQLite como banco de dados primário** em fase 1-2 (até GO LIVE 10/04/2026).
+
+### Consequências
+✅ **Prós**:
+- Zero dependência de servidor externo (embedded)
+- Latência sub-10ms para INSERT (vs 50-100ms em PostgreSQL over network)
+- Arquivo único para backup (data/db/trading.db)
+- Simplicidade operacional (zero configuração DB)
+- ACID completo com journal mode WAL
+
+❌ **Contras**:
+- Máximo ~1 conexão simultânea confiável (não é multi-user)
+- Não escalável para múltiplas instâncias (later phases)
+- File I/O bound (requer bom SSD)
+
+### Próximas Ações
+- **Phase 4 (10/04+)**: Migração para PostgreSQL no Azure (`operador-db-staging.postgres.database.azure.com`)
+- **Phase 3**: Replicação SQLite → PostgreSQL (dual-write)
+
+### Referências
+- [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) - Schema SQLite
+- [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md#r-crítica-005-order-execution-atomicity) - Atomicity rule
+
+---
+
+## ADR-002: Por que 3 Gates de Risco Sequenciais?
+
+**Status**: ✅ ACCEPTED  
+**Data**: 20/02/2026
+
+### Contexto
+Sistema de trading automático com capital real. Risk manager (Head Finanças) exige múltiplas camadas de validação para evitar over-trading ou violações de capital adequacy (CVM/B3).
+
+### Decisão
+**Implementar 3 gates sequenciais em RiskValidator:**
+```
+Gate 1: Capital Adequacy → Saldo deve ser ≥ 1.5x ticket (R-CRÍTICA-001)
+Gate 2: Correlation Check → Corr entre positions ≤ 70% (R-CRÍTICA-002)
+Gate 3: Volatility Band  → ATR deve estar in [lower, upper] (R-CRÍTICA-003)
+```
+
+**Chain of Responsibility Pattern**: Cada gate rejeita ordem se falha, próxima gate não é testada.
+
+### Consequências
+✅ **Prós**:
+- Independência: Cada gate é testável separadamente
+- Clarity: Rejeição menciona qual gate falhou
+- Performance: Falha rápido (não testa volatility se capital falhou)
+- Risk isolation: Um gate quebrado não quebraaos outros
+
+❌ **Contras**:
+- Overhead de 3 validações por ordem (~20ms total)
+- Complexidade de debugging (interação entre gates)
+
+### Exemplo de Fluxo
+```python
+order = ExecutionOrder(symbol="WIN", volume=1, entry_price=12500)
+
+# Gate 1: Capital
+if not validate_capital_adequacy(order):
+    return REJECTED("Gate 1: Insufficient capital")
+
+# Gate 2: Correlation
+if not validate_correlation(positions, order):
+    return REJECTED("Gate 2: Correlation breach")
+
+# Gate 3: Volatility
+if not validate_volatility(symbol, atr):
+    return REJECTED("Gate 3: Volatility band breach")
+
+# All gates passed
+return APPROVED(order)
+```
+
+### Referências
+- [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) - R-CRÍTICA-001, 002, 003
+- [DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md) - RiskValidator class
+
+---
+
+## ADR-003: Por que MT5 REST Adapter vs Direct DLL?
+
+**Status**: ✅ ACCEPTED  
+**Data**: 15/02/2026
+
+### Contexto
+MetaTrader 5 fornece 2 formas de integração:
+1. **DLL Direct**: Chamar `terminal64.exe` DLL directly (low-level)
+2. **REST API Gateway**: Chamar endpoint HTTP (high-level)
+
+### Decisão
+**Usar REST API Adapter** com isolamento terminal obrigatório (S2-5).
+
+```python
+MT5Adapter:
+  - Envia ordem via POST /mt5/send_order
+  - Recebe ticket em response de forma atomic
+  - Retry logic built-in (3x exponential backoff)
+  - Health check continuous (30s)
+```
+
+### Consequências
+✅ **Prós**:
+- Abstração: Desacoplado de versão MT5 (protocolo estável)
+- Observability: HTTP logs tudo (audit trail)
+- Resilience: Retry logic built-in
+- Isolated: Terminal é um serviço separado (pode reiniciar sem quebrar agente)
+- Testing: Mock REST para testes E2E
+
+❌ **Contras**:
+- Latência adicional (~50ms vs direct DLL ~5ms)
+- Dependência de servidor REST rodando
+- Network overhead
+
+### Health Check Integrado
+```python
+# A cada 30s em runtime
+response = mt5_adapter._validate_terminal_isolation():
+  1. Check PID do terminal64.exe
+  2. Check account_login corrente
+  3. Check server name
+  Se diferente → retry (5s, 10s, 20s) → HALT se falha
+```
+
+### Referências
+- [ARCHITECTURE.md](ARCHITECTURE.md#s2-5-mt5-terminal-isolation--reconnect) - S2-5 spec
+- [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md#r-crítica-004-mt5-terminal-isolation-3-camadas) - Protection rule
+
+---
+
+## ADR-004: Por que IntraDayLearner em Memória vs SQLite Imediato?
+
+**Status**: ✅ ACCEPTED  
+**Date**: 03/03/2026
+
+### Contexto
+IntraDayLearner precisa rastrear padrões de HOLD rejections durante trading session (~8 horas). Deve registrar silenciosamente (sem poluir tela) mas mantê-lo em memória rápido.
+
+### Decisão
+**Implementar em 2 fases:**
+
+**Phase P32 (03/03) - COMPLETO**: IntraDayLearner em memória
+```python
+class IntraDayLearner:
+    rejection_patterns: Dict[str, List]  # Em memória
+    hit_rate_history: Dict[str, float]   # Calculado em tempo real
+    session_start: datetime               # Marca início sessão
+    
+    def record_rejection(...):
+        # Log silencioso em memória (TRANSPARENTE)
+        
+    def validate_hold(...):
+        # Calcula hit_rate desde session_start
+        # Se hit_rate > 80% ou < 40% → boost/penalty
+```
+
+**Phase P34 (05/03) - FUTURA**: SQL persistence
+```python
+CREATE TABLE intraday_adjustments (
+    id, timestamp, pattern, hit_rate, adjustment_percent, session_id
+)
+# Persist ao final da sessão (17:55)
+# Restore no restart (continuidade entre dias)
+```
+
+### Consequências
+✅ **Prós**:
+- **P32**: Transparência operador (zero screen pollution)
+- Latência: Subms (~1μs memory access vs ~10ms SQL write)
+- Simplicidade: Nenhuma configuração SQL
+- Auditoria: Audit log em outputs/ (file-based, portable)
+
+❌ **Contras**:
+- Memory: Dict crescer com sessão (mas limite de 5MB estimado)
+- Volatilidade: Ajustes perdidos se crash (resolvido em P34 com SQL)
+- Sessão-bound: Reset a cada 17:55 (por design)
+
+### Fluxo Completo (P32-P36)
+```
+P32 (03/03): Silencieux registration + transparent mode
+    ↓
+P33 (04/03): Integração com PredictionTracker
+    ├─ Validação real vs simulação
+    └─ Hit_rate com dados verdadeiros
+    ↓
+P34 (05/03): SQLite persistence
+    ├─ Persist adjustments ao final sessão
+    └─ Restore no restart
+    ↓
+P35 (06/03): Dynamic threshold application
+    ├─ Aplicar boost/penalty REALMENTE
+    └─ Esperado +1-2% win rate
+    ↓
+P36 (07-09/03): Dashboard operacional
+    └─ Visualização real-time de aprendizado
+```
+
+### Referências
+- [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md#r-risco-004-confidence-threshold-dinâmico) - Dynamic threshold rule
+- [ARCHITECTURE.md](ARCHITECTURE.md#6-learning-layer-camada-de-aprendizado-⭐-new) - Learning Layer spec
+
+---
+
+## ADR-005: Por que 3 Camadas de MT5 CLEAR Protection?
+
+**Status**: ✅ ACCEPTED  
+**Date**: 03/03/2026
+
+### Contexto
+Operador tem múltiplos terminais MT5 no mesmo PC (FBS, Zero, CLEAR). Risco: Agente conecta ao terminal ERRADO e executa ordens com dinheiro privado (não CLEAR/operador).
+
+### Decisão
+**Implementar 3 camadas de isolamento:**
+
+**Camada 1: Pre-flight Validation (Startup)**
+```python
+def _preflight_check_mt5(config):
+    # Validar path do terminal antes de qualquer operação
+    terminal_path_valid = os.path.isfile(config.mt5_terminal_path)
+    if not terminal_path_valid:
+        raise BrokerConnectionError(f"Terminal not found: {config.mt5_terminal_path}")
+    
+    # Testar conexão com isolamento check
+    # Se falha → BLOQUEIA startup
+```
+
+**Camada 2: Path Validation (Connection)**
+```python
+def _validate_terminal_isolation(self):
+    # Validar que path contém "CLEAR"
+    if "CLEAR" not in self.terminal_exe_path:
+        raise BrokerConnectionError("Wrong terminal: not CLEAR")
+    
+    # Validar arquivo existe
+    if not os.path.isfile(self.terminal_exe_path):
+        raise BrokerConnectionError("Terminal exe not found")
+    
+    # Check PID + account_login + server_name
+    return self._check_fingerprint()
+```
+
+**Camada 3: Runtime Isolation Monitoring (Every 30s)**
+```python
+# A cada ciclo (~30s durante trading)
+if not mt5._validate_terminal_isolation():
+    # Detectou desconexão ou mudança de terminal
+    # Retry com exponential backoff (5s, 10s, 20s)
+    # Se 3 retries falham → HALT automático
+```
+
+### Consequências
+✅ **Prós**:
+- **Impossível conectar ao terminal errado** (3 camadas de validação)
+- Fail-safe: HALT automático se isolamento viola
+- Recovery: Exponential backoff permite recuperação de desconexões transitórias
+- Observable: Health check logs failures
+
+❌ **Contras**:
+- 3 chamadas per 30s (~10ms overhead)
+- Complexidade (3 pontos de validação)
+- Operador manual intervention se HALT
+
+### Cenários Testados
+```python
+# Cenário 1: Wrong terminal
+terminal_path = "C:\Program Files\FBS MT5\terminal64.exe"
+# → Pre-flight valida "CLEAR" not in path → REJEITA
+
+# Cenário 2: Desconexão automática
+# T=0s: Conectado (PID=1234, login=1000346516)
+# T=30s: Desconectado
+# → Runtime check detecta desconexão
+# → Retry 1 (5s): Still offline
+# → Retry 2 (10s): Back online
+# → Success, continua trading
+
+# Cenário 3: Terminal mudou
+# T=0s: Conectado (login=1000346516)
+# T=60s: Terminal reiniciou, login mudou (1000346520)
+# → Runtime check detecta mudança
+# → 3 retries esgotados
+# → HALT automático, operador intervenção manual
+```
+
+### Referências
+- [ARCHITECTURE.md](ARCHITECTURE.md#s2-5-mt5-terminal-isolation--reconnect) - S2-5 full spec
+- [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md#r-crítica-004-mt5-terminal-isolation-3-camadas) - Protection rule
+
+---
+
+## ADR-006: Circuit Breaker Strategy (Drawdown Management)
+
+**Status**: ✅ ACCEPTED  
+**Date**: 20/02/2026
+
+### Contexto
+Sistema de trading automático com capital real. Necessário proteger contra perdas catastróficas.
+
+### Decisão
+**3-level Circuit Breaker:**
+
+```
+Drawdown: -3%  → 🟡 ALERTA
+  ├─ Notify trader (email + SMS)
+  ├─ Continue operating
+  ├─ BUT: aumentar vigilância
+
+Drawdown: -5%  → 🟠 SLOW MODE
+  ├─ Reduz volume para 50%
+  ├─ Aumenta min_confidence_trade +10%
+  ├─ Aguarda manual approval para grandes ordens
+
+Drawdown: -8%  → 🔴 HALT AUTOMÁTICO
+  ├─ Pausa TODAS as ordens
+  ├─ Posições abertas mantidas com SL
+  ├─ Requer manual restart para retomar
+```
+
+### Consequências
+✅ **Prós**:
+- Graduado: Não é binário (alerta → slow → halt)
+- Operador aware: Notificação imediata de problemas
+- Capital protected: HALT antes de loss crítico
+- Recovery: Manual restart permite análise pós-mortem
+
+❌ **Contras**:
+- Overhead: Cálculo de drawdown a cada trade
+- Falsos positivos: Drawdown temporário pode gerar alerta desnecessário
+- Complexidade operacional: 3 modos diferentes
+
+### Implementation
+```python
+def check_circuit_breaker(current_balance, session_start_balance):
+    drawdown_percent = (current_balance - session_start_balance) / session_start_balance * 100
+    
+    if drawdown_percent <= -8:
+        return HALT  # 🔴
+    elif drawdown_percent <= -5:
+        return SLOW_MODE  # 🟠
+    elif drawdown_percent <= -3:
+        return ALERT  # 🟡
+    else:
+        return NORMAL
+```
+
+### Referências
+- [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md#r-risco-001-maximum-drawdown-circuit-breaker) - Rule definition
+
+---
+
+## ADR-007: Event-Driven Architecture vs Polling
+
+**Status**: ✅ ACCEPTED  
+**Date**: 15/02/2026
+
+### Contexto
+Sistema de trading precisa reagir a eventos de mercado (nuevos candles, fills MT5) com baixa latência.
+
+### Decisão
+**Usar Event-Driven Architecture:**
+```
+Market Data Stream (websocket)
+    ├─ NewCandleEvent
+    ├─ TickEvent
+    └─ MT5FillEvent
+    
+    → EventBus (pub/sub)
+    
+    subscribers:
+    ├─ FeatureEngineer: calcula features
+    ├─ MLPredictor: prediz direção
+    ├─ RiskValidator: valida risco
+    ├─ OrdersExecutor: executa ordens
+    └─ PositionMonitor: monitora posições
+```
+
+### Consequências
+✅ **Prós**:
+- Latência: Subsecond vs 1s polling
+- Desacoplamento: Subscribers independentes
+- Scalability: Novo subscriber sem mudar others
+- Observability: Event logs tudo
+
+❌ **Contras**:
+- Complexidade: Async/await e event ordering
+- Debugging: Fluxo não-linear (harder to trace)
+- Race conditions: Múltiplos events simultâneos
+
+### Referências
+- [ARCHITECTURE.md](ARCHITECTURE.md#princípios-arquiteturais) - Principles
+
+---
+
+## 🔗 Cross-Referencing
+
+| ADR | Principal Assunto | Documento Relacionado |
+|-----|-------------------|----------------------|
+| **ADR-001** | SQLite vs PostgreSQL | [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) |
+| **ADR-002** | 3 Gates de Risco | [REGRAS_NEGOCIO.md#r-crítica-001-a-003](REGRAS_NEGOCIO.md) |
+| **ADR-003** | REST vs DLL | [ARCHITECTURE.md#execution-layer](ARCHITECTURE.md) |
+| **ADR-004** | IntraDayLearner | [REGRAS_NEGOCIO.md#r-risco-004](REGRAS_NEGOCIO.md) |
+| **ADR-005** | MT5 Protection | [ARCHITECTURE.md#s2-5](ARCHITECTURE.md) |
+| **ADR-006** | Circuit Breaker | [REGRAS_NEGOCIO.md#r-risco-001](REGRAS_NEGOCIO.md) |
+| **ADR-007** | Event-Driven | [ARCHITECTURE.md#princípios](ARCHITECTURE.md) |
+
+---
+
+## 📋 Template para Novos ADRs
+
+```markdown
+## ADR-XXX: Título da Decisão
+
+**Status**: PROPOSED / ACCEPTED / DEPRECATED / SUPERSEDED  
+**Date**: DD/MM/YYYY  
+**Supercedes**: (se aplicável)
+
+### Contexto
+Por que essa decisão era necessária?
+
+### Decisão
+Qual foi a escolha exacta?
+
+### Consequências
+✅ Prós  
+❌ Contras
+
+### Alternativas Consideradas
+O que foi rejeitado e por quê?
+
+### Referências
+Links para docs relacionados
+
+### Implementação
+Como será implementado?
+
+### Revisão
+Data para revisão?
+```
+
+---
+
+## 📊 Status de ADRs
+
+| ADR | Status | Data | Próximo Review |
+|-----|--------|------|----------------|
+| ADR-001 | ✅ ACCEPTED | 27/02/2026 | 10/04/2026 (Phase 4 PostgreSQL) |
+| ADR-002 | ✅ ACCEPTED | 20/02/2026 | GO-LIVE 10/04/2026 |
+| ADR-003 | ✅ ACCEPTED | 15/02/2026 | Phase 3 |
+| ADR-004 | ✅ ACCEPTED | 03/03/2026 | P35 (06/03) dynamic apply |
+| ADR-005 | ✅ ACCEPTED | 03/03/2026 | Runtime (production trading) |
+| ADR-006 | ✅ ACCEPTED | 20/02/2026 | GO-LIVE 10/04/2026 |
+| ADR-007 | ✅ ACCEPTED | 15/02/2026 | Phase 3 scalability |
+
+---
+
+**ÚLTIMA ATUALIZAÇÃO:** 03/03/2026 | **STATUS**: ✅ COMPLETO E INTEGRADO

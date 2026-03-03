@@ -1,0 +1,356 @@
+# Regras de Negócio - Operador Day Trade WIN
+
+**Data**: 03/03/2026
+**Status**: ✅ COMPLETO
+**Referência**: [ARCHITECTURE.md](ARCHITECTURE.md) | [DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md) | [ADRs.md](ADRs.md)
+
+---
+
+## 📋 Classificação de Regras
+
+| Crítica | Risco | Otimização |
+|---------|-------|-----------|
+| 🔴 Devem ser implementadas | 🟡 Devem ser monitoradas | 🟢 Podem ser ajustadas |
+| Violação = Sistema falha | Violação = Prejuízo | Violação = Performance reduzida |
+
+---
+
+## 🔴 REGRAS CRÍTICAS (P0 - Bloqueadores)
+
+### R-CRÍTICA-001: Capital Adequacy Gate (Gate 1)
+
+**Regra**: Saldo disponível deve ser ≥ (Ticket Size × Preço Entrada × 1.5)
+
+**Cálculo**:
+```
+saldo_minimo = ticket_size × entry_price × 1.5
+saldo_disponivel = account_balance - margin_utilizado
+APROVADO se: saldo_disponivel ≥ saldo_minimo
+```
+
+**Implementação**: RiskValidator.validate_capital_adequacy()
+**Violação**: Ordem REJEITADA imediatamente
+**Timeout**: < 10ms (deve ser rápido)
+**Testing**: test_risk_validator_gates.py (AC-1.1 a AC-1.5)
+
+---
+
+### R-CRÍTICA-002: Correlation Limit Gate (Gate 2)
+
+**Regra**: Correlação máxima entre posições abertas ≤ 70%
+
+**Cálculo**:
+```
+Para cada par de posições (A, B):
+  correlation(returns_A, returns_B) ≤ 0.70
+Se violar: Rejeitar nova ordem
+```
+
+**Contexto**: Evitar hedge inadequado ou double-sided risk
+**Implementação**: RiskValidator.validate_correlation()
+**Violação**: Ordem REJEITADA
+**Timeout**: < 50ms
+**Testing**: test_correlation_validation.py
+
+**Comportamento**:
+- ✅ Posição A (WIN spot) + Posição B (WDO correlated): REJEITA se corr > 0.70
+- ✅ Posição A (WIN) + Posição B (outro símbolo): APROVA (correlação baixa)
+- ✅ Nenhuma posição aberta: APROVA (sem correlação)
+
+---
+
+### R-CRÍTICA-003: Volatility Band Gate (Gate 3)
+
+**Regra**: Volatilidade atual deve estar entre (ATR-3σ) e (ATR+3σ)
+
+**Cálculo**:
+```
+atr_15min = Average True Range de 15 minutos
+volatility_band_lower = atr_15min - (atr_15min × 3σ)
+volatility_band_upper = atr_15min + (atr_15min × 3σ)
+
+Se current_volatility < lower OU current_volatility > upper:
+  REJECTED (mercado muito calmo ou caótico)
+```
+
+**Contexto**: Evitar operar em mercados extremos
+**Implementação**: RiskValidator.validate_volatility()
+**Violação**: Ordem REJEITADA
+**Timeout**: < 20ms
+**Testing**: test_volatility_validation.py
+
+---
+
+### R-CRÍTICA-004: MT5 Terminal Isolation (3 Camadas)
+
+**Regra**: Sistema DEVE conectar sempre ao mesmo terminal MetaTrader 5
+
+**Camada 1: Pre-flight Validation**
+```
+Ao startup:
+  - Valida path do terminal executable
+  - Testa conexão com isolamento check
+  - Se falha → Bloqueia startup com mensagem clara
+```
+
+**Camada 2: Path Validation**
+```
+Ao conectar:
+  - Verificar os.path.isfile() no path configurado
+  - Validar que é terminal "CLEAR" (não FBS, Zero, etc)
+  - Se falhar → BrokerConnectionError com detalhes
+```
+
+**Camada 3: Runtime Isolation Monitoring**
+```
+A cada ~30 segundos durante trading:
+  - mt5._validate_terminal_isolation() verifica:
+    * PID do terminal64.exe
+    * Account login corrente
+    * Server name
+  - Se muda → Retry com exponential backoff (5s, 10s, 20s)
+  - Se 3 retries falham → HALT automático
+```
+
+**Implementação**: MT5Adapter (3 métodos)
+**Violação**: HALT imediato + log crítico + operador manual intervention
+**Recovery**: Manual restart necessário
+**Timeout**: < 100ms por check
+
+**Referência**: [ADR-005: MT5 Terminal Protection](ADRs.md#adr-005-por-que-3-camadas-de-mt5-clear-protection)
+
+---
+
+### R-CRÍTICA-005: Order Execution Atomicity
+
+**Regra**: Ordem DEVE ser persistida em SQLite ANTES de ser considerada executada
+
+**Fluxo Garantido**:
+```
+1. MT5Adapter.send_order() → ticket obtido
+2. ExecutionOrder.to_trade(ticket) → conversão
+3. Repository.save_trade() com retry (3x exponential backoff: 0.5s, 1s, 2s)
+4. Audit log atualizado
+5. APENAS ENTÃO: return success
+
+Se qualquer passo falha → REJECTED status + log detalhado
+```
+
+**Implementação**: SendToMT5Command.execute()
+**Violação**: Ordem marcada como REJECTED, retry agendado
+**Recovery**: Manual reconciliation se persistência falhar 3x
+**Compliance**: CVM/B3 - audit trail completo
+
+---
+
+### R-CRÍTICA-006: Learning Loop Closure (P33)
+
+**Regra**: HOLD rejections devem ser validadas contra outcome real
+
+**Processo**:
+```
+1. Padrão registrado como HOLD
+2. Após 1-5 min, trade é fechado
+3. PredictionTracker.evaluate_last_prediction() valida acerto
+4. IntraDayLearner.validate_hold(pattern, resultado.acertou)
+5. Hit rate é calculado com dado REAL (não simulado)
+```
+
+**Implementação**: IntraDayLearner + PredictionTracker
+**Status Atual**: P32 implementado (silencioso), P33 integração futura
+**Violação**: RL aprende com dados incorretos → degradação de model
+**SLA**: Integração P33 (04/03)
+
+---
+
+## 🟡 REGRAS DE RISCO (Devem ser Monitoradas)
+
+### R-RISCO-001: Maximum Drawdown Circuit Breaker
+
+**Regra**: Se drawdown de sessão ≥ 3%, sistema entra em SLOW MODE. Se ≥ 5%, HALT.
+
+**Três Níveis**:
+```
+🟡 -3%: ALERTA
+  → Trader notificado via email/SMS
+  → Sistema continua operando
+  → Aumentar vigilância
+
+🟠 -5%: SLOW MODE
+  → Reduz volume para 50% do normal
+  → Aumenta min_confidence_trade em 10%
+  → Aguarda manual approval para grandes ordens
+
+🔴 -8%: HALT AUTOMÁTICO
+  → Sistema pausa todas as ordens
+  → Posições abertas mantidas com SL
+  → Requer manual restart
+```
+
+**Implementação**: CircuitBreaker em main loop
+**Violação**: Executa ação automática (ALERT/SLOW/HALT)
+**Recovery**: Manual intervention ou aguardar reset de sessão
+**Compliance**: Risk management obrigatório
+
+---
+
+### R-RISCO-002: Position Size Limit
+
+**Regra**: Máximo 2 posições simultâneas POR SÍMBOLO
+
+**Cálculo**:
+```
+posicoes_abertas_WIN = count(open_positions where symbol='WIN')
+Se posicoes_abertas_WIN ≥ 2:
+  REJETA nova ordem para WIN
+
+Máximo exposure (todos símbolos) = account_balance × 5%
+```
+
+**Implementação**: PositionMonitor.get_current_exposure()
+**Violação**: Ordem REJEITADA
+**Monitoragem**: Dashboard em tempo real
+
+---
+
+### R-RISCO-003: Stop Loss / Take Profit Obrigatorios
+
+**Regra**: Toda ordem DEVE ter SL e TP definidos
+
+**Cálculo**:
+```
+SL = entry_price ± (atr_15min × 1.5)
+TP = entry_price ± (atr_15min × 2.5)
+
+% Risk/Reward = (TP - entry) / (entry - SL)
+Mínimo: 1:2 (para cada $ em risco, ganha $2)
+```
+
+**Implementação**: ATRCalibrator.calculate_trailing_stop()
+**Violação**: Ordem REJEITADA se SL/TP não definidos
+**Ajuste Dinâmico**: ATR recalculado a cada 5 min
+
+---
+
+### R-RISCO-004: Confidence Threshold Dinâmico
+
+**Regra**: MIN_CONFIDENCE_TRADE pode ser ajustado por IntraDayLearner baseado em hit_rate
+
+**Comportamento**:
+```
+Base: MIN_CONFIDENCE_TRADE = 0.65 (configurável em .env)
+
+Hit Rate Tracking:
+  - Se 5+ padrões com hit_rate > 80% → boost (+5%)
+  - Se 5+ padrões com hit_rate < 40% → penalty (-10%)
+
+Limite: Não pode variar mais que ±30% do base value
+  Min: 0.65 × 0.70 = 0.455
+  Max: 0.65 × 1.30 = 0.845
+
+Aplicação: [P35] Esse ajuste entra em vigor na próxima ordem
+
+Reverta: Sempre que nova sessão inicia (reset diário)
+```
+
+**Implementação**: IntraDayLearner.get_current_adjustments()
+**Monitoragem**: Audit log em outputs/intraday_audit_{SESSION_ID}.log
+**Impact Esperado**: +1-2% win rate após validação (P35-P36)
+
+---
+
+## 🟢 REGRAS DE OTIMIZAÇÃO
+
+### R-OTI-001: Latência Máxima de Execução
+
+**Target P95**: < 500ms (end-to-end)
+
+**Breakdown**:
+```
+T1: Feature Calculation     < 100ms
+T2: Decision Making         < 100ms
+T3: Order Transmission      < 300ms
+T_TOTAL: < 500ms
+```
+
+**Monitoramento**: Cada ordem log timestamp (envio + confirmação MT5)
+**Violação**: Log + alertar se > 500ms persistentemente
+
+---
+
+### R-OTI-002: Database Query Performance
+
+**Target**:
+```
+SELECT trades (historical) : < 100ms
+INSERT new trade         : < 50ms
+UPDATE position status   : < 30ms
+```
+
+**Índices Obrigatórios**:
+- trades(symbol, timestamp)
+- positions(symbol, status)
+- decisions(timestamp)
+
+---
+
+### R-OTI-003: Memory Footprint
+
+**Target**: < 100MB RAM durante operação (exclui market data)
+
+**Monitoramento**:
+```python
+import psutil
+memory_usage = psutil.Process().memory_info().rss / 1024**2
+if memory_usage > 100:
+    log.warning(f"Memory usage high: {memory_usage}MB")
+```
+
+---
+
+## 📊 Matriz de Validação
+
+| Regra | Crítica | Layer | Validação Automática | Monitoramento |
+|-------|---------|-------|----------------------|----------------|
+| **R-CRÍTICA-001** | 🔴 SIM | Decision | ✅ RiskValidator | Gate 1 pass/fail |
+| **R-CRÍTICA-002** | 🔴 SIM | Decision | ✅ RiskValidator | Gate 2 pass/fail |
+| **R-CRÍTICA-003** | 🔴 SIM | Decision | ✅ RiskValidator | Gate 3 pass/fail |
+| **R-CRÍTICA-004** | 🔴 SIM | Execution | ✅ MT5Adapter (3 camadas) | Health check 30s |
+| **R-CRÍTICA-005** | 🔴 SIM | Execution | ✅ SendToMT5Command | Retry count |
+| **R-CRÍTICA-006** | 🔴 SIM | Learning | ⏳ P33 | Audit log |
+| **R-RISCO-001** | 🟡 SIM | Execution | ✅ CircuitBreaker | Dashboard |
+| **R-RISCO-002** | 🟡 SIM | Decision | ✅ PositionMonitor | Current exposure |
+| **R-RISCO-003** | 🟡 SIM | Execution | ✅ ATRCalibrator | Order details |
+| **R-RISCO-004** | 🟡 SIM | Learning | ✅ IntraDayLearner [P35] | Intraday audit |
+| **R-OTI-001** | 🟢 NÃO | Monitoring | 📊 Manual check | Latency logs |
+| **R-OTI-002** | 🟢 NÃO | Data | ✅ Query analyzer | Slow query log |
+| **R-OTI-003** | 🟢 NÃO | Monitoring | 📊 psutil check | Memory monitor |
+
+---
+
+## 🔗 Referências Cruzadas
+
+| Regra | Referência em Código | ADR |
+|-------|-------------------   |-----|
+| R-CRÍTICA-001 | `src/application/risk_validator.py:40` | [ADR-002](ADRs.md#adr-002-por-que-3-gates-de-risco-sequenciais) |
+| R-CRÍTICA-002 | `src/application/risk_validator.py:80` | [ADR-002](ADRs.md#adr-002-por-que-3-gates-de-risco-sequenciais) |
+| R-CRÍTICA-003 | `src/application/risk_validator.py:120` | [ADR-002](ADRs.md#adr-002-por-que-3-gates-de-risco-sequenciais) |
+| R-CRÍTICA-004 | `src/infrastructure/providers/mt5_adapter.py:387-440` | [ADR-005](ADRs.md#adr-005-por-que-3-camadas-de-mt5-clear-protection) |
+| R-CRÍTICA-005 | `src/application/orders_executor.py:206-315` | [ADR-003](ADRs.md#adr-003-por-que-mt5-rest-adapter-vs-direct-dll) |
+| R-CRÍTICA-006 | `scripts/agente_micro_tendencia_winfut.py:2489-2618` | [ADR-004](ADRs.md#adr-004-por-que-intradaylearner-em-memoria-vs-sqlite-imediato) |
+| R-RISCO-001 | `scripts/agente_micro_tendencia_winfut.py:4377+` | [ADR-006](ADRs.md#adr-006-circuit-breaker-strategy) |
+| R-RISCO-004 | `scripts/agente_micro_tendencia_winfut.py:2489-2618` | [ADR-004](ADRs.md#adr-004-por-que-intradaylearner-em-memoria-vs-sqlite-imediato) |
+
+---
+
+## 📝 Histórico de Mudanças
+
+| Data | Regra | Mudança | Razão |
+|------|-------|---------|-------|
+| 03/03/2026 | R-CRÍTICA-001 a 006 | Criação | P32 IntraDayLearner + MT5 Protection |
+| 03/03/2026 | R-RISCO-004 | Adição | Confidence threshold dinâmico |
+| TBD | R-CRÍTICA-006 | Atualização | P33 integração com PredictionTracker |
+
+---
+
+**ÚLTIMA ATUALIZAÇÃO:** 03/03/2026 | **STATUS**: ✅ COMPLETO
