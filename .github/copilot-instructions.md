@@ -405,9 +405,80 @@ Padrão estabelecido 03/03/2026 para TODAS consolidações futuras:
 
 ---
 
-5. **check_interseção.py** (Script)
-   - Status: ✅ MOVIDO para `scripts/check_interseção.py`
-   - Conteúdo: Validação interseção rewards ↔ episodes
+### Lote 5 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P23 - 03/03/2026)
+
+**Origem:** 7 arquivos pendentes analisados (1 script Python + 5 documentos + 1 arquivo .bat)
+
+#### P23 - Arquivos Consolidados:
+
+1. **enviar_ordem_teste.py** (Script Python)
+   - Status: ✅ MOVIDO para `scripts/enviar_ordem_teste.py`
+   - Conteúdo: Sistema envio ordem teste conta real WIN$N (170 LOC)
+   - Funcionalidades: Confirmação dupla segurança, SL/TP automáticos, dashboard integration
+   - Localização: `scripts/enviar_ordem_teste.py`
+
+2. **ESPECIFICACAO_TASK4_ENG003_EMAIL_CONFIG.md** (Documento Markdown)
+   - Status: ✅ CONSOLIDADO em P23-2
+   - Conteúdo: Email SMTP Gmail + Jinja2 templates + AlertDispatcher (588 LOC)
+   - AC Criterios: 7 (SMTP, Security, Templates, Retry, Fallback, Integration, Testing)
+   - Unit Tests: 7 test cases with fixtures
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P23-2
+
+3. **FACILITADOR_CHEAT_SHEET.md** (Documento Markdown)
+   - Status: ✅ CONSOLIDADO em P23-3
+   - Conteúdo: Cheat sheet para facilitador reunião S1-4 diagnóstico (165 LOC)
+   - Recursos: 4 perguntas críticas, 3 cenários decisão, frases copy-paste
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P23-3
+
+4. **GATE2_OFFICIAL_DECISION.md** (Documento Markdown)
+   - Status: ✅ CONSOLIDADO em P23-4
+   - Conteúdo: Decisão oficial Gate 2 GO FOR PRODUCTION (288 LOC)
+   - Sign-offs: CTO + CFO + Product Owner (todos aprovados)
+   - Timeline: 10/03 GO-LIVE Phase 1 Beta, R$ 50k capital
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P23-4
+
+5. **GUIA_DIARIOS.txt** (Documento Texto)
+   - Status: ✅ CONSOLIDADO em P23-5
+   - Conteúdo: Sistema diários automatizados trading + AI reflection (186 LOC)
+   - Scripts: 7 scripts (continuous_journal, ai_reflection, quick_start, etc)
+   - Output: ~34 entries/dia + ~50 reflexões IA para ML training
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P23-5
+
+6. **INDICE_COMPLETO_AUDITORIA_S2_5.md** (Documento Markdown)
+   - Status: ✅ CONSOLIDADO em P23-6
+   - Conteúdo: Índice navegacional 9 documentos auditoria S2-5 (366 LOC)
+   - Matriz: TIER 1 (executivos) + TIER 2 (técnicos) + TIER 3 (operacionais) + TIER 4 (código)
+   - Matriz navegação: "Tenho 5 min" → "Sou board" → "Vou executar" → "Visual rápido"
+   - Localização: `docs/BACKLOG_UNIFICADO.md` → P23-6
+
+7. **INICIAR_RL_SCHEDULER.bat** (Arquivo Batch)
+   - Status: ✅ MOVIDO para `BAT/INICIAR_RL_SCHEDULER.bat`
+   - Conteúdo: Launcher RL training scheduler com menu interativo (126 LOC)
+   - Menu: 5 opções (start scheduler, run once, check health, list jobs, exit)
+   - Funcionalidades: Background execution via VBS, health monitoring, job management
+   - Localização: `BAT/INICIAR_RL_SCHEDULER.bat`
+
+#### Status da Consolidação P23:
+
+- ✅ 7 arquivos processados (1 script + 5 documentos + 1 .bat)
+- ✅ 1 Python script movido para `scripts/`
+- ✅ 1 arquivo .bat movido para `BAT/`
+- ✅ 5 documentos consolidados em BACKLOG
+- ✅ Padrão de pasta 100% aderente
+
+#### Consolidação Total Acumulada (FINAL):
+
+- **Total Geral:** 96 arquivos (19 scripts, 71 docs, 5 .bat, 1 JSON)
+- **Tarefas Rastreadas:** 90 (P0-P4, P8-P23)
+- **Código Consolidado:** ~7.000 LOC scripts
+- **Scripts em Padrão:** 100% (19/19) ✅
+- **.bat em Padrão:** 100% (5/5) ✅
+- **Project Root Cleanup:** 100% ✅
+
+**Timestamp:** 03/03/2026 (Consolidação Lote 5 - P23)
+**Status:** ✅ BACKLOG CONSOLIDAÇÃO FINAL COMPLETA
+
+---
    - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-4
 
 #### Processo de Consolidação

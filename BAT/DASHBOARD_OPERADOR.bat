@@ -58,24 +58,24 @@ while True:
     print('=' * 70)
     print('  [1] MONITOR DE STATUS - OPERADOR DAY TRADE WIN')
     print('=' * 70)
-    
+
     try:
         with open('logs/deployment_status.json', 'r') as f:
             status = json.load(f)
-        
+
         print(f\"\nStatus Geral: {status.get('status', 'DESCONHECIDO')}\")
         print(f\"Timestamp: {status.get('timestamp', 'N/A')}\n\")
-        
+
         for component, info in status.get('components', {}).items():
             comp_status = info.get('status', 'DESCONHECIDO')
             icon = '[OK]' if comp_status in ['LIVE', 'ACTIVE', 'MONITORING', 'READY'] else '[OFF]'
             print(f'{icon} {component.upper()}: {comp_status}')
-        
+
         print('\n(Atualizando a cada 5 segundos... Pressione Ctrl+C para parar)')
-        
+
     except Exception as e:
         print(f'Erro: {e}')
-    
+
     time.sleep(5)
 " 2>> logs\monitor_operador_erros.log
 goto menu
@@ -104,12 +104,12 @@ from datetime import datetime
 async def monitor_websocket():
     uri = 'ws://127.0.0.1:8765'
     print(f'Conectando em {uri}...\n')
-    
+
     try:
         async with websockets.connect(uri) as websocket:
             print('[OK] Conectado ao WebSocket!')
             print('Aguardando alertas de entrada...\n')
-            
+
             while True:
                 try:
                     msg = await asyncio.wait_for(websocket.recv(), timeout=60.0)
@@ -118,7 +118,7 @@ async def monitor_websocket():
                     print(f'[{timestamp}] ALERTA: {json.dumps(alert, indent=2)}')
                 except asyncio.TimeoutError:
                     print('[INFO] Aguardando alertas...')
-                    
+
     except Exception as e:
         print(f'[ERRO] Conexao falhou: {e}')
         print('Certifique-se de que o servidor WebSocket esta rodando.')
@@ -150,17 +150,17 @@ import json
 try:
     with open('backtest_labeled_results.json', 'r') as f:
         data = json.load(f)
-    
+
     total = len(data)
     positivos = sum(1 for x in data if x.get('label') == 1)
     negativos = sum(1 for x in data if x.get('label') == 0)
-    
+
     print(f'Total de samples: {total}')
     print(f'Positivos (BUY): {positivos} ({100*positivos/total:.1f}%)')
     print(f'Negativos (SKIP): {negativos} ({100*negativos/total:.1f}%)')
     print(f'Imbalance: {max(100*positivos/total, 100*negativos/total):.1f}%')
     print(f'Status: [OK] Dataset pronto para Grid Search')
-    
+
 except FileNotFoundError:
     print('[ERRO] backtest_labeled_results.json nao encontrado!')
 except Exception as e:
