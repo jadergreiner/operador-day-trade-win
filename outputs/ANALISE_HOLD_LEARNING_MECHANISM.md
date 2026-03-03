@@ -1,7 +1,7 @@
 # 🎯 Mecanismo de Aprendizado do HOLD - Análise Completa
 
-**Data:** 03/03/2026  
-**Arquivo:** [scripts/ai_reflection_continuous.py](../scripts/ai_reflection_continuous.py)  
+**Data:** 03/03/2026
+**Arquivo:** [scripts/ai_reflection_continuous.py](../scripts/ai_reflection_continuous.py)
 **Status:** ✅ Sistema Totalmente Implementado
 
 ---
@@ -87,7 +87,7 @@ if abs(-0.0128%) < DIVERGENCE_THRESHOLD_PCT (0.10%):
 # Avaliar acerto
 if prev_decision in ("HOLD", "NEUTRAL"):
     acertou = direcao_real == "FLAT"  # TRUE ✅
-    
+
     if abs_var > DIVERGENCE_THRESHOLD_PCT * 3:  # >0.30%?
         divergencia = False  # Mercado não fez movimento
         tipo_divergencia = ""
@@ -229,13 +229,13 @@ entry = journal.save_entry(reflection)
 ```python
 def main():
     # ... setup ...
-    
+
     prediction_tracker = PredictionTracker()  # ✅ Inicializa ao começar
-    
+
     try:
         while True:  # Loop contínuo
             entry_count += 1
-            
+
             # A cada 10 minutos:
             entry = create_reflection_entry(
                 mt5=mt5,
@@ -247,13 +247,13 @@ def main():
                 opening_price=opening_price,
                 human_last_action=human_last_action,
             )
-            
+
             if entry:
                 print(f"[OK] Reflexao #{entry_count} salva com sucesso")
-            
+
             # Aguarde 10 minutos para próxima avaliação
             time.sleep(600)
-    
+
     except KeyboardInterrupt:
         # ✅ REC6: Resumo final quando interrompido
         if prediction_tracker.total_avaliacoes > 0:
@@ -351,6 +351,6 @@ Dados persistidos em:
 
 ---
 
-**Timestamp:** 2026-03-03 23:45 BRT  
-**Autoria:** Análise Agente Autônomo  
+**Timestamp:** 2026-03-03 23:45 BRT
+**Autoria:** Análise Agente Autônomo
 **Status:** ✅ VALIDADO E DOCUMENTADO

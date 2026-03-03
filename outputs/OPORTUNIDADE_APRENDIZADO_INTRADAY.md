@@ -1,7 +1,7 @@
 # ⚡ Oportunidade: Aprendizado Intraday vs Batch Diário
 
-**Data:** 03/03/2026  
-**Status:** ❌ **GAP IDENTIFICADO** - Aprendizado atualmente é batch, poderia ser em tempo real  
+**Data:** 03/03/2026
+**Status:** ❌ **GAP IDENTIFICADO** - Aprendizado atualmente é batch, poderia ser em tempo real
 **Impacto:** Latência de 24-26 horas para aplicar lições
 
 ---
@@ -15,23 +15,23 @@ DIA 1 (03/03)
 └─ 09:00 Startup
    ├─ Load feedback dia anterior (02/03)
    └─ _diary_feedback = {threshold_buy: 42, ...}
-     
+
 └─ 13:36 Decisão HOLD
    ├─ register_prediction("HOLD", 117.200, 68%)
    └─ Rejeitou: ["EXPOSIÇÃO_REDUZIDA", "ALERTA_DIST"]
-     
+
 └─ 13:46 Validação (10min depois)
    ├─ evaluate: acertou=TRUE ✅
    ├─ hit_rate: 87% (7/8)
    └─ Mas NÃO persiste yet (em memória)
-     
+
 └─ 17:55 End-of-Day Analysis
    ├─ Consolidar todas rejeições do dia
    ├─ Gerar DiaryFeedback novo
    ├─ Save to DB:
    │  └─ diary_feedback (03/03): threshold_buy=48, hit_rate=87%
    └─ journal.save_entry()
-     
+
 └─ 23:59 Fim do dia
    └─ Feedback está no DB mas NÃO será usado hoje
 
@@ -42,7 +42,7 @@ DIA 2 (04/03)
    ├─ Load feedback dia anterior (03/03)
    ├─ _diary_feedback = {threshold_buy: 48, hit_rate: 87%, ...}
    └─ AGORA aplica aprendizado ✓
-     
+
 └─ 11:30 Decisão Melhorada
    ├─ Nova oportunidade BUY (confiança 48%)
    ├─ threshold_buy: 48 (do feedback 03/03)
@@ -105,7 +105,7 @@ DIA 1 (03/03) - COM APRENDIZADO INTRADAY
 └─ 15:50 Validação: O que aconteceu?
    ├─ Se não entrou: Acertou novamente ✅
    └─ hit_rate: 100% (3/3)
-     
+
    ├─ Se entrou AGORA com aprendizado:
    │  ├─ Ganho: +85 pts (se padrão mudou)
    │  └─ Perda: -45 pts (se padrão mantém)
@@ -128,13 +128,13 @@ class IntraDayLearner:
         self.validation_results = {}  # pattern → hits/total
         self.confidence_adjustments = {}  # pattern → delta %
         self.min_samples_for_adjust = 2  # Precisa 2+ para confiar
-        
+
     def record_rejection(self, reason_list: list[str]):
         """Registra motivo rejeição"""
         pattern = tuple(sorted(reason_list))  # Normaliza
         self.rejection_patterns[pattern] = self.rejection_patterns.get(pattern, 0) + 1
         self.validation_results[pattern] = (0, 0)  # (hits, total)
-        
+
     def validate_hold(self, pattern: tuple, acertou: bool):
         """Valida se HOLD foi acertado"""
         hits, total = self.validation_results.get(pattern, (0, 0))
@@ -143,7 +143,7 @@ class IntraDayLearner:
         total += 1
         hit_rate = hits / total * 100 if total > 0 else 0
         self.validation_results[pattern] = (hits, total)
-        
+
         if total >= self.min_samples_for_adjust:
             if hit_rate >= 90:
                 # Padrão está acertando muito → aumentar confiança
@@ -153,7 +153,7 @@ class IntraDayLearner:
                 # Padrão está falhando → reduzir confiança
                 self.confidence_adjustments[pattern] = -10
                 return False, f"LOW_CONFIDENCE_PATTERN: {hit_rate:.0f}%"
-        
+
         return None, f"MONITORING: {hit_rate:.0f}% ({hits}/{total})"
 
 # No loop principal:
@@ -161,16 +161,16 @@ _intraday_learner = IntraDayLearner()
 
 for cycle in range(...):
     # ... [codigo normal] ...
-    
+
     # Record rejection
     _intraday_learner.record_rejection(cycle_result._rejection_reasons)
-    
+
     # Validate previous HOLD (10 min depois)
     if cycle % 5 == 0:  # a cada 10 min
         previous_acertou = evaluate_previous_prediction()
         pattern = get_previous_pattern()
         should_boost, msg = _intraday_learner.validate_hold(pattern, previous_acertou)
-        
+
         if should_boost:
             print(f"  ⚡ INTRADAY BOOST: {msg}")
             MIN_CONFIDENCE_TRADE -= 5  # Mais agressivo AGORA
@@ -205,7 +205,7 @@ CREATE TABLE intraday_feedback (
 def update_intraday_feedback():
     """Analisa HOLDs do dia em tempo real"""
     conn = sqlite3.connect(DB_PATH)
-    
+
     # Busca rejections do dia
     today = datetime.now().date()
     rejections = conn.execute("""
@@ -215,7 +215,7 @@ def update_intraday_feedback():
         GROUP BY rejection_reason
         ORDER BY cnt DESC
     """, (today,)).fetchall()
-    
+
     # Para cada padrão, valida hit rate
     for pattern, count in rejections:
         # Busca HOLDs validados dele
@@ -225,34 +225,34 @@ def update_intraday_feedback():
             FROM hold_validations
             WHERE date = ? AND pattern = ?
         """, (today, pattern)).fetchone()
-        
+
         if results[0] >= 2:  # Mínimo 2 samples
             hit_rate = results[1] / results[0] * 100
-            
+
             # Determina ajuste
             delta = 0
             if hit_rate >= 90:
                 delta = +5
             elif hit_rate <= 20:
                 delta = -10
-            
+
             # Persiste intraday feedback
             conn.execute("""
-                INSERT INTO intraday_feedback 
+                INSERT INTO intraday_feedback
                 (date, pattern, hit_rate, sample_size, suggested_confidence_delta, active)
                 VALUES (?, ?, ?, ?, ?, 1)
             """, (today, pattern, hit_rate, results[0], delta))
-    
+
     conn.commit()
 
 # No agente, a cada 20 ciclos:
 if cycle % 20 == 0:
     intraday_fb = load_intraday_feedback(DB_PATH, today)
-    
+
     if intraday_fb:
-        total_delta = sum(fb['suggested_confidence_delta'] 
+        total_delta = sum(fb['suggested_confidence_delta']
                          for fb in intraday_fb if fb['active'])
-        
+
         if total_delta != 0:
             adjusted_threshold = MIN_CONFIDENCE_TRADE + total_delta
             print(f"  ⚡ Ajuste intraday: threshold = {adjusted_threshold}% "
@@ -272,12 +272,12 @@ class AdaptiveWeighting:
     def __init__(self):
         self.pattern_weights = {}  # pattern → weight (0.5-2.0)
         self.base_confidence = 45  # MIN_CONFIDENCE_TRADE base
-        
+
     def adjust_confidence_for_pattern(self, pattern: tuple) -> float:
         """Retorna threshold ajustado dinamicamente"""
         weight = self.pattern_weights.get(pattern, 1.0)
         return self.base_confidence * weight
-        
+
     def update_weight(self, pattern: tuple, hit_rate: float):
         """Atualiza peso baseado em performance"""
         if hit_rate >= 90:
@@ -333,7 +333,7 @@ if opp.confidence < threshold:
       A) Conservador: Mantém HOLD (miss trade de +85 pts)
          Pro: Hit rate continua 100% (4/4)
          Con: Não monetiza certeza
-      
+
       B) Agressivo: Executa com ajuste
          Pro: Ganha +85 pts se acerta
          Con: Pode quebrar hit rate (3/4 = 75%)
@@ -436,7 +436,7 @@ Para seu cenário **"não estou identificando entradas"**:
 
 ---
 
-**Status:** ✅ Architected, pronto para implementação  
-**Impacto Estimado:** +20-30% better trades em dias com muitos HOLDs  
-**Latência:** 10 minutos (vs 24h atual)  
+**Status:** ✅ Architected, pronto para implementação
+**Impacto Estimado:** +20-30% better trades em dias com muitos HOLDs
+**Latência:** 10 minutos (vs 24h atual)
 **Arquivo:** Este documento + design pronto para coding

@@ -1,7 +1,7 @@
 # 🔄 Ciclo Completo: HOLD → Aprendizado → Decisão Melhorada
 
-**Data:** 03/03/2026  
-**Status:** ✅ Sistema Totalmente Operacional  
+**Data:** 03/03/2026
+**Status:** ✅ Sistema Totalmente Operacional
 **Visão:** HOLD Learning feedback loop completo
 
 ---
@@ -12,7 +12,7 @@
 ════════════════════════════════════════════════════════════════════════════════
 
  DIA 1 (Exemplo: 03/03/2026)  ← Sistema aprende decisões HOLD
- 
+
  ┌─────────────────────────────────────────────────────────────────────────────┐
  │                          CICLO 1: DECISION + TRACKING                       │
  │                                                                             │
@@ -29,7 +29,7 @@
  │           └─ timestamp: 2026-03-03 13:36:00                               │
  │                                                                             │
  └─────────────────────────────────────────────────────────────────────────────┘
- 
+
  ┌─────────────────────────────────────────────────────────────────────────────┐
  │                      CICLO 2: VALIDATION (10 minutos depois)               │
  │                                                                             │
@@ -53,7 +53,7 @@
  │           └─ Journal entry com performance metrics                         │
  │                                                                             │
  └─────────────────────────────────────────────────────────────────────────────┘
- 
+
  ┌─────────────────────────────────────────────────────────────────────────────┐
  │                         CICLO 3: PERSISTENCE (Fim do dia)                  │
  │                                                                             │
@@ -95,7 +95,7 @@
 ════════════════════════════════════════════════════════════════════════════════
 
  DIA 2 (Exemplo: 04/03/2026)  ← Agente MELHORA decisões com feedback
- 
+
  ┌─────────────────────────────────────────────────────────────────────────────┐
  │                     CICLO 4: LOAD FEEDBACK (Startup)                       │
  │                                                                             │
@@ -127,7 +127,7 @@
  │               └──────────────────────────────────────────────────┘        │
  │                                                                             │
  └─────────────────────────────────────────────────────────────────────────────┘
- 
+
  ┌─────────────────────────────────────────────────────────────────────────────┐
  │              CICLO 5: APPLY LESSONS (Durante trading, 09:00-17:55)         │
  │                                                                             │
@@ -187,7 +187,7 @@
 ## 🔌 Pontos de Integração Código
 
 ### 1️⃣ **Registro HOLD (Dia 1 - 13:36)**
-**Arquivo:** `scripts/agente_micro_tendencia_winfut.py`  
+**Arquivo:** `scripts/agente_micro_tendencia_winfut.py`
 **Função:** `_generate_opportunities()` linha 1713
 
 ```python
@@ -197,7 +197,7 @@ result._rejection_reasons = []
 # Linhas 1719-1790: Collect rejection reasons during filter chain
 if reduced_exposure_mode_triggered:
     result._rejection_reasons.append("EXPOSIÇÃO REDUZIDA")
-    
+
 if distribution_rally_alert_triggered:
     result._rejection_reasons.append("ALERTA DISTRIBUIÇÃO")
 
@@ -209,7 +209,7 @@ def evaluate_opportunity(self, opp: Opportunity) -> tuple[bool, str]:
 ```
 
 ### 2️⃣ **Validação HOLD (Dia 1 - 13:46)**
-**Arquivo:** `scripts/ai_reflection_continuous.py`  
+**Arquivo:** `scripts/ai_reflection_continuous.py`
 **Classe:** `PredictionTracker` linhas 70-227
 
 ```python
@@ -226,17 +226,17 @@ def register_prediction(self, decision_action: str, price: Decimal, confidence: 
 def evaluate_last_prediction(self, current_price: Decimal) -> Optional[dict]:
     if prev_decision in ("HOLD", "NEUTRAL"):
         acertou = direcao_real == "FLAT"
-        
+
         if acertou:
             self.hits += 1
         else:
             self.divergences += 1
-    
+
     return eval_result  # Com acertou, divergencia, tipo_divergencia
 ```
 
 ### 3️⃣ **Persistência HOLD (Dia 1 - 17:55)**
-**Arquivo:** `src/application/services/diary_feedback.py`  
+**Arquivo:** `src/application/services/diary_feedback.py`
 **Função:** `save_diary_feedback()` linhas 250-290
 
 ```python
@@ -262,7 +262,7 @@ def save_diary_feedback(db_path: str, feedback: DiaryFeedback) -> int:
 ```
 
 ### 4️⃣ **Carregamento Feedback (Dia 2 - 09:00)**
-**Arquivo:** `scripts/agente_micro_tendencia_winfut.py`  
+**Arquivo:** `scripts/agente_micro_tendencia_winfut.py`
 **Linha:** 4090
 
 ```python
@@ -278,7 +278,7 @@ if _diary_feedback:
 ```
 
 ### 5️⃣ **Aplicação Feedback (Dia 2 - Durante trading)**
-**Arquivo:** `scripts/agente_micro_tendencia_winfut.py`  
+**Arquivo:** `scripts/agente_micro_tendencia_winfut.py`
 **Localização:** Múltiplos pontos onde lógica verifica `_diary_feedback`
 
 ```python
@@ -311,11 +311,11 @@ if "[EXP_REDUZIDA]" in (opp.reason or ""):
        • MIN_CONFIDENCE_TRADE: 45%
        • Distribution_rally_alert: Padrão intensity
        • Resultado: COMPRA ✓ (48% > 45%)
-       
+
 17:55  Resultado da compra: PERDA -45 pts
        • Mini Índice voltou para baixo
        • Descobriu que distribuição rally foi falsa
-       
+
 Feedback 03/03:
        • hold_pct: 12%, win_rate: 25% (compras ruins)
        • Lição aprendida: Distribution rally alert deveria ser mais rigoroso
@@ -330,16 +330,16 @@ Feedback 03/03:
        • MIN_CONFIDENCE_TRADE: 45% (igual)
        • Threshold_sugerido_buy: 48 ← CARREGADO DO FEEDBACK
        • Distribution_rally_alert: Intensidade 2.5 ← REFORÇADO
-       
+
        Avaliação:
        • 48% < 48%? NÃO (é igual, então passa)
        • MAS: distribution_rally_alert com intensidade 2.5 bloqueia!
        • Resultado: BLOQUEADO (HOLD) ✓ ← MELHOR DECISÃO!
-       
+
 13:44  Mini Índice reversa para DOWN (como esperado)
        • Sistema evitou falsa compra
        • Economizou -45 pts
-       
+
 Hit Rate: 100% (HOLDs foram corretos)
 ```
 
@@ -348,14 +348,14 @@ Hit Rate: 100% (HOLDs foram corretos)
 ## 🎯 Resumo: 2 Decisões Melhoradas
 
 ### Decisão 1: Confiança Mínima Aumenta
-**Antes:** 45% → **Depois:** 48%  
-**Efeito:** ↓ 6% menos BUY (mais conservador)  
-**Quando:** Dias com histórico de falsas reversões  
+**Antes:** 45% → **Depois:** 48%
+**Efeito:** ↓ 6% menos BUY (mais conservador)
+**Quando:** Dias com histórico de falsas reversões
 
 ### Decisão 2: Distribution Rally Alert Reforçado
-**Antes:** intensity=1.0 → **Depois:** intensity=2.5  
-**Efeito:** ↑ 150% mais rigoroso em distribuições  
-**Quando:** Dias após perdas em falsos reversals  
+**Antes:** intensity=1.0 → **Depois:** intensity=2.5
+**Efeito:** ↑ 150% mais rigoroso em distribuições
+**Quando:** Dias após perdas em falsos reversals
 
 **Resultado Final:**
 - Sistema aprende automaticamente do feedback do dia anterior
@@ -420,9 +420,9 @@ ORDER BY date DESC;
 
 ---
 
-**Timestamp:** 03/03/2026 23:50 BRT  
-**Status:** ✅ Ciclo Completo Documentado  
-**Arquivos Críticos:** 
+**Timestamp:** 03/03/2026 23:50 BRT
+**Status:** ✅ Ciclo Completo Documentado
+**Arquivos Críticos:**
 - scripts/ai_reflection_continuous.py (PredictionTracker)
 - src/application/services/diary_feedback.py (Persistência)
 - scripts/agente_micro_tendencia_winfut.py (Aplicação)

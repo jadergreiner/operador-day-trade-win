@@ -166,7 +166,8 @@ _active_directive: HeadDirective | None = None
 _diary_feedback: DiaryFeedback | None = None
 
 # IntraDayLearner para aprendizado EM TEMPO REAL (latência ~10min)
-_intraday_learner: IntraDayLearner | None = None
+# Forward reference: classe definida depois (linha 2489+)
+_intraday_learner: "IntraDayLearner | None" = None
 
 # ── Auditoria de Sessão ──
 _session_id: int | None = None
@@ -2488,23 +2489,23 @@ class OpenTrade:
 
 class IntraDayLearner:
     """Aprendizado EM TEMPO REAL durante o pregão.
-    
+
     Analisa HOLDs (rejeições) do dia e ajusta thresholds dinamicamente.
     Latência: ~10 minutos (vs 24h batch)
-    
+
     Exemplo:
     └─ 13:36 HOLD (motivo: EXPOSIÇÃO_REDUZIDA)
     └─ 13:46 Validação: Acertou? SIM → hit_rate 100% (1/1)
     └─ Decisão: Pattern está 100% acertando → boost confiança +5%
     └─ 15:20 Próxima oportunidade: usa novo threshold (mais confiante)
     """
-    
+
     MIN_SAMPLES_FOR_ADJUSTMENT = 2  # Precisa 2+ para confiar
     HIGH_HIT_THRESHOLD = 90  # % acertos para boost
     LOW_HIT_THRESHOLD = 20   # % acertos para penalizar
     CONFIDENCE_BOOST = 5     # % a aumentar threshold
     CONFIDENCE_PENALTY = 10  # % a diminuir threshold
-    
+
     def __init__(self):
         self.rejection_patterns = {}  # pattern → count
         self.validation_results = {}  # pattern → (hits, total)
@@ -2512,7 +2513,7 @@ class IntraDayLearner:
         self.last_adjustment_time = {}  # pattern → timestamp (evita spam)
         self.adjustment_cooldown = timedelta(minutes=5)  # Não ajusta 2x em 5min
         self._audit_log = []  # Log interno para auditoria
-    
+
     def _log_audit(self, event: str) -> None:
         """Registra evento em log interno (para auditoria sem print)."""
         timestamp = datetime.now().isoformat()
@@ -2520,30 +2521,30 @@ class IntraDayLearner:
         # Mantém últimas 100 linhas
         if len(self._audit_log) > 100:
             self._audit_log = self._audit_log[-100:]
-    
+
     def record_rejection(self, rejection_reasons: list[str]) -> str:
         """Registra um HOLD com seus motivos de rejeição.
-        
+
         Normaliza motivos em uma pattern tuple para análise agregada.
         Retorna a pattern normalizada.
         """
         if not rejection_reasons:
             return "UNKNOWN"
-        
+
         pattern = tuple(sorted(rejection_reasons))
-        
+
         if pattern not in self.rejection_patterns:
             self.rejection_patterns[pattern] = 0
             self.validation_results[pattern] = (0, 0)
             self._log_audit(f"NEW_PATTERN: {pattern}")
-        
+
         self.rejection_patterns[pattern] += 1
         self._log_audit(f"REJECTION: {pattern}")
         return pattern
-    
+
     def validate_hold(self, pattern: tuple, acertou: bool) -> tuple[Optional[float], str]:
         """Valida se um HOLD foi acertado e retorna ajuste de confiança.
-        
+
         Returns: (confidence_delta, message)
                  delta > 0: aumentar threshold (mais conservador)
                  delta < 0: diminuir threshold (mais agressivo)
@@ -2551,26 +2552,26 @@ class IntraDayLearner:
         """
         if pattern not in self.validation_results:
             return None, "UNKNOWN_PATTERN"
-        
+
         hits, total = self.validation_results[pattern]
         total += 1
         if acertou:
             hits += 1
-        
+
         self.validation_results[pattern] = (hits, total)
         hit_rate = hits / total * 100 if total > 0 else 0
-        
+
         # Cooldown: não ajusta 2x em 5 minutos (evita oscilação)
         now = datetime.now()
         if pattern in self.last_adjustment_time:
             if now - self.last_adjustment_time[pattern] < self.adjustment_cooldown:
                 self._log_audit(f"VALIDATE: {pattern} = {acertou} ({hits}/{total}) COOLDOWN")
                 return None, f"COOLDOWN: {hit_rate:.0f}% ({hits}/{total})"
-        
+
         # Lógica de ajuste
         adjustment = None
         reason = ""
-        
+
         if total >= self.MIN_SAMPLES_FOR_ADJUSTMENT:
             if hit_rate >= self.HIGH_HIT_THRESHOLD:
                 # Pattern está acertando muito → aumentar confiança
@@ -2586,33 +2587,33 @@ class IntraDayLearner:
                 self._log_audit(f"PENALTY: {pattern} = {hit_rate:.1f}% ({hits}/{total})")
         else:
             self._log_audit(f"VALIDATE: {pattern} = {acertou} ({hits}/{total})")
-        
+
         if adjustment is None:
             return None, f"MONITORING: {hit_rate:.0f}% ({hits}/{total})"
-        
+
         self.confidence_adjustments[pattern] = adjustment
         return adjustment, reason
-    
+
     def get_current_adjustments(self) -> float:
         """Retorna soma de todos ajustes ativos."""
         return sum(self.confidence_adjustments.values())
-    
+
     def summary_with_actions(self) -> str:
         """Resumo APENAS de padrões com ajustes reais (BOOST/PENALTY).
-        
+
         Aprendizado transparente: Exibe somente quando há ação real.
         Retorna string vazia se apenas monitorando (sem ajuste ainda).
         """
         if not self.confidence_adjustments:
             return ""  # Sem ajustes - aprendizado transparente
-        
+
         lines = []
         total_adjustment = self.get_current_adjustments()
-        
+
         # Separa boosts e penalties
         boosts = {p: v for p, v in self.confidence_adjustments.items() if v < 0}
         penalties = {p: v for p, v in self.confidence_adjustments.items() if v > 0}
-        
+
         if boosts:
             lines.append(f"  ⚡ APRENDIZADO ATIVO: Boosting confiança {total_adjustment:.0f}%")
             for pattern, delta in boosts.items():
@@ -2620,7 +2621,7 @@ class IntraDayLearner:
                 if total > 0:
                     hit_rate = hits / total * 100
                     lines.append(f"     🟢 {pattern}: {hit_rate:.0f}% hit rate ({hits}/{total}) → +agressivo")
-        
+
         if penalties:
             if boosts:
                 lines.append(f"  ")
@@ -2630,9 +2631,9 @@ class IntraDayLearner:
                 if total > 0:
                     hit_rate = hits / total * 100
                     lines.append(f"     🔴 {pattern}: {hit_rate:.0f}% hit rate ({hits}/{total}) → +conservador")
-        
+
         return "\n".join(lines) if lines else ""
-    
+
     def export_audit_log(self, filepath: str) -> None:
         """Exporta log de auditoria para arquivo (sem impacto na tela)."""
         try:
@@ -2642,7 +2643,7 @@ class IntraDayLearner:
                     f.write(f"{line}\n")
         except Exception as e:
             pass  # Falha silenciosa - não afeta trading
-    
+
     def summary(self) -> str:
         """Resumo status do IntraDay learner."""
         lines = []
@@ -2654,11 +2655,11 @@ class IntraDayLearner:
                     adj = self.confidence_adjustments.get(pattern, 0)
                     adj_str = f"({adj:+.0f}%)" if adj else ""
                     lines.append(f"     • {pattern}: {hit_rate:.0f}% ({hits}/{total}) {adj_str}")
-            
+
             total_adjustment = self.get_current_adjustments()
             if total_adjustment != 0:
                 lines.append(f"  ⚡ Ajuste total de confiança: {total_adjustment:+.0f}%")
-        
+
         return "\n".join(lines) if lines else "  (Sem dados intraday)"
 
 
@@ -3130,15 +3131,51 @@ class MicroTradingManager:
 # ────────────────────────────────────────────────────────────────
 
 def _connect_mt5(config) -> MT5Adapter:
-    """Conecta ao MetaTrader 5 com isolamento de terminal."""
+    """Conecta ao MetaTrader 5 com isolamento de terminal (ONLY CLEAR).
+
+    Proteção: Garante que APENAS o terminal CLEAR é usado, mesmo com
+    múltiplos MT5 abertos (FBS, Zero, etc). Falha rápido se terminal errado.
+    """
+    # Validação pré-voo: Verificar path do CLEAR
+    if not config.mt5_terminal_path:
+        raise RuntimeError(
+            "❌ ERRO CRÍTICO: mt5_terminal_path não configurado.\n"
+            "   Verifique .env: MT5_TERMINAL_PATH deve apontar para CLEAR."
+        )
+
+    # Verificar se path contém "CLEAR" (proteção contra FBS/Zero/outro)
+    if "CLEAR" not in config.mt5_terminal_path.upper():
+        raise RuntimeError(
+            f"❌ ERRO CRÍTICO: Terminal não é CLEAR!\n"
+            f"   Path configurado: {config.mt5_terminal_path}\n"
+            f"   Esperado: Caminho que contenha 'CLEAR' (ex: C:\\Program Files\\Clear MT5)"
+        )
+
+    # Verificar se arquivo existe
+    import os
+    if not os.path.exists(config.mt5_terminal_path):
+        raise RuntimeError(
+            f"❌ ERRO CRÍTICO: Caminho do terminal não existe!\n"
+            f"   Path: {config.mt5_terminal_path}\n"
+            f"   Verifique .env ou instale MetaTrader 5 CLEAR."
+        )
+
     mt5 = MT5Adapter(
         login=config.mt5_login,
         password=config.mt5_password,
         server=config.mt5_server,
-        terminal_exe_path=config.mt5_terminal_path,  # S2-5: Terminal Isolation
+        terminal_exe_path=config.mt5_terminal_path,  # S2-5: Terminal Isolation (ONLY CLEAR)
     )
     if not mt5.connect():
-        raise RuntimeError("Falha ao conectar no MT5. Verifique .env e terminal MT5.")
+        raise RuntimeError(
+            f"❌ Falha ao conectar no MT5 CLEAR.\n"
+            f"   Terminal: {config.mt5_terminal_path}\n"
+            f"   Login: {config.mt5_login}\n"
+            f"   Verifique:\n"
+            f"     • Terminal CLEAR está aberto?\n"
+            f"     • Credenciais corretas?\n"
+            f"     • Nenhum outro MT5 interferindo (feche FBS/Zero)?"
+        )
     return mt5
 
 
@@ -3724,6 +3761,56 @@ def _persist_cycle(db_path: str, result: CycleResult) -> int:
 # Display — Console
 # ────────────────────────────────────────────────────────────────
 
+def _preflight_check_mt5(config) -> bool:
+    """Verificação pré-voo: Garante que CLEAR terminal está configurado corretamente.
+    
+    Returns: True if OK, False if erro crítico.
+    """
+    print("\n  [PRE-FLIGHT] Verificando configuração de terminal MT5...")
+    
+    # 1. Verificar path
+    if not config.mt5_terminal_path:
+        print(f"  ❌ mt5_terminal_path não configurado no .env")
+        return False
+    
+    # 2. Verificar se é CLEAR
+    if "CLEAR" not in config.mt5_terminal_path.upper():
+        print(f"  ❌ Terminal não é CLEAR: {config.mt5_terminal_path}")
+        return False
+    
+    # 3. Verificar se arquivo existe
+    import os
+    if not os.path.exists(config.mt5_terminal_path):
+        print(f"  ❌ Arquivo não existe: {config.mt5_terminal_path}")
+        return False
+    
+    # 4. Tentar conectar (timeout rápido para pre-flight)
+    print(f"  [PRE-FLIGHT] Testando conexão com CLEAR terminal...")
+    try:
+        mt5_test = MT5Adapter(
+            login=config.mt5_login,
+            password=config.mt5_password,
+            server=config.mt5_server,
+            terminal_exe_path=config.mt5_terminal_path,
+        )
+        if not mt5_test.connect():
+            print(f"  ❌ Falha ao conectar: Verifique credenciais")
+            return False
+        
+        # Validar isolamento
+        if not mt5_test._validate_terminal_isolation():
+            print(f"  ❌ Terminal isolamento falhou: Verifique que APENAS CLEAR está aberto")
+            mt5_test.disconnect()
+            return False
+        
+        mt5_test.disconnect()
+        print(f"  ✅ Terminal CLEAR pronto. Path: {config.mt5_terminal_path}")
+        return True
+    except Exception as e:
+        print(f"  ❌ Erro na verificação: {str(e)[:80]}")
+        return False
+
+
 def _display_header():
     """Exibe cabeçalho do agente."""
     print("\n" + "═" * 70)
@@ -4287,6 +4374,12 @@ def main():
     else:
         print(f"  ℹ️  LightGBM Integrator: Não disponível (modo técnico apenas)")
 
+    # ── PRE-FLIGHT: Verificação crítica do terminal MT5 ──
+    if not _preflight_check_mt5(config):
+        print(f"\n  ❌ PRE-FLIGHT CHECK FALHOU!")
+        print(f"     Corrija a configuração de terminal MT5 antes de tentar novamente.")
+        sys.exit(1)
+
     _display_header()
     print(f"\n  DB: {DB_PATH}")
     print(f"  Símbolo: {SYMBOL}")
@@ -4429,11 +4522,18 @@ def main():
             mt5 = _connect_mt5(config)
 
             # Valida isolamento de terminal (S2-5) — previne switch acidental ao terminal errado
+            # CRÍTICO: Garante que APENAS o terminal CLEAR é usado (não FBS, Zero, etc)
             if not mt5._validate_terminal_isolation():
-                print(f"  ⚠️  ISOLAMENTO DE TERMINAL VIOLADO!")
-                print(f"     Login esperado: {config.mt5_login}")
-                print(f"     Terminal esperado: {config.mt5_terminal_path}")
-                print(f"     🛑 Abortando ciclo — reconecte no terminal correto")
+                print(f"\n  ❌ ISOLAMENTO DE TERMINAL VIOLADO!")
+                print(f"     ⚠️  ERRO CRÍTICO: Conexão não está no terminal CLEAR!")
+                print(f"     \n     Configuração esperada:")
+                print(f"       • Terminal: {config.mt5_terminal_path}")
+                print(f"       • Login: {config.mt5_login}")
+                print(f"     \n     Por favor:")
+                print(f"       1. Feche todos outros terminais MT5 (FBS, Zero, etc)")
+                print(f"       2. Abra APENAS o terminal CLEAR")
+                print(f"       3. Reconecte com Ctrl+C e reinicie o script")
+                print(f"     \n     🛑 Abortando ciclo — sistema aguardando terminal CLEAR")
                 mt5.disconnect()
                 time.sleep(5)
                 continue
