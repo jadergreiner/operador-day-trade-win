@@ -718,12 +718,12 @@ Semana 4-5 (P4 Sequencial):
 - **AC:** P95 latência <1s após implementação
 - **Sprint:** 1 (dependência zero, alto valor)
 
-**OPT-FECHAMENTO-2026-03-002: Dashboard em Tempo Real (Telnet UI)**
-- **Prioridade:** 🟡 MÉDIA
-- **Descrição:** Terminal UI para monitoramento DURANTE execução (não pós)
-- **Justificativa:** Visibilidade operacional = menor risco trader blind
-- **AC:** UI atualiza com latência <2s
-- **Sprint:** 2 (design primeiro, implementação depois)
+**OPT-FECHAMENTO-2026-03-002: Validação Automática de Execução de Ordens (Order Reconciliation)**
+- **Prioridade:** 🔴 ALTA
+- **Descrição:** Confirmação ponta-a-ponta: Ordem enviada → Confirmada MT5 → Registrada BD
+- **Justificativa:** Zero perda de trades por desincronização + auditoria compliance
+- **AC:** 100% ordens devem ser reconciliadas em <5s
+- **Sprint:** 1 (bloqueador para Phase 2)
 
 **OPT-FECHAMENTO-2026-03-003: Auditororia BDI end-to-end**
 - **Prioridade:** 🟡 MÉDIA

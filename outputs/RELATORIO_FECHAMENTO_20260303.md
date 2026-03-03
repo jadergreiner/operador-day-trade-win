@@ -253,32 +253,60 @@ class LatencyTracker:
 
 ---
 
-### 📌 OPORTUNIDADE #2: Dashboard em Tempo Real (mini-UI telnet)
+### 📌 OPORTUNIDADE #2: Validação Automática de Execução de Ordens (Order Reconciliation)
 
 **ID:** OPT-FECHAMENTO-2026-03-002  
-**Melhoria:** Terminal UI para monitoramento em tempo real durante operação  
+**Melhoria:** Sistema de confirmação ponta-a-ponta: Ordem enviada → Confirmada MT5 → Registrada BD  
 
 **Justificativa Técnica:**
-- Script atual é headless (sem feedback visual)
-- Logs vão para arquivo JSON (análise só posterior)
-- Trader fica "cego" durante execução (1-3 min conforme volume)
-- **Benefício:** Visibilidade operacional DURANTE a execução, não após
+- Script envia ordem ao MT5 mas não há validação se foi REALMENTE executada
+- Sem reconciliation, risco de desincronização (ordem rejeitada mas BD registra como enviada)
+- Fase 2 com 10-50 trades/dia amplifica esse risco exponencialmente
+- **Benefício:** Zero perda de trades por desincronização + auditoria compliance
 
 **Proposta Implementação:**
 ```python
-# Adicionar socket telnet listener (porta 9999) que exibe:
-# - Sinal atual (HOLD/BUY/SELL)
-# - Confiança ML (%)
-# - Gates status (OK/FAIL)
-# - Preço bid/ask atualizado
-# - PnL acumulado sessão
+# scripts/validate_order_execution.py (novo script)
 
-# Cliente se conecta: telnet localhost 9999
-# Update a cada 1-2 segundos
+class OrderReconciliator:
+    def __init__(self):
+        self.pending_orders = {}  # order_id -> {timestamp, ticket, signal}
+    
+    def send_and_track(self, order_id, signal):
+        """Envia ordem e aguarda confirmação MT5"""
+        ticket = self.mt5_send(order_id, signal)
+        self.pending_orders[order_id] = {
+            'sent_time': time.time(),
+            'ticket': ticket,
+            'signal': signal,
+            'status': 'PENDING'
+        }
+    
+    def reconcile(self, timeout=5):
+        """Valida cada ordem pending contra MT5 account"""
+        for order_id, order in self.pending_orders.items():
+            mt5_order = self.mt5_get_order(order['ticket'])
+            
+            if mt5_order.status == 'FILLED':
+                order['status'] = 'CONFIRMED'
+                self.db_update_order(order_id, 'CONFIRMED')
+            elif mt5_order.status == 'REJECTED':
+                order['status'] = 'REJECTED'
+                self.db_rollback_order(order_id)
+                self.alert_trader(f"Ordem {order_id} REJEITADA em MT5")
+            elif time.time() - order['sent_time'] > timeout:
+                order['status'] = 'TIMEOUT'
+                self.alert_trader(f"Ordem {order_id} timeout (5s sem resposta)")
 ```
 
-**Prioridade:** 🟡 MÉDIA | **Sprint:** 2  
-**AC Bloquerador:** UI atualiza com latência <2s  
+**Parâmetros Críticos:**
+- Timeout validação: 5 segundos
+- Retry automático: 3x com backoff exponencial
+- Log auditoria: JSON + DB trigggered
+- Alert trader: Slack notification + dashboard
+
+**Prioridade:** 🔴 ALTA | **Sprint:** 1  
+**AC Bloquerador:** 100% ordens enviadas devem ser reconciliadas em <5s  
 
 ---
 
