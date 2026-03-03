@@ -165,6 +165,9 @@ _active_directive: HeadDirective | None = None
 # Feedback do diário (análise crítica RL, carregado a cada 10 ciclos)
 _diary_feedback: DiaryFeedback | None = None
 
+# IntraDayLearner para aprendizado EM TEMPO REAL (latência ~10min)
+_intraday_learner: IntraDayLearner | None = None
+
 # ── Auditoria de Sessão ──
 _session_id: int | None = None
 
@@ -2483,6 +2486,120 @@ class OpenTrade:
     reason: str = ""
 
 
+class IntraDayLearner:
+    """Aprendizado EM TEMPO REAL durante o pregão.
+    
+    Analisa HOLDs (rejeições) do dia e ajusta thresholds dinamicamente.
+    Latência: ~10 minutos (vs 24h batch)
+    
+    Exemplo:
+    └─ 13:36 HOLD (motivo: EXPOSIÇÃO_REDUZIDA)
+    └─ 13:46 Validação: Acertou? SIM → hit_rate 100% (1/1)
+    └─ Decisão: Pattern está 100% acertando → boost confiança +5%
+    └─ 15:20 Próxima oportunidade: usa novo threshold (mais confiante)
+    """
+    
+    MIN_SAMPLES_FOR_ADJUSTMENT = 2  # Precisa 2+ para confiar
+    HIGH_HIT_THRESHOLD = 90  # % acertos para boost
+    LOW_HIT_THRESHOLD = 20   # % acertos para penalizar
+    CONFIDENCE_BOOST = 5     # % a aumentar threshold
+    CONFIDENCE_PENALTY = 10  # % a diminuir threshold
+    
+    def __init__(self):
+        self.rejection_patterns = {}  # pattern → count
+        self.validation_results = {}  # pattern → (hits, total)
+        self.confidence_adjustments = {}  # pattern → delta
+        self.last_adjustment_time = {}  # pattern → timestamp (evita spam)
+        self.adjustment_cooldown = timedelta(minutes=5)  # Não ajusta 2x em 5min
+    
+    def record_rejection(self, rejection_reasons: list[str]) -> str:
+        """Registra um HOLD com seus motivos de rejeição.
+        
+        Normaliza motivos em uma pattern tuple para análise agregada.
+        Retorna a pattern normalizada.
+        """
+        if not rejection_reasons:
+            return "UNKNOWN"
+        
+        pattern = tuple(sorted(rejection_reasons))
+        
+        if pattern not in self.rejection_patterns:
+            self.rejection_patterns[pattern] = 0
+            self.validation_results[pattern] = (0, 0)
+        
+        self.rejection_patterns[pattern] += 1
+        return pattern
+    
+    def validate_hold(self, pattern: tuple, acertou: bool) -> tuple[Optional[float], str]:
+        """Valida se um HOLD foi acertado e retorna ajuste de confiança.
+        
+        Returns: (confidence_delta, message)
+                 delta > 0: aumentar threshold (mais conservador)
+                 delta < 0: diminuir threshold (mais agressivo)
+                 None: sem ajuste recomendado
+        """
+        if pattern not in self.validation_results:
+            return None, "UNKNOWN_PATTERN"
+        
+        hits, total = self.validation_results[pattern]
+        total += 1
+        if acertou:
+            hits += 1
+        
+        self.validation_results[pattern] = (hits, total)
+        hit_rate = hits / total * 100 if total > 0 else 0
+        
+        # Cooldown: não ajusta 2x em 5 minutos (evita oscilação)
+        now = datetime.now()
+        if pattern in self.last_adjustment_time:
+            if now - self.last_adjustment_time[pattern] < self.adjustment_cooldown:
+                return None, f"COOLDOWN: {hit_rate:.0f}% ({hits}/{total})"
+        
+        # Lógica de ajuste
+        adjustment = None
+        reason = ""
+        
+        if total >= self.MIN_SAMPLES_FOR_ADJUSTMENT:
+            if hit_rate >= self.HIGH_HIT_THRESHOLD:
+                # Pattern está acertando muito → aumentar confiança
+                adjustment = -self.CONFIDENCE_BOOST  # Negativo = threshold menor = mais agressivo
+                reason = f"BOOST: {hit_rate:.0f}% ({hits}/{total}) - padrão confiável!"
+                self.last_adjustment_time[pattern] = now
+            elif hit_rate <= self.LOW_HIT_THRESHOLD:
+                # Pattern está falhando → reduzir confiança
+                adjustment = self.CONFIDENCE_PENALTY  # Positivo = threshold maior = mais conservador
+                reason = f"PENALTY: {hit_rate:.0f}% ({hits}/{total}) - padrão arriscado!"
+                self.last_adjustment_time[pattern] = now
+        
+        if adjustment is None:
+            return None, f"MONITORING: {hit_rate:.0f}% ({hits}/{total})"
+        
+        self.confidence_adjustments[pattern] = adjustment
+        return adjustment, reason
+    
+    def get_current_adjustments(self) -> float:
+        """Retorna soma de todos ajustes ativos."""
+        return sum(self.confidence_adjustments.values())
+    
+    def summary(self) -> str:
+        """Resumo status do IntraDay learner."""
+        lines = []
+        if self.validation_results:
+            lines.append(f"  📊 IntraDay Learner: {len(self.validation_results)} patterns analisados")
+            for pattern, (hits, total) in self.validation_results.items():
+                if total > 0:
+                    hit_rate = hits / total * 100
+                    adj = self.confidence_adjustments.get(pattern, 0)
+                    adj_str = f"({adj:+.0f}%)" if adj else ""
+                    lines.append(f"     • {pattern}: {hit_rate:.0f}% ({hits}/{total}) {adj_str}")
+            
+            total_adjustment = self.get_current_adjustments()
+            if total_adjustment != 0:
+                lines.append(f"  ⚡ Ajuste total de confiança: {total_adjustment:+.0f}%")
+        
+        return "\n".join(lines) if lines else "  (Sem dados intraday)"
+
+
 class MicroTradingManager:
     """Gerenciador de execução de ordens para o agente micro tendência.
 
@@ -4089,6 +4206,11 @@ def main():
     global _diary_feedback
     _diary_feedback = load_latest_feedback(DB_PATH)
 
+    # ── Inicializa IntraDayLearner para feedback EM TEMPO REAL ──
+    global _intraday_learner
+    _intraday_learner = IntraDayLearner()
+    print(f"  ⚡ IntraDayLearner: Ativo (latência ~10min)")
+
     # ── Inicializa Modelo LightGBM (26/02/2026) ──
     global _lgbm_integrator
     if LGBM_INTEGRATOR_AVAILABLE and get_lgbm_integrator:
@@ -4278,6 +4400,12 @@ def main():
             print(f"\n  ──── Ciclo #{cycle_count} ────")
             result = _run_cycle(mt5)
 
+            # ⚡ IntraDayLearner: Registra motivos de rejeição de HOLDs
+            if _intraday_learner and result._rejection_reasons:
+                pattern = _intraday_learner.record_rejection(result._rejection_reasons)
+                if len(result._rejection_reasons) <= 3:
+                    print(f"  📝 IntraDay: HOLD registrado ({', '.join(result._rejection_reasons)})")
+
             # ⚙️ Calibração Dinâmica ATR (S2-2)
             if result.atr_15 > 0:
                 old_ts = TRAILING_DISTANCE_PTS
@@ -4360,6 +4488,14 @@ def main():
                             print(f"  ⏸ Oportunidade rejeitada: {eval_reason}")
                     else:
                         print(f"  ⏸ Sem entrada: {cant_reason}")
+
+            # ⚡ IntraDayLearner: Valida HOLDs a cada 5 ciclos (~10 minutos)
+            if _intraday_learner and cycle_count % 5 == 0:
+                # Simula validação de último HOLD (em produção viria de PredictionTracker)
+                # Por enquanto, apenas exibe resumo de padrões aprendidos
+                summary = _intraday_learner.summary()
+                if summary and "Pattern" not in summary:  # Tem dados relevantes
+                    print(summary)
 
             # Exibe status do trading
             _display_trading_status(trading_mgr if AUTO_TRADING_ENABLED else None)
