@@ -3364,20 +3364,297 @@ scripts/
 - ✅ ANALISE_PRIORIZACAO_24FEV.md → **Histórico priorização**
 - ✅ ANALISE_PRIORIZACAO_25FEV_SEM_DATAS.md → **Histórico Sprint 1**
 
-### ANALYSIS SCRIPTS Files (Consolidados 02/03/2026 - Movidos para scripts/):
-- ✅ analise_rl_training.py → **P7-1 até P7-4 (RL Training)**
-- ✅ analise_sqlite.py → **P7-5 até P7-10 (RL Persistence)**
-- ✅ analyze_critical_failure.py → **P6-1 (SL/TP Bug - complementar)**
+### ANALYSIS & CONSOLIDATION FILES (Consolidados 02/03/2026):
+- ✅ analyze_historical_patterns.py → **P8-1 (Historical Pattern Analysis)**
+- ✅ analyze_order_origin.py → **P8-2 (Order Origin Analysis)**
+- ✅ check_order_creator.py → **P8-3 (Order Creator Audit)**
+- ✅ ARCHITECTURE_GUIDE_PHASE3.md → **P8-4 (Phase 3 Architecture)**
+- ✅ ARQUITETURA_INTEGRACAO_PHASE6.md → **P8-5 (Phase 6 Alert Pipeline)**
+- ✅ ATTESTADO_EXECUCAO_ATUALIZA_DOCS.md → **P8-6 (Documentation Sync)**
+- ✅ CHECKLIST_IMPLEMENTACAO_COMPLETA.md → **P8-7 (S2-5 Terminal Isolation)**
+- ✅ CRONOGRAMA_VISUAL.md → **P8-7 (S2-5 Timeline)**
+- ✅ DELIBERACAO_TASK_24FEV.md → **P8-8 (Task Approval Workflow)**
+- ✅ EMAIL_CONFIG_FINAL_STATUS.md → **P8-9 (Email Service Config)**
+- ✅ ESPECIFICACAO_TASK3_ML002_BACKTEST_VALIDATION.md → **P8-10 (ML Backtest Grid Search)**
+- ✅ GATE1_DECISION_OFFICIAL.md → **P8-11 (Gate 1 Approval)**
 
-**Localização:** Todos movidos para `scripts/` conforme padrão adotado
-**Safe to Delete:** YES - 3 scripts podem ser deletados (consolidados em P7)
+**Localização Scripts:** Movidos para `scripts/` conforme padrão
+  - ✅ scripts/analyze_historical_patterns.py (201 LOC)
+  - ✅ scripts/analyze_order_origin.py (218 LOC)
+  - ✅ scripts/check_order_creator.py (153 LOC)
+
+**Safe to Delete:** YES - 12 arquivos podem ser deletados (consolidados em P8)
 
 ---
 
-**Última Atualização:** 02/03/2026 (P7 + SCRIPT PATTERN replicado em 6 docs)
+## 📌 P8: ANALYSIS TOOLS & ARCHITECTURE CONSOLIDATION (02/03/2026)
+
+### P8-1: Historical Pattern Analysis Scripts
+
+**Status:** 🟡 Análise Histórica
+**Responsável:** Data Analyst
+**Squad:** 1 pessoa
+**Horas:** 3h
+**Origem:** `analyze_historical_patterns.py` (201 LOC)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- Script de análise de padrões históricos (baseline trading)
+- Relatório de estatísticas de trades
+- Análise por tipo de execução (manual vs automático)
+- Análise temporal (early/mid/late trading patterns)
+
+#### Critérios de Aceite (4):
+- [ ] CA-1: Script executa sem erros
+- [ ] CA-2: Estatísticas gerais computadas corretamente
+- [ ] CA-3: Análise temporal com 3+ períodos
+- [ ] CA-4: Insights para ML learning gerados
+
+---
+
+### P8-2: Order Origin & Execution Analysis
+
+**Status:** 🟡 Análise Diagnóstico
+**Responsável:** Data Analyst
+**Squad:** 1 pessoa
+**Horas:** 3h
+**Origem:** `analyze_order_origin.py` (218 LOC)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- Script de análise de origem das ordens (operador vs sistema)
+- Indicadores de operação manual
+- Scoring de probabilidade de origem
+- Padrão geral de operações detectado
+
+#### Critérios de Aceite (4):
+- [ ] CA-1: 3 ordens críticas analisadas (2276170194, 2276191196, 2276191635)
+- [ ] CA-2: Indicadores de origem identificados (SL/TP, horário, notas)
+- [ ] CA-3: Score de classificação (operador/automático) calculado
+- [ ] CA-4: Conclusão final sobre origem documentada
+
+---
+
+### P8-3: Order Creator Audit Log Verification
+
+**Status:** 🟡 Auditoria
+**Responsável:** Data Analyst
+**Squad:** 1 pessoa
+**Horas:** 2h
+**Origem:** `check_order_creator.py` (153 LOC)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- Script de verificação de logs de auditoria
+- Detecção de tabelas de log/auditoria disponíveis
+- Análise de metadados e notas das ordens
+- Identificação do criador (user_id, operador_id)
+
+#### Critérios de Aceite (3):
+- [ ] CA-1: Todas as tabelas de log/auditoria varridas
+- [ ] CA-2: Position IDs do MT5 correlacionados com ordens
+- [ ] CA-3: Conclusão sobre origem confirmada (manual/automático)
+
+---
+
+### P8-4: Phase 3 Architecture Integration Design
+
+**Status:** 🟡 Arquitetura Design
+**Responsável:** Eng Sr
+**Squad:** 2 pessoas
+**Horas:** 6h
+**Origem:** `ARCHITECTURE_GUIDE_PHASE3.md` (557 LOC)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- Arquitetura de integração OAuth + JWT
+- Design de WebSocket bidirecionado
+- Fluxo de autenticação e autorização
+- Especificação de endpoints (login, predict, broadcast)
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: OAuth/JWT flow documentado (token manager)
+- [ ] CA-2: WebSocket architecture com ConnectionManager
+- [ ] CA-3: 4 endpoints especificados (login, ws, predict, broadcast)
+- [ ] CA-4: Role-based access control (trader/admin/user)
+- [ ] CA-5: Quality assurance gates documentados
+
+---
+
+### P8-5: Phase 6 Integration Architecture (Alert Pipeline)
+
+**Status:** 🟡 Arquitetura Design
+**Responsável:** Eng Sr
+**Squad:** 2 pessoas
+**Horas:** 6h
+**Origem:** `ARQUITETURA_INTEGRACAO_PHASE6.md` (412 LOC)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- Arquitetura de fluxo detection → client
+- Design de BDI processor + detectors
+- Especificação de fila de alertas (dedup, rate limit)
+- WebSocket integrador + server blueprint
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: BDI processor flow documentado (detection hook)
+- [ ] CA-2: 2 detectors design (volatilidade, padrões)
+- [ ] CA-3: Fila de alertas com dedup (95%+ efetivo)
+- [ ] CA-4: WebSocket server (FastAPI + uvicorn port 8765)
+- [ ] CA-5: 4 endpoints especificados (/alertas, /health, /metrics)
+
+---
+
+### P8-6: Documentation Update Execution & Attestation
+
+**Status:** 🟢 Completo
+**Responsável:** GitHub Copilot
+**Squad:** 1 pessoa
+**Horas:** 4h (já completado)
+**Origem:** `ATTESTADO_EXECUCAO_ATUALIZA_DOCS.md` (174 LOC)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Executadas:
+- Sincronização de 7 documentos (README, copilot-instructions, agente_autonomo docs)
+- Validação de cross-references (FEATURES ↔ ROADMAP ↔ TRACKER)
+- SYNC_MANIFEST.json atualizado com checksums
+- Changelog atualizado com v1.1.0
+
+#### Critérios de Aceite (4): ✅ TODOS COMPLETOS
+- ✅ CA-1: 7 documentos sincronizados
+- ✅ CA-2: v1.1.0 entries criadas
+- ✅ CA-3: Cross-references validadas
+- ✅ CA-4: CHANGELOG atualizado com Phase 6 details
+
+---
+
+### P8-7: Terminal Isolation Implementation & Validation (S2-5)
+
+**Status:** 🟢 Completo
+**Responsável:** Eng Sr
+**Squad:** 4 pessoas
+**Horas:** 16h (já completado)
+**Origem:** `CHECKLIST_IMPLEMENTACAO_COMPLETA.md` (277 LOC), `CRONOGRAMA_VISUAL.md` (265 LOC)
+**Prioridade:** 🔴 CRÍTICA
+
+#### Entregas Executadas:
+- Root cause analysis (mt5.initialize() sem path)
+- Código fix implementado (4 linhas)
+- 5 test phases executadas (T1-T5 = 31/31 validações)
+- Board approval unânime (6/6 personas)
+- Deploy em produção completado
+
+#### Critérios de Aceite (5): ✅ TODOS COMPLETOS
+- ✅ CA-1: Root cause investigado e documentado
+- ✅ CA-2: Fix implementado e testado (15/15 unit tests passed)
+- ✅ CA-3: Integration tests passed (5/5 validações)
+- ✅ CA-4: Edge cases validados (8/8 checks passed)
+- ✅ CA-5: Board sign-off obtido (6/6 unânime)
+
+---
+
+### P8-8: Task Approval & Deliberation Workflow
+
+**Status:** 🟢 Completo
+**Responsável:** GitHub Copilot (Coordenadora Governança)
+**Squad:** 5 personas (BOARD_MULTIDISCIPLINAR)
+**Horas:** 2h (já completado)
+**Origem:** `DELIBERACAO_TASK_24FEV.md` (99 LOC)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Executadas:
+- Task TODO-1 (Label backtest) deliberada
+- Board approval obtido (4/4 personas)
+- Squad alocado (2-3 horas ML Expert)
+- Dependências validadas (zero bloqueadores)
+
+#### Critérios de Aceite (4): ✅ TODOS COMPLETOS
+- ✅ CA-1: Especificação de TODO-1 completa
+- ✅ CA-2: 7 AC definidos e mensuráveis
+- ✅ CA-3: Squad alocado e confirmado
+- ✅ CA-4: Board decision documentado e aprovado
+
+---
+
+### P8-9: Email Service Configuration Implementation
+
+**Status:** 🟢 Completo
+**Responsável:** Eng Sr
+**Squad:** 2 pessoas
+**Horas:** 2h (já completado, 1h ahead)
+**Origem:** `EMAIL_CONFIG_FINAL_STATUS.md` (254 LOC)
+**Prioridade:** 🔴 CRÍTICA (blocker de Beta launch)
+
+#### Entregas Executadas:
+- SMTP Configuration (Gmail TLS, retry 3x exponential backoff)
+- HTML Email Template (Jinja2, 13 variables, responsive)
+- Email Service module (340 LOC, 100% type hints)
+- Test suite completo (5 comprehensive tests)
+- 961 LOC production code deployed
+
+#### Critérios de Aceite (5): ✅ TODOS COMPLETOS
+- ✅ CA-1: SMTP config sem hardcode (env vars)
+- ✅ CA-2: HTML template responsivo (13 Jinja2 vars)
+- ✅ CA-3: Retry logic (3x exponential: 1s-2s-4s)
+- ✅ CA-4: 5 unit tests completos (fixtures)
+- ✅ CA-5: Type hints 100%, coverage >90%
+
+---
+
+### P8-10: ML Backtest Validation Grid Search
+
+**Status:** 🟡 Pronto para Execução
+**Responsável:** ML Expert
+**Squad:** 3 pessoas (ML + QA + Data Analyst)
+**Horas:** 6h
+**Origem:** `ESPECIFICACAO_TASK3_ML002_BACKTEST_VALIDATION.md` (397 LOC)
+**Prioridade:** 🔴 CRÍTICA (desbloqueia Phase 2 capital scale)
+
+#### Entregas Esperadas:
+- Grid search de 8 thresholds (1.0-4.5, step 0.5)
+- Métricas calculadas (F1, Precision, Recall, Win Rate)
+- Threshold ótimo selecionado
+- Relatório backtest_final_metrics.json persistido
+
+#### Critérios de Aceite (7):
+- [ ] CA-1: Grid search com 8 thresholds executado
+- [ ] CA-2: Métricas calculadas para cada threshold
+- [ ] CA-3: F1 ≥ 0.65 validado
+- [ ] CA-4: Win rate ≥ 60% confirmado
+- [ ] CA-5: Threshold ótimo identificado
+- [ ] CA-6: Relatório gerado (backtest_final_metrics.json)
+- [ ] CA-7: Unit tests >90% coverage (7 testes)
+
+---
+
+### P8-11: Gate 1 Decision & Phase 3 Approval
+
+**Status:** 🟢 Aprovado
+**Responsável:** CTO + Board
+**Squad:** 7 personas (BOARD_MULTIDISCIPLINAR)
+**Horas:** 4h (já completado, ahead of schedule)
+**Origem:** `GATE1_DECISION_OFFICIAL.md` (252 LOC)
+**Prioridade:** 🔴 CRÍTICA (milestone decisório)
+
+#### Entregas Executadas:
+- FASE 1 verification (code review, 43/43 tests passed)
+- FASE 2 verification (ML metrics 4/4 passed, performance 4/4 passed)
+- CTO sign-off formal obtido
+- Gate 1 decision: **GO FOR FASE 3**
+
+#### Critérios de Aceite (5): ✅ TODOS COMPLETOS
+- ✅ CA-1: Risk Validator 100% type-hinted (18/18 docstrings)
+- ✅ CA-2: Risk Framework tests 43/43 passed (92% coverage)
+- ✅ CA-3: ML metrics re-validated (F1 0.8552 > 0.65)
+- ✅ CA-4: Performance load test passed
+- ✅ CA-5: CTO formal sign-off obtained
+
+---
+
+**Última Atualização:** 02/03/2026 (P8 + 3 novos scripts consolidados)
 **Próxima Revisão:** Quando GATE 2 completo (Phase 4 kick-off)
 **Proprietário:** Product Owner (GitHub Copilot)
-**Status:** ✅ BACKLOG COMPLETO (P0-P7 + Padrão de Scripts em todas docs)
+**Status:** ✅ BACKLOG COMPLETO (P0-P8 + Padrão de Scripts em todas docs)
 
 
 
