@@ -3651,10 +3651,152 @@ scripts/
 
 ---
 
-**Última Atualização:** 02/03/2026 (P8 + 3 novos scripts consolidados)
-**Próxima Revisão:** Quando GATE 2 completo (Phase 4 kick-off)
+## 📌 P9: CRITICAL ISSUES & US-004 COMPLETION (02/03/2026)
+
+### P9-1: Terminal Isolation Board Convocation & Approval
+
+**Status:** 🟢 Aprovado
+**Responsável:** Eng Sr + Board
+**Squad:** 6 personas críticas
+**Horas:** 8h
+**Origem:** `BOARD_MULITIDISCIPLINAR_CONVOCACAO_URGENTE_27FEV.md` (310 LOC)
+**Prioridade:** 🔴 CRÍTICA (S2-5 fix)
+
+#### Entregas Executadas:
+- Convocação urgente do BOARD formalizada (27/02 14:45)
+- Terminal isolation violation diagnostic completo
+- Root cause: mt5.initialize() sem path parameter
+- 4 documentos técnicos criados (auditoria, testes, executiva, guia)
+- 6/6 personas aprovaram unânime
+
+#### Critérios de Aceite (4): ✅ TODOS COMPLETOS
+- ✅ CA-1: Terminal isolation violation identificada
+- ✅ CA-2: Root cause documentado com evidência
+- ✅ CA-3: Fix especificado (4 linhas código)
+- ✅ CA-4: Board approval unânime (6/6 personas)
+
+---
+
+### P9-2: RL Rewards Table Schema Verification
+
+**Status:** 🟡 Análise Diagnóstico
+**Responsável:** Data Engineer
+**Squad:** 1 pessoa
+**Horas:** 1h
+**Origem:** `check_rl_rewards_table.py` (153 LOC, movido para scripts/)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- Script de verificação de schema RL_REWARDS
+- Diagnóstico de estrutura de tabela
+- Validação de primeiros registros
+- Recomendações de migração (se necessário)
+
+#### Critérios de Aceite (3):
+- [ ] CA-1: Script executa sem erros (sqlite3 connection)
+- [ ] CA-2: Schema RL_REWARDS mapeado (PRAGMA table_info)
+- [ ] CA-3: Amostra validada (SELECT * LIMIT 5)
+
+---
+
+### P9-3: Backtest Labeled Results Analysis
+
+**Status:** 🟡 Análise Dados
+**Responsável:** ML Expert
+**Squad:** 1-2 pessoas
+**Horas:** 2h
+**Origem:** `backtest_labeled_results.json` (1.015 LOC, movido para outputs/)
+**Prioridade:** 🟡 IMPORTANTE
+
+#### Entregas Esperadas:
+- Análise de distribuição labels (620 positivos, 380 negativos)
+- Estatísticas de imbalance (62% vs 38%)
+- Validação de threshold_sigma (1.0 usado)
+- Recomendações para balanceamento (se necessário)
+
+#### Critérios de Aceite (4):
+- [ ] CA-1: JSON carregado e parseado (1.000 labels)
+- [ ] CA-2: Distribuição validada (positive/negative counts)
+- [ ] CA-3: Imbalance ratio calculado (<20% deviation target)
+- [ ] CA-4: Threshold impact analysis (sigma=1.0 effect)
+
+---
+
+### P9-4: Data Persistence Failure Root Cause Analysis
+
+**Status:** 🔴 CRÍTICO - AC-1 CONCLUÍDO
+**Responsável:** CTO + Eng Sr
+**Squad:** 3 pessoas (arquitetura + dev)
+**Horas:** 12h (já investigado, fix pending)
+**Origem:** `CAUSA_RAIZ_PERSISTENCIA_DOCUMENTO_TECNICO.md` (416 LOC)
+**Prioridade:** 🔴 CRÍTICA (blocker Beta)
+
+#### Investigação Realizada:
+- Root cause identificada: SendToMT5Command é skeleton (TODO)
+- Gap no pipeline execution-to-persistence
+- 4 ordens MT5 executadas (24/02) mas ZERO em SQLite
+- Violação CVM/B3 (sem auditoria persistida)
+
+#### Entregas Esperadas (AC-2 Implementation):
+- Implementar SendToMT5Command.execute() completo
+- Converter ExecutionOrder → TradeModel (ORM mapping)
+- Injetar trade_repository em OrdersExecutionOrchestrator
+- Validar persistência end-to-end
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: SendToMT5Command implementado (real MT5 call)
+- [ ] CA-2: ExecutionOrder.to_trade_model() converter criado
+- [ ] CA-3: Trade repository injetado (dependency injection)
+- [ ] CA-4: Persistência end-to-end testada (MT5 → SQLite)
+- [ ] CA-5: 24/02 trades reconciliados (backfill)
+
+---
+
+### P9-5: US-004 Implementation Conclusion & Sign-Off
+
+**Status:** 🟢 Completo
+**Responsável:** GitHub Copilot + Eng Sr + ML Expert
+**Squad:** 3 personas principais
+**Horas:** 40h (já completado)
+**Origem:** `CONCLUSAO_IMPLEMENTACAO.md` (493 LOC)
+**Prioridade:** 🔴 CRÍTICA (launch blocker for Beta)
+
+#### Entregas Executadas:
+- 11 arquivos código produção (3.900 LOC Python)
+- 3 documentos técnicos (1.070 LOC markdown)
+- 11 testes completos (8 unit + 3 integration, 100% pass)
+- Documentação executiva para CFO + stakeholders
+- Análise financeira & risk framework
+- Plano de integração detalhado (15 dias)
+
+#### Critérios de Aceite (5): ✅ TODOS COMPLETOS
+- ✅ CA-1: 3,900 LOC código novo (vs 3,000 target)
+- ✅ CA-2: 11 testes passando (100% pass rate)
+- ✅ CA-3: Documentação completa (API, README, specs, exec)
+- ✅ CA-4: Qualidade: 100% type hints, 100% docstrings PT
+- ✅ CA-5: ROI financeiro projetado (60-130% anual)
+
+---
+
+**Localização Scripts & Outputs (Consolidados 02/03/2026):**
+  - ✅ scripts/check_rl_rewards_table.py (153 LOC)
+  - ✅ outputs/backtest_labeled_results.json (1.015 LOC)
+
+**Consolidated Documentation Files (P9):**
+  - BOARD_MULITIDISCIPLINAR_CONVOCACAO_URGENTE_27FEV.md → P9-1
+  - check_rl_rewards_table.py → P9-2 (->scripts/)
+  - backtest_labeled_results.json → P9-3 (->outputs/)
+  - CAUSA_RAIZ_PERSISTENCIA_DOCUMENTO_TECNICO.md → P9-4
+  - CONCLUSAO_IMPLEMENTACAO.md → P9-5
+
+**Safe to Delete:** YES - 4 arquivos podem ser deletados (1 script moved, 1 JSON moved, 2 docs consolidated)
+
+---
+
+**Última Atualização:** 02/03/2026 (P9 + Consolidacao Phase 6 scripts/outputs)
+**Próxima Revisão:** Quando P9-4 (Data Persistence) for implementado
 **Proprietário:** Product Owner (GitHub Copilot)
-**Status:** ✅ BACKLOG COMPLETO (P0-P8 + Padrão de Scripts em todas docs)
+**Status:** ✅ BACKLOG COMPLETO (P0-P9 + Total 43 tarefas rastreadas)
 
 
 
