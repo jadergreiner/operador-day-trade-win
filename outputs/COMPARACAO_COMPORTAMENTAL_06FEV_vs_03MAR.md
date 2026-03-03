@@ -1,8 +1,8 @@
 # Comparação Comportamental: 06/02 (Baseline) vs 03/03 (Degradação)
 
-**Análise:** Comportamento da IA em dois extremos da curva de degradação  
-**Data Gerada:** 03/03/2026  
-**Fonte:** reflections_log.jsonl + BACKLOG_UNIFICADO.md P51 analysis  
+**Análise:** Comportamento da IA em dois extremos da curva de degradação
+**Data Gerada:** 03/03/2026
+**Fonte:** reflections_log.jsonl + BACKLOG_UNIFICADO.md P51 analysis
 
 ---
 
@@ -307,15 +307,15 @@ SOLUÇÃO: Positive feedback (win rate > 60%) para quebrar padrão
 | **Linguagem** | Formal | Metafórica | Adaptive |
 | **Padrão Decisão** | Pro-ativa | Defensiva | Risk-averse |
 
-**Narrativa:** Sistema DEGRADOUde "confiante e operacional" para "pessimista e defensivo"  
-**Causa Raiz:** Feedback loop incompleto (reflexões sem aprendizado)  
-**Solução:** P49-5 (daily retraining) + P51 (behavioral intervention)  
+**Narrativa:** Sistema DEGRADOUde "confiante e operacional" para "pessimista e defensivo"
+**Causa Raiz:** Feedback loop incompleto (reflexões sem aprendizado)
+**Solução:** P49-5 (daily retraining) + P51 (behavioral intervention)
 
 ---
 
-**Status:** Padrões de degradação documentados e lineados para intervenção  
-**Próxima Ação:** Implementar P49-5 para quebrar ciclo pessimista  
-**Timeline:** URGENT - Bloqueia decisões operacionais  
+**Status:** Padrões de degradação documentados e lineados para intervenção
+**Próxima Ação:** Implementar P49-5 para quebrar ciclo pessimista
+**Timeline:** URGENT - Bloqueia decisões operacionais
 
 ---
 

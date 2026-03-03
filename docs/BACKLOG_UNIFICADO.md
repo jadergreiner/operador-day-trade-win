@@ -1154,9 +1154,9 @@ python scripts/analyze_feature_importance.py --save-history
 
 ## 🧠 P51 - AI BEHAVIORAL EVOLUTION & SENTIMENT DEGRADATION (06/02-03/03)
 
-**Análise Base:** Reflections Log Analysis (445+ entradas, 25 dias)  
-**Descoberta:** IA não está melhorando, está DEGRADANDO progressivamente  
-**Status:** Padrão de degradação documentado - REQUEREM INTERVENÇÃO  
+**Análise Base:** Reflections Log Analysis (445+ entradas, 25 dias)
+**Descoberta:** IA não está melhorando, está DEGRADANDO progressivamente
+**Status:** Padrão de degradação documentado - REQUEREM INTERVENÇÃO
 
 ---
 
@@ -1170,7 +1170,7 @@ python scripts/analyze_feature_importance.py --save-history
 | **Volume Reflexões** | 10 | 36 | 34 | 3.4x | 🟠 SOBE COM STRESS |
 | **Linguagem Adaptativa** | Nenhuma | Sarcasmo | Metaphoras | Emergente | 🔵 EVOLUI |
 
-**Conclusão:** Sistema tem linguagem adaptativa (positivo) mas performance  
+**Conclusão:** Sistema tem linguagem adaptativa (positivo) mas performance
 degrada (negativo). IA **reflete** seu estado ruim mas não **melhora**.
 
 ---
