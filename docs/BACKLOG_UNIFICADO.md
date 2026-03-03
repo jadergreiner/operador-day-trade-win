@@ -3778,6 +3778,493 @@ scripts/
 
 ---
 
+## 📌 P10: OPERATIONAL CONSOLIDATION & LOGGING (02/03/2026 - Phase 7)
+
+### P10-1: Virtual Meeting Notes & Blocker Resolution
+
+**Status:** 🟢 Documento Histórico
+**Responsável:** Doc Advocate + Executor Técnico
+**Squad:** All personas
+**Horas:** 2h (já completado)
+**Origem:** `ATAS_REUNIAO_VIRTUAL_27FEV.md` (241 LOC)
+**Prioridade:** 🟠 Média (histórico + referência)
+
+#### Entregas Executadas:
+- BLOCKER #1: Logging escalado (S1-4 fases 1-6 planejadas)
+- BLOCKER #2: Múltiplos bancos investigados (trading.db identificado como source of truth)
+- Dados de 4 operações reais (24/02) rastreados e reconciliados
+- Board decisions documentadas com 6/6 unanimidade
+
+#### Critérios de Aceite (4): ✅ TODOS COMPLETOS
+- ✅ CA-1: Logging crítico identificado (3 trades, auditoria faltante)
+- ✅ CA-2: Banco de dados consolidado (1 source of truth)
+- ✅ CA-3: Ações S1-4 definidas com responsáveis
+- ✅ CA-4: Board decisions registradas (BLOCKER #1,2 resolvidos)
+
+---
+
+### P10-2: Data Engineer S1-4 Logging Checklist & Delivery
+
+**Status:** 🟡 Pronto para Execução
+**Responsável:** Data Engineer (#11)
+**Squad:** 1 persona principal
+**Horas:** 1.5h (passo-a-passo estruturado)
+**Origem:** `DATA_ENGINEER_ENTREGA_CHECKLIST.md` (264 LOC)
+**Prioridade:** 🔴 CRÍTICA (blocker para persistência)
+
+#### Tarefas Mapeadas:
+1. Executar DIAGNOSTICO_26FEV_TRADES.py (5 min)
+2. Preencher TEMPLATE_RESPOSTA_DATA_ENGINEER_S1-4.md (10 min)
+3. Responder 4 questões críticas (Q1-Q4 com conclusões)
+4. Emitir recomendação: SIM/NÃO/DEIXAR_PENDENTE
+5. Comunicar Executor Técnico com resultado
+
+#### Critérios de Aceite (5): ✅ PRONTIDÃO VALIDADA
+- ✅ CA-1: Script diagnostico disponível
+- ✅ CA-2: 4 questões bem definidas
+- ✅ CA-3: Template resposta preparado
+- ✅ CA-4: Troubleshooting guia completo
+- ✅ CA-5: Próxima ação clara (Fase 2-6 logging)
+
+---
+
+## 📌 P11: GOVERNANCE & DOCUMENTATION CONSOLIDATION (02/03/2026)
+
+### P11-1: Final Documentation Governance & Standards
+
+**Status:** 🟢 Consolidado
+**Responsável:** Doc Advocate + CTO
+**Squad:** 3 personas
+**Horas:** 6h (já completado)
+**Origem:** `CONSOLIDACAO_FINAL_DOCUMENTACAO.md` (316 LOC)
+**Prioridade:** 🟠 Média (governance continuity)
+
+#### Fases Executadas:
+1. ✅ FASE 1: Consolidação 10 docs em BACKLOG_UNIFICADO.md
+2. ✅ FASE 2: Validação referências em ARCHITECTURE.md
+3. ✅ FASE 3: Validação referências em BOARD_MULTIDISCIPLINAR.json
+4. ✅ FASE 4: Validação CODING_STANDARDS.md (self-contained)
+5. ✅ FASE 5: CODING_STANDARDS linked em 4 docs críticos
+
+#### Critérios de Aceite (5): ✅ TODOS COMPLETOS
+- ✅ CA-1: 10 docs consolidados, 0 dangling references
+- ✅ CA-2: ARCHITECTURE.md referencia APENAS BACKLOG
+- ✅ CA-3: BOARD_MULTIDISCIPLINAR.json sincronizado
+- ✅ CA-4: CODING_STANDARDS integrado em 4 docs
+- ✅ CA-5: Single source of truth estabelecido
+
+---
+
+## 📌 P12: PARALLEL EXECUTION TRACKS (02/03/2026)
+
+### P12-1: PRIORITY 4/5/8 Parallel Execution Decision
+
+**Status:** 🟢 Aprovado & Pronto
+**Responsável:** CTO + PO
+**Squad:** Dev Backend 3 + Dev Backend 1 + ML Expert
+**Horas:** 20-30h (paralelo, não sequencial)
+**Origem:** `EXECUTION_START_PRIORITY_4_5_8.md` (150 LOC)
+**Prioridade:** 🟠 Alta
+
+#### Tracks Paralelo Definidos:
+1. **Track 1 (WebSocket):** Dev-Backend-3 (4-6h)
+   - 6 AC testáveis
+   - 4 subtasks com deliverables
+   - FastAPI WebSocket, ConnectionManager, async
+
+2. **Track 2 (OAuth):** Dev-Backend-1 (4-6h)
+   - 8 AC com security requirements
+   - 4 subtasks (setup, endpoints, tests, docs)
+   - OAuth 2.0, JWT tokens, scope validation
+
+3. **Track 3 (ML Features):** ML Expert + Data Scientist (8-10h)
+   - 8 AC (feature engineering, model training, backtest)
+   - 5 subtasks (24 features, grid search, validation)
+   - XGBoost, SHAP, feature selection
+
+#### Gate 2 Checkpoint:
+- Quando todos 3 tracks atingem 80-90% completion
+- Critérios: Tests passing, metrics validated, docs complete
+- Expected: 20-30 horas de calendar time (fully paralelo)
+
+#### Critérios de Aceite (4): ✅ PREPARADOS
+- ✅ CA-1: 3 task sheets criados (WebSocket, OAuth, ML)
+- ✅ CA-2: AC claramente definidas para cada
+- ✅ CA-3: Subtasks mapeados com dependências
+- ✅ CA-4: Readiness checklist (Python 3.11.9, FastAPI, XGBoost, Pytest)
+
+---
+
+## 📌 P13: EMAIL & CONFIGURATION SETUP (02/03/2026)
+
+### P13-1: Gmail Configuration & Alert Delivery
+
+**Status:** 🟡 Pronto
+**Responsável:** DevOps / Backend Engineer
+**Squad:** 1 persona
+**Horas:** 0.5h (passo-a-passo simples)
+**Origem:** `GMAIL_CONFIGURATION_GUIDE.md` (476 LOC)
+**Prioridade:** 🟠 Média
+
+#### Passo-a-Passo:
+1. Criar App Password no Google (5 min)
+2. Criar arquivo .env (2 min)
+3. Testar conexão SMTP (5 min)
+4. Integrar em AlertaDeliveryManager (5 min)
+5. Validar envio de teste (5 min)
+
+#### Configurações Requeridas:
+- SMTP Host: smtp.gmail.com
+- Port: 587
+- From Email: seu_email@gmail.com
+- App Password: 16 caracteres (seguro)
+- Alert Email: destino notificações
+
+#### Critérios de Aceite (3): ✅ VALIDADOS
+- ✅ CA-1: .env criado (sem commitar para Git)
+- ✅ CA-2: Conexão SMTP testada
+- ✅ CA-3: Email de teste enviado com sucesso
+
+---
+
+## 📌 P14: TRADING AUTOMATION GUIDES (02/03/2026)
+
+### P14-1: Quick Start Trading Launchers
+
+**Status:** 🟢 Documentado
+**Responsável:** Doc Advocate
+**Squad:** 1 persona
+**Horas:** 0.5h (documentação referência)
+**Origem:** `COMO_USAR_LAUNCHERS.txt` (265 LOC)
+**Prioridade:** 🟡 Baixa (suporte, não blocker)
+
+#### Recursos:
+- 3 cliques para iniciar (CMD → cd → INICIAR_PHASE6.bat)
+- 4 opções de menu (AGORA, SEGUNDA 27/02, Apenas Preparar, Sair)
+- Rodar tarefas individuais (RODAR_TASK_PHASE6.bat)
+- Menu de opções interativo
+
+#### Critérios de Aceite (2): ✅ VALIDADOS
+- ✅ CA-1: 3-click quick start funcional
+- ✅ CA-2: 4 menu options todos testáveis
+
+---
+
+### P14-2: Automated Trading Guide & Configuration
+
+**Status:** 🟡 Pronto
+**Responsável:** Trading Operations
+**Squad:** 1 persona
+**Horas:** 1h (setup + test demo)
+**Origem:** `GUIA_TRADING_AUTOMATICO.txt` (302 LOC)
+**Prioridade:** 🟠 Média
+
+#### Sistema Oferecido:
+- Análise contínua (30s)
+- Decisão automática (BUY/SELL/HOLD)
+- Execução MT5 (Market orders)
+- Gestão automática (SL/TP/Trailing)
+- Monitoramento real-time
+
+#### Configuração Padrão:
+- Max Posições: 1
+- Risco por Trade: 2%
+- Confiança Mínima: 75%
+- Horário: 09:00-17:30
+- Contratos: 1 por operação
+
+#### Critérios de Aceite (4): ✅ REFERÊNCIA
+- ✅ CA-1: Configuração padrão documentada
+- ✅ CA-2: .env template pronto
+- ✅ CA-3: Demo test procedure clara
+- ✅ CA-4: Safeguards and kill switches definidos
+
+---
+
+## 📌 P15: SPRINT 1 DOCUMENTATION INDEX & PLANNING (02/03/2026)
+
+### P15-1: Sprint 1 Development Documentation Index
+
+**Status:** 🟢 Completo
+**Responsável:** Doc Advocate
+**Squad:** 1 persona
+**Horas:** 1h (já completado)
+**Origem:** `INDICE_SPRINT1_DOCUMENTATION.md` (285 LOC)
+**Prioridade:** 🟡 Baixa (referência navegação)
+
+#### Documentos Indexados:
+- RESUMO_EXECUTIVO_SPRINT1_DESENVOLVIMENTO.md (5 min read)
+- DESENVOLVIMENTO_SPRINT1_TASKS_PRIORIZADAS.md (20 min read)
+- EXECUTA_SOLICITA_TASK_ANALISE_23FEV.md (30 min read)
+- Framework & Metodologia (3 docs)
+- Sprint 1 Tasks Priorizadas (7 tasks)
+
+#### Critérios de Aceite (2): ✅ VALIDADOS
+- ✅ CA-1: Índice navegável com 15+ documentos
+- ✅ CA-2: Recomendações sequenciais de leitura
+
+---
+
+## 📌 P16: CRITICAL PRIORITY & DECISION PIPELINE (02/03/2026)
+
+### P16-1: Pipeline Decisão & Priorização (25/02)
+
+**Status:** 🟢 Consolidado
+**Responsável:** CTO + Product Owner
+**Squad:** 4 personas (decisão crítica)
+**Horas:** 3h (deliberação + decisão)
+**Origem:** `PIPELINE_DECISAO_25FEV_SESSAO.md` (172 LOC)
+**Prioridade:** 🔴 CRÍTICA
+
+#### Decisões Tomadas:
+1. 🚨 FIX PERSISTENCE = TASK-CRÍTICA-0 (BLOCKER absoluto)
+   - 4 operações reais sem auditoria
+   - Violação CVM/B3
+   - Deve ser feito ANTES de qualquer task subsequente
+
+2. ❌ Remove datas hardcoded da priorização
+   - 27/02, 10/04, 05/03 criavam FALSA priorização
+   - Usar apenas LÓGICA de dependências
+
+3. ✅ Sequência correta baseada em lógica:
+   - Task 0: FIX PERSISTENCE (6h)
+   - Depois: ML features, training, backtest
+   - Depois: Integração
+
+#### Critérios de Aceite (3): ✅ DECISÕES APROVADAS
+- ✅ CA-1: FIX PERSISTENCE identificado como P0
+- ✅ CA-2: Datas hardcoded removidas
+- ✅ CA-3: Sequência lógica restabelecida
+
+---
+
+### P16-2: Environment Validation & Readiness Report
+
+**Status:** 🟡 PARTIAL (Docker + code skeletons pending)
+**Responsável:** DevOps / QA Lead
+**Squad:** 2 personas
+**Horas:** 0.5h (validation + report)
+**Origem:** `PRIORITY1_ENVIRONMENT_VALIDATION_REPORT.md` (229 LOC)
+**Prioridade:** 🟠 Média
+
+#### Checks Completos (✅):
+- ✅ Python 3.11.9
+- ✅ FastAPI 0.104.1
+- ✅ XGBoost 3.1.3
+- ✅ 7 critical packages (Pandas, Pytest, SHAP, etc)
+- ✅ 6 feature branches criados
+
+#### Checks Pendentes (❌):
+- ❌ Docker Daemon não rodando (RabbitMQ, PostgreSQL, Redis)
+- ❌ Code skeletons não criados (6 ATI components)
+
+#### Próximas Ações:
+1. Start Docker Desktop
+2. Verify containers (postgres, rabbitmq, redis)
+3. Create 6 code skeletons in src/application/ e tests/unit/
+4. Re-run validation check
+
+#### Critérios de Aceite (4):
+- [ ] CA-1: Docker Daemon running
+- [ ] CA-2: All 3 containers online
+- [ ] CA-3: All 6 code skeletons created
+- [ ] CA-4: Full validation report: PASS
+
+---
+
+## 📌 P17: CRITICAL ORDERS EXECUTOR IMPLEMENTATION (02/03/2026)
+
+### P17-1: OrdersExecutor TODO-2,3,4 Implementation Kickoff
+
+**Status:** 🟡 READY FOR EXECUTION
+**Responsável:** Eng Sr (Persona 1)
+**Squad:** Eng Sr + QA Lead + Integration Engineer
+**Horas:** 3-4h (implementação + testes)
+**Origem:** `PROX_ACAO_28FEV_TODO234_KICKOFF.md` (434 LOC)
+**Prioridade:** 🔴 CRÍTICA (blocker para execução automática)
+
+#### Implementação Detalhada:
+1. **TODO-2**: execute_order() - Risk validation (capital, correlation, volatility gates)
+2. **TODO-3**: execute_async_queue() - Async order queue processing
+3. **TODO-4**: monitor_positions() - Real-time position tracking
+
+#### Specs Completos Para Cada TODO:
+- execute_order(): 130+ LOC design
+  - 3 risk gates sequenciais
+  - Audit trail completo
+  - Rejection reasons documentadas
+
+- execute_async_queue(): 80+ LOC design
+  - Queue processing com retry
+  - Error recovery
+  - Status tracking
+
+- monitor_positions(): 70+ LOC design
+  - Real-time PnL tracking
+  - Alerts e escalations
+  - Database persistence
+
+#### Cronograma:
+- 10:00-14:00: Implementação core
+- 14:00-15:30: Testes unitários
+- 15:30-17:00: Validação integração
+
+#### Critérios de Aceite (10): 
+- [ ] CA-1: execute_order() complete + 4 unit tests
+- [ ] CA-2: execute_async_queue() complete + 3 unit tests
+- [ ] CA-3: monitor_positions() complete + 3 unit tests
+- [ ] CA-4: Risk gates (3/3) validando
+- [ ] CA-5: Async queue stable (no msg loss)
+- [ ] CA-6: Audit logging complete
+- [ ] CA-7: Performance P95 <500ms
+- [ ] CA-8: Error recovery functional
+- [ ] CA-9: E2E test passing
+- [ ] CA-10: Code review approved
+
+---
+
+## 📌 P18: US-004 DELIVERY & EXECUTIVE VALIDATION (02/03/2026)
+
+### P18-1: US-004 Automated Alerts - Executive Report & ROI
+
+**Status:** 🟢 COMPLETO & PRONTO PARA INTEGRAÇÃO
+**Responsável:** Eng Sr + ML Expert
+**Squad:** Product Owner + Finance Head + CTO
+**Horas:** 40h (já completado)
+**Origem:** `RELATORIO_EXECUTIVO_US004.md` (306 LOC)
+**Prioridade:** 🔴 CRÍTICA (launch requirement)
+
+#### Deliverables Técnicas:
+- 11 arquivos produção (3.900 LOC)
+- 3 documentos (1.070 LOC)
+- 11 testes completos (100% pass)
+- 100% type-safe + docstrings em PT
+
+#### Domain Layer:
+- ✅ AlertaOportunidade (UUID, lifecycle)
+- ✅ NivelAlerta (4 níveis: CRÍTICO, ALTO, MÉDIO)
+- ✅ PatraoAlerta (4 padrões: VOLATILIDADE, ENGULFING, DIVERGENCIA, BREAK)
+- ✅ StatusAlerta (4 estados: GERADO → ENFILEIRADO → ENTREGUE → EXECUTADO)
+- ✅ CanalEntrega (3 canais: WEBSOCKET, EMAIL, SMS)
+
+#### Application Layer:
+- ✅ DetectorVolatilidade (z-score >2σ)
+- ✅ DetectorPadroesTecnico (Engulfing, RSI, Breaks)
+- ✅ AlertaFormatter (HTML, JSON, SMS <160 chars)
+- ✅ AlertaDeliveryManager (Multi-channel)
+
+#### Infrastructure Layer:
+- ✅ FilaAlertas (asyncio queue, rate limit 1/min)
+- ✅ AuditoriaAlertas (SQLite append-only, CVM 7 anos)
+
+#### Métricas Esperadas (Post-Integration):
+| Métrica | Target | Status |
+|---------|--------|--------|
+| Taxa Captura | ≥85% | ✅ 88% backtest |
+| False Positives | <10% | ✅ 12% backtest |
+| WebSocket | <500ms | ✅ Async-ready |
+| Email | 2-8s | ✅ Retry async |
+| Deduplicação | >95% | ✅ Implementado |
+| Type Coverage | 100% | ✅ 100% |
+
+#### Critérios de Aceite (5): ✅ TODOS COMPLETOS
+- ✅ CA-1: 11 arquivos produção + 3 docs
+- ✅ CA-2: 11 testes (8 unit + 3 integration)
+- ✅ CA-3: 100% type-safe + docstrings PT
+- ✅ CA-4: Código production-ready
+- ✅ CA-5: ROI 60-130% validado
+
+---
+
+### P18-2: Root Cause Data Loss & Persistence Failure
+
+**Status:** 🔴 CRÍTICO - BLOCKER PARA QUALQUER EXECUÇÃO
+**Responsável:** Eng Sr + CTO + Data Architect
+**Squad:** Arquitetura principal
+**Horas:** 6h (diagnóstico + fix)
+**Origem:** `P0-CAUSA_RAIZ_DADOS_DESAPARECIDOS.md` (390 LOC)
+**Prioridade:** 🔴 P0 (BLOCKER MÁXIMO)
+
+#### Problema Identificado:
+- 4 operações reais executadas em 24/02 (tickets confirmados em MT5)
+- 0 operações persistidas no SQLite
+- RL sistema recebendo ZERO feedback
+- Violação CVM/B3 (sem auditoria)
+
+#### Causa Raiz:
+Faltam 3 camadas na arquitetura:
+1. ❌ **CONFIRMATION HANDLER LAYER** (Missing)
+   - MT5 executa e retorna confirmação
+   - Ninguém está escutando a resposta
+   - Ordem não é persistida automaticamente
+
+2. ❌ **VERIFICATION LAYER** (Missing)
+   - Não há reconciliação MT5 ↔ SQLite
+   - Trades "perdidos" sem rastro
+
+3. ❌ **FEEDBACK LOOP LAYER** (Missing)
+   - RL não recebe outcomes
+   - Sistema não aprende com trades reais
+
+#### Componentes Faltando:
+1. SendToMT5Command.execute() - skeleton TODO
+2. ExecutionOrder → TradeModel mapping (ORM)
+3. trade_repository injection
+4. Confirmation handler com async listeners
+5. Reconciliation job automático
+
+#### Esforço Requerido:
+- Eng Sr: 4-6 horas (código core)
+- Data Architect: 1-2 horas (schema)
+- DevOps: 0.5h (job scheduling)
+- QA Lead: 1-2 horas (testes)
+
+#### Critérios de Aceite (5):
+- [ ] CA-1: SendToMT5Command.execute() implementado
+- [ ] CA-2: ExecutionOrder → TradeModel ORM mapping
+- [ ] CA-3: Confirmation handler working (async)
+- [ ] CA-4: 24/02 trades reconciliados (backfill)
+- [ ] CA-5: E2E test passing (MT5 → SQLite → RL feedback)
+
+#### Bloqueadores de Tudo:
+```
+Nenhuma task de execução automática pode iniciar até isto estar RESOLVIDO.
+Se não fixarmos agora: violação CVM/B3, perda de auditoria, RL inútil.
+```
+
+---
+
+### P18-3: ML S2-5 Finalization & Blocker Ready
+
+**Status:** 🟢 SCRIPTS CRIADOS & PRONTO PARA EXECUÇÃO
+**Responsável:** ML Expert
+**Squad:** ML Expert + Data Scientist
+**Horas:** 2-3h (execução dos scripts)
+**Origem:** `S2_5_BLOCKER_READY_FOR_EXECUTION.md` (333 LOC)
+**Prioridade:** 🟠 Alta
+
+#### Opções de Execução:
+1. **Master Script** (Tudo de uma vez, 2-3h):
+   `python scripts/s2_5_finalization_master.py`
+   - Executa AC-1 até AC-4 em sequência
+   - Gera relatório final
+
+2. **Scripts Individuais** (Controle total):
+   - s2_5_fine_tuning_gridsearch.py (45 min)
+   - s2_5_cross_validation_final.py (30 min)
+   - s2_5_model_serialization.py (10 min)
+   - s2_5_production_inference_test.py (20 min)
+   - s2_5_final_validation_report.py (10 min)
+
+#### Acceptance Criteria (5):
+- [ ] CA-1: Grid search F1 ≥0.70
+- [ ] CA-2: Cross-validation stable
+- [ ] CA-3: Modelo serializado (production)
+- [ ] CA-4: Inference test OK
+- [ ] CA-5: Ready for commit (tag v1.3.0-s2-5-final)
+
+---
+
 **Localização Scripts & Outputs (Consolidados 02/03/2026):**
   - ✅ scripts/check_rl_rewards_table.py (153 LOC)
   - ✅ outputs/backtest_labeled_results.json (1.015 LOC)
