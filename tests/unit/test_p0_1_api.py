@@ -39,7 +39,7 @@ def test_create_order_valid_request(client):
         "ml_score": 0.85,
         "detector_spike": 45.2
     }
-    
+
     response = client.post("/api/v1/orders", json=request_data)
     assert response.status_code == 200
     data = response.json()
@@ -60,7 +60,7 @@ def test_create_order_invalid_order_type(client):
         "take_profit": 125.45,
         "ml_score": 0.85
     }
-    
+
     response = client.post("/api/v1/orders", json=request_data)
     assert response.status_code == 400
 
@@ -86,10 +86,10 @@ def test_list_orders_multiple(client):
         "take_profit": 125.45,
         "ml_score": 0.85
     }
-    
+
     client.post("/api/v1/orders", json=request_data)
     client.post("/api/v1/orders", json=request_data)
-    
+
     # Listar
     response = client.get("/api/v1/orders")
     assert response.status_code == 200
@@ -110,10 +110,10 @@ def test_get_order_found(client):
         "take_profit": 125.45,
         "ml_score": 0.85
     }
-    
+
     create_response = client.post("/api/v1/orders", json=request_data)
     order_id = create_response.json()["order_id"]
-    
+
     # Obter ordem
     response = client.get(f"/api/v1/orders/{order_id}")
     assert response.status_code == 200

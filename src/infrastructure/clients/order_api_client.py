@@ -35,14 +35,14 @@ class APIOrderResponse:
 class OrderAPIClient:
     """
     Cliente HTTP para P0-1 REST API.
-    
+
     Responsabilidades:
     - Converter ExecutionOrder em CreateOrderRequest
     - Chamar POST /api/v1/orders
     - Interpretar resposta JSON
     - Implementar retry logic (3x com exponential backoff)
     - Logar todas as chamadas para auditoria
-    
+
     Uso:
     ```python
     client = OrderAPIClient(api_url="http://localhost:8888")
@@ -68,7 +68,7 @@ class OrderAPIClient:
     ):
         """
         Inicializa cliente REST.
-        
+
         Args:
             api_url: Base URL da API (ex: http://localhost:8888)
             timeout: Timeout de conexão em segundos
@@ -86,7 +86,7 @@ class OrderAPIClient:
     def health_check(self) -> bool:
         """
         Verifica se API está OK.
-        
+
         Returns:
             True se API respondeu com 200 OK
         """
@@ -116,14 +116,14 @@ class OrderAPIClient:
     ) -> APIOrderResponse:
         """
         Cria ordem via API REST P0-1.
-        
+
         Fluxo:
         1. Valida parâmetros
         2. Monta payload JSON
         3. POST /api/v1/orders com retry logic
         4. Interpreta resposta
         5. Loga auditoria
-        
+
         Args:
             symbol: Símbolo (ex: "WIN", "WINFUT")
             order_type: "BUY" ou "SELL"
@@ -133,7 +133,7 @@ class OrderAPIClient:
             take_profit: Take profit
             ml_score: Score ML 0.0-1.0
             detector_spike: Score spike 0.0-1.0
-            
+
         Returns:
             APIOrderResponse com status sucesso/erro
         """
@@ -262,10 +262,10 @@ class OrderAPIClient:
     def get_order(self, order_id: str) -> Optional[Dict[str, Any]]:
         """
         Obtém status de uma ordem.
-        
+
         Args:
             order_id: ID da ordem
-            
+
         Returns:
             Dict com dados da ordem ou None se erro
         """
@@ -284,10 +284,10 @@ class OrderAPIClient:
     def list_orders(self, limit: int = 100) -> Optional[Dict[str, Any]]:
         """
         Lista todas as ordens.
-        
+
         Args:
             limit: Número máximo de ordens a retornar
-            
+
         Returns:
             Dict com lista de ordens ou None se erro
         """

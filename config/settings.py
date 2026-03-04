@@ -141,6 +141,26 @@ class TradingConfig(BaseSettings):
             raise ValueError(f"Environment must be one of {valid_envs}")
         return v_lower
 
+    @field_validator("mt5_terminal_path")
+    @classmethod
+    def validate_mt5_terminal_path(cls, v: Optional[str]) -> Optional[str]:
+        """Validate that MT5 terminal path points to Clear broker (isolamento de terminal).
+        
+        CRÍTICO: Previne acidentes com FBS, XP, Zero Markets ou outro broker.
+        """
+        if v is None:
+            return None
+        
+        v_upper = v.upper()
+        if "CLEAR" not in v_upper:
+            raise ValueError(
+                f"Terminal path deve apontar para CLEAR (não FBS/XP/Zero/outro).\n"
+                f"Caminho fornecido: {v}\n"
+                f"Esperado: algo como C:\\Program Files\\Clear Investimentos MT5 Terminal\\terminal64.exe"
+            )
+        
+        return v
+
     def ensure_directories(self) -> None:
         """Create necessary directories if they don't exist."""
         Path(self.log_path).mkdir(parents=True, exist_ok=True)

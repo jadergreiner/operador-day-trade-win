@@ -15,13 +15,13 @@ def create_app(orders_executor: OrdersExecutor) -> FastAPI:
     """Factory para criar FastAPI app com dependency injection."""
     global _orders_executor
     _orders_executor = orders_executor
-    
+
     app = FastAPI(
         title="API REST MT5 - P0-1",
         description="Execução de ordens via ExecutionOrder queue",
         version="1.0.0"
     )
-    
+
     # Health check
     @app.get("/health")
     async def health():
@@ -30,7 +30,7 @@ def create_app(orders_executor: OrdersExecutor) -> FastAPI:
             "service": "api-rest-mt5",
             "version": "1.0.0"
         }
-    
+
     # Listar ordens
     @app.get("/api/v1/orders")
     async def list_orders():
@@ -46,11 +46,11 @@ def create_app(orders_executor: OrdersExecutor) -> FastAPI:
                 for oid, order in _orders_executor.orders.items()
             ]
         }
-    
+
     # Registra rotas
     from src.interfaces.api.routes import orders
     app.include_router(orders.router, prefix="/api/v1", tags=["orders"])
-    
+
     return app
 
 

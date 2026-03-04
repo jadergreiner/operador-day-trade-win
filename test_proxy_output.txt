@@ -1,0 +1,12 @@
+
+Traceback (most recent call last):
+
+  ============================================================
+  File "C:\repo\operador-day-trade-win\scripts\launch_agent_with_ml_v1_2_3.py", line 495, in <module>
+    main()
+  File "C:\repo\operador-day-trade-win\scripts\launch_agent_with_ml_v1_2_3.py", line 461, in main
+    print("  \U0001f680 AGENTE MICRO TEND╩NCIA v1.2.3")
+  File "C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\U0001f680' in position 2: character maps to <undefined>

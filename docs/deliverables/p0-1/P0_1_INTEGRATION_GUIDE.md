@@ -1,8 +1,8 @@
 #!/usr/bin/env markdown
 # P0-1 REST API Integration Guide
 
-> **Status:** ✅ IMPLEMENTED  
-> **Timestamp:** 03/03/2026  
+> **Status:** ✅ IMPLEMENTED
+> **Timestamp:** 03/03/2026
 > **Components:** OrderAPIClient + MT5AdapterProxy + Launcher Integration
 
 ---
@@ -35,7 +35,7 @@ health_check() → bool (True se API OK)
 **Retry Logic:**
 - Tentativa 1: Espera 0s (imediato)
 - Tentativa 2: Espera 1s (2^0)
-- Tentativa 3: Espera 2s (2^1)  
+- Tentativa 3: Espera 2s (2^1)
 - Timeout total: ~3-5 segundos máximo
 
 ### 2. **MT5AdapterProxy** (`src/infrastructure/adapters/mt5_adapter_proxy.py`)
@@ -313,8 +313,8 @@ for order in orders['orders']:
 
 ```sql
 sqlite3 data/db/api_orders.db
-SELECT state, timestamp, message FROM api_audit_log 
-WHERE order_id = 'ORD-xxx' 
+SELECT state, timestamp, message FROM api_audit_log
+WHERE order_id = 'ORD-xxx'
 ORDER BY timestamp;
 ```
 
@@ -418,6 +418,6 @@ conn = sqlite3.connect(db_path, timeout=10.0)
 
 ---
 
-**Created:** 03/03/2026  
-**Integration:** Complete (P0-1 → FastAPI → ExecutionOrder → SQLite)  
+**Created:** 03/03/2026
+**Integration:** Complete (P0-1 → FastAPI → ExecutionOrder → SQLite)
 **Agente Ready:** YES (Zero código changes necessárias!)

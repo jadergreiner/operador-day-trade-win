@@ -21,11 +21,11 @@ from src.interfaces.api.fastapi_server import create_app
 def create_database_tables():
     """Cria tabelas SQLite para P0-1 se não existirem."""
     db_path = root_dir / "data" / "db" / "api_orders.db"
-    
+
     try:
         conn = sqlite3.connect(str(db_path))
         cursor = conn.cursor()
-        
+
         # Tabela api_orders
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS api_orders (
@@ -43,7 +43,7 @@ def create_database_tables():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
+
         # Tabela api_audit_log
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS api_audit_log (
@@ -56,11 +56,11 @@ def create_database_tables():
                 FOREIGN KEY (order_id) REFERENCES api_orders(order_id)
             )
         """)
-        
+
         # Criar índices
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_orders_symbol ON api_orders(symbol)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_audit_order ON api_audit_log(order_id)")
-        
+
         conn.commit()
         conn.close()
         print("[DB] Tabelas SQLite criadas/validadas com sucesso")
@@ -71,7 +71,7 @@ def create_database_tables():
 def create_executor_with_mocks() -> OrdersExecutionOrchestrator:
     """
     Cria OrdersExecutionOrchestrator com mocks dos dependentes.
-    
+
     Necessários:
     - risk_processor: RiskValidationProcessor (mock)
     - mt5_adapter: MT5Adapter (mock)
@@ -80,12 +80,12 @@ def create_executor_with_mocks() -> OrdersExecutionOrchestrator:
     # Criar mocks dos dependentes
     risk_processor = MagicMock()
     risk_processor.validate_order = MagicMock(return_value=True)
-    
+
     mt5_adapter = MagicMock()
     mt5_adapter.send_order = MagicMock(return_value="MOCK-TICKET-001")
-    
+
     trade_repository = MagicMock()
-    
+
     # Criar executor com mocks
     executor = OrdersExecutionOrchestrator(
         risk_processor=risk_processor,
@@ -93,19 +93,19 @@ def create_executor_with_mocks() -> OrdersExecutionOrchestrator:
         trade_repository=trade_repository,
         event_bus=None
     )
-    
+
     return executor
 
 if __name__ == "__main__":
     # Criar tabelas SQLite
     create_database_tables()
-    
+
     # Criar executor com mocks
     executor = create_executor_with_mocks()
-    
+
     # Criar app
     app = create_app(executor)
-    
+
     print("\n" + "="*60)
     print("[P0-1] INICIANDO API REST MT5")
     print("="*60)
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     print(f"  Docs: http://localhost:8888/docs")
     print(f"  Health: http://localhost:8888/health")
     print("="*60 + "\n")
-    
+
     # Rodar Uvicorn
     uvicorn.run(
         app,

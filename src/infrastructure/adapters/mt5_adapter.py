@@ -180,9 +180,11 @@ class MT5Adapter(IBrokerAdapter):
                     if not exe_path:
                         continue
 
-                    # Se terminal_exe_path foi especificado, valida match
+                    # Se terminal_exe_path foi especificado, VALIDA MATCH (proteção contra FBS/XP/outro)
                     if self.terminal_exe_path:
+                        # CRÍTICO: Rejeita qualquer terminal que não corresponda EXATAMENTE
                         if self.terminal_exe_path.lower() not in exe_path.lower():
+                            logger.debug(f"Terminal mismatch: expected {self.terminal_exe_path}, got {exe_path}")
                             continue
 
                     return proc.info['pid']

@@ -24,13 +24,13 @@ logger = logging.getLogger(__name__)
 class MT5AdapterProxy:
     """
     Proxy que redirecionam chamadas send_order() para API REST P0-1.
-    
+
     Mantém compatibilidade total com MT5Adapter original:
     - Mesma interface pública
     - Converte ExecutionOrder para CreateOrderRequest
     - Retorna ticket string (mesmo que API)
     - Falhas degradam graciosamente
-    
+
     Arquitetura:
     agente.send_order(order)
          ↓
@@ -54,7 +54,7 @@ class MT5AdapterProxy:
     ):
         """
         Inicializa proxy.
-        
+
         Args:
             original_adapter: MT5Adapter original para fallback
             api_client: OrderAPIClient (cria novo se None)
@@ -72,7 +72,7 @@ class MT5AdapterProxy:
     def send_order(self, order) -> Optional[str]:
         """
         Envia ordem usando API REST P0-1 (com fallback optional para MT5).
-        
+
         Fluxo:
         1. Se use_api_rest=False → usa MT5 direto (bypass proxy)
         2. Se use_api_rest=True:
@@ -81,7 +81,7 @@ class MT5AdapterProxy:
            c. Se sucesso → retorna order_id
            d. Se falha e fallback_to_mt5=True → usa MT5 como fallback
            e. Se falha e fallback_to_mt5=False → retorna None
-        
+
         Args:
             order: Order/ExecutionOrder object com atributos:
                 - symbol: str
@@ -91,7 +91,7 @@ class MT5AdapterProxy:
                 - stop_loss: Price object
                 - take_profit: Price object
                 - order_type: OrderType enum
-                
+
         Returns:
             ticket: str (order_id) ou None se falha
         """
@@ -123,7 +123,7 @@ class MT5AdapterProxy:
             entry_price = float(order.price)
             stop_loss = float(order.stop_loss)
             take_profit = float(order.take_profit)
-            
+
             # ML score e detector (values padrão se não disponível)
             ml_score = getattr(order, 'ml_score', 0.5)
             detector_spike = getattr(order, 'detector_spike', 0.0)

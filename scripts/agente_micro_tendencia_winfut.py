@@ -3763,14 +3763,19 @@ def _persist_cycle(db_path: str, result: CycleResult) -> int:
 
 def _preflight_check_mt5(config) -> bool:
     """Verificação pré-voo: Garante que CLEAR terminal está configurado corretamente.
+    
+    CRÍTICO: Impede que o agente conecte a FBS, XP, Zero Markets ou qualquer outro
+    broker por acidente. REJEITA rapidamente se não for Clear.
 
     Returns: True if OK, False if erro crítico.
     """
-    print("\n  [PRE-FLIGHT] Verificando configuração de terminal MT5...")
+    print("\n  [PRE-FLIGHT] Auditando terminal MT5 (protegido contra FBS/XP/Zero/outro)...")
 
-    # 1. Verificar path
+    # 1. Verificar path (OBRIGATÓRIO)
     if not config.mt5_terminal_path:
-        print(f"  ❌ mt5_terminal_path não configurado no .env")
+        print(f"  ❌ ERRO CRÍTICO: mt5_terminal_path não configurado no .env")
+        print(f"     Adicione ao .env:")
+        print(f"     MT5_TERMINAL_PATH=C:\\Program Files\\Clear Investimentos MT5 Terminal\\terminal64.exe")
         return False
 
     # 2. Verificar se é CLEAR

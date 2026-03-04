@@ -17,14 +17,14 @@ async def create_order(
 ) -> CreateOrderResponse:
     """
     Cria nova ordem via queue.
-    
+
     Resposta: JSON com order_id + audit_trail
     """
     try:
         # Validar entrada
         if request.order_type not in ["BUY", "SELL"]:
             raise HTTPException(status_code=400, detail="order_type deve ser BUY ou SELL")
-        
+
         # Enfileira ordem
         order = await executor.enqueue_order(
             symbol=request.symbol,
@@ -37,7 +37,7 @@ async def create_order(
             ml_score=request.ml_score,
             trader_approval=request.trader_approval
         )
-        
+
         # Mapear audit trail
         audit_items = []
         if hasattr(order, 'audit_log') and order.audit_log:
@@ -50,7 +50,7 @@ async def create_order(
                 }
                 for log in order.audit_log
             ]
-        
+
         return CreateOrderResponse(
             order_id=order.order_id,
             symbol=order.symbol,
@@ -60,7 +60,7 @@ async def create_order(
             created_at=order.created_at,
             audit_trail=audit_items
         )
-        
+
     except Exception as e:
         logger.error(f"Erro criando ordem: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -74,7 +74,7 @@ async def get_order(
     """Obter status de uma ordem."""
     if order_id not in executor.orders:
         raise HTTPException(status_code=404, detail=f"Ordem {order_id} não encontrada")
-    
+
     order = executor.orders[order_id]
     return {
         "order_id": order_id,
