@@ -20,7 +20,7 @@ from src.interfaces.api.fastapi_server import create_app
 
 def create_database_tables():
     """Cria tabelas SQLite para P0-1 se não existirem."""
-    db_path = root_dir / "data" / "db" / "trading.db"
+    db_path = root_dir / "data" / "db" / "api_orders.db"
     
     try:
         conn = sqlite3.connect(str(db_path))
@@ -39,6 +39,7 @@ def create_database_tables():
                 ml_score REAL,
                 detector_spike REAL,
                 trader_approval BOOLEAN DEFAULT 0,
+                status TEXT DEFAULT 'ENQUEUED',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
