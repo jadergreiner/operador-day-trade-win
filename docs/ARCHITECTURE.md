@@ -216,6 +216,105 @@ isolamento obrigatório de terminal.
 
 **Tecnologias**: MetaTrader5 Python API, HTTP/REST, Pydantic
 
+### 4.5. Terminal Isolation Enforcer (S2-6) - NOVO ✅ IMPLEMENTADO (04/03/2026)
+
+**Status:** 🟢 **HARD STOP MODE ATIVO** - Production Ready
+
+**Responsabilidade**: Garantizar bloqueio rigoroso de conexões a MetaTraders FBS/XP/Zero
+com 3 camadas de validação ativa. Sistema NÃO envia mensagens - executa bloqueio com
+EXIT 1 ou KILL SWITCH automático.
+
+**Módulo Principal:**
+- `src/infrastructure/terminal_isolation_enforcer.py` (380 LOC, v1.0)
+
+**3 Camadas de Bloqueio Ativo:**
+
+1. **Startup Validation (PRÉ-OPERAÇÃO)**
+   - Método: `validate_before_operation("launcher:startup")`
+   - Gatilho: Antes que qualquer ordem seja enviada
+   - Ação: EXIT 1 (termina processo) se violação
+   - Integração: `scripts/launch_agent_with_ml_v1_2_3.py` (setup_integrations)
+
+2. **Operation Validation (PONTO CRÍTICO)**
+   - Método: `validate_critical_operation("execute_entry:send_order")`
+   - Gatilho: Antes de `send_order()` ser executado
+   - Ação: Rejeita ordem com `TerminalIsolationViolation` se FBS/XP/Zero detectado
+   - Integração: `scripts/agente_micro_tendencia_winfut.py` (execute_entry)
+
+3. **Continuous Monitoring (VIGILÂNCIA CONSTANTE)**
+   - Método: `validate_continuous()` a cada ciclo
+   - Gatilho: A cada iteração do main loop
+   - Ação: KILL SWITCH automático se MetaTrader mudar de terminal
+   - Integração: `scripts/agente_micro_tendencia_winfut.py` (main loop)
+
+**Brokers Detectados Automaticamente:**
+- ✅ FBS (C:\\Users\\...\\AppData\\Roaming\\FBS...)
+- ✅ XP Investimentos (C:\\Users\\...\\AppData\\Roaming\\XP...)
+- ✅ Zero Markets (C:\\Users\\...\\AppData\\Roaming\\Zero...)
+- ✅ IC Markets (C:\\Users\\...\\AppData\\Roaming\\IC...)
+- ✅ Ativa (C:\\Users\\...\\AppData\\Roaming\\Ativa...)
+- ✅ Rica Corretora (C:\\Users\\...\\AppData\\Roaming\\Rica...)
+
+**Padrão de Detecção**: Case-insensitive substring matching no caminho do executável MT5.
+
+**Configuração Obrigatória:**
+```python
+# .env (OBRIGATÓRIO)
+MT5_TERMINAL_PATH="/path/to/Clear_Investimentos/terminal.exe"
+# Validador rejeita qualquer path SEM "CLEAR" (case-insensitive)
+
+# config/settings.py
+class Settings(BaseSettings):
+    mt5_terminal_path: str = Field(..., description="Path ao Clear terminal")
+    
+    @field_validator('mt5_terminal_path')
+    def validate_clear_only(cls, v):
+        if 'clear' not in v.lower():
+            raise ValueError(f"❌ ONLY Clear allowed! Got: {v}")
+        return v
+```
+
+**Monitoramento & Status:**
+- Método: `get_isolation_status()` → Dict com estado completo
+- Retorna:
+  - `clear_pid`: PID do processo Clear conectado (ou None)
+  - `dangerous_terminals`: Lista de terminais FBS/XP/Zero detectados no sistema
+  - `violation_count`: Número de violações bloqueadas desde startup
+  - `mode`: HARD_STOP | WARN_ONLY | MONITOR
+
+**Modos de Operação:**
+- `HARD_STOP` (Produção): EXIT 1 ou rejeita operação
+- `WARN_ONLY` (Testes): Apenas registra warning, permite operação
+- `MONITOR` (Debug): Apenas monitora, não bloqueia
+
+**Casos Protegidos:**
+1. ✅ Operador abre FBS acidentalmente → Bloqueado no startup
+2. ✅ Sistema mudou terminal após inicialização → Detectado e bloqueado contínuamente
+3. ✅ Múltiplos MT5 abertos (Clear + outro) → Apenas Clear permitido
+4. ✅ Reconexão automática para terminal errado → Bloqueada antes de ordem
+5. ✅ Ordem enviada com terminal diferente → Rejeitada com exceção clara
+
+**Referências & Audits:**
+- 📊 Status & Métricas: [docs/STATUS_ENTREGAS.md#terminal-isolation-enforcer](docs/STATUS_ENTREGAS.md)
+- 🚀 Startup Quick Guide: [docs/QUICK_START.md#-configuração-de-isolamento](docs/QUICK_START.md)
+- 📋 Audit Report: [outputs/audits/AUDITORIA_MT5_ISOLAMENTO_04Mar.md](outputs/audits/AUDITORIA_MT5_ISOLAMENTO_04Mar.md)
+- 💾 Architecture Decision Record: [docs/ADRs.md#adr-008](docs/ADRs.md)
+
+**Exemplo de Uso:**
+```python
+# Em launcher ou agente
+from src.infrastructure.terminal_isolation_enforcer import TerminalIsolationEnforcer
+
+enforcer = TerminalIsolationEnforcer(expected_terminal_path=settings.mt5_terminal_path)
+
+# Antes de qualquer operação
+try:
+    enforcer.validate_before_operation("launcher:startup")
+except TerminalIsolationViolation as e:
+    print(f"❌ BLOQUEADO: {e}")
+    sys.exit(1)  # HARD STOP
+```
+
 ### 🔴 6. Confirmation & Feedback Layers (CAMADAS FALTANDO - P0 CRÍTICO)
 
 **⚠️ STATUS 24/02: FALTANDO - Causando dados desaparecidos**

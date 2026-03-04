@@ -110,6 +110,18 @@ PRÉ-EXECUÇÃO:
 ☐ Administrator rights? (need para ativar)
 ☐ Trader presente + pronto
 ☐ Backup sistema feito
+
+🔐 ISOLAMENTO DE TERMINAL (NOVO - P0-3):
+☐ Fechar TODOS os MetaTraders
+☐ Abrir APENAS Clear Investimentos
+☐ Verificar MT5_TERMINAL_PATH no .env (contén "CLEAR"?)
+☐ Executar validação de isolamento:
+    python scripts/audit_terminal_isolation.py
+    → Resultado esperado: ✅ ALL CHECKS PASSED
+    → Se falhar: Voltar ao início do passo anterior
+☐ Confirmar que:.clear_pid ESTÁ presente
+    - dangerous_terminals ESTÁ vazio
+    - violation_count = 0
 ```
 
 ### **09:30 - Primeira Execução Auto-Trade**

@@ -35,6 +35,12 @@ docs/
 ### Para Operador 👨‍💼
 **Comece aqui:** [docs/features/intraday-learner/README.md](features/intraday-learner/README.md)
 
+⚠️ **IMPORTANTE - TERMINAL ISOLATION (NOVO):** 
+Antes de executar qualquer trade, leia [QUICK_START.md#-configuração-de-isolamento](QUICK_START.md#-configuração-de-isolamento-de-terminal-importante)
+- Configura `MT5_TERMINAL_PATH` para proteger contra brokers errados
+- Sistema bloqueará automaticamente qualquer conexão a FBS/XP/Zero/IC/Ativa/Rica
+- Sem isolamento correto, go-live é impossível ❌
+
 Então leia:
 1. [Aprendizado Transparente](features/intraday-learner/APRENDIZADO_TRANSPARENTE_GUIA.md)
 2. [Proteção MT5 CLEAR](features/intraday-learner/PROTECAO_MT5_CLEAR_GUIA.md)
