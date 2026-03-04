@@ -48,6 +48,26 @@ REM Menu selection
 call :get_mode
 if errorlevel 1 goto :cancel
 
+REM =========================================================================
+REM P50-A: Detector de Pessimismo Crônico + Auto-Reset (ANTES DE CONFIRMAR)
+REM Roda em AMBAS opções (1 e 2) - antes da escolha de modo
+REM =========================================================================
+echo.
+echo   [P50-A] Verificando saude de confidence...
+python scripts/check_confidence_health.py >nul 2>&1
+if errorlevel 0 (
+    echo   [P50-A] Pessimismo detectado - Auto-reset em acao...
+    python scripts/reset_pessimism_mode.py
+    echo   [P50-A] OK - Operacoes reativadas
+)
+echo.
+
+REM P50-C: Feedback Logger em background (não bloqueia)
+echo   [P50-C] Iniciando feedback logger em background...
+start /B python scripts/feedback_logger_realtime.py >nul 2>&1
+echo   [P50-C] OK - Logger ativo
+echo.
+
 REM Confirmation for auto-trade mode
 if "!MODE!"=="auto-trade" (
     call :get_confirmation

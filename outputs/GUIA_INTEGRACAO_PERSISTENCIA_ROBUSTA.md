@@ -474,7 +474,7 @@ persistence.persist_reflection()
 
 **Status:** 🟢 **IMPLEMENTAÇÃO COMPLETA E TESTADA**
 
-**Data:** 04/03/2026  
-**Tempo:** 2.5 horas (design + código + testes)  
-**Impacto:** ZERO mudanças no agente, 100% backward compatible  
+**Data:** 04/03/2026
+**Tempo:** 2.5 horas (design + código + testes)
+**Impacto:** ZERO mudanças no agente, 100% backward compatible
 **Risco:** NENHUM (fallback para JSONL intacto)

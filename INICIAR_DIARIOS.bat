@@ -17,10 +17,26 @@ start /B python scripts\run_p0_2_backtest.py > data\logs\p0_2_execution.log 2>&1
 echo [09:32] P0-2 iniciado (background - nao bloqueia operador)
 echo.
 
+REM =========================================================================
+REM P50-B: Daily Confidence Retraining (baseado em WIN RATE real pregao anterior)
+REM =========================================================================
+echo [09:33] Iniciando P50-B Daily Confidence Retraining...
+python scripts\daily_confidence_retraining.py
+echo [09:34] P50-B OK - Confidence retrainado
+echo.
+
 echo Iniciando sistema com narrativa completa...
 echo.
 
 python scripts\start_journals_full_display.py
+
+REM =========================================================================
+REM P50-C: Generate Opportunity Summary (fim do dia anterior)
+REM =========================================================================
+echo.
+echo [17:30] Gerando sumário de oportunidades do dia anterior (P50-C)...
+python scripts\generate_opportunity_summary.py
+echo [17:31] P50-C OK - Sumário gerado (verificar outputs\)
 
 echo.
 echo ================================================================================

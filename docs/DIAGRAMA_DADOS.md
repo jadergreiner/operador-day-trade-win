@@ -750,11 +750,11 @@ IF http_response_time > 5000ms:
     SET status = 'TIMEOUT'
     SET action = 'FALLBACK_MT5'
     CALL MT5Adapter.send_order_direct()  [Terminal Isolation Enforcer]
-    
+
 IF retry_count < 3:
     RETRY with exponential backoff
     UPDATE api_audit_log (action='RETRY', attempt_number)
-    
+
 ELSE:
     SET status = 'FAILED'
     SET action = 'FAILURE'

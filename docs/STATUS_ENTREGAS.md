@@ -664,7 +664,7 @@ CREATE TABLE reflections (
     one_liner TEXT,
     data_json TEXT NOT NULL,
     checksum TEXT NOT NULL,
-    persistence_status TEXT DEFAULT 'SYNCED' 
+    persistence_status TEXT DEFAULT 'SYNCED'
         CHECK(persistence_status IN ('SYNCED', 'PENDING', 'FAILED', 'RETRYING')),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(timestamp, entry_id)
@@ -676,7 +676,7 @@ CREATE TABLE reflections (
 CREATE TABLE persistence_errors (
     error_id INTEGER PRIMARY KEY AUTOINCREMENT,
     entry_id TEXT NOT NULL FOREIGN KEY REFERENCES reflections(entry_id),
-    error_type TEXT NOT NULL 
+    error_type TEXT NOT NULL
         CHECK(error_type IN ('WRITE_FAILED', 'VALIDATION_FAILED', 'FSYNC_FAILED', 'TIMEOUT')),
     error_message TEXT NOT NULL,
     attempt_number INTEGER NOT NULL CHECK(attempt_number >= 1),

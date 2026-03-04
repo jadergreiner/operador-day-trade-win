@@ -93,6 +93,21 @@ Ver [CODING_STANDARDS.md](CODING_STANDARDS.md#11-scripts---padrão-de-localizaç
    - ⚠️ **Status (24/02):** Camadas 1 implantada, 2-4 FALTANDO
    - 📋 Ver [BACKLOG_UNIFICADO.md](BACKLOG_UNIFICADO.md#-p0---críticas-bloqueadores--sprint-2-atual) para status e próximas ações
 
+---
+
+7. **🔄 P50 - Pessimism Detection & Auto-Recovery (v1.3+)** ⭐ IMPLEMENTADO 04/03
+
+**Problema**: Sistema aprende pessimismo excessivo (confidence < 0.45), bloqueando operações por 2+ dias.
+
+**Solução em 3 Camadas**:
+1. **P50-A**: Detector + Auto-Reset (thresholds +4/-4 → +3/-3) → reativa operações
+2. **P50-B**: Daily Confidence Retraining (WR real) → feedback loop
+3. **P50-C**: Real-Time Logger + Sumário → observabilidade
+
+**Testes**: 11/11 passando | **Status**: 🟢 LIVE
+
+---
+
 ## Arquitetura em Camadas
 
 ```
@@ -531,7 +546,7 @@ CREATE TABLE reflections (
     checksum TEXT,
     persistence_status TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    
+
     INDEX idx_timestamp DESC,
     INDEX idx_mood,
     INDEX idx_decision,

@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-03-04T09:30:00Z",
+  "pessimism_detected": false,
+  "last_confidence": 0.34,
+  "consecutive_low_cycles": 0,
+  "threshold_reduced": false,
+  "threshold_up": 4,
+  "threshold_down": -4,
+  "source": "system_init"
+}

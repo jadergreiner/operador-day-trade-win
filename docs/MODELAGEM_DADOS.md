@@ -562,7 +562,7 @@ CREATE TABLE reflections (
     checksum TEXT NOT NULL,
     persistence_status TEXT DEFAULT 'SYNCED',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    
+
     CHECK(confidence >= 0.0 AND confidence <= 1.0),
     CHECK(persistence_status IN ('SYNCED', 'PENDING', 'FAILED', 'RETRYING')),
     UNIQUE(timestamp, entry_id)
@@ -606,7 +606,7 @@ CREATE TABLE persistence_errors (
     resolved BOOLEAN DEFAULT 0,
     resolved_at DATETIME,
     retry_count INTEGER DEFAULT 0,
-    
+
     FOREIGN KEY(entry_id) REFERENCES reflections(entry_id),
     CHECK(error_type IN ('WRITE_FAILED', 'VALIDATION_FAILED', 'FSYNC_FAILED', 'TIMEOUT')),
     CHECK(attempt_number >= 1),
@@ -647,7 +647,7 @@ CREATE TABLE persistence_stats (
     max_latency_ms REAL DEFAULT 0,
     min_latency_ms REAL DEFAULT 0,
     checkpoint_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-    
+
     CHECK(total_written >= 0),
     CHECK(total_failed >= 0),
     CHECK(avg_latency_ms >= 0)
@@ -690,7 +690,7 @@ CREATE TABLE api_orders (
     error_message TEXT,
     retry_count INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    
+
     CHECK(order_type IN ('BUY', 'SELL', 'BUY_LIMIT', 'SELL_LIMIT')),
     CHECK(status IN ('PENDING', 'SUBMITTED', 'EXECUTED', 'FAILED', 'CANCELLED')),
     CHECK(volume > 0)
@@ -735,7 +735,7 @@ CREATE TABLE api_audit_log (
     details TEXT,
     http_status INTEGER,
     response_time_ms INTEGER,
-    
+
     FOREIGN KEY(order_id) REFERENCES api_orders(order_id),
     CHECK(action IN ('REQUEST', 'RETRY', 'SUCCESS', 'FAILURE', 'FALLBACK_MT5', 'TIMEOUT'))
 );
