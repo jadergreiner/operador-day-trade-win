@@ -265,7 +265,34 @@ Cada tarefa é avaliada por **2 personas**:
 
 ---
 
-#### ✅ MISSÃO COMPLETA
+#### 🔄 ETAPA 3: Integration & Testing (12h - PROX)
+
+**Escopo:**
+- [ ] Integrar P0-2 com INICIAR_DIARIOS.bat (background execution)
+- [ ] Integrar P0-2 com INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat (Gate 2 validation)
+- [ ] BacktestMonitoringService: Progress tracking thread
+- [ ] Integration tests: 4 testes de fluxo E2E com .bat
+- [ ] Validação: Zero impacto no UX operador
+
+**Timeline:**
+- [ ] Dev1: BAT integration + monitoring (6h)
+- [ ] Dev2: Integration tests (4h)
+- [ ] QA: E2E validation (2h)
+
+---
+
+#### ⏳ ETAPA 4: Optimization & Finalization (11h - FUTURO)
+
+**Escopo:**
+- [ ] Performance tuning (<5min backtest, <500MB memory)
+- [ ] Code review + final QA
+- [ ] Documentation sync (ARCHITECTURE.md, CODING_STANDARDS.md)
+- [ ] Production readiness checks
+
+**Timeline:**
+- [ ] All: Performance optimization (5h)
+- [ ] Review: Code review board (3h)
+- [ ] Docs: Final documentation (3h)
 
 Validar modelo ML com dados históricos (252 dias):
 - ✅ Simular 3.780+ trades (backtest_engine.py OK)
