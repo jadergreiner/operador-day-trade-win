@@ -1,0 +1,41 @@
+{
+  "data": "20260303",
+  "data_formatada": "03/03/2026",
+  "extraido_em": "2026-03-04T00:00:00",
+  "metodo": "manual",
+  "status": "template",
+  "notas": [
+    "TEMPLATE PARA PREENCHIMENTO MANUAL",
+    "Preencha os valores abaixo conforme o boletim BDI oficial",
+    "Execute com: python scripts/processar_bdi_diario.py 20260303"
+  ],
+  "indicadores_economicos": {
+    "taxa_selic": "13.75",
+    "taxa_inflacao_ipca": "0.45",
+    "taxa_inflacao_igp_m": "0.32",
+    "dolar_compra": "5.12",
+    "dolar_venda": "5.13",
+    "ibovespa": "120450.50",
+    "mini_indice": "120450.50",
+    "taxa_poupanca_mes": "0.61",
+    "desemprego_percentual": "7.9"
+  },
+  "mercado": {
+    "bolsa_abertura": "aberta",
+    "dolar_tendencia": "estavel",
+    "juros_tendencia": "estavel"
+  },
+  "avisos": {
+    "importante": "Atualize com dados REAIS do Boletim Diário oficial do BC",
+    "fontes_recomendadas": [
+      "https://www.bcb.gov.br/publicacoes/boletimdiario",
+      "Sistema Operador MT5 - quotes em tempo real"
+    ],
+    "campos_prioritarios": [
+      "taxa_selic",
+      "dolar_compra",
+      "dolar_venda",
+      "ibovespa"
+    ]
+  }
+}
