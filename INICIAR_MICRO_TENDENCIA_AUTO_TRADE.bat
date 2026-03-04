@@ -102,6 +102,15 @@ start /b python scripts/start_journals_full_display.py >nul 2>&1
 echo   [OK] Diario RL iniciado
 echo.
 
+REM ============================================================
+REM INICIAR API REST MT5 (P0-1) em background
+REM ============================================================
+echo   [API] Iniciando API REST MT5 em background...
+start /b python scripts/start_api_server.py >nul 2>&1
+timeout /t 2 /nobreak >nul
+echo   [API] ✅ Servidor escutando em http://localhost:8888
+echo.
+
 REM Launch agent with ML v1.2.3 + Risk framework
 echo   [AGENT] Iniciando Operador Quantico v1.2.3...
 echo   ✅ ML Classifier: v1.2.3 (14/14 tests, 94% coverage)

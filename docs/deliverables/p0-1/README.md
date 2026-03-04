@@ -1,6 +1,6 @@
 # P0-1: API REST MT5 - Documentação
 
-**Status:** 📋 Planejamento Completo | **Data:** 2026-03-03  
+**Status:** 📋 Planejamento Completo | **Data:** 2026-03-03
 **Objetivo:** Exposição de ExecutionOrder queue via REST API (thin wrapper)
 
 ---
@@ -126,6 +126,6 @@ docs/deliverables/p0-1/
 
 ---
 
-**Autor:** Copilot (Architecture Analysis)  
-**Data:** 2026-03-03  
+**Autor:** Copilot (Architecture Analysis)
+**Data:** 2026-03-03
 **Status:** 📋 Ready for Presentation
