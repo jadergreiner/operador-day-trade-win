@@ -365,7 +365,7 @@ class ResilientReflectionPersistence:
         except Exception as e:
             logger.error(f"Failed to get health status: {e}")
             return {
-                "status": "🔴 ERROR",
+                "status": "[ERRO]",
                 "error": str(e),
             }
 
@@ -377,13 +377,13 @@ class ResilientReflectionPersistence:
     ) -> str:
         """Determine overall health status."""
         if failed_writes > 50:
-            return "🔴 CRÍTICO - Alto número de falhas (>50)"
+            return "[CRITICO] Alto numero de falhas (>50)"
         elif time_since_last_reflection and time_since_last_reflection > 600:
-            return "🟠 ALERTA - Sem reflexões por mais de 10 minutos"
+            return "[ALERTA] Sem reflexoes por mais de 10 minutos"
         elif db_size_mb > 100:
-            return "🟡 AVISO - Database > 100MB (executar VACUUM)"
+            return "[AVISO] Database > 100MB (executar VACUUM)"
         else:
-            return "🟢 OK"
+            return "[OK]"
 
     def recover_from_failure(self) -> int:
         """
