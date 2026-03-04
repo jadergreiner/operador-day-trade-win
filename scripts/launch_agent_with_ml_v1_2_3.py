@@ -48,6 +48,15 @@ except ImportError:
 
 import agente_micro_tendencia_s2_6_integrated as s2_6_module
 
+# ─ P0-1 API Integration ─
+try:
+    from src.infrastructure.clients.order_api_client import OrderAPIClient
+    from src.infrastructure.adapters.mt5_adapter_proxy import MT5AdapterProxy
+    P0_1_AVAILABLE = True
+except ImportError as e:
+    print(f"[WARN] P0-1 API não importado: {e}")
+    P0_1_AVAILABLE = False
+
 
 def load_ml_features():
     """
@@ -195,6 +204,7 @@ def setup_integrations():
     status = {
         's2_6': False,
         'ml': False,
+        'p0_1_api': False,
         'agent': AGENT_AVAILABLE
     }
     
@@ -222,11 +232,125 @@ def setup_integrations():
     except Exception as e:
         print(f"\n  ⚠️  ML setup error: {e}")
     
+    # P0-1 REST API setup
+    try:
+        result = inject_p0_1_proxy()
+        status['p0_1_api'] = result
+        if result:
+            print(f"\n  ✅ P0-1 REST API Integrado")
+        else:
+            print(f"\n  ℹ️  P0-1 não configurado (usando MT5 direto)")
+    except Exception as e:
+        print(f"\n  ⚠️  P0-1 setup error: {e}")
+    
     print("\n  " + "=" * 60)
-    print(f"  Sistema pronto: S2-6={status['s2_6']} | ML={status['ml']} | Agent={status['agent']}")
+    print(f"  Sistema pronto: S2-6={status['s2_6']} | ML={status['ml']} | P0-1={status['p0_1_api']} | Agent={status['agent']}")
     print("  " + "=" * 60)
     
     return status
+
+
+def setup_p0_1_api():
+    """
+    Setup P0-1 REST API integration para orders.
+    
+    Cria MT5AdapterProxy que intercepta mt5.send_order() calls
+    e encaminha para API REST ao invés de MT5 direto.
+    
+    Returns:
+        MT5AdapterProxy ou None se falha
+    """
+    if not P0_1_AVAILABLE:
+        print(f"  ⚠️  P0-1 API não disponível - usando MT5 direto")
+        return None
+    
+    try:
+        print(f"\n  🌐 P0-1 REST API INTEGRATION")
+        print("  " + "=" * 60)
+        
+        # API config
+        api_url = os.getenv("P0_1_API_URL", "http://localhost:8888")
+        print(f"  📍 API URL: {api_url}")
+        
+        # Create API client
+        api_client = OrderAPIClient(api_url=api_url, timeout=5, max_retries=3)
+        
+        # Health check
+        is_healthy = api_client.health_check()
+        if not is_healthy:
+            print(f"  ⚠️  API não respondendo. Será usado fallback (MT5 direto)")
+            return None
+        
+        print(f"  ✅ API Health: OK")
+        print("  " + "=" * 60)
+        
+        return api_client
+        
+    except Exception as e:
+        print(f"  ⚠️  Erro ao setup P0-1 API: {e}")
+        return None
+
+
+def inject_p0_1_proxy():
+    """
+    Injeta MT5AdapterProxy no agente para interceptar send_order() calls.
+    
+    Substituição transparente:
+        agente.mt5.send_order() → MT5AdapterProxy.send_order() 
+                                 → OrderAPIClient.create_order()
+                                 → POST /api/v1/orders
+    """
+    if not AGENT_AVAILABLE or not P0_1_AVAILABLE:
+        print(f"  ⚠️  Nao consegue injetar P0-1 proxy (deps unavailable)")
+        return False
+    
+    try:
+        print(f"\n  🔌 INJETANDO P0-1 PROXY NO AGENTE")
+        print("  " + "=" * 60)
+        
+        # Get API client
+        api_client = setup_p0_1_api()
+        if not api_client:
+            print(f"  ℹ️  API não disponível - usando MT5 direto")
+            return False
+        
+        # Procura por classes MicroTradingManager no agente
+        if hasattr(agente_module, 'MicroTradingManager'):
+            original_class = agente_module.MicroTradingManager
+            
+            # Monkey-patch: substitui send_order() na classe
+            original_send_order = original_class.send_order
+            
+            def patched_send_order(self, order):
+                """send_order patcheado que usa P0-1 API com fallback MT5"""
+                # Cria proxy se não existe
+                if not hasattr(self, '_p0_1_proxy'):
+                    self._p0_1_proxy = MT5AdapterProxy(
+                        original_adapter=self.mt5,
+                        api_client=api_client,
+                        use_api_rest=True,
+                        fallback_to_mt5=True
+                    )
+                
+                # Usa proxy para enviar
+                return self._p0_1_proxy.send_order(order)
+            
+            # Substitui método
+            original_class.send_order = patched_send_order
+            
+            print(f"  ✅ P0-1 Proxy injetado em MicroTradingManager")
+            print(f"     Todas as chamadas send_order() usarão API REST com fallback MT5")
+            print("  " + "=" * 60)
+            return True
+        else:
+            print(f"  ⚠️  MicroTradingManager nao encontrado no agente")
+            return False
+            
+    except Exception as e:
+        print(f"  ⚠️  Erro ao injetar proxy: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 
 def main():
