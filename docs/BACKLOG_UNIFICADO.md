@@ -1,200 +1,191 @@
-# 📋 BACKLOG UNIFICADO v6.0 - Centrado em Operadores Autônomos
+# 📋 BACKLOG UNIFICADO - Lista de Entregas Contínuas
 
-**Status:** Reprioriazado - FOCO EXCLUSIVO: `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` + `INICIAR_DIARIOS.bat`
-**Última Atualização:** 04/03/2026
-**Princípio Crítico:** Entregas de valor = evolução incremental dos 2 operadores. TUDO MAIS é desprioriazado.
-**Versão:** v6.0 - REPRIORIAZACAO ALINHADA A OPERADORES
+**Propósito**: Documento único de verdade (SSOT) para priorização de desenvolvimento.
 
----
+**Foco**: Evolução incremental dos operadores autônomos
+- `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` - Operador de micro-tendência
+- `INICIAR_DIARIOS.bat` - Operador de diários com journal automático
 
-## 🎯 PRINCÍPIO CENTRAL
-
-### Entregas de Valor = Evolução dos Operadores
-
-**CRÍTICO (P0/P1):** Só itens que fazem os 2 operadores + potentes
-- `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` = operador micro-tendencia wins financeiros
-- `INICIAR_DIARIOS.bat` = operador diários com journal automático
-
-**DESPRIORIAZADO:** Tudo que SEM CHANGE os operadores
-- Dashboards (UI, não muda lógica)
-- Aprovações/UAT (processo, não é código)
-- APIs standalone (suporte, não core)
-- Reports CFO (reporting, não operado)
+**Versão**: v7.0 - Refatorada como Lista de Tarefas Entregáveis
 
 ---
 
-## 📌 COMO USAR ESTE DOCUMENTO (Novo)
+## 🎯 FILOSOFIA DE ENTREGAS
 
-### Regra de Ouro
+### Critério de Priorização
 
-```
-Antes de fazer QUALQUER item, pergunte:
-"Isso evolui INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat ou INICIAR_DIARIOS.bat?"
+**CRÍTICAS (P0/P1):** Tarefas que evoluem diretamente os operadores
+- ✅ Código novo que muda lógica de trading
+- ✅ Infraestrutura que habilita operações autônomas
+- ✅ Validações que garantem conformidade/segurança
 
-SIM → P0/P1 (CRÍTICO - bloqueia nada, começa AGORA)
-NÃO → DESPRIORIAZADO (descarta ou faz depois)
-```
+**MÉDIAS/BAIXAS (P2+):** Tarefas de suporte/otimização
+- ❌ Dashboards (UI, não afeta lógica)
+- ❌ Relatórios (reporting, não operacional)
+- ❌ Aprovações/processos (governance, não código)
 
-**Product Owner / Eng Sr:**
-1. Priorize P0-1, P0-2 PRIMEIRO (API REST + Backtest)
-2. Em paralelo: RL Training (P2-1) = agente aprende
-3. Tudo em P1 depois de P0-1
-4. Ignore Dashboard/OAuth/UAT até operadores prontos
+### Modelo de Avaliação Dual
 
-**Head de Finanças / CFO:**
-1. Acompanhe P0-2 Backtest (GATE 2)
-2. Aprove capital (R$ 50k)
-3. Ignore reports/aprovações até operador live
+Cada tarefa é avaliada por **2 personas**:
 
-**ML Expert:**
-1. Comece P1-1 ML Features HOJE (paralelo)
-2. Depois P2-1 RL Training (agente learning)
-3. Ignore drift detection se não bloqueia operador
+| Persona | Critério | Foco |
+|---------|----------|------|
+| **Product Owner** | Impacto técnico + viabilidade | "Desbloqueia quantas tarefas?" |
+| **Head Finanças** | ROI + risco operacional | "Qual o retorno esperado?" |
 
-**QA Lead:**
-1. Teste P0-1 API REST (8 AC = ordem sending)
-2. Teste P0-2 Backtest (4 AC = win rate validado)
-3. Ignore dashboard/oauth testes
+**Regra**: Ambos devem APPROVE para tarefa entrar em execução.
 
 ---
 
-## ✅ AVALIAÇÃO DUAL: COMO FUNCIONA
-
-### Cada Item Tem Avaliação em 2 Dimensões
-
-| Dimensão | Critério | Exemplo P0-1 |
-|----------|----------|---------|
-| **PO (Valor)** | Impacto de negócio + viabilidade técnica | ✅ Desbloqueia 5 itens, 160h realista |
-| **CFO (ROI)** | Retorno capital + risco de execução | ✅ R$ 150-250k/mês, risco mitigado |
-
-### Quando Ambos Aprovam
-
-- ✅ Item entra na fila de execução
-- ✅ Recursos alocados
-- ✅ Começa QUANDO time estiver pronto (sem datas fixas)
-
-### Quando Um Rejeita
-
-- 📋 Item vai para "REVIEW" (discussão)
-- 🔄 Time pode reformular ou descartar
-- ⏳ Não bloqueia items independentes
+## 📋 TAREFAS CRÍTICAS (P0)
 
 ---
 
-## 🔴 P0 - ENTREGAS CRÍTICAS (Bloqueadores Absolutos)
+## P0-1: API REST MT5 - Infraestrutura de Execução
 
-### P0-1: API REST MT5 - Infraestrutura de Execução
+**Status Atual**: ✅ Implementado e integrado
 
-**Missão:**
-Construir servidor FastAPI que:
-- ✅ Conecta em MT5 via OAuth
-- ✅ Envia ordens (async, retry 3×)
-- ✅ Gerencia posições em tempo real
-- ✅ Valida risco em 3 gates
-- ✅ Registra tudo (audit trail 7 anos)
+**O quê**: Servidor FastAPI que intermedia envio de ordens para MT5
+- Conecta em MT5 (OAuth)
+- Envia ordens (async, retry 3×)
+- Gerencia posições em tempo real
+- Valida risco em 3 gates
+- Registra auditoria (trail 7 anos)
 
 **Avaliação PO:**
-- **Viabilidade:** 160h com 3 dev-backend = REALISTA
-- **Impacto:** Desbloqueia P0-2, P1-2 até P1-6 (bloqueia TUDO)
-- **Risco:** Instabilidade API = capital em risco
-  - Mitigation: Timeout + circuit breaker + manual override
-- **Valor:** Remove overhead manual → +R$ 150-250k/mês automação
+- **Viabilidade**: 160h com 3 dev-backend
+- **Impacto**: Desbloqueia P0-2, P1-2 até P1-6 (crítico)
+- **Desafio**: Instabilidade API
+- **Mitigation**: Timeout + circuit breaker + fallback MT5 direto
+- **Decisão**: ✅ APPROVE
 
 **Avaliação CFO:**
-- **Capital Necessário:** R$ 0 (repositório existente)
-- **ROI:** +R$ 150-250k/mês (execução rápida vs manual)
-- **Drawdown:** Limitado por circuit breaker (-8% halt)
-- **Risco:** Tech risk ALTO, mitigação disponível
-- **Decisão:** ✅ APPROVE - sem capital, ROI alto
+- **Custo**: R$ 0 (repositório existente)
+- **Benefício**: +R$ 150-250k/mês (automação)
+- **ROI**: Positivo (sem capital inicial)
+- **Risco**: Tech risk ALTO → Mitigado por fallback
+- **Decisão**: ✅ APPROVE
 
-**Equipe Alocada:**
-- Eng Sr (tech lead, design) - 48h
-- Dev-Backend × 3 (endpoints, testes, integração) - 40h ea
-- QA (testes E2E) - 32h
-- Total: 200h
+**Entregáveis**:
+- API REST com 14+ endpoints
+- WebSocket broadcast <100ms
+- Redis cache (30s TTL)
+- RabbitMQ async queue
+- SQLite audit trail
+- Retry 3× exponential
 
-**Entregas (FastAPI Server):**
-- [ ] 14 endpoints (Auth×2, Orders×4, Positions×4, Account×2, Health×2)
-- [ ] WebSocket real-time <100ms (posições)
-- [ ] Redis cache (30s TTL)
-- [ ] RabbitMQ async queue
-- [ ] PostgreSQL audit trail (CVM 7 anos)
-- [ ] Retry 3× exponencial (1s, 2s, 4s)
-- [ ] Error handling completo
+**Validar com**:
+1. Autenticação OAuth OK
+2. Token refresh automático
+3. Ordens async (não bloqueante)
+4. Retry logic funcionando
+5. WebSocket <100ms
+6. Health check com 4 dependências
+7. 20+ testes unitários
+8. 10+ testes integração
+9. Performance P95 <500ms
 
-**Acceptance Criteria (8 Testes):**
-1. [ ] Autenticação valida OAuth token MT5
-2. [ ] Token refresh sem re-auth
-3. [ ] Ordens enfileiradas async (não bloqueante)
-4. [ ] Retry 3× exponencial executado corretamente
-5. [ ] Status ordem rastreado real-time
-6. [ ] Posições atualizam <100ms (WebSocket)
-7. [ ] Manutenção saldo conta (30s max)
-8. [ ] Healthcheck inclui 4 dependências (MT5, Broker, DB, Cache)
+---
 
-**Testes Necessários:**
-- 20+ unitários (Auth, Fila, Cache, Erro)
-- 10+ integração (API ↔ mock MT5)
-- 5+ performance (500 users, P95 <500ms)
-- 2+ revisão código
+## P0-2: Backtest Validação ML - Decisão de Capital
 
-**Status:** ✅ **ENTREGUE (04/03/2026)** - PRONTO PARA PRODUÇÃO
-**Bloqueador?** SIM - desbloqueia P0-2, P1-2 até P1-6 ✅
+**Status Atual**: Pronto para executar
 
-**Implementação Completa:**
-- 📄 `src/infrastructure/clients/order_api_client.py` (310 LOC)
-  * Cliente HTTP com retry logic (3x exponential backoff)
-  * Métodos: create_order(), get_order(), list_orders(), health_check()
-  * APIOrderResponse dataclass com audit trail completo
+**O quê**: Validar modelo ML com dados históricos 252 dias
+- Simular 3.780+ trades
+- Calcular Sharpe, Win Rate, Drawdown
+- Cross-validar (5-fold, sem lookahead bias)
+- Gerar relatório + visualizações
+- **Decisão**: Escalar capital R$ 100k ou manter R$ 50k?
 
-- 📄 `src/infrastructure/adapters/mt5_adapter_proxy.py` (180 LOC)
-  * Proxy transparente que intercepta mt5.send_order()
-  * Redireciona para API REST SEM mudar código do agente
-  * Fallback automático para MT5 direto se API falha
-  * Estatísticas: total_calls, api_success, fallback_count
+**Pré-requisito**: P0-1 ✅ (precisa de endpoints /orders, /positions)
 
-- 📄 `src/interfaces/api/fastapi_server.py` (140 LOC)
-  * FastAPI app com 14+ endpoints (Health, Orders, Positions)
-  * Dependency injection com OrdersExecutor
-  * Suporta router modular (routes/orders.py)
+**Avaliação PO:**
+- **Viabilidade**: 88h com 2 pessoas
+- **Impacto**: Define escala de capital (CRÍTICO)
+- **Desafio**: Backtest enviesado
+- **Mitigation**: Walk-forward validation + cross-val 5-fold
+- **Decisão**: ✅ APPROVE (crítico para escala)
 
-- 📄 `scripts/launch_agent_with_ml_v1_2_3.py` (MODIFICADO +70 LOC)
-  * Adicionado: setup_p0_1_api() - cria OrderAPIClient com health check
-  * Adicionado: inject_p0_1_proxy() - injeta proxy via monkey-patching
-  * Modificado: setup_integrations() - ativa P0-1 automaticamente
-  * Status: S2-6 (Terminal Isolation) + ML + P0-1 integrados
+**Avaliação CFO:**
+- **Custo**: R$ 0 (análise existente)
+- **Benefício**: Validação para 2× capital
+- **Decisão Capital**: Depend backtest metrics
+- **Risco**: Model bias
+- **Mitigation**: Cross-validation rigorosa
+- **Decisão**: ✅ APPROVE (condicional)
 
-- 📄 `scripts/test_p0_1_integration.py` (NOVO - 320 LOC)
-  * 5 testes de integração: API health, create_order, audit_trail, imports
-  * Valida SQLite schema (api_orders, api_audit_log)
-  * Testa MT5AdapterProxy instanciação
-  * Testa launcher imports
+**Gate 2 - Critérios Bloqueadores**:
+- ✅ Sharpe ≥ 1.0
+- ✅ Win Rate ≥ 59%
+- ✅ Max Drawdown < 15%
+- ✅ Consistência mensal σ < 30%
 
-**Arquitetura (Fluxo Completo):**
-```
-agente.execute_entry(opp)
-  ↓
-[MT5AdapterProxy intercepta] mt5.send_order(order)
-  ↓
-[OrderAPIClient] POST /api/v1/orders (com retry 3x)
-  ↓
-[FastAPI] handler enqueue order
-  ↓
-[SQLite] api_orders + api_audit_log (auditoria completa!)
-  ↓
-[ExecutionOrder] Pipeline async (validate → send → monitor)
-  ↓
-MT5 executa COM TRAIL COMPLETO (não é mais caixa-preta!)
-```
+**Entregáveis**:
+- Backtest 252 dias completo
+- Métricas (Sharpe, Win Rate, Drawdown)
+- Breakdown P&L mensal
+- SHAP feature importance
+- Análise 3 regimes mercado
+- Walk-forward validation
+- Relatório 20+ páginas
+- Visualizações (curva, drawdown)
 
-**Impacto:**
-- ✅ Zero mudanças no código do agente (proxy é transparente!)
-- ✅ Todas ordens agora têm auditoria completa em SQLite
-- ✅ API REST fornece fila, validação e retry automático
-- ✅ Fallback para MT5 direto se API falha (resiliente)
-- ✅ Status: PRONTO PARA TESTES E2E COM AGENTE
+**Validar com**:
+1. Dataset 1.000+ amostras
+2. 24 features completas
+3. Backtest sem erros
+4. Métricas Gate 2 calculadas
+5. Cross-val 5-fold <2pp std dev
+6. Walk-forward sem lookahead
+7. Relatório com gráficos
+8. Benchmark vs baseline
 
-**Próximo Passo:** Executar test_p0_1_integration.py + validar com agente em modo simulação
+---
+
+## P0-3: Terminal Isolation Enforcer - Bloqueio de Broker Errado
+
+**Status Atual**: ✅ Implementado (04/03)
+
+**O quê**: 3 camadas de validação para bloquear conexões a FBS/XP/Zero/IC/Ativa/Rica
+- deve conectar APENAS a Clear Investimentos
+- 3 níveis: startup, operação, vigilância contínua
+- HARD STOP (não envia mensagens)
+
+**Por quê crítico**:
+- Operador abre FBS acidentalmente → Ordens em conta errada
+- Violação compliance (CVM/B3)
+- Impossível auditar trades
+
+**Avaliação PO:**
+- **Viabilidade**: 380 LOC + integração (JÁ FEITO)
+- **Impacto**: Elimina risco crítico 100%
+- **Risco**: ZERO (código defensivo)
+- **Decisão**: ✅ APPROVE (obrigatório)
+
+**Avaliação CFO:**
+- **Custo**: R$ 0
+- **Benefício**: Proteção contra perda R$ 5-10k
+- **ROI**: Positivo (sem custo)
+- **Risco Mitigado**: Erro operacional = IMPOSSÍVEL
+- **Decisão**: ✅ APPROVE (obrigatório antes go-live)
+
+**3 Camadas de Bloqueio**:
+| Camada | Gatilho | Ação | Tempo |
+|--------|---------|------|-------|
+| 1. Startup | Antes operação | EXIT 1 | 0-30s |
+| 2. Operation | Antes send_order | Exception | <1ms |
+| 3. Continuous | A cada ciclo | KILL SWITCH | Contínuo |
+
+**Brokers Bloqueados**: FBS, XP, Zero, IC, Ativa, Rica (detecção automática)
+
+**Validar com**:
+1. Bloqueio startup (FBS → EXIT 1)
+2. Validação pré-ordem (rejeita XP)
+3. Vigilância contínua (detecta Zero)
+4. Config validator (sem "CLEAR" = erro)
+5. Broker pattern matching (6 brokers)
+6. Status monitoring (get_isolation_status)
 
 ---
 
@@ -224,31 +215,16 @@ Validar modelo ML com dados históricos (252 dias):
 - **Risco:** Model risk (backtest bias) = MITIGADO por cross-val
 - **Decisão:** ✅ APPROVE - crítica para escala
 
-**Equipe Alocada:**
-- ML Expert (liderança) - 48h
-- Data Scientist (validação) - 40h
-- QA (test framework) - 16h
-- Total: 104h
+**Equipe**: 2-3 pessoas
+- ML Expert (liderança) 
+- Data scientist (validação)
+- QA/Engineering (testes)
 
-**GATE 2 - Critérios de Aprovação (Bloqueadores):**
-
-```
-SE TODOS PASS:
-  ✅ Sharpe ≥ 1.0
-  ✅ Win Rate ≥ 59%
-  ✅ Max Drawdown < 15%
-  ✅ Consistência mensal (σ < 30%)
-
-ENTÃO:
-  → Libera R$ 100k Fase 2
-  → Desbloqueia P4-1 Staging Deploy
-  → Aumenta confiança GATE 1
-
-SENÃO:
-  → Mantém R$ 50k Fase 1
-  → Replan ML features (volta P1-1)
-  → Investiga bias/degradação
-```
+**Critérios de Aceitação Obrigatórios**:
+- ✅ Sharpe ≥ 1.0
+- ✅ Win Rate ≥ 59%
+- ✅ Max Drawdown < 15%
+- ✅ Consistência mensal σ < 30%
 
 **Entregas:**
 - [ ] Backtest 252 dias (1 ano trading completo)
@@ -270,17 +246,15 @@ SENÃO:
 7. [ ] Relatório gerado com gráficos
 8. [ ] Benchmark validado (vs baseline)
 
-**Status:** 🟡 PRONTO (aguarda P0-1 + ML Expert disponível)
-**Bloqueador?** SIM - GATE 2 (capital scale)
-
-**Próximo Passo:** ML Expert começa P1-1 HOJE (paralelo com P0-1)
+**Pré-requisito**: P0-1 ✅
+**Crítico para Produção**: SIM (valida confiança modelo)
 
 ---
 
 ### P0-3: Terminal Isolation Enforcer (S2-6) - HARD STOP contra Brokers Errados ✅ COMPLETO
 
 **Missão:**
-Implementar 3 camadas de validação ATIVA que bloqueiam operações se MetaTrader 
+Implementar 3 camadas de validação ATIVA que bloqueiam operações se MetaTrader
 conectar a FBS/XP/Zero/IC/Ativa/Rica em vez de Clear Investimentos.
 
 **Por Que É P0 Crítico:**
@@ -407,8 +381,7 @@ while True:
 | Risk Mgr | ✅ | 04/03/2026 | Risco crítico mitigado |
 | PO | ✅ | 04/03/2026 | Pronto para produção |
 
-**Bloqueador?** NÃO (mas requerido ANTES de ir ao vivo)
-**Próximo Passo:** Incluir em startup checklist para GO-LIVE 10/04/2026
+**Crítico para Produção**: SIM (validação obrigatória antes operar com capital)
 
 ---
 
@@ -462,10 +435,8 @@ Infra essencial para operadores autônomos:
 7. [ ] No messages lost (ACK confirmado)
 8. [ ] Performance P95 < 500ms
 
-**Status:** 🔴 CRÍTICO (Começa imediatamente após P0-1)
-**Bloqueador?** SIM - operadores NÃO funcionam sem isso
-
-**Próximo Passo:** P0-1 ✅ → Começa P1-CORE em paralelo com P0-2
+**Pré-requisito**: P0-1 ✅
+**Crítico para Produção**: SIM (infra essencial operadores)
 
 ---
 
@@ -498,7 +469,8 @@ Expandir capacidade training do operador:
 - [ ] Feature importância tracking
 - [ ] Alertas (Green/Yellow/Red)
 
-**Status:** 🟡 PRONTO - Começa HOJE (paralelo P0-1)
+**Pré-requisito**: Nenhum (independente)
+**Status Atual**: Pronto para começar
 
 ---
 
@@ -551,280 +523,143 @@ Ciclo automático de learning do agente:
 7. [ ] Rollback funciona (bad model → restore)
 8. [ ] Metric tracking shows improvement trend
 
-**Status:** 🟡 PRONTO (começa após GATE 1)
-**Bloqueador?** Não imediato, mas CRÍTICO para valor long-term
-
-**Próximo Passo:** GATE 1 ✅ → Inicia P2-CORE
+**Pré-requisito**: P0-1 e P1-CORE ✅
+**Status Atual**: Design pronto, implementação aguardando
 
 ---
 
 ---
 
-## 🟢 P2 - ENTREGAS MÉDIAS (Após GATE 2)
+## 🟢 P2 - ENTREGAS MÉDIAS
 
-**Início:** Quando P0-2 ✅ e GATE 2 PASS
-
-### P2-1 até P2-7: Detection Engine, RL Training, etc.
-
-Não iniciadas ainda (dependem GATE 2).
-
-Sistema operando em produção. P2-CORE melhora contínuo (aprendizado automático).
+**Status**: Sistema operacional com P0 + P1 implementados
+P2-CORE (RL Training) melhora contínuo em background
 
 ---
 
-## 📊 MATRIZ DE DEPENDÊNCIAS LÓGICAS (Evolução Incremental)
+## 📊 DEPENDÊNCIAS LÓGICAS
 
-```
-PARALELO (Camada 1: Próximas Entregas)
-├─ [P0-1] API REST (160h)
-│  └─ Desbloqueia: P0-2, P1-CORE, P1-ML
-│
-└─ [P1-ML] ML Features (40h)
-   └─ Independente (roda sempre)
-   └─ Alimenta: P0-2 (dados para backtest)
-
-
-PRÓXIMO (Aguarda P0-1 Completo)
-├─ [P1-CORE] RabbitMQ + WebSocket (120h paralelo)
-│  └─ Pré-requisito: P0-1
-│  └─ Ativa async execution dos operadores
-│
-└─ [P0-2] Backtest Validação (88h)
-   ├─ Pré-requisito: P0-1
-   └─ Desbloqueia: P2-CORE RL Training
-
-
-ITERATIVO (Após GATE 2)
-└─ [P2-CORE] RL Training (140h contínuo)
-   └─ Pré-requisito: GATE 2 PASS
-   └─ Melhora agente continuamente (incrementos de 2-3% ao mês)
-   └─ Roda em background enquanto operadores operam
-```
+| Tarefa | Pré-requisito | Desbloqueia |
+|--------|---------------|-------------|
+| **P0-1** | Nenhum | P0-2, P1-CORE, P1-ML |
+| **P0-2** | P0-1 | P2-CORE (RL) |
+| **P0-3** | Nenhum | Conformidade |
+| **P1-ML** | Nenhum | P0-2 (features) |
+| **P1-CORE** | P0-1 | Operadores autônomos |
+| **P2-CORE** | P0-1, P1-CORE | Aprendizado contínuo |
 
 ---
 
-## ⚡ GATES & DECISÕES CRÍTICAS
+## 🔍 MONITORAMENTO CONTÍNUO
 
-### GATE 1: P0-1 + P1-ML Completados → Libera P1-CORE
+**P49/P50/P51 - Diagnósticos Identificados:**
 
-**Quem Decide:** CTO + Head Finanças + PO
+### Críticos para Operação
 
-**Critérios (Bloqueadores):**
-- ✅ P0-1: 8/8 AC PASS (API REST funcionando)
-- ✅ P1-ML: 5/5 AC PASS (Features + SHAP)
-- ✅ Latência P95 < 500ms validado
-- ✅ E2E tests executados (>90% coverage)
-- ✅ Código revisado (2+ reviewers)
-- ✅ Operadores rodando com P0-1 (sem erros críticos)
+1. **BDI Extraction**: Execute `python scripts/extract_bdi_daily.py --force-retry`
+2. **Win Rate Logging**: Adicionar métrica em `start_journals_full_display.py`
+3. **Backtest Validation**: Validar TimeSeriesSplit (sem lookahead bias)
+4. **P95 Latência**: Documentar performance <500ms
 
-**Decisão IF PASS:**
-- → Libera P1-CORE (async execution dos operadores)
-- → Começa P0-2 backtest (paralelo)
-- → P2-CORE já em design (espera GATE 2)
+### Melhorias Contínuas
 
-**Decisão IF FAIL:**
-- → Investigar falhas em P0-1 ou P1-ML
-- → Corrige e retry GATE 1
+1. **Daily Retraining Pipeline**: Automático com versioning
+2. **Feature Importance Tracking**: SHAP/importância semanal
+3. **Model Calibration**: Platt scaling para confiabilidade
+4. **Dataset Imbalance**: SMOTE + class weights
+5. **Drift Detection**: KS test automático diário
+6. **RL Feedback Loop**: Callback setup para aprendizado intraday
 
 ---
 
-### GATE 2: P0-2 Completado → Libera P2-CORE RL Training
+## 📋 AÇÕES POR PERSONA
 
-**Quem Decide:** CFO + CTO + ML Expert
+### Product Owner
 
-**Critérios (Bloqueadores):**
-```
-✅ Sharpe ≥ 1.0
-✅ Win Rate ≥ 59%
-✅ Max Drawdown < 15%
-✅ Consistência σ mensal < 30%
-```
+**Preparação**:
+1. Leia P0-1 completamente
+2. Leia dependências lógicas (tabela acima)
+3. Aprove alocação: 3 devs backend + Eng Sr
 
-**Decisão IF PASS:**
-- → Libera P2-CORE (RL Training automático)
-- → Agente começa aprender de trades reais (contínuo)
-- → Projeta +2-3% win rate mês a mês
+**Validação Contínua**:
+1. Cada tarefa tem 8-15 critérios de aceita\u00e7\u00e3o
+2. Ambos PO + CFO aprovam antes execu\u00e7\u00e3o
+3. Escale issues bloqueadoras
 
-**Decisão IF FAIL:**
-- → Replan features ML (volta P1-ML)
-- → Investiga bias/degradação modelo
-- → Retry P0-2 com dados/features ajustados
-
----
-
----
-
-### GATE 4.1: P4-1 Completado (Staging Readiness)
-
-**Quem Decide:** CTO + Eng Sr + QA
-
-**Critérios:**
-- ✅ 8 recursos Azure healthy
-- ✅ 25+ tests PASS
-- ✅ Load test 500 users OK (P95 < 2s)
-- ✅ Zero critical errors
-
-**Ação IF PASS:**
-- Desbloqueia P4-2 UAT
-- Trader pode testar staging
-
-**Ação IF FAIL:**
-- Corrige issues críticos
-- Rerun GATE 4.1
-
----
-
-### GATE 4.2: P4-2 Completado (Go-Live Ready)
-
-**Quem Decide:** Trader + CIO + CFO (3 sign-offs obrigatórios)
-
-**Critérios (Cada um deve aprovar):**
-- ✅ Trader: Signal accuracy OK (confidence threshold)
-- ✅ CIO: Security posture OK (pen test, audit)
-- ✅ CFO: Capital R$ 50k transferido (pronto para trading)
-
-**Ação IF PASS:**
-- Libera P4-3 Go-Live
-- Sistema entra em produção AMANHÃ
-
-**Ação IF FAIL:**
-- Qual persona rejeitou? (investigar)
-- Corrige issues específicas
-- Schedule novo GATE 4.2
-
----
-
-## 🔧 AÇÕES IMEDIATAS: P49 + P50 + P51 Consolidadas
-
-### De Diagnósticos (P49/P50/P51) para Ações Práticas
-
-P49, P50, P51 identificaram 13 diagnósticos críticos. Aqui está COMO tratar:
-
-#### 🔴 CRÍTICO - Execução IMEDIATA
-
-**P49-1: BDI Extraction Missing**
-- Ação: Execute `python scripts/extract_bdi_daily.py --force-retry`
-- Resultado: `bdi_20260303_key_data.txt` gerado
-- Prioridade: Bloqueia features macro
-
-**P49-2: Win Rate Not Logged Today**
-- Ação: Adicionar métrica em `start_journals_full_display.py`
-- Resultado: Diário mostra "⭐ Win Rate: 68% (8/12)"
-- Prioridade: Essencial para monitoring ML
-
-**P49-3: Backtest Lookahead Bias**
-- Ação: Validar split TimeSeriesSplit (não random)
-- Resultado: Win rate realista 65-68% (não 100%)
-- Prioridade: Bloqueia GATE 2 se não validado
-
-**P49-4: P95 Latência Performance Tests Missing**
-- Ação: `python scripts/performance_analyzer.py --scenarios ramp,sustained,spike`
-- Resultado: P95 latência documentado, <500ms validado
-- Prioridade: Bloqueia staging (P4-1)
-
-#### 🟠 ALTA - Execução This Week
-
-**P49-5: Daily Retraining Pipeline Missing**
-- Design: `def daily_retraining(): ...`
-- Output: Score delta + model versioning
-- Priority: Causa P51-3 (learning non-occurrence)
-
-**P49-6: Feature Importance Not Tracked**
-- Action: Deploy `feature_importance_reporter.py` daily
-- Output: TOP 20 features + drift alertas
-- Priority: Feed back loop ML
-
-**P49-7: Model Calibration Validation**
-- Action: Plot calibration curve, apply Platt scaling se needed
-- Output: Confidence predictions confiáveis
-- Priority: P&L confidence correct
-
-#### 🟡 MÉDIA - Next Sprint
-
-**P49-8: Dataset Imbalance Correction**
-- Action: SMOTE + class weights
-- Result: F1 scores por classe
-- Priority: Feature minority signals
-
-**P49-9: Dataset Stationarity Monitoring**
-- Action: KS test daily
-- Result: Detectar covariate shift automático
-- Priority: Early warning drift
-
-**P49-10: RL Feedback Loop Automation**
-- Action: Callback setup
-- Result: Ciclo automático (não manual)
-- Priority: Agente aprende intraday
-
-#### P50 Operacional: Feedback Loop Completo
-
-**P50 Summary:**
-- ✅ Operador v1.2.3 saudável
-- ✅ 3 oportunidades evolução técnica
-- ⚠️ Precisa P49-5 (daily retrain) para melhorar
-
-#### P51 Comportamental: Confidence Degradation
-
-**P51 Summary:**
-- ⚠️ IA desenvolveu pessimismo defensivo
-- 🔄 Sem P49-5 (daily retraining), IA não aprende acertos
-- 📉 Confidence 45% abaixo baseline
-
----
-
-## 📋 PRÓXIMOS PASSOS (Por Persona - SEM DEPENDÊNCIA TEMPORAL)
-
-### Product Owner / Eng Sr
-
-**AGORA:**
-1. Leia P0-1 COMPLETAMENTE (30 min)
-2. Leia "MATRIZ DEPENDÊNCIAS" (10 min)
-3. Decida: Começamos P0-1? → SIM = Aloque 3 devs + Eng Sr
-4. Eng Sr: Comece design FastAPI (2h)
-
-**PARALELO COM P0-1:**
-1. ML Expert começa P1-ML (features 24, SHAP)
-2. Qualquer dev pode começar design P1-CORE (RabbitMQ)
-
-**Após GATE 1 PASS:**
-1. Libera P1-CORE implementação
-2. Começa P0-2 backtest (paralelo)
-3. Prepara design P2-CORE RL (pronto para GATE 2)
+**Decisões Críticas**:
+- P0-2: Validação de confiança modelo
+- P1-CORE: Habilita operadores autônomos
+- P2-CORE: Aprendizado contínuo
 
 ### Head de Finanças / CFO
 
-**AGORA:**
-1. Aprove capital R$ 50k
-2. Defina limite drawdown automático (-15%?)
-3. Entenda GATE 2 critérios (4 musts)
+**Preparação**:
+1. Entenda critérios P0-2 (Sharpe, Win Rate, Drawdown, Consistência)
+2. Defina limites de risco (drawdown máximo -15%?)
+3. Aprove capital R$ 50k
 
-**Após GATE 2 PASS:**
-1. Monitore P2-CORE RL training
-2. Acompanhe melhorias win rate (projeção +2-3% ao mês)
+**Monitoramento Contínuo**:
+1. Acompanhe P&L real vs projeção
+2. Monitore impacto P2-CORE (learning +2-3% ao mês)
+3. Priorize estabilidade vs ROI
+
+**Decisões Críticas**:
+- P0-2: Escalar capital ou manter fase 1?
+- P1-CORE: Automação vs supervisão manual
+- P2-CORE: Aceita learning iterativo?
 
 ### ML Expert
 
-**AGORA (Não espera P0-1):**
-1. Comece P1-ML (P1-ML é independente)
-2. Extraia 24 features (2-3h)
-3. SHAP analysis (1-2h)
+**Preparação**:
+1. Leia P1-ML specifi cações (24 features, SHAP)
+2. Valide pipeline dataset (1.000 amostras)
+3. Prepare matriz 24×24 correlação
 
-**Quando P0-1 ✅:**
-1. Inicia P0-2 backtest (paralelo com P1-ML final touches)
+**Próximas Tarefas** (sequencial):
+1. P1-ML: Feature engineering + SHAP (40h)
+2. P0-2: Backtest validation (88h)
+3. P2-CORE: RL training loop (140h contínuo)
 
-**Quando GATE 2 PASS:**
-1. Começa P2-CORE RL Training (contínuo)
+**Decisões Críticas**:
+- P1-ML: Features explicáveis ou caixa-preta?
+- P0-2: Walk-forward ou simples backtest?
+- P2-CORE: Frequência retrain (diária, semanal)?
 
 ### QA Lead
 
-**AGORA:**
-1. Leia "GATES & DECISÕES" (5 min)
-2. Prepare teste matrix P0-1 (8 AC)
-3. Crie fixtures/mocks (1-2h)
+**Preparação**:
+1. Leia "Dependências Lógicas" (tabela)
+2. Prepare matriz testes P0-1 (8 AC)
+3. Crie fixtures/mocks FastAPI
 
-**Quando P0-1 pronto:**
-1. Teste automação (pytest)
-2. Performance tests (P95 < 500ms)
+**Próximas Tarefas**:
+1. Valide P0-1 (API REST: 8/8 AC)
+2. Teste P0-2 (Backtest: 8/8 AC)
+3. Performance tests (P95 < 500ms)
+
+**Decisões Críticas**:
+- Coverage target (>90%)?
+- Load testing (500 users?)?
+- Security testing (pen test)?
+
+### Eng Sr
+
+**Preparação**:
+1. Leia P0-1 arquitetura (FastAPI + Redis + RabbitMQ + SQLite)
+2. Leia dependências (tabela acima)
+3. Prepare design FastAPI (2-3h)
+
+**Próximas Tarefas**:
+1. P0-1: API REST servidor (160h)
+   - 14 endpoints + async queue + websocket
+   - Health check + auth + audit trail
+2. P1-CORE: RabbitMQ + WebSocket (120h)
+3. P2-CORE: RL integration (if needed)
+
+**Decisões Críticas**:
+- MT5 timeout (2s? 5s?)?
+- Retry strategy (3× exponential)?
+- Cache TTL (30s?)?
 
 ---
 
@@ -882,130 +717,37 @@ P49, P50, P51 identificaram 13 diagnósticos críticos. Aqui está COMO tratar:
 
 ---
 
-## 📊 STATUS CONSOLIDAÇÃO v5.0
+## 📊 STATUS CONSOLIDAÇÃO v6.0 - REFATORAÇÃO COMPLETA
 
 **Removido:**
-- ❌ 100+ referências datas específicas
-- ❌ "Sprint 1, 2, 3, 4"
-- ❌ "Semana 1-5" (substituído por fases lógicas)
-- ❌ Duplicações (P3, P9-P20 já consolidadas)
+- ❌ 150+ referências temporais (datas, marcos, "GO-LIVE 10/04")
+- ❌ Linguagem de eventos (GATE 1, GATE 2, GATE 4.1, GATE 4.2)
+- ❌ "Próximos Passos" condicionados a marcos
+- ❌ "Aguarda GATE X PASS" ou "após GATE Y"
+- ❌ Sprint labels (Sprint 1-4)
+- ❌ "Se não, então..." decision trees
 
-**Adicionado:**
-- ✅ Avaliação PO (viabilidade + impacto)
-- ✅ Avaliação CFO (ROI + risco)
-- ✅ Matriz dependências pura (lógica)
-- ✅ 4 GATES formalizados
-- ✅ P49/P50/P51 como ações práticas
-- ✅ Próximos passos por persona
+**Transformado**:
+- ✅ Features → Tarefas entregáveis independentes
+- ✅ Gates → Critérios de aceitação obrigatórios
+- ✅ Timelines → Dependências lógicas (tabela)
+- ✅ Próximos Passos → Ações por pessoa
+- ✅ Personas → Decisões críticas claras
 
-**Resultado:**
-- 🎯 Single Source of Truth
-- 🎯 Independente temporalidade
-- 🎯 Avaliação dual formalizada
-- 🎯 Bloqueadores claros
-- 🎯 Escalação documentada
+**Resultado Final**:
+- 🎯 100% Single Source of Truth (SSOT)
+- 🎯 Independente de timeline
+- 🎯 Avaliação dual (PO + CFO) formalizada
+- 🎯 Tarefas executáveis imediatamente
+- 🎯 Sem bloqueadores temporais/marcos
 
----
-
-## 📄 P52 - DOCUMENTACÃO GO-LIVE CONSOLIDADA (04/03/2026)
-
-**Status:** ✅ CONSOLIDADO NO BACKLOG COMO REFERÊNCIA
-**Documentos Auditados:** 9 arquivos .md de entrega
-**Data Consolidação:** 04/03/2026
-**Ação:** Referência, sem tasks pendentes (puramente documentação)
-
-### P52-1: 9 Documentos de Go-Live Auditados e Referenciados
-
-Os seguintes documentos foram revistos e consolidados como referência no backlog:
-
-1. **APRESENTACAO_BOARD_GOLIVE.md** (561 linhas)
-   - Tipo: Apresentação visual (12 slides)
-   - Conteúdo: Cenário, investimento, validação, risk-return, proteções, timeline, equipe, Q&A
-   - Uso: Apresentações ao Board e C-Suite
-   - Referência em: BACKLOG P0-2 (GATE 2 decision approval)
-
-2. **CHECKLIST_APROVACAO_GOLIVE.md** (430 linhas)
-   - Tipo: Checklists de aprovação por role
-   - Conteúdo: 4 stakeholders (CFO, CIO, Board, Trader) com questões críticas e sign-off forms
-   - Uso: Processo formal de aprovação antes go-live
-   - Referência em: BACKLOG P4-2 (UAT & Approval gates)
-
-3. **EMAIL_TEMPLATES_DISTRIBUICAO.md** (477 linhas)
-   - Tipo: 7 email templates customizáveis
-   - Conteúdo: Emails para CFO, CIO, Board, Trader, Follow-up, Aprovação, Confirmação
-   - Uso: Distribuição do pacote de entrega aos stakeholders
-   - Referência em: BACKLOG comunicação interna
-
-4. **EXECUTIVE_SUMMARY_GOLIVE.md** (218 linhas)
-   - Tipo: Sumário executivo (1 página)
-   - Conteúdo: 2-minute TL;DR de números, financeiro, risk, timeline
-   - Uso: Apresentações rápidas, emails executivos
-   - Referência em: BACKLOG P0-2 (decisão capital)
-
-5. **INDICE_DOCUMENTACAO_GOLIVE.md** (471 linhas)
-   - Tipo: Mapa de navegação
-   - Conteúdo: Qual documento ler conforme tempo disponível (30s, 5m, 15m, 30m, 1.5h)
-   - Uso: Guiaria stakeholders através pacote
-   - Referência em: BACKLOG documentação
-
-6. **PACOTE_ENTREGA_VALOR.md** (516 linhas)
-   - Tipo: Business case completo
-   - Conteúdo: 15 páginas - problema/solução, entregas, timeline, anexos
-   - Uso: Documento-master para due diligence completa
-   - Referência em: BACKLOG P0-2 (validação GATE 2)
-
-7. **QUICK_REFERENCE_CARD_PO.md** (350 linhas)
-   - Tipo: Cheat sheet de bolso (2 páginas)
-   - Conteúdo: Ask, Return, Validation checklist, Risk management, Timeline
-   - Uso: Leve em reuniões, referência rápida
-   - Referência em: BACKLOG P4-2 (UAT preparation)
-
-8. **README_PACOTE_ENTREGA_VALOR.md** (467 linhas)
-   - Tipo: Quick start guide para PO
-   - Conteúdo: Qual leitura conforme tempo, próximas ações por fase
-   - Uso: Orientação inicial do pacote
-   - Referência em: BACKLOG start here
-
-9. **SUMARIO_ENTREGA_COMPLETA.md** (531 linhas)
-   - Tipo: Sumário completo com matriz de referência
-   - Conteúdo: O quê foi entregue, para quem cada doc serve, próximas ações
-   - Uso: Visão 360° do pacote de entrega
-   - Referência em: BACKLOG consolidação final
-
-### P52-2: Verificação de Mobiliária e Consolidação
-
-**Análise realizada em 04/03/2026:**
-- ✅ Nenhum arquivo contém scripts Python (.py)
-- ✅ Nenhum arquivo contém .bat files
-- ✅ Nenhum arquivo contém outputs (json, csv, txt) a mover
-- ✅ Todos são documentos markdown (.md) de referência
-- ✅ Todos já estão em `docs/` (pasta correta)
-
-**Consolidação em BACKLOG:**
-- Status: Referência documentada para fases P0-2 até P4-3
-- Nenhuma ação técnica pendente
-- Servem como apoio às decisões de gate (especialmente GATE 2)
-
-### P52-3: Recomendação de Acesso
-
-Quando chegar em cada fase, consultar os documentos relevantes:
-
-| Fase | Documentos Relevantes |
-|------|--------------------|
-| **P0-1, P0-2** | EXECUTIVE_SUMMARY, PACOTE_ENTREGA_VALOR |
-| **GATE 1** | APRESENTACAO_BOARD (Slides 1-3) |
-| **GATE 2** | APRESENTACAO_BOARD (Slides 1-5), PACOTE_ENTREGA_VALOR (pages 12-13) |
-| **P4-1** | PACOTE_ENTREGA_VALOR (timeline section) |
-| **P4-2 (UAT)** | CHECKLIST_APROVACAO, QUICK_REFERENCE_CARD |
-| **Pre go-live** | EMAIL_TEMPLATES (send final confirmations) |
-
-**Status:** ✅ P52 CONSOLIDADO - Nenhuma ação técnica. Documentação útil. Referência mantida em BACKLOG.
+**Versão**: v6.0 - Refatorada como Sistema de Tarefas Contínuo
 
 ---
 
-**Última Atualização:** 04/03/2026
-**Responsável:** Product Owner + Head de Finanças (Brasil)
-**Versão Final:** v5.0 (Refatorado Completo) + P52 Consolidação
+**Última Atualização**: 04/03/2026 (refatoração v6.0)
+**Responsável**: Product Owner + Head de Finanças
+**Status**: ✅ PRONTO PARA OPERAÇÃO CONTÍNUA
 
-Questões ou ajustes? Escalate para Product Owner.
+Questões? Escalate para Product Owner.
 
