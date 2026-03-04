@@ -46,19 +46,19 @@ def initialize_reflection_persistence():
         # 1. Initialize persistence layer
         logger.info("Inicializando camada de persistência...")
         persistence = ResilientReflectionPersistence(project_root)
-        logger.info("✓ Camada de persistência inicializada")
+        logger.info("[OK] Camada de persistencia inicializada")
 
         # 2. Check health status
-        logger.info("Verificando saúde da persistência...")
+        logger.info("Verificando saude da persistencia...")
         health = persistence.get_health_status()
 
         total_reflections = health.get("total_reflections", 0)
         failed_writes = health.get("failed_writes", 0)
         status = health.get("status", "UNKNOWN")
 
-        logger.info(f"  • Total de reflexões em SQLite: {total_reflections}")
-        logger.info(f"  • Escritas falhadas: {failed_writes}")
-        logger.info(f"  • Status: {status}")
+        logger.info(f"  * Total de reflexoes em SQLite: {total_reflections}")
+        logger.info(f"  * Escritas falhadas: {failed_writes}")
+        logger.info(f"  * Status: {status}")
 
         # 3. Check for orphaned entries
         logger.info("Procurando por reflexões orfãs em JSONL...")
@@ -73,20 +73,20 @@ def initialize_reflection_persistence():
             logger.info("Executando auto-recovery...")
             recovered = persistence.recover_from_failure()
 
-            logger.info(f"✓ Auto-recovery concluído: {recovered} reflexões recuperadas")
+            logger.info(f"[OK] Auto-recovery concluido: {recovered} reflexoes recuperadas")
 
             # Re-check health after recovery
             health = persistence.get_health_status()
             total_reflections = health.get("total_reflections", 0)
-            logger.info(f"  • Total de reflexões após recovery: {total_reflections}")
+            logger.info(f"  * Total de reflexoes apos recovery: {total_reflections}")
 
         else:
-            logger.info("✓ Nenhuma reflexão orfã encontrada")
+            logger.info("[OK] Nenhuma reflexao orfa encontrada")
 
         # 5. Validate database integrity
         logger.info("Validando integridade do database...")
         persistence._repair_corrupted_records()
-        logger.info("✓ Database validation concluído")
+        logger.info("[OK] Database validation concluido")
 
         # 6. Display final status
         print("\n" + "-" * 80)
@@ -95,24 +95,24 @@ def initialize_reflection_persistence():
 
         health = persistence.get_health_status()
         print(f"Status Geral: {health['status']}")
-        print(f"Total de reflexões: {health['total_reflections']}")
+        print(f"Total de reflexoes: {health['total_reflections']}")
         print(f"Escritas falhadas: {health['failed_writes']}")
         print(f"Tamanho database: {health['db_size_mb']} MB")
         print(f"Tamanho JSONL: {health['jsonl_size_mb']} MB")
 
         if health.get("last_reflection_timestamp"):
-            print(f"Última reflexão: {health['last_reflection_timestamp']}")
+            print(f"Ultima reflexao: {health['last_reflection_timestamp']}")
 
         print("\n" + "=" * 80)
-        print("✓ PERSISTÊNCIA PRONTA PARA OPERAÇÃO\n")
+        print("[OK] PERSISTENCIA PRONTA PARA OPERACAO\n")
 
-        logger.info("✓ Inicialização de persistência completa")
+        logger.info("[OK] Inicializacao de persistencia completa")
 
         return persistence
 
     except Exception as e:
-        logger.error(f"✗ Erro durante inicialização: {e}")
-        print(f"\n✗ ERRO: {e}\n")
+        logger.error(f"[ERRO] Erro durante inicializacao: {e}")
+        print(f"\n[ERRO] {e}\n")
         raise
 
 

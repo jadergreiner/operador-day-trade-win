@@ -35,23 +35,23 @@ def check_persistencia_health():
     # Display health metrics
     print(f"Status Geral: {health['status']}\n")
 
-    print("Métricas Principais:")
-    print(f"  • Total de reflexões: {health['total_reflections']}")
-    print(f"  • Escritas falhadas: {health['failed_writes']}")
-    print(f"  • Tamanho database (SQLite): {health['db_size_mb']} MB")
-    print(f"  • Tamanho JSONL: {health['jsonl_size_mb']} MB")
+    print("Metricas Principais:")
+    print(f"  * Total de reflexoes: {health['total_reflections']}")
+    print(f"  * Escritas falhadas: {health['failed_writes']}")
+    print(f"  * Tamanho database (SQLite): {health['db_size_mb']} MB")
+    print(f"  * Tamanho JSONL: {health['jsonl_size_mb']} MB")
 
     if health['last_reflection_timestamp']:
-        print(f"  • Última reflexão: {health['last_reflection_timestamp']}")
+        print(f"  * Ultima reflexao: {health['last_reflection_timestamp']}")
         if health['time_since_last_reflection_seconds'] is not None:
             minutes = health['time_since_last_reflection_seconds'] / 60
-            print(f"  • Tempo desde última reflexão: {minutes:.1f} minutos")
+            print(f"  * Tempo desde ultima reflexao: {minutes:.1f} minutos")
 
-    print("\nMétricas de Persistência:")
+    print("\nMetricas de Persistencia:")
     metrics = health.get('metrics', {})
-    print(f"  • Total de reflexões (métrica): {metrics.get('total_reflections', 0)}")
-    print(f"  • Última escrita bem-sucedida: {metrics.get('last_successful_write', 'N/A')}")
-    print(f"  • Último erro: {metrics.get('last_error', 'N/A')}")
+    print(f"  * Total de reflexoes (metrica): {metrics.get('total_reflections', 0)}")
+    print(f"  * Ultima escrita bem-sucedida: {metrics.get('last_successful_write', 'N/A')}")
+    print(f"  * Ultimo erro: {metrics.get('last_error', 'N/A')}")
 
     print("\n" + "=" * 80 + "\n")
 
@@ -66,10 +66,10 @@ def recover_from_failure():
 
     persistence = ResilientReflectionPersistence(project_root)
 
-    print("Buscando por reflexões orfãs em JSONL não presentes em SQLite...")
+    print("Buscando por reflexoes orfas em JSONL nao presentes em SQLite...")
     recovered_count = persistence.recover_from_failure()
 
-    print(f"\n✓ Recuperação concluída: {recovered_count} reflexões restauradas\n")
+    print(f"\n[OK] Recuperacao concluida: {recovered_count} reflexoes restauradas\n")
     print("=" * 80 + "\n")
 
     return recovered_count
@@ -95,14 +95,14 @@ def validate_data_integrity():
         with open(str(persistence.jsonl_path), "r", encoding="utf-8") as f:
             jsonl_count = sum(1 for line in f if line.strip())
 
-    print(f"Reflexões em SQLite:  {db_count}")
-    print(f"Reflexões em JSONL:   {jsonl_count}")
+    print(f"Reflexoes em SQLite:  {db_count}")
+    print(f"Reflexoes em JSONL:   {jsonl_count}")
 
     if db_count >= jsonl_count:
-        print(f"\n✓ Integridade OK: SQLite tem todos os dados ({db_count} vs {jsonl_count})")
+        print(f"\n[OK] Integridade OK: SQLite tem todos os dados ({db_count} vs {jsonl_count})")
     else:
-        print(f"\n⚠ Aviso: {jsonl_count - db_count} reflexões em JSONL não estão em SQLite")
-        print("  Execute: recover_persistencia() para importar dados orfãos\n")
+        print(f"\n[AVISO] {jsonl_count - db_count} reflexoes em JSONL nao estao em SQLite")
+        print("  Execute: recover_persistencia() para importar dados orfaos\n")
 
     print("=" * 80 + "\n")
 
@@ -117,7 +117,7 @@ def export_todas_reflexoes():
 
     export_file = persistence.export_to_jsonl()
 
-    print(f"✓ Reflexões exportadas para: {export_file}\n")
+    print(f"[OK] Reflexoes exportadas para: {export_file}\n")
     print("=" * 80 + "\n")
 
     return export_file
@@ -126,7 +126,7 @@ def export_todas_reflexoes():
 def show_recent_reflections(limit: int = 10):
     """Show recent reflections from database."""
     print("\n" + "=" * 80)
-    print(f"ÚLTIMAS {limit} REFLEXÕES")
+    print(f"ULTIMAS {limit} REFLEXOES")
     print("=" * 80 + "\n")
 
     persistence = ResilientReflectionPersistence(project_root)
@@ -147,7 +147,7 @@ def show_recent_reflections(limit: int = 10):
     for entry_id, timestamp, mood, decision, confidence, one_liner in rows:
         print(f"[{timestamp}] {entry_id}")
         print(f"  Humor: {mood}")
-        print(f"  Decisão: {decision} (conf: {confidence:.2f})")
+        print(f"  Decisao: {decision} (conf: {confidence:.2f})")
         print(f"  \"{one_liner}\"")
         print()
 
@@ -158,18 +158,18 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Monitor e recuperar persistência de reflexões"
+        description="Monitorar e recuperar persistencia de reflexoes"
     )
     parser.add_argument(
         "action",
         choices=["health", "recover", "validate", "export", "recent"],
-        help="Ação a executar",
+        help="Acao a executar",
     )
     parser.add_argument(
         "--limit",
         type=int,
         default=10,
-        help="Número de reflexões a mostrar (para 'recent')",
+        help="Numero de reflexoes a mostrar (para 'recent')",
     )
 
     args = parser.parse_args()
@@ -181,7 +181,7 @@ if __name__ == "__main__":
         elif args.action == "recover":
             recover_from_failure()
             # Auto-check health after recovery
-            print("Verificando saúde após recuperação...")
+            print("Verificando saude apos recuperacao...")
             check_persistencia_health()
 
         elif args.action == "validate":
