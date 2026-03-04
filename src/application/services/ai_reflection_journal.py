@@ -3,14 +3,26 @@ AI Reflection Journal - O desabafo sincero do Operador Quantico.
 
 A IA reflete sobre suas proprias decisoes, os dados que analisa,
 e se o humano esta ajudando ou atrapalhando.
+
+Com persistência robusta:
+- SQLite primário (ACID transacional)
+- JSONL fallback (append-only)
+- Retry logic com exponential backoff
+- Flush/Sync forçado
+- Validação por checksum
+- Recovery automático
 """
 
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional
+from pathlib import Path
 
 from src.domain.enums.trading_enums import TradeSignal
+from src.infrastructure.persistence.resilient_reflection_persistence import (
+    ResilientReflectionPersistence,
+)
 
 
 @dataclass
@@ -74,17 +86,19 @@ class AIReflectionJournalService:
     - If its data actually matters
     - If the human is helping or hurting
     - What would actually work better
+
+    Uses resilient persistence with ACID guarantees.
     """
 
     def __init__(self):
         self.entries: list[AIReflectionEntry] = []
 
-        # Ensure directory exists
-        from pathlib import Path
+        # Initialize resilient persistence
         project_root = Path(__file__).resolve().parents[3]
-        log_dir = project_root / "data" / "db" / "reflections"
-        log_dir.mkdir(parents=True, exist_ok=True)
-        self.log_file = log_dir / "reflections_log.jsonl"
+        self.persistence = ResilientReflectionPersistence(project_root)
+
+        # Also maintain jsonl_path for backward compatibility
+        self.log_file = project_root / "data" / "db" / "reflections" / "reflections_log.jsonl"
 
     def generate_reflection(
         self,
@@ -221,10 +235,16 @@ class AIReflectionJournalService:
         return reflection
 
     def _persist_to_disk(self, reflection: AIReflection):
-        """Append reflection to JSONL file."""
-        try:
-            import json
+        """Persist reflection using resilient persistence layer.
 
+        Uses:
+        - SQLite primário (ACID transacional)
+        - JSONL fallback (append-only)
+        - Retry logic com exponential backoff
+        - Flush/Sync forçado
+        - Validação por checksum
+        """
+        try:
             # Convert dataclass to dict and handle special types
             r_dict = {
                 "timestamp": reflection.timestamp.isoformat(),
@@ -248,11 +268,16 @@ class AIReflectionJournalService:
                 "one_liner": reflection.one_liner
             }
 
-            with open(self.log_file, "a", encoding="utf-8") as f:
-                f.write(json.dumps(r_dict, ensure_ascii=False) + "\n")
+            # Use resilient persistence layer
+            success = self.persistence.persist_reflection(r_dict, max_retries=3)
+
+            if not success:
+                print(f"[ERRO] Falha ao persistir reflexao {reflection.entry_id} após 3 tentativas")
+            else:
+                print(f"[OK] Reflexao {reflection.entry_id} persistida com sucesso")
 
         except Exception as e:
-            print(f"[AVISO] Nao foi possivel persistir reflexao: {e}")
+            print(f"[ERRO] Exceção ao persistir reflexão: {e}")
 
     def _assess_mood(
         self, my_confidence: Decimal, my_alignment: Decimal, price_volatility: Decimal

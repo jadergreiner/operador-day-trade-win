@@ -1,9 +1,9 @@
 # 🚨 DIAGNÓSTICO CRÍTICO: Zero Operações em 2 Dias
 ## INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat v1.2.3
 
-**Data:** 04/03/2026 (análise retrospectiva)  
-**Problema:** Sistema rodando, gerando CUSTO, mas sem executar operações  
-**Duração:** 2 dias consecutivos (03/03 e 04/03)  
+**Data:** 04/03/2026 (análise retrospectiva)
+**Problema:** Sistema rodando, gerando CUSTO, mas sem executar operações
+**Duração:** 2 dias consecutivos (03/03 e 04/03)
 **Status Sistema:** ✅ Código OK | ⚠️ Decisões em PESSIMISMO (confidence 0.34)
 
 ---
@@ -13,7 +13,7 @@
 ### O Problema NÃO É Técnico — É Psicológico
 
 O sistema **APRENDEU A SER PESSIMISTA** desde 09/02/2026, quando confiança caiu de:
-- **06/02:** 0.62 (Normal, operacional) 
+- **06/02:** 0.62 (Normal, operacional)
 - **09/02:** 0.40 (Crash de -35%)
 - **03/03:** 0.34 (Pessimismo aprendido, nunca se recuperou)
 
@@ -86,9 +86,9 @@ Com base em diagnóstico real dos logs, aqui estão as 3 soluções práticas:
 
 ## PR-P50-A: Detector de Pessimismo Crônico + Auto-Reset
 
-**ID:** P50-A  
-**Criticidade:** 🔴 BLOQUEANTE (impede operações)  
-**Tempo Estimado:** 2h implementação + 1h testes  
+**ID:** P50-A
+**Criticidade:** 🔴 BLOQUEANTE (impede operações)
+**Tempo Estimado:** 2h implementação + 1h testes
 **LOC:** ~80 linhas Python + ~15 linhas .bat
 
 ### O Problema
@@ -129,23 +129,23 @@ from decimal import Decimal
 
 def check_confidence_pattern(lookback=20, threshold=Decimal("0.45")):
     """Detecta padrão de pessimismo crônico."""
-    
+
     # Ler histórico de reflections
     reflections_file = Path("data/reflections_log.jsonl")
     confidences = []
-    
+
     if reflections_file.exists():
         with open(reflections_file) as f:
             for line in f:
                 data = json.loads(line)
                 confidences.append(Decimal(str(data.get("confidence", 0.5))))
-    
+
     # Últimos N ciclos
     recent = confidences[-lookback:]
-    
+
     # Contar quantos < threshold
     pessimistic_count = sum(1 for c in recent if c < threshold)
-    
+
     if pessimistic_count >= 10:
         print(f"🚨 PESSIMISM DETECTED: {pessimistic_count}/20 ciclos com confidence < {threshold}")
         print(f"   Métricas:")
@@ -180,9 +180,9 @@ if __name__ == "__main__":
 
 ## PR-P50-B: Daily Retraining Loop com Positive Feedback
 
-**ID:** P50-B  
-**Criticidade:** 🟠 ALTA (quebra ciclo negativo)  
-**Tempo Estimado:** 3h implementação + 2h testes  
+**ID:** P50-B
+**Criticidade:** 🟠 ALTA (quebra ciclo negativo)
+**Tempo Estimado:** 3h implementação + 2h testes
 **LOC:** ~200 linhas Python + ~20 linhas .bat
 
 ### O Problema
@@ -225,52 +225,52 @@ from datetime import datetime, timedelta
 
 def retrain_confidence_daily(date_str):
     """Retraina confidence baseado em P&L real do pregão anterior."""
-    
+
     # 1. Ler trades do pregão anterior
     trades_file = Path(f"data/db/daily_trades_{date_str}.json")
-    
+
     if not trades_file.exists():
         print(f"ℹ️ Nenhum trade anterior ({date_str}) - pulando retraining")
         exit(0)
-    
+
     with open(trades_file) as f:
         trades = json.load(f)
-    
+
     # 2. Calcular win rate REAL
     wins = sum(1 for t in trades if t.get("pnl", 0) > 0)
     total = len(trades)
-    
+
     if total == 0:
         print(f"ℹ️ Zero trades - nenhum feedback para retraining")
         exit(0)
-    
+
     win_rate = wins / total
-    
+
     print(f"📊 Resultados pregão anterior ({date_str}):")
     print(f"   - Trades executados: {total}")
     print(f"   - Vencedores: {wins} ({win_rate*100:.1f}%)")
     print(f"   - P&L total: R$ {sum(t.get('pnl', 0) for t in trades):.2f}")
-    
+
     # 3. Ajustar confidence baseado em win rate
     current_confidence = load_current_confidence()
-    
+
     if win_rate > 0.60:
         # Feedback positivo: boost confidence
         adjustment = Decimal("0.03")  # +0.03 (máximo +0.06 por semana)
         new_confidence = min(Decimal("0.65"), current_confidence + adjustment)
         print(f"   ✅ Win rate > 60% → boost confidence: {current_confidence:.2f} → {new_confidence:.2f}")
-    
+
     elif win_rate < 0.50:
         # Feedback negativo: reduz confidence
         adjustment = Decimal("-0.02")
         new_confidence = max(Decimal("0.25"), current_confidence + adjustment)
         print(f"   ❌ Win rate < 50% → reduz confidence: {current_confidence:.2f} → {new_confidence:.2f}")
-    
+
     else:
         # Neutro: mantém confidence
         new_confidence = current_confidence
         print(f"   ⚖️ Win rate ~55% → mantém confidence: {new_confidence:.2f}")
-    
+
     # 4. Persistir novo confidence
     save_confidence_for_next_session(new_confidence)
     exit(0)
@@ -319,9 +319,9 @@ if __name__ == "__main__":
 
 ## PR-P50-C: Feedback Logging Real-Time + Dashboard Diagnóstico
 
-**ID:** P50-C  
-**Criticidade:** 🟡 MÉDIA (visibilidade para debug)  
-**Tempo Estimado:** 2.5h implementação + 1.5h testes  
+**ID:** P50-C
+**Criticidade:** 🟡 MÉDIA (visibilidade para debug)
+**Tempo Estimado:** 2.5h implementação + 1.5h testes
 **LOC:** ~150 linhas Python + ~30 linhas .bat
 
 ### O Problema
@@ -370,7 +370,7 @@ class FeedbackLogger:
     def __init__(self, logfile):
         self.logfile = Path(logfile)
         self.cycles = []
-    
+
     def log_cycle(self, cycle_data):
         """Log um ciclo de decisão do agente."""
         cycle_record = {
@@ -385,40 +385,40 @@ class FeedbackLogger:
             "decision": cycle_data.get("decision"),  # BUY/SELL/HOLD
             "confidence": cycle_data.get("confidence"),
         }
-        
+
         # Escrever para arquivo de log
         with open(self.logfile, "a") as f:
             f.write(json.dumps(cycle_record) + "\n")
-        
+
         # Exibir diagnóstico
         self._display_diagnosis(cycle_record)
-    
+
     def _display_diagnosis(self, record):
         """Exibe diagnóstico visual em tempo real."""
-        
+
         print("\n" + "="*60)
         print(f"CICLO: {record['timestamp']}")
         print("="*60)
-        
+
         # Confidence meter
         conf = float(record['macro_confidence'])
         bar = "█" * int(conf * 20) + "░" * (20 - int(conf * 20))
         print(f"Confiança:  [{bar}] {conf:.0%}")
-        
+
         # Score metrics
         print(f"Macro Score: {record['macro_score']:.1f} | Micro: {record['micro_score']:.1f}")
         print(f"RSI: {record['rsi']:.0f} | ADX: {record['adx']:.0f}")
-        
+
         # Oportunidades
         opps = record['opportunities_generated']
         print(f"Oportunidades: {opps} geradas")
-        
+
         # Rejeições
         if record['rejection_reasons']:
             print(f"❌ Bloqueios:")
             for reason in record['rejection_reasons'][:3]:  # Top 3
                 print(f"   - {reason}")
-        
+
         # Decisão
         decision = record['decision']
         if decision == "BUY":
@@ -427,16 +427,16 @@ class FeedbackLogger:
             print(f"🔴 DECISÃO: VENDA")
         else:
             print(f"⚪ DECISÃO: HOLD (aguardando melhor setup)")
-        
+
         print("="*60)
 
 if __name__ == "__main__":
     import sys
     logfile = sys.argv[2] if len(sys.argv) > 2 else "outputs/agent_feedback_live.txt"
-    
+
     # Exemplo de uso (em produção, agente injeta dados)
     logger = FeedbackLogger(logfile)
-    
+
     # Simular ciclo (em produção: dados reais do agente)
     sample_cycle = {
         "macro_score": 2.5,
@@ -453,7 +453,7 @@ if __name__ == "__main__":
         "decision": "HOLD",
         "confidence": 0.34,
     }
-    
+
     logger.log_cycle(sample_cycle)
 ```
 
@@ -464,26 +464,26 @@ if __name__ == "__main__":
 
 def generate_summary(output_file):
     """Analisa cycles e gera sumário."""
-    
+
     # Ler feedback_log
     cycles = []
     with open("outputs/agent_feedback_live.txt") as f:
         for line in f:
             cycles.append(json.loads(line))
-    
+
     # Agregações
     total_cycles = len(cycles)
     avg_confidence = sum(float(c['macro_confidence']) for c in cycles) / total_cycles
     total_opps_generated = sum(c['opportunities_generated'] for c in cycles)
-    
+
     # Top rejection reasons
     all_reasons = []
     for c in cycles:
         all_reasons.extend(c.get('rejection_reasons', []))
-    
+
     from collections import Counter
     top_reasons = Counter(all_reasons).most_common(5)
-    
+
     # Gerar relatório
     summary = f"""
 SUMÁRIO DE OPORTUNIDADES - {datetime.now().date()}
@@ -496,7 +496,7 @@ TOP 5 Razões de Bloqueio:
 """
     for reason, count in top_reasons:
         summary += f"  - {reason}: {count} vezes\n"
-    
+
     summary += f"""
 
 STATUS DE HOJE:
@@ -515,7 +515,7 @@ AÇÃO RECOMENDADA:
     else 'Nenhuma ação necessária - sistema operacional'
 }
 """
-    
+
     Path(output_file).write_text(summary)
     print(summary)
 ```

@@ -43,7 +43,7 @@ class TestEtapa3Integration:
         script_path = Path("scripts/run_p0_2_backtest.py")
         assert script_path.exists(), "run_p0_2_backtest.py not found"
         assert script_path.is_file(), "run_p0_2_backtest.py is not a file"
-        
+
         # Verify it's syntactically valid Python
         try:
             with open(script_path, "r", encoding="utf-8") as f:
@@ -56,7 +56,7 @@ class TestEtapa3Integration:
         script_path = Path("scripts/check_p0_2_status.py")
         assert script_path.exists(), "check_p0_2_status.py not found"
         assert script_path.is_file(), "check_p0_2_status.py is not a file"
-        
+
         # Verify it's syntactically valid Python
         try:
             with open(script_path, "r", encoding="utf-8") as f:
@@ -71,7 +71,7 @@ class TestEtapa3Integration:
         """Test: check_p0_2_status.py returns exit code 2 when P0-2 not started."""
         # Ensure no status files exist
         self.cleanup_files()
-        
+
         # Run check_p0_2_status.py script
         try:
             result = subprocess.run(
@@ -82,7 +82,7 @@ class TestEtapa3Integration:
             )
         except subprocess.TimeoutExpired:
             pytest.fail("check_p0_2_status.py timed out")
-        
+
         # Should return exit code 2 (P0-2 not running)
         assert result.returncode == 2, (
             f"Expected exit code 2 (not started), got {result.returncode}\n"
@@ -97,24 +97,24 @@ class TestEtapa3Integration:
         """Test: check_p0_2_status.py retrieves GATE 2 decision when complete."""
         # Create directories
         BACKTEST_DIR.mkdir(parents=True, exist_ok=True)
-        
+
         # Write simulated status files
         status_file = BACKTEST_DIR / "p0_2_status.json"
         decision_file = BACKTEST_DIR / "gate2_decision.json"
-        
+
         status_file.write_text(json.dumps({
             "completed": True,
             "gate2_passed": True,
             "timestamp": "2026-03-04T12:34:56Z",
             "decision": "PASS"
         }))
-        
+
         decision_file.write_text(json.dumps({
             "gate2_passed": True,
             "decision": "PASS",
             "timestamp": "2026-03-04T12:34:56Z"
         }))
-        
+
         # Run check_p0_2_status.py
         try:
             result = subprocess.run(
@@ -125,13 +125,13 @@ class TestEtapa3Integration:
             )
         except subprocess.TimeoutExpired:
             pytest.fail("check_p0_2_status.py timed out")
-        
+
         # Should return exit code 0 (GATE 2 PASS)
         assert result.returncode == 0, (
             f"Expected exit code 0 (PASS), got {result.returncode}\n"
             f"stdout: {result.stdout}"
         )
-        
+
         # Check that decision is printed
         assert "PASS" in result.stdout or "[OK]" in result.stdout
 
@@ -142,24 +142,24 @@ class TestEtapa3Integration:
         """Test: check_p0_2_status.py correctly returns FAIL decision."""
         # Create directories
         BACKTEST_DIR.mkdir(parents=True, exist_ok=True)
-        
+
         # Write simulated FAIL status files
         status_file = BACKTEST_DIR / "p0_2_status.json"
         decision_file = BACKTEST_DIR / "gate2_decision.json"
-        
+
         status_file.write_text(json.dumps({
             "completed": True,
             "gate2_passed": False,
             "timestamp": "2026-03-04T12:34:56Z",
             "decision": "FAIL"
         }))
-        
+
         decision_file.write_text(json.dumps({
             "gate2_passed": False,
             "decision": "FAIL",
             "timestamp": "2026-03-04T12:34:56Z"
         }))
-        
+
         # Run check_p0_2_status.py
         try:
             result = subprocess.run(
@@ -170,13 +170,13 @@ class TestEtapa3Integration:
             )
         except subprocess.TimeoutExpired:
             pytest.fail("check_p0_2_status.py timed out")
-        
+
         # Should return exit code 1 (GATE 2 FAIL)
         assert result.returncode == 1, (
             f"Expected exit code 1 (FAIL), got {result.returncode}\n"
             f"stdout: {result.stdout}"
         )
-        
+
         # Check that decision is printed
         assert "FAIL" in result.stdout or "[FAIL]" in result.stdout
 
@@ -187,9 +187,9 @@ class TestEtapa3Integration:
         """Test: INICIAR_DIARIOS.bat contains P0-2 launch commands."""
         bat_file = Path("INICIAR_DIARIOS.bat")
         assert bat_file.exists(), "INICIAR_DIARIOS.bat not found"
-        
+
         content = bat_file.read_text(encoding="utf-8")
-        
+
         # Verify key integration elements
         assert "run_p0_2_backtest.py" in content, (
             "INICIAR_DIARIOS.bat missing P0-2 script call"
@@ -205,9 +205,9 @@ class TestEtapa3Integration:
         """Test: INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat checks GATE 2."""
         bat_file = Path("INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat")
         assert bat_file.exists(), "INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat not found"
-        
+
         content = bat_file.read_text(encoding="utf-8")
-        
+
         # Verify GATE 2 validation integration
         assert "check_p0_2_status.py" in content, (
             "Agent BAT file missing GATE 2 status check"
@@ -225,9 +225,9 @@ class TestEtapa3Integration:
     def test_etapa3_status_file_format(self) -> None:
         """Test: P0-2 status JSON file has required fields."""
         BACKTEST_DIR.mkdir(parents=True, exist_ok=True)
-        
+
         status_file = BACKTEST_DIR / "p0_2_status.json"
-        
+
         # Write a valid status file
         status_data = {
             "completed": True,
@@ -236,10 +236,10 @@ class TestEtapa3Integration:
             "decision": "PASS"
         }
         status_file.write_text(json.dumps(status_data))
-        
+
         # Read and validate
         loaded = json.loads(status_file.read_text())
-        
+
         assert "completed" in loaded, "Missing 'completed' field"
         assert "gate2_passed" in loaded, "Missing 'gate2_passed' field"
         assert "timestamp" in loaded, "Missing 'timestamp' field"
@@ -253,14 +253,14 @@ class TestEtapa3Integration:
         """Test: check_p0_2_status.py exit codes match .bat expectations."""
         # This is a documentation test - verifying the contract
         # between check_p0_2_status.py and .bat files
-        
+
         exit_codes_mapping = {
             0: "GATE 2 PASS - use R$ 100k",
             1: "GATE 2 FAIL - use R$ 50k",
             2: "P0-2 still running - skip check",
             3: "Error checking status"
         }
-        
+
         # Verify that all expected codes are in the mapping
         # (This test just documents the contract)
         assert all(isinstance(k, int) for k in exit_codes_mapping.keys())
@@ -274,10 +274,10 @@ class TestEtapa3NonBlocking:
         """Test: `start /B` syntax produces non-blocking execution."""
         # This is more of a Windows command documentation test
         # verifying that expected behavior is correct
-        
+
         # Verify the command syntax is correct
         start_command = "start /B python scripts/run_p0_2_backtest.py"
-        
+
         assert "/B" in start_command, "Missing /B flag for background execution"
         assert "python" in start_command, "Missing python executable"
         assert "run_p0_2_backtest.py" in start_command, "Missing script name"
@@ -286,10 +286,10 @@ class TestEtapa3NonBlocking:
         """Test: check_p0_2_status.py always returns (never hangs)."""
         # Ensure check_p0_2_status.py has short timeout/polling
         # and doesn't block indefinitely
-        
+
         script_path = Path("scripts/check_p0_2_status.py")
         content = script_path.read_text(encoding="utf-8")
-        
+
         # Verify timeout is present (max ~10 seconds)
         assert "timeout" in content.lower() or "sleep" in content.lower(), (
             "Status check script should have timeout/polling mechanism"
@@ -298,7 +298,7 @@ class TestEtapa3NonBlocking:
     def test_etapa3_log_redirection_works(self) -> None:
         """Test: Log output is redirected to file (doesn't block)."""
         bat_content = Path("INICIAR_DIARIOS.bat").read_text(encoding="utf-8")
-        
+
         # Verify redirection syntax
         assert ">" in bat_content and "log" in bat_content.lower(), (
             "BAT file should redirect output to log file"

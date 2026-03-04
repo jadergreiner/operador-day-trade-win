@@ -957,11 +957,11 @@ class OrderAPIClient:
         self.api_url = api_url
         self.retry_max = retry_max
         self.session = aiohttp.ClientSession()
-    
+
     async def create_order(self, order: ExecutionOrder) -> APIOrderResponse:
         # Retry 3× com exponential backoff (1s, 2s, 4s)
         # Retorna: APIOrderResponse(order_id, status, timestamp)
-    
+
     async def health_check(self) -> Dict[str, str]:
         # Verifica saúde do API server
 ```
@@ -972,7 +972,7 @@ class MT5AdapterProxy:
     def __init__(self, client: OrderAPIClient):
         self.client = client
         self.stats = {"total_calls": 0, "api_success": 0, "fallback_count": 0}
-    
+
     def send_order(self, order: ExecutionOrder) -> int:
         # Tenta API REST primeiro
         try:
@@ -999,16 +999,16 @@ async def create_order(request: CreateOrderRequest) -> APIOrderResponse:
 ```python
 def test_api_health_check():
     # Verifica /health endpoint
-    
+
 def test_create_order_via_rest():
     # POST /api/v1/orders com order válida
-    
+
 def test_audit_trail_persisted():
     # Valida api_orders + api_audit_log em SQLite
-    
+
 def test_mt5_adapter_proxy_fallback():
     # Mock API failure → fallback para MT5 direto
-    
+
 def test_launcher_integration():
     # Verifica imports corretos em launcher
 ```
@@ -1019,11 +1019,11 @@ def setup_p0_1_api():
     # Cria OrderAPIClient com URL de env
     # Health check passa?
     # Retorna client ou None
-    
+
 def inject_p0_1_proxy():
     # Cria MT5AdapterProxy
     # Injeta via monkey-patching: agent.mt5_adapter = proxy
-    
+
 def setup_integrations():
     # Ativa P0-1 automaticamente se ~/.env tem API_URL
 ```

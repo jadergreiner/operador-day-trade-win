@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 AI Reflection Continuous - O desabafo da IA a cada 10 minutos.
 
@@ -489,11 +490,12 @@ def run_continuous_reflection():
     print("  - Se voce esta ajudando ou atrapalhando")
     print("  - O que funcionaria melhor")
     print()
-    print("NOVIDADES v2:")
-    print("  ✦ Dados macro AO VIVO (BCB SGS + Yahoo Finance)")
-    print("  ✦ Rastreamento de previsões vs resultado real")
-    print("  ✦ Detecção de divergência (HOLD quando mercado trend)")
-    print("  ✦ Hit rate acumulado na sessão")
+    print("NOVIDADES v3:")
+    print("  [*] Dados macro AO VIVO (BCB SGS + Yahoo Finance)")
+    print("  [*] Rastreamento de previsoes vs resultado real")
+    print("  [*] Deteccao de divergencia (HOLD quando mercado trend)")
+    print("  [*] Hit rate acumulado na sessao")
+    print("  [*] Persistencia ROBUSTA com SQLite + JSONL + Recovery")
     print()
     print("Com HUMOR mas HONESTIDADE BRUTAL.")
     print()
@@ -503,6 +505,31 @@ def run_continuous_reflection():
     # Setup
     config = get_config()
     symbol = Symbol(config.trading_symbol)
+
+    # =========================================================================
+    # NOVO: Inicializar persistencia com auto-recovery
+    # =========================================================================
+    print("Inicializando sistema de persistencia de reflexoes...")
+    from src.infrastructure.persistence.resilient_reflection_persistence import (
+        ResilientReflectionPersistence,
+    )
+
+    project_root = Path(__file__).parent.parent
+    persistence = ResilientReflectionPersistence(project_root)
+
+    # Verificar saude e recuperar se necessario
+    health = persistence.get_health_status()
+    print(f"Status de persistencia: {health['status']}")
+
+    if health.get("failed_writes", 0) > 0:
+        print(f"⚠ Detectadas {health['failed_writes']} escri tas falhadas")
+        print("  Executando recovery...")
+        recovered = persistence.recover_from_failure()
+        if recovered > 0:
+            print(f"  ✓ {recovered} reflexões recuperadas")
+
+    print("[OK] Sistema de persistencia pronto!")
+    print()
 
     # Connect to MT5
     print("Conectando ao MT5...")

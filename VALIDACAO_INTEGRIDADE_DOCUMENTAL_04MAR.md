@@ -2,7 +2,7 @@
 
 **Objetivo:** Confirmar que todas as entregas (especialmente P0-1 REST API Integration) estão refletidas corretamente na documentação.
 
-**Data Validação:** 04/03/2026 09:15 BRT  
+**Data Validação:** 04/03/2026 09:15 BRT
 **Status Geral:** ✅ **100% ALINHADO**
 
 ---
@@ -424,9 +424,9 @@ Status alinhado.
 
 ## 📞 Contatos para Dúvidas
 
-**Documentação Técnica:** ARCHITECTURE.md (Seção 4.6)  
-**Status de Entrega:** STATUS_ENTREGAS.md (Linha 136)  
-**Tarefas Relacionadas:** BACKLOG_UNIFICADO.md (Seção P0-1)  
+**Documentação Técnica:** ARCHITECTURE.md (Seção 4.6)
+**Status de Entrega:** STATUS_ENTREGAS.md (Linha 136)
+**Tarefas Relacionadas:** BACKLOG_UNIFICADO.md (Seção P0-1)
 **Code:** `src/infrastructure/clients/order_api_client.py` + `MT5AdapterProxy`
 
 ---

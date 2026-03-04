@@ -99,7 +99,7 @@ class BacktestVisualizer:
             <text x="315" y="310" font-size="12" text-anchor="middle">Dias de Negociação (252)</text>
 
             <!-- Equity path (simplified curve) -->
-            <path d="M 50,{280 - (equity_start - equity_start) * 200 / (equity_end - lowest)} 
+            <path d="M 50,{280 - (equity_start - equity_start) * 200 / (equity_end - lowest)}
                      L 200,{280 - (equity_start * 0.95 - equity_start) * 200 / (equity_end - lowest)}
                      L 350,{280 - (equity_start * 1.05 - equity_start) * 200 / (equity_end - lowest)}
                      L 580,{280 - (equity_end - equity_start) * 200 / (equity_end - lowest)}"
