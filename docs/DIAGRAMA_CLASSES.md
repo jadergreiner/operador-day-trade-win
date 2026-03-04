@@ -167,6 +167,21 @@ classDiagram
         +export_validation_report() str
     }
 
+    %% Security Layer (S2-6 - NOVO)
+    class TerminalIsolationEnforcer {
+        -expected_terminal_path: str
+        -mode: str
+        -violation_count: int
+        -clear_pid: Optional~int~
+        -dangerous_terminals: List~str~
+        +validate_before_operation(op_name: str) void
+        +validate_critical_operation(op_name: str) void
+        +validate_continuous() void
+        +get_isolation_status() Dict
+        -_detect_dangerous_terminals() List~str~
+        -_match_broker_pattern(path: str) bool
+    }
+
     %% Relationships
     MT5Adapter --|> IntraDayLearner: "usa silent_register"
     DataPipeline --|> Repository: "persiste"
@@ -176,6 +191,7 @@ classDiagram
     RiskValidator --|> ATRCalibrator: "obtém volatility"
     OrderManager --|> ExecutionOrder: "gerencia"
     ExecutionOrder --|> SendToMT5Command: "executa"
+    SendToMT5Command --|> TerminalIsolationEnforcer: "valida isolamento ANTES"
     SendToMT5Command --|> MT5Adapter: "envia"
     SendToMT5Command --|> Repository: "persiste"
     PositionMonitor --|> SendToMT5Command: "monitora resultado"
@@ -219,6 +235,28 @@ classDiagram
 |--------|-----------------|-------------|
 | **ExecutionOrder** | Modelo de orden com auditoria | `src/domain/models/execution_order.py` |
 | **SendToMT5Command** | Envio com retry logic (3x exponential backoff) | `src/application/orders_executor.py` |
+
+### Security Layer 🔐 (S2-6 - NOVO)
+
+| Classe | Responsabilidade | Localização |
+|--------|-----------------|-------------|
+| **TerminalIsolationEnforcer** | 3 camadas HARD STOP contra FBS/XP/Zero/IC/Ativa/Rica | `src/infrastructure/terminal_isolation_enforcer.py` |
+
+**Funcionalidades:**
+- **validate_before_operation()**: HARD STOP na startup (EXIT 1)
+- **validate_critical_operation()**: Bloqueio pré-ordem (rejeita se violação)
+- **validate_continuous()**: KILL SWITCH a cada ciclo (vigilância)
+- **get_isolation_status()**: Monitora clear_pid, dangerous_terminals, violation_count
+- **Detecção automática**: 6 brokers (padrão case-insensitive no exe path)
+
+**Integração:**
+- SendToMT5Command chama `validate_critical_operation()` ANTES de send_order()
+- Main loop chama `validate_continuous()` a cada ciclo
+- Launcher inicializa enforcer em `setup_integrations()`
+
+**Exceção:** `TerminalIsolationViolation` (tratada como CRÍTICA - bloqueia execução)
+
+**Status:** ✅ Implementado 04/03/2026 - 6/6 testes PASSING
 
 ### Learning Layer 🧠NEW
 
