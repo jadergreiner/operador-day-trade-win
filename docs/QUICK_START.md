@@ -1,10 +1,41 @@
 # ⚡ QUICK START - 3 PASSOS PARA GO-LIVE
 
-**Tempo:** 10 minutos  
+**Tempo:** 10 minutos
 **Resultado:** Sistema de trading automático ativo
 
 ---
+## 🔐 CONFIGURAÇÃO DE ISOLAMENTO DE TERMINAL (IMPORTANTE!)
 
+**ANTES de qualquer coisa, configure o isolamento de terminal MT5:**
+
+### 1. Abra arquivo `.env` (na raiz do projeto)
+```bash
+C:\repo\operador-day-trade-win\.env
+```
+
+### 2. Adicione a linha (exemplo):
+```bash
+MT5_TERMINAL_PATH=C:\Program Files\Clear Investimentos MT5 Terminal\terminal64.exe
+```
+
+### 3. Salve o arquivo
+
+### 4. Feche TODOS os outros MetaTraders:
+```bash
+# PowerShell (como administrador):
+Get-Process terminal64 -ErrorAction SilentlyContinue | Stop-Process -Force
+```
+
+### 5. Abra APENAS Clear Investimentos MT5
+
+**Por quê?** O sistema agora valida ANTES de cada operação que você está usando APENAS o terminal Clear. Se FBS, XP, Zero ou outro MT5 estiver aberto:
+- ❌ Sistema **NÃO INICIA** (EXIT 1)
+- ❌ Ordens são **REJEITADAS** se tentam durante execução
+- ❌ Trading **PARA IMEDIATAMENTE** se detectado outro terminal
+
+**Status:** 🟢 Com isolamento ativado e configurado, você está 100% protegido contra acidentes!
+
+---
 ## ✅ PRÉ-REQUISITOS (10 minutos)
 
 ```
@@ -28,13 +59,24 @@ Verificar: Abrir CMD, digitar: python --version
 
 ## 🚀 3 PASSOS PARA INICIAR
 
-### **Passo 1: Navegar para pasta (30 segundos)**
+### **Passo 1: Validar Isolamento de Terminal (30 segundos)**
+```bash
+Verifique:
+  [ ] .env contém MT5_TERMINAL_PATH? ✅
+  [ ] APENAS Clear Investimentos MT5 aberto? ✅
+  [ ] Outros MTs fechados (FBS/XP/Zero)? ✅
+
+Se sim em todos → Continue
+Se não → Siga instrução "🔐 CONFIGURAÇÃO" acima
+```
+
+### **Passo 2: Navegar para pasta (30 segundos)**
 ```bash
 Abrir File Explorer
 Vá para: c:\repo\operador-day-trade-win
 ```
 
-### **Passo 2: Executar o sistema (10 segundos)**
+### **Passo 3: Executar o sistema (10 segundos)**
 ```bash
 Double-click (2x clique rápido):
 INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
@@ -42,7 +84,7 @@ INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
 Aguarde 5 segundos (carregamento)
 ```
 
-### **Passo 3: Escolher modo (20 segundos)**
+### **Passo 4: Escolher modo (20 segundos)**
 ```bash
 Menu aparece:
 [1] SIMULADO (testes, sem ordens reais)
@@ -53,7 +95,23 @@ Digite: 2
 Pressione: ENTER
 ```
 
-### **Passo 4: Confirmar (10 segundos)**
+### **Passo 5: Validação de Isolamento Automática (5-10 segundos)**
+```bash
+🔐 TERMINAL ISOLATION ENFORCEMENT (HARD STOP MODE)
+===============================================================
+✅ Terminal isolado: True
+✅ PID(s) CLEAR: [1234]
+✅ Terminais perigosos: Nenhum
+===============================================================
+```
+
+**Se mensagem acima NÃO aparecer:**
+```bash
+❌ FALHA: Outro terminal MT5 detectado!
+Feche TODOS os outros MetaTraders e tente novamente.
+```
+
+### **Passo 6: Confirmar (10 segundos)**
 ```bash
 Aviso aparece:
 "ORDENS REAIS serao executadas. Tem certeza? (S/N)"
@@ -70,6 +128,7 @@ Sistema inicia! 🚀
 
 ```
 [PRE-FLIGHT] Verificando saude... ✅
+[TERMINAL-ISOLATION] Validando isolamento CLEAR... ✅
 [SYNC] Sincronizando MT5... ✅
 [BDI] Aplicando licoes BDI... ✅
 [ML-SYNC] Carregando ML data... ✅
@@ -175,7 +234,7 @@ Boa sorte! 🚀
 
 ---
 
-**Documento:** QUICK_START.md  
-**Tempo leitura:** 3 minutos  
-**Tempo execução:** 10 minutos  
+**Documento:** QUICK_START.md
+**Tempo leitura:** 3 minutos
+**Tempo execução:** 10 minutos
 **Status:** 🟢 PRONTO

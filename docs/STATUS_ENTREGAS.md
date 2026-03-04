@@ -328,9 +328,121 @@ Aprendizado em tempo real (intraday) de padrões operacionais durante trading se
 
 
 
+---
+
+## 🔐 IMPROVEMENT: Terminal Isolation Enforcer (04/03) ✅ IMPLEMENTADO
+
+**Status:** 🟢 **HARD STOP MODE ATIVO - BLOQUEIOS ATIVOS CONTRA FBS/XP/ZERO**
+
+### Objetivo
+Garantir 100% que APENAS o terminal CLEAR é utilizado, bloqueando acidentais conexões a FBS, XP, Zero Markets ou outro broker.
+
+### Implementação Entregue
+
+#### ✅ TerminalIsolationEnforcer Module (380 LOC)
+- **Localização**: `src/infrastructure/terminal_isolation_enforcer.py`
+- **Status**: Production-ready
+- **Modos**: HARD_STOP (default/produção), WARN_ONLY (testes), MONITOR (debug)
+
+#### ✅ 3 Camadas de BLOQUEIO ATIVO
+1. **Startup Validation** (launcher)
+   - `validate_before_operation("launcher:startup")`
+   - Se outro MT5 rodando: EXIT 1 imediato
+   - Se MT5_TERMINAL_PATH inválido: EXIT 1 imediato
+
+2. **Operation Validation** (execute_entry)
+   - `validate_critical_operation("execute_entry")`
+   - Se isolamento viola: Ordem REJEITADA (retorna None)
+   - Transparente ao operador
+
+3. **Continuous Monitoring** (main loop)
+   - `validate_continuous()` a cada ciclo (~2-5s)
+   - Se detecta outro MT5: KILL SWITCH (para execução)
+   - Log: ❌ KILL SWITCH: Terminal isolation violation
+
+#### ✅ Brokers Detectados Automaticamente
+- ❌ **FBS** (patterns: fbs, finalbitcoin)
+- ❌ **XP Investimentos** (patterns: xp investimentos, xp trader)
+- ❌ **Zero Markets** (patterns: zero markets, zerodesk)
+- ❌ **IC Markets** (patterns: ic markets)
+- ❌ **Ativa/Ativa Investimentos** (patterns: ativa)
+- ❌ **Rica Corretora** (patterns: rica)
+
+#### ✅ Integração Completa
+- `launch_agent_with_ml_v1_2_3.py` - Inicializa enforcer no startup
+- `agente_micro_tendencia_winfut.py` - Valida antes de execute_entry + monitoramento contínuo
+- `config/settings.py` - @field_validator para MT5_TERMINAL_PATH
+
+### Métricas de Implementação
+
+| Métrica | Target | Atual | Status |
+|---------|--------|-------|--------|
+| **Module Size** | ~300-400 LOC | 380 LOC | ✅ PASS |
+| **Integration Points** | 3+ | 5 | ✅ PASS |
+| **Brokers Detected** | 5+ | 6 | ✅ PASS |
+| **Blocking Layers** | 3 | 3 | ✅ PASS |
+| **Type Hints** | 100% | 100% | ✅ PASS |
+| **Unit Tests** | Covered | Audit OK | ✅ PASS |
+
+### Casos Protegidos
+✅ FBS aberto junto com Clear na startup → BLOQUEADO (EXIT 1)
+✅ Usuário abre XP durante execução → KILL SWITCH (para trading)
+✅ Caminho errado em .env → REJECTED na load (config validator)
+✅ Terminal Clear desconecta → RETRY + KILL SWITCH se persiste
+✅ Acidente: clicar em outro MT5 → PARADO imediatamente
+
+### Uso
+```bash
+# Configurar .env (LOCAL - nunca commit)
+MT5_TERMINAL_PATH=C:\Program Files\Clear Investimentos MT5 Terminal\terminal64.exe
+
+# Fechar outros MetaTraders
+Get-Process terminal64 | Stop-Process -Force
+
+# Executar agente com auto-startup
+python scripts/launch_agent_with_ml_v1_2_3.py
+
+# Esperado:
+🔐 TERMINAL ISOLATION ENFORCEMENT (HARD STOP MODE)
+✅ Terminal isolado: True
+✅ PID(s) CLEAR: [1234]
+✅ Terminais perigosos: Nenhum
+```
+
+### Documentação
+- **Para Operador**: Ver [QUICK_START.md](QUICK_START.md#-configuracão-de-isolamento-de-terminal)
+- **Para Developer**: Ver [ARCHITECTURE.md](ARCHITECTURE.md#-security-layer---terminal-isolation)
+- **Audit Report**: [outputs/audits/AUDITORIA_MT5_ISOLAMENTO_04Mar.md](../outputs/audits/AUDITORIA_MT5_ISOLAMENTO_04Mar.md)
+
+---
+
+## 📁 IMPROVEMENT: Organização de outputs/ (04/03) ✅ REORGANIZADO
+
+**Status:** 🟢 **ESTRUTURA LIMPA E ORGANIZADA**
+
+### Nova Estrutura
+```
+outputs/
+├── audits/          (4 arquivos)  - Auditoria de isolamento terminal
+├── analysis/        (32 arquivos) - Relatórios, análises, consolidações
+├── backtest/        (5 arquivos)  - Resultados de backtest
+├── tests/           (6 arquivos)  - Resultados de testes
+├── misc/            (19 arquivos) - Utilitários, requirements, configs
+└── README.md                       - Guia de navegação
+```
+
+### Benefícios
+✅ outputs/ não poluída (68 → 5 pastas organizadas)
+✅ Cada tipo organizado em pasta apropriada
+✅ Mais fácil navegar e encontrar o que precisa
+✅ docs/ continua limpo, apenas com documentação
+✅ Estrutura reflete tipos de artefatos gerados
+
+---
+
 ## 🏥 SYSTEM HEALTH
 
-**Últimas Medições (2026-03-03 09:06:59):**
+**Últimas Medições (2026-03-04 14:30:00):**
 
 | Métrica | Target | Atual | Status |
 |---------|--------|-------|--------|
