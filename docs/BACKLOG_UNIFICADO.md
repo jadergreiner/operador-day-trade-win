@@ -216,7 +216,7 @@ Validar modelo ML com dados históricos (252 dias):
 - **Decisão:** ✅ APPROVE - crítica para escala
 
 **Equipe**: 2-3 pessoas
-- ML Expert (liderança) 
+- ML Expert (liderança)
 - Data scientist (validação)
 - QA/Engineering (testes)
 

@@ -266,7 +266,7 @@ MT5_TERMINAL_PATH="/path/to/Clear_Investimentos/terminal.exe"
 # config/settings.py
 class Settings(BaseSettings):
     mt5_terminal_path: str = Field(..., description="Path ao Clear terminal")
-    
+
     @field_validator('mt5_terminal_path')
     def validate_clear_only(cls, v):
         if 'clear' not in v.lower():
@@ -377,13 +377,13 @@ except TerminalIsolationViolation as e:
 def setup_integrations():
     # 1. Criar API client
     api_client = OrderAPIClient(api_url="http://localhost:8888")
-    
+
     # 2. Criar proxy
     proxy = MT5AdapterProxy(client=api_client)
-    
+
     # 3. Injetar em agente (monkey-patching via DI)
     agent.mt5_adapter = proxy
-    
+
     # Agente continua chamando: agent.execute_entry(opp)
     # Internamente: mt5_adapter.send_order() → API → SQLite → MT5
 ```

@@ -57,7 +57,7 @@ TARDE (14:00):
   → Envar 1 ordem
   ☐ Fallback para MT5 direto funciona
   ☐ Sem timeout/erro
-  
+
   start_api_server.py  # Reiniciar API
   ☐ Sistema volta a usar API
 ```
@@ -132,7 +132,7 @@ TARDE (14:00):
 FINAL DO DIA (17:00):
 ☐ Backup banco de dados
   Scripts/backup.sql created
-  
+
 ☐ Checklist final
   ☐ Todos os itens acima: ✅
   ☐ Confiança: 95%+
@@ -242,7 +242,7 @@ Exemplo output esperado:
 ### **Sistema não inicia**
 ```
 Erro: "Python 3.10+ not found"
-Solução: 
+Solução:
   1. Abrir Command Prompt como Admin
   2. Verificar: python --version
   3. Se não encontra: instalar Python 3.10+
@@ -341,7 +341,7 @@ Fase 2 Scale-Up:
 ```
 1. Email para: [seu-email]@trading.com
    Subject: "GO-LIVE ERROR - [data/hora]"
-   Body: 
+   Body:
      - Exact error message (copiar do console)
      - Que você já tentou fazer
      - Sistema status (up/down/paused)
@@ -393,7 +393,7 @@ Você tem:
 
 ---
 
-**Documento:** GO_LIVE_CHECKLIST.md  
-**Data:** 04/03/2026  
-**Status:** 🟢 READY FOR EXECUTION  
+**Documento:** GO_LIVE_CHECKLIST.md
+**Data:** 04/03/2026
+**Status:** 🟢 READY FOR EXECUTION
 **Confiança:** 95%+

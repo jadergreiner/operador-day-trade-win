@@ -466,7 +466,7 @@ async def create_order(request: CreateOrderRequest):
 # src/infrastructure/clients/order_api_client.py
 class OrderAPIClient:
     """Cliente HTTP com retry logic"""
-    
+
     def create_order(self, symbol, volume, order_type):
         # 1. POST /api/v1/orders
         # 2. Retry 3x: 1s, 2s, 4s exponential backoff
@@ -479,7 +479,7 @@ class OrderAPIClient:
 # src/infrastructure/adapters/mt5_adapter_proxy.py
 class MT5AdapterProxy:
     """Intercepta mt5.send_order() → redireciona para API"""
-    
+
     def send_order(self, order: ExecutionOrder):
         # Operador NÃO vê mudança (proxy é transparente)
         # Internamente:
@@ -494,11 +494,11 @@ class MT5AdapterProxy:
 def setup_integrations():
     # Criar API client
     api_client = OrderAPIClient(api_url="http://localhost:8888")
-    
+
     # Injetar proxy via monkey-patching
     import src.infrastructure.adapters.mt5_adapter_proxy as proxy_module
     proxy = MT5AdapterProxy(client=api_client)
-    
+
     # IMPORTANTE: Agente NÃO muda, apenas trocamos mt5 internamente
     agent.mt5_adapter = proxy  # ou via dependency injection
 ```

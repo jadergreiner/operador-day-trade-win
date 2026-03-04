@@ -417,21 +417,21 @@ def execute_critical_operation(operation_name: str) -> None:
     enforcer = TerminalIsolationEnforcer(
         expected_terminal_path=settings.mt5_terminal_path
     )
-    
+
     # ANTES de qualquer ação irreversível
     try:
         enforcer.validate_critical_operation(f"{operation_name}:entry")
     except TerminalIsolationViolation as e:
         logger.critical(f"❌ BLOQUEADO: {e}")
         raise  # Rejeita operação
-    
+
     # Agora é SEGURO prosseguir
     logger.info(f"✅ Isolamento validado para {operation_name}")
 
 # ✅ Uso em execute_entry()
 def execute_entry(signal: SignalData) -> None:
     execute_critical_operation("execute_entry:send_order")
-    
+
     # Após validação, é seguro enviar ordem
     order = create_order(signal)
     send_to_mt5(order)
@@ -441,11 +441,11 @@ def main_trading_loop():
     enforcer = TerminalIsolationEnforcer(
         expected_terminal_path=settings.mt5_terminal_path
     )
-    
+
     while True:
         # Validação contínua
         enforcer.validate_continuous()  # KILL SWITCH se terminal muda
-        
+
         # Resto da lógica
         signal = analyzer.analyze_market()
         if signal.should_trade:
