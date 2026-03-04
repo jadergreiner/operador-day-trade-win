@@ -145,12 +145,12 @@ class TradingConfig(BaseSettings):
     @classmethod
     def validate_mt5_terminal_path(cls, v: Optional[str]) -> Optional[str]:
         """Validate that MT5 terminal path points to Clear broker (isolamento de terminal).
-        
+
         CRÍTICO: Previne acidentes com FBS, XP, Zero Markets ou outro broker.
         """
         if v is None:
             return None
-        
+
         v_upper = v.upper()
         if "CLEAR" not in v_upper:
             raise ValueError(
@@ -158,7 +158,7 @@ class TradingConfig(BaseSettings):
                 f"Caminho fornecido: {v}\n"
                 f"Esperado: algo como C:\\Program Files\\Clear Investimentos MT5 Terminal\\terminal64.exe"
             )
-        
+
         return v
 
     def ensure_directories(self) -> None:

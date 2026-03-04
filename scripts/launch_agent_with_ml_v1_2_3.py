@@ -63,6 +63,31 @@ except ImportError as e:
     print(f"[WARN] P0-1 API não importado: {e}")
     P0_1_AVAILABLE = False
 
+# ─ Terminal Isolation Enforcer ─
+try:
+    from src.infrastructure.terminal_isolation_enforcer import (
+        TerminalIsolationEnforcer,
+        initialize_enforcer,
+        validate_critical_operation,
+        TerminalIsolationViolation,
+    )
+    ENFORCER_AVAILABLE = True
+except ImportError as e:
+    print(f"[WARN] Terminal Isolation Enforcer não importado: {e}")
+    ENFORCER_AVAILABLE = False
+
+# ─ Terminal Isolation Enforcer ─
+try:
+    from src.infrastructure.terminal_isolation_enforcer import (
+        TerminalIsolationEnforcer,
+        initialize_enforcer,
+        validate_critical_operation
+    )
+    ENFORCER_AVAILABLE = True
+except ImportError as e:
+    print(f"[WARN] Terminal Isolation Enforcer não importado: {e}")
+    ENFORCER_AVAILABLE = False
+
 
 def start_api_server_subprocess():
     """
@@ -279,20 +304,60 @@ def inject_ml_into_environment(ml_data):
 
 def setup_integrations():
     """
-    Setup completo: S2-6 Analytics + ML v1.2.3
+    Setup completo: S2-6 Analytics + ML v1.2.3 + Terminal Isolation
 
     Returns:
         dict: Status das integrações
     """
-    print("\n\n  🔗 SETUP INTEGRAÇÕES: S2-6 + ML v1.2.3")
+    print("\n\n  🔗 SETUP INTEGRAÇÕES: Terminal Isolation + S2-6 + ML v1.2.3")
     print("  " + "=" * 60)
 
     status = {
+        'terminal_isolation': False,
         's2_6': False,
         'ml': False,
         'p0_1_api': False,
         'agent': AGENT_AVAILABLE
     }
+
+    # ⚡ FIRST: Initialize Terminal Isolation Enforcer (HARD STOP MODE)
+    if ENFORCER_AVAILABLE:
+        print("\n  🔐 TERMINAL ISOLATION ENFORCEMENT (HARD STOP MODE)")
+        print("  " + "=" * 60)
+        try:
+            from config.settings import get_config
+            from src.infrastructure.terminal_isolation_enforcer import TerminalIsolationViolation
+            
+            config = get_config()
+            
+            if not config.mt5_terminal_path:
+                print(f"  ⚠️  MT5_TERMINAL_PATH não configurado em .env")
+                print(f"     Adicione a linha (exemplo):")
+                print(f"     MT5_TERMINAL_PATH=C:\\Program Files\\Clear Investimentos MT5 Terminal\\terminal64.exe")
+                print(f"  ℹ️  Terminal isolation: DESATIVADO (você configura quando quiser)")
+            else:
+                # Initializa enforcer com HARD_STOP mode
+                enforcer = initialize_enforcer(config.mt5_terminal_path)
+                print(f"  ✅ Enforcer inicializado: {config.mt5_terminal_path}")
+                
+                # Valida imediatamente (BLOQUEIO ATIVO)
+                try:
+                    enforcer.validate_before_operation("launcher:startup")
+                    isolation_status = enforcer.get_isolation_status()
+                    print(f"  ✅ Terminal isolado: {isolation_status['is_isolated']}")
+                    print(f"  ✅ PID(s) CLEAR: {isolation_status['clear_pids']}")
+                    print(f"  ✅ Terminais perigosos: {isolation_status['dangerous_terminals_detected'] or 'Nenhum'}")
+                    status['terminal_isolation'] = True
+                except TerminalIsolationViolation as e:
+                    # HARD STOP: Falha imediata se isolamento viola
+                    print(f"  ❌ FALHA CRÍTICA: {e}")
+                    print("  " + "=" * 60)
+                    sys.exit(1)
+        except Exception as e:
+            print(f"  ⚠️  Erro no setup de terminal isolation: {e}")
+            # Continue anyway - enforcer é opcional
+        
+        print("  " + "=" * 60)
 
     # S2-6 setup (from launch_agent_with_s2_6.py pattern)
     try:
@@ -382,7 +447,7 @@ def inject_p0_1_proxy():
     Injeta MT5AdapterProxy no módulo MT5Adapter para interceptar send_order() calls.
 
     Estratégia: Monkey-patch a classe MT5Adapter ANTES de o agente instanciar.
-    
+
     Substituição transparente:
         agente.mt5.send_order() → MT5AdapterProxy.send_order()
                                  → OrderAPIClient.create_order()
@@ -462,6 +527,7 @@ def main():
     print("  " + "=" * 60)
     print(f"  Release: INTEGRATION-ML-001 Phase 3 (25/02/2026)")
     print(f"  Status: 14/14 tests PASSING | 94% coverage")
+    print(f"  Terminal Isolation: HARD STOP Mode (v1.0)")
     print("  " + "=" * 60)
 
     # Inicia servidor API em background (automatic startup)

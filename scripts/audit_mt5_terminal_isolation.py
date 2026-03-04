@@ -69,7 +69,7 @@ class MT5TerminalAuditor:
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
-            
+
             issues = []
             for broker, patterns in DANGEROUS_PATTERNS.items():
                 for pattern in patterns:
@@ -77,7 +77,7 @@ class MT5TerminalAuditor:
                     for match in matches:
                         line_num = content[:match.start()].count('\n') + 1
                         issues.append(f"  ⚠️  RISCO: Referen\u00e7a a {broker} na linha {line_num}: {match.group()[:50]}")
-            
+
             return len(issues) == 0, issues
         except Exception as e:
             return False, [f"  \u274c Erro ao ler arquivo: {e}"]
@@ -88,10 +88,10 @@ class MT5TerminalAuditor:
         try:
             with open(env_file, 'r', encoding='utf-8') as f:
                 content = f.read()
-            
+
             if "MT5_TERMINAL_PATH" not in content:
                 return False, ["  \u274c .env.example n\u00e3o tem MT5_TERMINAL_PATH configurado"]
-            
+
             # Procura por exemplos de CLEAR path
             if any(re.search(p, content, re.IGNORECASE) for p in CLEAR_EXPECTED_PATHS):
                 return True, ["  \u2705 .env.example tem exemplo de CLEAR path: MT5_TERMINAL_PATH=C:\\Program Files\\Clear..."]
@@ -106,20 +106,20 @@ class MT5TerminalAuditor:
         try:
             with open(settings_file, 'r', encoding='utf-8') as f:
                 content = f.read()
-            
+
             checks = []
             issues = []
-            
+
             # Verificar se tem validação de CLEAR
             if "CLEAR" in content and "upper()" in content:
                 checks.append("  \u2705 settings.py valida que path cont\u00e9m 'CLEAR'")
             else:
                 issues.append("  \u26a0\ufe0f  settings.py pode n\u00e3o estar validando 'CLEAR' no path")
-            
+
             # Verificar se tem field description com warning
             if "FBS" in content or "Terminal Isolation" in content:
                 checks.append("  \u2705 settings.py documenta isolamento de terminal")
-            
+
             return len(issues) == 0, checks + issues
         except Exception as e:
             return False, [f"  \u274c Erro ao ler settings.py: {e}"]
@@ -130,21 +130,21 @@ class MT5TerminalAuditor:
         try:
             with open(adapter_file, 'r', encoding='utf-8') as f:
                 content = f.read()
-            
+
             checks = []
             issues = []
-            
+
             if "terminal_exe_path" in content:
                 checks.append("  \u2705 MT5Adapter aceita terminal_exe_path como par\u00e2metro")
-            
+
             if "_get_mt5_terminal_pid" in content:
                 checks.append("  \u2705 MT5Adapter tem fun\u00e7\u00e3o para validar PID")
-            
+
             if "terminal_exe_path.lower()" in content and "continue" in content:
                 checks.append("  \u2705 MT5Adapter rejeita terminal se n\u00e3o corresponder ao path")
             else:
                 issues.append("  \u26a0\ufe0f  MT5Adapter pode n\u00e3o estar filtrando terminal corretamente")
-            
+
             return len(issues) == 0, checks + issues
         except Exception as e:
             return False, [f"  \u274c Erro ao ler MT5Adapter: {e}"]
@@ -155,24 +155,24 @@ class MT5TerminalAuditor:
         try:
             with open(agente_file, 'r', encoding='utf-8') as f:
                 content = f.read()
-            
+
             checks = []
             issues = []
-            
+
             if "_preflight_check_mt5" in content:
                 checks.append("  \u2705 Agente tem fun\u00e7\u00e3o _preflight_check_mt5")
             else:
                 issues.append("  \u274c Agente n\u00e3o tem fun\u00e7\u00e3o _preflight_check_mt5")
-            
+
             if "_connect_mt5" in content:
                 checks.append("  \u2705 Agente tem fun\u00e7\u00e3o _connect_mt5 dedicada")
-            
+
             if "CLEAR" in content and "config.mt5_terminal_path" in content:
                 checks.append("  \u2705 Agente valida que path cont\u00e9m 'CLEAR'")
-            
+
             if "os.path.exists(config.mt5_terminal_path)" in content:
                 checks.append("  \u2705 Agente verifica se arquivo terminal existe")
-            
+
             return len(issues) == 0, checks + issues
         except Exception as e:
             return False, [f"  \u274c Erro ao ler agente: {e}"]
@@ -183,21 +183,21 @@ class MT5TerminalAuditor:
         try:
             with open(launcher_file, 'r', encoding='utf-8') as f:
                 content = f.read()
-            
+
             checks = []
             issues = []
-            
+
             if "MT5Adapter" in content or "MT5" in content:
                 checks.append("  \u2705 Launcher importa ou referencia MT5Adapter")
-            
+
             # Verificar se n\u00e3o h\u00e1 instancia\u00e7\u00e3o direta sem path
             if re.search(r'MT5Adapter\s*\(\s*login', content):
                 if "terminal_exe_path" not in content or "mt5.connect()" in content:
                     # Precisa verificar melhor
                     pass
-            
+
             checks.append("  \u2705 Launcher n\u00e3o instancia MT5Adapter diretamente (agente o faz)")
-            
+
             return len(issues) == 0, checks + issues
         except Exception as e:
             return False, [f"  \u274c Erro ao ler launcher: {e}"]
@@ -207,7 +207,7 @@ class MT5TerminalAuditor:
         print("\n" + "="*70)
         print("  AUDITORIA MT5 TERMINAL ISOLATION")
         print("="*70)
-        
+
         # CHECK 1: .env.example
         print("\n[1/6] Verificando .env.example...")
         status, msgs = self.check_clear_path_configuration()
@@ -217,7 +217,7 @@ class MT5TerminalAuditor:
             self.checks_passed.append("env_example_configured")
         else:
             self.issues.append("env_example_missing_mt5_terminal_path")
-        
+
         # CHECK 2: config/settings.py
         print("\n[2/6] Verificando config/settings.py...")
         status, msgs = self.check_config_settings_validation()
@@ -227,7 +227,7 @@ class MT5TerminalAuditor:
             self.checks_passed.append("settings_validation_ok")
         else:
             self.issues.append("settings_validation_incomplete")
-        
+
         # CHECK 3: MT5Adapter
         print("\n[3/6] Verificando MT5Adapter...")
         status, msgs = self.check_mt5_adapter_validation()
@@ -237,7 +237,7 @@ class MT5TerminalAuditor:
             self.checks_passed.append("mt5_adapter_safe")
         else:
             self.issues.append("mt5_adapter_incomplete")
-        
+
         # CHECK 4: Agente
         print("\n[4/6] Verificando agente_micro_tendencia_winfut.py...")
         status, msgs = self.check_agente_validation()
@@ -247,7 +247,7 @@ class MT5TerminalAuditor:
             self.checks_passed.append("agente_validation_ok")
         else:
             self.issues.append("agente_validation_missing")
-        
+
         # CHECK 5: Launcher
         print("\n[5/6] Verificando launcher...")
         status, msgs = self.check_launcher_integrity()
@@ -255,7 +255,7 @@ class MT5TerminalAuditor:
             print(msg)
         if status:
             self.checks_passed.append("launcher_ok")
-        
+
         # CHECK 6: Hardcoded paths
         print("\n[6/6] Auditando c\u00f3digo para hardcoded paths de FBS/Zero/outro...")
         for file_path_str in AUDIT_PATHS:
@@ -269,7 +269,7 @@ class MT5TerminalAuditor:
                         self.warnings.append(f"{file_path_str}: {msg}")
                 else:
                     print(f"  \u2705 {file_path_str}: OK")
-        
+
         # Gera relat\u00f3rio
         return self._generate_report()
 
@@ -334,23 +334,23 @@ Todos os eventos cr\u00edticos s\u00e3o logados em:
 - `data/db/trading.db`: Tabela `_logs` registra \u00e9poca da conex\u00e3o e terminal
 
 """
-        
+
         if self.issues:
             report += f"\n## ISSUES ENCONTRADOS\n"
             for issue in self.issues:
                 report += f"- {issue}\n"
-        
+
         if self.warnings:
             report += f"\n## WARNINGS\n"
             for warning in self.warnings:
                 report += f"- {warning}\n"
-        
+
         report += f"\n## CONCLUS\u00d5ES\n"
         report += f"- Total de validações: {len(self.checks_passed) + len(self.issues)} ({len(self.checks_passed)} passed, {len(self.issues)} failed)\n"
         report += f"- Hardcoded paths de FBS/Zero encontrados: {len(self.warnings)}\n"
         report += f"- Isolamento de terminal: {'🟢 SEGURO' if len(self.issues) == 0 else '🔴 INSEGURO'}\n"
         report += f"- Recomendação: {'Liberado para produção' if len(self.issues) == 0 else 'Não use em produção até corrigir issues'}\n"
-        
+
         return report
 
 
@@ -359,17 +359,17 @@ def main():
     root = Path.cwd()
     auditor = MT5TerminalAuditor(root)
     report = auditor.run_audit()
-    
+
     # Salva em outputs/
     outputs_dir = root / "outputs"
     outputs_dir.mkdir(exist_ok=True)
-    
+
     report_file = outputs_dir / f"AUDITORIA_MT5_ISOLAMENTO_{datetime.now().strftime('%d%b')}.md"
     with open(report_file, 'w', encoding='utf-8') as f:
         f.write(report)
-    
+
     print(f"\n📄 Relatório salvo em: {report_file}")
-    
+
     # Exit code
     sys.exit(0 if len(auditor.issues) == 0 else 1)
 

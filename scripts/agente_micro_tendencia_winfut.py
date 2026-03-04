@@ -2843,6 +2843,17 @@ class MicroTradingManager:
 
     def execute_entry(self, opp: Opportunity) -> Optional[str]:
         """Executa entrada no MT5. Retorna ticket ou None."""
+        # ⚡ TERMINAL ISOLATION: Valida HARD STOP antes de qualquer operação
+        try:
+            from src.infrastructure.terminal_isolation_enforcer import validate_critical_operation
+            validate_critical_operation("execute_entry:send_order")
+        except ImportError:
+            pass  # Enforcer opcional
+        except Exception as e:
+            # Falha crítica - rejeta ordem
+            print(f"  ❌ BLOQUEIO: Terminal isolation violation: {e}")
+            return None
+
         # Validação obrigatória de SL/TP para execução automática
         if not opp.stop_loss or opp.stop_loss <= Decimal("0"):
             print(f"  ✗ ERRO: stop_loss inválido ou zero: {opp.stop_loss}")
@@ -3763,7 +3774,7 @@ def _persist_cycle(db_path: str, result: CycleResult) -> int:
 
 def _preflight_check_mt5(config) -> bool:
     """Verificação pré-voo: Garante que CLEAR terminal está configurado corretamente.
-    
+
     CRÍTICO: Impede que o agente conecte a FBS, XP, Zero Markets ou qualquer outro
     broker por acidente. REJEITA rapidamente se não for Clear.
 
@@ -4504,6 +4515,21 @@ def main():
     while True:
         try:
             start_time = time.perf_counter() # [S1-5] Medição de latência P95
+            
+            # ⚡ TERMINAL ISOLATION: Validação contínua a cada ciclo
+            try:
+                from src.infrastructure.terminal_isolation_enforcer import get_enforcer
+                enforcer = get_enforcer()
+                if enforcer:
+                    enforcer.validate_continuous()  # HARD STOP se isolamento viola
+            except ImportError:
+                pass  # Enforcer opcional
+            except Exception as e:
+                # Isolamento violado - para execução
+                print(f"\n  ❌ KILL SWITCH: Terminal isolation violation")
+                print(f"     {e}")
+                break  # Sai do loop
+            
             # Verifica horário de pregão
             if not _is_market_hours():
                 # Fecha posições abertas ao sair do pregão
