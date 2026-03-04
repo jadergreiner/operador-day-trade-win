@@ -13,6 +13,7 @@ REM  Integrações Ativas:
 REM    ✅ BDI Detection (v1.2.0)
 REM    ✅ SMC Confluence (M1/M5 validation)
 REM    ✅ ML Classifier (v1.2.3 - 94% coverage)
+REM    ✅ P0-1 REST API (Auto-startup no launcher)
 REM    🔄 WebSocket Monitor (Sprint 1 - starts 27/02)
 REM    🔄 Risk Validator (Sprint 1 - starts 28/02)
 REM
@@ -22,7 +23,8 @@ REM    - ML data synchronization (v1.2.3)
 REM    - MT5 trade synchronization
 REM    - BDI lessons application
 REM    - Journal logging initialization
-REM    - Agent execution with ML + Risk framework
+REM    - P0-1 REST API auto-startup (transparente)
+REM    - Agent execution with ML + Risk framework + P0-1 API
 REM ============================================================
 REM
 
@@ -103,16 +105,14 @@ echo   [OK] Diario RL iniciado
 echo.
 
 REM ============================================================
-REM INICIAR API REST MT5 (P0-1) em background
+REM NOTA: P0-1 REST API é iniciada automaticamente no launcher
+REM       (transparente - sem mudança na rotina)
 REM ============================================================
-echo   [API] Iniciando API REST MT5 em background...
-start /b python scripts/start_api_server.py >nul 2>&1
-timeout /t 2 /nobreak >nul
-echo   [API] ✅ Servidor escutando em http://localhost:8888
+echo   [API] P0-1 REST API será iniciado automaticamente...
 echo.
 
-REM Launch agent with ML v1.2.3 + Risk framework
-echo   [AGENT] Iniciando Operador Quantico v1.2.3...
+REM Launch agent with ML v1.2.3 + Risk framework + P0-1 API auto-startup
+echo   [AGENT] Iniciando Operador Quantico v1.2.3 com P0-1 API...
 echo   ✅ ML Classifier: v1.2.3 (14/14 tests, 94% coverage)
 echo   ✅ Risk Framework: 3 validation gates
 echo   ✅ WebSocket: Sprint 1 (incoming 27/02)
