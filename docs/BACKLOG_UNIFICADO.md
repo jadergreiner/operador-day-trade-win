@@ -266,7 +266,7 @@ Cada tarefa é avaliada por **2 personas**:
 
 **Timeline (REALIZADA):**
 - ✅ Dev1: Backtest Reporter (8h) - CONCLUIDA
-- ✅ Dev2: Gate2 Validator (3h) - CONCLUIDA  
+- ✅ Dev2: Gate2 Validator (3h) - CONCLUIDA
 - ✅ QA: Unit tests (5h) - CONCLUIDA
 
 ---
@@ -1236,7 +1236,170 @@ ABRIL 2026
 
 ---
 
+## 🔴 P50 - TAREFAS URGENTES DESBLOQUEANTES (04/03 - CRITICAL)
 
+**Situação Crítica**: Sistema gerando ZERO operações por 2 dias
+- Root cause: Pessimismo aprendido (confidence 0.34 < 0.45)
+- Custo: R$ 100-200/dia + ~15-20 sinais perdidos (~R$ 5-10k)
+- Status: Bloqueado por reduced_exposure_mode (thresholds +1 acima do normal)
+
+---
+
+### P50-A: Detector de Pessimismo Crônico + Auto-Reset [🔴 BLOQUEANTE - 1 dia]
+
+**O Problema**:
+- Confidence 0.34 ativa `reduced_exposure_mode`
+- Thresholds aumentam de (+3, -3) → (+4, -4)
+- Resultado: macro_score=2.5 não passa threshold=+4 → ZERO operações hoje
+
+**A Solução**:
+Criar detector que:
+1. Monitora histórico de confidence (últimos 20 ciclos)
+2. Detecta padrão: confidence < 0.45 por 10+ ciclos consecutivos
+3. Auto-reset: Reduz thresholds para permitir operações novamente
+
+**Avaliação PO**:
+- **Viabilidade**: 2h implementação + 1h testes (REALISTA)
+- **Impacto**: Desbloqueia operações IMEDIATAMENTE (CRÍTICO)
+- **Independência**: ✅ Não depende de nada, roda hoje
+- **Valor**: Volta ~15-20 sinais/dia, evita -R$ 5-10k
+
+**Avaliação CFO**:
+- **Custo**: R$ 0 (código existente)
+- **Benefício**: Reativa operações perdidas (-R$ 100-200/dia custo, +R$ oportunidades)
+- **ROI**: IMEDIATO (2h implementação → lucro hoje)
+- **Risco**: ZERO (operação defensiva, não agressiva)
+- **Decisão**: ✅ APPROVE HOJE
+
+**Entregáveis**:
+- Script: `scripts/check_confidence_health.py` (80 LOC)
+- Script: `scripts/reset_pessimism_mode.py` (100 LOC)
+- BAT integration: 15 linhas em INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
+- Test: Validar detecção + reset de thresholds
+
+**Acceptance Criteria**:
+1. ✅ Detecta padrão pessimismo (confidence < 0.45 por 10+ ciclos)
+2. ✅ Auto-reduz thresholds (+4 → +3, -4 → -3)
+3. ✅ Operações voltam a ser geradas (<1h após reset)
+4. ✅ Log indica QUANDO pessimismo foi detectado + AÇÃO tomada
+5. ✅ Operador recebe alerta claro via BAT
+
+**Pré-requisito**: NENHUM (roda imediatamente)
+**Crítico para Produção**: SIM (desbloqueia operações)
+**Status**: 🔴 **IMPLEMENTAÇÃO HOJE**
+
+---
+
+### P50-B: Daily Retraining Loop + Positive Feedback [🟠 ALTA - 2 dias]
+
+**O Problema**:
+- Sistema aprendeu "confiança alta = sofrer" (ciclo negativo desde 09/02)
+- Sem novo feedback positivo, confiança nunca se recupera
+- P50-A ativa operações, mas B evita regressão
+
+**A Solução**:
+Criar pipeline diário que:
+1. Coleta resultado do pregão anterior (trades executados, P&L real)
+2. Calcula WIN RATE REAL (não esperado)
+3. Se WR > 60%: Boost confidence +0.03 incrementally
+4. Se WR < 50%: Reduz confidence (mantém realism)
+5. Persiste novo confidence para próximo pregão
+
+**Avaliação PO**:
+- **Viabilidade**: 3h implementação + 2h testes
+- **Impacto**: Quebra ciclo negativo (ALTO)
+- **Independência**: ✅ Roda em paralelo com P50-A
+- **Valor**: Recupera confiança em 5-10 pregões bons
+
+**Avaliação CFO**:
+- **Custo**: R$ 0
+- **Benefício**: Feedback positivo reestablish sistema (confidence 0.34 → 0.45-0.55)
+- **ROI**: MÉDIO-ALTO (manutenção permanente)
+- **Risco**: BAIXO (feedback baseado em métrica real)
+- **Decisão**: ✅ APPROVE (após P50-A)
+
+**Entregáveis**:
+- Script: `scripts/daily_confidence_retraining.py` (200 LOC)
+- BAT integration: 20 linhas
+- Config: `config/confidence_override_today.json` (persistence)
+- Test: Validar cálculo WR, ajuste confidence, persistência
+
+**Acceptance Criteria**:
+1. ✅ Calcula WIN RATE real do pregão anterior (trades executados)
+2. ✅ Se WR > 60%: boost confidence +0.03 (capped em 0.65)
+3. ✅ Se WR < 50%: reduz confidence -0.02 (floored em 0.25)
+4. ✅ Novo valor persistido no arquivo de config
+5. ✅ BAT carrega novo valor no próximo startup
+6. ✅ Log registra transição (0.34 → 0.37, por exemplo)
+
+**Pré-requisito**: P50-A (operações voltam a acontecer)
+**Crítico para Produção**: SIM (mantém sistema saudável)
+**Status**: 🟠 **IMPLEMENTAÇÃO 05/03**
+
+---
+
+### P50-C: Real-Time Feedback Dashboard + Sumário Diário [🟡 MÉDIA - 1.5 dias]
+
+**O Problema**:
+- Operador não consegue diagnosticar rapidamente por que não há operações
+- Precisa rodar scripts Python manualmente para entender rejeições
+- Feedback loop lento (>30 min de análise por dia)
+
+**A Solução**:
+Criar dashboard minimal que:
+1. Log em tempo real de scores + rejection reasons
+2. Visual feedback (confidence meter, top blockers)
+3. Sumário diário automático com diagnóstico claro
+4. Recomendações acionáveis ("execute P50-A se pessimismo")
+
+**Avaliação PO**:
+- **Viabilidade**: 2.5h implementação + 1.5h testes
+- **Impacto**: Diagnóstico rápido = ação rápida (MÉDIO)
+- **Independência**: ✅ Não bloqueia nada, suporte
+- **Valor**: Reduz tempo debug de 30min → 5min
+
+**Avaliação CFO**:
+- **Custo**: R$ 0
+- **Benefício**: Visibilidade operacional (confiança em sistema)
+- **ROI**: BAIXO (suporte, não core)
+- **Risco**: ZERO (log-only, não modifica lógica)
+- **Decisão**: ✅ APPROVE (após P50-A e B)
+
+**Entregáveis**:
+- Script: `scripts/feedback_logger_realtime.py` (150 LOC)
+- Script: `scripts/generate_opportunity_summary.py` (120 LOC)
+- Output: `outputs/agent_feedback_live.txt` (persistence)
+- Output: `outputs/opportunity_summary_YYYYMMDD.txt` (daily)
+
+**Acceptance Criteria**:
+1. ✅ Log gerado a cada ciclo do agente (timestamp, scores, rejeições)
+2. ✅ Visual feedback indica confidence em % com barra
+3. ✅ Top 5 rejection reasons listadas (e quantas vezes)
+4. ✅ Sumário diário inclui diagnóstico automático
+5. ✅ Recomendação acionável clara ("execute P50-A se pessimismo detectado")
+6. ✅ Arquivo persistido para debug posterior
+
+**Pré-requisito**: NENHUM (roda em paralelo)
+**Crítico para Produção**: NÃO (suporte, não core)
+**Status**: 🟡 **IMPLEMENTAÇÃO 05/03 (paralelo com P50-B)**
+
+---
+
+## 📊 Resumo P50: Prioridade & Timeline
+
+| PR | Título | Criticidade | Tempo | Deploy | Status |
+|----|--------|-------------|-------|--------|--------|
+| **P50-A** | Detector Pessimismo + Reset | 🔴 Bloqueante | 3h | TODAY (04/03) | **URGENT** |
+| **P50-B** | Daily Retraining | 🟠 Alta | 5h | 05/03 | Após P50-A |
+| **P50-C** | Real-Time Dashboard | 🟡 Média | 4h | 05/03 | Paralelo |
+
+**Impacto Acumulado**:
+- **T+0 (hoje):** P50-A ativa operações → volta ~15-20 sinais/dia
+- **T+1 (amanhã):** P50-B + C ativa feedback loop → recupera confiança
+- **T+5 (proxima semana):** Confiança 0.34 → 0.45-0.50 (recovering)
+- **T+10:** Confiança >>0.50 (sistema healthy)
+
+---
 
 **Removido:**
 - ❌ 150+ referências temporais (datas, marcos, "GO-LIVE 10/04")
