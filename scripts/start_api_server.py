@@ -5,6 +5,8 @@ import sys
 import os
 from pathlib import Path
 import sqlite3
+from typing import Optional, Any
+from unittest.mock import MagicMock
 
 # Setup path
 root_dir = Path(__file__).parent.parent
@@ -12,7 +14,7 @@ if str(root_dir) not in sys.path:
     sys.path.insert(0, str(root_dir))
 
 import uvicorn
-from src.application.orders_executor import OrdersExecutor
+from src.application.orders_executor import OrdersExecutionOrchestrator
 from src.interfaces.api.fastapi_server import create_app
 
 
@@ -65,15 +67,43 @@ def create_database_tables():
         print(f"[WARN] Erro criando tabelas: {e}")
 
 
-# Criar executor singleton
-executor = OrdersExecutor()
-
-# Criar app
-app = create_app(executor)
+def create_executor_with_mocks() -> OrdersExecutionOrchestrator:
+    """
+    Cria OrdersExecutionOrchestrator com mocks dos dependentes.
+    
+    Necessários:
+    - risk_processor: RiskValidationProcessor (mock)
+    - mt5_adapter: MT5Adapter (mock)
+    - trade_repository: ITradeRepository (mock)
+    """
+    # Criar mocks dos dependentes
+    risk_processor = MagicMock()
+    risk_processor.validate_order = MagicMock(return_value=True)
+    
+    mt5_adapter = MagicMock()
+    mt5_adapter.send_order = MagicMock(return_value="MOCK-TICKET-001")
+    
+    trade_repository = MagicMock()
+    
+    # Criar executor com mocks
+    executor = OrdersExecutionOrchestrator(
+        risk_processor=risk_processor,
+        mt5_adapter=mt5_adapter,
+        trade_repository=trade_repository,
+        event_bus=None
+    )
+    
+    return executor
 
 if __name__ == "__main__":
     # Criar tabelas SQLite
     create_database_tables()
+    
+    # Criar executor com mocks
+    executor = create_executor_with_mocks()
+    
+    # Criar app
+    app = create_app(executor)
     
     print("\n" + "="*60)
     print("🚀 INICIANDO API REST MT5 (P0-1)")

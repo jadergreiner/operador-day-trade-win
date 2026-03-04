@@ -39,15 +39,17 @@ async def create_order(
         )
         
         # Mapear audit trail
-        audit_items = [
-            {
-                "state": log.state.name,
-                "timestamp": log.timestamp,
-                "message": log.message,
-                "metadata": log.metadata
-            }
-            for log in order.audit_trail
-        ]
+        audit_items = []
+        if hasattr(order, 'audit_log') and order.audit_log:
+            audit_items = [
+                {
+                    "state": log.state.name if hasattr(log.state, 'name') else str(log.state),
+                    "timestamp": str(log.timestamp),
+                    "message": log.message,
+                    "metadata": log.metadata
+                }
+                for log in order.audit_log
+            ]
         
         return CreateOrderResponse(
             order_id=order.order_id,
