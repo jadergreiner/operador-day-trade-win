@@ -107,7 +107,7 @@ if __name__ == "__main__":
     app = create_app(executor)
     
     print("\n" + "="*60)
-    print("🚀 INICIANDO API REST MT5 (P0-1)")
+    print("[P0-1] INICIANDO API REST MT5")
     print("="*60)
     print(f"  Servidor: http://localhost:8888")
     print(f"  Docs: http://localhost:8888/docs")

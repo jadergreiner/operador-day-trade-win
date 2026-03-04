@@ -23,6 +23,9 @@ Status: ✅ PRODUÇÃO
 
 import sys
 import os
+import subprocess
+import time
+import atexit
 from pathlib import Path
 
 # ─ Setup path ─
@@ -30,6 +33,9 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 root_dir = Path(current_dir).parent
 if str(root_dir) not in sys.path:
     sys.path.insert(0, str(root_dir))
+
+# ─ Global API process handle ─
+_api_process = None
 
 # ─ Imports ─
 try:
@@ -56,6 +62,86 @@ try:
 except ImportError as e:
     print(f"[WARN] P0-1 API não importado: {e}")
     P0_1_AVAILABLE = False
+
+
+def start_api_server_subprocess():
+    """
+    Inicia servidor API em subprocess.
+    
+    A API é iniciada em background e continua rodando enquanto
+    o agente está ativo. É finalizada automaticamente via atexit.
+    
+    Returns:
+        subprocess.Popen: Processo da API ou None se falha
+    """
+    if not P0_1_AVAILABLE:
+        return None
+    
+    global _api_process
+    
+    try:
+        api_script = root_dir / "scripts" / "start_api_server.py"
+        
+        print("  🚀 Iniciando servidor P0-1 API em background...")
+        
+        # Inicia API em subprocess
+        _api_process = subprocess.Popen(
+            [sys.executable, str(api_script)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        # Aguarda API iniciar (timeout 5 segundos)
+        print("  ⏳ Aguardando API carregar (timeout=5s)...")
+        for i in range(5):
+            time.sleep(1)
+            if _api_process.poll() is not None:
+                # Processo terminou unexpectedly
+                stdout, stderr = _api_process.communicate()
+                print(f"  ❌ API falhou ao iniciar")
+                if stderr:
+                    print(f"     Erro: {stderr[:200]}")
+                return None
+        
+        # Verifica se API respondendo
+        try:
+            from src.infrastructure.clients.order_api_client import OrderAPIClient
+            test_client = OrderAPIClient(timeout=2, max_retries=1)
+            if test_client.health_check():
+                print(f"  ✅ API Server iniciado com sucesso (PID={_api_process.pid})")
+                
+                # Registra cleanup automático
+                atexit.register(_cleanup_api_process)
+                
+                return _api_process
+        except Exception as e:
+            print(f"  ⚠️  API não respondendo: {e}")
+        
+        return None
+        
+    except Exception as e:
+        print(f"  ❌ Erro ao iniciar API subprocess: {e}")
+        return None
+
+
+def _cleanup_api_process():
+    """
+    Finaliza processo da API quando o programa termina.
+    """
+    global _api_process
+    
+    if _api_process and _api_process.poll() is None:
+        try:
+            print("\n  🛑 Encerrando servidor API...")
+            _api_process.terminate()
+            try:
+                _api_process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                _api_process.kill()
+            print("  ✅ API Server finalizado")
+        except Exception as e:
+            print(f"  ⚠️  Erro ao finalizar API: {e}")
 
 
 def load_ml_features():
@@ -362,6 +448,12 @@ def main():
     print("  " + "=" * 60)
     print(f"  Release: INTEGRATION-ML-001 Phase 3 (25/02/2026)")
     print(f"  Status: 14/14 tests PASSING | 94% coverage")
+    print("  " + "=" * 60)
+    
+    # Inicia servidor API em background (automatic startup)
+    print("\n  💻 STARTUP AUTOMÁTICO")
+    print("  " + "=" * 60)
+    api_process = start_api_server_subprocess()
     print("  " + "=" * 60)
     
     # Setup integrações
