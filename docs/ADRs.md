@@ -420,6 +420,195 @@ Market Data Stream (websocket)
 
 ---
 
+## ADR-009: Rest API Gateway com Proxy Transparente para MT5 Orders
+
+**Status**: ✅ **ACCEPTED** (04/03/2026)
+**Autor**: Eng Sr (Technical Lead)
+**Prioridade**: 🔴 P0-1 (CRÍTICO - desbloqueia arquitetura de execução)
+**Data**: 04/03/2026
+**Próximo Review**: 10/04/2026 (GO-LIVE)
+
+### Contexto
+
+**Necessidade**: System precisa intermediar chamadas `mt5.send_order()` para:
+1. Enfileiramento assíncrono (não bloqueia agente)
+2. Retry logic com exponential backoff
+3. Auditoria completa (SQLite trail 7 anos)
+4. Fallback gracioso se API falha
+
+**Abordagens Consideradas**:
+1. ❌ **DLL Wrapper MT5**: Alto acoplamento, complexo
+2. ❌ **Polling direto MT5**: Latência >1s, bloqueia agente
+3. ✅ **REST API Gateway com Proxy Transparente**: Separa concerns, permite retry, auditoria
+
+### Decisão
+
+**Implementar 3 camadas:**
+
+**Camada 1: REST API Gateway (FastAPI Server)**
+```python
+# src/interfaces/api/fastapi_server.py
+app = FastAPI(
+    title="API REST MT5 - P0-1",
+    description="Execução de ordens via ExecutionOrder queue"
+)
+
+@app.post("/api/v1/orders")
+async def create_order(request: CreateOrderRequest):
+    # 1. Valida parâmetros + risco
+    # 2. Enfileira em RabbitMQ (async)
+    # 3. Retorna order_id + status
+    # 4. Background: executar async via OrdersExecutor
+```
+
+**Camada 2: OrderAPIClient (HTTP Client)**
+```python
+# src/infrastructure/clients/order_api_client.py
+class OrderAPIClient:
+    """Cliente HTTP com retry logic"""
+    
+    def create_order(self, symbol, volume, order_type):
+        # 1. POST /api/v1/orders
+        # 2. Retry 3x: 1s, 2s, 4s exponential backoff
+        # 3. Retorna APIOrderResponse com audit trail
+        # 4. Fallback: se API falha 3x → tenta MT5 direto
+```
+
+**Camada 3: MT5AdapterProxy (Transparent Proxy)**
+```python
+# src/infrastructure/adapters/mt5_adapter_proxy.py
+class MT5AdapterProxy:
+    """Intercepta mt5.send_order() → redireciona para API"""
+    
+    def send_order(self, order: ExecutionOrder):
+        # Operador NÃO vê mudança (proxy é transparente)
+        # Internamente:
+        # 1. self.client.create_order(...)  # via API
+        # 2. if api_fails: mt5.send_order(...)  # fallback
+        # 3. return response (agente vê resposta normal)
+```
+
+**Integração com Agente (Zero Changes Pattern)**:
+```python
+# scripts/launch_agent_with_ml_v1_2_3.py
+def setup_integrations():
+    # Criar API client
+    api_client = OrderAPIClient(api_url="http://localhost:8888")
+    
+    # Injetar proxy via monkey-patching
+    import src.infrastructure.adapters.mt5_adapter_proxy as proxy_module
+    proxy = MT5AdapterProxy(client=api_client)
+    
+    # IMPORTANTE: Agente NÃO muda, apenas trocamos mt5 internamente
+    agent.mt5_adapter = proxy  # ou via dependency injection
+```
+
+### Consequências
+
+**✅ Benefícios**:
+- 🔀 **Separação de concerns**: API isolada de agente
+- ⏱️ **Assincronia**: Ordens enfileiradas, agente não bloqueia
+- 🔄 **Retry automático**: 3x exponential backoff built-in
+- 📊 **Auditoria 100%**: SQLite trail (`api_orders`, `api_audit_log`)
+- 🤖 **Zero mudanças no agente**: Proxy é transparente
+- ⚡ **Fallback resiliente**: Se API falha → tenta MT5 direto
+- 🧪 **Testável**: API mockável, testes E2E possíveis
+
+**⚙️ Trade-offs**:
+- +310 LOC OrderAPIClient (aceitável)
+- +180 LOC MT5AdapterProxy (aceitável)
+- +140 LOC FastAPI server (aceitável)
+- Overhead HTTP (~50-100ms) vs MT5 direto (~10-50ms)
+  - Mitigação: Compensado por assincronia (não bloqueia agente)
+- Extra dependency: FastAPI, requests library
+  - Mitigação: Ambas já no projeto (websocket_server usa FastAPI)
+
+**❌ Riscos Mitigados**:
+- Risco: Agente bloqueia em send_order() → Mitigado por assincronia
+- Risco: Perda de ordem se MT5 falha → Mitigado por SQLite trail
+- Risco: Sem auditoria de ordens → Mitigado por api_audit_log
+- Risco: Falha API → Mitigado por fallback direto MT5
+
+### Alternativas Consideradas
+
+**1. ❌ Polling Direto MT5**
+```
+def send_order(...):
+    ticket = mt5.order_send(...)  # BLOQUEANTE (~500ms)
+    while True:
+        mt5.wait_for_order_fill(ticket)  # BLOQUEIA AGENTE
+```
+- Problema: Agente trava enquanto aguarda resposta
+- Ineficiente: Não permite processamento paralelo
+- Rejeção: INUTILIZÁVEL para operação real (latência)
+
+**2. ❌ Thread Workers no Agente**
+```python
+class AgentWithThreadPool:
+    def execute_entry(self, opp):
+        thread = Thread(target=mt5.send_order, ...)  # Cria thread
+        thread.start()
+        # Agente continua imediatamente
+```
+- Problema: Complexo, race conditions
+- Limitado: Max 100-200 threads antes de overhead
+- Rejeição: Difícil testar, debugging complicado
+
+**✅ Selecionado: REST API Gateway + Transparent Proxy**
+- Motivo 1: Separação clara (API ≠ Agente)
+- Motivo 2: Assincronia built-in (FastAPI async/await)
+- Motivo 3: Auditoria garantida (SQLite trail)
+- Motivo 4: Testabilidade (mockável)
+- Motivo 5: Resilência (fallback automático)
+
+### Implementação Status
+
+**✅ COMPLETO (04/03/2026)**:
+
+| Componente | LOC | Status | Integração |
+|-----------|-----|--------|-----------|
+| OrderAPIClient | 310 | ✅ | Em uso |
+| MT5AdapterProxy | 180 | ✅ | Em uso |
+| FastAPI server | 140 | ✅ | Rodando |
+| launcher (P0-1) | +70 | ✅ | Ativo |
+| test_p0_1_integration | 320 | ✅ | CI-ready |
+
+**Testes Passados**:
+1. ✅ OrderAPIClient health check
+2. ✅ create_order via API
+3. ✅ audit trail SQLite validation
+4. ✅ launcher imports válidos
+5. ✅ MT5AdapterProxy instanciação
+
+### Deployment
+
+**Produção (10/04/2026)**:
+```bash
+# Terminal 1: Iniciar API server
+python scripts/start_api_server.py  # Porta 8888
+
+# Terminal 2: Iniciar agente (usa proxy automaticamente)
+INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat  # Menu [1] ou [2]
+```
+
+**Configuração .env**:
+```bash
+API_URL=http://localhost:8888
+API_RETRY_MAX=3
+API_RETRY_BACKOFF=[1, 2, 4]  # segundos
+API_TIMEOUT=30
+```
+
+### Referências & Documentação
+
+- 📄 [ARCHITECTURE.md § 4.6](ARCHITECTURE.md#46-p0-1-rest-api-gateway-novo-implementado-0403) - Implementação técnica
+- 📊 [BACKLOG_UNIFICADO.md § P0-1](BACKLOG_UNIFICADO.md#p0-1-api-rest-mt5---infraestrutura-de-execução) - Delivery status
+- 🚀 [docs/deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md](docs/deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md) - Integration guide
+- 🧪 [scripts/test_p0_1_integration.py](scripts/test_p0_1_integration.py) - Test suite
+- 📋 [STATUS_ENTREGAS.md § P0-1]( STATUS_ENTREGAS.md) - Delivery metrics
+
+---
+
 ## 🔗 Cross-Referencing
 
 | ADR | Principal Assunto | Documento Relacionado |
@@ -431,6 +620,8 @@ Market Data Stream (websocket)
 | **ADR-005** | MT5 Protection | [ARCHITECTURE.md#s2-5](ARCHITECTURE.md) |
 | **ADR-006** | Circuit Breaker | [REGRAS_NEGOCIO.md#r-risco-001](REGRAS_NEGOCIO.md) |
 | **ADR-007** | Event-Driven | [ARCHITECTURE.md#princípios](ARCHITECTURE.md) |
+| **ADR-008** | Terminal Isolation 3-Layer | [ARCHITECTURE.md#45](ARCHITECTURE.md) |
+| **ADR-009** | REST API Gateway P0-1 | [ARCHITECTURE.md#46](ARCHITECTURE.md) |
 
 ---
 

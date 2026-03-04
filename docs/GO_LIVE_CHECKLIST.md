@@ -19,7 +19,50 @@
 
 ---
 
-## 🔧 PRÉ-REQUISITOS PARA GO-LIVE
+## � **P0-1: REST API GATEWAY VALIDATION (NOVO - 04/03)**
+
+**Requisito**: API REST P0-1 deve estar rodando e integrada com agente.
+
+### **Pré-Go-Live (09/04)**
+
+```bash
+MANHÃ (08:00):
+☐ Verificar API server health
+  curl http://localhost:8888/health
+  ☐ Esperado: {"status": "ok", "service": "api-rest-mt5"}
+
+☐ Verificar proxy integration
+  python scripts/test_p0_1_integration.py
+  ☐ Resultado: [PASS] 5/5 testes
+  ☐ Audit log criado em outputs/
+
+☐ TestE2E com agente
+  INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
+  → Escolha: [1] SIMULADO
+  → Enviar 5+ ordens
+  ☐ Ordens aparecem em /api/v1/orders JSON
+  ☐ Audit trail em SQLite (api_orders + api_audit_log)
+  ☐ Zero fallbacks (API funcionando 100%)
+
+TARDE (14:00):
+☐ Stress test
+  python scripts/load_test_api.py --concurrent=20 --orders=100
+  ☐ Latência P95: < 500ms
+  ☐ Success rate: > 99%
+  ☐ Sem erros críticos
+
+☐ Fallback test
+  pkill -f start_api_server.py  # Matar API
+  INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
+  → Envar 1 ordem
+  ☐ Fallback para MT5 direto funciona
+  ☐ Sem timeout/erro
+  
+  start_api_server.py  # Reiniciar API
+  ☐ Sistema volta a usar API
+```
+
+
 
 ### **Máquina Local (Windows)**
 ```

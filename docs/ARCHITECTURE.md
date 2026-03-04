@@ -315,6 +315,180 @@ except TerminalIsolationViolation as e:
     sys.exit(1)  # HARD STOP
 ```
 
+### 4.6. P0-1: REST API Gateway para Execução de Ordens ✅ IMPLEMENTADO (04/03/2026)
+
+**Status:** 🟢 **PRONTO PARA PRODUÇÃO** - Proxy transparente em operação
+
+**Responsabilidade**: Intermediar chamadas `mt5.send_order()` através de API REST para enfileiramento assíncrono, retry logic e auditoria completa.
+
+**Módulos Implementados:**
+
+#### A. OrderAPIClient (Cliente HTTP)
+- **Arquivo:** `src/infrastructure/clients/order_api_client.py` (310 LOC)
+- **Responsabilidade:**
+  - Abstrai comunicação HTTP com FastAPI server
+  - Implementa retry logic (3x exponential backoff: 1s, 2s, 4s)
+  - Converte ExecutionOrder → CreateOrderRequest
+  - Interpreta resposta JSON → APIOrderResponse
+  - Logging completo para auditoria
+- **Métodos principais:**
+  - `create_order(symbol, volume, order_type, stop_loss, take_profit) → APIOrderResponse`
+  - `get_order(order_id) → APIOrderResponse`
+  - `list_orders() → List[APIOrderResponse]`
+  - `health_check() → Dict[str, str]`
+
+#### B. MT5AdapterProxy (Proxy Transparente)
+- **Arquivo:** `src/infrastructure/adapters/mt5_adapter_proxy.py` (180 LOC)
+- **Responsabilidade:**
+  - Intercepta chamadas `mt5.send_order()` do agente
+  - Redireciona para API REST (OrderAPIClient)
+  - Fallback automático se API falha 3x → tenta MT5 direto
+  - Mantém 100% compatibilidade com interface original (ZERO mudanças agente!)
+  - Estatísticas: `total_calls`, `api_success`, `fallback_count`
+- **Padrão**: Proxy Pattern (transparente para agente)
+
+#### C. FastAPI Server (REST API)
+- **Arquivo:** `src/interfaces/api/fastapi_server.py` (140 LOC)
+- **Responsabilidade:**
+  - Recebe requisições POST `/api/v1/orders`
+  - Valida parâmetros (risco, limites MT5)
+  - Enfileira em OrdersExecutor (async)
+  - Retorna ordem_id + status imediatamente
+  - Background: Executa envio assíncrono para MT5
+- **Endpoints**:
+  - `GET /health` - Health check
+  - `GET /api/v1/orders` - Listar ordens
+  - `POST /api/v1/orders` - Criar ordem
+  - `GET /api/v1/orders/{order_id}` - Status ordem
+
+#### D. Test Suite
+- **Arquivo:** `scripts/test_p0_1_integration.py` (320 LOC)
+- **Testes**:
+  1. API health check
+  2. Create order via REST
+  3. Audit trail SQLite validation
+  4. MT5AdapterProxy instanciação
+  5. Launcher imports válidos
+
+**Integração com Agente (Zero Changes Pattern):**
+
+```python
+# scripts/launch_agent_with_ml_v1_2_3.py
+def setup_integrations():
+    # 1. Criar API client
+    api_client = OrderAPIClient(api_url="http://localhost:8888")
+    
+    # 2. Criar proxy
+    proxy = MT5AdapterProxy(client=api_client)
+    
+    # 3. Injetar em agente (monkey-patching via DI)
+    agent.mt5_adapter = proxy
+    
+    # Agente continua chamando: agent.execute_entry(opp)
+    # Internamente: mt5_adapter.send_order() → API → SQLite → MT5
+```
+
+**Fluxo Completo de Execução:**
+
+```
+┌─────────────────────────────────────────────────┐
+│ INICIAR_MICRO_TENDENCIA.bat                    │
+│ └─ Inicia launcher com setup_integrations()   │
+│    ├─ Cria OrderAPIClient HTTP                │
+│    ├─ Cria MT5AdapterProxy                    │
+│    └─ Injeta em agente                        │
+└─────────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────────┐
+│ agente.execute_entry(opp)                      │
+│ └─ Identifica oportunidade (ML classifier)    │
+└─────────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────────┐
+│ [MT5AdapterProxy] Intercepta mt5.send_order()  │
+│ └─ Chamada TRANSPARENTE para agente            │
+└─────────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────────┐
+│ [OrderAPIClient] POST /api/v1/orders            │
+│ ├─ Retry 1 (1s): OK → success                 │
+│ └─ ou Retry N: se falha → fallback MT5 direto │
+└─────────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────────┐
+│ [FastAPI Server] Handler /api/v1/orders        │
+│ ├─ Valida parâmetros                          │
+│ ├─ Enfileira em OrdersExecutor                │
+│ └─ Retorna order_id + status JSON             │
+└─────────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────────┐
+│ [SQLite Audit Log] api_orders + api_audit_log │
+│ └─ Trail completo: timestamp, params, status  │
+└─────────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────────┐
+│ [OrdersExecutor] Async Pipeline                │
+│ ├─ Step 1: Validar risco (3 gates)            │
+│ ├─ Step 2: Enviar para MT5 (via MT5Adapter)  │
+│ └─ Step 3: Monitorar posição                  │
+└─────────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────────┐
+│ [MT5] Executa ordem com ticket                │
+│ └─ Retorna: ticket, status, preço             │
+└─────────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────────┐
+│ TRAIL COMPLETO NO SQLITE:                      │
+│ ├─ api_orders: order_id, symbol, volume       │
+│ ├─ api_audit_log: timestamp, action, status   │
+│ ├─ executed_trades: ticket, price, gain/loss  │
+│ └─ decision_log: ML prediction, confidence    │
+└─────────────────────────────────────────────────┘
+```
+
+**Benefícios:**
+
+| Benefício | Descrição | Resultado |
+|-----------|-----------|-----------|
+| 🤖 Zero Mudanças Agente | Proxy é transparente | Agente vê `mt5.send_order()` normal |
+| ⏱️ Assincronia | Ordens enfileiradas | Agente não bloqueia enquanto MT5 responde |
+| 🔄 Retry Automático | 3x exponential backoff | Recuperação de falhas transitórias |
+| 📊 Auditoria 100% | SQLite trail 7 anos | Compliance CVM/B3 garantido |
+| ⚡ Fallback Resiliente | Se API falha → MT5 direto | ZERO ordens perdidas |
+| 🧪 Testável | Mock de API fácil | Tests unitários e E2E possíveis |
+
+**Configuração Requerida:**
+
+```bash
+# .env
+API_URL=http://localhost:8888
+API_RETRY_MAX=3
+API_RETRY_BACKOFF=[1, 2, 4]  # segundos
+API_TIMEOUT=30
+SQLITE_AUDIT_DB=data/db/trading.db
+```
+
+**Deployment (GO-LIVE 10/04):**
+
+```bash
+# Terminal 1: Iniciar API server (porta 8888)
+cd c:\repo\operador-day-trade-win
+python scripts/start_api_server.py
+
+# Terminal 2: Iniciar agente (usa proxy automaticamente)
+INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
+# Menu: [1] SIMULADO ou [2] AUTO-TRADE
+```
+
+**Documentação & Referências:**
+
+- 📄 [docs/ADRs.md#adr-009](ADRs.md#adr-009-rest-api-gateway-com-proxy-transparente-para-mt5-orders) - Architecture Decision Record
+- 📋 [BACKLOG_UNIFICADO.md#p0-1](BACKLOG_UNIFICADO.md#p0-1-api-rest-mt5---infraestrutura-de-execução) - Delivery status
+- 🚀 [docs/deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md](docs/deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md) - Integration guide completo
+- 👨‍💻 Code: `src/infrastructure/clients/order_api_client.py`, `src/infrastructure/adapters/mt5_adapter_proxy.py`
+
 ### 🔴 6. Confirmation & Feedback Layers (CAMADAS FALTANDO - P0 CRÍTICO)
 
 **⚠️ STATUS 24/02: FALTANDO - Causando dados desaparecidos**
