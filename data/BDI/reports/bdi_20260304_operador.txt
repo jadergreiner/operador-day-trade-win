@@ -1,0 +1,25 @@
+======================================================================
+BOLETIM OPERACIONAL - 04/03/2026
+======================================================================
+Processado: 04/03/2026 08:54:59
+
+INDICADORES PRINCIPAIS
+----------------------------------------------------------------------
+  Taxa Selic: 13.75
+  Dolar Compra: 5.12
+  Dolar Venda: 5.13
+  Ibovespa: 120450.50
+
+SINTESE DE ANALISE
+----------------------------------------------------------------------
+  Selic Impacto: moderado
+  Cambio Condicao: normal
+  Bolsa Status: verificar_mt5
+
+RECOMENDACOES
+----------------------------------------------------------------------
+  - Valide dados BDI em: https://www.bcb.gov.br/publicacoes/boletimdiario
+  - Sincronize horario operacional com calendario economico
+  - Confirme quotes MT5 antes de operacoes criticas
+
+[FIM DO RELATORIO]

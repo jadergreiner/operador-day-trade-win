@@ -18,7 +18,7 @@ DECISAO OPERADOR:
   > Nao reduza tickets por SELIC
   > Se operacoes FX: valide cambio
 
-INDICADOR: Dolar USD/BRL  
+INDICADOR: Dolar USD/BRL
 VALOR: Compra 5.12 | Venda 5.13
 IMPACTO: Normal
 DECISAO OPERADOR:

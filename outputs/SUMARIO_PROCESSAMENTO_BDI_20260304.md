@@ -1,7 +1,7 @@
 # SUMARIO - PROCESSAMENTO BOLETIM DIARIO BDI
 
-**Data de Processamento:** 04/03/2026 08:54:09  
-**Data do Boletim:** 03/03/2026 (quarta-feira)  
+**Data de Processamento:** 04/03/2026 08:54:09
+**Data do Boletim:** 03/03/2026 (quarta-feira)
 **Status:** ✅ CONCLUÍDO COM SUCESSO
 
 ---
@@ -36,22 +36,22 @@ Sistema de processamento de boletim diário BDI foi **implementado e validado co
 ## 🛠️ SCRIPTS IMPLEMENTADOS
 
 ### 1. `scripts/processar_bdi_diario.py` (160 linhas)
-**Função:** Extrai dados do PDF do boletim BDI  
-**Método:** pdfplumber com fallback PyPDF2  
+**Função:** Extrai dados do PDF do boletim BDI
+**Método:** pdfplumber com fallback PyPDF2
 **Saída:** JSON estruturado de indicadores
 
 ### 2. `scripts/analisar_bdi_diario.py` (250 linhas)
-**Função:** Analisa indicadores e gera recomendações  
-**Análise:** SELIC, Câmbio, Bolsa com impacto operacional  
+**Função:** Analisa indicadores e gera recomendações
+**Análise:** SELIC, Câmbio, Bolsa com impacto operacional
 **Saída:** Relatório com recomendações para operadores
 
 ### 3. `scripts/executar_pipeline_bdi.py` (220 linhas)
-**Função:** **EXECUTAR ESTE - Pipeline completo**  
-**Executa:** Processo + análise + relatório + checklist  
+**Função:** **EXECUTAR ESTE - Pipeline completo**
+**Executa:** Processo + análise + relatório + checklist
 **Saída:** Pronto para iniciar bots
 
 ### 4. `scripts/README_BDI.md` (250 linhas)
-**Função:** Documentação completa do sistema  
+**Função:** Documentação completa do sistema
 **Conteúdo:** Instruções, troubleshooting, interpretação
 
 ---
@@ -164,17 +164,17 @@ Pipeline BDI
 ## 🔍 TROUBLESHOOTING
 
 ### Se PDF não conseguir ser processado:
-→ ✅ Sistema automático usa template  
-→ ✅ Preencha `data/BDI/bdi_template_manual.json`  
+→ ✅ Sistema automático usa template
+→ ✅ Preencha `data/BDI/bdi_template_manual.json`
 → ✅ Execute novamente
 
 ### Se dados não encontrados:
-→ ✅ Verifique arquivo em `data/BDI/BDI_00_YYYYMMDD.pdf`  
+→ ✅ Verifique arquivo em `data/BDI/BDI_00_YYYYMMDD.pdf`
 → ✅ Consulte manual em `scripts/README_BDI.md`
 
 ### Se quotes MT5 desatualizadas:
-→ ✅ Abra MT5 manualmente  
-→ ✅ Force refresh (F9)  
+→ ✅ Abra MT5 manualmente
+→ ✅ Force refresh (F9)
 → ✅ Confirme antes de operações críticas
 
 ---
@@ -230,7 +230,7 @@ STATUS: OPERACIONAL
 
 ---
 
-**Processado em:** 04/03/2026 08:54  
-**Boletim:** 03/03/2026  
-**Sistema:** ✅ OPERACIONAL  
+**Processado em:** 04/03/2026 08:54
+**Boletim:** 03/03/2026
+**Sistema:** ✅ OPERACIONAL
 **Próxima execução:** Diariamente antes das operações
