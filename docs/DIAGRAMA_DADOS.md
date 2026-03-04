@@ -502,12 +502,356 @@ WHERE NOT EXISTS (
 
 ---
 
+## � Novas Entidades (04/03/2026) - Persistence & API Layer ✅
+
+### 10. REFLECTIONS (IA Reflexão Storage)
+
+**Relação**: REFLECTIONS ← 1:N → PERSISTENCE_ERRORS
+
+```
+AI_REFLECTION_JOURNAL_SERVICE
+    (coleta reflexões IA diárias)
+    │
+    └─> REFLECTIONS [01f, 02f, 03f, ...]
+        ├─ entry_id: "reflections_2026_03_04_1"
+        ├─ timestamp: 2026-03-04 10:30:00
+        ├─ mood: "optimistic"
+        ├─ decision: "Aumentar posições em tendência"
+        ├─ confidence: 0.82
+        ├─ alignment: 0.91
+        ├─ data_json: {...complete JSON...}
+        ├─ checksum: "sha256xyz..."
+        └─ persistence_status: "SYNCED"
+```
+
+**Propósito**: Armazenar reflexões da IA para:
+- Auditoria de decisões
+- ML training (long-term learning)
+- Análise de padrões de comportamento
+- Compliance/regulatory tracking
+
+**Integração com Persistência**:
+- Stored: SQLite + JSONL (dual persistence)
+- Backup: Daily snapshots em `data/diarios/`
+- Recovery: Auto-import on startup (518 reflexões recovered 04/03)
+
+---
+
+### 11. PERSISTENCE_ERRORS (Failure Audit Trail)
+
+**Relação**: PERSISTENCE_ERRORS → N:1 → REFLECTIONS
+
+```
+REFLECTIONS [entry_id: "ref_001"]
+    │
+    └─ PERSISTENCE_ERRORS (when failure occurs)
+       ├─ error_id: 1001
+       ├─ entry_id: "ref_001" (FK)
+       ├─ error_type: "WRITE_FAILED"
+       ├─ error_message: "SQLite disk I/O error"
+       ├─ attempt_number: 1
+       ├─ timestamp: 2026-03-04 10:30:15
+       ├─ resolved: false
+       └─ retry_count: 0
+```
+
+**Propósito**: Auditoria completa de falhas
+- Detectar padrões de degradação
+- Trigger alertas para DevOps
+- Support para triaging de problemas
+- Métricas para SLA tracking
+
+**Tipos de Erro**:
+- `WRITE_FAILED`: Erro ao escrever em disk/SQLite
+- `VALIDATION_FAILED`: Checksum ou constraint violation
+- `FSYNC_FAILED`: Falha ao sincronizar com filesystem
+- `TIMEOUT`: Operação excedeu timeout configurado
+
+---
+
+### 12. PERSISTENCE_STATS (Performance Metrics)
+
+**Relação**: 1-per-day agregando REFLECTIONS + PERSISTENCE_ERRORS
+
+```
+Daily Snapshot (stats_date: 2026-03-04)
+├─ total_written: 127 reflexões
+├─ total_failed: 1 falha
+├─ avg_latency_ms: 23.5
+├─ max_latency_ms: 87.2
+├─ min_latency_ms: 4.1
+└─ checkpoint_time: 2026-03-04 23:59:59
+```
+
+**Propósito**: Monitoramento de degradação
+- Detectar aumento em latências
+- Alertar se failure rate > 5%
+- Track disponibilidade do storage
+- Dashboard para operadores
+
+**Uso**:
+- Query: `SELECT * FROM persistence_stats WHERE total_failed > 0`
+- Alert: Se avg_latency > 100ms em 3 dias consecutivos
+
+---
+
+### 13. API_ORDERS (REST API Order Tracking)
+
+**Relação**: API_ORDERS ← 1:M → API_AUDIT_LOG
+
+```
+REST API Client
+    (enviar ordem via HTTP)
+    │
+    └─> API_ORDERS [order_001, order_002, ...]
+        ├─ order_id: "api_20260304_001" (UUID)
+        ├─ timestamp_created: 2026-03-04 10:30:00
+        ├─ symbol: "WIN"
+        ├─ volume: 1 contrato
+        ├─ order_type: "BUY"
+        ├─ stop_loss: 12450.0 (-50 pontos)
+        ├─ take_profit: 12550.0 (+50 pontos)
+        ├─ status: "EXECUTED"
+        ├─ api_response_time_ms: 145
+        ├─ mt5_ticket: "567890101" (FK → TRADES)
+        ├─ execution_timestamp: 2026-03-04 10:30:02
+        ├─ error_message: null
+        └─ retry_count: 0
+```
+
+**Propósito**: Rastrear requisições REST para MT5
+- Mapear API order ↔ MT5 ticket (correlação)
+- Detectar timeouts e retries
+- Fallback validation (fallback para conexão MT5 direta)
+- Performance analytics (latência API)
+
+**Status Values**:
+- `PENDING`: Awaiting submission
+- `SUBMITTED`: HTTP request sent
+- `EXECUTED`: MT5 confirmou execução
+- `FAILED`: Não conseguiu executar após retries
+- `CANCELLED`: Cancelado por circuit breaker
+
+**Índices**: `(status, timestamp)`, `(mt5_ticket)`, `(symbol, timestamp)`
+
+---
+
+### 14. API_AUDIT_LOG (API Operation Trail)
+
+**Relação**: API_AUDIT_LOG → N:1 → API_ORDERS
+
+```
+API_ORDERS [order_id: "api_001"]
+    │
+    └─ API_AUDIT_LOG:
+       ├─ Entry 1: "REQUEST"
+       │  ├─ timestamp: 10:30:00.000
+       │  ├─ action: "REQUEST"
+       │  ├─ http_status: null
+       │  └─ response_time_ms: null
+       │
+       ├─ Entry 2: "SUCCESS"
+       │  ├─ timestamp: 10:30:00.145
+       │  ├─ action: "SUCCESS"
+       │  ├─ http_status: 200
+       │  └─ response_time_ms: 145
+       │
+       └─ Entry 3: "FALLBACK_MT5"  (se timeout)
+          ├─ timestamp: 10:30:05.000
+          ├─ action: "FALLBACK_MT5"
+          ├─ http_status: 504
+          └─ response_time_ms: 5000 (timeout)
+```
+
+**Propósito**: Step-by-step trail de cada operação API
+- Retry attempts tracking
+- Timeout/fallback decisions
+- Compliance audit (full trace)
+- Performance analysis (latency breakdown)
+
+**Action Types**:
+- `REQUEST`: HTTP request initiated
+- `RETRY`: Retry attempt N (exponential backoff)
+- `SUCCESS`: Order executed successfully
+- `FAILURE`: HTTP error (400, 500, etc.)
+- `FALLBACK_MT5`: Fallback ativado (API timeout)
+- `TIMEOUT`: Waiting timeout excedido
+
+---
+
+## 🔗 New Relationships (Arquitetura 04/03)
+
+### 14.1 Persistence Layer Connection
+
+```
+AIReflectionJournalService._persist_to_disk()
+    │
+    ├─ ResilientReflectionPersistence._persist(reflection)
+    │  │
+    │  ├─ INSERT INTO reflections (entry_id, mood, decision, confidence, data_json, checksum)
+    │  │  └─ 1:1 relationship
+    │  │
+    │  ├─ [IF ERROR] INSERT INTO persistence_errors (entry_id, error_type, error_message)
+    │  │  └─ 1:N relationship (one reflection can have multiple errors)
+    │  │
+    │  └─ [DAILY] UPDATE persistence_stats (total_written, total_failed, avg_latency)
+    │     └─ Aggregation (1 row per day)
+    │
+    └─ JSONL Fallback (duplicate persistence)
+       └─ `data/diarios/{date}.jsonl`
+```
+
+**Garantias ACID**:
+- **Atomicity**: SQLite transactions (COMMIT on success, ROLLBACK on error)
+- **Consistency**: NOT NULL constraints + checksum validation
+- **Isolation**: WAL mode (Write-Ahead Logging)
+- **Durability**: PRAGMA synchronous=FULL
+
+**Recovery Mechanism**:
+```
+Startup Sequence:
+1. Load SQLite reflections table
+2. Scan JSONL directory for orphaned entries
+3. Import orphaned entries: 518/532 success (97.4%)
+4. Update persistence_stats with recovery results
+5. Mark errors as "RESOLVED" in persistence_errors
+```
+
+---
+
+### 14.2 API Order Execution Connection
+
+```
+OrderAPIClient.send_order() [P0-1 REST API]
+    │
+    ├─ HTTP POST /api/orders
+    │  │
+    │  ├─ [REQUEST] INSERT INTO api_orders (order_id, timestamp_created, symbol, volume, status='PENDING')
+    │  │  └─ 1:1 relationship
+    │  │
+    │  ├─ INSERT INTO api_audit_log (order_id, action='REQUEST', timestamp)
+    │  │  └─ 1:N relationship
+    │  │
+    │  └─ [RESPONSE] UPDATE api_orders (status, mt5_ticket, execution_timestamp, api_response_time_ms)
+    │     │
+    │     ├─ SUCCESS case: mt5_ticket populated → Map to TRADES table
+    │     │  └─ Can correlate REST order ↔ MT5 execution
+    │     │
+    │     └─ FAILURE case: error_message set, retry_count incremented
+    │        └─ Trigger exponential backoff (retry up to 3x)
+    │
+    └─ INSERT INTO api_audit_log (order_id, action='SUCCESS|FAILURE|FALLBACK_MT5')
+       └─ Audit completion for compliance
+```
+
+**Error Handling**:
+```
+IF http_response_time > 5000ms:
+    SET status = 'TIMEOUT'
+    SET action = 'FALLBACK_MT5'
+    CALL MT5Adapter.send_order_direct()  [Terminal Isolation Enforcer]
+    
+IF retry_count < 3:
+    RETRY with exponential backoff
+    UPDATE api_audit_log (action='RETRY', attempt_number)
+    
+ELSE:
+    SET status = 'FAILED'
+    SET action = 'FAILURE'
+    ALERT DevOps
+```
+
+---
+
+## 📈 Data Flow Diagram (Complete Stack)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   COMPLETE DATA FLOW (04/03/2026)              │
+└─────────────────────────────────────────────────────────────────┘
+
+┌──────────────────┐        ┌──────────────────┐
+│  MARKET_DATA     │────────│  FEATURES        │
+│  (velas MT5)     │ 1:N    │  (24 engineered) │
+└──────────────────┘        └──────────────────┘
+                                      │
+                                      │ N:1
+                                      ▼
+                            ┌──────────────────┐
+                            │ PREDICTIONS      │
+                            │ (ML model score) │
+                            └──────────────────┘
+                                      │
+                                      │ 1:1
+                                      ▼
+         ┌────────────────────────────────────────────┐
+         │         DECISION LOOP (04/03)             │
+         │  ┌─ AI Head Financeiro                    │
+         │  ├─ Risk Manager (3 validators)           │
+         │  └─ Order Manager                         │
+         │                                            │
+         │  DECISIONS ← logs → AUDIT_LOG             │
+         └────────────────────────────────────────────┘
+                                      │
+                    ┌─────────────────┼─────────────────┐
+                    │                 │                 │
+                 1:1 │              1:1 │              1:1 │
+                    ▼                 ▼                 ▼
+            ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+            │ TRADES       │  │ API_ORDERS   │  │ RL_EPISODES  │
+            │ (execução)   │  │ (REST API)   │  │ (training)   │
+            └──────────────┘  └──────────────┘  └──────────────┘
+                    │                 │                 │
+                    │ 1:1              │ 1:M            │ 1:M
+                    │                  │                │
+                    ▼                  ▼                ▼
+            ┌──────────────┐  ┌──────────────────┐  ┌──────────────┐
+            │ POSITIONS    │  │ API_AUDIT_LOG    │  │ RL_REWARDS   │
+            │ (tracking)   │  │ (compliance)     │  │ (signals)    │
+            └──────────────┘  └──────────────────┘  └──────────────┘
+                    │
+                    │ N:1 (agregação)
+                    ▼
+            ┌──────────────────┐
+            │ PERFORMANCE      │
+            │ (métricas daily) │
+            └──────────────────┘
+
+┌────────────────────────────────────────────────────────────────────┐
+│ PERSISTENCE LAYER (NEW - 04/03/2026) ✅ PRODUCTION-READY          │
+│                                                                    │
+│ AIReflectionJournalService                                        │
+│   ├─ _persist_to_disk()                                          │
+│   │  └─ ResilientReflectionPersistence(800 LOC)                 │
+│   │     ├─ Dual persistence: SQLite + JSONL                    │
+│   │     ├─ Auto-recovery: 518/532 reflexões recovered          │
+│   │     └─ Health monitoring: daily stats                       │
+│   │                                                             │
+│   └─ Database Tables:                                           │
+│      ├─ REFLECTIONS (IA reflexão storage)                      │
+│      ├─ PERSISTENCE_ERRORS (failure audit)                    │
+│      └─ PERSISTENCE_STATS (performance metrics)               │
+│                                                                 │
+│ OrderAPIClient (P0-1 REST API - NEW 04/03) ✅ PRODUCTION-READY │
+│   ├─ send_order() via HTTP                                      │
+│   ├─ Retry logic: 3x exponential backoff                        │
+│   ├─ Fallback: Direct MT5 on timeout                           │
+│   │                                                             │
+│   └─ Database Tables:                                           │
+│      ├─ API_ORDERS (REST order tracking)                       │
+│      └─ API_AUDIT_LOG (operation trail)                        │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## 🔗 Documentos Relacionados
 
-- [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) - Schema SQL completo com tipos e constraints
+- [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) - Schema SQL completo com tipos e constraints (Tables 1-15)
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Seção 4.7 (Reflection Persistence Layer) + 4.6 (P0-1 REST API)
 - [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) - Regras que regem os dados em cada entity
 - [ADRs.md](ADRs.md) - Decisões sobre estrutura de dados
 
 ---
 
-**ÚLTIMA ATUALIZAÇÃO:** 03/03/2026 | **STATUS**: ✅ COMPLETO
+**ÚLTIMA ATUALIZAÇÃO:** 04/03/2026 | **STATUS**: ✅ COMPLETO (15 tabelas, todas relacionadas)

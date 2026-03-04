@@ -545,12 +545,228 @@ END;
 
 ---
 
+## � Tabelas de Persistência (Reflexões IA & API) - ✅ NOVO 04/03/2026
+
+### Tabela 11: REFLECTIONS (Reflexões do Head Financeiro)
+
+```sql
+CREATE TABLE reflections (
+    entry_id TEXT PRIMARY KEY,
+    timestamp DATETIME NOT NULL,
+    mood TEXT NOT NULL,
+    decision TEXT NOT NULL,
+    confidence REAL NOT NULL,
+    alignment REAL,
+    one_liner TEXT,
+    data_json TEXT NOT NULL,
+    checksum TEXT NOT NULL,
+    persistence_status TEXT DEFAULT 'SYNCED',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    CHECK(confidence >= 0.0 AND confidence <= 1.0),
+    CHECK(persistence_status IN ('SYNCED', 'PENDING', 'FAILED', 'RETRYING')),
+    UNIQUE(timestamp, entry_id)
+);
+
+CREATE INDEX idx_reflections_timestamp_desc ON reflections(timestamp DESC);
+CREATE INDEX idx_reflections_mood ON reflections(mood);
+CREATE INDEX idx_reflections_decision ON reflections(decision);
+CREATE INDEX idx_reflections_created_at_desc ON reflections(created_at DESC);
+```
+
+**Campos:**
+- `entry_id`: PK UUID único para reflexão
+- `timestamp`: Quando a reflexão foi gerada
+- `mood`: Sentimento/estado (BULLISH, BEARISH, UNCERTAIN, etc)
+- `decision`: Código de decisão ("BUY_SPIKE", "HOLD_SMC", "AVOID_RR", etc)
+- `confidence`: [0.0-1.0] confiança na reflexão
+- `alignment`: [0.0-1.0] alinhamento com histórico
+- `one_liner`: Resumo executivo em uma linha
+- `data_json`: Dados completos serializados
+- `checksum`: SHA256 do data_json (validação integridade)
+- `persistence_status`: Estado de persistência (SYNCED, PENDING, FAILED, RETRYING)
+
+**Propósito:**
+- Armazenar reflexões IA do Head Financeiro para auditoria
+- Suportar machine learning de longo prazo (aprendizado contínuo)
+- Recuperação de dados em caso de falhas
+
+---
+
+### Tabela 12: PERSISTENCE_ERRORS (Auditoria de Falhas)
+
+```sql
+CREATE TABLE persistence_errors (
+    error_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    entry_id TEXT NOT NULL,
+    error_type TEXT NOT NULL,
+    error_message TEXT NOT NULL,
+    attempt_number INTEGER NOT NULL,
+    timestamp DATETIME NOT NULL,
+    resolved BOOLEAN DEFAULT 0,
+    resolved_at DATETIME,
+    retry_count INTEGER DEFAULT 0,
+    
+    FOREIGN KEY(entry_id) REFERENCES reflections(entry_id),
+    CHECK(error_type IN ('WRITE_FAILED', 'VALIDATION_FAILED', 'FSYNC_FAILED', 'TIMEOUT')),
+    CHECK(attempt_number >= 1),
+    CHECK(retry_count >= 0)
+);
+
+CREATE INDEX idx_persistence_errors_entry_id ON persistence_errors(entry_id);
+CREATE INDEX idx_persistence_errors_resolved ON persistence_errors(resolved);
+CREATE INDEX idx_persistence_errors_timestamp ON persistence_errors(timestamp DESC);
+```
+
+**Campos:**
+- `error_id`: PK
+- `entry_id`: FK para reflexão que falhou
+- `error_type`: WRITE_FAILED, VALIDATION_FAILED, FSYNC_FAILED, TIMEOUT
+- `error_message`: Mensagem de erro completa
+- `attempt_number`: Qual tentativa (1, 2, 3)
+- `timestamp`: Quando o erro ocorreu
+- `resolved`: Se foi resolvido (0 = não, 1 = sim)
+- `resolved_at`: Quando foi resolvido
+- `retry_count`: Número de retries
+
+**Propósito:**
+- Auditoria completa de falhas de persistência
+- Rastreamento de recuperação automática
+- Debugging de problemas intermitentes
+
+---
+
+### Tabela 13: PERSISTENCE_STATS (Métricas)
+
+```sql
+CREATE TABLE persistence_stats (
+    stats_date DATE PRIMARY KEY,
+    total_written INTEGER DEFAULT 0,
+    total_failed INTEGER DEFAULT 0,
+    avg_latency_ms REAL DEFAULT 0,
+    max_latency_ms REAL DEFAULT 0,
+    min_latency_ms REAL DEFAULT 0,
+    checkpoint_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    CHECK(total_written >= 0),
+    CHECK(total_failed >= 0),
+    CHECK(avg_latency_ms >= 0)
+);
+
+CREATE INDEX idx_persistence_stats_date ON persistence_stats(stats_date DESC);
+```
+
+**Campos:**
+- `stats_date`: PK (data do snapshot)
+- `total_written`: Total de reflexões persistidas
+- `total_failed`: Total de falhas neste dia
+- `avg_latency_ms`: Latência média de escrita
+- `max_latency_ms`: Latência máxima
+- `min_latency_ms`: Latência mínima
+- `checkpoint_time`: Última atualização das métricas
+
+**Propósito:**
+- Monitoramento de performance
+- Detecção de degradação
+- Relatórios operacionais
+
+---
+
+### Tabela 14: API_ORDERS (Ordens via P0-1 REST API)
+
+```sql
+CREATE TABLE api_orders (
+    order_id TEXT PRIMARY KEY,
+    timestamp_created DATETIME NOT NULL,
+    symbol TEXT NOT NULL,
+    volume INTEGER NOT NULL,
+    order_type TEXT NOT NULL,
+    stop_loss REAL,
+    take_profit REAL,
+    status TEXT NOT NULL DEFAULT 'PENDING',
+    api_response_time_ms INTEGER,
+    mt5_ticket TEXT UNIQUE,
+    execution_timestamp DATETIME,
+    error_message TEXT,
+    retry_count INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    CHECK(order_type IN ('BUY', 'SELL', 'BUY_LIMIT', 'SELL_LIMIT')),
+    CHECK(status IN ('PENDING', 'SUBMITTED', 'EXECUTED', 'FAILED', 'CANCELLED')),
+    CHECK(volume > 0)
+);
+
+CREATE INDEX idx_api_orders_status ON api_orders(status);
+CREATE INDEX idx_api_orders_timestamp ON api_orders(timestamp_created DESC);
+CREATE INDEX idx_api_orders_mt5_ticket ON api_orders(mt5_ticket);
+CREATE INDEX idx_api_orders_symbol ON api_orders(symbol);
+```
+
+**Campos:**
+- `order_id`: PK (UUID da ordem REST)
+- `timestamp_created`: Timestamp da requisição
+- `symbol`: Código do ativo (WIN, WDO, etc)
+- `volume`: Quantidade de contratos
+- `order_type`: BUY, SELL, BUY_LIMIT, SELL_LIMIT
+- `stop_loss`: SL em preço absoluto
+- `take_profit`: TP em preço absoluto
+- `status`: PENDING, SUBMITTED, EXECUTED, FAILED, CANCELLED
+- `api_response_time_ms`: Latência da resposta HTTP
+- `mt5_ticket`: Ticket retornado pelo MT5 (preenchido quando executado)
+- `execution_timestamp`: Quando o MT5 executou
+- `error_message`: Se falhou, mensagem de erro
+- `retry_count`: Quantas vezes foi retried
+
+**Propósito:**
+- Trail completo de ordens REST API
+- Rastreamento de correspondência entre REST ordersId e MT5 tickets
+- Diagnóstico de problemas de execução
+
+---
+
+### Tabela 15: API_AUDIT_LOG (Auditoria de Operações API)
+
+```sql
+CREATE TABLE api_audit_log (
+    audit_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id TEXT NOT NULL,
+    timestamp DATETIME NOT NULL,
+    action TEXT NOT NULL,
+    details TEXT,
+    http_status INTEGER,
+    response_time_ms INTEGER,
+    
+    FOREIGN KEY(order_id) REFERENCES api_orders(order_id),
+    CHECK(action IN ('REQUEST', 'RETRY', 'SUCCESS', 'FAILURE', 'FALLBACK_MT5', 'TIMEOUT'))
+);
+
+CREATE INDEX idx_api_audit_log_order_id ON api_audit_log(order_id);
+CREATE INDEX idx_api_audit_log_timestamp ON api_audit_log(timestamp DESC);
+CREATE INDEX idx_api_audit_log_action ON api_audit_log(action);
+```
+
+**Campos:**
+- `audit_id`: PK
+- `order_id`: FK para api_orders
+- `timestamp`: Quando ocorreu
+- `action`: REQUEST, RETRY, SUCCESS, FAILURE, FALLBACK_MT5, TIMEOUT
+- `details`: JSON com detalhes (retry attempt, error, etc)
+- `http_status`: Status HTTP da resposta (200, 500, 408, etc)
+- `response_time_ms`: Tempo de resposta
+
+**Propósito:**
+- Auditoria passo-a-passo de cada operação API
+- Debugging de timeouts e retries
+- Compliance e rastreamento de falhas
+
+---
+
 ## 🔗 Documentos Relacionados
 
 - [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md) - ER diagram visual
 - [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) - Regras que governam os dados
-- [ARCHITECTURE.md](ARCHITECTURE.md) - Arquitetura geral
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Arquitetura geral (seções 4.6 e 4.7)
 
 ---
 
-**ÚLTIMA ATUALIZAÇÃO:** 03/03/2026 | **STATUS**: ✅ COMPLETO
+**ÚLTIMA ATUALIZAÇÃO:** 04/03/2026 | **STATUS**: ✅ COMPLETO + Persistência implementada
