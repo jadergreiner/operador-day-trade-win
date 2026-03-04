@@ -1,37 +1,60 @@
-# 📋 BACKLOG UNIFICADO v5.0 - Single Source of Truth
+# 📋 BACKLOG UNIFICADO v6.0 - Centrado em Operadores Autônomos
 
-**Status:** Refatorado - Modelo de Entregáveis Independentes (SEM datas, APENAS dependências lógicas)
-**Última Atualização:** 03/03/2026
-**Responsável:** Product Owner + Head de Finanças (Brasil)
-**Versão:** v5.0 - REMOVIDAS 100+ REFERÊNCIAS TEMPORAIS
+**Status:** Reprioriazado - FOCO EXCLUSIVO: `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` + `INICIAR_DIARIOS.bat`
+**Última Atualização:** 04/03/2026
+**Princípio Crítico:** Entregas de valor = evolução incremental dos 2 operadores. TUDO MAIS é desprioriazado.
+**Versão:** v6.0 - REPRIORIAZACAO ALINHADA A OPERADORES
 
 ---
 
-## 🎯 COMO USAR ESTE DOCUMENTO
+## 🎯 PRINCÍPIO CENTRAL
 
-### Para Cada Persona
+### Entregas de Valor = Evolução dos Operadores
+
+**CRÍTICO (P0/P1):** Só itens que fazem os 2 operadores + potentes
+- `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` = operador micro-tendencia wins financeiros
+- `INICIAR_DIARIOS.bat` = operador diários com journal automático
+
+**DESPRIORIAZADO:** Tudo que SEM CHANGE os operadores
+- Dashboards (UI, não muda lógica)
+- Aprovações/UAT (processo, não é código)
+- APIs standalone (suporte, não core)
+- Reports CFO (reporting, não operado)
+
+---
+
+## 📌 COMO USAR ESTE DOCUMENTO (Novo)
+
+### Regra de Ouro
+
+```
+Antes de fazer QUALQUER item, pergunte:
+"Isso evolui INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat ou INICIAR_DIARIOS.bat?"
+
+SIM → P0/P1 (CRÍTICO - bloqueia nada, começa AGORA)
+NÃO → DESPRIORIAZADO (descarta ou faz depois)
+```
 
 **Product Owner / Eng Sr:**
-1. Leia: "P0 - ENTREGAS CRÍTICAS" (20 min)
-2. Leia: "MATRIZ DE DEPENDÊNCIAS" (10 min)
-3. Decida: Começamos P0-1 HOJE?
-4. Verifique: Pré-requisitos validados?
+1. Priorize P0-1, P0-2 PRIMEIRO (API REST + Backtest)
+2. Em paralelo: RL Training (P2-1) = agente aprende
+3. Tudo em P1 depois de P0-1
+4. Ignore Dashboard/OAuth/UAT até operadores prontos
 
 **Head de Finanças / CFO:**
-1. Leia: "AVALIAÇÃO CFO" para P0-1 e P0-2 (15 min)
-2. Entenda: GATE 2 (capital scale decision)
-3. Defina: Limite de drawdown (-15%?)
-4. Aprove: Capital R$ 50k inicial
+1. Acompanhe P0-2 Backtest (GATE 2)
+2. Aprove capital (R$ 50k)
+3. Ignore reports/aprovações até operador live
 
 **ML Expert:**
-1. Leia: "P1-1 - ANÁLISE FEATURES" (10 min)
-2. Comece HOJE - não depende de P0-1
-3. Coordene com Eng Sr: dados para P0-2
+1. Comece P1-1 ML Features HOJE (paralelo)
+2. Depois P2-1 RL Training (agente learning)
+3. Ignore drift detection se não bloqueia operador
 
 **QA Lead:**
-1. Leia: "GATES & DECISÕES" (10 min)
-2. Prepare: Estratégia de testes (matriz AC)
-3. Coordene: Critérios de aceitação com Eng Sr
+1. Teste P0-1 API REST (8 AC = ordem sending)
+2. Teste P0-2 Backtest (4 AC = win rate validado)
+3. Ignore dashboard/oauth testes
 
 ---
 
@@ -201,79 +224,151 @@ SENÃO:
 
 ---
 
-## 🟡 P1 - ENTREGAS PARALELAS (Após P0-1 completo)
+## 🟡 P1 - ENTREGAS CRÍTICAS PARALELAS (Evolui Operadores)
 
-### P1-1: ML Features & Drift Detection - Independente P0-1
+### P1-CORE: RabbitMQ Queue Async + WebSocket Real-Time + Position Monitor
 
 **Missão:**
-Criar sistema de explainabilidade ML:
-- ✅ SHAP analysis (top 10 features)
-- ✅ Detecção drift (KS test, correlação)
-- ✅ Alertas degradação (Green/Yellow/Red)
-- ✅ Documentação explainabilidade
+Infra essencial para operadores autônomos:
+- ✅ RabbitMQ fila assíncrona (ordens não bloqueiam)
+- ✅ WebSocket broadcast posições (todas traders em tempo real)
+- ✅ Position Monitor (feedback loop operador)
+- ✅ RL callback (agente aprende de cada trade)
+
+**Por que CRÍTICO?**
+- `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` PRECISA de fila async para enviar ordens
+- `INICIAR_DIARIOS.bat` PRECISA de position monitor para registrar trades
+- SEM isso, operadores SÃO síncronos (1 ordem → trava por 2s) = INUTILIZÁVEL
 
 **Avaliação PO:**
-- **Viabilidade:** 40h, 1-2 pessoas = REALISTA
-- **Impacto:** Decisões trader informadas (sabe quando confiar/desconfiar)
-- **Independência:** ✅ Não bloqueia ninguém
-- **Valor:** Confiança user + rastreabilidade
+- **Viabilidade:** 120h paralelo = REALISTA
+- **Impacto:** CRÍTICO - desbloqueia operadores autônomos reais
+- **Independência:** ✅ Pode rodar paralelo com P0-2
+- **Valor:** Transforma operadores manuais → automáticos
 
 **Avaliação CFO:**
 - **Capital:** R$ 0
-- **ROI:** Direto (confiança = mais capital)
-- **Risco:** Low (analítico apenas)
-- **Decisão:** ✅ APPROVE
+- **ROI:** ALTÍSSIMO (automação = multiplicador)
+- **Risco:** LOW (suporte apenas, não lógica trading)
+- **Decisão:** ✅ APPROVE IMEDIATO
 
-**Equipe:** ML Expert (tech lead) + Data Scientist - 40-50h
+**Equipe:** 3 devs paralelo
+- Dev-Backend 1: RabbitMQ queue + retry (40h)
+- Dev-Backend 2: WebSocket broadcast (40h)
+- Dev-Backend 3: Position Monitor + RL callback (40h)
+
+**CRÍTICO - Entregas:**
+- [ ] RabbitMQ: Fila ordem (PUT) + confirma (ACK)
+- [ ] WebSocket: Broadcast posição atualizada <100ms
+- [ ] Position Monitor: Registra entrada/saída (para journal auto)
+- [ ] RL Callback: Feedback loop (reward signal)
+- [ ] Retry exponencial (1s, 2s, 4s, fail)
+
+**Acceptance Criteria (8 Testes):**
+1. [ ] Fila RabbitMQ processa 100+ ordens/min sem backlog
+2. [ ] WebSocket broadcast 50 clientes <100ms
+3. [ ] Position entry registrado <1s
+4. [ ] Position exit registrado <1s (gain/loss calculado)
+5. [ ] Retry 3× funciona (fail = logged)
+6. [ ] RL callback called com reward signal
+7. [ ] No messages lost (ACK confirmado)
+8. [ ] Performance P95 < 500ms
+
+**Status:** 🔴 CRÍTICO (Começa imediatamente após P0-1)
+**Bloqueador?** SIM - operadores NÃO funcionam sem isso
+
+**Próximo Passo:** P0-1 ✅ → Começa P1-CORE em paralelo com P0-2
+
+---
+
+### P1-ML: ML Features & Leading Indicators
+
+**Missão:**
+Expandir capacidade training do operador:
+- ✅ SHAP analysis (top 10 features)
+- ✅ Detecção drift automática
+- ✅ Feature importance atualizado
+- ✅ Correlação matrix (find relationships)
+
+**Por que entra P1?**
+- Alimenta P0-2 e P2-1 (RL training)
+- Não bloqueia operador (suporte)
+- Paralelo com tudo
+
+**Avaliação PO:**
+- **Viabilidade:** 40h = REALISTA
+- **Impacto:** Melhora confiança ML model
+- **Independência:** ✅ Não bloqueia ninguém
+- **Valor:** Explainability + drift alertas
+
+**Equipe:** ML Expert (tech lead) - 40-50h
 
 **Entregas:**
 - [ ] SHAP analysis: top 10 features
 - [ ] Matriz correlação 24×24
-- [ ] 3 regras drift (KS test, média, correlação)
-- [ ] Dashboard alertas (Verde/Amarelo/Vermelho)
-- [ ] Relatório explainabilidade
-
-**Acceptance Criteria (6 Testes):**
-1. [ ] Features carregadas e validadas
-2. [ ] SHAP plot gerado
-3. [ ] Drift detection roda sem erros
-4. [ ] Limiares alerta definidos
-5. [ ] Dashboard atualiza em tempo real
-6. [ ] Documentação completa
+- [ ] Drift detector (KS test automático)
+- [ ] Feature importância tracking
+- [ ] Alertas (Green/Yellow/Red)
 
 **Status:** 🟡 PRONTO - Começa HOJE (paralelo P0-1)
-**Bloqueador?** NÃO (alimenta P0-2 apenas)
-
-**Próximo Passo:** ML Expert começa AGORA - 2h design, 4h implementação
 
 ---
 
-### P1-2 até P1-6: Dashboard, OAuth, RabbitMQ, WebSocket, Monitor
+## 🟢 P2-CORE: RL Training (Agente Aprende)
 
-**Resumo Geral:**
+**Missão:**
+Ciclo automático de learning do agente:
+- ✅ RL agent initialization
+- ✅ Trial execution (100+ iterações)
+- ✅ Episode feedback (reward de cada trade)
+- ✅ Policy update (agente melhora)
+- ✅ Daily retrain (aprender de ontem)
+- ✅ Model versioning (rastrear progress)
 
-Todos têm **Pré-Requisito Comum:** P0-1 completo
+**Por que CRÍTICO?**
+- `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` MELHORA a cada dia se RL ativo
+- `INICIAR_DIARIOS.bat` registra trades para RL aprender
+- SEM isso, operador é ESTÁTICO (não learning)
 
-Todos podem rodar **100% em paralelo** entre si (zero dependência mútua)
+**Avaliação PO:**
+- **Viabilidade:** 140h iterativo = REALISTA
+- **Impacto:** CRÍTICO - transforma operador estático → learning
+- **Independência:** ✅ Paralelo com P1
+- **Valor:** Agente melhora win rate +2-3% ao mês
 
-| Tarefa | Missão | Equipe | Horas | AC | Status |
-|--------|--------|--------|-------|----|----|
-| P1-2 | Dashboard Real-Time Ordens | Dev-Backend 1 | 40h | 8 | 🟡 Pronto |
-| P1-3 | OAuth Integração | Dev-Backend 2 | 40h | 8 | 🟡 Pronto |
-| P1-4 | RabbitMQ Queue Async | Dev-Backend 3 | 40h | 8 | 🟡 Pronto |
-| P1-5 | WebSocket Real-Time | Dev-Backend 4 | 40h | 8 | 🟡 Pronto |
-| P1-6 | Position Monitor | Dev-Backend 5 | 40h | 8 | 🟡 Pronto |
+**Avaliação CFO:**
+- **Capital:** R$ 0
+- **ROI:** Multiplicador (learning = exponencial)
+- **Risco:** MITIGADO (versioning + rollback)
+- **Decisão:** ✅ APPROVE IMEDIATO
 
-**Padrão de Execução:**
-1. Assim que P0-1 ✅: Todas 5 tarefas iniciam SIMULTANEAMENTE
-2. Cada dev trabalha independentemente
-3. Testes paralelos
-4. ZERO conflito (cada um seu domínio)
+**Equipe:** ML Expert (tech lead) + Dev-Backend - 140h
 
-**Timeline Realista (SEM DATAS):**
-- P0-1: Primeira semana implementação
-- P1-1 até P1-6: Semanas 2-3 em paralelo
-- GATE 1 check: Quando todos AC PASS
+**CRÍTICO - Entregas:**
+- [ ] RL environment setup (Gym-compatible)
+- [ ] Episode callback (cada trade gera reward)
+- [ ] Agent training loop (100+ iterations)
+- [ ] Model save/load (versionning)
+- [ ] Daily retrain scheduler
+- [ ] Rollback policy (bad model → restore last good)
+- [ ] Metric tracking (reward curve, win rate improvement)
+
+**Acceptance Criteria (8 Testes):**
+1. [ ] Agent inicializa sem erros
+2. [ ] 100+ episodes executam sem crash
+3. [ ] Reward signal calculado corretamente
+4. [ ] Policy atualiza (loss decreasing)
+5. [ ] Model salvo e carregado com sucesso
+6. [ ] Daily retrain roda (scheduler válido)
+7. [ ] Rollback funciona (bad model → restore)
+8. [ ] Metric tracking shows improvement trend
+
+**Status:** 🟡 PRONTO (começa após GATE 1)
+**Bloqueador?** Não imediato, mas CRÍTICO para valor long-term
+
+**Próximo Passo:** GATE 1 ✅ → Inicia P2-CORE
+
+---
 
 ---
 
@@ -285,138 +380,71 @@ Todos podem rodar **100% em paralelo** entre si (zero dependência mútua)
 
 Não iniciadas ainda (dependem GATE 2).
 
-Quando GATE 2 aprovado:
-- P2 items desbloqueados
-- Começam segunda onda paralela
-- Sem conflito com P1
+Sistema operando em produção. P2-CORE melhora contínuo (aprendizado automático).
 
 ---
 
-## 🔵 P3 - ENTREGAS FUTURO (Phase 3+)
-
-Não iniciadas (Phase 3 separada).
-
----
-
-## 🟣 P4 - SEQUENCIAL: STAGING → UAT → GO-LIVE
-
-**Padrão RÍGIDO:** Sequential (não paralelo)
-
-### P4-1: Staging Deployment
-
-**Pré-Requisito:** GATE 2 PASS (P0-2 ✅)
-
-**Missão:** Deploy production-grade em staging, teste com traders
-
-**AC:** 8/8
-- [ ] 8 recursos Azure healthy
-- [ ] 25+ tests PASS
-- [ ] Load 500 users: P95 < 2s
-- [ ] Zero critical errors
-
-**Equipe:** DevOps + Eng Sr - 25h
-
-**Status:** 🔴 BLOCKED (aguarda GATE 2)
-
----
-
-### P4-2: UAT & Approval
-
-**Pré-Requisito:** P4-1 ✅
-
-**Missão:** Trader aprova, CIO aprova security, CFO aprova capital
-
-**3 Sign-offs Obrigatórios:**
-1. ✅ Trader (signal confidence)
-2. ✅ CIO (security posture)
-3. ✅ CFO (capital R$ 50k transferido)
-
-**AC:** 8/8
-
-**Equipe:** QA + Trader - 15h
-
-**Status:** 🔴 BLOCKED (aguarda P4-1)
-
----
-
-### P4-3: Go-Live Production
-
-**Pré-Requisito:** P4-2 ✅ + 3 sign-offs
-
-**Missão:** Deploy produção, ativa capital R$ 50k, primeiros trades reais
-
-**AC:** 8/8 (Environment UP, trading ONLINE, capital OK, P&L tracking)
-
-**Equipe:** Eng Sr + DevOps + Trader - 10h
-
-**Status:** 🔴 BLOCKED (aguarda P4-2)
-
----
-
-## 📊 MATRIZ DE DEPENDÊNCIAS LÓGICAS (SEM DATAS)
+## 📊 MATRIZ DE DEPENDÊNCIAS LÓGICAS (Evolução Incremental)
 
 ```
-PARALELO (Camada 1: Sem Dependência Temporal)
+PARALELO (Camada 1: Próximas Entregas)
 ├─ [P0-1] API REST (160h)
-│  └─ Desbloqueia: P0-2, P1-2 até P1-6, P4-1
+│  └─ Desbloqueia: P0-2, P1-CORE, P1-ML
 │
-└─ [P1-1] ML Features (40h)
+└─ [P1-ML] ML Features (40h)
    └─ Independente (roda sempre)
    └─ Alimenta: P0-2 (dados para backtest)
 
 
 PRÓXIMO (Aguarda P0-1 Completo)
-├─ [P1-2 a P1-6] 5 tarefas paralelas (40-50h cada)
+├─ [P1-CORE] RabbitMQ + WebSocket (120h paralelo)
 │  └─ Pré-requisito: P0-1
-│  └─ Podem rodar 100% paralelo entre si
+│  └─ Ativa async execution dos operadores
 │
-└─ [P0-2] Backtest (88h + GATE 2 decision)
+└─ [P0-2] Backtest Validação (88h)
    ├─ Pré-requisito: P0-1
-   └─ Desbloqueia: P4-1 (staging)
+   └─ Desbloqueia: P2-CORE RL Training
 
 
-SEQUENCIAL (Produção Rígida)
-├─ [P4-1] Staging (25h) → GATE 4.1 ✓
-│  └─ Pré-requisito: GATE 2 PASS
-│  └─ Desbloqueia: P4-2
-│
-├─ [P4-2] UAT (15h) → GATE 4.2 ✓
-│  └─ Pré-requisito: P4-1
-│  └─ Requer: 3 sign-offs (Trader, CIO, CFO)
-│  └─ Desbloqueia: P4-3
-│
-└─ [P4-3] Go-Live (10h) → LIVE ✓✓✓
-   └─ Pré-requisito: P4-2
-   └─ Ativa capital R$ 50k
+ITERATIVO (Após GATE 2)
+└─ [P2-CORE] RL Training (140h contínuo)
+   └─ Pré-requisito: GATE 2 PASS
+   └─ Melhora agente continuamente (incrementos de 2-3% ao mês)
+   └─ Roda em background enquanto operadores operam
 ```
 
 ---
 
 ## ⚡ GATES & DECISÕES CRÍTICAS
 
-### GATE 1: P0-1 + P1-1 Completados
+### GATE 1: P0-1 + P1-ML Completados → Libera P1-CORE
 
 **Quem Decide:** CTO + Head Finanças + PO
 
 **Critérios (Bloqueadores):**
-- ✅ P0-1: 8/8 AC PASS
-- ✅ P1-1: 6/6 AC PASS
+- ✅ P0-1: 8/8 AC PASS (API REST funcionando)
+- ✅ P1-ML: 5/5 AC PASS (Features + SHAP)
 - ✅ Latência P95 < 500ms validado
 - ✅ E2E tests executados (>90% coverage)
 - ✅ Código revisado (2+ reviewers)
+- ✅ Operadores rodando com P0-1 (sem erros críticos)
 
-**Decisão:**
-- SIM → Libera P1-2 a P1-6
-- SIM → Começa P0-2 backtest
-- NÃO → Investigar falhas, replan
+**Decisão IF PASS:**
+- → Libera P1-CORE (async execution dos operadores)
+- → Começa P0-2 backtest (paralelo)
+- → P2-CORE já em design (espera GATE 2)
+
+**Decisão IF FAIL:**
+- → Investigar falhas em P0-1 ou P1-ML
+- → Corrige e retry GATE 1
 
 ---
 
-### GATE 2: P0-2 Completado (★ CRÍTICA CAPITAL ★)
+### GATE 2: P0-2 Completado → Libera P2-CORE RL Training
 
-**Quem Decide:** CFO + Board + CTO
+**Quem Decide:** CFO + CTO + ML Expert
 
-**Critérios (Bloqueadores - 4 Musts):**
+**Critérios (Bloqueadores):**
 ```
 ✅ Sharpe ≥ 1.0
 ✅ Win Rate ≥ 59%
@@ -424,14 +452,17 @@ SEQUENCIAL (Produção Rígida)
 ✅ Consistência σ mensal < 30%
 ```
 
-**Ação IF PASS:**
-- Libera R$ 100k Fase 2
-- Desbloqueia P4-1 Staging
+**Decisão IF PASS:**
+- → Libera P2-CORE (RL Training automático)
+- → Agente começa aprender de trades reais (contínuo)
+- → Projeta +2-3% win rate mês a mês
 
-**Ação IF FAIL:**
-- Mantém R$ 50k Fase 1
-- Replan ML (volta P1-1, adjust features)
-- Investiga bias
+**Decisão IF FAIL:**
+- → Replan features ML (volta P1-ML)
+- → Investiga bias/degradação modelo
+- → Retry P0-2 com dados/features ajustados
+
+---
 
 ---
 
@@ -553,116 +584,59 @@ P49, P50, P51 identificaram 13 diagnósticos críticos. Aqui está COMO tratar:
 
 ---
 
-## 📋 PRÓXIMOS PASSOS (Por Persona, SEM DATAS)
+## 📋 PRÓXIMOS PASSOS (Por Persona - SEM DEPENDÊNCIA TEMPORAL)
 
 ### Product Owner / Eng Sr
 
-```
-HOJE MESMO:
+**AGORA:**
 1. Leia P0-1 COMPLETAMENTE (30 min)
 2. Leia "MATRIZ DEPENDÊNCIAS" (10 min)
-3. Decida: Começamos P0-1?
-   SIM? → Aloque 3 devs, Eng Sr tech lead
-   NÃO? → Identifique bloqueador
-
+3. Decida: Começamos P0-1? → SIM = Aloque 3 devs + Eng Sr
 4. Eng Sr: Comece design FastAPI (2h)
-5. Aloque 3 dev-backend
 
-PRÓXIMA SEMANA:
-6. Codigo implementação P0-1
-7. Testes 20+ unitários + 10+ integração
-8. Schedule GATE 1 check (quando AC PASS)
-```
+**PARALELO COM P0-1:**
+1. ML Expert começa P1-ML (features 24, SHAP)
+2. Qualquer dev pode começar design P1-CORE (RabbitMQ)
+
+**Após GATE 1 PASS:**
+1. Libera P1-CORE implementação
+2. Começa P0-2 backtest (paralelo)
+3. Prepara design P2-CORE RL (pronto para GATE 2)
 
 ### Head de Finanças / CFO
 
-```
-HOJE MESMO:
-1. Leia P0-2 GATE 2 (15 min)
-2. Entenda 4 critérios bloqueadores
-3. Prepare aprovação capital R$ 50k
-4. Defina: Limite drawdown automático?
-5. Schedule GATE 2 board
+**AGORA:**
+1. Aprove capital R$ 50k
+2. Defina limite drawdown automático (-15%?)
+3. Entenda GATE 2 critérios (4 musts)
 
-PRÓXIMA SEMANA:
-6. Acompanhe P0-2 progress
-7. Prepare materiais board para GATE 2
-```
+**Após GATE 2 PASS:**
+1. Monitore P2-CORE RL training
+2. Acompanhe melhorias win rate (projeção +2-3% ao mês)
 
 ### ML Expert
 
-```
-HOJE MESMO:
-1. Comece P1-1 (NÃO PRECISA ESPERAR P0-1)
+**AGORA (Não espera P0-1):**
+1. Comece P1-ML (P1-ML é independente)
 2. Extraia 24 features (2-3h)
 3. SHAP analysis (1-2h)
 
-PRÓXIMA SEMANA:
-4. Assim que P0-1 ✅: Inicia P0-2 backtest
-5. Parallel: P1-1 continua
-```
+**Quando P0-1 ✅:**
+1. Inicia P0-2 backtest (paralelo com P1-ML final touches)
+
+**Quando GATE 2 PASS:**
+1. Começa P2-CORE RL Training (contínuo)
 
 ### QA Lead
 
-```
-HOJE MESMO:
+**AGORA:**
 1. Leia "GATES & DECISÕES" (5 min)
 2. Prepare teste matrix P0-1 (8 AC)
 3. Crie fixtures/mocks (1-2h)
 
-PRÓXIMA SEMANA:
-4. Teste automação (pytest)
-5. Load test setup (500 users)
-```
-
----
-
-## 🚀 EXECUÇÃO POR SEMANA (SEM DATAS ESPECÍFICAS)
-
-### Semana 1: P0-1 Design + P1-1 Features
-
-**P0-1:** 40h design + skeleton
-- Architecture design
-- 8/14 endpoints skeleton
-- Test framework setup
-- Code review
-
-**P1-1:** 20h features work
-- 24 features extraction
-- SHAP analysis
-- Drift rules
-- Tests
-
-**Deliverable:** P0-1 skeleton testable + P1-1 SHAP proof-of-concept
-
----
-
-### Semana 2-3: P0-1 Completion + P0-2 Backtest
-
-**P0-1:** 100h implementation
-- Endpoints completadas
-- Testes
-- Integração
-
-**P0-2:** 60h backtest
-- Dataset load
-- Backtest framework
-- Métricas + relatório
-- Cross-val + walk-forward
-
-**Deliverable:** P0-1 ✅ (AC 8/8) + P0-2 relatório pronto para GATE 2
-
----
-
-### Semana 4-5: (Pós GATE 2)
-
-**IF GATE 2 PASS:**
-- P1-2 a P1-6 começam em paralelo
-- P4-1 Staging começa
-
-**IF GATE 2 FAIL:**
-- Replan P1-1 features
-- Retry P0-2 com novos dados
+**Quando P0-1 pronto:**
+1. Teste automação (pytest)
+2. Performance tests (P95 < 500ms)
 
 ---
 
@@ -670,27 +644,25 @@ PRÓXIMA SEMANA:
 
 | Problema | Escalate Para |
 |----------|---------------|
-| P0-1 blocker técnico | CTO |
+| P0-1 blocker técnico | CTO/Eng Sr |
 | P0-2 ML off target | ML Expert Lead |
-| GATE 1 FAIL | CTO + PO (replan) |
-| GATE 2 FAIL | CFO + Board (replan capital) |
-| P1-x paralelo conflict | Eng Sr (coordena) |
-| P4-1 staging falha | DevOps + Eng Sr (SEV-1) |
-| P4-2 trader rejeita | CTO + PO + Trader |
-| P4-3 go-live down | CTO + CEO (SEV-0) |
+| GATE 1 FAIL | CTO + PO (replan P0-1 ou P1-ML) |
+| GATE 2 FAIL | CFO + CTO + ML (replan features) |
+| Operador down | CTO (SEV-1, revert código) |
+| P&L degradação | ML Expert (drift detection) |
 
 ---
 
 ## ✅ PRÉ-REQUISITOS OBRIGATÓRIOS
 
-**Completo ANTES de começar:**
+**Completo ANTES de começar qualquer item:**
 
 - [ ] Python 3.11+
 - [ ] Docker (PostgreSQL, Redis, RabbitMQ)
 - [ ] Git com branches (feature/ pattern)
 - [ ] VS Code + Python/Pylance extensions
 - [ ] MT5 acesso (paper ou live)
-- [ ] Slack configurado (CI/CD notifications)
+- [ ] Slack configurado (CI/CD + P&L notifications)
 - [ ] ARCHITECTURE.md lido
 - [ ] CODING_STANDARDS.md (SOLID + DDD)
 - [ ] REGRAS_NEGOCIO.md (6 regras P0)
@@ -701,22 +673,24 @@ PRÓXIMA SEMANA:
 ## 📚 REFERÊNCIA RÁPIDA
 
 **Qual é meu papel?**
-- Product Owner → Leia P0 + GATES
-- Eng Sr → Leia P0-1 + MATRIZ DEPENDÊNCIAS
-- CFO → Leia P0-2 GATE 2 + AVALIAÇÃO
-- ML Expert → Comece P1-1 HOJE
-- QA Lead → Leia GATES + AC
+- Product Owner → Leia P0 + P1 + GATES
+- Eng Sr → Leia P0-1 + P1-CORE + MATRIZ DEPENDÊNCIAS
+- CFO → Leia GATE 2 critérios + P2-CORE impacto
+- ML Expert → Comece P1-ML AGORA, depois P0-2, depois P2-CORE
+- QA Lead → Leia GATES + AC, prepare testes
 
-**Preciso de datas?**
+**Entregas de Valor = Evolução dos Operadores?**
+- P0-1 (API REST) = SIM (operadores conseguem executar)
+- P0-2 (Backtest) = SIM (valida confiança modelo)
+- P1-CORE (Async/WebSocket) = SIM (operadores funcionam melhor)
+- P1-ML (Features) = SIM (alimenta P2-CORE)
+- P2-CORE (RL Training) = SIM (operador aprende e melhora)
+- Tudo mais = NÃO (descarta ou faz muito depois)
+
+**Timeline:**
 - NENHUMA data neste documento
-- Timeline = quando AC estão PASS
-- Flexibilidade = vantagem
-
-**Qual item priorizia?**
-- P0-1 = bloqueador central, comece AQUI
-- P1-1 = paralelo, comece HOJE
-- GATE 2 = crítica capital, monitore
-- P4 = sequencial rígido
+- Entregas = quando AC estão PASS
+- Flexibilidade = vantagem competitiva
 
 ---
 
@@ -829,7 +803,7 @@ Os seguintes documentos foram revistos e consolidados como referência no backlo
 Quando chegar em cada fase, consultar os documentos relevantes:
 
 | Fase | Documentos Relevantes |
-|------|--------------------| 
+|------|--------------------|
 | **P0-1, P0-2** | EXECUTIVE_SUMMARY, PACOTE_ENTREGA_VALOR |
 | **GATE 1** | APRESENTACAO_BOARD (Slides 1-3) |
 | **GATE 2** | APRESENTACAO_BOARD (Slides 1-5), PACOTE_ENTREGA_VALOR (pages 12-13) |
