@@ -953,7 +953,290 @@ P2-CORE (RL Training) melhora contínuo em background
 
 ---
 
-## 📊 STATUS CONSOLIDAÇÃO v6.0 - REFATORAÇÃO COMPLETA
+## � PRÓXIMAS FASES - Roadmap 2026
+
+### **FASE 1: SPRINT 1 KICK-OFF (27/02 - 05/03)**
+
+**Escopo:** Desenvolver P1-ML + P1-CORE (segunda onda de features)
+
+**Componentes P1-ML:**
+- [ ] Feature Engineering (24+ features estendidas)
+- [ ] Classifier Training (XGBoost/LightGBM grid search)
+- [ ] Cross-validation (5-fold) + backtesting
+- [ ] Model selection + hyperparameter tuning
+- [ ] Feature importance analysis
+
+**Componentes P1-CORE:**
+- [ ] MT5 Order Executor (async queue)
+- [ ] Risk Validators (3 gates: capital, correlation, volatility)
+- [ ] Position Monitor (real-time tracking)
+- [ ] E2E Integration (agente → MT5)
+- [ ] Performance Dashboard
+
+**Success Criteria:**
+- ✅ ML Model: F1 > 0.68, Sharpe > 1.0
+- ✅ Orders: <500ms P95 latency, 100% audit trail
+- ✅ Risk: Zero breaches on 3 gates
+- ✅ Tests: 100+ unit + integration tests
+
+**Team:**
+- Eng Sr (160h): P1-CORE (MT5, Risk, Integration)
+- ML Expert (140h): P1-ML (Features, Training, Backtesting)
+- QA Lead (40h): Testing + validation
+- Tech Writer (15h): Documentation
+
+**Timeline:**
+- Week 1 (27/02-01/03): Architecture + design review
+- Week 2 (02/03-05/03): Development + testing
+- **Decision Point: 05/03 - GATE 2 CHECKPOINT**
+
+---
+
+### **FASE 2: GATE 2 CHECKPOINT (05/03)**
+
+**Decision Point:** Capital Scaling Authorization
+
+**Validation Criteria:**
+- ✅ P0-2 Backtest complete (Sharpe, WR, DD validated)
+- ✅ P1-ML Model performance (F1 >0.65)
+- ✅ P1-CORE Architecture approved (CTO signoff)
+- ✅ Risk Framework validated (CFO signoff)
+
+**Outcomes:**
+- **GO:** Approve P0-2 execution + allocate R$ 100k capital
+- **NO-GO:** Maintain safe mode (P0-1 signals only, no execution)
+- **PIVOT:** Extend GATE 2, adjust models, retry
+
+**Attendees:**
+- Product Owner (requirements)
+- Head de Finanças (capital + risk)
+- CTO (technical feasibility)
+- ML Expert (model confidence)
+
+**Deliverables:**
+- GATE 2 Decision Report (financial + technical)
+- Capital Allocation Authority
+- Risk Framework Sign-off
+- Go/No-Go Authorization
+
+---
+
+### **FASE 3: BETA LAUNCH - P0-2 Goes Live (13/03)**
+
+**Scope:** Production execution with real capital (Fase 1 Beta)
+
+**Capital Allocation:** R$ 50k initial (Phase 1 Beta)
+- Scaled from P0-2 GATE 2 decision
+- Circuit breakers: -3% (alert), -5% (slow), -8% (halt)
+- Operator override: Manual execution control 100%
+
+**Components Active:**
+- ✅ P0-1: Order routing + audit trail
+- ✅ P0-2: Backtest validation + GATE 2 decision
+- ✅ P1-ML: ML Classifier v1.2.3
+- ✅ P1-CORE: Risk validators + Position monitor
+- ✅ Diarios: Journal + AI reflection
+
+**Daily Operations:**
+- 09:00-16:00: Live trading (S&P 500 E-mini futures)
+- 16:00-17:00: End-of-day reconciliation + journals
+- Evening: RL training on day's data
+
+**Monitoring:**
+- Live P&L dashboard (hourly)
+- Risk metrics (real-time)
+- Trade audit trail (every 5 min)
+- System health checks (every 15 min)
+
+**Success Targets (30 days Beta):**
+- Win Rate: 62-65% (vs 60% minimum)
+- Sharpe Ratio: >1.0 (vs >0.8 minimum)
+- Drawdown: <15% (vs <20% maximum)
+- Uptime: >99.5%
+- P&L: +R$ 50-75k (breakeven = 0)
+
+**Team:**
+- Operador (8h/day): Manual control + monitoring
+- ML Expert (2h/day): Performance analysis + model tweaks
+- Eng Sr (4h/day): System monitoring + hotfixes
+- QA (1h/day): Validation + testing
+
+---
+
+### **FASE 4: PRODUCTION GO-LIVE - FASE 1 (10/04)**
+
+**Scope:** Full production deployment with capital scale
+
+**Capital Allocation (Post-GATE 2):**
+- Phase 1 Beta (13/03-20/03): R$ 50k approved
+- Phase 2 Ramp (21/03-09/04): R$ 50k → R$ 100k (if positive P&L)
+- Phase 4 Full (10/04+): R$ 150k+ (pending continued profitability)
+
+**Components in Production:**
+- ✅ All P0 features (backtest, validation, API)
+- ✅ All P1 features (ML, Risk, Orders)
+- ✅ S2 features (journals, RL training) - parallel
+- ✅ P0-1 REST API fully operational
+- ✅ WebSocket server (Phase 1 incoming)
+
+**Operational Hours:**
+- Mon-Fri: 09:00-16:00 EST (live trading)
+- 16:00-18:00: Reconciliation + analysis
+- 18:00+: RL training pipeline
+
+**Monitoring & Safety:**
+- Real-time P&L + risk dashboards
+- Automated circuit breakers (-3%, -5%, -8%)
+- Manual operator override available 24/7
+- AI-assisted trade filtering (confidence ≥80%)
+- Complete audit trail (SQLite + logs)
+
+**Success Targets (Q1 2026):**
+- **Win Rate:** 64-68% (vs 60% minimum)
+- **Sharpe Ratio:** 1.0-1.5 (vs 0.8+ minimum)
+- **Drawdown:** <12% (vs <20% maximum)
+- **Monthly P&L:** R$ 150-250k (scaling model)
+- **System Uptime:** >99.9%
+
+**Roadmap Extensions (Post-Phase 1):**
+- Phase 2 (May): Multi-symbol expansion (ES, NQ, GC)
+- Phase 3 (June): Advanced ML (LSTM, ensemble models)
+- Phase 4 (July): Distributed RL training
+- Phase 5+ (Aug+): Full automation + 24/7 operation
+
+---
+
+### **Timeline Consolidado (Marzo - Abril 2026)**
+
+```
+MARÇO 2026
+═════════════════════════════════════════════════════════════
+
+27 FEV | SPRINT 1 KICK-OFF
+Mo━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ P1-ML + P1-CORE dev
+       ├─ Eng Sr: P1-CORE architecture (160h)
+       ├─ ML Expert: P1-ML features + training (140h)
+       └─ QA: 100+ unit + integration tests (40h)
+
+01 MAR | Development checkpoint
+       ├─ Architecture review (CTO signoff)
+       └─ ML model initial training results
+
+05 MAR | ⛔ GATE 2 CHECKPOINT - CRITICAL DECISION
+       ├─ P0-2 backtest validation complete ✓
+       ├─ P1-ML model performance approved ✓
+       ├─ P1-CORE architecture signed off ✓
+       ├─ Risk framework validated ✓
+       └─ DECISION: GO (R$ 100k) or NO-GO (safe mode)
+           ↓
+           ✅ APPROVED: Capital allocation R$ 50k initial
+
+13 MAR | 🎉 BETA LAUNCH - P0-2 Goes Live
+        ├─ P0-2 starts live trading (real capital R$ 50k)
+        ├─ P1-ML classifier active
+        ├─ P1-CORE risk validators operational
+        ├─ Daily monitoring + operator control
+        └─ 30-day performance validation
+
+20 MAR | Mid-Beta Review
+        ├─ P&L check (positive? continue)
+        ├─ Win rate assessment (≥62%?)
+        ├─ System stability (uptime ≥99.5%?)
+        └─ Capital scaling decision (50k → 100k?)
+
+ABRIL 2026
+═════════════════════════════════════════════════════════════
+
+10 ABR | 🚀 PRODUCTION GO-LIVE - FASE 1 FULL
+        ├─ Capital scale: R$ 50k → R$ 100k (pending performance)
+        ├─ Extended hours: Mon-Fri 09:00-16:00 EST
+        ├─ Full monitoring + risk automation
+        ├─ AI-assisted trade filtering (≥80% confidence)
+        └─ Roadmap Phase 2+ starts planning
+
+30 ABR | End-of-Phase-1 Report
+        ├─ Q1 Performance summary
+        ├─ Win rate + Sharpe + Drawdown metrics
+        ├─ Capital ROI analysis
+        └─ Recommendations: Phase 2 direction
+```
+
+---
+
+### **Decision Gates & Go/No-Go Criteria**
+
+| Gate | Date | Decision | Success | Fallback |
+|------|------|----------|---------|----------|
+| **GATE 2** | 05/03 | Capital scale R$ 50k→100k | P0-2 Sharpe>1.0, WR>59% | Maintain R$ 50k (safe mode) |
+| **Mid-Beta** | 20/03 | Scale R$ 50k→100k | P&L positive, WR≥62% | Continue at R$ 50k |
+| **Phase-1** | 10/04 | Full production activation | All metrics green | Extend beta 2 weeks |
+| **Phase-2** | 01/05 | Multi-symbol expansion | Phase-1 P&L >R$ 150k | Focus on optimization |
+
+---
+
+### **Key Dependencies & Blockers**
+
+**Pre-GATE 2 (Critical):**
+- ✅ P0-2 backtest engine (DONE)
+- ✅ P0-2 validation suite (DONE)
+- 🔄 P1-ML feature engineering (IN PROGRESS)
+- 🔄 P1-CORE risk framework (IN PROGRESS)
+
+**Pre-BETA Launch:**
+- ✅ P0-1 REST API (DONE)
+- ✅ MT5 adapter + order routing (DONE)
+- 🔄 Live paper trading validation (PENDING)
+- 🔄 Operator training + runbooks (PENDING)
+
+**Pre-Phase-1 GO-LIVE:**
+- ✅ All components tested
+- 🔄 Capital allocation approved (GATE 2 dependent)
+- 🔄 Risk framework validated
+- 🔄 Operator ready + trained
+
+---
+
+### **Resource Allocation (Março - Abril)**
+
+**Total FTE:**
+- PO: 20h/week (Sprint 1 planning + GATE 2 prep)
+- Eng Sr: 40h/week (P1-CORE + system monitoring)
+- ML Expert: 35h/week (P1-ML + backtest validation)
+- QA Lead: 20h/week (Testing + validation)
+- Operador: 40h/week (Training + live monitoring)
+- DevOps: 15h/week (Infrastructure + deploy)
+
+**Estimated Budget:**
+- Development: R$ 80-100k (Sprint 1)
+- Capital: R$ 50k (beta) + scaling post-GATE 2
+- Infrastructure: R$ 5-10k (servers, monitoring)
+- **Total Phase 1-4: R$ 140-180k (3 weeks dev + 4 weeks live)**
+
+---
+
+### **Próximas Ações Imediatas (04/03)**
+
+**Today:**
+- [ ] Finalize P1-ML feature specifications
+- [ ] Finalize P1-CORE architecture design
+- [ ] Schedule GATE 2 prep meeting (05/03 afternoon)
+
+**This Week:**
+- [ ] Start P1-ML development (27/02)
+- [ ] Start P1-CORE development (27/02)
+- [ ] Setup live paper trading environment
+- [ ] Operator training begins
+
+**Before GATE 2 (05/03):**
+- [ ] P0-2 backtest complete + validated
+- [ ] P1-ML model first iteration complete
+- [ ] P1-CORE components integrated
+- [ ] Risk framework reviewed + approved
+- [ ] Financial analysis for capital allocation
+
+---
+
+
 
 **Removido:**
 - ❌ 150+ referências temporais (datas, marcos, "GO-LIVE 10/04")
