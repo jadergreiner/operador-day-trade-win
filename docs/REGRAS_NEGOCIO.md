@@ -165,6 +165,75 @@ Se qualquer passo falha → REJECTED status + log detalhado
 
 ---
 
+### R-CRÍTICA-007: Terminal Isolation Enforcer (S2-6) ✅ NOVO
+
+**Regra**: Sistema DEVE bloquear 100% das tentativas de conectar a de brokers FBS/XP/Zero/IC/Ativa/Rica
+
+**Objetivo**: Impedir erro operacional onde análise está em Clear mas ordem vai para broker errado.
+
+**3 Camadas de Bloqueio:**
+
+**Camada 1: Startup Validation (PRÉ-OPERAÇÃO)**
+```
+Ao iniciar launcher:
+  - Enforcer valida MT5_TERMINAL_PATH (deve conter "CLEAR")
+  - Config validator rejeita paths sem "CLEAR"
+  - Se falha → EXIT 1 (termina processo imediatamente)
+  - Timing: < 30s (pré-operação)
+```
+
+**Camada 2: Operation-Critical Validation (PONTO CRÍTICO)**
+```
+Antes de execute_entry:send_order():
+  - Enforcer.validate_critical_operation("execute_entry:send_order")
+  - Detecta automaticamente 6 brokers perigosos
+  - Se falha → TerminalIsolationViolation levantada
+  - RESULTADO: Ordem é REJEITADA (não envia para broker)
+  - Timing: < 1ms (negligenciável)
+```
+
+**Camada 3: Continuous Monitoring (VIGILÂNCIA)**
+```
+A cada ciclo do main loop:
+  - Enforcer.validate_continuous() monitora isolamento
+  - Se MetaTrader muda para broker errado → KILL SWITCH
+  - Sistema para automaticamente (sem enviar orderL)
+  - Timing: Contínuo (cada ciclo ~100ms)
+```
+
+**Brokers Bloqueados (Detecção Automática):**
+- FBS (www.fbs.com)
+- XP Investimentos (www.xp.com.br)
+- Zero Markets (zeromercado.io)
+- IC Markets (icmarkets.com)
+- Ativa (www.ativa.com.br)
+- Rica Corretora (www.rica.com.br)
+
+**Padrão de Detecção**: Case-insensitive substring matching no caminho exe do MT5.
+
+**Implementação**: `src/infrastructure/terminal_isolation_enforcer.py` (380 LOC, v1.0)
+**Violação**: HARD STOP - EXIT 1 ou rejeita operação (não permite continuar)
+**Exceção**: `TerminalIsolationViolation` (tratada em CODING_STANDARDS.md § 6)
+**Status**: ✅ IMPLEMENTADO 04/03/2026 - 6/6 testes PASSING
+
+**Configuração Obrigatória**:
+```bash
+# .env (OBRIGATÓRIO)
+MT5_TERMINAL_PATH="/path/to/Clear_Investimentos/terminal.exe"
+
+# Validação
+settings.mt5_terminal_path → Pydantic rejeita path sem "CLEAR"
+```
+
+**Monitoramento**:
+- Método: `enforcer.get_isolation_status()` → Dict com estado completo
+- Retorna: clear_pid, dangerous_terminals, violation_count, mode
+
+**Referência**: [ADR-008: Terminal Isolation Enforcer](ADRs.md#adr-008-terminal-isolation-enforcer-com-3-camadas-de-bloqueio)
+**Documentação**: [ARCHITECTURE.md § 4.5](ARCHITECTURE.md#45-terminal-isolation-enforcer-s2-6---novo--implementado-04032026)
+
+---
+
 ## 🟡 REGRAS DE RISCO (Devem ser Monitoradas)
 
 ### R-RISCO-001: Maximum Drawdown Circuit Breaker
@@ -320,6 +389,7 @@ if memory_usage > 100:
 | **R-CRÍTICA-004** | 🔴 SIM | Execution | ✅ MT5Adapter (3 camadas) | Health check 30s |
 | **R-CRÍTICA-005** | 🔴 SIM | Execution | ✅ SendToMT5Command | Retry count |
 | **R-CRÍTICA-006** | 🔴 SIM | Learning | ⏳ P33 | Audit log |
+| **R-CRÍTICA-007** | 🔴 SIM | Security | ✅ TerminalIsolationEnforcer (3 camadas) | Violation count |
 | **R-RISCO-001** | 🟡 SIM | Execution | ✅ CircuitBreaker | Dashboard |
 | **R-RISCO-002** | 🟡 SIM | Decision | ✅ PositionMonitor | Current exposure |
 | **R-RISCO-003** | 🟡 SIM | Execution | ✅ ATRCalibrator | Order details |
@@ -340,6 +410,7 @@ if memory_usage > 100:
 | R-CRÍTICA-004 | `src/infrastructure/providers/mt5_adapter.py:387-440` | [ADR-005](ADRs.md#adr-005-por-que-3-camadas-de-mt5-clear-protection) |
 | R-CRÍTICA-005 | `src/application/orders_executor.py:206-315` | [ADR-003](ADRs.md#adr-003-por-que-mt5-rest-adapter-vs-direct-dll) |
 | R-CRÍTICA-006 | `scripts/agente_micro_tendencia_winfut.py:2489-2618` | [ADR-004](ADRs.md#adr-004-por-que-intradaylearner-em-memoria-vs-sqlite-imediato) |
+| R-CRÍTICA-007 | `src/infrastructure/terminal_isolation_enforcer.py:1-380` | [ADR-008](ADRs.md#adr-008-terminal-isolation-enforcer-com-3-camadas-de-bloqueio) |
 | R-RISCO-001 | `scripts/agente_micro_tendencia_winfut.py:4377+` | [ADR-006](ADRs.md#adr-006-circuit-breaker-strategy) |
 | R-RISCO-004 | `scripts/agente_micro_tendencia_winfut.py:2489-2618` | [ADR-004](ADRs.md#adr-004-por-que-intradaylearner-em-memoria-vs-sqlite-imediato) |
 

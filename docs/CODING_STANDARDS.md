@@ -381,6 +381,10 @@ class BrokerConnectionError(TradingError):
     """Erro de conexão com broker."""
     pass
 
+class TerminalIsolationViolation(TradingError):
+    """Violação de isolamento de terminal (broker diferente de Clear)."""
+    pass
+
 # ✅ Tratamento específico
 def execute_order(order: Order) -> Trade:
     try:
@@ -392,10 +396,67 @@ def execute_order(order: Order) -> Trade:
     except InvalidOrderError as e:
         logger.warning(f"Ordem inválida: {e}")
         raise
+    except TerminalIsolationViolation as e:
+        logger.critical(f"❌ BLOQUEADO: {e}")
+        sys.exit(1)  # HARD STOP - não continua
     except Exception as e:
         logger.critical(f"Erro inesperado: {e}")
         raise TradingError("Erro ao executar ordem") from e
 ```
+
+### 6.5. Terminal Isolation Validation Pattern ✅ NOVO
+
+**OBRIGATÓRIO:** Todo código que envia ordens DEVE validar isolamento de terminal ANTES.
+
+```python
+# ✅ Padrão obrigatório para execução segura
+from src.infrastructure.terminal_isolation_enforcer import TerminalIsolationEnforcer
+
+def execute_critical_operation(operation_name: str) -> None:
+    """Valida isolamento antes de operação crítica."""
+    enforcer = TerminalIsolationEnforcer(
+        expected_terminal_path=settings.mt5_terminal_path
+    )
+    
+    # ANTES de qualquer ação irreversível
+    try:
+        enforcer.validate_critical_operation(f"{operation_name}:entry")
+    except TerminalIsolationViolation as e:
+        logger.critical(f"❌ BLOQUEADO: {e}")
+        raise  # Rejeita operação
+    
+    # Agora é SEGURO prosseguir
+    logger.info(f"✅ Isolamento validado para {operation_name}")
+
+# ✅ Uso em execute_entry()
+def execute_entry(signal: SignalData) -> None:
+    execute_critical_operation("execute_entry:send_order")
+    
+    # Após validação, é seguro enviar ordem
+    order = create_order(signal)
+    send_to_mt5(order)
+
+# ✅ Uso em main loop (vigilância contínua)
+def main_trading_loop():
+    enforcer = TerminalIsolationEnforcer(
+        expected_terminal_path=settings.mt5_terminal_path
+    )
+    
+    while True:
+        # Validação contínua
+        enforcer.validate_continuous()  # KILL SWITCH se terminal muda
+        
+        # Resto da lógica
+        signal = analyzer.analyze_market()
+        if signal.should_trade:
+            execute_entry(signal)
+```
+
+**Status de Compliance:**
+- ✅ Obrigatório em todos os métodos que enviam ordens (execute_entry, etc)
+- ✅ Documentado em [ARCHITECTURE.md § 4.5](ARCHITECTURE.md#45-terminal-isolation-enforcer-s2-6)
+- ✅ Exemplos completos em [src/infrastructure/terminal_isolation_enforcer.py](../src/infrastructure/terminal_isolation_enforcer.py)
+- ✅ Validações implementadas em [scripts/audit_terminal_isolation.py](../scripts/audit_terminal_isolation.py)
 
 ### 7. Logging e Observabilidade
 

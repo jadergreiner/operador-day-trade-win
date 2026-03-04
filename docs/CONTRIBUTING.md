@@ -258,6 +258,13 @@ Antes de criar um Pull Request, verifique:
 - [ ] Logging estruturado implementado
 - [ ] Documentação atualizada se necessário
 
+🔐 **NOVO - Terminal Isolation (P0-3):**
+- [ ] Se modifica execute_entry(): Validar isolamento com enforcer
+- [ ] Se modifica main loop: Validação contínua implementada
+- [ ] Scripts de order execution: Terminal isolation tests ([scripts/audit_terminal_isolation.py](../scripts/audit_terminal_isolation.py))
+- [ ] Lido [CODING_STANDARDS.md § 6.5](CODING_STANDARDS.md#65-terminal-isolation-validation-pattern--novo)
+- [ ] ARCHITECTURE.md atualizado se há mudanças em infrastructure layer
+
 ## Áreas Prioritárias
 
 ### 1. Data Pipeline (Alta Prioridade)
