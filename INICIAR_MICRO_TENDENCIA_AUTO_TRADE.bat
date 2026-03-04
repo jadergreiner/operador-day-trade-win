@@ -105,6 +105,28 @@ echo   [OK] Diario RL iniciado
 echo.
 
 REM ============================================================
+REM GATE 2 VALIDATION (P0-2) - Nova validacao antes de agente
+REM ============================================================
+echo   [GATE2] Validando P0-2 Backtest (GATE 2 decision)...
+python scripts/check_p0_2_status.py
+set GATE2_STATUS=!ERRORLEVEL!
+
+if !GATE2_STATUS! equ 0 (
+    echo   [GATE2] ✓ GATE 2 PASSED - Escalando para R$ 100k
+    set CAPITAL_SCALE=100000
+) else if !GATE2_STATUS! equ 1 (
+    echo   [GATE2] ✗ GATE 2 FAILED - Mantendo R$ 50k
+    set CAPITAL_SCALE=50000
+) else if !GATE2_STATUS! equ 2 (
+    echo   [GATE2] ⏳ P0-2 Ainda rodando em background - Continuando normal
+    set CAPITAL_SCALE=50000
+) else (
+    echo   [GATE2] ? Status indefinido - Continuando com capital padrao
+    set CAPITAL_SCALE=50000
+)
+echo.
+
+REM ============================================================
 REM NOTA: P0-1 REST API é iniciada automaticamente no launcher
 REM       (transparente - sem mudança na rotina)
 REM ============================================================
@@ -115,10 +137,11 @@ REM Launch agent with ML v1.2.3 + Risk framework + P0-1 API auto-startup
 echo   [AGENT] Iniciando Operador Quantico v1.2.3 com P0-1 API...
 echo   ✅ ML Classifier: v1.2.3 (14/14 tests, 94% coverage)
 echo   ✅ Risk Framework: 3 validation gates
+echo   ✅ Capital Scale: R$ !CAPITAL_SCALE! (via GATE 2)
 echo   ✅ WebSocket: Sprint 1 (incoming 27/02)
 echo.
 
-python scripts/launch_agent_with_ml_v1_2_3.py !MODE! --account 1000346516 --ml-version 1.2.3
+python scripts/launch_agent_with_ml_v1_2_3.py !MODE! --account 1000346516 --ml-version 1.2.3 --capital !CAPITAL_SCALE!
 
 REM Final sync on exit
 echo.
