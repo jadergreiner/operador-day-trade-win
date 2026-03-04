@@ -32,15 +32,15 @@ class TerminalIsolationEnforcer:
 
     Valida que APENAS o terminal Clear está rodando e conectado.
     Se detectar qualquer outro terminal MT5, FALHA IMEDIATAMENTE.
-    
+
     Uso:
         enforcer = TerminalIsolationEnforcer(
             expected_terminal_path="C:\\Program Files\\Clear...\\terminal64.exe"
         )
-        
+
         # Chamar ANTES de qualquer operação crítica
         enforcer.validate_before_operation("send_order")
-        
+
         # Chamar periodicamente para monitorar
         enforcer.validate_continuous()
     """
@@ -69,7 +69,7 @@ class TerminalIsolationEnforcer:
         """
         self.expected_terminal_path = expected_terminal_path.lower()
         self.enforce_mode = enforce_mode
-        
+
         # Validação básica
         if "clear" not in self.expected_terminal_path.upper():
             raise ValueError(
@@ -80,7 +80,7 @@ class TerminalIsolationEnforcer:
         self.violations_count = 0
         self.last_violation_time: Optional[datetime] = None
         self.operation_count = 0
-        
+
         logger.info(
             f"TerminalIsolationEnforcer inicializado com modo {enforce_mode}"
         )
@@ -207,15 +207,15 @@ class TerminalIsolationEnforcer:
             for proc in psutil.process_iter(["pid", "name", "exe"]):
                 try:
                     exe = proc.info.get("exe", "").lower()
-                    
+
                     # Skip se é nosso terminal Clear esperado
                     if exe == self.expected_terminal_path:
                         continue
-                    
+
                     # Procurar por padrões perigosos
                     if "terminal64.exe" in proc.info.get("name", "").lower():
                         # É um terminal MT5, mas qual broker?
-                        
+
                         for broker, patterns in self.DANGEROUS_PATTERNS.items():
                             for pattern in patterns:
                                 if pattern in exe.lower():
@@ -242,7 +242,7 @@ class TerminalIsolationEnforcer:
             for proc in psutil.process_iter(["pid", "name", "exe"]):
                 try:
                     exe = proc.info.get("exe", "").lower()
-                    
+
                     # Procurar por qualquer terminal64.exe from Clear
                     if (
                         exe == self.expected_terminal_path or
@@ -312,7 +312,7 @@ def validate_critical_operation(operation_name: str) -> None:
 
     Uso:
         from src.infrastructure.terminal_isolation_enforcer import validate_critical_operation
-        
+
         def send_order(...):
             validate_critical_operation("send_order")
             # ... send order ...

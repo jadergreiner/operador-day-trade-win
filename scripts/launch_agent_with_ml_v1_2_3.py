@@ -327,9 +327,9 @@ def setup_integrations():
         try:
             from config.settings import get_config
             from src.infrastructure.terminal_isolation_enforcer import TerminalIsolationViolation
-            
+
             config = get_config()
-            
+
             if not config.mt5_terminal_path:
                 print(f"  ⚠️  MT5_TERMINAL_PATH não configurado em .env")
                 print(f"     Adicione a linha (exemplo):")
@@ -339,7 +339,7 @@ def setup_integrations():
                 # Initializa enforcer com HARD_STOP mode
                 enforcer = initialize_enforcer(config.mt5_terminal_path)
                 print(f"  ✅ Enforcer inicializado: {config.mt5_terminal_path}")
-                
+
                 # Valida imediatamente (BLOQUEIO ATIVO)
                 try:
                     enforcer.validate_before_operation("launcher:startup")
@@ -356,7 +356,7 @@ def setup_integrations():
         except Exception as e:
             print(f"  ⚠️  Erro no setup de terminal isolation: {e}")
             # Continue anyway - enforcer é opcional
-        
+
         print("  " + "=" * 60)
 
     # S2-6 setup (from launch_agent_with_s2_6.py pattern)

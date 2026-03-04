@@ -4515,7 +4515,7 @@ def main():
     while True:
         try:
             start_time = time.perf_counter() # [S1-5] Medição de latência P95
-            
+
             # ⚡ TERMINAL ISOLATION: Validação contínua a cada ciclo
             try:
                 from src.infrastructure.terminal_isolation_enforcer import get_enforcer
@@ -4529,7 +4529,7 @@ def main():
                 print(f"\n  ❌ KILL SWITCH: Terminal isolation violation")
                 print(f"     {e}")
                 break  # Sai do loop
-            
+
             # Verifica horário de pregão
             if not _is_market_hours():
                 # Fecha posições abertas ao sair do pregão
