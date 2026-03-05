@@ -841,6 +841,61 @@ ELSE:
             └──────────────────┘
 
 ┌────────────────────────────────────────────────────────────────────┐
+│ P50 CONFIDENCE & RISK MANAGEMENT (NEW - 05/03/2026) ✅ ACTIVE    │
+│                                                                    │
+│ Status: OPERATIONAL (after GATE 2 FAIL, isolation mode)          │
+│ Purpose: Independent risk guardrail outside ML model             │
+│                                                                    │
+│ PessimismDetector (P50-A) → daily_confidence_retraining (P50-B)  │
+│   ├─ Input: trades table (yesterday's win_rate calculation)     │
+│   ├─ Adjustment: WIN_RATE > 60% → +0.03                         │
+│   │               WIN_RATE < 50% → -0.02                        │
+│   │               WIN_RATE 50-60% → no change                   │
+│   │                                                              │
+│   ├─ Confidence Floor: 0.25 | Ceiling: 0.65                    │
+│   ├─ Persist: config/confidence_override_today.json              │
+│   │                                                              │
+│   └─ Database Table:                                             │
+│      ├─ CONFIDENCE_HISTORY                                       │
+│      │  ├─ id (PK)                                               │
+│      │  ├─ timestamp (datetime)                                  │
+│      │  ├─ confidence_value (float, 0.0-1.0)                   │
+│      │  ├─ source (string: 'pessimism_detector'|'retraining')   │
+│      │  ├─ reason (string: explanation)                         │
+│      │  └─ status (string: 'active'|'archived')                 │
+│      │                                                           │
+│      └─ PESSIMISM_MODE                                           │
+│         ├─ id (PK)                                               │
+│         ├─ timestamp (datetime)                                  │
+│         ├─ is_pessimism (bool: true=reduced_exposure)           │
+│         ├─ confidence_current (float)                            │
+│         ├─ cycles_below_threshold (int: 0-10)                  │
+│         ├─ adjustment_multiplier (float: default 1.0)           │
+│         ├─ persist_path (string: JSON file)                    │
+│         └─ status (string: 'active'|'recovered')                │
+│                                                                    │
+│ RealtimeFeedbackSystem (P50-C)                                    │
+│   ├─ feedback_logger_realtime.py (198 LOC)                      │
+│   │  └─ Background monitoring: rejection tracking               │
+│   │                                                              │
+│   └─ generate_opportunity_summary.py (295+ LOC)                │
+│      └─ Daily EOD: execution_rate, win_rate stats              │
+│         └─ Output: outputs/opportunity_summary_YYYYMMDD.txt    │
+│                                                                    │
+│ Circuit Breaker Config (Planned P0-3)                            │
+│   ├─ CIRCUIT_BREAKER_CONFIG table                               │
+│   │  ├─ lever_yellow (-3%): Alert only, trading continues     │
+│   │  ├─ lever_orange (-5%): Slow mode (50% ticket, 90% ML)    │
+│   │  ├─ lever_red (-8%): Halt all                              │
+│   │  └─ last_updated (timestamp)                                │
+│   │                                                              │
+│   └─ CIRCUIT_BREAKER_HISTORY table                              │
+│      ├─ timestamp (datetime)                                    │
+│      ├─ lever_triggered (string)                               │
+│      ├─ capital_drawdown (float %)                              │
+│      └─ action_taken (string)                                   │
+│                                                                    │
+┌────────────────────────────────────────────────────────────────────┐
 │ PERSISTENCE LAYER (NEW - 04/03/2026) ✅ PRODUCTION-READY          │
 │                                                                    │
 │ AIReflectionJournalService                                        │
@@ -870,11 +925,12 @@ ELSE:
 
 ## 🔗 Documentos Relacionados
 
-- [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) - Schema SQL completo com tipos e constraints (Tables 1-15)
-- [ARCHITECTURE.md](ARCHITECTURE.md) - Seção 4.7 (Reflection Persistence Layer) + 4.6 (P0-1 REST API)
-- [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) - Regras que regem os dados em cada entity
-- [ADRs.md](ADRs.md) - Decisões sobre estrutura de dados
+- [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) - Schema SQL completo com tipos e constraints (Tables 1-18)
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Seção 3 (P50 Risk Management) + 4.6 (REST API) + 4.7 (Reflection)
+- [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) - Règles que regem os dados + P50 confidence rules
+- [ADRs.md](ADRs.md) - ADR-011 (GATE 2 FAIL - Risk Management Priority)
+- [STATUS_ENTREGAS.md](STATUS_ENTREGAS.md) - P50 implementation status + GATE 2 checkpoint results
 
 ---
 
-**ÚLTIMA ATUALIZAÇÃO:** 04/03/2026 | **STATUS**: ✅ COMPLETO (15 tabelas, todas relacionadas)
+**ÚLTIMA ATUALIZAÇÃO:** 05/03/2026 12:28 BRT | **STATUS**: ✅ COMPLETO (18 tabelas, todas relacionadas + P50)

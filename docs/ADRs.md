@@ -1168,6 +1168,80 @@ Solução necessária: Detecção automática + Auto-recovery (sem intervenção
 
 ---
 
+## ADR-011: GATE 2 FAIL - Risk Management Prioritization vs Model Tuning
+
+**Status**: ✅ ACCEPTED
+**Data**: 05/03/2026
+
+### Contexto
+
+GATE 2 Backtest Validation executado em 05/03/2026 12:22:22 resultou em **FAIL**:
+- Max Drawdown: 92.8% (target <15%) - **BLOQUEANTE**
+- Consistency (σ): 238.8% (target <30%) - **BLOQUEANTE**
+- Sharpe Ratio: 6.67 ✅ | Win Rate: 63.6% ✅ (métricas OK)
+
+**Problema**: Modelo tem performance inconsistente entre folds (Fold 0: 60% WR vs Fold 4: 71% WR), sem proteção contra perdas totais (DD=100% em 4 de 5 folds).
+
+**Capital Decision:** R$ 50k baseline (sem escalabilidade até melhorias)
+
+### Decisão
+
+**Priorizar Risk Management Upgrade ANTES de Model Tuning:**
+
+```
+Phase 1 (06-07/03): Risk Management
+├─ Implementar P0-3 (Terminal Isolation validation)
+├─ 3-layer circuit breakers (-3% ⚠️, -5% 🟠, -8% 🔴)
+└─ Max drawdown limits por fold (15% max antes de stop)
+
+Phase 2 (08/03): Dataset Upgrade
+├─ Coletar 252 dias de dados reais (vs 435 sintético atual)
+└─ Re-rodar backtest com validação histórica
+
+Phase 3 (09-10/03): Model Refinement
+├─ Análise SHAP dos erros Fold 0-3
+├─ Retrain com regularization L1/L2
+└─ 10-fold cross-validation (vs 5-fold atual)
+
+GATE 2 Retest: 08-10/03/2026
+```
+
+### Consequências
+
+✅ **Por que Risk Management PRIMEIRO:**
+- Circuit breakers reduzem risco máximo de 92.8% para <8%
+- Operação segura mesmo com modelo inconsistente
+- Não requer retraining de modelo (testado no dia)
+- Go-Live possível em 13/03 se GATE 2 retest PASS
+
+❌ **Risco de dataset sintético:**
+- 435 samples originais não generalizam bem cross-timeframes
+- Bootstrap augmentation para 1000 acentuou overfitting
+- Validação em dados reais necessária antes de escalabilidade
+
+### Trade-Offs Aceitos
+
+| Decision | Escolha | Razão |
+|----------|---------|-------|
+| Model Tuning | **DEFER** | Risk Management = immediate safety |
+| Risk Management | **PRIORITIZE** | Circuit breakers = live-safe agora |
+| Capital Escalabilidade | **HOLD** | R$ 50k até GATE 2 retest PASS |
+| Go-Live Target | **MANTER** | 13/03 possível se Risk + GATE 2 completam |
+
+### Referências Relacionadas
+
+- 📊 **[STATUS_ENTREGAS.md § P0-2](STATUS_ENTREGAS.md#--p0-2-backtest-validação-ml---gate-2-checkpoint-0503--fail)** - GATE 2 resultado detalha
+- 📋 **[BACKLOG_UNIFICADO.md § P0-2](BACKLOG_UNIFICADO.md#p0-2-backtest-validacao-ml---gate-2-decisao-capital)** - Status P0-2 Etapas 1-3
+- 🏗️ **[ARCHITECTURE.md § P0-3](ARCHITECTURE.md#3-p0-3--terminal-isolation-enforcer-com-3-camadas)** - Terminal Isolation design
+- 📈 **[DATA_MODELS.md](DATA_MODELS.md)** - Circuit breaker configuration storage
+
+### Próximas ADRs
+
+- **ADR-012**: Circuit Breaker Thresholds (-3%, -5%, -8%) tuning post-alpha
+- **ADR-013**: Data strategy para Phase 3 (real-time vs batch retraining)
+
+---
+
 ## 📊 Status de ADRs
 
 | ADR | Status | Data | Próximo Review |
@@ -1182,7 +1256,10 @@ Solução necessária: Detecção automática + Auto-recovery (sem intervenção
 | ADR-008 | ✅ ACCEPTED | 04/03/2026 | GO-LIVE 10/04/2026 (validation) |
 | ADR-009 | ✅ ACCEPTED | 04/03/2026 | Sprint 1 (27/02+) - Proxy stability |
 | ADR-010 | ✅ ACCEPTED | 04/03/2026 | Phase 3 (13/03) - Root cause analysis |
+| ADR-011 | ✅ ACCEPTED | 05/03/2026 | 08/03/2026 - GATE 2 retest |
 
 ---
 
-**ÚLTIMA ATUALIZAÇÃO:** 04/03/2026 | **STATUS**: ✅ COMPLETO E INTEGRADO
+**ÚLTIMA ATUALIZAÇÃO:** 05/03/2026 12:25 BRT | **STATUS**: ✅ INTEGRADO COM GATE 2
+
+```

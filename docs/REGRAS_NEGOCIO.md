@@ -392,7 +392,99 @@ Se degradation_detected AND pessimism_recovery_in_progress:
 **Safety Margin**: 3% (não deixar confidence muito próximo de win_rate)
 
 ---
+## 🔴 REGRAS DE PROTEÇÃO P0-3 (Circuit Breaker - Planejado 06/03)
 
+### R-RISCO-P0-3-001: Circuit Breaker Amarelo (-3%)
+
+**Regra**: Quando capital loss alcança -3%, disparar ALERTA (trading continua)
+
+**Implementação**:
+```
+drawdown_percentual = (session_balance_minimo - session_balance_inicio) / session_balance_inicio
+Se drawdown_percentual <= -0.03 AND drawdown_percentual > -0.05:
+  → Status: YELLOW
+  → Ação: Log alerta | Dashboard warning | Notificação trader
+  → Trading: Continua (sem restrições)
+  → Duração: Até recuperação (manual reset)
+```
+
+**Trigger**: Contínuo (monitorado a cada ciclo)
+**Ação Trader**: Pode parar manualmente sistema se julgar necessário
+**Revert**: Automático quando drawdown volta acima de -3%
+**Validação**: CIRCUIT_BREAKER_HISTORY table
+
+---
+
+### R-RISCO-P0-3-002: Circuit Breaker Laranja (-5%)
+
+**Regra**: Quando capital loss alcança -5%, ativar SLOW MODE (50% ticket, ML ≥90%)
+
+**Implementação**:
+```
+Se drawdown_percentual <= -0.05 AND drawdown_percentual > -0.08:
+  → Status: ORANGE
+  → Ação: 
+    1. Reduzir ticket size a 50% do normal
+    2. Aumentar ML confidence threshold para 0.90
+    3. Desabilitar oportunidades < 0.90
+  → Trading: Continua com restrições
+  → Duração: Até -3% ou -8% (gate transition)
+```
+
+**Entrada (Trigger)**: Drawdown -5%
+**Saída (Recovery)**: Drawdown volta para -3% (volta a YELLOW)
+**Fallback**: Se continuar piorando → RED threshold
+**Validação**: 
+- CIRCUIT_BREAKER_CONFIG.ticket_reduction_percent_slow_mode = 50
+- CIRCUIT_BREAKER_CONFIG.ml_score_threshold_slow_mode = 0.90
+
+---
+
+### R-RISCO-P0-3-003: Circuit Breaker Vermelho (-8%)
+
+**Regra**: Quando capital loss alcança -8%, HALTAR todas as operações
+
+**Implementação**:
+```
+Se drawdown_percentual <= -0.08:
+  → Status: RED
+  → Ação: 
+    1. Haltar todas as operações em tempo real
+    2. Fechar todas posições abertas (stop-loss)
+    3. Sistema em standby (aguardando análise)
+  → Trading: BLOQUEADO completamente
+  → Duração: Até decisão manual do trader/CIO/CFO
+```
+
+**Trigger**: Drawdown -8% (BLOQUEANTE)
+**Recovery**: Manual (requer aprovação CIO/CFO para reativação)
+**Fallback**: Email + SMS alerta para stakeholders
+**Timeline**: Imediato (< 100ms de detecção a halt)
+**Validação**: CIRCUIT_BREAKER_HISTORY + sistema_halt_status
+
+---
+
+### R-RISCO-P0-3-004: Circuit Breaker Reset Protocol
+
+**Regra**: Recuperação da Red → Orange → Yellow seguindo drawdown recovery
+
+**Implementação**:
+```
+recovery_check = drawdown_percentual > last_worst_drawdown_em_sessao
+
+Se recovery_detected:
+  Se drawdown > -0.08: permanecer RED (até < -0.08)
+  Se drawdown ≤ -0.05: transicionar para RED→ORANGE
+  Se drawdown ≤ -0.03: transicionar para ORANGE→YELLOW
+  Se drawdown > -0.03: transicionar para YELLOW→GREEN (normal)
+```
+
+**Automatismo**: 100% automático (não requer ação manual)
+**Incrementalidade**: Cada gate transition logged separately
+**Validação**: CIRCUIT_BREAKER_HISTORY.recovery_timestamp atualizado
+**Auditoria**: recovery_timestamp field para compliance
+
+---
 ## �🟢 REGRAS DE OTIMIZAÇÃO
 
 ### R-OTI-001: Latência Máxima de Execução
@@ -479,6 +571,13 @@ if memory_usage > 100:
 | R-CRÍTICA-007 | `src/infrastructure/terminal_isolation_enforcer.py:1-380` | [ADR-008](ADRs.md#adr-008-terminal-isolation-enforcer-com-3-camadas-de-bloqueio) |
 | R-RISCO-001 | `scripts/agente_micro_tendencia_winfut.py:4377+` | [ADR-006](ADRs.md#adr-006-circuit-breaker-strategy) |
 | R-RISCO-004 | `scripts/agente_micro_tendencia_winfut.py:2489-2618` | [ADR-004](ADRs.md#adr-004-por-que-intradaylearner-em-memoria-vs-sqlite-imediato) |
+| R-RISCO-P50-001 | `scripts/check_confidence_health.py:100-150` | [ADR-010](ADRs.md#adr-010-por-que-pessimism-detection-p50-urgente) |
+| R-RISCO-P50-002 | `scripts/reset_pessimism_mode.py:1-180` | [ADR-010](ADRs.md#adr-010-por-que-pessimism-detection-p50-urgente) |
+| R-RISCO-P50-003 | `scripts/daily_confidence_retraining.py:50-120` | [ADR-010](ADRs.md#adr-010-por-que-pessimism-detection-p50-urgente) |
+| R-RISCO-P0-3-001 | `(Planejado P0-3 06/03)` | [ADR-011](ADRs.md#adr-011-gate-2-fail---risk-management-prioritization-vs-model-tuning) |
+| R-RISCO-P0-3-002 | `(Planejado P0-3 06/03)` | [ADR-011](ADRs.md#adr-011-gate-2-fail---risk-management-prioritization-vs-model-tuning) |
+| R-RISCO-P0-3-003 | `(Planejado P0-3 06/03)` | [ADR-011](ADRs.md#adr-011-gate-2-fail---risk-management-prioritization-vs-model-tuning) |
+| R-RISCO-P0-3-004 | `(Planejado P0-3 06/03)` | [ADR-011](ADRs.md#adr-011-gate-2-fail---risk-management-prioritization-vs-model-tuning) |
 
 ---
 
@@ -488,8 +587,11 @@ if memory_usage > 100:
 |------|-------|---------|-------|
 | 03/03/2026 | R-CRÍTICA-001 a 006 | Criação | P32 IntraDayLearner + MT5 Protection |
 | 03/03/2026 | R-RISCO-004 | Adição | Confidence threshold dinâmico |
+| 05/03/2026 | R-RISCO-P50-001,002,003 | Adição | P50 implementado e operacional |
+| 05/03/2026 | R-RISCO-P0-3-001 a 004 | Planejamento | ADR-011 GATE 2 FAIL - Risk Management Priority |
 | TBD | R-CRÍTICA-006 | Atualização | P33 integração com PredictionTracker |
+| TBD | R-RISCO-P0-3-001 a 004 | Implementação | P0-3 Circuit Breaker (06-10/03/2026) |
 
 ---
 
-**ÚLTIMA ATUALIZAÇÃO:** 03/03/2026 | **STATUS**: ✅ COMPLETO
+**ÚLTIMA ATUALIZAÇÃO:** 05/03/2026 12:32 BRT | **STATUS**: ✅ COMPLETO (P50 + P0-3 planning)

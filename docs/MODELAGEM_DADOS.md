@@ -901,12 +901,105 @@ CREATE INDEX idx_confidence_health_pessimism ON confidence_health(pessimism_dete
 
 ---
 
-## 🔗 Documentos Relacionados
+### Tabela 18: CIRCUIT_BREAKER_CONFIG (Configuração de Proteção P0-3)
 
-- [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md) - ER diagram visual
-- [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) - Regras que governam os dados
-- [ARCHITECTURE.md](ARCHITECTURE.md) - Arquitetura geral (seções 4.6 e 4.7)
+```sql
+CREATE TABLE circuit_breaker_config (
+    id INTEGER PRIMARY KEY,
+    lever_yellow_threshold REAL NOT NULL DEFAULT -0.03,
+    lever_orange_threshold REAL NOT NULL DEFAULT -0.05,
+    lever_red_threshold REAL NOT NULL DEFAULT -0.08,
+    yellow_action TEXT NOT NULL DEFAULT 'ALERT',
+    orange_action TEXT NOT NULL DEFAULT 'SLOW_MODE',
+    red_action TEXT NOT NULL DEFAULT 'HALT',
+    ticket_reduction_percent_slow_mode INTEGER DEFAULT 50,
+    ml_score_threshold_slow_mode REAL DEFAULT 0.90,
+    enabled BOOLEAN DEFAULT 1,
+    last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    CHECK(lever_yellow_threshold > lever_orange_threshold),
+    CHECK(lever_orange_threshold > lever_red_threshold),
+    CHECK(ticket_reduction_percent_slow_mode >= 0 AND ticket_reduction_percent_slow_mode <= 100),
+    CHECK(ml_score_threshold_slow_mode >= 0.0 AND ml_score_threshold_slow_mode <= 1.0)
+);
+
+CREATE UNIQUE INDEX idx_circuit_breaker_config_primary ON circuit_breaker_config(id);
+```
+
+**Campos:**
+- `id`: PK (single row config table)
+- `lever_yellow_threshold`: Capital loss threshold for yellow alert (-3% = -0.03)
+- `lever_orange_threshold`: Capital loss threshold for orange slow mode (-5% = -0.05)
+- `lever_red_threshold`: Capital loss threshold for red halt (-8% = -0.08)
+- `*_action`: Action text identifier
+- `ticket_reduction_percent_slow_mode`: In slow mode, reduce ticket size to % (e.g., 50%)
+- `ml_score_threshold_slow_mode`: In slow mode, only execute if ML confidence >= 90%
+- `enabled`: Circuit breaker system active flag
+- `last_updated`: Timestamp última modificação
+
+**Estado Inicial (P0-3 Deployment):**
+- Yellow: -3% → Alert only, trading continues
+- Orange: -5% → Slow mode (50% ticket, 90% ML min)
+- Red: -8% → Halt all trading
 
 ---
 
-**ÚLTIMA ATUALIZAÇÃO:** 04/03/2026 | **STATUS**: ✅ COMPLETO + Persistência implementada
+### Tabela 19: CIRCUIT_BREAKER_HISTORY (Auditoria de Ativações)
+
+```sql
+CREATE TABLE circuit_breaker_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp DATETIME NOT NULL,
+    lever_triggered TEXT NOT NULL,
+    capital_loss_percent REAL NOT NULL,
+    session_pnl REAL,
+    action_taken TEXT NOT NULL,
+    ticket_sequence REAL,
+    ml_confidence_at_trigger REAL,
+    recovery_timestamp DATETIME,
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(ticket_sequence) REFERENCES trades(pnl),
+    CHECK(lever_triggered IN ('YELLOW', 'ORANGE', 'RED', 'NONE')),
+    CHECK(action_taken IN ('ALERT', 'SLOW_MODE', 'HALT', 'RECOVERY')),
+    CHECK(capital_loss_percent <= 0.0),
+    CHECK(capital_loss_percent >= -1.0)
+);
+
+CREATE INDEX idx_circuit_breaker_history_timestamp ON circuit_breaker_history(timestamp DESC);
+CREATE INDEX idx_circuit_breaker_history_lever ON circuit_breaker_history(lever_triggered);
+CREATE INDEX idx_circuit_breaker_history_session ON circuit_breaker_history(timestamp, action_taken);
+```
+
+**Campos:**
+- `id`: PK
+- `timestamp`: When circuit breaker was triggered
+- `lever_triggered`: YELLOW | ORANGE | RED | NONE
+- `capital_loss_percent`: Exact % loss at trigger (-0.03 to -0.08)
+- `session_pnl`: Session P&L value in R$
+- `action_taken`: ALERT | SLOW_MODE | HALT | RECOVERY
+- `ticket_sequence`: Link to trade that triggered
+- `ml_confidence_at_trigger`: ML model confidence when triggered
+- `recovery_timestamp`: When circuit breaker was reset (for RED/ORANGE)
+- `notes`: Additional context
+- `created_at`: Auditoria insert time
+
+**Propósito:**
+- Compliance and risk audit trail
+- Post-mortem analysis of drawdowns
+- Circuit breaker effectiveness tracking
+- Regulatory reporting
+
+---
+
+## 🔗 Documentos Relacionados
+
+- [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md) - ER diagram visual (updated with P50 + P0-3)
+- [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) - Regras que governam os dados + Circuit Breaker rules
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Arquitetura geral (seções 3 P50, 3.1 P0-3 Planejado)
+- [ADRs.md](ADRs.md) - ADR-011 (GATE 2 decision to prioritize risk management)
+
+---
+
+**ÚLTIMA ATUALIZAÇÃO:** 05/03/2026 12:30 BRT | **STATUS**: ✅ COMPLETO (19 tabelas SQL + P50 JSON configs)
