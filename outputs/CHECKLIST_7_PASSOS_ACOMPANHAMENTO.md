@@ -1,6 +1,6 @@
 # ✅ CHECKLIST EXECUTIVO - 7 PASSOS (Acompanhamento)
 
-Use este arquivo para rastrear progresso dos 7 passos.  
+Use este arquivo para rastrear progresso dos 7 passos.
 Atualize diariamente durante execução.
 
 ---
@@ -19,9 +19,9 @@ Progresso: ████████░░░░░░░░░░░░░ 35% (
 
 ## PASSO 1️⃣ : Revisar P0-URGENT-1 com Stakeholders
 
-**Duração:** 45 min  
-**Status:** ⏳ TODO  
-**Owner:** Tech Lead / Apresentador  
+**Duração:** 45 min
+**Status:** ⏳ TODO
+**Owner:** Tech Lead / Apresentador
 
 | Item | Status | Data | Notas |
 |------|--------|------|-------|
@@ -56,9 +56,9 @@ Decisão: [ ] SIM [ ] NÃO [ ] CONDICIONAL
 
 ## PASSO 2️⃣ : Deploy para Staging
 
-**Duração:** 30 min  
-**Status:** ⏳ TODO  
-**Owner:** Operador Técnico  
+**Duração:** 30 min
+**Status:** ⏳ TODO
+**Owner:** Operador Técnico
 
 | Item | Status | Data | Notas |
 |------|--------|------|-------|
@@ -96,9 +96,9 @@ Erros encontrados: ___________
 
 ## PASSO 3️⃣ : Notificar Equipe P1-LEARNING
 
-**Duração:** 20 min  
-**Status:** ⏳ TODO  
-**Owner:** Tech Lead  
+**Duração:** 20 min
+**Status:** ⏳ TODO
+**Owner:** Tech Lead
 
 | Item | Status | Data | Notas |
 |------|--------|------|-------|
@@ -134,9 +134,9 @@ Data K.O. agendado: ___________
 
 ## PASSO 4️⃣ : Monitorar P0-URGENT-1 (Contínuo - 3-5 dias)
 
-**Duração:** 3-5 dias (daily standups)  
-**Status:** ⏳ APÓS PASSO 2  
-**Owner:** Operador + ML Expert  
+**Duração:** 3-5 dias (daily standups)
+**Status:** ⏳ APÓS PASSO 2
+**Owner:** Operador + ML Expert
 
 ### Dia 1 (Data: _______):
 
@@ -177,7 +177,7 @@ Saída: ___________
 ```
 [ ] SIM - P0-URGENT-1 validado com sucesso
     → Prosseguir para PASSO 6
-    
+
 [ ] NÃO - Problemas encontrados
     → Ativar P0-URGENT-2 (Forced Activation backup)
     → Estender monitoramento
@@ -187,9 +187,9 @@ Saída: ___________
 
 ## PASSO 5️⃣ : Preparar P1-LEARNING (Paralelo a Passo 4)
 
-**Duração:** 5-6h (em paralelo)  
-**Status:** ⏳ PARALELO COM PASSO 4  
-**Owner:** Data Engineer + ML Expert + QA  
+**Duração:** 5-6h (em paralelo)
+**Status:** ⏳ PARALELO COM PASSO 4
+**Owner:** Data Engineer + ML Expert + QA
 
 | Subtarefa | Status | Owner | Data | Notas |
 |-----------|--------|-------|------|-------|
@@ -238,9 +238,9 @@ Commits: ___________
 
 ## PASSO 6️⃣ : P1-LEARNING Kick-off
 
-**Duração:** 60 min (reunião)  
-**Status:** ⏳ QUANDO PASSO 4 VALIDADO  
-**Owner:** ML Expert (facilitador)  
+**Duração:** 60 min (reunião)
+**Status:** ⏳ QUANDO PASSO 4 VALIDADO
+**Owner:** ML Expert (facilitador)
 
 | Item | Status | Data | Notas |
 |------|--------|------|-------|
@@ -281,9 +281,9 @@ Próximo sprint standup: ___________
 
 ## PASSO 7️⃣ : Extrair Regras Causais (Etapas 6-7)
 
-**Duração:** 5-8h (semana 2 de P1)  
-**Status:** ⏳ APÓS PASSO 6  
-**Owner:** ML Expert + Data Engineer  
+**Duração:** 5-8h (semana 2 de P1)
+**Status:** ⏳ APÓS PASSO 6
+**Owner:** ML Expert + Data Engineer
 
 | Item | Status | Data | Notas |
 |------|--------|------|-------|
@@ -428,6 +428,6 @@ _________________________________________________________________
 
 ---
 
-**Última atualização:** _______  
-**Próxima revisão:** _______  
+**Última atualização:** _______
+**Próxima revisão:** _______
 **Status geral:** 🟢 PRONTO PARA EXECUÇÃO

@@ -59,7 +59,7 @@
 ```
 4. Rodar testes:
    python scripts/test_inactivity_penalty.py
-   
+
 5. Esperado: "TODOS OS TESTES PASSARAM!" ✅
 ```
 
@@ -289,6 +289,6 @@ Em 2-3 semanas:
 
 ---
 
-**Status:** 🟢 PRONTO PARA COMEÇAR  
-**Sua ação:** Escolha opção acima + execute agora  
+**Status:** 🟢 PRONTO PARA COMEÇAR
+**Sua ação:** Escolha opção acima + execute agora
 **Próxima review:** In 30 min / In 1h / Tomorrow

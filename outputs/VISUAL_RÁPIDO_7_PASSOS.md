@@ -25,7 +25,7 @@ START
   │
   └─ PASSO 7: Implementar + Extrair Regras
              └─ Result: 7-step causal loop operacional
-             
+
 END
 ```
 
@@ -60,12 +60,12 @@ APRESENTADOR          OPERADOR              TECH LEAD
 │                     │                     │
 ├─ PASSO 1:           ├─ PASSO 2:           ├─ COORDENA 1-3
 │  Slides             │  Terminal            Reuniões
-│  Apresenta          │  Deploy              
-│  Defende            │  
+│  Apresenta          │  Deploy
+│  Defende            │
 │                     ├─ PASSO 4:           ├─ PASSO 6:
 ├─ VALIDA             │  Monitora            Kick-off
-│  Feedback           │  Logs                
-├─ DOCUMENTA           │  Reports             
+│  Feedback           │  Logs
+├─ DOCUMENTA           │  Reports
 │  Resultados         │                     ├─ PASSO 7:
 └─ ASSINA OFF         └─ PASSO 5:           │  Coordena
                          Prepara            │  Implementa

@@ -145,8 +145,8 @@ Write-Host "✅ Rollback completo - database restaurada"
 
 🟢 **DEPLOY PASSO 2 COMPLETO - AGENT PRONTO PARA INICIAR**
 
-**Time**: 20:05 BRT  
-**Sessions**: Backup + Syntax + Tests + Config  
-**Result**: ✅ SUCCESS  
+**Time**: 20:05 BRT
+**Sessions**: Backup + Syntax + Tests + Config
+**Result**: ✅ SUCCESS
 
 👉 **Próximo**: Executar agent agora ou agendar para depois?

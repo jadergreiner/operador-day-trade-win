@@ -1,6 +1,6 @@
 # 📋 ROADMAP DE EXECUÇÃO - P0 + P1 READY
 
-**Status Atual:** P0-URGENT-1 implementado e committed  
+**Status Atual:** P0-URGENT-1 implementado e committed
 **Pronto para:** Próximo pregão (validação de produção)
 
 ---
@@ -41,15 +41,15 @@
 ✅ MÉTRICA CRÍTICA: Trades/dia
    Target: 0 → 2-3
    Validar: Logs com ENTER signals
-   
+
 ✅ MÉTRICA CRÍTICA: Confidence Trend
    Target: Para de cair, começa subir
    Validar: Gráfico trend (não mais caindo)
-   
+
 ✅ MÉTRICA CRÍTICA: Penalty Aplicada
    Target: Ativa em >120min sem trade
    Validar: Logs "INACTIVITY_PENALTY" presentes
-   
+
 ✅ MÉTRICA CRÍTICA: Erros
    Target: Zero
    Validar: Nenhum exception ou crash
@@ -263,6 +263,6 @@ Seção 3: Métricas
 
 ---
 
-**Próxima Review:** Daily standup 09:00  
-**Owner:** GitHub Copilot + ML Expert + Data Analyzer  
+**Próxima Review:** Daily standup 09:00
+**Owner:** GitHub Copilot + ML Expert + Data Analyzer
 **Status:** 🟢 READY FOR EXECUTION (Próximo pregão)

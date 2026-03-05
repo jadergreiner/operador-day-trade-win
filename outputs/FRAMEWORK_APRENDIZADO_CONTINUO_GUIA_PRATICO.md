@@ -1,7 +1,7 @@
 # Framework de Aprendizado Contínuo & Causal - Guia Prático
 
-**Data:** 05/03/2026  
-**Responsável:** ML Expert + Data Analyst  
+**Data:** 05/03/2026
+**Responsável:** ML Expert + Data Analyst
 **Documentação Técnica:** [ADR-010-CAUSAL_FEEDBACK_LOOP.md](ADR-010-CAUSAL_FEEDBACK_LOOP.md)
 
 ---
@@ -50,7 +50,7 @@ Problema: Próximo sinal com RSI > 70 em regime SIDEWAYS
   → Modelo entra porque aprendeu "RSI > 70"
   → Mas condições mudaram (trend foi ∆)
   → Trade perde -R$ 300
-  
+
 ROOT CAUSE: Modelo não sabia que RSI só funciona em UPTREND
 ```
 
@@ -63,7 +63,7 @@ Resultado: WIN (Profit +R$ 450)
 Análise Causal (Passo 6):
   - Trend no início: UP
   - Trend no fim: UP (+0.8%) ✓ ESTÁVEL
-  - Volatility drift: +0.95% ✓ ESTÁVEL  
+  - Volatility drift: +0.95% ✓ ESTÁVEL
   - Volume mudou: -4.8% ✓ ACEITÁVEL
 
 CONCLUSÃO: Todas as condições que fizeram RSI funcionar continuam presentes
@@ -71,7 +71,7 @@ CONCLUSÃO: Todas as condições que fizeram RSI funcionar continuam presentes
 
 Aprendizado Causal:
   "RSI > 70 + UPTREND_STABLE + HIGH_VOLUME → +0.04 confidence"
-  
+
 Aplicável APENAS quando:
   - RSI > 70 ✓
   - Trend = UP (não sideways, não down) ✓
@@ -92,22 +92,22 @@ Resultado: Win rate 60% → 72% porque modelo só aplica regra quando apropriado
   Sinal: BBands Lower bounce + Oversold RSI
   Condições: Downtrend, high support volume, 1.5% below 20-day MA
   Confidence: 0.65 (sinal clássico de bounce)
-  
+
 📈 EVOLUÇÃO (Monitoramento)
   T+2min: Bounce +0.4%, volume confirma
   T+4min: Bounce +0.8%, resistência local quebra
-  
+
 ✅ FECHAMENTO
   Saída: TP hit em +1.2%, Profit R$ 520
-  
+
 🔍 ANÁLISE L2 (Causal)
   - Oversold mantido durante trade? NÃO (melhorou)
   - Support volume confirmou? SIM
   - Downtrend sustentou? SIM (menor bounce em uptrend)
-  
+
 ✅ CONCLUSÃO: ACERTO CAUSAL
   Condições que "fizeram funcionar" estavam presentes
-  
+
 🧠 APRENDIZADO:
   "BBands_Lower + Oversold_RSI + Strong_Support_Volume → +0.05 confidence"
   Aplicável: sempre que 3 condições presentes juntas
@@ -120,23 +120,23 @@ Resultado: Win rate 60% → 72% porque modelo só aplica regra quando apropriado
   Sinal: RSI > 70 em mercado sideways
   Condições: Lateral 15min, tight range R$ 0.15
   Confidence: 0.55 (baixa confiança)
-  
+
 📈 EVOLUÇÃO
   T+1min: News macro (dólar sai +1%)
-  
+
 ✅ FECHAMENTO
   Saída: TP hit em +0.8%, Profit R$ 280
   Motivo: Macro rally, não por RSI
-  
+
 🔍 ANÁLISE L2 (Causal)
   - RSI estava 72: SIM
   - Mas mercado era LATERAL, não trending
   - Ganho foi causado por MACRO NEWS (fora do modelo)
   - Condições de mercado mundialmente DIFERENTES
-  
+
 ❌ CONCLUSÃO: CORRELAÇÃO ESPÚRIA
   Não era o sinal que funcionou, era o macro event
-  
+
 🧠 APRENDIZADO:
   NENHUM - Rejeita "RSI > 70" como regra válida isolada
   Evita overfitting a correlação falsa
@@ -149,30 +149,30 @@ Resultado: Win rate 60% → 72% porque modelo só aplica regra quando apropriado
   Sinal: MACD Bullish cross + RSI > 60
   Condições: Uptrend, strong volume +60%
   Confidence: 0.78 (alta confiança)
-  
+
 📈 EVOLUÇÃO
   T+2min: Trend reversa (double top formado)
   T+4min: Volume diminui 50% (não confirma)
-  
+
 ❌ FECHAMENTO
   Saída: SL hit em -0.5%, Loss R$ 220
-  
+
 🔍 ANÁLISE L2 (Causal)
   - Uptrend no início? SIM
   - Uptrend no fim? NÃO (reverteu)
   - Volume no início: +60%
   - Volume no fim: -15% (divergence!)
   - Volatility: 2.0% → 3.2% (+60% drift)
-  
+
 ⚠️ CONCLUSÃO: CONDIÇÕES MUDARAM RADICALMENTE
   - Trend flip (principal causa da perda)
   - Volume divergence (modelo ignorava isso antes)
   - Volatility burst (fator de risco não controlado)
-  
+
 🧠 APRENDIZADO CAUSAL:
   "MACD_Cross + Uptrend_REQUIRED + HIGH_VOLUME_SUSTAINED → -0.01 confidence"
   (não +0.04 como em caso 1)
-  
+
   NOVO BLOQUEADOR APRENDIDO:
   "IF volume_drift > 30% OR trend_reversal THEN skip_rule"
 ```
@@ -187,14 +187,14 @@ Resultado: Win rate 60% → 72% porque modelo só aplica regra quando apropriado
 {
   "signal_id": "SIG_20260305_123045_001",
   "timestamp_detection": "2026-03-05T12:30:45Z",
-  
+
   "technical_factors": {
     "rsi_14": 72.5,
     "macd": {"value": 0.234, "signal": 0.201},
     "bbands": {"upper": 187.89, "lower": 187.12},
     "atr_14": 0.38
   },
-  
+
   "market_conditions_AT_DETECTION": {
     "volatility_20d": 2.1,
     "trend": "UP",
@@ -213,7 +213,7 @@ Resultado: Win rate 60% → 72% porque modelo só aplica regra quando apropriado
   "signal_id": "SIG_20260305_123045_001",
   "decision": "ENTER",
   "confidence": 0.72,
-  
+
   "reasoning": {
     "factors": [
       "RSI > 70 (overbought reversal)",
@@ -231,7 +231,7 @@ Resultado: Win rate 60% → 72% porque modelo só aplica regra quando apropriado
   "closure_id": "CLS_20260305_123045_001",
   "outcome": "PROFIT R$ 450",
   "exit_type": "TAKE_PROFIT_HIT",
-  
+
   "market_conditions_AT_CLOSURE": {
     "volatility_20d": 2.12,       ← Comparar com 2.1 (drift +0.95%)
     "trend": "UP",                 ← Comparar com UP (0% drift)
@@ -246,11 +246,11 @@ Resultado: Win rate 60% → 72% porque modelo só aplica regra quando apropriado
 ```json
 {
   "analysis_id": "ANA_20260305_123045_001",
-  
+
   "level_2_causal": {
     "market_conditions_comparable": true,
     "conditions_drift_score": 0.08,  ← 0 = total match, 1 = different
-  
+
     "causal_factors": {
       "rsi_overbought": {
         "present_at_detection": true,
@@ -266,12 +266,12 @@ Resultado: Win rate 60% → 72% porque modelo só aplica regra quando apropriado
         "confidence": "MEDIUM"
       }
     },
-  
+
     "spurious_factors": [],  ← Nenhuma
-  
+
     "decision_was_fundamentally_sound": true
   },
-  
+
   "learning_update": {
     "old_rule": "RSI > 70 → +0.02 confidence",
     "new_rule": "RSI > 70 + UPTREND + HIGH_VOLUME + STABLE_VOLATILITY → +0.04 confidence",
@@ -332,7 +332,7 @@ Resultado: Win rate 60% → 72% porque modelo só aplica regra quando apropriado
 
 ---
 
-**Status:** ✅ CONCEITO PRONTO PARA IMPLEMENTAÇÃO  
-**Crítica para:** Qualidade e generalização do modelo  
-**Nice-to-have:** Não bloqueia produção  
+**Status:** ✅ CONCEITO PRONTO PARA IMPLEMENTAÇÃO
+**Crítica para:** Qualidade e generalização do modelo
+**Nice-to-have:** Não bloqueia produção
 **Game-changer:** Sim - transformador de aprendizado correlacional → causal

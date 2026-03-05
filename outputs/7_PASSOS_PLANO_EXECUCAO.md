@@ -1,7 +1,7 @@
 # 7️⃣ PLANO DE EXECUÇÃO - 7 PASSOS SEQUENCIAIS
 
-**Data:** 06/03/2026  
-**Status:** Estrutura para execução imediata  
+**Data:** 06/03/2026
+**Status:** Estrutura para execução imediata
 **Responsável:** GitHub Copilot + Time Técnico
 
 ---
@@ -16,7 +16,7 @@ Contexto:
   - Modelo aprendeu que inatividade é melhor que trades ruins
   - Últimos 3 dias: 0 trades, R$ 735-1.005 custos operacionais
   - Confidence caindo: 0.50 → 0.48 → 0.46
-  
+
 Impacto:
   - Loop de não-decisão = "melhor não fazer nada"
   - Custo fixo de operação sem receita
@@ -29,7 +29,7 @@ Penalidade Progressiva por Inatividade:
   121 minutos   → -3.1% confiança (R$ 87 custo)
   200 minutos   → -5.0% confiança (R$ 144 custo)
   390 minutos   → -5.0% confiança (R$ 280 custo)
-  
+
 Reset: Imediato ao ENTRAR em trade
 Objetivo: Forçar modelo a tentar novamente
 ```
@@ -174,7 +174,7 @@ Título: [P1-LEARNING] Kick-off Preparado - Aguardando Validação P0-URGENT-1
 
 Olá ML Expert + Data Analyst,
 
-P1-LEARNING (Framework Causal de 7 Passos) está planejado para iniciar 
+P1-LEARNING (Framework Causal de 7 Passos) está planejado para iniciar
 assim que P0-URGENT-1 seja validado em produção (3-5 dias).
 
 PREPARAÇÃO NECESSÁRIA (hoje/amanhã):
@@ -250,17 +250,17 @@ MÉTRICA 1: TRADES/DIA
   Target:  2-3 trades
   Atual:   ? trades
   Trend:   [📈 subindo / → estável / 📉 caindo]
-  
+
 MÉTRICA 2: CONFIDENCE
   Target:  Para de cair, começa subir
   Atual:   [0.XX]
   Trend:   [📈 subindo / → estável / 📉 caindo]
-  
+
 MÉTRICA 3: INACTIVITY PENALTY
   Esperado: Presente nos logs
   Atual:    [✅ Vendo penalty / ❌ Sem penalty]
   Exemplos: [INACTIVITY_PENALTY(LEVE|MÉDIA|CRÍTICA): ...]
-  
+
 MÉTRICA 4: ERROS
   Target:  Zero
   Atual:   [0 / quantidade]
@@ -304,12 +304,12 @@ Dia 1-2 (07-08/03):
   ✅ Agent rodando sem crashes
   ✅ Penalties sendo aplicadas
   ✅ Trades podem começar (ou não, normal)
-  
+
 Dia 3-4 (09-10/03):
   ✅ 2-3 trades realizados (esperado)
   ✅ Confidence estável ou subindo
   ✅ Penalidades ajudando decisões
-  
+
 Dia 5+ (11/03+):
   ✅ Padrão estabelecido
   ✅ Pronto para P1-LEARNING
@@ -331,48 +331,48 @@ Dia 5+ (11/03+):
 CREATE TABLE IF NOT EXISTS causal_learning_episodes (
     episode_id INTEGER PRIMARY KEY AUTOINCREMENT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
+
     -- Etapa 1: Signal Detection
     signal_timestamp TIMESTAMP,
     technical_factors JSON,  -- RSI, MACD, Bollinger, etc
     market_conditions JSON, -- Volatility, Trend, Volume
     parameters JSON,         -- Threshold, period, etc
-    
+
     -- Etapa 2: Decision
     decision TEXT,           -- ENTER, HOLD, EXIT
     confidence REAL,        -- 0.0-1.0
     reasoning_factors JSON,  -- Why this decision
-    
+
     -- Etapa 3: Monitoring
     monitoring_evolution JSON, -- Timestamp series
     parameter_drift REAL,
     market_regime_changes JSON,
-    
+
     -- Etapa 4: Closure
     outcome TEXT,           -- WIN, LOSS, TIMEOUT
     exit_reason TEXT,
     final_conditions JSON,
-    
+
     -- Etapa 5: L1 Analysis
     decision_correctness BOOLEAN,  -- DID IT WORK?
-    
+
     -- Etapa 6: L2 Causal Analysis
     context_start JSON,     -- Market state at SIGNAL time
     context_end JSON,       -- Market state at CLOSE time
     context_changed BOOLEAN, -- Same conditions?
-    
+
     -- Etapa 7: Learning Rule
     causal_rule JSON,       -- Extracted rule
     rule_confidence REAL,   -- How confident (0.0-1.0)
-    
+
     CREATED_AT_INDEX (created_at),
     OUTCOME_INDEX (outcome)
 );
 
 -- Criar índices para query eficiente
-CREATE INDEX IF NOT EXISTS idx_episode_outcome 
+CREATE INDEX IF NOT EXISTS idx_episode_outcome
   ON causal_learning_episodes(outcome);
-CREATE INDEX IF NOT EXISTS idx_episode_timestamp 
+CREATE INDEX IF NOT EXISTS idx_episode_timestamp
   ON causal_learning_episodes(signal_timestamp);
 ```
 
@@ -400,11 +400,11 @@ import json
 
 class CausalLearningEngine:
     """7-step causal loop para aprendizado estruturado."""
-    
+
     def __init__(self, db_path: str = "data/db/trading.db"):
         self.db_path = db_path
         self.current_episode = None
-    
+
     # Etapa 1: Signal Detection
     def record_signal_detection(
         self,
@@ -415,7 +415,7 @@ class CausalLearningEngine:
         """Registra detecção de sinal inicial."""
         # TODO: Insert em tabela, retornar episode_id
         pass
-    
+
     # Etapa 2: Decision
     def record_decision(
         self,
@@ -427,7 +427,7 @@ class CausalLearningEngine:
         """Registra decisão e raciocínio."""
         # TODO: Update episode com decision data
         pass
-    
+
     # Etapa 3: Monitoring
     def record_monitoring(
         self,
@@ -439,7 +439,7 @@ class CausalLearningEngine:
         """Registra evolução durante execução."""
         # TODO: Update episode com monitoring
         pass
-    
+
     # Etapa 4: Closure
     def record_closure(
         self,
@@ -451,13 +451,13 @@ class CausalLearningEngine:
         """Registra encerramento da oportunidade."""
         # TODO: Update episode com closure
         pass
-    
+
     # Etapa 5: L1 Analysis
     def analyze_decision_correctness(self, episode_id: int) -> Tuple[bool, str]:
         """Análise nível 1: A decisão foi correta?"""
         # TODO: Ler outcome vs decision, retornar (bool, reason)
         pass
-    
+
     # Etapa 6: L2 Causal Analysis
     def analyze_causation(
         self,
@@ -468,7 +468,7 @@ class CausalLearningEngine:
         """Análise nível 2: Mesma causação?"""
         # TODO: Comparar contextos, retornar (bool, differences)
         pass
-    
+
     # Etapa 7: Learning Rule Generation
     def generate_causal_rule(self, episode_id: int) -> Optional[Dict]:
         """Gera regra causal a partir do episódio."""
@@ -476,7 +476,7 @@ class CausalLearningEngine:
         # TODO: Create rule: "If [context] and [signal] then [decision]"
         # TODO: Retornar regra JSON
         pass
-    
+
     def get_episode_summary(self, episode_id: int) -> Dict:
         """Retorna sumário completo de um episódio."""
         # TODO: Query tabela, retornar tudo
@@ -512,9 +512,9 @@ def test_signal_detection_records(engine):
         "market_conditions": {"volatility": 0.02, "trend": "UP"},
         "parameters": {"threshold": 0.75, "period": 20}
     }
-    
+
     episode_id = engine.record_signal_detection(**signal_data)
-    
+
     assert episode_id > 0
     assert engine.current_episode is not None
 
@@ -527,7 +527,7 @@ def test_decision_records(engine):
         confidence=0.75,
         reasoning_factors={"reason": "RSI > 70"}
     )
-    
+
     episode = engine.get_episode_summary(ep_id)
     assert episode["decision"] == "ENTER"
     assert episode["confidence"] == 0.75
@@ -542,7 +542,7 @@ def test_closure_and_outcome(engine):
         exit_reason="Hit TP",
         final_conditions={"price": 100.5}
     )
-    
+
     episode = engine.get_episode_summary(ep_id)
     assert episode["outcome"] == "WIN"
 
@@ -550,7 +550,7 @@ def test_causal_rule_generation(engine):
     """Teste 4: Gera regra causal."""
     ep_id = engine.record_signal_detection({}, {}, {})
     # ... registrar todas as etapas
-    
+
     rule = engine.generate_causal_rule(ep_id)
     assert rule is not None
     assert "signal" in rule
@@ -560,11 +560,11 @@ def test_causal_rule_generation(engine):
 def test_episode_persistence(engine):
     """Teste 5: Episódio persiste no DB."""
     ep_id = engine.record_signal_detection({}, {}, {})
-    
+
     # Recarregar engine
     engine2 = CausalLearningEngine()  # Novo engine
     episode = engine2.get_episode_summary(ep_id)
-    
+
     assert episode is not None
 ```
 
@@ -634,13 +634,13 @@ def test_episode_persistence(engine):
 ```python
 def analyze_causation(episode_id: int) -> Dict:
     """Compare context START vs END para validar causação."""
-    
+
     # Buscar episódio completo
     episode = get_from_db(episode_id)
-    
+
     context_start = episode["context_start"]  # Market state no sinal
     context_end = episode["context_end"]      # Market state no close
-    
+
     # Comparar cada fator
     differences = {}
     for key in context_start:
@@ -650,10 +650,10 @@ def analyze_causation(episode_id: int) -> Dict:
                 "end": context_end[key],
                 "changed": True
             }
-    
+
     # Classificar: Mesmas condições? (para causação funcionar)
     same_context = len(differences) < 3  # Se poucos diffs = contexto similar
-    
+
     return {
         "episode_id": episode_id,
         "same_context": same_context,
@@ -667,19 +667,19 @@ def analyze_causation(episode_id: int) -> Dict:
 ```python
 def generate_causal_rule(episode_id: int) -> Dict:
     """Extrai regra causal estruturada."""
-    
+
     episode = get_from_db(episode_id)
-    
+
     # Validar que é episódio causal
     if not episode["causal_analysis"]["same_context"]:
         return None  # Não é causal
-    
+
     # Extrair componentes
     signal = episode["technical_factors"]
     decision = episode["decision"]
     outcome = episode["outcome"]
     context = episode["context_start"]
-    
+
     # Gerar regra em formato estruturado
     rule = {
         "type": "causal_rule",
@@ -701,7 +701,7 @@ def generate_causal_rule(episode_id: int) -> Dict:
         "rule_text": f"IF ({signal conditions}) AND ({context conditions}) THEN {decision} → {outcome}",
         "applicability": "Use this rule only when context matches"
     }
-    
+
     return rule
 ```
 
@@ -710,24 +710,24 @@ def generate_causal_rule(episode_id: int) -> Dict:
 ```python
 def extract_causal_rules(min_episodes: int = 20) -> List[Dict]:
     """Extrai todas as regras causais válidas do histórico."""
-    
+
     # Buscar todos os episódios com outcome = WIN
     episodes = query_db(f"SELECT * FROM causal_learning_episodes WHERE outcome='WIN'")
-    
+
     causal_rules = []
-    
+
     for episode in episodes:
         # Analisar causação
         causal_analysis = analyze_causation(episode["id"])
-        
+
         if causal_analysis["same_context"]:
             # É causal - extrair regra
             rule = generate_causal_rule(episode["id"])
             causal_rules.append(rule)
-    
+
     # Agregar regras similares
     aggregated_rules = aggregate_similar_rules(causal_rules)
-    
+
     return aggregated_rules
 ```
 
@@ -805,7 +805,7 @@ P0-URGENT-1:
   ✅ Trades/dia: 0 → 2-3
   ✅ Confidence: Para de cair
   ✅ Op costs: Começam reduzir
-  
+
 P1-LEARNING:
   ✅ Etapas: 7/7 implementadas
   ✅ Episódios: 20+ capturados
@@ -815,6 +815,6 @@ P1-LEARNING:
 
 ---
 
-**Responsável:** GitHub Copilot + Time Técnico  
-**Status:** 🟢 PRONTO PARA EXECUÇÃO  
+**Responsável:** GitHub Copilot + Time Técnico
+**Status:** 🟢 PRONTO PARA EXECUÇÃO
 **Próximo:** Iniciar Passo 1 HOJE

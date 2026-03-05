@@ -23,14 +23,14 @@ from scripts.agente_micro_tendencia_winfut import IntraDayLearner
 
 def test_inactivity_penalty_system():
     """Testa P0-URGENT-1 Inactivity Penalty."""
-    
+
     print("=" * 80)
     print("TEST: P0-URGENT-1 Inactivity Penalty System (06/03/2026)")
     print("=" * 80)
     print()
-    
+
     learner = IntraDayLearner()
-    
+
     # ─────────────────────────────────────────────────────────────────────
     # 1. Teste: Sem entrada registrada ainda (primeira chamada)
     # ─────────────────────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ def test_inactivity_penalty_system():
     print(f"  ✅ Penalty: {penalty} (esperado 0.0)")
     print(f"  ✅ Message: {msg}")
     print()
-    
+
     # ─────────────────────────────────────────────────────────────────────
     # 2. Teste: Registra uma entrada
     # ─────────────────────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ def test_inactivity_penalty_system():
     print(f"  ✅ Entry recorded at: {learner.last_entry_time}")
     print(f"  ✅ Inactivity penalty reset to: {learner.inactivity_penalty}")
     print()
-    
+
     # ─────────────────────────────────────────────────────────────────────
     # 3. Teste: Sem penalidade se ativo (< 120 min)
     # ─────────────────────────────────────────────────────────────────────
@@ -66,7 +66,7 @@ def test_inactivity_penalty_system():
     print(f"  ✅ Penalty: {penalty} (esperado 0.0, ativo)")
     print(f"  ✅ Message: {msg}")
     print()
-    
+
     # ─────────────────────────────────────────────────────────────────────
     # 4. Teste: Simula 121 minutos de inatividade
     # ─────────────────────────────────────────────────────────────────────
@@ -74,63 +74,63 @@ def test_inactivity_penalty_system():
     print("-" * 60)
     # Simula: move last_entry_time para trás
     learner.last_entry_time = datetime.now() - timedelta(minutes=121)
-    
+
     penalty, msg = learner.calculate_inactivity_penalty()
     print(f"  ✅ Penalty: {penalty:.4f} (esperado < 0)")
     print(f"  ✅ Severity: LEVE (121 min)")
     print(f"  ✅ Message: {msg}")
-    
+
     assert penalty < 0, f"Expected penalty < 0, got {penalty}"
     assert "LEVE" in msg, f"Expected 'LEVE' in message for 121 min"
     assert abs(penalty) <= learner.MAX_INACTIVITY_PENALTY, f"Penalty exceeded max"
     print()
-    
+
     # ─────────────────────────────────────────────────────────────────────
     # 5. Teste: Simula 200 minutos de inatividade (penalidade média)
     # ─────────────────────────────────────────────────────────────────────
     print("TEST 5: Simula 200 min de inatividade (penalidade MÉDIA)")
     print("-" * 60)
     learner.last_entry_time = datetime.now() - timedelta(minutes=200)
-    
+
     penalty, msg = learner.calculate_inactivity_penalty()
     print(f"  ✅ Penalty: {penalty:.4f}")
     print(f"  ✅ Severity: MÉDIA (200 min)")
     print(f"  ✅ Message: {msg}")
-    
+
     assert penalty < 0, f"Expected penalty < 0, got {penalty}"
     assert "MÉDIA" in msg, f"Expected 'MÉDIA' in message for 200 min"
     print()
-    
+
     # ─────────────────────────────────────────────────────────────────────
     # 6. Teste: Simula 390 minutos (full pregão) de inatividade
     # ─────────────────────────────────────────────────────────────────────
     print("TEST 6: Simula 390 min (full pregão) - penalidade CRÍTICA")
     print("-" * 60)
     learner.last_entry_time = datetime.now() - timedelta(minutes=390)
-    
+
     penalty, msg = learner.calculate_inactivity_penalty()
     print(f"  ✅ Penalty: {penalty:.4f} (máximo)")
     print(f"  ✅ Severity: CRÍTICA (390 min)")
     print(f"  ✅ Message: {msg}")
-    
+
     assert penalty == -learner.MAX_INACTIVITY_PENALTY, f"Expected penalty = -0.05 at max"
     assert "CRÍTICA" in msg, f"Expected 'CRÍTICA' in message for 390 min"
     print()
-    
+
     # ─────────────────────────────────────────────────────────────────────
     # 7. Teste: Reset após nova entrada
     # ─────────────────────────────────────────────────────────────────────
     print("TEST 7: Reset após nova entrada")
     print("-" * 60)
     learner.record_entry()
-    
+
     penalty, msg = learner.calculate_inactivity_penalty()
     assert penalty == 0.0, f"Expected penalty=0.0 after entry, got {penalty}"
     assert learner.inactivity_penalty == 0.0, f"inactivity_penalty not resetada"
     print(f"  ✅ Penalty resetada: {penalty}")
     print(f"  ✅ Back to active trading")
     print()
-    
+
     # ─────────────────────────────────────────────────────────────────────
     # 8. Teste: get_total_confidence_adjustment inclui penalidade
     # ─────────────────────────────────────────────────────────────────────
@@ -138,15 +138,15 @@ def test_inactivity_penalty_system():
     print("-" * 60)
     learner.last_entry_time = datetime.now() - timedelta(minutes=150)
     penalty, _ = learner.calculate_inactivity_penalty()
-    
+
     total_adj = learner.get_total_confidence_adjustment()
     assert total_adj == penalty, f"Expected total_adj == penalty"
-    
+
     print(f"  ✅ Inactivity penalty: {penalty:.4f}")
     print(f"  ✅ Total adjustment: {total_adj:.4f}")
     print(f"  ✅ Match: {total_adj == penalty}")
     print()
-    
+
     # ─────────────────────────────────────────────────────────────────────
     # 9. Teste: Auditoria é registrada
     # ─────────────────────────────────────────────────────────────────────
@@ -154,12 +154,12 @@ def test_inactivity_penalty_system():
     print("-" * 60)
     audit_log = learner._audit_log
     assert len(audit_log) > 0, "Audit log vazio"
-    
+
     print(f"  ✅ {len(audit_log)} eventos registrados")
     for i, event in enumerate(audit_log[-5:], 1):  # Últimos 5 eventos
         print(f"     {i}. {event}")
     print()
-    
+
     # ─────────────────────────────────────────────────────────────────────
     # 10. Teste: summary_with_actions() exibe penalidade
     # ─────────────────────────────────────────────────────────────────────
@@ -167,16 +167,16 @@ def test_inactivity_penalty_system():
     print("-" * 60)
     learner.last_entry_time = datetime.now() - timedelta(minutes=150)
     learner.calculate_inactivity_penalty()
-    
+
     summary = learner.summary_with_actions()
     assert summary != "", "Summary is empty (should show penalty)"
     assert "INACTIVITY" in summary.upper(), f"Summary doesn't mention inactivity"
-    
+
     print(f"  ✅ Summary gerado:")
     for line in summary.split("\n"):
         print(f"     {line}")
     print()
-    
+
     # ─────────────────────────────────────────────────────────────────────
     # FIM
     # ─────────────────────────────────────────────────────────────────────

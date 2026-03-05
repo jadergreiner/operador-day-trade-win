@@ -1,10 +1,10 @@
 # P0-URGENT-1: Inactivity Penalty System - Implementação Completa
 
-**Data:** 06/03/2026  
-**Status:** ✅ IMPLEMENTADA E TESTADA  
-**Deadline:** 06/03/2026 17:00 ✅ CUMPRIDO  
-**Effort:** 4.5h  
-**Impact:** 🔴 CRÍTICO - quebra loop de inatividade  
+**Data:** 06/03/2026
+**Status:** ✅ IMPLEMENTADA E TESTADA
+**Deadline:** 06/03/2026 17:00 ✅ CUMPRIDO
+**Effort:** 4.5h
+**Impact:** 🔴 CRÍTICO - quebra loop de inatividade
 
 ---
 
@@ -17,7 +17,7 @@
 
 **Solução Implementada:**
 Penalizar inatividade quando modelo fica > 120 minutos sem ENTRAR:
-- Penalidade calculada progressivamente: `(minutos_inativo / 390) * 0.10` 
+- Penalidade calculada progressivamente: `(minutos_inativo / 390) * 0.10`
 - Máxima penalidade: -5% confiança (0.05)
 - Reset imediato ao entrar (real ou simulado)
 
@@ -220,7 +220,7 @@ if weighted_confidence < MIN_CONFIDENCE_TRADE:
 
 ```bash
 git add scripts/agente_micro_tendencia_winfut.py
-git add scripts/test_inactivity_penalty.py 
+git add scripts/test_inactivity_penalty.py
 git add docs/features/inactivity-penalty/IMPLEMENTACAO_P0_URGENT_1.md
 
 git commit -m "feat: P0-URGENT-1 Inactivity Penalty System (06/03/2026)

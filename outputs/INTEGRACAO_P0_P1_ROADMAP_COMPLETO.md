@@ -1,8 +1,8 @@
 # Integração Completa: Aprendizado Causal + Recuperação de Custos Operacionais
 
-**Data:** 05/03/2026  
-**Visão Geral:** Conectando análise de fechamento → P0-URGENT → P1-LEARNING  
-**Status:** ✅ Roadmap Completo  
+**Data:** 05/03/2026
+**Visão Geral:** Conectando análise de fechamento → P0-URGENT → P1-LEARNING
+**Status:** ✅ Roadmap Completo
 
 ---
 
@@ -13,14 +13,14 @@
   03/03: 0 trades | Confidence 0.50 → 0.48 | Custo R$ 280
   04/03: 0 trades | Confidence 0.48 → 0.46 | Custo R$ 280
   05/03: 0 trades | Confidence 0.46 → 0.44 | Custo R$ 280
-  
+
 TOTAL: R$ 840 queimados SEM RETORNO
 
 Root Cause: Modelo aprendeu que INATIVIDADE é melhor que RISCO
   - Fazer trade ruim: -0.02 confidence
   - Não fazer nada: ±0.00 confidence (neutro!)
   - Conclusão: Fique parado, custa menos
-  
+
 Problema: Ficar parado CUSTA DINHEIRO (R$ 280/dia em infraestrutura)
 ```
 
@@ -63,7 +63,7 @@ EFEITO:
 ```
 PROBLEMA:  Operador não "vê" o dano sendo feito
 SOLUÇÃO:   Dashboard mostra a cada 30min:
-  
+
   Tempo rodando: 8h
   Custo operacional: R$ 560
   Trades necessários pra break-even: 0.93
@@ -91,9 +91,9 @@ Atual:
 
   Trade 2: RSI > 70, Sideways → LOSS (-R$ 300)
     Learning: "RSI > 70 → -0.02"
-    
+
   Result: RSI > 70 não aprende nada útil (50/50)
-  
+
 Problema: Modelo ainda não sabe QUE CONTEXTO IMPORTA
 ```
 
@@ -128,7 +128,7 @@ Analysis says:       "Causal, aprender"
 
 vs.
 
-Sinal detectado em:  Uptrend + Volume  
+Sinal detectado em:  Uptrend + Volume
 Sinal fechou em:     Sideways + No volume (CONTEXTO MUDOU)
 Analysis says:       "Spurious, ignorar"
 ```
@@ -142,13 +142,13 @@ SEMANA 06-10/03: P0-URGENT (Fix Inactivity Problem)
   06/03 17:00 → P50-A1 Inactivity Penalty   deployed
   09/03 17:00 → P50-A2 Forced Activation    deployed
   10/03 17:00 → P50-A3 Op Cost Dashboard    deployed
-  
+
   RESULTADO: Trade frequency ↑, inactivity loop broken ✅
 
 SEMANA 10-14/03: P1-LEARNING Foundation (Build Learning Pipeline)
   10/03 → Etapa 1: SQLite persistence (signals, decisions)
   13/03 → Etapa 2: Signal capture (technical + market + macro)
-  
+
 SEMANA 16-22/03: P1-LEARNING Analysis (Extract Causal Rules)
   16/03 → Etapa 3: L1+L2 analysis (correctness + causation)
   19/03 → Etapa 4: Learning update (causal rules  extraction)
@@ -173,7 +173,7 @@ DEPOIS (10-14/03):
   Confidence: 🔧 (0.44 → 0.48 recovering)
   Win rate: Same as before (60%)
   Operational cost: Partially recovered via small wins
-  
+
 💡 SOLUTION: Breaks inactivity loop, gets model back in action
 ```
 
@@ -185,13 +185,13 @@ Current State (with only P0-URGENT):
   Trades/dia: 2-3 (good, but...)
   Win rate: 60% (unchanged)
   False positives: Still high
-  
+
 With P1-LEARNING:
   Trades/dia: 2-3 (same entry frequency)
   Win rate: 60% → 72% (causal rules applied only when valid)
   False positives: 30% reduction
   Generalization: Cross-regime ✓ (works in all market conditions)
-  
+
 📊 PROJECTED P&L:
   Assuming 10 trades/week, R$ 500 per trade (avg):
     Before P1-LEARNING: 0.60 × 10 × 500 = R$ 3.000/week
