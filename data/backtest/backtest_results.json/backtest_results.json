@@ -1,0 +1,79 @@
+{
+  "timestamp": "2026-03-05T12:22:22.713976",
+  "summary": {
+    "mean_sharpe": 6.673257576839555,
+    "mean_win_rate": 0.6363844792518831,
+    "mean_max_drawdown": 0.9285073526764691,
+    "consistency_std": 238.76273658050374,
+    "total_folds": 5,
+    "total_trades": 407,
+    "mean_pnl": 3894.313571279317
+  },
+  "folds": [
+    {
+      "fold_id": 0,
+      "sharpe_ratio": 6.288195066921598,
+      "win_rate": 0.6027397260273972,
+      "max_drawdown": 1.0,
+      "total_trades": 73,
+      "winning_trades": 44,
+      "avg_return": 45.07202099916532,
+      "pnl_total": 3290.2575329390684,
+      "pnl_monthly_std": 498.4444368426023,
+      "sortino_ratio": 21.686777933258956,
+      "recovery_factor": 32.902575329390686
+    },
+    {
+      "fold_id": 1,
+      "sharpe_ratio": 6.143999565747207,
+      "win_rate": 0.6162790697674418,
+      "max_drawdown": 1.0,
+      "total_trades": 86,
+      "winning_trades": 53,
+      "avg_return": 44.96091066510823,
+      "pnl_total": 3866.6383171993075,
+      "pnl_monthly_std": 0.0,
+      "sortino_ratio": 19.944797666057404,
+      "recovery_factor": 38.666383171993076
+    },
+    {
+      "fold_id": 2,
+      "sharpe_ratio": 5.754911443904868,
+      "win_rate": 0.6219512195121951,
+      "max_drawdown": 1.0,
+      "total_trades": 82,
+      "winning_trades": 51,
+      "avg_return": 41.76049144649753,
+      "pnl_total": 3424.3602986127976,
+      "pnl_monthly_std": 0.0,
+      "sortino_ratio": 21.541749924881824,
+      "recovery_factor": 34.243602986127975
+    },
+    {
+      "fold_id": 3,
+      "sharpe_ratio": 6.287162927870622,
+      "win_rate": 0.6266666666666667,
+      "max_drawdown": 1.0,
+      "total_trades": 75,
+      "winning_trades": 47,
+      "avg_return": 45.16773114532538,
+      "pnl_total": 3387.5798358994034,
+      "pnl_monthly_std": 0.0,
+      "sortino_ratio": 21.54375553819931,
+      "recovery_factor": 33.87579835899403
+    },
+    {
+      "fold_id": 4,
+      "sharpe_ratio": 8.892018879753481,
+      "win_rate": 0.7142857142857143,
+      "max_drawdown": 0.6425367633823457,
+      "total_trades": 91,
+      "winning_trades": 65,
+      "avg_return": 60.46958100819788,
+      "pnl_total": 5502.731871746007,
+      "pnl_monthly_std": 475.8643644136289,
+      "sortino_ratio": 27.956336844119342,
+      "recovery_factor": 85.64073194472718
+    }
+  ]
+}
