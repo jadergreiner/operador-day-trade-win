@@ -237,7 +237,7 @@ classDiagram
     PositionMonitor --|> SendToMT5Command: "monitora resultado"
     IntraDayLearner --|> PredictionTracker: "integração P33"
     PositionMonitor --|> IntraDayLearner: "registra outcome"
-    
+
     %% P50 Relationships (Pessimism Detection & Recovery)
     ConfidenceHealthChecker --|> IntraDayLearner: "monitora confidence"
     ConfidenceHealthChecker --|> PessimismResetManager: "dispara reset se pessimismo"

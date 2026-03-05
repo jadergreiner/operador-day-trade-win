@@ -362,7 +362,7 @@ Estratégia GRADUAL (padrão):
   Ciclo 1-8:    TP reduced by 25% (-1%), SL reduced by 25% (-1%)
   Ciclo 9-16:   Confidence retraining 25% dos dados recentes
   Ciclo 17-24:  Gradual restore de TP/SL original (1% a cada ciclo)
-  
+
 Se win_rate recupera para > 0.62: Early exit (pular ciclos restantes)
 ```
 

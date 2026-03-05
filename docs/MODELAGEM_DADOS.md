@@ -884,7 +884,7 @@ CREATE TABLE confidence_health (
     adjustment_reason TEXT,
     win_rate_cycle REAL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    
+
     CHECK(confidence_value >= 0.0 AND confidence_value <= 1.0),
     CHECK(adjustment_reason IN ('none', 'pessimism_detected', 'manual', 'retraining'))
 );
