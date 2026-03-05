@@ -1,0 +1,426 @@
+================================================================================
+                  IMMEDIATE ACTIONS - PROXIMAS 48 HORAS
+                     08/03 18:00 - 10/03 14:00
+================================================================================
+
+RESPONSAVEL: CTO/Eng Sr + ML Expert + Team
+OBJETIVO: Preparar sistema 100% pronto para GO-LIVE em 10/03 15:00
+DECISAO GATEWAY: Final infrastructure check (10/03 12:00)
+
+================================================================================
+TAREFAS CRITICAS - NEXT 48H
+================================================================================
+
+HOJE (08/03 - After GATE 2):
+================================
+
+18:00-19:00: DOCUMENTATION FINALIZATION
+  [ ] Update README.md with GO-LIVE timestamp
+  [ ] Finalize DEPLOYMENT_GUIDE.md (step-by-step)
+  [ ] Create RUNBOOK_COMMON_ISSUES.md
+  [ ] Document emergency ROLLBACK procedure
+  [ ] Verify all docs are UTF-8 compliant
+  [ ] Commit all documentation updates
+
+19:00-20:00: INFRASTRUCTURE VERIFICATION
+  [ ] Test database connectivity (data/db/trading.db)
+  [ ] Verify backup directory structure (data/db/backups/)
+  [ ] Check logging configuration
+  [ ] Test API connectivity (MT5 simulator)
+  [ ] Verify network connectivity
+  [ ] Confirm server resources sufficient
+
+20:00-21:00: MODEL DEPLOYMENT PREPARATION
+  [ ] Package all model artifacts
+  [ ] Create feature scaler backup
+  [ ] Export XGBoost model weights
+  [ ] Document all dependencies (pip freeze)
+  [ ] Test model loading in fresh Python env
+  [ ] Verify threshold configuration (sigma=1.0)
+
+21:00-22:00: OPERATIONAL PREPARATION
+  [ ] Brief trader on system one more time
+  [ ] Verify dashboard access
+  [ ] Test manual override mechanism
+  [ ] Confirm communication channels (Teams/Slack/Email)
+  [ ] Review alert escalation procedures
+  [ ] Set up on-call schedule confirmation
+
+22:00-23:00: DAILY CLOSE & OVERNIGHT TASKS
+  [ ] Commit all changes to git
+  [ ] Tag release candidate: v1.0.0-rc1
+  [ ] Document any known issues
+  [ ] Prepare morning briefing slides
+  [ ] Schedule stress tests for next morning
+
+
+AMANHA (09/03):
+=================================
+
+09:00-10:00: OVERNIGHT ISSUE REVIEW
+  [ ] Check if any errors during night
+  [ ] Review logs for anomalies
+  [ ] Confirm all systems stable
+  [ ] Morning team sync (5 min)
+  [ ] Update progress board
+
+10:00-12:00: PRODUCTION ENVIRONMENT SETUP
+  [ ] Clone repository to production server
+  [ ] Install all Python dependencies (testing environment)
+  [ ] Create symbolic links for data directories
+  [ ] Configure production logging
+  [ ] Set up monitoring endpoints
+  [ ] Verify disk space sufficient (>10GB recommended)
+
+12:00-14:00: STRESS TEST & LOAD VERIFICATION
+  [ ] Run load_test_order_queue.py on production env
+  [ ] Execute 50 ord/sec test (10 sec = 500 orders)
+  [ ] Verify P95 latency <500ms
+  [ ] Check memory footprint +0.3MB acceptable
+  [ ] Test cleanup_old_orders_scheduler.py dry-run
+  [ ] Confirm no side effects on production data
+
+14:00-16:00: DATABASE BACKUP & VERIFICATION
+  [ ] Create full backup: data/db/trading.db → backup_20260309.db
+  [ ] Verify backup integrity (sqlite3 integrity_check)
+  [ ] Test restore procedure (on copy of backup)
+  [ ] Document backup location & recovery procedure
+  [ ] Verify backup automated scheduling ready
+  [ ] Test cleanup scheduler with dry-run
+
+16:00-18:00: MODEL VALIDATION ON PRODUCTION
+  [ ] Load all model artifacts on production env
+  [ ] Test feature pipeline (24 features engineering)
+  [ ] Verify data shape and types correct
+  [ ] Run inference on sample batch
+  [ ] Check model output format (probabilities)
+  [ ] Validate threshold application (sigma=1.0)
+
+18:00-19:00: RISK SYSTEMS ACTIVATION
+  [ ] Configure circuit breaker levels (-3%, -5%, -8%)
+  [ ] Test position size calculation
+  [ ] Verify correlation check (max 70%)
+  [ ] Set capital adequacy limits (R$ 50k)
+  [ ] Enable manual trade veto system
+  [ ] Test alert generation & notification
+
+19:00-20:00: MONITORING & ALERTING
+  [ ] Set up real-time monitoring dashboard
+  [ ] Configure alert thresholds (P&L, drawdown, latency)
+  [ ] Test email/SMS alerts
+  [ ] Set up log aggregation
+  [ ] Configure performance metrics export
+  [ ] Test incident response automation
+
+20:00-21:00: DOCUMENTATION FINALIZATION pt 2
+  [ ] Create trader quick-start guide (1 page)
+  [ ] Document all keyboard shortcuts & commands
+  [ ] Create troubleshooting flowchart
+  [ ] List common error messages & solutions
+  [ ] Prepare FAQ document
+  [ ] Finalize escalation contact list
+
+21:00-22:00: TEAM BRIEFING & SIGN-OFF
+  [ ] Conduct end-of-day status meeting (all personas)
+  [ ] Confirm readiness for final day (10/03)
+  [ ] Address any concerns or obstacles
+  [ ] Confirm attendance at 10/03 14:00 kickoff
+  [ ] Final preparations assignment
+
+22:00-23:59: OVERNIGHT MONITORING
+  [ ] Set up 24/7 monitoring (even during night)
+  [ ] Monitor database stability
+  [ ] Check for any memory leaks
+  [ ] Verify network connectivity stable
+  [ ] Ensure backup systems still operational
+  [ ] Prepare morning status report
+
+
+DIA FINAL (10/03 - GO-LIVE DAY):
+=================================
+
+08:00-09:00: MORNING FINAL CHECKS
+  [ ] Health check: all systems responding
+  [ ] Database integrity check (passing)
+  [ ] Model artifacts loaded (no errors)
+  [ ] Monitoring dashboard live
+  [ ] Alerts functioning correctly
+  [ ] Network connectivity stable
+
+09:00-10:00: PRE-FLIGHT VERIFICATION
+  [ ] CTO/Eng Sr: Infrastructure final go/no-go
+  [ ] ML Expert: Model readiness final validation
+  [ ] Finance/CFO: Capital allocation confirmed
+  [ ] Trader: Dashboard & procedures one last check
+  [ ] All systems: Zero critical issues
+
+10:00-12:00: FINAL STRESS TEST
+  [ ] Single comprehensive E2E test
+  [ ] Load test on production (10sec @ 50/ord/sec)
+  [ ] Model inference test (10 samples)
+  [ ] Cleanup scheduler test (dry-run)
+  [ ] Monitoring alerts test (all channels)
+  [ ] Error recovery test (rollback procedure)
+
+12:00-13:00: DEPLOYMENT APPROVAL GATE
+  [ ] Infrastructure: APPROVED?
+  [ ] Model: APPROVED?
+  [ ] Capital: APPROVED?
+  [ ] Operations: APPROVED?
+  [ ] ALL 4 GATEKEEPERS SIGN-OFF?
+
+IF ALL GO → Proceed to kickoff
+IF ANY ISSUE → Debug immediately
+
+13:00-14:00: TEAM ASSEMBLY & KICKOFF PREP
+  [ ] All participants online & ready
+  [ ] Slides displayed (status overview)
+  [ ] Video/audio tested
+  [ ] Backup communication channels ready
+  [ ] Chat/incident tracking open
+  [ ] Captain (CTO) ready to lead deployment
+
+14:00-16:00: KICKOFF FINAL MEETING
+  (See KICKOFF_FINAL_PRE_LAUNCH.txt for detailed agenda)
+  
+  14:00-14:20: Status review (GATE 2, ETAPA 4)
+  14:20-14:40: Deployment readiness
+  14:40-15:00: Live trading setup
+  15:00-15:30: Team responsibilities review
+  15:30-16:00: Launch sequence confirmation
+
+15:00-15:30: GO-LIVE ACTIVATION
+  [ ] Systems final green check
+  [ ] Capital R$ 50k allocated (LIVE)
+  [ ] Model activated (generating signals)
+  [ ] Trading engine started
+  [ ] Monitoring live (all streams active)
+  [ ] "READY FOR LIVE TRADING" signal
+  [ ] 🚀 LAUNCH SEQUENCE INITIATED
+
+15:30-16:00: FIRST TRADE MONITORING
+  [ ] Monitor alerts & order queue
+  [ ] Verify order execution success
+  [ ] Check P&L calculation
+  [ ] Confirm position tracking
+  [ ] Test manual override (if needed)
+
+16:00-19:00: SUSTAINED OPERATIONS (First 4 hours)
+  [ ] Monitor continuous trading activity
+  [ ] Check latency metrics (P95 < 500ms)
+  [ ] Watch memory usage (< 50MB delta)
+  [ ] CPU usage normal (< 80%)
+  [ ] Alert system functioning
+  [ ] No critical errors in logs
+
+19:00-22:00: DAY 1 EVENING REVIEW
+  [ ] Analyze afternoon performance (15:00-19:00)
+  [ ] P&L snapshot vs expectations
+  [ ] Win rate calculation (preliminary)
+  [ ] Any manual interventions required?
+  [ ] Trader confidence assessment
+  [ ] Critical issues log (none = success)
+
+22:00+ : OVERNIGHT 24/5 MONITORING
+  [ ] Trader on-call (or support staff)
+  [ ] Continuous system monitoring
+  [ ] Alert response procedures active
+  [ ] Log aggregation ongoing
+  [ ] Database backups automated
+  [ ] Performance metrics collection
+
+11/03 (Day 1 + 24h):
+  [ ] Full day performance analysis
+  [ ] Trader sign-off (OK to continue? Yes/No)
+  [ ] Any bugs or issues found?
+  [ ] Update progress for GATE 3 (17/03 checkpoint)
+
+================================================================================
+CRITICAL PATH DEPENDENCIES
+================================================================================
+
+If any BLOCKER found, escalate immediately:
+
+BLOCKER #1: Database corruption
+  → Restore from backup, retest all systems
+  → Delay GO-LIVE if unresolved in 2h
+
+BLOCKER #2: Model loading error
+  → Recreate model artifacts, revalidate
+  → Run backtest again if format changed
+  → Delay GO-LIVE if unresolved in 1h
+
+BLOCKER #3: Infrastructure unavailable
+  → Switch to backup infrastructure
+  → Verify all systems operational
+  → Delay GO-LIVE if not resolved in 2h
+
+BLOCKER #4: Network connectivity issues
+  → Test network paths individually
+  → Verify firewall rules
+  → Contact IT support immediately
+  → Delay GO-LIVE if not resolved in 1.5h
+
+BLOCKER #5: Capital not approved by CFO
+  → Escalate to CFO immediately
+  → Confirm R$ 50k allocation in writing
+  → Cannot launch without capital approval
+
+BLOCKER #6: Trader requests additional training
+  → Delay by 2h max, conduct final training
+  → If still insufficient confidence, delay to next day
+  → Trader MUST be confident to proceed
+
+BLOCKER #7: Critical bugs found in final testing
+  → Debug and fix immediately
+  → Retest affected systems
+  → If hotfix >30 min, evaluate postponement
+  → No GO-LIVE with known critical bugs
+
+================================================================================
+CONTINGENCY PLANS
+================================================================================
+
+SCENARIO A: Minor issues found (fixable in 30 min)
+├─ Fix issue immediately
+├─ Retest affected system
+├─ If all green → Proceed to kickoff on schedule
+└─ If not → Request 1h delay
+
+SCENARIO B: Database or infrastructure issue (1-2h fix time)
+├─ Attempt fix in parallel with kickoff
+├─ If resolved by 14:00, proceed as planned
+├─ If not resolved, delay to 14:00 next day
+└─ Use overnight for extended debugging
+
+SCENARIO C: Model issue discovered (requires retraining)
+├─ Rerun backtest immediately (30 min)
+├─ If GATE 2 still passes with fix, ok
+├─ If GATE 2 fails, cannot launch
+└─ Postpone to allow for retraining (1-2 days)
+
+SCENARIO D: Trader not confident in system
+├─ Conduct additional training (1h)
+├─ Run live simulation with trader
+├─ If confidence restored, proceed same day
+├─ If not, postpone to next day for full retraining
+
+SCENARIO E: Last-minute capital approval issue
+├─ Escalate to Executive level immediately
+├─ Cannot proceed without CFO sign-off
+├─ Alternative: Reduce capital for Phase 1 (if approved)
+├─ Worst case: Postpone 1-2 days pending approval
+
+================================================================================
+SUCCESS INDICATORS (Green Light = GO)
+================================================================================
+
+✅ DATABASE:
+   ├─ Connectivity OK (response time <100ms)
+   ├─ Backup created & verified
+   ├─ Size normal (>100MB indicates good data)
+   └─ Integrity check: PASS
+
+✅ CODE:
+   ├─ All scripts execute without error
+   ├─ Load test passes P95 < 500ms
+   ├─ Cleanup scheduler dry-run OK
+   ├─ No encoding errors
+   └─ Zero critical warnings
+
+✅ MODEL:
+   ├─ Loads in < 5 seconds
+   ├─ Inference latency < 100ms
+   ├─ Threshold parameters correct (sigma=1.0)
+   ├─ GATE 2 validation: CONFIRMED
+   └─ Feature pipeline working
+
+✅ INFRASTRUCTURE:
+   ├─ CPU: <80% at peak
+   ├─ Memory: <50GB available
+   ├─ Disk: >10GB free
+   ├─ Network: <100ms latency
+   └─ Uptime: 100% last 24h
+
+✅ OPERATIONS:
+   ├─ Trader trained & confident
+   ├─ Dashboard responsive
+   ├─ Alerts functional
+   ├─ On-call schedule confirmed
+   └─ Runbooks finalized
+
+✅ GOVERNANCE:
+   ├─ All gatekeepers APPROVED
+   ├─ Capital R$ 50k confirmed
+   ├─ Documentation synced
+   ├─ Compliance checklist signed
+   └─ Insurance verified
+
+================================================================================
+FINAL DECISION POINT
+================================================================================
+
+GO-LIVE DECISION MATRIX:
+
+IF ALL ITEMS GREEN ✅
+→ DECISION: GO FOR GO-LIVE 🚀
+→ Launch at 10/03 15:00 as planned
+→ Capital R$ 50k activated
+→ Trader empowered for live trading
+
+IF 1-2 ITEMS YELLOW ⚠️
+→ DECISION: CONDITIONAL GO
+→ Proceed but with enhanced monitoring
+→ Trader has veto authority
+→ Frequent check-ins first 4 hours
+
+IF ANY ITEM RED 🔴
+→ DECISION: NO-GO / POSTPONE
+→ Debug issue immediately
+→ Revalidate systems
+→ Reschedule GO-LIVE for next viable date
+
+================================================================================
+COMMUNICATION PLAN
+================================================================================
+
+UPDATES TO:
+- CTO/Eng Sr (daily 09:00, 16:00, 22:00)
+- ML Expert (daily 09:00, 18:00)
+- Trader/Operador (daily 08:00, 14:00)
+- Finance/CFO (daily 12:00)
+- Executive (if blockers found)
+
+DURING GO-LIVE (10/03 15:00+):
+- Real-time chat monitoring (Teams/Slack)
+- Incident response queue active
+- CTO on-call (0 latency response)
+- Trader direct line available
+
+POST GO-LIVE:
+- First day: Hourly status updates
+- Day 1-3: Daily end-of-day summaries
+- Week 1: Daily performance reviews
+- Week 2+: Weekly status reports
+
+================================================================================
+SIGN-OFF AUTHORITY
+================================================================================
+
+This plan is approved by:
+[ ] CTO/Eng Sr      - Infrastructure owner
+[ ] ML Expert       - Model owner
+[ ] Finance/CFO     - Budget & capital
+[ ] Product Owner   - Requirements & acceptance
+
+Each owner confirms readiness by 09/03 20:00.
+
+Plan execution begins: 08/03 18:00
+Final decision point: 10/03 12:00
+GO-LIVE: 10/03 15:00 (if all green)
+
+================================================================================
+Generated: 08/03/2026 16:00 BRT
+Document: IMMEDIATE_ACTIONS_48H.txt
+Status: ✅ PRE-LAUNCH PLAN READY
+================================================================================
