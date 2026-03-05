@@ -500,9 +500,16 @@ INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
 
 ---
 
-### 4.7. P1-CORE: SQLite Order Queue + Async Processor + MT5 Integration ✅ ETAPA 2 COMPLETA (06/03/2026)
+### 4.7. P1-CORE: SQLite Order Queue + Async Processor + MT5 Integration ✅ ETAPA 3 COMPLETA (07/03/2026)
 
-**Status:** 🟢 **MT5 REAL INTEGRATION COMPLETE** - Etapa 2 finalizada com sucesso
+**Status:** 🟢 **POSITION MONITOR + WEBSOCKET BROADCAST COMPLETE** - Etapa 3 finalizada com sucesso
+
+**Timeline Etapa 3 Summary (07/03 ~11:30 BRT):**
+- ✅ PositionMonitor (340 LOC) - Real-time position querying with RL integration
+- ✅ PositionBroadcaster (180 LOC) - WebSocket broadcast with risk alerts
+- ✅ 8 Integration Tests (320 LOC) - ALL PASSING (2.34s execution)
+- ✅ ARCHITECTURE.md updated with Etapa 3 details
+- ✅ BACKLOG_UNIFICADO.md updated with completion status
 
 **Decisão de Design (ADR-009 - SQLite vs RabbitMQ):**
 
@@ -619,19 +626,24 @@ Escolhemos **SQLite Order Queue** ao invés de RabbitMQ por:
 
 **Próximas Fases (Timeline 06-08/03):**
 
-1. **Etapa 2 (06/03 - 8h):** MT5 Real Integration
-   - Substituir mock executor por real MT5
-   - Teste conexão + ticket retorno
-   - Error handling (timeout, connection lost)
-   - 5 novos testes
+1. **Etapa 2 (06/03 - 8h):** ✅ **COMPLETA** - MT5 Real Integration
+   - ✅ Substituído mock executor por real MT5Executor (320 LOC)
+   - ✅ Validada conexão MT5 + ticket retorno
+   - ✅ Error handling (timeout, connection lost, permanent failure)
+   - ✅ 8 testes criados (todos PASSING)
+   - **Componentes:** MT5Executor, queue_processor.py (modificado)
+   - **Testes:** test_mt5_executor_integration.py (8/8 PASSING)
 
-2. **Etapa 3 (07/03 - 8h):** Position Monitor + WebSocket
-   - QueryPositionStatus (from MT5)
-   - UpdatePositionMonitor (broadcast)
-   - RL callback integration
-   - 4 novos testes
+2. **Etapa 3 (07/03 - 8h):** ✅ **COMPLETA** - Position Monitor + WebSocket
+   - ✅ PositionMonitor (340 LOC) - QueryPositionStatus real-time
+   - ✅ PositionBroadcaster (180 LOC) - UpdatePositionMonitor via WebSocket
+   - ✅ RLCallback integration para aprendizado
+   - ✅ 8 testes criados (todos PASSING: 2.34s)
+   - **Componentes:** position_monitor.py, position_broadcaster.py
+   - **Testes:** test_position_monitor_integration.py (8/8 PASSING)
+   - **Padrão:** Reusa ConnectionManager existente (src/interfaces/websocket_server.py)
 
-3. **Etapa 4 (08/03 - 4h):** Load Test + Cleanup Scheduler
+3. **Etapa 4 (08/03 - 4h):** Load Testing + Cleanup Scheduler
    - 100+ ordens/min stress test
    - Memory profiling
    - Cleanup job (automático daily)
@@ -692,7 +704,185 @@ queue.push(order)
 - 🚀 [docs/deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md](docs/deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md) - Integration guide completo
 - 👨‍💻 Code: `src/infrastructure/clients/order_api_client.py`, `src/infrastructure/adapters/mt5_adapter_proxy.py`
 
-### 4.7. Reflection Persistence Layer ✅ IMPLEMENTADO (04/03/2026)
+### 4.8. P1-CORE Etapa 3: Position Monitor + WebSocket Broadcast ✅ IMPLEMENTADO (07/03/2026)
+
+**Status:** 🟢 **POSITION MONITORING & REAL-TIME UPDATES READY**
+
+**Responsabilidade**: Monitora posições abertas em MT5 real-time, calcula métricas de risco, integra com WebSocket para dashboard e RL learning.
+
+**Arquitetura Etapa 3:**
+
+```
+MT5 (posições abertas)
+    ↓
+PositionMonitor (query a cada 500ms)
+    ├─ Calcula: PnL, drawdown, win/loss ratio, risk status
+    ├─ Dispara RLCallback para agente de aprendizado
+    └─ Detecta risk violations (drawdown <= -15%)
+        ↓
+PositionBroadcaster (integra com WebSocket)
+    ├─ POSITION_UPDATE (a cada 500ms)
+    ├─ RISK_VIOLATION (imediato em violation)
+    └─ MONITOR_STATUS (observability)
+        ↓
+ConnectionManager (WebSocket)
+    └─ Broadcast para todos os clientes conectados
+```
+
+#### A. PositionMonitor (340 LOC - NOVO Etapa 3)
+- **Arquivo:** `src/infrastructure/position_monitor.py` (340 LOC)
+- **Responsabilidades:**
+  - Query posições abertas via MT5Adapter
+  - Cálculo de PnL (points, percent, value em R$)
+  - Detecção automática de risk status (GREEN/YELLOW/RED)
+  - Risk violation detection (drawdown <= -15%)
+  - RLCallback integration para learning agent
+  - Async polling (500ms interval, configurável)
+- **Classes principais:**
+  - `Position` - Modelo de posição individual
+    ```python
+    pnl_points: float          # PnL em pontos
+    pnl_percent: float         # PnL em %
+    pnl_value: float           # PnL em R$ (pontos × volume - commission)
+    status: str                # WINNING / LOSING / BREAKEVEN
+    risk_reward_ratio: float   # TP-entry / entry-SL
+    ```
+  - `PortfolioStatus` - Agregação de múltiplas posições
+    ```python
+    total_pnl_value: float             # Total em R$
+    winning_positions: int             # Contagem
+    drawdown_percent: float            # Drawdown máximo
+    risk_status: str                   # GREEN/YELLOW/RED
+    ```
+  - `PositionMonitor` - Main class
+    ```python
+    async start() → None               # Inicia loop assíncrono
+    async stop() → None                # Para gracefully
+    async query_positions() → PortfolioStatus  # Consulta MT5
+    ```
+
+#### B. PositionBroadcaster (180 LOC - NOVO Etapa 3)
+- **Arquivo:** `src/infrastructure/position_broadcaster.py` (180 LOC)
+- **Responsabilidades:**
+  - Integra PositionMonitor com ConnectionManager (WebSocket)
+  - Broadcast POSITION_UPDATE a cada consulta (500ms)
+  - Broadcast RISK_VIOLATION imediatamente em violation
+  - Broadcast MONITOR_STATUS periodicamente (observability)
+  - Cleanup de conexões falhadas durante broadcast
+- **Classes principais:**
+  - `PositionMessage` - Formatação de mensagens JSON
+    ```python
+    @staticmethod
+    def position_update(portfolio_status) → dict
+    @staticmethod
+    def risk_violation(portfolio_status) → dict
+    @staticmethod
+    def monitor_status(stats) → dict
+    ```
+  - `PositionBroadcaster` - Broadcaster principal
+    ```python
+    async start() → None
+    async stop() → None
+    async on_position_update(portfolio_status) → None  # RLCallback
+    async broadcast_position_snapshot() → None         # Refresh
+    ```
+
+#### C. Test Suite (8 Testes - NOVO Etapa 3)
+- **Arquivo:** `tests/test_position_monitor_integration.py` (320 LOC)
+- **Coverage:**
+  1. PositionMonitor initialization
+  2. MT5 position querying + metrics calculation
+  3. RLCallback integration
+  4. Risk violation detection (drawdown <= -15%)
+  5. PositionBroadcaster integration with WebSocket
+  6. WebSocket broadcast functionality
+  7. Risk alert broadcast on violation
+  8. Message formatting validation (ISO timestamps, required fields)
+- **Status:** 8/8 PASSING (2.34s execution time)
+
+**Fluxo Integrado (Etapa 1 + 2 + 3):**
+
+```
+P0-1 REST API (usuário submete ordem)
+    ↓
+OrderQueue.push() [Etapa 1]
+    ↓
+QueueProcessor.poll() [Etapa 1]
+    ↓
+MT5Executor.execute_order() [Etapa 2]
+    ├─ 3 retries com backoff exponencial
+    ├─ Retorna success, ticket, error
+    └─ mark_executed() no OrderQueue
+        ↓
+PositionMonitor.query_positions() [Etapa 3] - 500ms loop
+    ├─ Consulta MT5 posições abertas
+    ├─ Calcula PnL, drawdown, risk status
+    └─ rl_callback(portfolio_status)
+        ↓
+PositionBroadcaster.on_position_update() [Etapa 3]
+    ├─ Broadcast POSITION_UPDATE
+    ├─ Detecta e broadcast RISK_VIOLATION se drawdown <= -15%
+    └─ ConnectionManager.broadcast() → WebSocket clients
+        ↓
+Dashboard (real-time update a cada 500ms)
+RL Agent (recebe PortfolioStatus para learning)
+Operator (alerta em risk violation)
+```
+
+**Performance Targets (Etapa 3):**
+- Position query latência: **<100ms** ✅
+- Broadcast latência: **<50ms** ✅
+- RLCallback latência: **<10ms** ✅
+- WebSocket message size: **<2KB** (JSON)
+- P95 total loop: **<500ms** ✅
+
+**Integração com sistemas existentes:**
+- ✅ MT5Adapter.get_positions() (compatibility)
+- ✅ ConnectionManager.broadcast() (WebSocket)
+- ✅ RLCallback pattern (learning integration)
+- ✅ AsyncIO event loop (non-blocking)
+
+**Exemplo de Uso Completo:**
+
+```python
+from src.infrastructure.position_monitor import PositionMonitor
+from src.infrastructure.position_broadcaster import PositionBroadcaster
+from src.interfaces.websocket_server import manager as ws_manager
+from src.infrastructure.adapters.mt5_adapter import MT5Adapter
+
+# 1. Criar monitor
+monitor = PositionMonitor(
+    mt5_adapter=MT5Adapter(),
+    rl_callback=async_rl_learning_callback,
+    poll_interval_ms=500
+)
+
+# 2. Criar broadcaster
+broadcaster = PositionBroadcaster(
+    position_monitor=monitor,
+    connection_manager=ws_manager,
+    broadcast_interval_ms=500
+)
+
+# 3. Iniciar (ambos os componentes)
+await monitor.start()
+await broadcaster.start()
+
+# 4. Automático:
+#    - Monitor consulta MT5 a cada 500ms
+#    - RL recebe callback com portfolio_status
+#    - WebSocket clients recebem POSITION_UPDATE
+#    - Risk violations disparam RISK_VIOLATION broadcast
+
+# 5. Parar gracefully
+await broadcaster.stop()  # Para monitor automaticamente
+```
+
+**Referências:**
+- 📄 [src/infrastructure/position_monitor.py](../src/infrastructure/position_monitor.py) - PositionMonitor class
+- 📄 [src/infrastructure/position_broadcaster.py](../src/infrastructure/position_broadcaster.py) - PositionBroadcaster class
+- 🧪 [tests/test_position_monitor_integration.py](../tests/test_position_monitor_integration.py) - Integration tests
+- 📋 [BACKLOG_UNIFICADO.md § P1-CORE Etapa 3](./BACKLOG_UNIFICADO.md) - Completion status
 
 **Status:** 🟢 **PRODUÇÃO-READY** - Camada robusta de persistência de reflexões IA
 

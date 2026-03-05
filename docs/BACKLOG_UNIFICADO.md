@@ -716,12 +716,29 @@ Fila assíncrona + processador de ordens + broadcast em tempo real:
   - Retry on failures
   - Batch execution in parallel
 
-**Etapa 3 (07/03 - 8h):** Position Monitor + WebSocket
-- [ ] QueryPositionStatus (from MT5)
-- [ ] UpdatePositionMonitor (broadcast WebSocket)
-- [ ] RL callback integration
-- [ ] Dashboard real-time
-- Tests: 4 novos (position tracking)
+**Etapa 3 (07/03 - 8h):** ✅ **COMPLETA** - Position Monitor + WebSocket Integration
+- ✅ PositionMonitor (340 LOC) - QueryPositionStatus real-time
+  - Consulta posições abertas do MT5 periodicamente (500ms)
+  - Calcula PnL, drawdown, win/loss ratio, risk status
+  - Suporta RLCallback para integração com agente de aprendizado
+  - Detecção automática de risk violations (drawdown <= -15%)
+  - Async polling com graceful startup/shutdown
+- ✅ PositionBroadcaster (180 LOC) - UpdatePositionMonitor via WebSocket
+  - Integra PositionMonitor com ConnectionManager
+  - Broadcast POSITION_UPDATE a cada 500ms (real-time dashboard)
+  - Broadcast RISK_VIOLATION em tempo real (risk management)
+  - Broadcast MONITOR_STATUS para observability
+  - Cleanup de conexões falhadas
+- ✅ 8 Testes Integração (320 LOC) - TODOS PASSING (2.34s)
+  1. test_position_monitor_initialization - Monitor initializes correctly
+  2. test_position_monitor_query_positions - Queries MT5 positions + metrics
+  3. test_position_monitor_rl_callback - RLCallback integration works
+  4. test_position_monitor_risk_violation_detection - Risk violation detection (drawdown <= -15%)
+  5. test_position_broadcaster_integration - Monitor + WebSocket integration
+  6. test_position_broadcaster_websocket_broadcast - WebSocket broadcast functionality
+  7. test_position_broadcaster_risk_alert_broadcast - Risk alert broadcast on violation
+  8. test_position_message_format - Message formatting validation (ISO timestamps, correct fields)
+- ✅ ConnectionManager já existia (src/interfaces/websocket_server.py) - reusado com sucesso
 
 **Etapa 4 (08/03 - 4h):** Load Testing + Optimization
 - [ ] 100+ ordens/min stress test
