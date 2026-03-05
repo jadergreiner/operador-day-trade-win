@@ -5,6 +5,11 @@
 
 ⚠️ **CORE DO PRODUTO:** Veja [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) e [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat) na **raiz do projeto** - estes são os dois entry points principais que o sistema foi construído ao redor.
 
+🚨 **STATUS CRÍTICO (05/03/2026):**
+- ✅ P50 (Pessimism Detection): **ATIVO** - Sistema em estado seguro
+- 🔴 GATE 2 (Backtest Validation): **FAIL** (DD 92.8%, σ=238.8%) - Capital HOLD
+- 📍 Próxima ação: P0-2 melhorias (Risk Management + Dataset real)
+
 ---
 
 ## 📚 Estrutura de Documentação

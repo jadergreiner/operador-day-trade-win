@@ -423,7 +423,7 @@ Se drawdown_percentual <= -0.03 AND drawdown_percentual > -0.05:
 ```
 Se drawdown_percentual <= -0.05 AND drawdown_percentual > -0.08:
   → Status: ORANGE
-  → Ação: 
+  → Ação:
     1. Reduzir ticket size a 50% do normal
     2. Aumentar ML confidence threshold para 0.90
     3. Desabilitar oportunidades < 0.90
@@ -434,7 +434,7 @@ Se drawdown_percentual <= -0.05 AND drawdown_percentual > -0.08:
 **Entrada (Trigger)**: Drawdown -5%
 **Saída (Recovery)**: Drawdown volta para -3% (volta a YELLOW)
 **Fallback**: Se continuar piorando → RED threshold
-**Validação**: 
+**Validação**:
 - CIRCUIT_BREAKER_CONFIG.ticket_reduction_percent_slow_mode = 50
 - CIRCUIT_BREAKER_CONFIG.ml_score_threshold_slow_mode = 0.90
 
@@ -448,7 +448,7 @@ Se drawdown_percentual <= -0.05 AND drawdown_percentual > -0.08:
 ```
 Se drawdown_percentual <= -0.08:
   → Status: RED
-  → Ação: 
+  → Ação:
     1. Haltar todas as operações em tempo real
     2. Fechar todas posições abertas (stop-loss)
     3. Sistema em standby (aguardando análise)

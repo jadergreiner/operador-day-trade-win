@@ -1,8 +1,8 @@
 # 📊 STATUS DE ENTREGAS - Operador Day Trade WIN
 
-**[SYNC] ÚLTIMA ATUALIZAÇÃO:** 2026-03-03T09:09:31Z
-**Status Geral:** 🟢 **OPERACIONAL**
-**Versão:** v1.2.8
+**[SYNC] ÚLTIMA ATUALIZAÇÃO:** 2026-03-05T12:25:00Z
+**Status Geral:** 🟢 **OPERACIONAL - P50 Ativo, GATE 2 Executado**
+**Versão:** v1.2.9
 ⚖️ **Métrica Principal de Entrega**: Ambos os operadores core funcionando:
 - ✅ [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) - Startup diário
 - ✅ [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat) - Auto trading engine
@@ -17,7 +17,8 @@
 | **Sprint 1 Tasks** | ✅ COMPLETO | 100% | Gate 1 Validation |
 | **Alertas (US-004)** | ✅ COMPLETO | 100% | BETA 13/03 |
 | **Health Check System** | 🟢 OPERACIONAL | 100% | Contínuo |
-| **Backtest Validation** | ✅ VALIDADO | 100% | ML-003 Complete |
+| **P50 Crisis Management** | ✅ COMPLETO | 100% | Monitorando 24/7 |
+| **Backtest Validation** | 🔴 GATE 2 FAIL | Etapas 1-3 OK | Melhorias P0-2 Pendentes |
 | **MT5 Integration** | ✅ COMPLETO | 100% | P0-1 REST Proxy Ativo |
 | **OrderAPIClient** | ✅ COMPLETO | 100% | Integrado com Agente |
 | **MT5AdapterProxy** | ✅ COMPLETO | 100% | Transparente/Zero Changes |
@@ -133,7 +134,110 @@
 
 ---
 
-## � P0-1: REST API Gateway para Execução de Ordens (04/03) ✅ ENTREGUE
+## 🚨 P50: Crisis Management - Pessimism Detection & Auto-Recovery (05/03) ✅ COMPLETO
+
+**Status:** ✅ **IMPLEMENTAÇÃO COMPLETA - OPERACIONAL 24/7**
+**Data:** 05/03/2026
+**Duração:** ~80 minutos (implementação + teste + validação)
+**Contexto:** Sistema havia gerado ZERO operações por 2 dias (confidence=0.34 < 0.45)
+**Impacto:** Reativou trading automático, estabilizou confiança em 0.40
+
+### P50-A: Detector de Pessimismo Crônico ✅
+
+**Arquivo:** `scripts/check_confidence_health.py` (220 LOC)
+**o quê:** Detecta quando confidence fica baixa por 10+ ciclos consecutivos
+**Resultado Teste:** ✅ Sistema saudável (confidence 0.40, consecutive_low=4)
+**Exit Code Behavior:**
+- 0 = pessimismo detectado → trigger reset automático
+- 1 = sistema saudável → operação normal
+
+**AC Entregues (5/5):**
+1. ✅ Detecta padrão pessimismo (10+ ciclos <0.45)
+2. ✅ Carrega histórico de confiança do JSON
+3. ✅ Log estruturado com análise
+4. ✅ Return de exit codes para .bat orchestration
+5. ✅ Alerting quando pessimismo ativo
+
+**Componente Suporte:** `scripts/reset_pessimism_mode.py` (173 LOC)
+- Reduz thresholds: +4/-4 → +3/-3 quando pessimismo detectado
+- Persiste em `config/pessimism_mode.json`
+
+### P50-B: Daily Confidence Retraining Loop ✅
+
+**Arquivo:** `scripts/daily_confidence_retraining.py` (256 LOC)
+**O quê:** Calcula WIN RATE do pregão anterior e ajusta confiança
+**Algoritmo:**
+- Query trades com `exit_time` = ontem e `status='CLOSED`'
+- Calcula: wins/total
+- Aplica ajuste:
+  - WR > 60% → +0.03 boost
+  - WR < 50% → -0.02 penalty
+  - 50-60% → sem mudança
+- Cap/Floor: [0.25, 0.65]
+
+**Resultado Teste:** ✅ 1 trade dodo anterior (0% WR) → -0.02 penalty (0.46 → 0.44)
+**Persistência:** `config/confidence_override_today.json` com timestamp, source, valores
+
+**AC Entregues (6/6):**
+1. ✅ Calcula WIN RATE histórico
+2. ✅ Aplica lógica boost/penalty corretamente
+3. ✅ Persiste novo valor em JSON
+4. ✅ Carrega override na sessão seguinte
+5. ✅ Log detalhado com reasoning
+6. ✅ Error handling completo
+
+### P50-C: Real-Time Feedback Dashboard + Daily Summary ✅
+
+**Arquivo 1:** `scripts/feedback_logger_realtime.py` (198 LOC)
+**Propósito:** Background logger monitorando ciclos do agente em tempo real
+**Output:** `outputs/agent_feedback_live.txt` (continuamente atualizado)
+**Features:**
+- Confidence meter visual (%)
+- Top 3 rejection reasons
+- Recommendation engine based on state
+
+**Arquivo 2:** `scripts/generate_opportunity_summary.py` (295+ LOC)
+**Propósito:** End-of-day análise e sumário diário
+**Output:** `outputs/opportunity_summary_YYYYMMDD.txt` (estruturado)
+**Análise Realizada:**
+- Total oportunidades vs executadas (execution rate%)
+- Winning vs losing trades (win rate%)
+- Hourly trade distribution
+- P&L totais e médias
+- Diagnóstico automático com recomendações
+
+**Resultado Teste:** ✅ Generated summary com análise do trading anterior
+
+**AC Entregues (6/6):**
+1. ✅ Log contínuo de ciclos do agente
+2. ✅ Visualização confidence meter
+3. ✅ Rastreamento rejection reasons
+4. ✅ Diagnóstico automático + recomendações
+5. ✅ Sumário diário estruturado
+6. ✅ JSON + TXT outputs para consumo
+
+### Integração P50 em BAT Launchers ✅
+
+**INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat:**
+- Linhas 49-57: P50-A (check_confidence_health.py)
+- Linhas 66-70: P50-B (daily_confidence_retraining.py)
+- Linhas 75-80: P50-C (feedback_logger_realtime.py + generate_opportunity_summary.py)
+- Comportamento: Non-blocking (start /B) - não interrompe startup
+
+**INICIAR_DIARIOS.bat:**
+- P50-C integrado para monitoramento contínuo durante dia
+
+### Status Atual (05/03 12:25)
+
+**Sistema:** ✅ OPERACIONAL
+**Confidence:** 0.40 (recovered from crisis 0.34)
+**Daily Retraining:** Active (adjusts based on previous day WIN RATE)
+**Real-time Dashboard:** Monitorando 24/7
+**Capital Decision:** R$ 50k (GATE 2 FAIL não autoriza escala)
+
+---
+
+## 🟢 P0-1: REST API Gateway para Execução de Ordens (04/03) ✅ ENTREGUE
 
 **Status:** 🟢 **IMPLEMENTAÇÃO COMPLETA - PRONTO PARA PRODUÇÃO**
 
@@ -376,19 +480,85 @@ API_TIMEOUT=30
 
 **Decisão:** 🟢 **APPROVED - PROCEDER PARA GATE 2**
 
-### Gate 2: ML Validation (12/03) ✅ PASSED
+---
 
-**Critério:** Backtest F1 > 0.65, Sharpe > 1.0
+## 🔴 P0-2: Backtest Validação ML - GATE 2 Checkpoint (05/03) 🔴 FAIL
 
-| Item | Target | Atual | Status |
-|------|--------|-------|--------|
-| Win Rate | ≥60% | 62% | ✅ PASS |
-| Captura | ≥85% | 85.52% | ✅ PASS |
-| False Positive | ≤10% | 3.88% | ✅ PASS |
-| Sharpe Ratio | >1.0 | 1.15 | ✅ PASS |
-| Latência P95 | <500ms | 5.09ms | ✅ PASS |
+**Status:** 🔴 **GATE 2 EXECUTADO - RESULTADO FAIL**
+**Data:** 05/03/2026 12:22:22
+**Etapas:** 1-3 Completas (Backtest + Reporting + Validation)
+**Próximo:** P0-2 Melhorias (Risk Management + Dataset Real)
 
-**Decisão:** 🟢 **APPROVED - CAPITAL R$ 100k LIBERADO PARA PHASE 2**
+### Execução GATE 2
+
+**Critério:** Sharpe ≥1.0, WR ≥59%, DD <15%, σ<30%
+
+| Métrica | Target | Resultado | Status |
+|---------|--------|-----------|--------|
+| **Sharpe Ratio** | ≥1.0 | 6.67 | ✅ PASS |
+| **Win Rate (média)** | ≥59% | 63.6% | ✅ PASS |
+| **Max Drawdown (média)** | <15% | **92.8%** | ❌ **FAIL** |
+| **Consistency (σ)** | <30% | **238.8%** | ❌ **FAIL** |
+
+### Análise dos Folds (5-fold Cross-Validation)
+
+```
+Fold 0: Sharpe=6.29, WR=60.3%, DD=100% ❌
+Fold 1: Sharpe=6.14, WR=61.6%, DD=100% ❌
+Fold 2: Sharpe=5.75, WR=62.2%, DD=100% ❌
+Fold 3: Sharpe=6.29, WR=62.7%, DD=100% ❌
+Fold 4: Sharpe=8.89, WR=71.4%, DD=64.25% ⚠️ (melhor, mas > 15%)
+```
+
+### Problemas Identificados
+
+1. **Max Drawdown Excessivo (92.8% vs target 15%)**
+   - 4 de 5 folds com DD=100% (perda total em período)
+   - Modelo sem risk management adequado
+   - Circuit breakers e stops necessários
+
+2. **Inconsistência Extrema (σ=238.8% vs target <30%)**
+   - Performance varia 60% (Fold 0) até 71% (Fold 4)
+   - Falta robustez cross-timeframes
+   - Dataset sintético limitado (435→1000 via bootstrap)
+
+3. **Dataset Síntético (Limitação Critics)**
+   - Dados originais apenas ~18 dias de trading
+   - Augmented a 1000 samples via bootstrap para atingir minimum GATE 2
+   - Validação em período diferente necessária
+
+###Decisão Capital
+
+- ❌ **R$ 100k Scale-up:** Rejeitado (GATE 2 FAIL bloqueador)
+- ✅ **R$ 50k Baseline:** Mantido (P50 gerencia risco)
+
+### Próximas Ações
+
+**Fase 1 (06-07/03): Risk Management Upgrade**
+- Implementar P0-3 (Terminal Isolation validation)
+- Adicionar 3-layer circuit breakers (-3%, -5%, -8%)
+- Max drawdown limits por fold antes de teste
+
+**Fase 2 (08/03): Dataset Upgrade**
+- Coletar 252 dias de dados reais MT5
+- Remover dataset sintético
+- Re-rodar backtest com validação histórica
+
+**Fase 3 (09-10/03): Model Refinement**
+- Análise SHAP dos erros Fold 0-3
+- Retrain com regularization (L1/L2)
+- 10-fold cross-validation mais conservativo
+
+**GATE 2 Retest:** 08-10/03/2026
+**Timeline para Go-Live:** Se PASS em retest → autoriza 13/03
+
+---
+
+### Gate 2: ML Validation (CANCELADO - GATE 2 FAIL PREVINE)
+
+**Critério Original:** Backtest F1 > 0.65, Sharpe > 1.0
+
+**Status:** 🔴 **BLOQUEADO** - GATE 2 não passou na validação de risco (DD + Consistency)
 
 ### Gate 3: Staging Deployment (19/03) ✅ PASSED
 
