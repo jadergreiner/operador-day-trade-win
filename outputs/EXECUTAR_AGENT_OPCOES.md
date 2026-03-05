@@ -7,26 +7,41 @@
 
 ## 📋 3 FORMAS DE INICIAR O AGENT
 
-### **Opção 1: Via BAT File (RECOMENDADO - Mais Simples)**
+### **Opção 1: Via BAT File OFICIAL da Raiz (RECOMENDADO)**
 
 ```batch
-cd c:\repo\operador-day-trade-win\BAT
+cd c:\repo\operador-day-trade-win
 INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
 ```
 
+**Localização Oficial:** `c:\repo\operador-day-trade-win\INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`  
+**Versão:** v1.2.3 (26/02/2026) - Full integration avec BDI + SMC + ML + P0-URGENT-1
+
 **O que faz:**
 - ✅ Inicia em background automaticamente
+- ✅ Carrega ML models (LightGBM F1: 0.5664, IntraDayLearner)
+- ✅ Aplica P0-URGENT-1 (Inactivity Penalty System)
+- ✅ Valida health checks pré-voo (P50-A: pessimismo, P50-B: retraining, P50-C: feedback logger)
+- ✅ Ativa BDI Detection (v1.2.0)
+- ✅ Ativa SMC Confluence validation (M1/M5)
 - ✅ Salva logs em `outputs/agent_auto_trade_YYYYMMDD_HHMM.log`
+- ✅ REST API disponível (porta 8000, auto-startup)
 - ✅ Não bloqueia o terminal
 - ✅ Pronto para monitoramento
 
 **Saída esperada:**
 ```
-Agent iniciado (PID: 30700)
-Logs: outputs/agent_auto_trade_20260306_2015.log
+[*] Sessao ID: 51/52 iniciada
+[-] IntraDayLearner: Ativo
+[*] LightGBM: Carregado (F1: 0.5664, Accuracy: 59.55%)
+[!] P0-URGENT-1: Inactivity Penalties ATIVA
+[*] BDI Detection: Ativo
+[i] Terminal CLEAR: Pronto para negocios (isolado)
+Agent iniciado (PID: 29724 | 31872)
+Logs: outputs/agent_auto_trade_20260306_2010.log
 
 Para monitorar:
-  Get-Content outputs/agent_auto_trade_20260306_2015.log -Wait
+  Get-Content outputs/agent_auto_trade_20260306_2010.log -Wait
 ```
 
 ---
@@ -86,14 +101,20 @@ Write-Host "Logs: outputs/agent_staging.log"
 
 ## 📊 ARQUIVOS BAT DISPONÍVEIS
 
-### Novo (06/03/2026 - P0 Integrado):
+### Oficial (Raiz do Projeto):
 ```
-INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat    ← NOVO (recomendado agora)
-   └─ Background execution com P0-URGENT-1
+INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat    ← OFICIAL (v1.2.3, 26/02/2026)
+   └─ Localização: c:\repo\operador-day-trade-win\INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
+   └─ Integrações: BDI + SMC + ML + P0-URGENT-1 + P50-A/B/C
+   └─ Status: 🟢 PRODUCTION-READY (use este arquivo)
 ```
 
-### Existentes (versões anteriores):
+### Extras em Subdirectório (BAT/):
 ```
+BAT/INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
+   └─ ⚠️ Versão criada por agente (duplica função do oficial)
+   └─ Status: ❌ DEPRECATED (usar arquivo da raiz em vez disso)
+
 INICIAR_AGENTE_MICRO_TENDENCIA.bat
    └─ Versão original (terminal window)
 
@@ -106,6 +127,8 @@ INICIAR_AGENTE_WDO_WINFUT.bat
 INICIAR_AGENTE_WDO_WINFUT_LOOP.bat
    └─ Com loop automático
 ```
+
+**⚡ RECOMENDAÇÃO:** Use sempre o arquivo raiz `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
 
 ---
 
