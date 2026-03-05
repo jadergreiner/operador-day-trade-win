@@ -1,8 +1,8 @@
 # Emergency Rollback Procedure
 
-**Situação:** Sistema em erro crítico, revert necessário  
-**Data:** 08/03/2026  
-**Responsável de Execução:** CTO / Eng Sr (com aprovação CFO)  
+**Situação:** Sistema em erro crítico, revert necessário
+**Data:** 08/03/2026
+**Responsável de Execução:** CTO / Eng Sr (com aprovação CFO)
 **Janela SLA:** < 10 minutos
 
 ---
@@ -111,8 +111,8 @@ python scripts/backtest_optimizado.py --test-only --skip-plot
 
 ### Cenário 3: Completo Rollback (MÁXIMA EMERGÊNCIA)
 
-**Ativação:** Aprovação SIMULTÂNEA de CTO + CFO obrigatória  
-**Janela de Decisão:** < 5 minutos  
+**Ativação:** Aprovação SIMULTÂNEA de CTO + CFO obrigatória
+**Janela de Decisão:** < 5 minutos
 **Consequência:** Adiamento de go-live para 11/03 ou 12/03
 
 **Procedimento:**
@@ -201,21 +201,21 @@ fi
 4. **Communication Template:**
    ```
    Subject: INCIDENT REPORT - Emergency Rollback 10/03 14:30
-   
+
    SUMMARY:
    - Time: 10/03 14:30 BRT
    - System: Trading engine (production)
    - Status: ROLLED BACK to 07/03 stable snapshot
    - Impact: Go-live POSTPONED to 11/03
-   
+
    ROOT CAUSE: [To be determined in post-mortem]
-   
+
    ACTIONS TAKEN:
    - Stopped all trading activity
    - Restored database from 07/03
    - Validated all systems passing
    - Escalated to CIO
-   
+
    NEXT STEPS:
    - Post-mortem meeting: 10/03 16:00
    - Root cause analysis: 10/03 16:00-17:30
@@ -305,9 +305,9 @@ Before attempting re-launch:
 
 ---
 
-Document: ROLLBACK_PROCEDURE.md  
-Created: 08/03/2026 16:25 BRT  
+Document: ROLLBACK_PROCEDURE.md
+Created: 08/03/2026 16:25 BRT
 Status: ✅ READY FOR EMERGENCY USE
 
-**Last Review:** 08/03 16:25  
+**Last Review:** 08/03 16:25
 **Next Review Required:** 10/03 after go-live (if any incident)

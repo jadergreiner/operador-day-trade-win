@@ -8,13 +8,17 @@
 
 **Versão**: v7.0 - Refatorada como Lista de Tarefas Entregáveis
 
-**📌 LAST UPDATE (05/03/2026 - P1-CORE Opção A EXECUTADA):**
-- ✅ P1-CORE arquitetura SQLite Queue + Async Processor definida
-- ✅ Código implementado: order_queue_sqlite.py (220 LOC) + queue_processor.py (180 LOC)
-- ✅ Testes criados: test_order_queue_sqlite.py (10 testes, 100% coverage)
-- ✅ ARCHITECTURE.md seção 4.7 adicionada (P1-CORE SQLite)
-- ✅ Docs sincronizadas conforme prompts/atualiza_docs.md
-- ⏳ Próximo: Etapa 2 - Integração MT5 Real (06/03)
+**📌 LAST UPDATE (05/03/2026 - SINCRONIZACAO DOCS + ANALISE DE FECHAMENTO & 3 OPORTUNIDADES P0):**
+- ✅ Revisao de Sincronizacao de Documentacao: docs/REVISAO_SINCRONIZACAO_DOCS_05MAR.md
+  - Lint obrigatorio: pymarkdown auto-fix aplicado (4 arquivos)
+  - Integridade referencial: 100% validada (5/5 referencias cruzadas OK)
+  - Portugues: 100% de conformidade (zero linhas em outro idioma)
+- ✅ Analise de Fechamento completa: outputs/FECHAMENTO_05MAR_ANALISE_CUSTOS_OPERACIONAIS.md
+- ⚠️  PROBLEMA CRITICO IDENTIFICADO: Modelo learning "inatividade eh melhor que trades ruins"
+- ✅ 3 Oportunidades P0 definidas (ver secao abaixo)
+- 🔴 URGENCIA: Implementar "Inactivity Penalty" amanha (06/03) antes que confidence → 0
+- 📊 Custos operacionais: R$ 245-335/dia rodando inativo (3 dias = R$ 735-1005 prejudicados)
+- ⏳ Proximo: P0-1 Inactivity Penalty (06/03 17:00)
 
 ---
 
@@ -592,7 +596,127 @@ while True:
 
 ---
 
-## 🟡 P1 - ENTREGAS CRÍTICAS PARALELAS (Evolui Operadores)
+## � P0-URGENT: 3 Oportunidades Críticas - Análise de Fechamento 05/03/2026
+
+**Contexto Crítico:**
+- ⚠️ Último 3 dias: 0 trades, R$ 735-1.005 em custos operacionais
+- 🔴 Problema: Modelo learning "inatividade é melhor que risco"
+- 📊 Análise completa: [outputs/FECHAMENTO_05MAR_ANALISE_CUSTOS_OPERACIONAIS.md](../outputs/FECHAMENTO_05MAR_ANALISE_CUSTOS_OPERACIONAIS.md)
+
+---
+
+### P0-URGENT-1: Inactivity Penalty System
+
+**ID:** P50-A1
+**Título:** Penalizar Inatividade com Custo Operacional
+**Prioridade:** 🔴 **CRÍTICA** | **Deadline:** 06/03/2026 17:00
+
+**Justificativa Técnica:**
+Modelo aprendeu que fazer trade perdedor (-0.02 confidence) é PIOR que não fazer nada (±0.00).
+Realidade financeira: não fazer nada custa R$ 280/dia em infraestrutura.
+
+**Solução:**
+Integrar custo operacional na métrica de Confidence:
+```python
+# Se modelo ficar inativo > 2h, aplicar penalidade
+if minutes_inactive > 120:
+    penalty = min(0.05, (minutes_inactive / 390) * 0.10)  # Max -0.05
+    confidence -= penalty
+```
+
+**Aceitação Critérios:**
+1. ✅ Variável `operational_cost_daily` em config (default R$ 280)
+2. ✅ Cálculo `cost_per_minute` integrado (R$ 280 / 390min pregão)
+3. ✅ Penalidade aplicada quando `minutes_inactive > 120`
+4. ✅ Log mostra "Inactivity penalty: -0.03" antes de HOLD decision
+5. ✅ Backtest mostra % de dias com tentativa de entrada ↑
+
+**Owner:** ML Expert | **Estimate:** 4-5h | **Type:** Feature ML
+
+---
+
+### P0-URGENT-2: Forced Activation Threshold
+
+**ID:** P50-A2
+**Título:** "Confidence Reset Window" - Forçar Entrada Quando Modelo Fica Muito Conservador
+**Prioridade:** 🟡 **MÉDIA** | **Deadline:** 09/03/2026
+
+**Justificativa Técnica:**
+Modelo pode cair em trap onde Confidence → 0 (nunca mais entra).
+Solução: Implementar "forced activation" que força tentativa quando dano operacional ultrapassa threshold.
+
+**Solução:**
+```python
+def should_force_activation(confidence, days_inactive, cost_accumulated):
+    if confidence < 0.35 and days_inactive >= 3:
+        return True  # FORÇA entrada mesmo com confidence baixa
+    if cost_accumulated > 1000:  # R$ 1k queimado
+        return True
+    return False
+
+# Aplicar no momento da decisão:
+if should_force_activation(...):
+    signal_threshold = 0.40  # Relaxa threshold (normalmente 0.65)
+```
+
+**Aceitação Critérios:**
+1. ✅ Função `should_force_activation()` implementada
+2. ✅ Ativa quando `confidence < 0.35 AND dias_inativos >= 3`
+3. ✅ Ativa quando `cost_operacional_acumulado > R$ 1.000`
+4. ✅ Log mostra "⚠️ FORCED ACTIVATION TRIGGERED"
+5. ✅ Signal threshold relaxado de 0.65 → 0.40 durante activation
+
+**Owner:** Eng Sr | **Estimate:** 6-8h | **Type:** Feature Risk Mgmt
+
+---
+
+### P0-URGENT-3: Opportunity Cost Dashboard
+
+**ID:** P50-A3
+**Título:** Painel Executivo em Tempo Real - Mostrar Impacto de Inatividade
+**Prioridade:** 🟡 **MÉDIA** | **Deadline:** 10/03/2026
+
+**Justificativa Técnica:**
+Operador/ML Expert não "vê" o dano sendo feito em tempo real.
+Visibilidade → Pressão saudável para ativar modelo.
+
+**Solução:**
+Dashboard que exibe a cada 30min:
+```
+╔════════════════════════════════════════╗
+║  OPPORTUNITY COST DASHBOARD - 15:30   ║
+╠════════════════════════════════════════╣
+║  Tempo rodando: 7h30m                  ║
+║  Custo operacional: R$ 520             ║
+║                                        ║
+║  Trades hoje: 0/5 necessários          ║
+║  ⚠️  Você precisa de 0.87 trades       ║
+║      só pra pagar a infraestrutura   ║
+╚════════════════════════════════════════╝
+```
+
+**Aceitação Critérios:**
+1. ✅ Script `opportunity_cost_dashboard.py` criado
+2. ✅ Calcula `cost = hours_active * (280/6)`
+3. ✅ Calcula `trades_needed = cost / 600`
+4. ✅ Exibe a cada 30min via subprocess ou log
+5. ✅ Integra com `MONITOR_OPERADOR.bat`
+
+**Owner:** Data Analyst | **Estimate:** 3-4h | **Type:** Tool/Monitoring
+
+---
+
+## Status de Aprovação (P0-URGENT)
+
+| Task | PO | CFO | Eng Sr | ML Expert | Status |
+|------|----|----|--------|-----------|--------|
+| P50-A1 | ⏳ | ⏳ | ⏳ | ⏳ | Aguardando |
+| P50-A2 | ⏳ | ⏳ | ⏳ | ⏳ | Aguardando |
+| P50-A3 | ⏳ | ⏳ | ⏳ | ⏳ | Aguardando |
+
+---
+
+## �🟡 P1 - ENTREGAS CRÍTICAS PARALELAS (Evolui Operadores)
 
 ### P1-CORE: SQLite Order Queue + Async Processor + WebSocket Broadcast
 
@@ -1743,9 +1867,9 @@ Questões? Escalate para Product Owner.
 
 ## P53: Task 3 - Model Deployment & Operational Testing [✅ 05/03 20:00]
 
-**Data:** 05/03/2026 19:30-20:05 BRT  
-**Status:** ✅ **COMPLETO - Model Production-Ready**  
-**Testes:** 16/16 PASSED (100%)  
+**Data:** 05/03/2026 19:30-20:05 BRT
+**Status:** ✅ **COMPLETO - Model Production-Ready**
+**Testes:** 16/16 PASSED (100%)
 **Aprovações:** ✅ CTO, ✅ ML Expert, ✅ Trader, ✅ CFO
 
 ### Resumo Executivo

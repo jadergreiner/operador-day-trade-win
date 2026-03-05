@@ -1,0 +1,19 @@
+{
+  "total_orders": 25,
+  "successful": 25,
+  "failed": 0,
+  "success_rate_percent": 100.0,
+  "duration_seconds": 7.104332447052002,
+  "throughput_orders_per_sec": 3.52,
+  "latency_min_ms": 15.35,
+  "latency_max_ms": 63.07,
+  "latency_mean_ms": 33.97,
+  "latency_p50_ms": 31.21,
+  "latency_p95_ms": 61.75,
+  "latency_p99_ms": 63.07,
+  "memory_before_mb": 25.6,
+  "memory_after_mb": 25.7,
+  "memory_delta_mb": 0.1,
+  "cpu_percent": 0.0,
+  "queue_final_size": 25
+}

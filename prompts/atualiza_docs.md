@@ -1,230 +1,261 @@
-# Atualização de Documentação — Prompt Refatorado
+# 📝 Atualização de Documentação — Guia Executável
 
 ## 🎯 Objetivo
-Manter sincronização e integridade referencial entre 11 documentos críticos do projeto.
+
+Manter sincronização e integridade referencial entre 11 documentos críticos
+do projeto operador-day-trade-win.
 
 ---
 
-## 📋 Documentos e Responsabilidades
+## 📚 Documentos e Responsabilidades
 
 | Doc | Propósito | Atualizar Quando |
 |-----|-----------|-----------------|
-| **ADRs.md** | Decisões arquiteturais registradas | Nova decisão de design importante |
-| **ARCHITECTURE.md** | Arquitetura do sistema (evolução) | Mudança em componentes/módulos |
-| **BACKLOG_UNIFICADO.md** | Status e progresso de atividades | Conclusão/início de tarefas |
-| **CODING_STANDARDS.md** | Padrões de código e boas práticas | Nova regra de qualidade/style |
-| **CONTRIBUTING.md** | Guia de contribuição (referencia CODING_STANDARDS) | Mudança em workflow/processo |
-| **DATA_MODELS.md** | Modelo de dados (tabelas, campos, tipos) | Novo campo/tabela ou alteração de schema |
-| **DIAGRAMA_CLASSES.md** | Diagrama de classes (UML/visual) | Nova classe ou refatoração estrutural |
-| **DIAGRAMA_DADOS.md** | Diagrama ER (entidade-relacionamento) | Mudança na modelagem de dados |
-| **MODELAGEM_DADOS.md** | Documentação técnica da modelagem | Evolução do DATA_MODELS.md |
-| **README.md** | Visão geral do projeto (top-level) | Mudança em features, setup ou status |
-| **REGRAS_NEGOCIO.md** | Regras em linguagem não-técnica | Nova regra ou mudança de lógica |
-| **STATUS_ENTREGAS.md** | Cronograma e status de entregas | Mudança em prazos ou conclusão |
+| **ARCHITECTURE.md** | Arquitetura do sistema | Mudança componentes |
+| **ADRs.md** | Decisões arquiteturais | Nova decisão design |
+| **BACKLOG_UNIFICADO.md** | Status progresso | Conclusão tarefas |
+| **CODING_STANDARDS.md** | Padrões código | Nova regra qualidade |
+| **CONTRIBUTING.md** | Guia contribuição | Mudança workflow |
+| **DATA_MODELS.md** | Modelo dados | Novo campo/schema |
+| **DIAGRAMA_CLASSES.md** | Diagrama UML | Nova classe |
+| **DIAGRAMA_DADOS.md** | Diagrama ER | Mudança modelagem |
+| **MODELAGEM_DADOS.md** | Docs técnica | Evolução DATA_MODELS |
+| **README.md** | Visão geral projeto | Mudança features |
+| **REGRAS_NEGOCIO.md** | Regras não-técnicas | Nova regra lógica |
+| **STATUS_ENTREGAS.md** | Cronograma status | Mudança prazos |
 
 ---
 
-## 🔗 Mapa de Dependências (Impactos)
+## 🔗 Mapa de Dependências
 
-```
-ARCHITECTURE.md (core)
-  ├─→ ADRs.md (registra decisões)
-  ├─→ DIAGRAMA_CLASSES.md (visual)
-  └─→ CODING_STANDARDS.md (implementação)
+### ARCHITECTURE.md (🔴 CORE)
 
-DATA_MODELS.md (core)
-  ├─→ DIAGRAMA_DADOS.md (visual)
-  ├─→ MODELAGEM_DADOS.md (documentação tática)
-  └─→ README.md (overview)
+- ADRs.md, DIAGRAMA_CLASSES.md, CODING_STANDARDS.md, README.md
 
-BACKLOG_UNIFICADO.md
-  ├─→ STATUS_ENTREGAS.md (resumo status)
-  └─→ README.md (seção "Status")
+### DATA_MODELS.md (🔴 CORE)
 
-REGRAS_NEGOCIO.md
-  ├─→ CODING_STANDARDS.md (implementar padrões)
-  └─→ DATA_MODELS.md (validar estrutura)
+- DIAGRAMA_DADOS.md, MODELAGEM_DADOS.md, README.md, REGRAS_NEGOCIO.md
 
-CONTRIBUTING.md (implementação)
-  └─→ CODING_STANDARDS.md (referencia)
+### BACKLOG_UNIFICADO.md (🔴 CORE)
 
-README.md (agregador)
-  ├─ Resumo de ARCHITECTURE.md
-  ├─ Resumo de DATA_MODELS.md
-  ├─ Link para CONTRIBUTING.md
-  └─ Status de STATUS_ENTREGAS.md
+- STATUS_ENTREGAS.md, README.md
+
+### REGRAS_NEGOCIO.md
+
+- CODING_STANDARDS.md, DATA_MODELS.md
+
+### CONTRIBUTING.md
+
+- CODING_STANDARDS.md
+
+---
+
+## ✅ Lint Obrigatório
+
+**Regra MD013 (Comprimento de Linha):**
+
+- Máximo 80 caracteres por linha
+- Exceção: URLs, tabelas, blocos código
+- Ferramenta: `python -m pymarkdown scan docs/`
+
+**Padrões Obrigatórios:**
+
+- MD001: Headers em sequência
+- MD002: Primeiro header deve ser (#) nível 1
+- MD022: Espaço em branco acima headers
+- MD023: Headers devem começar no início da linha
+- Sem caracteres de encoding incorreto
+- Mensagens commit SEM acentos
+
+**Validação Pré-Commit:**
+
+```bash
+python -m pymarkdown scan docs/*.md
+python -m pymarkdown fix docs/arquivo.md
 ```
 
 ---
 
-## ✅ Checklist de Sincronização (EXECUTÁVEL)
+## 🚀 Fluxo de Execução (5 Passos)
 
-Após **QUALQUER** mudança em documentação:
+### 1️⃣ EDITAR + IDENTIFICAR IMPACTOS
 
-### Passo 1: Identificar Núcleo Alterado
-- [ ] Qual documento foi editado?
-- [ ] É um documento **CORE** (ARCHITECTURE, DATA_MODELS, BACKLOG)?
-- [ ] É um documento **DEPENDENTE**?
+EDITAR documento X → CLASSIFICAR tipo → MAPEAR impactados
 
-### Passo 2: Mapear Impactos
-Baseado no mapa acima, verificar documentos dependentes.
+**Impactos Rápidos:**
 
-**Se ARCHITECTURE alterada:**
-  - [ ] ADRs.md registra decisão?
-  - [ ] DIAGRAMA_CLASSES.md reflete mudança?
-  - [ ] CODING_STANDARDS.md precisa atualização?
-  - [ ] README.md seção "Arquitetura" está sincronizado?
+- ARCHITECTURE → ADRs, DIAGRAM_CLASSES, README
+- DATA_MODELS → DIAGRAM_DADOS, MODELAGEM, README
+- BACKLOG → STATUS_ENTREGAS, README
 
-**Se DATA_MODELS alterada:**
-  - [ ] DIAGRAMA_DADOS.md reflete nova schema?
-  - [ ] MODELAGEM_DADOS.md documentação técnica atualizada?
-  - [ ] README.md dados estrutura atualizada?
+### 2️⃣ ATUALIZAR DEPENDENTES
 
-**Se BACKLOG_UNIFICADO alterada:**
-  - [ ] STATUS_ENTREGAS.md reflete novo status?
-  - [ ] README.md seção "Status" sincronizado?
+REVISAR seção → ATUALIZAR mudanças → VALIDAR cross-references
 
-**Se REGRAS_NEGOCIO alterada:**
-  - [ ] CODING_STANDARDS.md implementação está confirmada?
-  - [ ] DATA_MODELS.md validação está consistente?
+### 3️⃣ LINT VALIDATION (OBRIGATÓRIO)
 
-**Se CONTRIBUTING alterada:**
-  - [ ] README.md "Como Contribuir" aponta para novo localização?
-  - [ ] CODING_STANDARDS.md linkado corretamente?
-
-### Passo 3: Atualizar Documentos Impactados
-- [ ] Para cada documento impactado, revisar conteúdo relevante
-- [ ] Fazer updates incrementais (não reescrever tudo)
-- [ ] Manter timestamps/versões quando aplicável
-
-### Passo 4: Validação
-- [ ] Cross-references entre docs estão válidas?
-- [ ] Não há contradições nos conteúdos?
-- [ ] Exemplos de código estão sincronizados?
-- [ ] Links internos funcionam?
-
-### Passo 5: Registrar Mudança
-Adicionar entrada em BACKLOG_UNIFICADO.md:
+```bash
+python -m pymarkdown scan docs/
+# Esperado: 0 violations
+python -m pymarkdown fix docs/arquivo.md
 ```
-- [DD/MM] atualiza_docs: {Doc1} + {Doc2} + {Doc3} sincronizados
+
+### 4️⃣ REGISTRAR NO BACKLOG
+
+Adicionar entrada em `BACKLOG_UNIFICADO.md`:
+
+```markdown
+- [DD/MM] atualiza_docs: {Docs sincronizados}
   Motivo: {descrição breve}
-  Impacto: {quais documentos foram atualizados}
+  Docs Afetados: {lista}
+  Lint: ✅ VALIDADO
+```
+
+### 5️⃣ COMMIT + PUSH
+
+```bash
+python -m pymarkdown scan docs/
+git commit -m "docs: Sincronizacao {Docs} - {desc}"
+git push origin main
 ```
 
 ---
 
-## 🔄 Fluxo de Execução
+## 📊 Checklist Rápido
 
-```
-1. EDITAR documento X
-   ↓
-2. IDENTIFICAR documentos dependentes (usar mapa acima)
-   ↓
-3. PARA CADA documento impactado:
-   a. REVISAR seção relevante
-   b. ATUALIZAR com mudanças
-   c. VALIDAR cross-references
-   ↓
-4. REGISTRAR em BACKLOG_UNIFICADO.md
-   ↓
-5. VALIDAÇÃO FINAL:
-   - Nenhuma contradição?
-   - Links válidos?
-   - Timestamps sincronizados?
-   ↓
-6. COMMIT: git commit -m "docs: Sincronizacao {Docs atualizados}"
-```
+**Antes:**
+
+- Qual documento foi editado?
+- Qual tipo: CORE ou DEPENDENTE?
+- Quais documentos dependem dele?
+
+**Durante:**
+
+- Atualizei todas as seções impactadas?
+- Nenhum link quebrado?
+- Nenhuma contradição?
+
+**Depois:**
+
+- Lint passou? (`python -m pymarkdown scan docs/`)
+- Registrei em BACKLOG_UNIFICADO.md?
+- Commit message clara e SEM acentos?
 
 ---
 
-## 📊 Critérios de Sucesso
+## 🎯 Exemplo Prático (Completo)
 
-✅ **Validação Automática (Checklist)**
-- Todos os 11 documentos passam validação de sintaxe
-- Nenhum link quebrado entre documentos
-- Nenhuma contradição entre sections relacionadas
-
-✅ **Completude**
-- Documento núcleo atualizado
-- Todos os documentos dependentes identificados
-- Todos os documentos dependentes sincronizados
-
-✅ **Consistência**
-- Schema de dados reflete em todos os 3 diagramas
-- Regras de negócio implementadas em CODING_STANDARDS
-- Status em STATUS_ENTREGAS reflete BACKLOG_UNIFICADO
-- README.md sempre reflete status atual
-
-✅ **Documentação**
-- Mudança registrada em BACKLOG_UNIFICADO.md
-- Commit message clara e descritiva
-- Nenhuma documentação órfã (não referenciada)
-
----
-
-## 🚀 Exemplo Prático
-
-**Cenário:** Nova field adicionada à tabela `orders` no banco.
+**Cenário:** Alterar `ARCHITECTURE.md` (add seção 4.8)
 
 **Execução:**
 
-1. **EDITAR:** DATA_MODELS.md
-   - Adicionar nova field à seção `orders`
-   - Documentar tipo e propósito
+1. **EDITAR** docs/ARCHITECTURE.md - Nova seção
 
-2. **IMPACTOS IDENTIFICADOS:**
-   - DIAGRAMA_DADOS.md (visual)
-   - MODELAGEM_DADOS.md (documentação tática)
-   - REGRAS_NEGOCIO.md (se field tem validação)
-   - README.md (se mudança é relevante ao user)
+2. **MAPEAR IMPACTOS:**
+   - ADRs.md ← Registrar decisão
+   - README.md ← Atualizar visão geral
+   - STATUS_ENTREGAS.md ← Reflect completion
 
-3. **ATUALIZAR IMPACTADOS:**
-   ```
-   DIAGRAMA_DADOS.md: Adicionar field ao diagrama ER
-   MODELAGEM_DADOS.md: Documentar nova field + constraints
-   REGRAS_NEGOCIO.md: Validação se aplicável
-   README.md: Atualizar schema summary se necessário
-   ```
+3. **ATUALIZAR:**
 
-4. **VALIDAR:**
-   - Toda referência à tabela `orders` está consistente?
-   - Nenhuma contradição entre docs?
+   ```markdown
+   # ADRs.md
+   + ADR-XXX com decisão arquitetural
 
-5. **REGISTRAR:**
-   ```
-   BACKLOG_UNIFICADO.md:
-   - [05/03] atualiza_docs: DATA_MODELS + DIAGRAMA_DADOS + 
-     MODELAGEM_DADOS sincronizados
-     Motivo: Nova field 'execution_timestamp' em orders
-     Impacto: Schema evolução + validações atualizadas
+   # README.md
+   + Seção "Arquitetura" com link
+
+   # STATUS_ENTREGAS.md
+   + Seção Próximas Fases
    ```
 
-6. **COMMIT:**
+### 4️⃣ LINT
+
    ```bash
-   git commit -m "docs: Sincronizacao DATA_MODELS - nova field orders.execution_timestamp"
+   python -m pymarkdown scan docs/ARCHITECTURE.md \
+     docs/ADRs.md docs/README.md docs/STATUS_ENTREGAS.md
+   # ✅ 0 violations
+   ```
+
+### 5️⃣ REGISTRAR
+
+   ```markdown
+   - [07/03] atualiza_docs: ARCHITECTURE + ADRs + README
+     + STATUS_ENTREGAS sincronizados
+     Motivo: Nova seção 4.8 (P1-CORE Etapa 3)
+     Docs Afetados: 4 (ARCHITECTURE → 3 dependentes)
+     Lint: ✅ VALIDADO (0 violations)
+   ```
+
+### 6️⃣ COMMIT
+
+   ```bash
+   git commit -m \
+     "docs: Sincronizacao ARCHITECTURE - P1-CORE Etapa 3"
+   git push
    ```
 
 ---
 
 ## ⚡ Instruções para Claude Haiku
 
-**Quando receber task "atualiza_docs":**
+**Quando receber "Execute {{prompts/atualiza_docs_refatorado.md}}":**
 
-1. **Parse:** Qual documento foi alterado? (identifique CORE ou DEPENDENTE)
-2. **Map:** Use mapa de dependências para encontrar impactados
-3. **Process:** Atualize cada impactado seguindo Passo 3
-4. **Validate:** Use Validação (Passo 4)
-5. **Register:** Registre em BACKLOG_UNIFICADO.md seguindo template
-6. **Commit:** Mensagem clara indicando docs sincronizados
+1. **PARSE:** Qual documento foi alterado?
+   - Procure: ARCHITECTURE, DATA_MODELS, BACKLOG
+   - Identifique: CORE ou DEPENDENTE?
 
-**Crítico:** Não reescreva documentos inteiros. Atualize apenas seções impactadas.
+2. **MAP:** Encontre impactados
+   - Use seção "Mapa de Dependências"
+   - Execute: `grep -r "referência" docs/`
+
+3. **PROCESS:** Atualize impactados
+   - Altere APENAS seções relacionadas
+   - Use replace_string_in_file (não reescreva tudo)
+
+4. **LINT:** Valide todos os docs
+   - Execute: `python -m pymarkdown scan docs/`
+   - SE ERROS: `python -m pymarkdown fix docs/arquivo.md`
+   - Revalidar até 0 violations
+
+5. **REGISTER:** Adicione entrada BACKLOG
+   - Template: `- [DATA] atualiza_docs: {...}`
+   - Inclua "Lint: ✅ VALIDADO"
+
+6. **COMMIT:** Mensagem clara, SEM acentos
+   - Template: `docs: Sincronizacao {Docs} - {desc}`
+
+**Critical:** Lint obrigatório antes de qualquer commit!
 
 ---
 
-## 📌 Notas Importantes
+## 📌 Reminders
 
-- **Não é bloqueante:** Use checklist como guia, não impedimento
-- **Incremental:** Atualizações pequenas e focadas
-- **Transparência:** Sempre registrar mudanças em BACKLOG_UNIFICADO.md
-- **Link Validation:** Antes de commit, validar que links internos funcionam
-- **Version Control:** Usar timestamps/versões apenas em docs que evoluem frequentemente
+- ⏱️ Tempo típico: 15-30 min por update (incluindo lint)
+- 🎯 Foco: Atualizar seções impactadas, não reescrever
+- 🔗 Links: Validar cross-references após update
+- ✅ Lint: SEMPRE executar antes de commit
+- 📝 Registro: SEMPRE adicionar entrada em BACKLOG
+- 💬 Commit: Mensagens claras, SEM acentos
+
+---
+
+## 📈 Métricas de Sucesso
+
+| Critério | Target | Validação |
+|----------|--------|-----------|
+| Docs sincronizadas | 100% | Sem contradição |
+| Lint violations | 0 | `pymarkdown scan` |
+| Links válidos | 100% | Grep cross-refs |
+| Registro BACKLOG | 100% | Check BACKLOG |
+| Commits claros | 100% | Review commit |
+
+---
+
+**Versão:** 2.0 (Refatorado 07/03/2026)
+
+**Lint:** ✅ MD013, MD001, MD002, MD022, MD023
+
+**Encoding:** ✅ UTF-8, sem caracteres danificados
+
+**Executable:** ✅ Pronto para Claude Haiku

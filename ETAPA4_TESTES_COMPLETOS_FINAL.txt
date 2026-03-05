@@ -121,7 +121,7 @@ scripts/load_test_order_queue.py (450+ LOC)
 │  └─ Features: Variable latency (5-50ms), failure rate simulation
 ├─ Functions:
 │  ├─ simulate_orders() [async]
-│  ├─ run_load_test() [async]  
+│  ├─ run_load_test() [async]
 │  ├─ validate_results()
 │  └─ main()
 └─ CLI: argparse with --duration, --rate, --failure

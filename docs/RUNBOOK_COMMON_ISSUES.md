@@ -1,7 +1,7 @@
 # Runbook - Operação Phase 1 Beta
 
-**Objetivo:** Respostas rápidas para os 15+ cenários mais prováveis durante o Beta  
-**Data:** 08/03/2026  
+**Objetivo:** Respostas rápidas para os 15+ cenários mais prováveis durante o Beta
+**Data:** 08/03/2026
 **Audiência:** Operador, CTO, ML Expert, Finance
 
 ---
@@ -193,7 +193,7 @@ tail -50 data/logs/model.log | grep -E "score=|error|exception"
 
 **Decisão de Recuperação:**
 Requer aprovação de AMBOS:
-- ✅ **CTO:** "Código operacional, recuperação segura" 
+- ✅ **CTO:** "Código operacional, recuperação segura"
 - ✅ **CFO:** "Aceita risco, capital protegido"
 
 **Recuperação (CTO autoriza):**
@@ -236,11 +236,11 @@ python -m src.application.services.trading_orchestrator --resume --capital-check
 ```bash
 # Calcular FP rate atual
 sqlite3 data/db/trading.db "
-SELECT 
+SELECT
   CAST(SUM(CASE WHEN pnl < 0 THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) * 100 as fp_rate,
   AVG(ABS(pnl)) as avg_trade_size,
   MIN(pnl) as worst_trade
-FROM orders 
+FROM orders
 WHERE date = '2026-03-10' AND timestamp > datetime('now', '-2 hours');
 "
 
@@ -344,6 +344,6 @@ Fri 15:00-Mon 09:00: Standby mode
 
 ---
 
-Document: RUNBOOK_COMMON_ISSUES.md  
-Created: 08/03/2026 16:20 BRT  
+Document: RUNBOOK_COMMON_ISSUES.md
+Created: 08/03/2026 16:20 BRT
 Status: ✅ READY FOR OPERATIONS

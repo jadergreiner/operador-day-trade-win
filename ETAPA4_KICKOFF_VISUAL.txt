@@ -23,10 +23,10 @@ ARTEFATOS CRIADOS (6 arquivos + 1.600 LOC código novo)
      • Coleta de métricas: latência, CPU, memória
      • Validação 5 acceptance criteria
      • Output: resultados em JSON
-   
+
    RESULTADO PRIMEIRA EXECUÇÃO:
    ├─ Latência P95:        61.6ms ✅ (target: <500ms)
-   ├─ Memória delta:       +0.3MB ✅ (target: <50MB)  
+   ├─ Memória delta:       +0.3MB ✅ (target: <50MB)
    ├─ CPU:                 0% ✅ (target: <80%)
    ├─ Success rate:        98.8% ⚠️  (target: ≥99%)
    ├─ Throughput:          14.5 ord/s ⚠️ (target: ≥100)
@@ -40,7 +40,7 @@ ARTEFATOS CRIADOS (6 arquivos + 1.600 LOC código novo)
      • Suporte dual-table (orders + order_queue)
      • Validação integridade SQLite (PRAGMA check)
      • Modo dry-run para preview
-   
+
    RESULTADO PRIMEIRA EXECUÇÃO:
    ├─ Dry-run:             ✅ (funcionou, banco vazio - OK)
    ├─ Tabela detectada:    Tentou orders → order_queue (fallback)
@@ -54,7 +54,7 @@ ARTEFATOS CRIADOS (6 arquivos + 1.600 LOC código novo)
      AGENDA_LIMPEZA_DIARIA.bat start   → Agenda tarefa (requer Admin)
      AGENDA_LIMPEZA_DIARIA.bat stop    → Remove tarefa agendada
      AGENDA_LIMPEZA_DIARIA.bat status  → Verifica status
-   
+
    DETALHES:
    ├─ Tarefa Windows:      P1-CORE-Limpeza-Ordens-Diarias
    ├─ Horário:             23:00 (daily)
@@ -70,7 +70,7 @@ ARTEFATOS CRIADOS (6 arquivos + 1.600 LOC código novo)
      • TestCleanupScheduler (4 testes)
      • TestEtapa4Integration (3 testes)
      • TestEtapa4Documentation (3 testes)
-   
+
    ACCEPTANCE CRITERIA (14 testes):
    ├─ AC1: Load test script executável ✓
    ├─ AC2: Cleanup script executável ✓
@@ -80,7 +80,7 @@ ARTEFATOS CRIADOS (6 arquivos + 1.600 LOC código novo)
    ├─ AC6: Ambos scripts com docstrings ✓
    ├─ AC7: BAT scheduler existe ✓
    └─ AC8-14: Testes de integração (mock DB, output format, etc)
-   
+
    EXECUTAR:
    $ pytest tests/test_etapa4_load_and_cleanup.py -v
 
@@ -179,13 +179,13 @@ COMO USAR OS SCRIPTS
 
 ✨ CLEANUP SCHEDULER - Limpeza Segura (Dry-Run Primeiro):
    $ cd c:\repo\operador-day-trade-win
-   
+
    PRÉ-VISUALIZAÇÃO (SEM DELETAR):
    $ python scripts/cleanup_old_orders_scheduler.py --dry-run --days 7
-   
+
    EXECUÇÃO REAL (COM BACKUP):
    $ python scripts/cleanup_old_orders_scheduler.py --days 7 --backup
-   
+
    AGENDAMENTO DIÁRIO (Windows Task Scheduler):
    $ BAT\AGENDA_LIMPEZA_DIARIA.bat start  (requer Admin)
    $ BAT\AGENDA_LIMPEZA_DIARIA.bat status (ver status)
@@ -223,13 +223,13 @@ TIMELINE ETAPA 4
    • cleanup_old_orders_scheduler.py (380 LOC)
    • AGENDA_LIMPEZA_DIARIA.bat
    • test_etapa4_load_and_cleanup.py (370 LOC)
-   
+
    Resultado: 2 roteiros PASSED, 2 FAIL (await Etapa 5 real queue)
 
 ✅ 08/03 14:50: Primeira execução + análise resultados
    • Load test: 98.8% sucesso (latência excelente, throughput await)
    • Cleanup: Funcional (banco vazio, dry-run OK)
-   
+
    Commits: e297ee7 (1.177 insertions across 6 files)
 
 ⏳ 08/03 18:00: GATE 2 Retest (backtest validation post-cleanup)
@@ -248,7 +248,7 @@ TIMELINE ETAPA 4
    • Etapa 4 teste suite 100% PASS ✅
    • Cleanup validated ✅
    • Load test accepted (P95 latência excelente) ✅
-   
+
    Outcome: GO for Fase 1 Phase Beta Launch
 
 ================================================================================

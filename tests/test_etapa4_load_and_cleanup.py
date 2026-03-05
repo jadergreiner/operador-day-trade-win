@@ -21,12 +21,12 @@ import os
 
 class TestLoadTestOrderQueue:
     """Testes para load_test_order_queue.py"""
-    
+
     def test_load_test_exists(self):
         """Verifica se script de load test existe"""
         script = Path("scripts/load_test_order_queue.py")
         assert script.exists(), f"Script {script} nao encontrado"
-    
+
     def test_load_test_has_required_functions(self):
         """Verifica se script tem funcoes obrigatorias"""
         with open("scripts/load_test_order_queue.py", "r", encoding="utf-8") as f:
@@ -36,44 +36,44 @@ class TestLoadTestOrderQueue:
             assert "simulate_orders" in content
             assert "run_load_test" in content
             assert "validate_results" in content
-    
+
     def test_load_test_cli_parameters(self):
         """Verifica se script aceita parametros CLI"""
         result = subprocess.run(
-            [sys.executable, "scripts/load_test_order_queue.py", 
+            [sys.executable, "scripts/load_test_order_queue.py",
              "--duration", "1", "--rate", "1"],
             capture_output=True,
             text=True
         )
         assert result.returncode in [0, 1], "Script nao roda corretamente"
-    
+
     def test_load_test_creates_output(self):
         """Verifica se load test gera arquivo JSON de resultados"""
         outputs_dir = Path("outputs")
         outputs_dir.mkdir(exist_ok=True)
-        
+
         files_before = len(list(outputs_dir.glob("load_test_results_*.json")))
-        
+
         result = subprocess.run(
-            [sys.executable, "scripts/load_test_order_queue.py", 
+            [sys.executable, "scripts/load_test_order_queue.py",
              "--duration", "2", "--rate", "5"],
             capture_output=True,
             text=True,
             cwd="."
         )
-        
+
         files_after = len(list(outputs_dir.glob("load_test_results_*.json")))
         assert files_after >= files_before, "Nenhum arquivo JSON foi criado"
 
 
 class TestCleanupScheduler:
     """Testes para cleanup_old_orders_scheduler.py"""
-    
+
     def test_cleanup_script_exists(self):
         """Verifica se script de cleanup existe"""
         script = Path("scripts/cleanup_old_orders_scheduler.py")
         assert script.exists(), f"Script {script} nao encontrado"
-    
+
     def test_cleanup_has_required_classes(self):
         """Verifica se script tem classes obrigatorias"""
         with open("scripts/cleanup_old_orders_scheduler.py", "r", encoding="utf-8") as f:
@@ -83,30 +83,30 @@ class TestCleanupScheduler:
             assert "create_backup" in content
             assert "delete_old_orders" in content
             assert "validate_integrity" in content
-    
+
     def test_cleanup_dry_run_mode(self):
         """Verifica se cleanup suporta dry-run (sem deletar)"""
         result = subprocess.run(
-            [sys.executable, "scripts/cleanup_old_orders_scheduler.py", 
+            [sys.executable, "scripts/cleanup_old_orders_scheduler.py",
              "--dry-run", "--days", "7"],
             capture_output=True,
             text=True,
             cwd="."
         )
-        
+
         assert result.returncode == 0, f"Dry-run falhou: {result.stderr}"
         combined = (result.stdout + result.stderr).lower()
         assert "cleanup" in combined
-    
+
     def test_cleanup_with_mock_database(self):
         """Testa cleanup scheduler com banco mock"""
         with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
             db_path = tmp.name
-        
+
         try:
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
-            
+
             cursor.execute("""
                 CREATE TABLE orders (
                     id INTEGER PRIMARY KEY,
@@ -115,31 +115,31 @@ class TestCleanupScheduler:
                     status TEXT
                 )
             """)
-            
+
             old_date = (datetime.now() - timedelta(days=10)).isoformat()
             cursor.execute(
                 "INSERT INTO orders (symbol, created_at, status) VALUES (?, ?, ?)",
                 ("WIN", old_date, "CLOSED")
             )
-            
+
             recent_date = (datetime.now() - timedelta(days=2)).isoformat()
             cursor.execute(
                 "INSERT INTO orders (symbol, created_at, status) VALUES (?, ?, ?)",
                 ("WIN", recent_date, "CLOSED")
             )
-            
+
             conn.commit()
             conn.close()
-            
+
             result = subprocess.run(
                 [sys.executable, "scripts/cleanup_old_orders_scheduler.py",
                  "--db", str(db_path), "--dry-run", "--days", "7"],
                 capture_output=True,
                 text=True
             )
-            
+
             assert result.returncode == 0, f"Cleanup falhou: {result.stderr}"
-            
+
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
             cursor.execute("SELECT COUNT(*) FROM orders")
@@ -152,23 +152,23 @@ class TestCleanupScheduler:
                     os.remove(db_path)
                 except:
                     pass
-    
+
     def test_cleanup_backup_directory(self):
         """Verifica se backup directory eh criado corretamente"""
         backup_dir = Path("data/db/backups")
-        
+
         if backup_dir.exists():
             backups_before = len(list(backup_dir.glob("trading_*.db")))
         else:
             backups_before = 0
-        
+
         subprocess.run(
             [sys.executable, "scripts/cleanup_old_orders_scheduler.py",
              "--dry-run"],
             capture_output=True,
             text=True
         )
-        
+
         if backup_dir.exists():
             backups_after = len(list(backup_dir.glob("trading_*.db")))
             assert backups_after >= backups_before
@@ -176,31 +176,31 @@ class TestCleanupScheduler:
 
 class TestEtapa4Integration:
     """Testes de integracao Etapa 4"""
-    
+
     def test_both_scripts_executable(self):
         """Verifica se ambos scripts sao executaveis"""
         load_test = Path("scripts/load_test_order_queue.py")
         cleanup = Path("scripts/cleanup_old_orders_scheduler.py")
-        
+
         assert load_test.exists()
         assert cleanup.exists()
         assert load_test.stat().st_size > 0
         assert cleanup.stat().st_size > 0
-    
+
     def test_load_test_output_format(self):
         """Testa formato do output JSON do load test"""
         outputs_dir = Path("outputs")
         outputs_dir.mkdir(exist_ok=True)
-        
+
         subprocess.run(
             [sys.executable, "scripts/load_test_order_queue.py",
              "--duration", "2", "--rate", "5"],
             capture_output=True,
             text=True
         )
-        
+
         json_files = list(outputs_dir.glob("load_test_results_*.json"))
-        
+
         if json_files:
             with open(json_files[-1], "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -210,18 +210,18 @@ class TestEtapa4Integration:
                     "failed",
                     "success_rate_percent",
                 ]
-                
+
                 for field in required_fields:
                     assert field in data, f"Campo obrigatorio {field} nao encontrado"
-    
+
     def test_etapa4_acceptance_criteria(self):
         """Testa criterios de aceitacao da Etapa 4"""
         load_test = Path("scripts/load_test_order_queue.py")
         assert load_test.exists(), "AC1 FAIL: Load test script nao existe"
-        
+
         cleanup = Path("scripts/cleanup_old_orders_scheduler.py")
         assert cleanup.exists(), "AC2 FAIL: Cleanup script nao existe"
-        
+
         result = subprocess.run(
             [sys.executable, "scripts/load_test_order_queue.py",
              "--duration", "1", "--rate", "1"],
@@ -231,7 +231,7 @@ class TestEtapa4Integration:
         )
         combined = (result.stdout + result.stderr).lower()
         assert "duration" in combined or result.returncode in [0, 1]
-        
+
         result = subprocess.run(
             [sys.executable, "scripts/cleanup_old_orders_scheduler.py",
              "--dry-run"],
@@ -239,11 +239,11 @@ class TestEtapa4Integration:
             text=True
         )
         assert result.returncode == 0, "AC4 FAIL: Dry-run nao funciona"
-        
+
         with open("scripts/load_test_order_queue.py", encoding="utf-8") as f:
             content = f.read()
             assert "logging" in content or "INFO" in content
-        
+
         with open("scripts/cleanup_old_orders_scheduler.py", encoding="utf-8") as f:
             content = f.read()
             assert "logging" in content
@@ -251,22 +251,22 @@ class TestEtapa4Integration:
 
 class TestEtapa4Documentation:
     """Testes de documentacao Etapa 4"""
-    
+
     def test_scripts_have_docstrings(self):
         """Verifica se scripts tem docstrings"""
         with open("scripts/load_test_order_queue.py", encoding="utf-8") as f:
             content = f.read()
             assert '"""' in content or "'''" in content
-        
+
         with open("scripts/cleanup_old_orders_scheduler.py", encoding="utf-8") as f:
             content = f.read()
             assert '"""' in content or "'''" in content
-    
+
     def test_bat_scheduler_exists(self):
         """Verifica se BAT scheduler foi criado"""
         bat_file = Path("BAT/AGENDA_LIMPEZA_DIARIA.bat")
         assert bat_file.exists(), "BAT scheduler nao existe"
-        
+
         with open(bat_file) as f:
             content = f.read()
             assert "cleanup_old_orders_scheduler.py" in content

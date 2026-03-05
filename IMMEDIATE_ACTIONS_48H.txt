@@ -182,7 +182,7 @@ IF ANY ISSUE → Debug immediately
 
 14:00-16:00: KICKOFF FINAL MEETING
   (See KICKOFF_FINAL_PRE_LAUNCH.txt for detailed agenda)
-  
+
   14:00-14:20: Status review (GATE 2, ETAPA 4)
   14:20-14:40: Deployment readiness
   14:40-15:00: Live trading setup
