@@ -1341,7 +1341,7 @@ INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
 
 ---
 
-### P50-C: Real-Time Feedback Dashboard + Sumário Diário [🟡 MÉDIA - 1.5 dias]
+### P50-C: Real-Time Feedback Dashboard + Sumário Diário [✅ IMPLEMENTADO - 05/03]
 
 **O Problema**:
 - Operador não consegue diagnosticar rapidamente por que não há operações
@@ -1349,42 +1349,58 @@ INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
 - Feedback loop lento (>30 min de análise por dia)
 
 **A Solução**:
-Criar dashboard minimal que:
+Dashboard minimal que:
 1. Log em tempo real de scores + rejection reasons
 2. Visual feedback (confidence meter, top blockers)
 3. Sumário diário automático com diagnóstico claro
 4. Recomendações acionáveis ("execute P50-A se pessimismo")
 
-**Avaliação PO**:
-- **Viabilidade**: 2.5h implementação + 1.5h testes
-- **Impacto**: Diagnóstico rápido = ação rápida (MÉDIO)
-- **Independência**: ✅ Não bloqueia nada, suporte
-- **Valor**: Reduz tempo debug de 30min → 5min
+**Implementação Completa**:
+- ✅ Script: `scripts/feedback_logger_realtime.py` (198 LOC)
+  - Executa em background via `start /B` no BAT launcher
+  - Monitora ciclos em tempo real
+  - Persiste em `outputs/agent_feedback_live.txt`
+  - Não bloqueia agente (assíncrono)
 
-**Avaliação CFO**:
-- **Custo**: R$ 0
-- **Benefício**: Visibilidade operacional (confiança em sistema)
-- **ROI**: BAIXO (suporte, não core)
-- **Risco**: ZERO (log-only, não modifica lógica)
-- **Decisão**: ✅ APPROVE (após P50-A e B)
+- ✅ Script: `scripts/generate_opportunity_summary.py` (295 LOC)
+  - Gera sumário diário do pregão
+  - Analisa oportunidades detectadas vs executadas
+  - Calcula taxa de execução e acerto (%)
+  - Diagnóstico automático com recomendações
+  - Arquivo: `outputs/opportunity_summary_YYYYMMDD.txt`
 
-**Entregáveis**:
-- Script: `scripts/feedback_logger_realtime.py` (150 LOC)
-- Script: `scripts/generate_opportunity_summary.py` (120 LOC)
-- Output: `outputs/agent_feedback_live.txt` (persistence)
-- Output: `outputs/opportunity_summary_YYYYMMDD.txt` (daily)
+- ✅ BAT Integration: Adicionado em INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
+  - P50-C iniciado em background (linha 75-80)
+  - Não interfere com agente (rodam em paralelo)
 
-**Acceptance Criteria**:
+**Acceptance Criteria Status**:
 1. ✅ Log gerado a cada ciclo do agente (timestamp, scores, rejeições)
-2. ✅ Visual feedback indica confidence em % com barra
-3. ✅ Top 5 rejection reasons listadas (e quantas vezes)
-4. ✅ Sumário diário inclui diagnóstico automático
-5. ✅ Recomendação acionável clara ("execute P50-A se pessimismo detectado")
-6. ✅ Arquivo persistido para debug posterior
+2. ✅ Visual feedback com confidence em % e barra
+3. ✅ Top 5 rejection reasons rastreadas e contabilizadas
+4. ✅ Sumário diário com diagnóstico automático
+5. ✅ Recomendações acionáveis claras
+6. ✅ Arquivos persistidos para análise posterior
 
-**Pré-requisito**: NENHUM (roda em paralelo)
+**Teste Executado (05/03)**:
+- ✅ generate_opportunity_summary.py: Executado com sucesso
+- ✅ Arquivo gerado: `outputs/opportunity_summary_20260305.txt`
+- ✅ feedback_logger_realtime.py: Ativo em background (start /B)
+- ✅ Integração BAT: Confirmada
+
+**Fluxo Completo P50**:
+```
+INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
+├─ P50-A: check_confidence_health.py → reset_pessimism_mode.py
+├─ P50-B: daily_confidence_retraining.py (WIN RATE boost)
+├─ P50-C: feedback_logger_realtime.py (background, visual)
+├─ PRE-FLIGHT: system_health_monitor.py
+├─ Agente: Usa P50-A+B+C framework completo
+└─ FIM-DO-DIA: generate_opportunity_summary.py (sumário)
+```
+
+**Pre-requisito**: P50-A & B (operações + feedback loop)
 **Crítico para Produção**: NÃO (suporte, não core)
-**Status**: 🟡 **IMPLEMENTAÇÃO 05/03 (paralelo com P50-B)**
+**Status**: ✅ **IMPLEMENTADO & OPERACIONAL (05/03 12:15Z)**
 
 ---
 
@@ -1458,7 +1474,7 @@ Criar dashboard minimal que:
 - Persiste em: `config/confidence_override_today.json`
 - BAT integration: Adicionado em `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` (linha 66-70)
 
-✅ **Teste (05/03 12:07)**: 
+✅ **Teste (05/03 12:07)**:
 - WIN RATE pregão anterior: 0.0% (1 trade perdido)
 - Confidence ajustada: 0.46 → 0.44 (-0.02 penalty)
 - Novo valor persistido e carregado no próximo startup
@@ -1487,13 +1503,14 @@ Criar dashboard minimal que:
 |-------|------|--------|-----------|
 | **T+0** | 04/03 | ✅ P50-A Deploy | Operações reativadas (~15-20 sinais/dia) |
 | **T+1** | 05/03 | ✅ P50-B Deploy | Feedback loop + boost automático |
-| **T+2** | 06/03 | 🔄 P50-C Start | Dashboard visual feedback |
+| **T+2** | 05/03 | ✅ P50-C Deploy | Dashboard visual feedback + sumário diário |
 | **T+5** | 09/03 | 📊 Validação | Confidence 0.40 → 0.45-0.55 |
 
 **próximas ações**:
-- [x] P50-A: Verificar saúde de confidence (implement + deploy)
-- [x] P50-B: Daily retraining (implement + deploy)
-- [ ] P50-C: Feedback dashboard (próxima, paralelo)
+- [x] P50-A: Verificar saúde de confidence (implement + test + deploy)
+- [x] P50-B: Daily retraining (implement + test + deploy)
+- [x] P50-C: Feedback dashboard (implement + test + deploy)
+- [ ] Monitor próximos 5 dias (avaliar impacto de P50-A+B+C)
 
 ### P50-B: Daily Confidence Retraining
 ✅ **Implementado em**: `scripts/daily_confidence_retraining.py` (200 LOC)
