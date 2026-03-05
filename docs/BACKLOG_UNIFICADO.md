@@ -701,12 +701,20 @@ Fila assíncrona + processador de ordens + broadcast em tempo real:
 
 **Próximas Fases:**
 
-**Etapa 2 (06/03 - 8h):** Integração com MT5 Real
-- [ ] Substituir mock_executor por MT5 real
-- [ ] Testar conexão autenticada
-- [ ] Validar ticket retorno
-- [ ] Error handling (timeout, connection lost)
-- Tests: 5 novos (MT5 integration)
+**Etapa 2 (06/03 - 8h):** ✅ **COMPLETA** - Integração com MT5 Real
+- ✅ Substituído mock_executor por MT5Executor real
+- ✅ Validada conexão MT5 + ticket retorno
+- ✅ Implementada retry logic (3× exponential backoff)
+- ✅ Error handling (timeout, connection lost)
+- ✅ 8 novos testes criados (todos PASSED)
+  - MT5Executor initialization
+  - Successful order execution
+  - Retry with exponential backoff (1s/2s/4s)
+  - Permanent failure after 3 retries
+  - MT5 adapter interface
+  - QueueProcessor with MT5Executor
+  - Retry on failures
+  - Batch execution in parallel
 
 **Etapa 3 (07/03 - 8h):** Position Monitor + WebSocket
 - [ ] QueryPositionStatus (from MT5)
@@ -725,6 +733,7 @@ Fila assíncrona + processador de ordens + broadcast em tempo real:
 **Pré-requisito**: P0-1 ✅
 **Crítico para Produção**: SIM (infra essencial operadores)
 **Timeline Total**: 20h (vs 120h original RabbitMQ)
+**Status Etapa 2**: 🟢 **COMPLETA (06/03 11:52 BRT)**
 **Go-Live Ready**: 08/03 ~17:00 (antes GATE 2 Re-test 08/03 18:00)
 
 ---

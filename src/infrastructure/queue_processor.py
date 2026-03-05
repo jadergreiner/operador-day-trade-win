@@ -157,25 +157,20 @@ class QueueProcessor:
 
     async def _default_executor(self, order: Order) -> dict:
         """
-        Executor padrão (mock para testes).
-        Em produção, substituir por integração MT5 real.
+        Executor real MT5 (default).
+        Integra com MT5Executor para envio real ao broker.
         """
-        # Simula latência MT5
-        await asyncio.sleep(0.050)
+        from src.infrastructure.mt5_executor import MT5Executor
 
-        # Simula sucesso 95% das vezes (para testes)
-        import random
-        if random.random() < 0.95:
-            return {
-                "success": True,
-                "ticket": random.randint(100000, 999999),
-                "price": order.price or 1.0,
-            }
-        else:
-            return {
-                "success": False,
-                "error": "MT5 connection timeout",
-            }
+        executor = MT5Executor()
+        success, ticket, error = await executor.execute_order(order)
+
+        return {
+            "success": success,
+            "ticket": ticket or "",
+            "price": order.price or 1.0,
+            "error": error,
+        }
 
     async def _notify_order_executed(self, order: Order, ticket: int) -> None:
         """Notifica operador (via WebSocket, logging, etc)."""
