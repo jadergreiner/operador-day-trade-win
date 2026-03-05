@@ -17,6 +17,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+# FIX: Adicionar project root ao PYTHONPATH se não estiver
+project_root = Path(__file__).parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 from src.infrastructure.backtests.backtest_engine import BacktestEngine
 from src.infrastructure.reports.backtest_reporter import BacktestReporter
 from src.infrastructure.reports.backtest_visualizer import BacktestVisualizer
@@ -72,7 +77,7 @@ def run_etapa_1_backtest() -> bool:
         # Executar backtest
         engine = BacktestEngine()
         logging.info("[ETAPA 1] Carregando dataset...")
-        engine.load_dataset(DATASET_PATH)
+        engine.load_dataset()
 
         logging.info("[ETAPA 1] Executando 5-fold cross-validation...")
         engine.run_backtest()

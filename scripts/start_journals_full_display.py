@@ -1681,6 +1681,7 @@ def run_trading_journal():
         login=config.mt5_login,
         password=config.mt5_password,
         server=config.mt5_server,
+        terminal_exe_path=r"C:\Program Files\Clear Investimentos MT5 Terminal\terminal64.exe",
     )
 
     if not mt5.connect():
@@ -1798,6 +1799,7 @@ def run_ai_reflection():
         login=config.mt5_login,
         password=config.mt5_password,
         server=config.mt5_server,
+        terminal_exe_path=r"C:\Program Files\Clear Investimentos MT5 Terminal\terminal64.exe",
     )
 
     if not mt5.connect():

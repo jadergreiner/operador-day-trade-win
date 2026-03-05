@@ -106,14 +106,14 @@ def calculate_previous_day_win_rate() -> Optional[Tuple[float, int, int]]:
         yesterday_str = yesterday.strftime("%Y-%m-%d")
 
         # Query trades from yesterday
-        # Assuming table has: execution_date (or similar), pnl, status columns
+        # Using profit_loss column (not pnl) and status='CLOSED' (not 'COMPLETED')
         query = """
         SELECT
             COUNT(*) as total_trades,
-            SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) as wins
+            SUM(CASE WHEN profit_loss > 0 THEN 1 ELSE 0 END) as wins
         FROM trades
-        WHERE DATE(execution_date) = ?
-            AND status IN ('CLOSED', 'COMPLETED')
+        WHERE DATE(entry_time) = ?
+            AND status = 'CLOSED'
         """
 
         cursor.execute(query, (yesterday_str,))

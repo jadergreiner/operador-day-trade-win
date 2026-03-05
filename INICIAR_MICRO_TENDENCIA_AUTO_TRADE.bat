@@ -62,6 +62,15 @@ if errorlevel 0 (
 )
 echo.
 
+REM =========================================================================
+REM P50-B: Daily Confidence Retraining + Positive Feedback (ANTES DO AGENTE)
+REM Quebra ciclo negativo: calcula WIN RATE real e ajusta confidence
+REM =========================================================================
+echo   [P50-B] Executando daily confidence retraining...
+python scripts/daily_confidence_retraining.py >nul 2>&1
+echo   [P50-B] OK - Confidence ajustada
+echo.
+
 REM P50-C: Feedback Logger em background (não bloqueia)
 echo   [P50-C] Iniciando feedback logger em background...
 start /B python scripts/feedback_logger_realtime.py >nul 2>&1

@@ -1,7 +1,8 @@
 {
-  "total_reflections": 0,
+  "total_reflections": 27,
   "failed_writes": 0,
-  "last_successful_write": null,
+  "last_successful_write": "2026-03-05T12:07:30.424479",
   "last_error": null,
-  "recovery_attempts": 0
+  "recovery_attempts": 0,
+  "last_successful_write_streak": 27
 }

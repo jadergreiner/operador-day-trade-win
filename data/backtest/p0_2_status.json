@@ -1,0 +1,8 @@
+{
+  "completed": true,
+  "gate2_passed": false,
+  "timestamp": "2026-03-05T11:37:30.316824",
+  "backtest_results": "data\\backtest\\backtest_results.json",
+  "reports_dir": "data\\backtest\\reports",
+  "decision": "FAIL"
+}
