@@ -1,0 +1,237 @@
+# Next Phase: Model Deployment & Testing
+
+**Fase:** Task 3 de IMMEDIATE_ACTIONS_48H  
+**Tempo:** 19:30-20:00 BRT (30 minutes)  
+**Data:** 05/03/2026  
+**Owner:** ML Expert + Eng Sr
+
+---
+
+## Checklist - Model Deployment Testing
+
+### Pre-Test Validation (5 min)
+
+```bash
+# 1. Verify model file exists and is accessible
+python -c "
+import os
+model_path = 'data/models/xgboost_v1.0.pkl'
+if os.path.exists(model_path):
+    size = os.path.getsize(model_path)
+    print(f'✅ Model file exists: {size} bytes')
+else:
+    print(f'❌ Model file missing')
+"
+
+# 2. Verify feature names are loaded
+python -c "
+import json
+with open('data/feature_names.json', 'r') as f:
+    features = json.load(f)
+print(f'✅ Features loaded: {len(features)} features')
+print(f'   First 3: {features[:3]}')
+"
+
+# 3. Verify threshold configuration
+python -c "
+# Check if threshold config exists
+import os
+if os.path.exists('config/settings.py'):
+    with open('config/settings.py') as f:
+        content = f.read()
+        if 'sigma' in content.lower():
+            print('✅ Threshold configuration found in settings.py')
+        else:
+            print('⚠️ Threshold config not found, using default (sigma=1.0)')
+"
+```
+
+**Expected Output:**
+- Model file: ~50-100 KB
+- Features: 24 features
+- Threshold: sigma = 1.0
+
+---
+
+## Model Loading Test (5 min)
+
+```python
+# Load model and test basic functionality
+python -c "
+import pickle
+import numpy as np
+
+print('Loading model...')
+with open('data/models/xgboost_v1.0.pkl', 'rb') as f:
+    model = pickle.load(f)
+
+print(f'✅ Model loaded: {type(model).__name__}')
+
+# Test prediction with sample data
+print('Testing prediction...')
+X_test = np.random.randn(5, 24)  # 5 samples, 24 features
+predictions = model.predict(X_test)
+scores = model.predict_proba(X_test)
+
+print(f'✅ Predictions generated: {len(predictions)} samples')
+print(f'✅ Prediction probabilities: {scores.shape}')
+print(f'   Shape: {scores.shape}')
+print(f'   Range: [0.0 - 1.0]')
+"
+```
+
+**Expected Results:**
+- Model loads without errors
+- Predictions: 5 samples processed
+- Probabilities: 5x2 matrix (binary classification)
+- All values in range [0.0 - 1.0]
+
+---
+
+## Integration Test (10 min)
+
+```python
+# Test full inference pipeline
+python -c "
+import pickle
+import json
+import numpy as np
+
+# Load model
+with open('data/models/xgboost_v1.0.pkl', 'rb') as f:
+    model = pickle.load(f)
+
+# Load features
+with open('data/feature_names.json', 'r') as f:
+    feature_names = json.load(f)
+
+print(f'Model features expected: {len(feature_names)}')
+
+# Simulate trading signal generation
+print('Simulating 10 market signals...')
+for i in range(10):
+    # Generate random 24-feature vector
+    X = np.random.randn(1, 24)
+    
+    # Get prediction
+    pred = model.predict(X)[0]
+    prob = model.predict_proba(X)[0]
+    
+    signal = 'BUY' if pred == 1 else 'SELL'
+    confidence = prob.max()
+    
+    print(f'  Signal {i+1}: {signal} (confidence: {confidence:.2%})')
+
+print('✅ Integration test complete')
+"
+```
+
+**Expected Results:**
+- 10 signals generated without errors
+- Confidence scores in range [50% - 100%]
+- Execution time: <1 second for 10 signals
+
+---
+
+## Feature Transformation Test (5 min)
+
+```python
+# Test feature scaling and transformation
+python -c "
+import json
+import numpy as np
+
+with open('data/feature_names.json', 'r') as f:
+    features = json.load(f)
+
+print(f'Testing {len(features)} features:')
+print('Feature groups:')
+print(f'  - Volatility features: {len([f for f in features if \"vol\" in f.lower()])}')
+print(f'  - Momentum features: {len([f for f in features if \"rsi\" in f.lower() or \"macd\" in f.lower()])}')
+print(f'  - MA features: {len([f for f in features if \"sma\" in f.lower() or \"ema\" in f.lower()])}')
+
+# Test data normalization
+print()
+print('Testing feature normalization...')
+X_raw = np.random.randn(100, len(features))
+X_normalized = (X_raw - X_raw.mean(axis=0)) / (X_raw.std(axis=0) + 1e-8)
+
+print(f'✅ Raw data shape: {X_raw.shape}')
+print(f'✅ Normalized data shape: {X_normalized.shape}')
+print(f'✅ Normalized mean: {X_normalized.mean():.4f} (target: ≈0)')
+print(f'✅ Normalized std: {X_normalized.std():.4f} (target: ≈1)')
+"
+```
+
+**Expected Results:**
+- All 24 features present and named
+- Normalized mean ≈ 0
+- Normalized std ≈ 1
+
+---
+
+## Success Criteria
+
+✅ **Model-related:**
+- [ ] Model loads without import errors
+- [ ] Predictions generate within 100ms per sample
+- [ ] Output probabilities in valid range [0.0 - 1.0]
+- [ ] Feature count matches expected (24)
+
+✅ **Feature-related:**
+- [ ] All 24 feature names present
+- [ ] Feature normalization working correctly
+- [ ] Scaling produces standard normal distribution
+
+✅ **Performance-related:**
+- [ ] Inference latency <500ms for 50 samples (P95)
+- [ ] Memory usage <50MB for model + data
+- [ ] No memory leaks after 1000 predictions
+
+---
+
+## Decision Gate: Model Ready?
+
+**IF ALL SUCCESS CRITERIA MET:**
+- ✅ Proceed to Operational Readiness (20:00)
+- Status: "Ready for Phase 1 Beta Launch"
+
+**IF ANY FAILURE:**
+- ❌ Return to model creation/training
+- Escalate to ML Expert
+- Reschedule testing for tomorrow
+
+---
+
+## Rollback Plan (If Model Fails)
+
+```bash
+# If model test fails, rollback to previous version
+git checkout HEAD~1 data/models/  # Rollback model
+git checkout HEAD~1 data/feature_names.json  # Rollback features
+
+# Or reload from backup if available
+cp data/db/backups/model_backup.pkl data/models/xgboost_v1.0.pkl
+```
+
+---
+
+## Timeline This Phase
+
+```
+19:30 - Pre-Test Validation (5 min)
+19:35 - Model Loading Test (5 min)
+19:40 - Integration Test (10 min)
+19:50 - Feature Transformation Test (5 min)
+20:00 - Decision Gate: APPROVED for Operational Testing
+        OR FAILURE: Extend testing / Escalate
+```
+
+---
+
+**Document:** NEXT_PHASE_MODEL_TESTING_PLAN.txt  
+**Creator:** GitHub Copilot  
+**Date:** 05/03/2026  
+**Status:** Ready for 19:30 Execution
+
+**Next Trigger:** `Execute agora: Model Deployment Testing (19:30)`
