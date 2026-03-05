@@ -122,7 +122,7 @@ class BacktestOtimizado:
 async def executar_backtest_otimizado():
     """Executa backtest otimizado com grid search."""
     print("\n" + "="*80)
-    print("🧠 ML EXPERT - Backtest Otimizado (Modelo Realista)")
+    print("[ML EXPERT] Backtest Otimizado (Modelo Realista)")
     print("="*80 + "\n")
 
     thresholds = [1.0, 1.3, 1.5, 1.8, 2.0, 2.2, 2.5, 3.0]
@@ -145,21 +145,21 @@ async def executar_backtest_otimizado():
 
         gates_str = ""
         if relatorio["gates_validacao"]["captura_minima_85pct"]:
-            gates_str += "✅Cap "
+            gates_str += "[OK]Cap "
         else:
-            gates_str += "❌Cap "
+            gates_str += "[XX]Cap "
 
         if relatorio["gates_validacao"]["fp_maxima_10pct"]:
-            gates_str += "✅FP "
+            gates_str += "[OK]FP "
         else:
-            gates_str += "❌FP "
+            gates_str += "[XX]FP "
 
         if relatorio["gates_validacao"]["win_rate_minimo_60pct"]:
-            gates_str += "✅Win"
+            gates_str += "[OK]Win"
         else:
-            gates_str += "❌Win"
+            gates_str += "[XX]Win"
 
-        status_symbol = "✅ PASS" if status == "PASS" else "❌ FAIL"
+        status_symbol = "[PASS]" if status == "PASS" else "[FAIL]"
         print(f"{threshold:<12.1f} {captura:<12.2f} {fp:<12.2f} {win:<12.2f} "
               f"{status_symbol:<12} {gates_str}")
 
@@ -171,17 +171,17 @@ async def executar_backtest_otimizado():
     print("-" * 100)
 
     if best_result:
-        print(f"\n✅ RESULTADO FINAL - BACKTEST PASSOU!")
-        print(f"   Threshold ótimo: {best_result['threshold_sigma']}")
+        print(f"\n[OK] RESULTADO FINAL - BACKTEST PASSOU!")
+        print(f"   Threshold otimo: {best_result['threshold_sigma']}")
         print(f"   Captura: {best_result['taxas']['taxa_captura_pct']}%"
-              f" ≥ 85% ✅")
+              f" >= 85% [OK]")
         print(f"   False Positives: {best_result['taxas']['taxa_false_positive_pct']}%"
-              f" ≤ 10% ✅")
+              f" <= 10% [OK]")
         print(f"   Win Rate: {best_result['taxas']['win_rate_estimado_pct']}%"
-              f" ≥ 60% ✅\n")
+              f" >= 60% [OK]\n")
         return best_result
     else:
-        print(f"\n⚠️  Nenhum threshold passou em TODOS os gates.")
+        print(f"\n[WARNING] Nenhum threshold passou em TODOS os gates.")
 
         best = max(resultados, key=lambda r: sum([
             r["gates_validacao"]["captura_minima_85pct"],
@@ -191,15 +191,15 @@ async def executar_backtest_otimizado():
 
         print(f"   Melhor aproximação: threshold = {best['threshold_sigma']}")
 
-        cap_status = "✅" if best['gates_validacao']['captura_minima_85pct'] else "❌"
+        cap_status = "[OK]" if best['gates_validacao']['captura_minima_85pct'] else "[XX]"
         print(f"   Captura: {best['taxas']['taxa_captura_pct']}% "
               f"(target: 85%) - {cap_status}")
 
-        fp_status = "✅" if best['gates_validacao']['fp_maxima_10pct'] else "❌"
+        fp_status = "[OK]" if best['gates_validacao']['fp_maxima_10pct'] else "[XX]"
         print(f"   FP: {best['taxas']['taxa_false_positive_pct']}% "
               f"(target: 10%) - {fp_status}")
 
-        win_status = "✅" if best['gates_validacao']['win_rate_minimo_60pct'] else "❌"
+        win_status = "[OK]" if best['gates_validacao']['win_rate_minimo_60pct'] else "[XX]"
         print(f"   Win: {best['taxas']['win_rate_estimado_pct']}% "
               f"(target: 60%) - {win_status}\n")
 
@@ -215,7 +215,7 @@ async def main():
               encoding="utf-8") as f:
         json.dump(best_config, f, ensure_ascii=False, indent=2)
 
-    logger.info("✅ Backtest otimizado completado\n")
+    logger.info("[OK] Backtest otimizado completado\n")
 
     return 0 if best_config["status"] == "PASS" else 1
 
