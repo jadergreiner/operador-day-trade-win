@@ -64,26 +64,26 @@ def log_message(message: str) -> None:
 def parse_feedback_log() -> Tuple[int, Dict[str, int], float]:
     """
     Parse agent_feedback_live.txt
-    
+
     Returns:
         (operation_count, rejection_reasons_dict, avg_confidence)
     """
     rejection_counter = defaultdict(int)
     operation_count = 0
     confidence_values = []
-    
+
     if not FEEDBACK_LOG_FILE.exists():
         return 0, {}, 0.0
-    
+
     try:
         with open(FEEDBACK_LOG_FILE, "r", encoding="utf-8") as f:
             for line in f:
                 # Parse lines like:
                 # [09:35:22] WING26   HOLD   | score= 2.1 | conf= 45% | ❌ reason
-                
+
                 if "[LOGGER]" in line or "=" * 20 in line:
                     continue  # Skip headers
-                
+
                 if "❌" in line:
                     # Extract rejection reason
                     try:
@@ -94,7 +94,7 @@ def parse_feedback_log() -> Tuple[int, Dict[str, int], float]:
                         pass
                 else:
                     operation_count += 1
-                
+
                 # Extract confidence percentage
                 try:
                     if "conf=" in line:
@@ -102,36 +102,36 @@ def parse_feedback_log() -> Tuple[int, Dict[str, int], float]:
                         confidence_values.append(int(conf_part) / 100.0)
                 except:
                     pass
-    
+
     except IOError:
         pass
-    
+
     avg_confidence = sum(confidence_values) / len(confidence_values) if confidence_values else 0.0
-    
+
     return operation_count, dict(rejection_counter), avg_confidence
 
 
 def load_confidence_history() -> Tuple[float, float, List[float]]:
     """
     Load confidence history.
-    
+
     Returns:
         (current_confidence, trend_avg, full_history)
     """
     if not CONFIDENCE_HISTORY_FILE.exists():
         return 0.0, 0.0, []
-    
+
     try:
         with open(CONFIDENCE_HISTORY_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
             history = data.get("history", [])
-            
+
             if not history:
                 return 0.0, 0.0, []
-            
+
             current = history[-1]
             trend_avg = sum(history) / len(history)
-            
+
             return float(current), float(trend_avg), history
     except (json.JSONDecodeError, IOError):
         return 0.0, 0.0, []
@@ -141,7 +141,7 @@ def load_pessimism_config() -> bool:
     """Load pessimism detection status."""
     if not PESSIMISM_CONFIG_FILE.exists():
         return False
-    
+
     try:
         with open(PESSIMISM_CONFIG_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -158,17 +158,17 @@ def diagnose_system(
 ) -> Tuple[str, str]:
     """
     Generate automatic diagnosis and recommendation.
-    
+
     Returns:
         (diagnosis, recommendation)
     """
     diagnosis = ""
     recommendation = ""
-    
+
     # Diagnose based on metrics
     if ops_count == 0:
         diagnosis = "🔴 ZERO operações geradas hoje"
-        
+
         if confidence < 0.45 and pessimism_detected:
             diagnosis += "\n     → Pessimismo crônico detectado"
             recommendation = (
@@ -183,7 +183,7 @@ def diagnose_system(
                 "   Verificar logs de decisão do agente\n"
                 "   Pode indicar início de pessimismo aprendido"
             )
-    
+
     elif ops_count > 0 and ops_count < 5:
         diagnosis = f"🟡 POUCAS operações ({ops_count} sinais)"
         if confidence < 0.50:
@@ -193,7 +193,7 @@ def diagnose_system(
                 "   Sistema operando com cautela\n"
                 "   Aguarde recuperação de confiança (P50-B)"
             )
-    
+
     else:
         diagnosis = f"🟢 OPERAÇÕES NORMAIS ({ops_count} sinais)"
         if confidence > 0.55:
@@ -203,13 +203,13 @@ def diagnose_system(
                 "   Sistema operando conforme esperado\n"
                 "   Continuar monitoramento"
             )
-    
+
     # Check for anomalies in rejections
     if rejections:
         top_reason = max(rejections.items(), key=lambda x: x[1])
         if top_reason[1] > 50:
             diagnosis += f"\n     → Anomalia: {top_reason[0]} ({top_reason[1]}x)"
-    
+
     return diagnosis, recommendation
 
 
@@ -222,28 +222,28 @@ def generate_summary() -> str:
     diagnosis, recommendation = diagnose_system(
         ops_count, current_conf, rejections, pessimism_detected
     )
-    
+
     # Prepare top rejections list
     top_rejections = sorted(rejections.items(), key=lambda x: x[1], reverse=True)[:5]
-    
+
     # Build summary
     summary = (
         f"\n{'═' * 80}\n"
         f"  SUMÁRIO DIÁRIO - {datetime.now().strftime('%d/%m/%Y')}\n"
         f"{'═' * 80}\n\n"
-        
+
         f"STATUS OPERACIONAL\n"
         f"─" * 40 + "\n"
         f"Operações geradas: {ops_count} sinais\n"
         f"Confidence atual: {current_conf:.2f} ({int(current_conf*100)}%)\n"
         f"Trend (média histórica): {conf_trend:.2f}\n"
         f"Pessimismo detectado: {'SIM ⚠️' if pessimism_detected else 'NÃO ✅'}\n\n"
-        
+
         f"DIAGNÓSTICO\n"
         f"─" * 40 + "\n"
         f"{diagnosis}\n\n"
     )
-    
+
     if top_rejections:
         summary += (
             f"TOP 5 MOTIVOS DE REJEIÇÃO\n"
@@ -252,18 +252,18 @@ def generate_summary() -> str:
         for rank, (reason, count) in enumerate(top_rejections, 1):
             summary += f"{rank}. {reason} ({count}x)\n"
         summary += "\n"
-    
+
     summary += (
         f"RECOMENDAÇÃO\n"
         f"─" * 40 + "\n"
         f"{recommendation}\n\n"
-        
+
         f"{'═' * 80}\n"
         f"Gerado em: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
         f"Arquivo: {SUMMARY_OUTPUT_FILE.name}\n"
         f"{'═' * 80}\n"
     )
-    
+
     return summary
 
 
@@ -271,18 +271,18 @@ def main() -> int:
     """Main entry point."""
     try:
         summary = generate_summary()
-        
+
         # Write to file
         with open(SUMMARY_OUTPUT_FILE, "w", encoding="utf-8") as f:
             f.write(summary)
-        
+
         # Print to console
         print(summary)
-        
+
         log_message(f"Sumário gerado com sucesso: {SUMMARY_OUTPUT_FILE}")
-        
+
         return 0
-    
+
     except Exception as e:
         print(f"[ERRO] {e}", file=sys.stderr)
         log_message(f"Erro ao gerar sumário: {e}")

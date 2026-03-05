@@ -330,7 +330,70 @@ Reverta: Sempre que nova sessão inicia (reset diário)
 
 ---
 
-## 🟢 REGRAS DE OTIMIZAÇÃO
+## � REGRAS P50: PESSIMISM DETECTION & AUTO-RECOVERY
+
+### R-RISCO-P50-001: Confidence Threshold Minimum (Detecção Pessimismo)
+
+**Regra**: Quando confidence < 0.45 por 10+ ciclos consecutivos, sistema detectou pessimismo
+
+**Cálculo**:
+```
+pessimism_detected = (confidence_value < 0.45) AND (consecutive_cycles ≥ 10)
+Se pessimism_detected = TRUE:
+  → Trigger: ConfidenceHealthChecker.detect_pessimism()
+  → Action: Iniciar reset gradual de thresholds
+  → Notification: Log alerta de pessimismo detectado
+```
+
+**Implementação**: `scripts/check_confidence_health.py` | **Validação Automática**: ✅ ConfidenceHealthChecker | **Monitoramento**: Pessimism flag
+**Violação (não resolvida)**: Sistema continua operando com pessimismo por > 48h = prejuízo
+**Timeout**: < 5s no ciclo de detecção
+**Testing**: test_p50_full.py (11 test cases covering detection)
+
+---
+
+### R-RISCO-P50-002: Threshold Adjustment Recovery (Reset Pessimismo)
+
+**Regra**: Quando pessimismo detectado, reduzir thresholds gradualmente até sistema recuperar confiança
+
+**Cálculo**:
+```
+Estratégia GRADUAL (padrão):
+  Ciclo 1-8:    TP reduced by 25% (-1%), SL reduced by 25% (-1%)
+  Ciclo 9-16:   Confidence retraining 25% dos dados recentes
+  Ciclo 17-24:  Gradual restore de TP/SL original (1% a cada ciclo)
+  
+Se win_rate recupera para > 0.62: Early exit (pular ciclos restantes)
+```
+
+**Implementação**: `scripts/reset_pessimism_mode.py` | **Validação Automática**: ✅ PessimismResetManager | **Monitoramento**: Threshold adjustments
+**Trigger**: Automático quando pessimism_detected = TRUE
+**Duration**: 24 ciclos (ajustável via pessimism_mode.json reset_strategy)
+
+---
+
+### R-RISCO-P50-003: Confidence Retraining Trigger (Retraining Automático)
+
+**Regra**: Quando confidence está degradando (< win_rate por N ciclos), disparar retraining automático
+
+**Cálculo**:
+```
+degradation_detected = confidence_value < (win_rate_recent - 0.05)
+
+Se degradation_detected AND pessimism_recovery_in_progress:
+  → Trigger: ConfidenceRetrainer.calculate_win_rate()
+  → Adjust: confidence_threshold = win_rate_recent - margin_safety(0.03)
+  → Update: confidence_history.json + pessimism_mode.json
+```
+
+**Implementação**: `scripts/daily_confidence_retraining.py` | **Validação Automática**: ✅ ConfidenceRetrainer | **Monitoramento**: Retraining logs
+**Frequency**: Diário às 00:00 UTC (após fechamento do mercado)
+**Backtest Period**: 20 ciclos (últimos dias de trading)
+**Safety Margin**: 3% (não deixar confidence muito próximo de win_rate)
+
+---
+
+## �🟢 REGRAS DE OTIMIZAÇÃO
 
 ### R-OTI-001: Latência Máxima de Execução
 
@@ -394,6 +457,9 @@ if memory_usage > 100:
 | **R-RISCO-002** | 🟡 SIM | Decision | ✅ PositionMonitor | Current exposure |
 | **R-RISCO-003** | 🟡 SIM | Execution | ✅ ATRCalibrator | Order details |
 | **R-RISCO-004** | 🟡 SIM | Learning | ✅ IntraDayLearner [P35] | Intraday audit |
+| **R-RISCO-P50-001** | 🟡 SIM | Detection | ✅ ConfidenceHealthChecker | Pessimism flag |
+| **R-RISCO-P50-002** | 🟡 SIM | Recovery | ✅ PessimismResetManager | Threshold adjustments |
+| **R-RISCO-P50-003** | 🟡 SIM | Learning | ✅ ConfidenceRetrainer | Retraining logs |
 | **R-OTI-001** | 🟢 NÃO | Monitoring | 📊 Manual check | Latency logs |
 | **R-OTI-002** | 🟢 NÃO | Data | ✅ Query analyzer | Slow query log |
 | **R-OTI-003** | 🟢 NÃO | Monitoring | 📊 psutil check | Memory monitor |

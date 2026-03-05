@@ -182,6 +182,46 @@ classDiagram
         -_match_broker_pattern(path: str) bool
     }
 
+    %% P50: Pessimism Detection & Auto-Recovery Layer (v1.3+) ⭐ NEW
+    class ConfidenceHealthChecker {
+        -confidence_history: List~float~
+        -history_size: int
+        -pessimism_threshold: float
+        +load_confidence_history() List~float~
+        +detect_pessimism() bool
+        +get_pessimism_details() Dict
+        +save_history() void
+    }
+
+    class PessimismResetManager {
+        -current_thresholds: Dict
+        -threshold_step: int
+        +load_pessimism_config() Dict
+        +reset_thresholds() Dict
+        +save_pessimism_config() void
+        +get_adjustment_summary() str
+    }
+
+    class ConfidenceRetrainer {
+        -db_path: str
+        -confidence_floor: float
+        -confidence_ceiling: float
+        +calculate_previous_day_win_rate() float
+        +adjust_confidence(current: float, win_rate: float) float
+        +save_confidence_override() void
+        +get_retraining_summary() str
+    }
+
+    class FeedbackLogger {
+        -output_file: str
+        -rejection_counter: Dict
+        -session_stats: Dict
+        +log_cycle(timestamp: str, symbol: str, score: float, confidence: float) void
+        +log_rejection(reason: str) void
+        +get_statistics() Dict
+        +generate_summary() str
+    }
+
     %% Relationships
     MT5Adapter --|> IntraDayLearner: "usa silent_register"
     DataPipeline --|> Repository: "persiste"
@@ -197,6 +237,15 @@ classDiagram
     PositionMonitor --|> SendToMT5Command: "monitora resultado"
     IntraDayLearner --|> PredictionTracker: "integração P33"
     PositionMonitor --|> IntraDayLearner: "registra outcome"
+    
+    %% P50 Relationships (Pessimism Detection & Recovery)
+    ConfidenceHealthChecker --|> IntraDayLearner: "monitora confidence"
+    ConfidenceHealthChecker --|> PessimismResetManager: "dispara reset se pessimismo"
+    PessimismResetManager --|> RiskValidator: "ajusta thresholds"
+    ConfidenceRetrainer --|> Repository: "queries WIN RATE"
+    ConfidenceRetrainer --|> MLModels: "calibra confiança"
+    FeedbackLogger --|> OrderManager: "logga rejeições"
+    FeedbackLogger --|> PositionMonitor: "registra outcomes"
 ```
 
 ---

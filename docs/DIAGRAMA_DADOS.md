@@ -22,6 +22,9 @@ erDiagram
     DECISIONS ||--o{ AUDIT_LOG : logged
     TRADES ||--o{ AUDIT_LOG : logged
     POSITIONS ||--o{ AUDIT_LOG : logged
+    DECISIONS ||--o{ CONFIDENCE_HISTORY : tracks
+    DECISIONS ||--o{ PESSIMISM_MODE : controls
+    PREDICTIONS ||--o{ CONFIDENCE_HISTORY : updates
 
     MARKET_DATA {
         int id PK
@@ -142,6 +145,26 @@ erDiagram
         float cumulative_reward
         string reward_type
         string reasoning
+    }
+
+    CONFIDENCE_HISTORY {
+        int id PK
+        datetime timestamp
+        list history
+        int count
+        float avg_confidence
+        string status_pessimism
+    }
+
+    PESSIMISM_MODE {
+        int id PK
+        datetime timestamp
+        boolean pessimism_detected
+        int threshold_up
+        int threshold_down
+        float last_confidence
+        int consecutive_low_cycles
+        string action_taken
     }
 
     AUDIT_LOG {

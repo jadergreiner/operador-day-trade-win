@@ -7,7 +7,7 @@ Reduz thresholds quando pessimismo é detectado por check_confidence_health.py.
 Mudança de Thresholds:
   - Normal: buy_threshold = +4, sell_threshold = -4
   - Pessimismo: buy_threshold = +3, sell_threshold = -3
-  
+
 Esta redução permite que operações com scores menos extremos sejam geradas.
 
 Impacto no Agente:
@@ -52,9 +52,9 @@ def log_message(message: str, level: str = "INFO") -> None:
     """Log message to file and console."""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     formatted = f"[{timestamp}] [{level}] {message}"
-    
+
     print(formatted)
-    
+
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(formatted + "\n")
 
@@ -67,7 +67,7 @@ def load_pessimism_config() -> dict:
                 return json.load(f)
         except (json.JSONDecodeError, IOError):
             pass
-    
+
     return {
         "timestamp": datetime.now().isoformat(),
         "pessimism_detected": False,
@@ -82,16 +82,16 @@ def load_pessimism_config() -> dict:
 def reset_thresholds() -> dict:
     """
     Reset thresholds when pessimism detected.
-    
+
     Returns:
         Updated config with reduced thresholds
     """
     config = load_pessimism_config()
-    
+
     # Apply reset: thresholds reduced by 1
     previous_up = config.get("threshold_up", 4)
     previous_down = config.get("threshold_down", -4)
-    
+
     config.update({
         "timestamp": datetime.now().isoformat(),
         "threshold_reduced": True,
@@ -100,7 +100,7 @@ def reset_thresholds() -> dict:
         "reset_reason": "Pessimismo detectado - auto-reset em ação",
         "reset_timestamp": datetime.now().isoformat()
     })
-    
+
     return config
 
 
@@ -118,7 +118,7 @@ def save_pessimism_config(config: dict) -> bool:
 def main() -> int:
     """
     Reset pessimism mode and update thresholds.
-    
+
     Returns:
         0 = Success
         1 = Failure
@@ -128,17 +128,17 @@ def main() -> int:
         old_config = load_pessimism_config()
         old_up = old_config.get("threshold_up", 4)
         old_down = old_config.get("threshold_down", -4)
-        
+
         # Reset thresholds
         new_config = reset_thresholds()
         new_up = new_config.get("threshold_up", 3)
         new_down = new_config.get("threshold_down", -3)
-        
+
         # Save updated config
         if not save_pessimism_config(new_config):
             log_message("Falha ao persistir configuração", level="ERROR")
             return 1
-        
+
         # Log success
         log_message(
             f"✅ PESSIMISMO RESET EXECUTADO\n"
@@ -149,7 +149,7 @@ def main() -> int:
             f"  → Expect ~15-20 sinais/dia",
             level="SUCCESS"
         )
-        
+
         # Console output for operator
         print()
         print("=" * 60)
@@ -159,9 +159,9 @@ def main() -> int:
         print(f"Status: Pronto para opção 1 ou 2")
         print("=" * 60)
         print()
-        
+
         return 0
-    
+
     except Exception as e:
         log_message(f"Erro durante reset: {e}", level="ERROR")
         return 1

@@ -761,6 +761,146 @@ CREATE INDEX idx_api_audit_log_action ON api_audit_log(action);
 
 ---
 
+## P50: Modelagem Pessimism Detection & Auto-Recovery
+
+### Arquivo: config/pessimism_mode.json (Estado Runtime)
+
+**Propósito:** Rastrear estado de pessimismo detectado e controlar ajustes de threshold
+
+```json
+{
+  "pessimism_detected": false,
+  "detection_timestamp": "2026-03-04T10:15:30Z",
+  "confidence_threshold_original": 0.50,
+  "confidence_threshold_current": 0.45,
+  "take_profit_original": "0.004",
+  "take_profit_current": "0.003",
+  "stop_loss_original": "-0.004",
+  "stop_loss_current": "-0.003",
+  "reset_strategy": "gradual",
+  "reset_cycles_completed": 0,
+  "reset_cycles_total": 24,
+  "next_reset_timestamp": "2026-03-04T11:00:00Z",
+  "consecutive_low_confidence_cycles": 14,
+  "last_confidence_value": 0.42,
+  "system_learned_pessimism": true,
+  "last_updated": "2026-03-04T10:20:15Z"
+}
+```
+
+**Schema:**
+- `pessimism_detected` (BOOLEAN): Flag indicando se pessimismo foi detectado
+- `detection_timestamp` (ISO8601): Quando pessimismo foi primeiro detectado
+- `confidence_threshold_*` (DECIMAL): Limiar original vs atual
+- `take_profit_*` (STRING): TP original vs ajustado (em percentual string)
+- `stop_loss_*` (STRING): SL original vs ajustado (em percentual string)
+- `reset_strategy` (ENUM): "gradual" | "aggressive" | "conservative"
+- `reset_cycles_*` (INTEGER): Progresso do reset (completado/total)
+- `next_reset_timestamp` (ISO8601): Próxima execução de reset
+- `consecutive_low_confidence_cycles` (INTEGER): Contador de ciclos com confidence < threshold
+- `last_confidence_value` (DECIMAL): Último valor observado (0.0-1.0)
+- `system_learned_pessimism` (BOOLEAN): Se sistema foi aprendido para ser pessimista
+- `last_updated` (ISO8601): Timestamp da última atualização
+
+**Uso:**
+- Leitura: check_confidence_health.py, reset_pessimism_mode.py
+- Escrita: reset_pessimism_mode.py, daily_confidence_retraining.py
+- Persistência: JSON file-based (simples, sem DB)
+
+### Arquivo: config/confidence_history.json (Histórico 20-Ciclos)
+
+**Propósito:** Rastrear últimos 20 ciclos de confidence para análise de tendências
+
+```json
+{
+  "history": [
+    {
+      "cycle_number": 1234,
+      "timestamp": "2026-03-04T10:00:00Z",
+      "confidence_value": 0.50,
+      "win_rate_recent": 0.62,
+      "predictions_count": 8,
+      "correct_predictions": 5,
+      "trigger_action": "none",
+      "market_conditions": "normal",
+      "volatility_regime": "standard"
+    },
+    {
+      "cycle_number": 1235,
+      "timestamp": "2026-03-04T10:01:00Z",
+      "confidence_value": 0.48,
+      "win_rate_recent": 0.61,
+      "predictions_count": 7,
+      "correct_predictions": 4,
+      "trigger_action": "none",
+      "market_conditions": "normal",
+      "volatility_regime": "standard"
+    }
+  ],
+  "count": 2,
+  "window_size": 20,
+  "average_confidence": 0.49,
+  "confidence_trend": "declining",
+  "pessimism_threshold_breach_count": 0,
+  "last_updated": "2026-03-04T10:01:15Z"
+}
+```
+
+**Schema:**
+- `history` (ARRAY[Object]): Lista de 20 últimos ciclos
+  - `cycle_number` (INTEGER): Identificador do ciclo
+  - `timestamp` (ISO8601): Quando ocorreu
+  - `confidence_value` (DECIMAL): Confidence naquele ciclo (0.0-1.0)
+  - `win_rate_recent` (DECIMAL): Win rate calculada (0.0-1.0)
+  - `predictions_count` (INTEGER): Total de predicções no ciclo
+  - `correct_predictions` (INTEGER): Predicções corretas
+  - `trigger_action` (ENUM): "none" | "alert" | "reset" | "retrain"
+  - `market_conditions` (ENUM): "normal" | "volatile" | "trending" | "choppy"
+  - `volatility_regime` (ENUM): "standard" | "high" | "low"
+- `count` (INTEGER): Número atual de ciclos no histórico (max 20)
+- `window_size` (INTEGER): Tamanho máximo da janela (sempre 20)
+- `average_confidence` (DECIMAL): Média dos últimos 20 ciclos
+- `confidence_trend` (ENUM): "improving" | "stable" | "declining" | "volatile"
+- `pessimism_threshold_breach_count` (INTEGER): Vezes que confidence < 0.45
+- `last_updated` (ISO8601): Última vez que foi atualizado
+
+**Uso:**
+- Escrita: feedback_logger_realtime.py (a cada ciclo)
+- Leitura: check_confidence_health.py, daily_confidence_retraining.py, generate_opportunity_summary.py
+- Persistência: JSON file-based, rotação automática (max 20 entries)
+
+### Entidades de Dados (SQLite: data/db/trading.db)
+
+**Tabela: CONFIDENCE_HEALTH (P50)**
+
+```sql
+CREATE TABLE confidence_health (
+    health_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cycle_number INTEGER NOT NULL UNIQUE,
+    timestamp DATETIME NOT NULL,
+    confidence_value REAL NOT NULL,
+    pessimism_detected BOOLEAN,
+    thresholds_adjusted BOOLEAN,
+    adjustment_reason TEXT,
+    win_rate_cycle REAL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    CHECK(confidence_value >= 0.0 AND confidence_value <= 1.0),
+    CHECK(adjustment_reason IN ('none', 'pessimism_detected', 'manual', 'retraining'))
+);
+
+CREATE INDEX idx_confidence_health_timestamp ON confidence_health(timestamp DESC);
+CREATE INDEX idx_confidence_health_cycle ON confidence_health(cycle_number DESC);
+CREATE INDEX idx_confidence_health_pessimism ON confidence_health(pessimism_detected);
+```
+
+**Uso:**
+- Persistência de histórico em banco de dados
+- Auditoria de detecção pessimismo
+- Analytics histórico (tendências)
+
+---
+
 ## 🔗 Documentos Relacionados
 
 - [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md) - ER diagram visual

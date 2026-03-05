@@ -64,9 +64,9 @@ def log_message(message: str, level: str = "INFO") -> None:
     """Log message to file and console."""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     formatted = f"[{timestamp}] [{level}] {message}"
-    
+
     print(formatted)
-    
+
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(formatted + "\n")
 
@@ -82,7 +82,7 @@ def load_current_confidence() -> Decimal:
                     return Decimal(str(conf_val))
         except (json.JSONDecodeError, IOError, ValueError):
             pass
-    
+
     # Default: neutral confidence
     return Decimal("0.50")
 
@@ -90,45 +90,45 @@ def load_current_confidence() -> Decimal:
 def calculate_previous_day_win_rate() -> Optional[Tuple[float, int, int]]:
     """
     Calculate actual WIN RATE from previous trading day.
-    
+
     Returns:
         (win_rate, wins_count, total_count) or None if no trades
     """
     if not TRADING_DB_FILE.exists():
         return None
-    
+
     try:
         conn = sqlite3.connect(TRADING_DB_FILE)
         cursor = conn.cursor()
-        
+
         # Get yesterday's date (trading might have ended already)
         yesterday = datetime.now().date() - timedelta(days=1)
         yesterday_str = yesterday.strftime("%Y-%m-%d")
-        
+
         # Query trades from yesterday
         # Assuming table has: execution_date (or similar), pnl, status columns
         query = """
-        SELECT 
+        SELECT
             COUNT(*) as total_trades,
             SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) as wins
         FROM trades
         WHERE DATE(execution_date) = ?
             AND status IN ('CLOSED', 'COMPLETED')
         """
-        
+
         cursor.execute(query, (yesterday_str,))
         result = cursor.fetchone()
         conn.close()
-        
+
         if not result or result[0] == 0:
             return None  # No trades yesterday
-        
+
         total_trades = result[0]
         wins = result[1] or 0
         win_rate = wins / total_trades if total_trades > 0 else 0.0
-        
+
         return (win_rate, wins, total_trades)
-    
+
     except (sqlite3.Error, Exception) as e:
         log_message(f"Erro ao consultar trades: {e}", level="ERROR")
         return None
@@ -137,17 +137,17 @@ def calculate_previous_day_win_rate() -> Optional[Tuple[float, int, int]]:
 def adjust_confidence(current: Decimal, win_rate: float) -> Decimal:
     """
     Adjust confidence based on win rate.
-    
+
     Rules:
       - WR > 60%: +0.03 boost
       - 50% <= WR <= 60%: no change
       - WR < 50%: -0.02 penalty
-    
+
     Applies caps: [0.25, 0.65]
     """
     new_confidence = current
     adjustment_reason = ""
-    
+
     if win_rate > 0.60:
         new_confidence = current + CONFIDENCE_BOOST_GOOD
         adjustment_reason = f"Boost positivo: WR={win_rate:.1%} > 60%"
@@ -156,10 +156,10 @@ def adjust_confidence(current: Decimal, win_rate: float) -> Decimal:
         adjustment_reason = f"Penalty conservador: WR={win_rate:.1%} < 50%"
     else:
         adjustment_reason = f"Sem mudança: WR={win_rate:.1%} (50-60%)"
-    
+
     # Apply caps
     new_confidence = max(CONFIDENCE_MIN, min(CONFIDENCE_MAX, new_confidence))
-    
+
     return new_confidence, adjustment_reason
 
 
@@ -175,10 +175,10 @@ def save_confidence_config(confidence: Decimal, win_rate: float, trades_count: i
             "retraining_date": datetime.now().date().isoformat(),
             "source": "p50_daily_retraining"
         }
-        
+
         with open(CONFIDENCE_CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2, ensure_ascii=False)
-        
+
         return True
     except IOError as e:
         log_message(f"Erro salvando config: {e}", level="ERROR")
@@ -188,7 +188,7 @@ def save_confidence_config(confidence: Decimal, win_rate: float, trades_count: i
 def main() -> int:
     """
     Main retraining logic.
-    
+
     Returns:
         0 = Success
         1 = No trades to retrain from (still success, just no action)
@@ -196,28 +196,28 @@ def main() -> int:
     """
     try:
         log_message("Iniciando daily confidence retraining...")
-        
+
         # Load current confidence
         current_conf = load_current_confidence()
         log_message(f"Confidence atual: {float(current_conf):.2f}")
-        
+
         # Get previous day's win rate
         result = calculate_previous_day_win_rate()
-        
+
         if result is None:
             log_message("Sem trades no pregão anterior para retraining", level="WARN")
             return 1  # Not an error, just no action needed
-        
+
         win_rate, wins, total = result
         log_message(
             f"Pregão anterior:\n"
             f"  WIN RATE: {win_rate:.1%} ({wins}/{total} trades)\n",
             level="INFO"
         )
-        
+
         # Adjust confidence
         new_conf, reason = adjust_confidence(current_conf, win_rate)
-        
+
         log_message(
             f"Ajuste de confidence:\n"
             f"  {reason}\n"
@@ -225,12 +225,12 @@ def main() -> int:
             f" ({new_conf - current_conf:+.2f})",
             level="INFO"
         )
-        
+
         # Save updated config
         if not save_confidence_config(new_conf, win_rate, total):
             log_message("Falha ao persistir configuração", level="ERROR")
             return 2
-        
+
         # Console output
         print()
         print("=" * 60)
@@ -241,10 +241,10 @@ def main() -> int:
         print(f"Trades: {total} | Ganhos: {wins}")
         print("=" * 60)
         print()
-        
+
         log_message("Daily retraining concluído com sucesso", level="SUCCESS")
         return 0
-    
+
     except Exception as e:
         log_message(f"Erro durante retraining: {e}", level="ERROR")
         return 2

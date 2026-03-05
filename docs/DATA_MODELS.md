@@ -513,6 +513,133 @@ CREATE INDEX idx_operation_audit_timestamp
 
 ---
 
+## P50: Data Models Pessimism Detection & Auto-Recovery
+
+### Modelo: ConfidenceScore
+
+**Propósito:** Representar valor de confiança e tendências associadas
+
+```python
+@dataclass
+class ConfidenceScore:
+    """Score de confiança do sistema com histórico de tendências"""
+    
+    value: float  # 0.0 to 1.0
+    timestamp: datetime
+    cycle_number: int
+    win_rate_recent: float  # 0.0 to 1.0
+    predictions_count: int
+    correct_predictions: int
+    
+    @property
+    def is_pessimistic(self) -> bool:
+        """Retorna True se confiança está abaixo do threshold crítico (0.45)"""
+        return self.value < 0.45
+    
+    @property
+    def trend(self) -> str:
+        """Tendência: 'declining', 'stable', 'improving'"""
+        # Calculado comparando com ciclos anteriores
+        pass
+```
+
+### Modelo: PessimismDetectionResult
+
+**Propósito:** Resultado da análise de detecção de pessimismo
+
+```python
+@dataclass
+class PessimismDetectionResult:
+    """Resultado da detecção de pessimismo do sistema"""
+    
+    pessimism_detected: bool
+    confidence_current: float
+    confidence_threshold: float
+    consecutive_low_cycles: int
+    trigger_action: str  # 'none', 'alert', 'reset', 'retrain'
+    adjustment_reason: str
+    reset_strategy: str  # 'gradual', 'aggressive', 'conservative'
+    affected_thresholds: Dict[str, float]  # Original vs adjusted
+    
+    @property
+    def severity(self) -> str:
+        """Severidade: 'low', 'medium', 'high', 'critical'"""
+        if self.consecutive_low_cycles < 5:
+            return 'low'
+        elif self.consecutive_low_cycles < 10:
+            return 'medium'
+        elif self.consecutive_low_cycles < 15:
+            return 'high'
+        else:
+            return 'critical'
+```
+
+### Modelo: FeedbackEvent
+
+**Propósito:** Evento de feedback para retraining e logging
+
+```python
+@dataclass
+class FeedbackEvent:
+    """Evento de feedback do sistema (correto/incorreto) com contexto"""
+    
+    event_id: str  # UUID
+    timestamp: datetime
+    cycle_number: int
+    prediction_id: str  # Referência à predição
+    actual_outcome: bool  # True = correto, False = incorreto
+    confidence_when_predicted: float
+    market_type: str  # 'normal', 'volatile', 'trending'
+    volatility_level: str  # 'low', 'standard', 'high'
+    
+    features_snapshot: Dict[str, float]  # Features usadas na predição
+    feedback_trigger: str  # 'realtime', 'end_of_day', 'manual'
+    
+    @property
+    def contribution_to_learning(self) -> float:
+        """Peso deste feedback para retraining (0.0-1.0)"""
+        # Eventos em mercado volatível > eventos em mercado normal
+        # Eventos recentes > eventos antigos
+        pass
+```
+
+### Modelo: RetrainingMetrics
+
+**Propósito:** Métricas calculadas para decisão de retraining
+
+```python
+@dataclass
+class RetrainingMetrics:
+    """Métricas para decisão de retraining automático"""
+    
+    window_size: int  # Últimos N ciclos (default: 20)
+    win_rate: float  # Taxa de acerto (0.0-1.0)
+    f1_score: float  # F1 score do período (0.0-1.0)
+    confidence_degradation: float  # -0.15 = degradou 15%
+    prediction_consistency: float  # Variância em threshold
+    drift_detected: bool  # Se houve mudança no mercado
+    
+    recommendation: str  # 'none', 'alert', 'retrain', 'retrain_forced'
+    
+    @property
+    def should_retrain(self) -> bool:
+        """Retorna True se métricas indicam necessidade de retraining"""
+        return (
+            self.win_rate < 0.60 or
+            self.f1_score < 0.65 or
+            self.confidence_degradation < -0.10 or
+            self.drift_detected
+        )
+```
+
+**Mapeamento para Banco de Dados:**
+- `ConfidenceScore` → `CONFIDENCE_HEALTH` (SQLite: data/db/trading.db)
+- `PessimismDetectionResult` → `PESSIMISM_MODE` (JSON: config/pessimism_mode.json)
+- `FeedbackEvent` → `FEEDBACK_LOGS` (potencial futura tabela)
+- `RetrainingMetrics` → `CONFIDENCE_HISTORY` (JSON: config/confidence_history.json)
+
+---
+
 ## 🔗 Referências Cruzadas
 
 ### Relacionamento com Outros Documentos

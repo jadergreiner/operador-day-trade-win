@@ -55,26 +55,26 @@ REJECTION_TRACKING_LIMIT = 100  # Keep last 100 rejections
 
 class FeedbackLogger:
     """Real-time feedback logger for agent cycles."""
-    
+
     def __init__(self):
         self.last_processed_line = 0
         self.rejection_counter = defaultdict(int)
         self.session_start = datetime.now()
-    
+
     def log_system_message(self, message: str) -> None:
         """Log system message to feedback file and console."""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         entry = f"[{timestamp}] [LOGGER] {message}\n"
-        
+
         with open(FEEDBACK_LOG_FILE, "a", encoding="utf-8") as f:
             f.write(entry)
-        
+
         print(entry.strip())
-    
+
     def log_cycle(self, cycle_data: Dict[str, Any]) -> None:
         """
         Log a single agent cycle.
-        
+
         cycle_data expected to contain:
           - timestamp: cycle timestamp
           - macro_score: float score
@@ -90,25 +90,25 @@ class FeedbackLogger:
             rejection_reason = cycle_data.get("rejection_reason", None)
             symbol = cycle_data.get("symbol", "UNKNOWN")
             operation = cycle_data.get("operation", "HOLD")
-            
+
             # Format confidence as percentage
             confidence_pct = int(confidence * 100) if isinstance(confidence, float) else confidence
-            
+
             # Build log line
             log_line = f"[{timestamp_str}] {symbol} {operation:6s} | score={macro_score:5.1f} | conf={confidence_pct:3d}%"
-            
+
             # Add rejection reason if exists
             if rejection_reason:
                 log_line += f" | ❌ {rejection_reason}"
                 self.rejection_counter[rejection_reason] += 1
-            
+
             # Write to feedback log
             with open(FEEDBACK_LOG_FILE, "a", encoding="utf-8") as f:
                 f.write(log_line + "\n")
-            
+
         except Exception as e:
             print(f"[ERROR] Erro ao registrar ciclo: {e}")
-    
+
     def write_header(self) -> None:
         """Write session header to feedback log."""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -119,10 +119,10 @@ class FeedbackLogger:
             f"Formato: [HH:MM:SS] SYMBOL OPERATION | score=X.X | conf=X% [| ❌ reason]\n"
             f"{'=' * 80}\n\n"
         )
-        
+
         with open(FEEDBACK_LOG_FILE, "a", encoding="utf-8") as f:
             f.write(header)
-    
+
     def get_top_rejections(self, limit: int = 5) -> list:
         """Get top rejection reasons."""
         return sorted(
@@ -130,11 +130,11 @@ class FeedbackLogger:
             key=lambda x: x[1],
             reverse=True
         )[:limit]
-    
+
     def get_statistics(self) -> Dict[str, Any]:
         """Get session statistics."""
         total_rejections = sum(self.rejection_counter.values())
-        
+
         return {
             "session_duration": (datetime.now() - self.session_start).total_seconds(),
             "total_rejections": total_rejections,
@@ -146,29 +146,29 @@ class FeedbackLogger:
 def poll_agent_decisions() -> None:
     """
     Poll for agent decisions and log them.
-    
+
     This function runs indefinitely, checking for new cycles from the agent.
     In production, this would integrate with actual agent output source
     (could be queue, file, socket, etc.)
-    
+
     For now: Creates synthetic cycles for demonstration/testing.
     """
     logger = FeedbackLogger()
     logger.write_header()
     logger.log_system_message("✅ Feedback logger iniciado")
-    
+
     cycle_count = 0
-    
+
     try:
         while True:
             # Simulate agent cycle (in production, get from actual agent source)
             # This is a placeholder - integrate with actual agent output
-            
+
             time.sleep(LOG_INTERVAL)
-            
+
             # Check if we should exit gracefully
             # (could be file marker, signal handler, etc.)
-    
+
     except KeyboardInterrupt:
         logger.log_system_message("⚙️ Shutdown solicitado (Ctrl+C)")
     except Exception as e:
