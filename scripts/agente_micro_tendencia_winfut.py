@@ -2492,12 +2492,18 @@ class IntraDayLearner:
 
     Analisa HOLDs (rejeições) do dia e ajusta thresholds dinamicamente.
     Latência: ~10 minutos (vs 24h batch)
+    P0-URGENT-1: Inactivity Penalty System (06/03/2026)
 
     Exemplo:
     └─ 13:36 HOLD (motivo: EXPOSIÇÃO_REDUZIDA)
     └─ 13:46 Validação: Acertou? SIM → hit_rate 100% (1/1)
     └─ Decisão: Pattern está 100% acertando → boost confiança +5%
     └─ 15:20 Próxima oportunidade: usa novo threshold (mais confiante)
+    
+    Inactivity Penalty:
+    └─ Se modelo ficar inativo > 120min → penalidade progressiva
+    └─ Penalidade = (minutes_inactive / 390_pregao) * 0.10 (máx -0.05)
+    └─ Força modelo a sair da inatividade aprendida
     """
 
     MIN_SAMPLES_FOR_ADJUSTMENT = 2  # Precisa 2+ para confiar
@@ -2505,6 +2511,12 @@ class IntraDayLearner:
     LOW_HIT_THRESHOLD = 20   # % acertos para penalizar
     CONFIDENCE_BOOST = 5     # % a aumentar threshold
     CONFIDENCE_PENALTY = 10  # % a diminuir threshold
+    
+    # P0-URGENT-1: Inactivity Penalty
+    INACTIVITY_THRESHOLD_MIN = 120  # 120 minutos = 2h inatividade
+    OPERATIONAL_COST_DAILY_R = 280  # Custo diário em Reais
+    PREGAO_MINUTES = 390  # 09:00-17:55 = 8.9h ≈ 535min, mas trading core = 390min
+    MAX_INACTIVITY_PENALTY = 0.05  # Penalidade máxima: -5% confiança
 
     def __init__(self):
         self.rejection_patterns = {}  # pattern → count
@@ -2513,6 +2525,11 @@ class IntraDayLearner:
         self.last_adjustment_time = {}  # pattern → timestamp (evita spam)
         self.adjustment_cooldown = timedelta(minutes=5)  # Não ajusta 2x em 5min
         self._audit_log = []  # Log interno para auditoria
+        
+        # P0-URGENT-1: Inactivity tracking
+        self.last_entry_time: Optional[datetime] = None  # Timestamp do último ENTER
+        self.inactivity_penalty: float = 0.0  # Penalidade acumulada por inatividade
+        self._inactivity_started_at: Optional[datetime] = None  # Quando inatividade começou > 120min
 
     def _log_audit(self, event: str) -> None:
         """Registra evento em log interno (para auditoria sem print)."""
@@ -2598,39 +2615,131 @@ class IntraDayLearner:
         """Retorna soma de todos ajustes ativos."""
         return sum(self.confidence_adjustments.values())
 
+    # ─────────────────────────────────────────────────────────────────────
+    # P0-URGENT-1: INACTIVITY PENALTY SYSTEM (06/03/2026)
+    # ─────────────────────────────────────────────────────────────────────
+
+    def record_entry(self) -> None:
+        """Registra timestamp de uma entrada (ENTER decision).
+        
+        Chamado quando há ENTER, para resetar cronômetro de inatividade.
+        """
+        self.last_entry_time = datetime.now()
+        self.inactivity_penalty = 0.0  # Reset penalidade ao entrar
+        self._inactivity_started_at = None
+        self._log_audit(f"ENTRY_RECORDED: Reset inactivity timer")
+
+    def calculate_inactivity_penalty(self) -> tuple[float, str]:
+        """Calcula penalidade por inatividade > 120 minutos.
+        
+        Returns: (penalty_pct, message)
+                 penalty_pct: valor negativo (-0.01 a -0.05) = reduzir confiança
+                 message: explicação para log
+                 
+        Lógica:
+        - Se nunca entrou: inicia cronômetro quando chamado primeira vez
+        - Se inativo 120-180min: penalidade pequena (-0.01 a -0.02)
+        - Se inativo 180-300min: penalidade média (-0.02 a -0.04)
+        - Se inativo > 300min: penalidade máxima (-0.05)
+        """
+        now = datetime.now()
+        
+        # Primeira chamada: registra início de inatividade
+        if self.last_entry_time is None:
+            if self._inactivity_started_at is None:
+                self._inactivity_started_at = now
+                self._log_audit(f"INACTIVITY_BEGINS: Primeira vez — cronômetro iniciado")
+            # Retorna sem penalidade na primeira vez
+            return 0.0, "Inactivity timer started (no entry yet)"
+        
+        # Calcula minutos desde última entrada
+        minutes_inactive = (now - self.last_entry_time).total_seconds() / 60.0
+        
+        # Se ativo ainda: retorna sem penalidade
+        if minutes_inactive < self.INACTIVITY_THRESHOLD_MIN:
+            self.inactivity_penalty = 0.0
+            return 0.0, f"Active trading: {minutes_inactive:.0f}min since last entry"
+        
+        # Inativo > 120 minutos: aplica penalidade progressiva
+        # Fórmula: (minutos_inativo / 390_pregao) * 0.10 com teto de -0.05
+        penalty = min(
+            self.MAX_INACTIVITY_PENALTY,
+            (minutes_inactive / self.PREGAO_MINUTES) * 0.10
+        )
+        penalty = -penalty  # Negativo = reduzir threshold = mais conservador
+        
+        self.inactivity_penalty = penalty
+        
+        # Determina gravidade
+        if minutes_inactive < 180:
+            severity = "LEVE"
+        elif minutes_inactive < 300:
+            severity = "MÉDIA"
+        else:
+            severity = "CRÍTICA"
+        
+        msg = (
+            f"INACTIVITY_PENALTY({severity}): "
+            f"{minutes_inactive:.0f}min inativo → "
+            f"penalidade {penalty:.3f} (custo R$ {minutes_inactive * self.OPERATIONAL_COST_DAILY_R / self.PREGAO_MINUTES:.0f})"
+        )
+        self._log_audit(msg)
+        return penalty, msg
+
+    def get_total_confidence_adjustment(self) -> float:
+        """Retorna ajuste TOTAL de confiança: patterns + inactivity.
+        
+        Diferente de get_current_adjustments() que só retorna patterns.
+        Este inclui penalidade de inatividade.
+        """
+        pattern_adjustments = sum(self.confidence_adjustments.values())
+        return pattern_adjustments + self.inactivity_penalty
+
     def summary_with_actions(self) -> str:
         """Resumo APENAS de padrões com ajustes reais (BOOST/PENALTY).
 
         Aprendizado transparente: Exibe somente quando há ação real.
         Retorna string vazia se apenas monitorando (sem ajuste ainda).
+        
+        P0-URGENT-1: Inclui penalidade de inatividade se ativa.
         """
-        if not self.confidence_adjustments:
+        if not self.confidence_adjustments and self.inactivity_penalty == 0.0:
             return ""  # Sem ajustes - aprendizado transparente
 
         lines = []
-        total_adjustment = self.get_current_adjustments()
+        total_adjustment = self.get_total_confidence_adjustment()
 
-        # Separa boosts e penalties
+        # Penalidade de inatividade
+        if self.inactivity_penalty < 0:
+            penalty_pct = abs(self.inactivity_penalty) * 100
+            mins_inactive = (datetime.now() - self.last_entry_time).total_seconds() / 60.0 if self.last_entry_time else 0
+            cost_accumulated = mins_inactive * self.OPERATIONAL_COST_DAILY_R / self.PREGAO_MINUTES
+            lines.append(f"  ⏱️ INACTIVITY PENALTY: {penalty_pct:.1f}% (custo R$ {cost_accumulated:.0f})")
+            lines.append(f"     📊 {mins_inactive:.0f} minutos desde último ENTER")
+
+        # Separa boosts e penalties de patterns
         boosts = {p: v for p, v in self.confidence_adjustments.items() if v < 0}
         penalties = {p: v for p, v in self.confidence_adjustments.items() if v > 0}
 
         if boosts:
-            lines.append(f"  ⚡ APRENDIZADO ATIVO: Boosting confiança {total_adjustment:.0f}%")
+            if self.inactivity_penalty < 0:
+                lines.append(f"  ")
+            lines.append(f"  ⚡ LEARNING BOOST: +Confiança (hit rate alto)")
             for pattern, delta in boosts.items():
                 hits, total = self.validation_results.get(pattern, (0, 0))
                 if total > 0:
                     hit_rate = hits / total * 100
-                    lines.append(f"     🟢 {pattern}: {hit_rate:.0f}% hit rate ({hits}/{total}) → +agressivo")
+                    lines.append(f"     🟢 {pattern}: {hit_rate:.0f}% ({hits}/{total}) → +agressivo")
 
         if penalties:
-            if boosts:
+            if boosts or self.inactivity_penalty < 0:
                 lines.append(f"  ")
-            lines.append(f"  ⚡ APRENDIZADO ATIVO: Reduzindo confiança {total_adjustment:.0f}%")
+            lines.append(f"  ⚡ LEARNING PENALTY: -Confiança (hit rate baixo)")
             for pattern, delta in penalties.items():
                 hits, total = self.validation_results.get(pattern, (0, 0))
                 if total > 0:
                     hit_rate = hits / total * 100
-                    lines.append(f"     🔴 {pattern}: {hit_rate:.0f}% hit rate ({hits}/{total}) → +conservador")
+                    lines.append(f"     🔴 {pattern}: {hit_rate:.0f}% ({hits}/{total}) → +conservador")
 
         return "\n".join(lines) if lines else ""
 
@@ -2799,9 +2908,23 @@ class MicroTradingManager:
         else:
             weighted_confidence = opp.confidence
 
-        # Reavalia com score misto
+        # P0-URGENT-1: Aplica ajuste de confiança (patterns + inactividade)
+        global _intraday_learner
+        if _intraday_learner:
+            total_adjustment = _intraday_learner.get_total_confidence_adjustment()
+            if total_adjustment != 0:
+                # Converte adjustment em percentual
+                adjustment_pct = total_adjustment * 100
+                weighted_confidence += adjustment_pct
+                extra_detail = ""
+                if _intraday_learner.inactivity_penalty < 0:
+                    mins_inactive = (datetime.now() - _intraday_learner.last_entry_time).total_seconds() / 60 if _intraday_learner.last_entry_time else 0
+                    extra_detail = f" [inativo {mins_inactive:.0f}min]"
+                print(f"     📊 IntraDay Adj: {adjustment_pct:+.1f}% → {weighted_confidence:.0f}%{extra_detail}")
+
+        # Reavalia com score misto + ajustes intraday
         if weighted_confidence < MIN_CONFIDENCE_TRADE:
-            return False, f"Score misto {weighted_confidence:.0f}% < {MIN_CONFIDENCE_TRADE}% (técnico={opp.confidence:.0f}%, ML={lgbm_score:.1%})"
+            return False, f"Score ajustado {weighted_confidence:.0f}% < {MIN_CONFIDENCE_TRADE}% (base={opp.confidence:.0f}%)"
 
         # FIX 12/02/2026: Cooling-off anti-TILT — bloqueia reentrada na mesma
         # direção por COOLING_OFF_MINUTES minutos após stop loss.
@@ -4593,6 +4716,12 @@ def main():
             print(f"\n  ──── Ciclo #{cycle_count} ────")
             result = _run_cycle(mt5)
 
+            # P0-URGENT-1: Calcula penalidade de inatividade
+            if _intraday_learner:
+                inactivity_penalty, inactivity_msg = _intraday_learner.calculate_inactivity_penalty()
+                if inactivity_penalty < -0.001:  # Threshold para evitar noise
+                    print(f"  {inactivity_msg}")
+
             # ⚡ IntraDayLearner: Registra motivos de rejeição de HOLDs
             if _intraday_learner and result._rejection_reasons:
                 pattern = _intraday_learner.record_rejection(result._rejection_reasons)
@@ -4643,6 +4772,10 @@ def main():
                             try:
                                 _persist_simulated_trade(DB_PATH, best, result, decision_id)
                                 print(f"  ✓ Sinal logado em simulated_trades (com decision_id={decision_id})")
+                                # P0-URGENT-1: Registra entrada para reset de inatividade (simulado)
+                                if _intraday_learner:
+                                    _intraday_learner.record_entry()
+                                    print(f"  ✓ Inactivity timer reset (simulado)")
                             except Exception as e:
                                 print(f"  ✗ Erro ao logar sinal simulado: {e}")
                         else:
@@ -4674,6 +4807,10 @@ def main():
                             ticket = trading_mgr.execute_entry(best)
                             if ticket:
                                 print(f"  ✓ Ordem executada! Ticket: {ticket}")
+                                # P0-URGENT-1: Registra entrada para reset de inatividade
+                                if _intraday_learner:
+                                    _intraday_learner.record_entry()
+                                    print(f"  ✓ Inactivity timer reset (entrada registrada)")
                             else:
                                 print(f"  ✗ Falha na execução da ordem")
                         else:
