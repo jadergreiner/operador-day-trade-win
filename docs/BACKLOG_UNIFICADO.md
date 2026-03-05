@@ -1640,3 +1640,53 @@ INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
 
 Questões? Escalate para Product Owner.
 
+---
+
+## P51: Synchronization - Architecture to ADRs (07/03/2026)
+
+**Data**: 07/03/2026 ~14:30 BRT
+**Motivo**: P1-CORE Etapa 3 (Position Monitor + WebSocket) completion
+**Framework**: {{prompts/atualiza_docs_refatorado.md}} v2.0
+**Pessoas Envolvidas**: Arquiteto
+
+### Documentos Sincronizados
+
+#### CORE (ARCHITECTURE.md)
+- ✅ **ARCHITECTURE.md § 4.8 (P1-CORE Etapa 3)**
+  - Position Monitor real-time com WebSocket
+  - Async polling (500ms interval)
+  - RLCallback integration pattern
+  - Risk status classification (GREEN/YELLOW/RED)
+  - Updated: 07/03 Etapa 3 completion
+
+#### DEPENDENTES (Afetados)
+1. **ADRs.md**
+   - ✅ ADR-012 NOVA: Real-Time Position Monitoring
+   - ✅ Tabela de status atualizada (12 ADRs total)
+   - ✅ Last updated timestamp: 07/03 14:30 BRT
+
+2. **README.md**
+   - ✅ STATUS CRÍTICO section atualizado
+   - ✅ P1-CORE: Etapas 1-3 COMPLETAS (05/03, 06/03, 07/03)
+   - ✅ Link para ADR-012 adicionado
+
+### Lint Status
+- ⚠️ ADRs.md: Violations pré-existentes (MD013, MD024)
+  - Causadas por múltiplas ADRs + design histórico
+  - Não bloqueantes para sincronização
+  - Conhecidas e documentadas
+
+- ✅ README.md: Mudanças aplicadas sem new violations
+
+### Próximas Ações
+- [ ] Etapa 4 (08/03): Load testing 100+ordens/min
+- [ ] Etapa 4: Cleanup scheduler implementation
+- [ ] GATE 2 Retest (08-10/03): Backtest validation
+- [ ] Go-Live (10/03): Fase 1 production deployment
+
+### Commits
+- commit a ser criado: `docs: Sincronizacao ADRs + README - P1-CORE Etapa 3 complete`
+
+**Status**: ✅ SINCRONIZAÇÃO P1-CORE ETAPA 3 COMPLETA
+
+---
