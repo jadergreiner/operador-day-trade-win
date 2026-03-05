@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Agente de Micro Tendências para Day Trade WINFUT.
 
@@ -2499,7 +2500,7 @@ class IntraDayLearner:
     └─ 13:46 Validação: Acertou? SIM → hit_rate 100% (1/1)
     └─ Decisão: Pattern está 100% acertando → boost confiança +5%
     └─ 15:20 Próxima oportunidade: usa novo threshold (mais confiante)
-    
+
     Inactivity Penalty:
     └─ Se modelo ficar inativo > 120min → penalidade progressiva
     └─ Penalidade = (minutes_inactive / 390_pregao) * 0.10 (máx -0.05)
@@ -2511,7 +2512,7 @@ class IntraDayLearner:
     LOW_HIT_THRESHOLD = 20   # % acertos para penalizar
     CONFIDENCE_BOOST = 5     # % a aumentar threshold
     CONFIDENCE_PENALTY = 10  # % a diminuir threshold
-    
+
     # P0-URGENT-1: Inactivity Penalty
     INACTIVITY_THRESHOLD_MIN = 120  # 120 minutos = 2h inatividade
     OPERATIONAL_COST_DAILY_R = 280  # Custo diário em Reais
@@ -2525,7 +2526,7 @@ class IntraDayLearner:
         self.last_adjustment_time = {}  # pattern → timestamp (evita spam)
         self.adjustment_cooldown = timedelta(minutes=5)  # Não ajusta 2x em 5min
         self._audit_log = []  # Log interno para auditoria
-        
+
         # P0-URGENT-1: Inactivity tracking
         self.last_entry_time: Optional[datetime] = None  # Timestamp do último ENTER
         self.inactivity_penalty: float = 0.0  # Penalidade acumulada por inatividade
@@ -2621,7 +2622,7 @@ class IntraDayLearner:
 
     def record_entry(self) -> None:
         """Registra timestamp de uma entrada (ENTER decision).
-        
+
         Chamado quando há ENTER, para resetar cronômetro de inatividade.
         """
         self.last_entry_time = datetime.now()
@@ -2631,11 +2632,11 @@ class IntraDayLearner:
 
     def calculate_inactivity_penalty(self) -> tuple[float, str]:
         """Calcula penalidade por inatividade > 120 minutos.
-        
+
         Returns: (penalty_pct, message)
                  penalty_pct: valor negativo (-0.01 a -0.05) = reduzir confiança
                  message: explicação para log
-                 
+
         Lógica:
         - Se nunca entrou: inicia cronômetro quando chamado primeira vez
         - Se inativo 120-180min: penalidade pequena (-0.01 a -0.02)
@@ -2643,7 +2644,7 @@ class IntraDayLearner:
         - Se inativo > 300min: penalidade máxima (-0.05)
         """
         now = datetime.now()
-        
+
         # Primeira chamada: registra início de inatividade
         if self.last_entry_time is None:
             if self._inactivity_started_at is None:
@@ -2651,15 +2652,15 @@ class IntraDayLearner:
                 self._log_audit(f"INACTIVITY_BEGINS: Primeira vez — cronômetro iniciado")
             # Retorna sem penalidade na primeira vez
             return 0.0, "Inactivity timer started (no entry yet)"
-        
+
         # Calcula minutos desde última entrada
         minutes_inactive = (now - self.last_entry_time).total_seconds() / 60.0
-        
+
         # Se ativo ainda: retorna sem penalidade
         if minutes_inactive < self.INACTIVITY_THRESHOLD_MIN:
             self.inactivity_penalty = 0.0
             return 0.0, f"Active trading: {minutes_inactive:.0f}min since last entry"
-        
+
         # Inativo > 120 minutos: aplica penalidade progressiva
         # Fórmula: (minutos_inativo / 390_pregao) * 0.10 com teto de -0.05
         penalty = min(
@@ -2667,9 +2668,9 @@ class IntraDayLearner:
             (minutes_inactive / self.PREGAO_MINUTES) * 0.10
         )
         penalty = -penalty  # Negativo = reduzir threshold = mais conservador
-        
+
         self.inactivity_penalty = penalty
-        
+
         # Determina gravidade
         if minutes_inactive < 180:
             severity = "LEVE"
@@ -2677,7 +2678,7 @@ class IntraDayLearner:
             severity = "MÉDIA"
         else:
             severity = "CRÍTICA"
-        
+
         msg = (
             f"INACTIVITY_PENALTY({severity}): "
             f"{minutes_inactive:.0f}min inativo → "
@@ -2688,7 +2689,7 @@ class IntraDayLearner:
 
     def get_total_confidence_adjustment(self) -> float:
         """Retorna ajuste TOTAL de confiança: patterns + inactivity.
-        
+
         Diferente de get_current_adjustments() que só retorna patterns.
         Este inclui penalidade de inatividade.
         """
@@ -2700,7 +2701,7 @@ class IntraDayLearner:
 
         Aprendizado transparente: Exibe somente quando há ação real.
         Retorna string vazia se apenas monitorando (sem ajuste ainda).
-        
+
         P0-URGENT-1: Inclui penalidade de inatividade se ativa.
         """
         if not self.confidence_adjustments and self.inactivity_penalty == 0.0:
@@ -4484,7 +4485,7 @@ def main():
 
     # ── Auditoria de Sessão ──
     _session_id = _start_session(DB_PATH, mode_str, login_id)
-    print(f"  🏁 Sessão ID: {_session_id} iniciada")
+    print(f"  [*] Sessao ID: {_session_id} iniciada")
 
     # ── Carrega diretivas do Head Financeiro ──
     global _active_directive
@@ -4497,7 +4498,7 @@ def main():
     # ── Inicializa IntraDayLearner para feedback EM TEMPO REAL ──
     global _intraday_learner
     _intraday_learner = IntraDayLearner()
-    print(f"  ⚡ IntraDayLearner: Ativo (latência ~10min)")
+    print(f"  [-] IntraDayLearner: Ativo (latencia ~10min)")
 
     # ── Inicializa Modelo LightGBM (26/02/2026) ──
     global _lgbm_integrator
@@ -4505,13 +4506,13 @@ def main():
         try:
             _lgbm_integrator = get_lgbm_integrator()
             if _lgbm_integrator and _lgbm_integrator.model_loaded:
-                print(f"  🤖 LightGBM Integrator: Ativo (F1: 0.5664, Acc: 59.55%)")
+                print(f"  [*] LightGBM Integrator: Ativo (F1: 0.5664, Acc: 59.55%)")
             else:
-                print(f"  ⚠️  LightGBM Integrator: Modelo não carregado")
+                print(f"  [!] LightGBM Integrator: Modelo nao carregado")
         except Exception as e:
-            print(f"  ⚠️  LightGBM Integrator: Falha ao inicializar ({str(e)[:40]})")
+            print(f"  [!] LightGBM Integrator: Falha ao inicializar ({str(e)[:40]})")
     else:
-        print(f"  ℹ️  LightGBM Integrator: Não disponível (modo técnico apenas)")
+        print(f"  [i] LightGBM Integrator: Nao disponivel (modo tecnico apenas)")
 
     # ── PRE-FLIGHT: Verificação crítica do terminal MT5 ──
     if not _preflight_check_mt5(config):
