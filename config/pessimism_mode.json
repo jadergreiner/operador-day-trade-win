@@ -1,9 +1,11 @@
 {
-  "timestamp": "2026-03-05T11:56:18.311516",
+  "timestamp": "2026-03-06T00:38:52.771698",
   "pessimism_detected": false,
   "last_confidence": 0.4,
-  "consecutive_low_cycles": 4,
-  "threshold_reduced": false,
-  "threshold_up": 4,
-  "threshold_down": -4
+  "consecutive_low_cycles": 5,
+  "threshold_reduced": true,
+  "threshold_up": 3,
+  "threshold_down": -3,
+  "reset_reason": "Pessimismo detectado - auto-reset em ação",
+  "reset_timestamp": "2026-03-06T00:38:52.771698"
 }
