@@ -391,13 +391,13 @@ def loop_operacao():
     global last_signal
 
     logger.info("\n" + "=" * 70)
-        logger.info("🚀 INICIANDO OPERAÇÃO RL v5000 (BALANCED MODE - SEM LIMITE DIÁRIO)")
-        logger.info("=" * 70)
-        logger.info(f"Alvo: R${TARGET_LUCRO_DIARIO} | Stop: R${STOP_PERDA_DIARIA}")
-        logger.info(f"Trades/dia: ILIMITADO (até target/stop loss)")
-        logger.info(f"Cooldown entre trades: {AntiOvertradingConfig.COOLDOWN_SECONDS}s")
-        logger.info(f"Min volatilidade: {AntiOvertradingConfig.MIN_VOLATILITY_PERCENT}%")
-        logger.info(f"Confirmação sinal: {AntiOvertradingConfig.CONFIRM_SIGNAL_BARS} velas")
+    logger.info("🚀 INICIANDO OPERAÇÃO RL v5000 (BALANCED MODE - SEM LIMITE DIÁRIO)")
+    logger.info("=" * 70)
+    logger.info(f"Alvo: R${TARGET_LUCRO_DIARIO} | Stop: R${STOP_PERDA_DIARIA}")
+    logger.info(f"Trades/dia: ILIMITADO (até target/stop loss)")
+    logger.info(f"Cooldown entre trades: {AntiOvertradingConfig.COOLDOWN_SECONDS}s")
+    logger.info(f"Min volatilidade: {AntiOvertradingConfig.MIN_VOLATILITY_PERCENT}%")
+    logger.info(f"Confirmação sinal: {AntiOvertradingConfig.CONFIRM_SIGNAL_BARS} velas")
 
     lucro_sessao = 0.0
     ciclo = 0
