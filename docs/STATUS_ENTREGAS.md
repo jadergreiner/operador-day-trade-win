@@ -629,12 +629,26 @@ Status: MONITORING & LEARNING ACTIVE
 
 ## 🔴 P0-2: Backtest Validação ML - GATE 2 Checkpoint (05/03) 🔴 FAIL
 
-**Status:** 🔴 **GATE 2 EXECUTADO - RESULTADO FAIL**
-**Data:** 05/03/2026 12:22:22
+**Status:** 🔴 **GATE 2 EXECUTADO - RESULTADO FAIL** ⚠️ **TIMEFRAME M5 (Corrigido 05/03)**
+**Data:** 05/03/2026 12:22:22 | **Atualizado:** 05/03/2026 14:00 (Correcao M5)
 **Etapas:** 1-3 Completas (Backtest + Reporting + Validation)
-**Próximo:** P0-2 Melhorias (Risk Management + Dataset Real)
+**Próximo:** P0-2 Melhorias (Risk Management + Dataset M5 Real)
+**Referência:** [OPERATIVE_BRIEF_BACKTEST_V1_2.md](prompts/OPERATIVE_BRIEF_BACKTEST_V1_2.md) | [AJUSTES_TIMEFRAME_M5_VS_H1.md](prompts/AJUSTES_TIMEFRAME_M5_VS_H1.md)
 
-### Execução GATE 2
+### ⚠️ TIMEFRAME CORRECAO CRITICA (05/03/2026)
+
+**Problema Identificado:** Backtest original executado com H1 (17.280 velas/ano)
+**Especificacao Correta:** Sistema opera M5 (73.776 velas/ano), decisioes a cada 2 minutos
+**Motivo Atualizacao:** Look-ahead bias risk + incompatibilidade com agente operacional
+**Impacto:** GATE 2 FAIL permanece valido (criterios unchanged), mas retest usará M5
+**Mais Detalhes:** Leia [AJUSTES_TIMEFRAME_M5_VS_H1.md](prompts/AJUSTES_TIMEFRAME_M5_VS_H1.md)
+
+Dados:
+- Dados H1 (ORIGINAL - INCORRETO): 17.280 candles/ano
+- Dados M5 (CORRETO - OPERACIONAL): 73.776 candles/ano (4.27× mais data)
+- Ciclo Decisao: 2 minutos (validacao de sinal a cada M5 fechamento)
+
+### Execução GATE 2 (Com H1 - Validacao Historica)
 
 **Critério:** Sharpe ≥1.0, WR ≥59%, DD <15%, σ<30%
 
@@ -655,47 +669,53 @@ Fold 3: Sharpe=6.29, WR=62.7%, DD=100% ❌
 Fold 4: Sharpe=8.89, WR=71.4%, DD=64.25% ⚠️ (melhor, mas > 15%)
 ```
 
-### Problemas Identificados
+### Problemas Identificados (Validos em Ambas Timeframes)
 
 1. **Max Drawdown Excessivo (92.8% vs target 15%)**
    - 4 de 5 folds com DD=100% (perda total em período)
    - Modelo sem risk management adequado
    - Circuit breakers e stops necessários
+   - ⚠️ Problema persiste com M5 (requer risk layer)
 
 2. **Inconsistência Extrema (σ=238.8% vs target <30%)**
    - Performance varia 60% (Fold 0) até 71% (Fold 4)
    - Falta robustez cross-timeframes
-   - Dataset sintético limitado (435→1000 via bootstrap)
+   - Dataset sintético limitado (435→1000 via bootstrap em H1)
+   - ⚠️ Retest M5 deve usar 252 dias dados reais (73.776 candles)
 
-3. **Dataset Síntético (Limitação Critics)**
-   - Dados originais apenas ~18 dias de trading
-   - Augmented a 1000 samples via bootstrap para atingir minimum GATE 2
-   - Validação em período diferente necessária
+3. **Dataset Síntético vs M5 Requerido**
+   - Dados originais apenas ~18 dias de trading (INSUFICIENTE)
+   - Para M5: Precisa mínimo 10 dias = 2.880 candles (NOVO AC3 M5)
+   - Especificacao corrigida em OPERATIVE_BRIEF_BACKTEST_V1_2.md FASE 1
 
-###Decisão Capital
+### Decisão Capital
 
-- ❌ **R$ 100k Scale-up:** Rejeitado (GATE 2 FAIL bloqueador)
-- ✅ **R$ 50k Baseline:** Mantido (P50 gerencia risco)
+- ❌ **R$ 100k Scale-up:** Rejeitado (GATE 2 FAIL bloqueador - persiste)
+- ✅ **R$ 50k Baseline:** Mantido (P50 gerencia risco em retest M5)
 
-### Próximas Ações
+### Próximas Ações (GATE 2 RETEST - Com Timeframe M5)
 
-**Fase 1 (06-07/03): Risk Management Upgrade**
-- Implementar P0-3 (Terminal Isolation validation)
-- Adicionar 3-layer circuit breakers (-3%, -5%, -8%)
-- Max drawdown limits por fold antes de teste
+**Fase 1 (06-07/03): M5 Dataset Collection + Risk Management Upgrade**
+- Coletar ~252 dias dados REAIS MT5 (73.776 candles M5)
+- Implementar 3-layer circuit breakers (-3%, -5%, -8%)
+- Look-ahead bias validation (NOVA AC3 M5 spec)
+- Ref: OPERATIVE_BRIEF_BACKTEST_V1_2.md Task 2.2 ACs validam M5
 
-**Fase 2 (08/03): Dataset Upgrade**
-- Coletar 252 dias de dados reais MT5
-- Remover dataset sintético
-- Re-rodar backtest com validação histórica
+**Fase 2 (08/03): M5 Backtest Execution + Validation**
+- Re-rodar backtest com 73.776 candles M5 (não H1)
+- Walk-forward validation (simulando ciclo real 2-min)
+- 10-fold cross-validation com dados reais
+- Novo AC: Timing sequence test (confirma 2-min decision cycle)
+- Ref: OPERATIVE_BRIEF_BACKTEST_V1_2.md Task 2.2 + 2.3 (Grid Search)
 
-**Fase 3 (09-10/03): Model Refinement**
-- Análise SHAP dos erros Fold 0-3
-- Retrain com regularization (L1/L2)
-- 10-fold cross-validation mais conservativo
+**Fase 3 (09-10/03): Circuit Breaker + Model Refinement**
+- Aplicar circuit breakers nos folds (halt se DD > -8%)
+- Análise SHAP dos erros Fold 0-3 (com M5 data)
+- Retrain com regularization (L1/L2) + M5 features corretas
+- Gate 2 Re-check: DD <15%, σ<30% target (com M5)
 
-**GATE 2 Retest:** 08-10/03/2026
-**Timeline para Go-Live:** Se PASS em retest → autoriza 13/03
+**GATE 2 Retest Target:** 08-10/03/2026 (COM TIMEFRAME M5)
+**Timeline para Go-Live:** Se PASS em retest M5 → autoriza 13/03 BETA
 
 ---
 

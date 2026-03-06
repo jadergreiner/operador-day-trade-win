@@ -8,7 +8,23 @@
 
 **Versão**: v7.0 - Refatorada como Lista de Tarefas Entregáveis
 
-**📌 LAST UPDATE (05/03/2026 - SINCRONIZACAO DOCS + ANALISE DE FECHAMENTO & 3 OPORTUNIDADES P0):**
+**📌 LAST UPDATE (05/03/2026 - SINCRONIZACAO DOCS OPERATIVE_BRIEF + ANALISE P0):**
+
+**[05/03 14:00] atualiza_docs: Sincronizacao OPERATIVE_BRIEF_BACKTEST_V1_2**
+- ✅ Correcao: Timeframe M5 vs H1 (look-ahead bias)
+- ✅ Docs Atualizadas:
+  - docs/prompts/OPERATIVE_BRIEF_BACKTEST_V1_2.md (Task specs M5)
+  - docs/prompts/AJUSTES_TIMEFRAME_M5_VS_H1.md (Nova doc)
+  - docs/ARCHITECTURE.md (Section 4: M5 requerido)
+  - docs/STATUS_ENTREGAS.md (P0-2 GATE 2: retest M5)
+  - docs/BACKLOG_UNIFICADO.md (THIS FILE: sync entry)
+- ⚠️  CRITICA: Sistema usa M5 (nao H1) - dados reais
+- 📊 Impacto: 73.776 M5/ano vs 17.280 H1/ano
+- 🎯 Proxima: Lint validation + GATE 2 retest
+
+---
+
+**[05/03 ANTERIOR] Revisao de Sincronizacao + Analise de Fechamento:**
 - ✅ Revisao de Sincronizacao de Documentacao: docs/REVISAO_SINCRONIZACAO_DOCS_05MAR.md
   - Lint obrigatorio: pymarkdown auto-fix aplicado (4 arquivos)
   - Integridade referencial: 100% validada (5/5 referencias cruzadas OK)

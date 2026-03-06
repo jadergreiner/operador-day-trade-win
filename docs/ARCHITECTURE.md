@@ -1734,8 +1734,17 @@ DB_PATH=data/db/trading.db
 - Teste de fluxo de dados DataLayer → DecisionLayer.
 
 ### 4. Backtesting
-- Validação histórica de estratégias.
-- Capture rate >= 85%, FP <= 10%, Win Rate >= 60%.
+
+⚠️ **TIMEFRAME M5 (Crítico):** Sistema operacional executa em ciclo de
+2 minutos com candles M5. Backtest DEVE usar M5 (não H1) para
+compatibilidade temporal e ausência de look-ahead bias.
+
+- Dados: M5 candles (~73.776 por ano), não H1 (incompatível)
+- Validação histórica de estratégias com temporal alignment
+- Walk-forward validation SEM look-ahead bias detectado
+- Capture rate >= 85%, FP <= 10%, Win Rate >= 60%
+- Referência: [docs/prompts/OPERATIVE_BRIEF_BACKTEST_V1_2.md](
+prompts/OPERATIVE_BRIEF_BACKTEST_V1_2.md) (correção M5 05/03/2026)
 
 ### 5. Paper Trading
 - Simulação em tempo real antes de produção real-money.
