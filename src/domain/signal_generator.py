@@ -152,6 +152,9 @@ class SignalGenerator:
 
         BOS = Romper o último high (uptrend) ou low (downtrend) significativo.
 
+        AC1.DEDUP: Implementa deduplicação de onda para evitar múltiplos sinais
+        do mesmo padrão contínuo.
+
         Args:
             candles: Lista de candles ordenados cronologicamente
 
@@ -162,27 +165,41 @@ class SignalGenerator:
             return []
 
         detections = []
+        last_buy_index = None
+        last_sell_index = None
+        min_distance = 50  # Mínimo 50 candles (~4h em M5) entre sinais da mesma direção
+
         for i in range(2, len(candles)):
             prev_candle = candles[i - 1]
             curr_candle = candles[i]
 
             # BOS BUY: Current high > Previous high (depois de pullback)
-            if curr_candle.high > prev_candle.high and prev_candle.close < prev_candle.open:
-                detections.append({
-                    "pattern": "BOS",
-                    "type": "BUY",
-                    "price": curr_candle.high,
-                    "candle_index": i,
-                })
+            # DEDUP: Evita registrar múltiplos sinais se já registrou recentemente
+            if (curr_candle.high > prev_candle.high and 
+                    prev_candle.close < prev_candle.open):
+                # Deduplica: só registra se distância >= min_distance da última detecção BUY
+                if last_buy_index is None or (i - last_buy_index) >= min_distance:
+                    detections.append({
+                        "pattern": "BOS",
+                        "type": "BUY",
+                        "price": curr_candle.high,
+                        "candle_index": i,
+                    })
+                    last_buy_index = i
 
             # BOS SELL: Current low < Previous low (depois de pullback)
-            if curr_candle.low < prev_candle.low and prev_candle.close > prev_candle.open:
-                detections.append({
-                    "pattern": "BOS",
-                    "type": "SELL",
-                    "price": curr_candle.low,
-                    "candle_index": i,
-                })
+            # DEDUP: Evita registrar múltiplos sinais se já registrou recentemente
+            if (curr_candle.low < prev_candle.low and 
+                    prev_candle.close > prev_candle.open):
+                # Deduplica: só registra se distância >= min_distance da última detecção SELL
+                if last_sell_index is None or (i - last_sell_index) >= min_distance:
+                    detections.append({
+                        "pattern": "BOS",
+                        "type": "SELL",
+                        "price": curr_candle.low,
+                        "candle_index": i,
+                    })
+                    last_sell_index = i
 
         return detections
 
@@ -191,6 +208,9 @@ class SignalGenerator:
         AC1.1b: Detecta Change of Character (CHoCH).
 
         CHoCH = Reversão do padrão de impulso/pullback.
+
+        AC1.DEDUP: Implementa deduplicação de onda para evitar múltiplos sinais
+        do mesmo padrão contínuo.
 
         Args:
             candles: Lista de candles
@@ -202,6 +222,10 @@ class SignalGenerator:
             return []
 
         detections = []
+        last_buy_index = None
+        last_sell_index = None
+        min_distance = 50  # Mínimo 50 candles (~4h em M5) entre sinais da mesma direção
+
         for i in range(4, len(candles)):
             # Analisa últimos 5 candles para reversal
             recent = candles[i - 4 : i + 1]
@@ -212,22 +236,28 @@ class SignalGenerator:
 
             if (lows[0] > lows[1] and lows[1] < lows[2] and
                     lows[2] > lows[3] and lows[3] > lows[4]):
-                detections.append({
-                    "pattern": "CHoCH",
-                    "type": "BUY",
-                    "price": recent[-1].low,
-                    "candle_index": i,
-                })
+                # Deduplica: só registra se distância >= min_distance da última detecção BUY
+                if last_buy_index is None or (i - last_buy_index) >= min_distance:
+                    detections.append({
+                        "pattern": "CHoCH",
+                        "type": "BUY",
+                        "price": recent[-1].low,
+                        "candle_index": i,
+                    })
+                    last_buy_index = i
 
             # CHoCH SELL: Up -> Down reversal (série altas → série baixas)
             if (highs[0] < highs[1] and highs[1] > highs[2] and
                     highs[2] < highs[3] and highs[3] < highs[4]):
-                detections.append({
-                    "pattern": "CHoCH",
-                    "type": "SELL",
-                    "price": recent[-1].high,
-                    "candle_index": i,
-                })
+                # Deduplica: só registra se distância >= min_distance da última detecção SELL
+                if last_sell_index is None or (i - last_sell_index) >= min_distance:
+                    detections.append({
+                        "pattern": "CHoCH",
+                        "type": "SELL",
+                        "price": recent[-1].high,
+                        "candle_index": i,
+                    })
+                    last_sell_index = i
 
         return detections
 
@@ -236,6 +266,9 @@ class SignalGenerator:
         AC1.1c: Detecta Fair Value Gap (FVG).
 
         FVG = Gap não preenchido entre candles (low candle N > high candle N-2).
+
+        AC1.DEDUP: Implementa deduplicação de onda para evitar múltiplos sinais
+        do mesmo padrão contínuo.
 
         Args:
             candles: Lista de candles
@@ -247,6 +280,10 @@ class SignalGenerator:
             return []
 
         detections = []
+        last_buy_index = None
+        last_sell_index = None
+        min_distance = 50  # Mínimo 50 candles (~4h em M5) entre sinais da mesma direção
+
         for i in range(2, len(candles)):
             candle_n_minus_2 = candles[i - 2]
             candle_n_minus_1 = candles[i - 1]
@@ -254,23 +291,29 @@ class SignalGenerator:
 
             # FVG BULLISH: Candle N low > Candle N-2 high (gap não preenchido)
             if candle_n.low > candle_n_minus_2.high:
-                detections.append({
-                    "pattern": "FVG",
-                    "type": "BUY",
-                    "price": candle_n.low,
-                    "gap_top": candle_n_minus_2.high,
-                    "candle_index": i,
-                })
+                # Deduplica: só registra se distância >= min_distance da última detecção BUY
+                if last_buy_index is None or (i - last_buy_index) >= min_distance:
+                    detections.append({
+                        "pattern": "FVG",
+                        "type": "BUY",
+                        "price": candle_n.low,
+                        "gap_top": candle_n_minus_2.high,
+                        "candle_index": i,
+                    })
+                    last_buy_index = i
 
             # FVG BEARISH: Candle N high < Candle N-2 low
             if candle_n.high < candle_n_minus_2.low:
-                detections.append({
-                    "pattern": "FVG",
-                    "type": "SELL",
-                    "price": candle_n.high,
-                    "gap_bottom": candle_n_minus_2.low,
-                    "candle_index": i,
-                })
+                # Deduplica: só registra se distância >= min_distance da última detecção SELL
+                if last_sell_index is None or (i - last_sell_index) >= min_distance:
+                    detections.append({
+                        "pattern": "FVG",
+                        "type": "SELL",
+                        "price": candle_n.high,
+                        "gap_bottom": candle_n_minus_2.low,
+                        "candle_index": i,
+                    })
+                    last_sell_index = i
 
         return detections
 
