@@ -193,8 +193,8 @@ def load_ml_features():
 
         # Paths
         data_dir = root_dir / "data"
-        backtest_results = data_dir / "backtest_results.json"
         ml_output_dir = data_dir / "ml"
+        backtest_results = ml_output_dir / "backtest_results.json"
 
         # Validations
         if not backtest_results.exists():
