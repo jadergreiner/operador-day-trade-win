@@ -41,13 +41,13 @@ volatilidade) e treinamento incremental do modelo ML.
 ### Dados disponíveis em SQLite (`data/db/trading.db`)
 ✅ Tabelas: market_data | features | signals | trades | positions
 ✅ História: ~1 ano de candles WIN/WDO com OHLCV
-   - **M5 EXCLUSIVO** para validação SMC day trade
+   - **M5 PRIMEIRA CAMADA** - gera sinais operacionais
    - 1 ano M5 = 252 dias × 288 M5/dia = **73.776 candles**
    - Suficiente para 10-fold cross-validation (73.776 ÷ 10 ≈ 7.377 por fold)
-   - Nota: H4/M15 opcionais para contexto macro (não requerido para day trade SMC)
-✅ Features: 24 engineered (volatilidade, momentum, MA, padrões, lags, correlação)
+   - Nota: H4/M15 opcionais para contexto macro (não participam geração sinal)
+✅ Features: 24 engineered (volatilidade, momentum, MA, padrões, lags, correlação) - Segunda camada
 ✅ Timing: Dados exatos com timestamps MT5 (hh:mm:ss)
-✅ SMC: Estrutura (BOS/CHoCH/FVG) calculada apenas em M5
+✅ SMC M5: Estrutura (BOS/CHoCH/FVG) GERA sinal primário - Primeira camada
 
 ### Especificações
 📄 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#-core-do-produto) — Core components
@@ -60,63 +60,81 @@ volatilidade) e treinamento incremental do modelo ML.
 
 ### 1. Engine Backtester (`src/application/backtester.py` ~ 400-500 LOC)
 
-⚠️ **TIMEFRAME M5 ONLY (Day Trade SMC)**
-- Backtest usa **M5 exclusivamente** para validação SMC (Smart Money Concepts)
-- Day trade não requer confluência multi-timeframe (H4/M15)
-- SMC em M5 é suficiente para sinais intraday curtos
-- Ciclo operacional: 2 minutos (aguarda fechamento M5)
+⚠️ **M5 PRIMEIRA CAMADA - GERAÇÃO DE SINAIS**
+- M5 é a camada primária que **gera os sinais** (não apenas valida)
+- SMC em M5 detecta estrutura: BOS/CHoCH/FVG → produz sinal operacional
+- Day trade opera diretamente no sinal M5 (sem dependência de H4/M15)
+- Ciclo operacional: 2 minutos (amostra novo fechamento M5 = novo sinal)
 
 ```
-Responsabilidades:
-├─ Carregar dataset M5 histórico (2.880+ candles = 10 dias * 288 M5/dia)
-├─ Simular decisões a cada 2 minutos (como agente real)
-├─ Aguardar fechamento de candle M5 (HARD REQUIREMENT)
-├─ Detectar estrutura SMC em M5 (BOS/CHoCH/FVG)
-├─ Aplicar modelo ML sequencialmente (walk-forward, SEM look-ahead)
-├─ Executar sinais com SL/TP validados
-├─ Rastrear P&L, drawdown, win rate
-├─ Validar circuit breakers (-3/-5/-8%)
-└─ Persistir resultados em JSON
+Arquitetura de Camadas:
+├─ M5 (Primeira camada)
+│  ├─ Detecta SMC (BOS/CHoCH/FVG)
+│  ├─ Calcula indicadores técnicos (ATR, Momentum, Bollinger)
+│  ├─ Gera SINAL OPERACIONAL (COMPRA/VENDA)
+│  └─ → DECISÃO EXECUTADA
+│
+├─ Features ML (Segunda camada - validação)
+│  ├─ 24 features engineered (volatilidade, momentum, MA, padrões)
+│  ├─ Modelo XGBoost/LightGBM classifica confiança
+│  └─ → FILTRO DE CONFIANÇA (mínimo 45%)
+│
+└─ Risk Management (Terceira camada - proteção)
+   ├─ Circuit breakers (-3%, -5%, -8%)
+   ├─ SL/TP fixos por ATR M5
+   └─ → EXECUÇÃO SEGURA
 ```
 
-**Acceptance Criteria (M5-Only Day Trade SMC):**
-- [ ] **AC1: Timeframe M5 exclusivo**
+**Acceptance Criteria (M5 Primeira Camada - Geração de Sinais):**
+- [ ] **AC1: M5 Gera Sinais (Primeira Camada)**
   - Carrega dados M5 (5-min candles)
-  - SMC detectado apenas em M5 (não requer H4/M15)
-  - Valida que cada decisão aguarda fechamento M5
+  - Detecta estrutura SMC em cada novo fechamento M5
+  - Produz sinal COMPRA ou VENDA a cada ciclo (2 minutos)
   - Dados mínimo: 2.880 candles (10 dias histórico)
 
-- [ ] **AC2: Ciclo Operacional 2-minutos**
-  - Simula ciclo de decisão real (120 segundos)
-  - Aguarda fechamento candle M5 antes de decidir
-  - SEM look-ahead bias (não usa dado do futuro)
-  - Usa timestamps exatos MT5
+- [ ] **AC2: Ciclo Operacional 2-minutos (Amostragem M5)**
+  - A cada 2 minutos: novo candle M5 fecha
+  - Sinal gerado IMEDIATAMENTE após fechamento M5
+  - SEM look-ahead bias (t[i] sinal usa apenas dados até t[i])
+  - Timestamps exatos MT5 (hh:mm:ss)
 
-- [ ] **AC3: Detectar SMC em M5 (BOS/CHoCH/FVG)**
-  - Implementa detector SMC M5 completo
-  - Identifica Break of Structure (BOS)
-  - Identifica Change of Character (CHoCH)
-  - Identifica Fair Value Gap (FVG)
-  - Score consolidado [-3, +3] por movimento estrutural
+- [ ] **AC3: Detector SMC M5 - Geração de Sinal**
+  - M5 detecta Break of Structure (BOS) → sinal imediato
+  - M5 detecta Change of Character (CHoCH) → sinal imediato
+  - M5 detecta Fair Value Gap (FVG) → confirmação de zona
+  - Score consolidado [-3, +3] determina FORÇA do sinal
+  - Sinal só gerado quando score ≥ +1 (COMPRA) ou ≤ -1 (VENDA)
 
-- [ ] **AC4: Trade Execution com SL/TP**
-  - Executa ordem no fechamento M5 validado
-  - Stop loss + Take Profit aplicados IMEDIATAMENTE
+- [ ] **AC4: Validação por ML (Segunda Camada)**
+  - Sinal M5 + Features (24 engineered) → passa no modelo ML
+  - XGBoost/LightGBM classifica confiança (40-100%)
+  - Mínimo 45% confiança para EXECUTAR sinal
+  - Rejeita sinal M5 se ML confidence < 45%
+
+- [ ] **AC5: Trade Execution com SL/TP (Terceira Camada)**
+  - Executa ordem imediatamente após aprovação ML
+  - Stop loss + Take Profit baseados em ATR M5
   - Rastreia partial fills (não assume VWAP)
   - P&L calculado com slippage realista (2-3 pontos WIN)
 
-- [ ] **AC5: Métricas Exatas**
+- [ ] **AC6: Métricas Exatas**
   - P&L total e por trade
   - Drawdown máximo com calculation rigorosa
   - Win rate calculado por 50+ trades mínimo
   - F1 score (precision + recall balanceado)
 
-- [ ] **AC6: Circuit Breakers Funcionais**
+- [ ] **AC6: Métricas Exatas**
+  - P&L total e por trade
+  - Drawdown máximo com calculation rigorosa
+  - Win rate calculado por 50+ trades mínimo
+  - F1 score (precision + recall balanceado)
+
+- [ ] **AC7: Circuit Breakers Funcionais**
   - Detecta triggers -3%, -5%, -8% com precisão
   - Valida HARD STOP em -8% (tradeoff = 0)
   - Simula 3 níveis de escalação
 
-- [ ] **AC7: Export JSON Estruturado**
+- [ ] **AC8: Export JSON Estruturado**
   - Armazena em `outputs/backtest_results_M5.json`
   - Inclui: trades[], metrics{}, decisions[]
   - Validável contra histórico real MT5
