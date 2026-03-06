@@ -462,7 +462,7 @@ def loop_operacao():
                 time.sleep(AntiOvertradingConfig.COOLDOWN_SECONDS)
             else:
                 last_signal = acao_str
-                logger.info(f"📌 Sinal: {acao_str} (confiança: {confidence:.2%}, vol: {vol:.3f}%)")
+                logger.info(f"[SINAL] Sinal: {acao_str} (confiança: {confidence:.2%}, vol: {vol:.3f}%)")
                 time.sleep(60)
 
         except Exception as e:
