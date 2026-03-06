@@ -43,8 +43,12 @@ env/
 # Logs
 *.log
 data/logs/
+outputs/*.txt
+outputs/*.log
+outputs/*.json
+outputs/agent_feedback_live.txt
 
-# Models
+# Configurações de Estado / Voláteis
 data/models/*.pkl
 data/models/*.h5
 data/models/*.pt
