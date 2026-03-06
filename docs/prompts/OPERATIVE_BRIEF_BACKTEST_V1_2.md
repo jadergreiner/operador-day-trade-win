@@ -60,95 +60,142 @@ volatilidade) e treinamento incremental do modelo ML.
 
 ### 1. Engine Backtester (`src/application/backtester.py` ~ 400-500 LOC)
 
-⚠️ **M5 PRIMEIRA CAMADA - GERAÇÃO DE SINAIS**
-- M5 é a camada primária que **gera os sinais** (não apenas valida)
-- SMC em M5 detecta estrutura: BOS/CHoCH/FVG → produz sinal operacional
-- Day trade opera diretamente no sinal M5 (sem dependência de H4/M15)
-- Ciclo operacional: 2 minutos (amostra novo fechamento M5 = novo sinal)
+**ARQUITETURA 3 CAMADAS INDEPENDENTES**
 
 ```
-Arquitetura de Camadas:
-├─ M5 (Primeira camada)
-│  ├─ Detecta SMC (BOS/CHoCH/FVG)
-│  ├─ Calcula indicadores técnicos (ATR, Momentum, Bollinger)
-│  ├─ Gera SINAL OPERACIONAL (COMPRA/VENDA)
-│  └─ → DECISÃO EXECUTADA
-│
-├─ Features ML (Segunda camada - validação)
-│  ├─ 24 features engineered (volatilidade, momentum, MA, padrões)
-│  ├─ Modelo XGBoost/LightGBM classifica confiança
-│  └─ → FILTRO DE CONFIANÇA (mínimo 45%)
-│
-└─ Risk Management (Terceira camada - proteção)
-   ├─ Circuit breakers (-3%, -5%, -8%)
-   ├─ SL/TP fixos por ATR M5
-   └─ → EXECUÇÃO SEGURA
+┌─────────────────────────────────────────────────────────────┐
+│ CAMADA 1: GERAÇÃO + PERSISTÊNCIA DE SINAL (M5)             │
+├─────────────────────────────────────────────────────────────┤
+│ • M5 detecta SMC (BOS/CHoCH/FVG) → gera SINAL              │
+│ • Sinal persistido em DB (timestamp, tipo, score)          │
+│ • Sinal acompanhado até fim (PnL, duração, outcome)        │
+│ • Geração INDEPENDENTE de decisão de entrada               │
+└─────────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────────┐
+│ CAMADA 2: DECISÃO INDEPENDENTE (ENTRAR vs FICAR DE FORA)   │
+├─────────────────────────────────────────────────────────────┤
+│ • Sinal M5 gerado ✓                                         │
+│ • ML valida confiança (features + modelo)                  │
+│ • DECISÃO: ENTRAR no sinal (execute trade)                 │
+│            OU FICAR DE FORA (reject sinal)                 │
+│ • Decisão persistida + sinal rastreado                     │
+│ • Independente da geração do sinal                         │
+└─────────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────────┐
+│ CAMADA 3: APRENDIZADO (VALIDAÇÃO DE DECISÃO)               │
+├─────────────────────────────────────────────────────────────┤
+│ • Trade finalizado: P&L conhecido                          │
+│ • Avaliar: decisão ENTRAR foi correta?                     │
+│            decisão FICAR DE FORA foi correta?              │
+│ • Calcular: acurácia de decisão (sim/não)                  │
+│ • Feedback: modelo aprende padrão de acertos              │
+│ • Evolui: próximas decisões mais precisas                  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-**Acceptance Criteria (M5 Primeira Camada - Geração de Sinais):**
-- [ ] **AC1: M5 Gera Sinais (Primeira Camada)**
-  - Carrega dados M5 (5-min candles)
-  - Detecta estrutura SMC em cada novo fechamento M5
-  - Produz sinal COMPRA ou VENDA a cada ciclo (2 minutos)
-  - Dados mínimo: 2.880 candles (10 dias histórico)
+**Acceptance Criteria (3 Camadas Independentes):**
 
-- [ ] **AC2: Ciclo Operacional 2-minutos (Amostragem M5)**
-  - A cada 2 minutos: novo candle M5 fecha
-  - Sinal gerado IMEDIATAMENTE após fechamento M5
-  - SEM look-ahead bias (t[i] sinal usa apenas dados até t[i])
-  - Timestamps exatos MT5 (hh:mm:ss)
+### **CAMADA 1: Geração + Persistência de Sinal**
 
-- [ ] **AC3: Detector SMC M5 - Geração de Sinal**
-  - M5 detecta Break of Structure (BOS) → sinal imediato
-  - M5 detecta Change of Character (CHoCH) → sinal imediato
-  - M5 detecta Fair Value Gap (FVG) → confirmação de zona
-  - Score consolidado [-3, +3] determina FORÇA do sinal
-  - Sinal só gerado quando score ≥ +1 (COMPRA) ou ≤ -1 (VENDA)
+- [ ] **AC1: Geração de Sinal M5**
+  - M5 detecta SMC (BOS/CHoCH/FVG) a cada fechamento de candle
+  - Produz sinal COMPRA ou VENDA com score [-3, +3]
+  - Sinal gerado INDEPENDENTE de qualquer decisão de entrada
+  - Mínimo: 2.880 candles (10 dias) para validação estatística
 
-- [ ] **AC4: Validação por ML (Segunda Camada)**
-  - Sinal M5 + Features (24 engineered) → passa no modelo ML
-  - XGBoost/LightGBM classifica confiança (40-100%)
-  - Mínimo 45% confiança para EXECUTAR sinal
-  - Rejeita sinal M5 se ML confidence < 45%
+- [ ] **AC2: Persistência do Sinal em DB**
+  - Cada sinal armazenado em tabela `signals`:
+    - `signal_id`: UUID único
+    - `timestamp`: momento exact do fechamento M5
+    - `signal_type`: COMPRA ou VENDA
+    - `smc_score`: valor [-3, +3] (força do sinal)
+    - `entry_price`: preço no momento da geração
+  - Sinal registrado ANTES de qualquer decisão de entrada
 
-- [ ] **AC5: Trade Execution com SL/TP (Terceira Camada)**
-  - Executa ordem imediatamente após aprovação ML
-  - Stop loss + Take Profit baseados em ATR M5
-  - Rastreia partial fills (não assume VWAP)
-  - P&L calculado com slippage realista (2-3 pontos WIN)
+- [ ] **AC3: Rastreamento Completo do Sinal**
+  - Sinal acompanhado desde geração até fechamento da negociação
+  - Registra em DB:
+    - `entry_time`, `exit_time` (quando existe)
+    - `pnl_if_entered`: P&L hipotético se tivesse entrado
+    - `days_open`: quantos dias o sinal ficou aberto
+    - `outcome`: WINNING_SIGNAL, WHIPSAW, MISSED_OPPORTUNITY
+  - Permite auditoria: qual foi o destino de cada sinal?
 
-- [ ] **AC6: Métricas Exatas**
+### **CAMADA 2: Decisão Independente (ENTRAR vs FICAR DE FORA)**
+
+- [ ] **AC4: Decisão ENTRAR vs FICAR DE FORA**
+  - Pré-requisito: Sinal M5 já gerado e persistido
+  - ML extrai 24 features engineered + prediz confiança
+  - Decisão lógica:
+    - SE confiança ≥ 45% → ENTRAR (execute trade)
+    - SE confiança < 45% → FICAR DE FORA (reject signal)
+  - Decisão INDEPENDENTE da geração do sinal
+  - Permite rejeitar sinais válidos com baixa confiança
+
+- [ ] **AC5: Validação de Confiança (Modelo ML)**
+  - XGBoost/LightGBM prediz confiança (0-100%)
+  - Features incluem: volatilidade, momentum, médias, padrões, lags
+  - Threshold de entrada: 45% (configurável)
+  - Permite auditoria: qual foi a confiança em cada decisão?
+
+- [ ] **AC6: Persistência da Decisão**
+  - Cada decisão armazenada em tabela `decisions`:
+    - `decision_id`: UUID único
+    - `signal_id`: referência ao sinal que a gerou
+    - `decision_type`: ENTRAR ou FICAR_DE_FORA
+    - `confidence`: score de confiança ML (0-100%)
+    - `timestamp`: momento da decisão
+  - Rastreia ENTRADAS executadas e REJEIÇÕES
+  - Permite auditoria: quais sinais foram rejeitados e por quê?
+
+### **CAMADA 3: Aprendizado (Validação de Decisão)**
+
+- [ ] **AC7: Calcular Outcome Real**
+  - ENTROU: trade fechado → P&L real calculado
+  - FICOU DE FORA: P&L hipotético se tivesse entrado
+  - Outcome catalogado em `learning_feedback`:
+    - `decision_id`: qual decisão está sendo avaliada
+    - `trade_pnl`: P&L real (ou hipotético)
+    - `decision_accuracy`: CORRETA ou ERRADA
+
+- [ ] **AC8: Validar Acerto de Decisão**
+  - ENTROU e fechou PROFITABLE → decisão CORRETA ✓
+  - ENTROU e fechou em LOSS → decisão ERRADA ✗
+  - FICOU DE FORA mas teria sido PROFITABLE → decisão ERRADA ✗
+  - FICOU DE FORA e teria sido LOSS → decisão CORRETA ✓
+  - Permite calcular acurácia de decisão
+
+- [ ] **AC9: Feedback Loop para Aprendizado**
+  - Calcular: % de decisões corretas vs erradas
+  - Agrupar erros por padrão (ex: alta confiança mas LOSS)
+  - Identificar: quando o modelo erra mais?
+  - Feedback serve para: evolução do modelo (próximas decisões)
+
+### **Métricas Agregadas (Camadas 1+2+3)**
+
+- [ ] **AC10: Métricas de Backtest**
   - P&L total e por trade
-  - Drawdown máximo com calculation rigorosa
-  - Win rate calculado por 50+ trades mínimo
-  - F1 score (precision + recall balanceado)
+  - Drawdown máximo com cálculo rigoroso
+  - Win rate (≥60% alvo)
+  - F1 score (≥0.65 alvo)
+  - Trades mínimo: 50+ para validação estatística
 
-- [ ] **AC6: Métricas Exatas**
-  - P&L total e por trade
-  - Drawdown máximo com calculation rigorosa
-  - Win rate calculado por 50+ trades mínimo
-  - F1 score (precision + recall balanceado)
+- [ ] **AC11: Circuit Breakers Funcionais**
+  - Detecta triggers -3% (aviso), -5% (slow), -8% (hard stop)
+  - Valida HARD STOP em -8% (para trading imediatamente)
+  - Simula 3 níveis de escalação corretamente
 
-- [ ] **AC7: Circuit Breakers Funcionais**
-  - Detecta triggers -3%, -5%, -8% com precisão
-  - Valida HARD STOP em -8% (tradeoff = 0)
-  - Simula 3 níveis de escalação
+- [ ] **AC12: Export Estruturado**
+  - Armazena em `outputs/backtest_results_M5.json`:
+    - `signals[]`: lista de sinais gerados (Layer 1)
+    - `decisions[]`: lista de decisões tomadas (Layer 2)
+    - `learning[]`: feedback de acurácia (Layer 3)
+    - `metrics{}`: métricas agregadas
+  - Permite auditoria: verificar cada camada independentemente
 
-- [ ] **AC8: Export JSON Estruturado**
-  - Armazena em `outputs/backtest_results_M5.json`
-  - Inclui: trades[], metrics{}, decisions[]
-  - Validável contra histórico real MT5
 
-- [ ] **AC8: Performance Aceitável**
-  - Tempo < 5min para 2.880 candles M5 (10 dias)
-  - Paralelizável (walk-forward splits independentes)
-  - Memory < 500MB (em-memory dataframes)
-
-- [ ] **AC9: Documentação + Docstrings**
-  - 100% português obrigatório
-  - Explicar por que M5 ≠ H1
-  - Look-ahead bias detection explicado
-  - Timing logic documentada
 
 ### 2. Risk Validator (`src/application/risk_validator.py` ~ 150-200 LOC)
 ```
