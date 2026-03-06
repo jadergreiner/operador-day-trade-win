@@ -1,13 +1,15 @@
 # 📊 Data Models - Operador Day Trade WIN
 
-**Versão:** 1.0.1
+**Versão:** 1.0.2
 **Data Criação:** 27/02/2026
-**Última Atualização:** 03/03/2026
+**Última Atualização:** 05/03/2026 (AC3 Signal Tracking added)
 **Responsável:** Data Engineer + Arquiteto de Sistemas
 **Sincronização:** [ARCHITECTURE.md](ARCHITECTURE.md) | [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) | [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md)
-**Status:** ✅ Sincronizado com 5 documentos arquiteturais
+**Status:** ✅ Sincronizado com 5 documentos arquiteturais + AC3 Implementation
 
 ⭐ **CORE DO PRODUTO**: Os modelos aqui descritos são populados/utilizados por [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) e [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat).
+
+⭐ **AC3 SIGNAL TRACKING** (05/03/2026): SignalTracker implementado para rastreamento completo de sinais AC1→AC2→AC3 com 9 testes + 100% coverage
 
 ---
 
@@ -247,9 +249,65 @@ CREATE TABLE ml_features (
 
 ---
 
-## 4️⃣ CAMADA 4: Decisions & Signals (Decisões e Sinais)
+## 4️⃣ CAMADA 4: Decisions & Signals (Decisões e Sinais) + AC3 Signal Tracking
 
-### 4.1 Tabela: `trading_signals` (Sinais Gerados)
+### Arquitetura AC1→AC2→AC3 (Signal Lifecycle)
+
+**AC1 (SignalGenerator):** Gera sinais com contexto de mercado
+↓
+**AC2 (SignalPersistence):** Persiste em `signals` table com outcome fields
+↓
+**AC3 (SignalTracker):** Rastreia ciclo de vida até outcome final (05/03/2026) ✅ IMPLEMENTED
+
+### 4.1 Tabela: `signals` (AC1→AC2→AC3 Signal Lifecycle)
+
+**Propósito:** Persistência + rastreamento completo de sinais desde geração até outcome final.
+
+```sql
+CREATE TABLE signals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    signal_id TEXT UNIQUE NOT NULL,
+    timestamp DATETIME NOT NULL,
+    symbol TEXT NOT NULL,
+    signal_type TEXT NOT NULL,
+    smc_score REAL NOT NULL,
+    smc_detector TEXT NOT NULL,
+    entry_price REAL NOT NULL,
+    candle_index INTEGER,
+    market_context_json TEXT,
+    -- AC3: Signal Lifecycle Fields
+    status TEXT DEFAULT 'OPEN',
+    outcome_trade_id INTEGER,
+    outcome_pnl REAL,
+    outcome_days_open REAL,
+    outcome_type TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    closed_at DATETIME,
+
+    FOREIGN KEY(outcome_trade_id) REFERENCES trades(id),
+    CHECK(signal_type IN ('BUY', 'SELL')),
+    CHECK(status IN ('OPEN', 'LINKED', 'CLOSED', 'WHIPSAW', 'MISSED')),
+    CHECK(outcome_type IN ('WINNING_SIGNAL', 'LOSING_SIGNAL', 'BREAKEVEN_SIGNAL', 
+                           'WHIPSAW_SIGNAL', 'MISSED_SIGNAL', 'PARTIAL_SIGNAL', 'OPEN')),
+    CHECK(smc_score >= -3.0 AND smc_score <= 3.0),
+    UNIQUE(timestamp, symbol, signal_type)
+);
+
+CREATE INDEX idx_signals_timestamp ON signals(timestamp DESC);
+CREATE INDEX idx_signals_symbol_timestamp ON signals(symbol, timestamp);
+CREATE INDEX idx_signals_outcome_type ON signals(outcome_type);
+CREATE INDEX idx_signals_status ON signals(status);
+```
+
+**AC3 Operations (SignalTracker):**
+- `link_signal_to_trade()` - Vincula sinal a trade executada
+- `update_signal_status()` - Atualiza status (OPEN→LINKED→CLOSED)
+- `sync_from_db()` - Sincroniza com banco de dados
+- `audit_signal_flow()` - Valida cadeia AC1→AC2→AC3
+- `detect_orphaned()` - Identifica sinais sem persistência
+- `get_tracking_stats()` - Estatísticas em tempo real
+
+### 4.2 Tabela: `trading_signals` (Sinais Gerados)
 
 **Propósito:** Registrar sinais gerados pelos modelos ML com confiança e
 parâmetros técnicos.

@@ -474,6 +474,7 @@ CREATE TABLE signals (
     entry_price REAL NOT NULL,
     candle_index INTEGER,
     market_context_json TEXT,
+    status TEXT DEFAULT 'OPEN',
     outcome_trade_id INTEGER,
     outcome_pnl REAL,
     outcome_days_open REAL,
@@ -483,7 +484,8 @@ CREATE TABLE signals (
 
     FOREIGN KEY(outcome_trade_id) REFERENCES trades(id),
     CHECK(signal_type IN ('BUY', 'SELL')),
-    CHECK(outcome_type IN ('WINNING_SIGNAL', 'WHIPSAW', 'MISSED_OPPORTUNITY', 'OPEN')),
+    CHECK(status IN ('OPEN', 'LINKED', 'CLOSED', 'WHIPSAW', 'MISSED')),
+    CHECK(outcome_type IN ('WINNING_SIGNAL', 'LOSING_SIGNAL', 'BREAKEVEN_SIGNAL', 'WHIPSAW_SIGNAL', 'MISSED_SIGNAL', 'PARTIAL_SIGNAL', 'OPEN')),
     CHECK(smc_score >= -3.0 AND smc_score <= 3.0),
     UNIQUE(timestamp, symbol, signal_type)
 );
@@ -491,14 +493,22 @@ CREATE TABLE signals (
 CREATE INDEX idx_signals_timestamp ON signals(timestamp DESC);
 CREATE INDEX idx_signals_symbol_timestamp ON signals(symbol, timestamp);
 CREATE INDEX idx_signals_outcome_type ON signals(outcome_type);
+CREATE INDEX idx_signals_status ON signals(status);
 ```
 
-**Propósito**: Persistência de sinais gerados pela Camada 1 (SMC M5 detector)
+**Propósito**: Persistência de sinais gerados (Camada 1 - AC1) com rastreamento até fechamento (Camada 3 - AC3)
 
-**Refinado (05/03/2026):**
+**Arquitetura AC1→AC2→AC3:**
+- **AC1 (SignalGenerator)**: Gera sinal com market context
+- **AC2 (SignalPersistence)**: Persiste em signals table
+- **AC3 (SignalTracker)**: Rastreia ciclo de vida até outcome final (05/03/2026)
+
+**Refinado (05/03/2026 - AC3 Implementation):**
 - Captura TODO o contexto de mercado no momento do sinal
 - market_context_json: Indicadores em tempo real (RSI, ATR, BB, volume, spread, trend)
-- Permite auditoria: quais eram as condições quando o sinal foi gerado?
+- **NEW (AC3)**: Campo `status` para rastreamento de estados do ciclo de vida
+- **NEW (AC3)**: Classificações outcome_type expandidas (6 categorias)
+- Permite auditoria completa: quais eram as condições quando o sinal foi gerado?
 
 **Campos**:
 - `signal_id`: UUID único do sinal (rastreamento global)
@@ -509,7 +519,7 @@ CREATE INDEX idx_signals_outcome_type ON signals(outcome_type);
 - `smc_detector`: Qual estrutura detectou (BOS, CHoCH, FVG)
 - `entry_price`: Preço no momento da geração do sinal
 - `candle_index`: Índice do candle M5 (para auditoria)
-- `market_context_json`: **NOVO** Indicadores capturados (JSON)
+- `market_context_json`: Indicadores capturados (JSON)
   - rsi: RSI (0-100)
   - atr: Volatilidade absoluta
   - bb_upper, bb_lower: Bandas de Bollinger
@@ -517,10 +527,23 @@ CREATE INDEX idx_signals_outcome_type ON signals(outcome_type);
   - spread: Bid-ask em pontos
   - trend_direction: UP/DOWN/FLAT
   - last_close: Preço anterior
+- **`status` (AC3)**: Estado do ciclo de vida do sinal
+  - `OPEN`: Sinal gerado, aguardando execução
+  - `LINKED`: Sinal vinculado a uma trade executada
+  - `CLOSED`: Trade fechada, outcome calculado
+  - `WHIPSAW`: Trade aberta mas logo revertida
+  - `MISSED`: Nunca foi executada (expirou)
 - `outcome_trade_id`: FK para TRADES (se entrou)
 - `outcome_pnl`: P&L se tivesse entrado no sinal
 - `outcome_days_open`: Quantos dias o sinal ficou aberto
-- `outcome_type`: Classificação final (WINNING, WHIPSAW, MISSED, OPEN)
+- **`outcome_type` (AC3 expandido)**: Classificação final
+  - `WINNING_SIGNAL`: P&L positivo
+  - `LOSING_SIGNAL`: P&L negativo
+  - `BREAKEVEN_SIGNAL`: P&L ≈ 0
+  - `WHIPSAW_SIGNAL`: Abriu mas reverteu rápido
+  - `MISSED_SIGNAL`: Nunca executada
+  - `PARTIAL_SIGNAL`: Parcialmente executada
+  - `OPEN`: Ainda em andamento
 - `created_at`: Timestamp inserção
 - `closed_at`: Quando o sinal foi fechado/concluído
 
