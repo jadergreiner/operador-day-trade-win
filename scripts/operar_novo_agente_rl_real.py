@@ -24,7 +24,10 @@ from src.domain.value_objects.financial import Symbol, Price, Quantity
 from src.domain.entities.trade import Order
 from src.domain.enums.trading_enums import OrderSide, TimeFrame, OrderType
 from src.application.services.novo_agente.pipeline_treinamento import PipelineTreinamentoRL
+from src.infrastructure.repositories.rl_repository import SqliteRLRepository
+from src.infrastructure.database.schema import get_session
 from config.settings import TradingConfig
+import uuid
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,6 +49,7 @@ MAGIC_NUMBER = 234500
 config = TradingConfig()
 mt5_adapter: Optional[MT5Adapter] = None
 pipeline: Optional[PipelineTreinamentoRL] = None
+rl_repo: Optional[SqliteRLRepository] = None
 
 
 def inicializar_adaptador_mt5() -> MT5Adapter:
@@ -89,6 +93,21 @@ def inicializar_agente_rl() -> PipelineTreinamentoRL:
         raise RuntimeError(f"Modelo nao encontrado")
 
     return pipeline
+
+
+def inicializar_rl_repo():
+    """Inicializa repositório RL para persistência de episódios."""
+    global rl_repo
+    try:
+        db_path = str(ROOT_DIR / "data" / "db" / "trading.db")
+        session = get_session(db_path)
+        rl_repo = SqliteRLRepository(session)
+        rl_repo.seed_dimension_tables()
+        logger.info("OK RL Repository pronto")
+        return rl_repo
+    except Exception as e:
+        logger.error(f"Erro ao inicializar RL Repository: {e}")
+        return None
 
 
 def verificar_horario_trading() -> bool:
@@ -237,17 +256,30 @@ def loop_operacao():
             acao_id = obter_acao_do_modelo(dados)
             mapeamento = {1: "Comprar", 0: "Aguardar", 2: "Vender"}
             acao_str = mapeamento.get(acao_id, "Aguardar")
+            preco_atual = float(dados['close'].iloc[-1])
+            preco_aberto = float(dados['open'].iloc[-1])
 
             if acao_str != "Aguardar":
-                preco_atual = float(dados['close'].iloc[-1])
                 sucesso = enviar_ordem_mt5adapter(acao_str, preco_atual)
                 if sucesso:
-                    logger.info("Aguardando conclusao...")
-                    time.sleep(60)
-                else:
-                    logger.warning("Falha ao enviar. Tentando em 10s...")
-                    time.sleep(10)
-            else:
+                    # [NEW] Persistir episódio RL após ordem enviada
+                    if rl_repo:
+                        try:
+                            episode_id = str(uuid.uuid4())
+                            episode = {
+                                "episode_id": episode_id,
+                                "timestamp": datetime.now(),
+                                "source": "RL_AGENT_V5000",
+                                "win_price": preco_atual,
+                                "win_open_price": preco_aberto,
+                                "action": acao_str.upper(),
+                                "symbol": SIMBOLO,
+                                "ciclo": ciclo,
+                            }
+                            rl_repo.save_episode(episode)
+                            logger.info(f"[RL] Episódio persistido: {episode_id[:8]}...")
+                        except Exception as e:
+                            logger.warning(f"[RL] Erro ao persistir: {e}")
                 logger.info("Sinal AGUARDAR. Proxima em 2 minutos.")
                 time.sleep(120)
 
@@ -261,6 +293,7 @@ if __name__ == "__main__":
         logger.info("Inicializando...")
         inicializar_adaptador_mt5()
         inicializar_agente_rl()
+        inicializar_rl_repo()  # [NEW] Inicializar repositório RL
 
         loop_operacao()
 
