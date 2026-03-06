@@ -496,6 +496,12 @@ def modificar_sl_ordem(ticket: int, novo_sl: float) -> bool:
             logger.warning(f"[PROTEÇÃO] Posição #{ticket} não encontrada")
             return False
 
+        # Verificação: evitar modificar se o SL já está no valor desejado (tolerância 0.1)
+        current_sl = float(position.sl) if position.sl else 0.0
+        if abs(float(novo_sl) - current_sl) < 0.1:
+            logger.debug(f"[PROTEÇÃO] SL do ticket {ticket} já está em {current_sl:.2f}. Nenhuma modif necessária")
+            return True
+
         # Prepa requisicao para modificação
         request = {
             'action': mt5_adapter._mt5.TRADE_ACTION_MODIFY,
@@ -641,11 +647,12 @@ def proteger_lucro_trade() -> None:
             # Level 1: 25% de lucro → Move SL para break-even
             if percent_tp > 25:
                 novo_sl = entry_price
-                if side == 0 and novo_sl > sl:  # BUY: novo SL > SL antigo
+                # Tolerância: não modificar se diferença < 0.5 pontos (evita "Invalid request")
+                if side == 0 and novo_sl > sl + 0.5:  # BUY: novo SL > SL antigo + tolerância
                     logger.info(f"[PROTEÇÃO] Posição #{ticket} em +{percent_tp:.1f}% de lucro. "
                                f"Movendo SL para break-even ({novo_sl:.2f})")
                     modificar_sl_ordem(ticket, novo_sl)
-                elif side == 1 and novo_sl < sl:  # SELL: novo SL < SL antigo
+                elif side == 1 and novo_sl < sl - 0.5:  # SELL: novo SL < SL antigo - tolerância
                     logger.info(f"[PROTEÇÃO] Posição #{ticket} em +{percent_tp:.1f}% de lucro. "
                                f"Movendo SL para break-even ({novo_sl:.2f})")
                     modificar_sl_ordem(ticket, novo_sl)
@@ -662,13 +669,13 @@ def proteger_lucro_trade() -> None:
                 trailing_distance = 50  # 50 pontos de trailing
                 if side == 0:  # BUY
                     novo_sl = current_price - trailing_distance
-                    if novo_sl > sl:
+                    if novo_sl > sl + 0.5:  # Tolerância: diferença mínima 0.5 pontos
                         logger.info(f"[PROTEÇÃO] Posição #{ticket} em +{percent_tp:.1f}% de lucro. "
                                    f"Ativando trailing stop (SL={novo_sl:.2f})")
                         modificar_sl_ordem(ticket, novo_sl)
                 else:  # SELL
                     novo_sl = current_price + trailing_distance
-                    if novo_sl < sl:
+                    if novo_sl < sl - 0.5:  # Tolerância: diferença mínima 0.5 pontos
                         logger.info(f"[PROTEÇÃO] Posição #{ticket} em +{percent_tp:.1f}% de lucro. "
                                    f"Ativando trailing stop (SL={novo_sl:.2f})")
                         modificar_sl_ordem(ticket, novo_sl)
