@@ -12,8 +12,9 @@
 
 | Componente | Status | % Completo | Próxima Ação |
 |-----------|--------|-----------|-------------|
-| **AC1: Signal Generation** | ✅ PRODUCTION READY | 100% | Em uso pelo AC2 |
-| **AC2: Signal Persistence** | ✅ PRODUCTION READY | 100% | AC3 integration pronta |
+| **AC1: Signal Generation** | ✅ PRODUCTION READY | 100% | Alimenta AC2 |
+| **AC2: Signal Persistence** | ✅ PRODUCTION READY | 100% | Alimenta AC3 |
+| **AC3: Signal Tracking** | ✅ PRODUCTION READY | 100% | Integrado AC1→AC2→AC3 |
 | **Phase 6 Integration** | ✅ COMPLETO | 100% | P0-1 REST API Integrado |
 | **P0-1 REST API Gateway** | ✅ COMPLETO | 100% | Testes E2E Agente |
 | **Sprint 1 Tasks** | ✅ COMPLETO | 100% | Gate 1 Validation |

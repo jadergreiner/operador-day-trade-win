@@ -100,6 +100,16 @@ classDiagram
         +detect_reversal(candles: List) bool
     }
 
+    class SignalTracker {
+        -db_path: str
+        -connection: sqlite3.Connection
+        +link_signal_to_trade(signal_id: str, trade_id: int) bool
+        +update_signal_outcome(signal_id: str, outcomes: Dict) SignalOutcome
+        +mark_signal_missed(signal_id: str, expiration_time: datetime) bool
+        +get_open_signals(symbol: str, max_age: int) List~Dict~
+        +calculate_metrics(symbol: str, date_range: Tuple) SignalMetrics
+    }
+
     class SMCConfluence {
         -swing_highs: List~float~
         -swing_lows: List~float~
@@ -245,8 +255,7 @@ classDiagram
     }
 
     %% Relationships
-    SignalGenerator --|> SignalPersistence: "AC1→AC2: persist signals"
-    SignalPersistence --|> Repository: "usa SQLite"
+    SignalGenerator --|> SignalPersistence: "AC1→AC2: persist signals"    SignalPersistence --|> SignalTracker: "AC2->AC3: track lifecycle"    SignalPersistence --|> Repository: "usa SQLite"
     MT5Adapter --|> IntraDayLearner: "usa silent_register"
     DataPipeline --|> Repository: "persiste"
     MLModels --|> TechnicalAnalysis: "complementam"

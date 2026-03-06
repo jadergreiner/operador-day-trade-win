@@ -165,7 +165,15 @@ Ver [CODING_STANDARDS.md](CODING_STANDARDS.md#11-scripts---padrão-de-localizaç
   - Arquivo: `src/application/signal_persistence.py` (872 LOC com market_context_json)
   - Testes: 8/8 PASSED (100%, 9.62s total, doc: `AC2_SIGNAL_PERSISTENCE_IMPLEMENTATION.md`)
   - Método de deserialização: JSON ↔ MarketContext (bidirecional, com error handling)
-  - Integração: AC1 → AC2 → AC3 pipeline validado
+
+- **AC3: Signal Tracking (Lifecycle Management)** ✅ PRODUCTION READY (05/03/2026)
+  - Rastreamento completo do ciclo de vida de sinais desde geração até fechamento
+  - Linkagem de sinais gerados (AC1) a trades executadas
+  - Atualização de outcomes com P&L, duração, classificação (winner/loser/whipsaw/missed)
+  - Cálculo de métricas agregadas: win rate, profit factor, recovery factor
+  - Arquivo: `src/application/signal_tracker.py` (661 LOC, type hints 100%)
+  - Testes: 9/9 PASSED (100%, 1.49s total, incluindo AC1→AC2→AC3 integration)
+  - Integração: AC1 → AC2 → AC3 pipeline completo validado
 - **MT5Adapter**: Interface com MetaTrader 5 para captura de dados
 - **DataPipeline**: Processamento, limpeza e normalização de dados
 - **Repository Pattern**: Abstração de persistência
@@ -175,7 +183,7 @@ Ver [CODING_STANDARDS.md](CODING_STANDARDS.md#11-scripts---padrão-de-localizaç
 
 ### 2. Analysis Layer (Camada de Análise)
 
-**Responsabilidade**: Análise técnica, modelos preditivos e geração de sinais.
+**Responsabilidade**: Análise técnica, modelos preditivos, geração de sinais e rastreamento.
 
 **Componentes**:
 - **AC1: Signal Generation (M5 Pattern Detection)** ✅ PRODUCTION READY (05/03/2026)

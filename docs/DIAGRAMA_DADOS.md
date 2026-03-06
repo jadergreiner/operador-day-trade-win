@@ -13,6 +13,7 @@ erDiagram
     MARKET_DATA ||--o{ SIGNALS : generates
     MARKET_DATA ||--o{ FEATURES : contains
     SIGNALS ||--o{ DECISIONS : uses
+    SIGNALS ||--o{ TRADES : linked_to
     FEATURES ||--o{ PREDICTIONS : uses
     PREDICTIONS ||--o{ DECISIONS : drives
     DECISIONS ||--o{ TRADES : creates

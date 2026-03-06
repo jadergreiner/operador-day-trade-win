@@ -780,7 +780,7 @@ class SignalPersistence:
 
     def _row_to_signal(self, row: sqlite3.Row) -> Signal:
         """AC2: Converte sqlite3.Row para objeto Signal com market_context desserializado."""
-        
+
         # Desserializar market_context
         market_context_json = row["market_context_json"] if "market_context_json" in row.keys() else None
         market_context = self._deserialize_market_context(market_context_json)

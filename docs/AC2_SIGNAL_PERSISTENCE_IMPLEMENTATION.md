@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS signals (
 def _serialize_market_context(self, market_context: Optional[MarketContext]) -> str:
     """
     AC2: Serializes MarketContext to JSON string for DB storage.
-    
+
     Converts 8 market context fields into JSON:
     {
         "rsi": 65.5,
@@ -63,7 +63,7 @@ def _serialize_market_context(self, market_context: Optional[MarketContext]) -> 
         "trend_direction": "UP",
         "last_close": 123.45
     }
-    
+
     Returns: json.dumps({}) if context is None
     """
 ```
@@ -73,7 +73,7 @@ def _serialize_market_context(self, market_context: Optional[MarketContext]) -> 
 def _deserialize_market_context(self, json_str: Optional[str]) -> Optional[MarketContext]:
     """
     AC2: Deserializes JSON string back to MarketContext object.
-    
+
     Returns: MarketContext object or None if invalid
     """
 ```
@@ -84,16 +84,16 @@ Now saves **market_context_json**:
 def insert(self, signal: Signal) -> bool:
     """
     AC2: Persist signal to database with market context.
-    
+
     Args:
         signal: Signal object with market_context from AC1
-        
+
     Returns:
         True if successful, False if duplicate/error
     """
     # Serialize market context
     market_context_json = self._serialize_market_context(signal.market_context)
-    
+
     # INSERT with market_context_json
     cursor.execute("""
         INSERT INTO signals (
@@ -110,7 +110,7 @@ Now deserializes **market_context_json**:
 def _row_to_signal(self, row: sqlite3.Row) -> Signal:
     """
     AC2: Convert SQLite row to Signal with market_context.
-    
+
     Deserializes market_context_json back to MarketContext object.
     """
     market_context = self._deserialize_market_context(
@@ -173,7 +173,7 @@ CREATE TABLE signals (
     outcome_type TEXT,                           -- WINNING|WHIPSAW|MISSED
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     closed_at DATETIME,
-    
+
     FOREIGN KEY(outcome_trade_id) REFERENCES trades(id),
     CHECK(signal_type IN ('BUY', 'SELL')),
     UNIQUE(timestamp, symbol, signal_type)
