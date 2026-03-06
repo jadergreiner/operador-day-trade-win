@@ -15,6 +15,8 @@
 | **AC1: Signal Generation** | ✅ PRODUCTION READY | 100% | Alimenta AC2 |
 | **AC2: Signal Persistence** | ✅ PRODUCTION READY | 100% | Alimenta AC3 |
 | **AC3: Signal Tracking** | ✅ PRODUCTION READY | 100% | Integrado AC1→AC2→AC3 |
+| **AC4: BDI Decision Filter** | ✅ PRODUCTION READY | 100% | 16 testes, gates risk |
+| **AC5: Trade Executor** | ✅ PRODUCTION READY | 100% | SL/TP calc, order execution |
 | **Phase 6 Integration** | ✅ COMPLETO | 100% | P0-1 REST API Integrado |
 | **P0-1 REST API Gateway** | ✅ COMPLETO | 100% | Testes E2E Agente |
 | **Sprint 1 Tasks** | ✅ COMPLETO | 100% | Gate 1 Validation |
