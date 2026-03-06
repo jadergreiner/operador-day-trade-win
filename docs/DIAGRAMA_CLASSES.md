@@ -27,6 +27,17 @@ classDiagram
     }
 
     %% Data Layer
+    class SignalPersistence {
+        -db_path: str
+        -connection: sqlite3.Connection
+        +insert(signal: Signal) bool
+        +_serialize_market_context(context: MarketContext) str
+        +_deserialize_market_context(json_str: str) MarketContext
+        +_row_to_signal(row: sqlite3.Row) Signal
+        +get_signals_by_symbol(symbol: str) List~Signal~
+        +get_signals_by_date_range(start: datetime, end: datetime) List~Signal~
+    }
+
     class MT5Adapter {
         -terminal_path: str
         -account_login: int
@@ -61,6 +72,17 @@ classDiagram
     }
 
     %% Analysis Layer
+    class SignalGenerator {
+        -smc_config: SMCConfig
+        -market_context: MarketContext
+        +detect_bos(candles: List) List~Signal~
+        +detect_choch(candles: List) List~Signal~
+        +detect_fvg(candles: List) List~Signal~
+        +calculate_smc_score(detector_type: str) float
+        +generate_signal(signal_type: str, context: MarketContext) Signal
+        +validate_signal_confluence() bool
+    }
+
     class MLModels {
         -classifier: XGBClassifier
         -regressor: XGBRegressor
@@ -223,6 +245,8 @@ classDiagram
     }
 
     %% Relationships
+    SignalGenerator --|> SignalPersistence: "AC1→AC2: persist signals"
+    SignalPersistence --|> Repository: "usa SQLite"
     MT5Adapter --|> IntraDayLearner: "usa silent_register"
     DataPipeline --|> Repository: "persiste"
     MLModels --|> TechnicalAnalysis: "complementam"
@@ -256,6 +280,7 @@ classDiagram
 
 | Classe | Responsabilidade | Localização |
 |--------|-----------------|-------------|
+| **SignalPersistence** | AC2: Persistência de sinais com market_context_json em SQLite | `src/application/signal_persistence.py` (872 LOC) |
 | **MT5Adapter** | Interface com MetaTrader 5, validação de isolamento (3 camadas) | `src/infrastructure/providers/mt5_adapter.py` |
 | **DataPipeline** | Processamento de candles, normalização de features | `src/data/pipeline.py` |
 | **Repository** | Persistência em SQLite com pattern Repository | `src/data/repository.py` |
@@ -264,6 +289,7 @@ classDiagram
 
 | Classe | Responsabilidade | Localização |
 |--------|-----------------|-------------|
+| **SignalGenerator** | AC1: Geração de sinais M5 com padrões SMC (BOS, CHoCH, FVG) | `src/domain/signal_generator.py` (200+ LOC) |
 | **MLModels** | Classificação (XGBoost), Regressão, Volatilidade | `src/ml/models.py` |
 | **TechnicalAnalysis** | Indicadores técnicos (RSI, MACD, Bollinger) | `src/analysis/technical.py` |
 | **SMCConfluence** | Smart Money Concepts, zonas de Supply/Demand | `src/analysis/smc_confluence.py` |

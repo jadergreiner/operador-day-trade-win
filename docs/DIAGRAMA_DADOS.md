@@ -10,7 +10,9 @@
 
 ```mermaid
 erDiagram
+    MARKET_DATA ||--o{ SIGNALS : generates
     MARKET_DATA ||--o{ FEATURES : contains
+    SIGNALS ||--o{ DECISIONS : uses
     FEATURES ||--o{ PREDICTIONS : uses
     PREDICTIONS ||--o{ DECISIONS : drives
     DECISIONS ||--o{ TRADES : creates
@@ -21,6 +23,7 @@ erDiagram
     RL_EPISODES ||--o{ RL_REWARDS : receives
     DECISIONS ||--o{ AUDIT_LOG : logged
     TRADES ||--o{ AUDIT_LOG : logged
+    SIGNALS ||--o{ AUDIT_LOG : logged
     POSITIONS ||--o{ AUDIT_LOG : logged
     DECISIONS ||--o{ CONFIDENCE_HISTORY : tracks
     DECISIONS ||--o{ PESSIMISM_MODE : controls
@@ -36,6 +39,24 @@ erDiagram
         float close
         float volume
         float spread
+    }
+
+    SIGNALS {
+        int id PK
+        string signal_id UK
+        datetime timestamp
+        string symbol
+        string signal_type
+        float smc_score
+        string smc_detector
+        float entry_price
+        int candle_index
+        string market_context_json
+        float outcome_pnl
+        float outcome_days_open
+        string outcome_type
+        datetime created_at
+        datetime closed_at
     }
 
     FEATURES {
@@ -185,7 +206,59 @@ erDiagram
 
 ---
 
+## 🎯 Foundation Layer: AC1 & AC2 (Signal Generation & Persistence) ✅ NEW (05/03/2026)
+
+### AC1: Signal Generation (M5 Pattern Detection)
+
+**Responsabilidade**: Gerar sinais baseados em padrões SMC (BOS, CHoCH, FVG)
+
+**Fluxo**:
+```
+MARKET_DATA (M5 candles)
+  └─ SignalGenerator (AC1)
+     ├─ detect_bos() → Break of Structure
+     ├─ detect_choch() → Change of Character
+     ├─ detect_fvg() → Fair Value Gap
+     └─ Output: Signal {signal_type, smc_score, market_context}
+```
+
+### AC2: Signal Persistence (Market Context JSON)
+
+**Responsabilidade**: Persistir sinais com contexto completo em JSON
+
+**Fluxo**:
+```
+Signal (AC1)
+  └─ SignalPersistence (AC2)
+     ├─ _serialize_market_context() → JSON
+     └─ INSERT INTO signals (market_context_json)
+```
+
+**Campos SIGNALS**:
+- `signal_id`: UUID (rastreamento global)
+- `market_context_json`: {"rsi": 65.5, "atr": 45.2, ...} (8 campos)
+- `outcome_type`: WINNING|WHIPSAW|MISSED|OPEN
+- Índices: timestamp, symbol_timestamp, outcome_type
+
+**Pipeline**: AC1 → AC2 (persistence) → AC3 (tracking)
+
+---
+
 ## 📈 Relacionamentos Detalhados
+
+### 0. MARKET_DATA generates SIGNALS (AC1→AC2)
+
+**Relação**: N:1 (Múltiplos candles geram sinais)
+
+```
+MARKET_DATA [100 candles M5]
+  └─ SIGNALS [AC1 detected + AC2 persisted]
+     ├─ signal_id: "SIG-001"
+     ├─ market_context_json: '{"rsi": 65.5, ...}'
+     └─ outcome_type: "OPEN"
+```
+
+---
 
 ### 1. MARKET_DATA contain FEATURES
 
