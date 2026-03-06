@@ -8,7 +8,26 @@
 
 **Versão**: v7.0 - Refatorada como Lista de Tarefas Entregáveis
 
-**📌 LAST UPDATE (06/03/2026 - AC1 PRODUCTION READY + FULL AC1→AC6 PIPELINE):**
+**📌 LAST UPDATE (06/03/2026 - AGENTE RL + SETUP PRODUCAO):**
+
+**✅ P51: Melhoria Agente RL — Treinamento com Dados Reais MT5**
+
+- [06/03] atualiza_docs: treinar_novo_agente_rl + SETUP_PRODUCAO
+  Motivo: Habilitar treinamento do agente RL com dados reais da conta
+  MT5 via credenciais do .env com validacoes completas de conta
+  Docs Afetados: ARCHITECTURE.md, BACKLOG_UNIFICADO.md, SETUP_PRODUCAO.md
+  Lint: ✅ VALIDADO
+
+- ✅ Script: `scripts/treinar_novo_agente_rl.py` — melhorias:
+  - `_carregar_credenciais_mt5()`: lê MT5_LOGIN/PASSWORD/SERVER do .env
+  - `_validar_conta_mt5()`: valida saldo >= R$5.000 e margem livre
+  - `verificar_horario_trading()`: aviso seg-sex 9h-18h (Brasília)
+  - `carregar_dados_mt5()`: login automático, sem senha em logs
+  - Fallback automático para dados sintéticos em qualquer falha
+- ✅ Docs: `docs/SETUP_PRODUCAO.md` criado (instruções passo a passo)
+- ✅ Config: `.env.example` atualizado com variáveis RL_SIMBOLO/RL_N_CANDLES
+- ✅ Architecture: `docs/ARCHITECTURE.md` — Novo Agente RL referenciado
+- ✅ Uso: `python scripts/treinar_novo_agente_rl.py --dados-reais`
 
 **✅ P50: AC1 SignalGenerator Implementation Complete**
 - ✅ Código: src/domain/signal_generator.py (449 LOC) - PRODUCTION READY

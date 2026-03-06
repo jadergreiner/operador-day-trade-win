@@ -22,6 +22,7 @@ do projeto operador-day-trade-win.
 | **MODELAGEM_DADOS.md** | Docs técnica | Evolução DATA_MODELS |
 | **README.md** | Visão geral projeto | Mudança features |
 | **REGRAS_NEGOCIO.md** | Regras não-técnicas | Nova regra lógica |
+| **SETUP_PRODUCAO.md** | Setup MT5 produção | Mudança configuração |
 | **STATUS_ENTREGAS.md** | Cronograma status | Mudança prazos |
 
 ---
@@ -39,6 +40,10 @@ do projeto operador-day-trade-win.
 ### BACKLOG_UNIFICADO.md (🔴 CORE)
 
 - STATUS_ENTREGAS.md, README.md
+
+### SETUP_PRODUCAO.md
+
+- ARCHITECTURE.md, README.md, .env.example
 
 ### REGRAS_NEGOCIO.md
 
@@ -199,7 +204,7 @@ git push origin main
 
 ## ⚡ Instruções para Claude Haiku
 
-**Quando receber "Execute {{prompts/atualiza_docs_refatorado.md}}":**
+**Quando receber "Execute {{prompts/atualiza_docs.md}}":**
 
 1. **PARSE:** Qual documento foi alterado?
    - Procure: ARCHITECTURE, DATA_MODELS, BACKLOG
@@ -252,7 +257,7 @@ git push origin main
 
 ---
 
-**Versão:** 2.0 (Refatorado 07/03/2026)
+**Versão:** 2.1 (Atualizado 06/03/2026 — SETUP_PRODUCAO.md adicionado)
 
 **Lint:** ✅ MD013, MD001, MD002, MD022, MD023
 
