@@ -177,7 +177,7 @@ class TestFullPipelineIntegration:
             trend_direction="UP",
             last_close=99.5,
         )
-        
+
         signal = signal_gen.generate_signal(
             symbol="WINFUT",
             signal_type="BUY",

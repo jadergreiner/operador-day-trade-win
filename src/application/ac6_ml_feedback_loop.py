@@ -210,10 +210,10 @@ class MLFeedbackLoop:
         # Query trade associada
         cursor.execute(
             """
-            SELECT id, exit_price, pnl_realized, created_at 
-            FROM trades 
-            WHERE signal_id = ? 
-            ORDER BY created_at DESC 
+            SELECT id, exit_price, pnl_realized, created_at
+            FROM trades
+            WHERE signal_id = ?
+            ORDER BY created_at DESC
             LIMIT 1
             """,
             (signal_id,),
@@ -276,8 +276,8 @@ class MLFeedbackLoop:
         # Query trades relacionados
         cursor.execute(
             """
-            SELECT pnl_realized, created_at 
-            FROM trades 
+            SELECT pnl_realized, created_at
+            FROM trades
             WHERE signal_id = ? AND created_at >= datetime('now', '-' || ? || ' days')
             ORDER BY created_at DESC
             """,

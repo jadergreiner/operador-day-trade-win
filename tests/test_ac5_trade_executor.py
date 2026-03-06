@@ -264,7 +264,7 @@ class TestRegisterExecution:
         """)
         # Inserir sinal de teste
         cursor.execute("""
-            INSERT INTO signals (signal_id, outcome_trade_id) 
+            INSERT INTO signals (signal_id, outcome_trade_id)
             VALUES ('SIG-REG-001', NULL)
         """)
         executor.connection.commit()
@@ -290,7 +290,7 @@ class TestRegisterExecution:
 
         # Validar que foi registrado no BD
         cursor = executor_with_schema.connection.cursor()
-        cursor.execute("SELECT * FROM trades WHERE signal_id = ?", 
+        cursor.execute("SELECT * FROM trades WHERE signal_id = ?",
                       ("SIG-REG-001",))
         trade = cursor.fetchone()
         assert trade is not None
@@ -326,7 +326,7 @@ class TestExecuteTrade:
             )
         """)
         cursor.execute(
-            "INSERT INTO signals (signal_id) VALUES (?)", 
+            "INSERT INTO signals (signal_id) VALUES (?)",
             ("SIG-EXEC-001",)
         )
         executor.connection.commit()
@@ -429,7 +429,7 @@ class TestAC5Integration:
             )
         """)
         cursor.execute(
-            "INSERT INTO signals (signal_id) VALUES (?)", 
+            "INSERT INTO signals (signal_id) VALUES (?)",
             ("SIG-PIPE-001",)
         )
         executor.connection.commit()

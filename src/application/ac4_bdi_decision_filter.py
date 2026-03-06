@@ -153,7 +153,7 @@ class BDIDecisionFilter:
             cursor = self.connection.cursor()
 
             cursor.execute("""
-                SELECT 
+                SELECT
                     id, signal_id, timestamp, symbol, signal_type,
                     smc_score, smc_detector, entry_price,
                     market_context_json, status, outcome_trade_id
@@ -396,7 +396,7 @@ class BDIDecisionFilter:
             cursor = self.connection.cursor()
 
             cursor.execute("""
-                SELECT 
+                SELECT
                     COUNT(*) as total_decisions,
                     SUM(CASE WHEN decision_type = 'EXECUTE' THEN 1 ELSE 0 END)
                         as executed,

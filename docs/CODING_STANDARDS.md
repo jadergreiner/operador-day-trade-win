@@ -631,7 +631,7 @@ scripts/
 Este módulo exemplifica as melhores práticas descritas acima:
 
 **Padrões Implementados:**
-- ✅ **SOLID**: 
+- ✅ **SOLID**:
   - Single Responsibility: Cada método detecta um padrão SMC específico
   - Open/Closed: Fácil adicionar novos detectores sem modificar classe base
   - Liskov: Signal e Candle são value objects que substituem dados brutos
@@ -684,7 +684,7 @@ def generate_signal(
 ) -> Signal:
     """
     AC1.4: Generates signal with full market context.
-    
+
     Returns Signal dataclass with UUID and timestamp.
     """
     return Signal(

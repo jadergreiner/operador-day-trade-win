@@ -87,14 +87,14 @@ class TestCorrelateSignalToOutcome:
             )
             """
         )
-        
+
         # Insert test data
         signal_created = datetime.now()
         cursor.execute(
             "INSERT INTO signals VALUES (?, ?, ?, ?)",
             ("SIG-CORR-001", "WINFUT", 100.0, signal_created.isoformat())
         )
-        
+
         trade_created = datetime.now()
         cursor.execute(
             "INSERT INTO trades VALUES (?, ?, ?, ?, ?)",
@@ -121,7 +121,7 @@ class TestCorrelateSignalToOutcome:
         cursor = loop.connection.cursor()
         cursor.execute("CREATE TABLE signals (signal_id TEXT, symbol TEXT, entry_price REAL, created_at DATETIME)")
         cursor.execute("CREATE TABLE trades (id INTEGER, signal_id TEXT, exit_price REAL, pnl_realized REAL, created_at DATETIME)")
-        
+
         cursor.execute(
             "INSERT INTO signals VALUES (?, ?, ?, ?)",
             ("SIG-LOSS-001", "WINFUT", 100.0, datetime.now().isoformat())
@@ -164,7 +164,7 @@ class TestCalculateSignalStrength:
         cursor = loop.connection.cursor()
         cursor.execute("CREATE TABLE signals (signal_id TEXT PRIMARY KEY)")
         cursor.execute("CREATE TABLE trades (signal_id TEXT, pnl_realized REAL, created_at DATETIME)")
-        
+
         # Insert winning and losing trades
         pnls = [100, -50, 200, 150, -30, 120]
         now = datetime.now()
@@ -255,7 +255,7 @@ class TestGenerateTrainingLabel:
         cursor = loop.connection.cursor()
         cursor.execute("CREATE TABLE signals (signal_id TEXT PRIMARY KEY)")
         cursor.execute("CREATE TABLE trades (signal_id TEXT, pnl_realized REAL, created_at DATETIME)")
-        
+
         cursor.execute("INSERT INTO signals VALUES (?)", ("SIG-LABEL-001",))
         for pnl in [100, 150, 120]:  # All winning
             cursor.execute(
@@ -278,7 +278,7 @@ class TestGenerateTrainingLabel:
         cursor = loop.connection.cursor()
         cursor.execute("CREATE TABLE signals (signal_id TEXT PRIMARY KEY)")
         cursor.execute("CREATE TABLE trades (signal_id TEXT, pnl_realized REAL, created_at DATETIME)")
-        
+
         cursor.execute("INSERT INTO signals VALUES (?)", ("SIG-LABEL-002",))
         cursor.execute(
             "INSERT INTO trades VALUES (?, ?, ?)",
@@ -299,7 +299,7 @@ class TestGenerateTrainingLabel:
         cursor = loop.connection.cursor()
         cursor.execute("CREATE TABLE signals (signal_id TEXT PRIMARY KEY)")
         cursor.execute("CREATE TABLE trades (signal_id TEXT, pnl_realized REAL, created_at DATETIME)")
-        
+
         cursor.execute("INSERT INTO signals VALUES (?)", ("SIG-LABEL-003",))
         cursor.execute(
             "INSERT INTO trades VALUES (?, ?, ?)",
@@ -427,20 +427,20 @@ class TestAC6Integration:
             )
             """
         )
-        
+
         # Insert data
         signal_created = datetime.now()
         cursor.execute(
             "INSERT INTO signals VALUES (?, ?, ?, ?, ?)",
             ("SIG-PIPE-001", "WINFUT", 100.0, 1, signal_created.isoformat())
         )
-        
+
         trade_created = datetime.now()
         cursor.execute(
             "INSERT INTO trades VALUES (?, ?, ?, ?, ?)",
             (1, "SIG-PIPE-001", 105.0, 500.0, trade_created.isoformat())
         )
-        
+
         loop.connection.commit()
 
         # 1. Correlate signal → outcome

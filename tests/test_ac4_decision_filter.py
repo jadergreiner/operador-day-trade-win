@@ -84,11 +84,11 @@ class TestGetSignalsForDecision:
         # Inserir 3 sinais (2 OPEN, 1 LINKED)
         cursor.execute("""
             INSERT INTO signals VALUES
-            (1, 'SIG-001', '2026-03-05 10:00:00', 'WINFUT', 'BUY', 1.5, 
+            (1, 'SIG-001', '2026-03-05 10:00:00', 'WINFUT', 'BUY', 1.5,
              'BOS', 100.0, '{}', 'OPEN', NULL),
-            (2, 'SIG-002', '2026-03-05 10:05:00', 'WINFUT', 'SELL', -2.0, 
+            (2, 'SIG-002', '2026-03-05 10:05:00', 'WINFUT', 'SELL', -2.0,
              'CHoCH', 100.5, '{}', 'OPEN', NULL),
-            (3, 'SIG-003', '2026-03-05 10:10:00', 'WINFUT', 'BUY', 0.5, 
+            (3, 'SIG-003', '2026-03-05 10:10:00', 'WINFUT', 'BUY', 0.5,
              'FVG', 100.2, '{}', 'LINKED', 1)
         """)
         filter_obj.connection.commit()
@@ -157,7 +157,7 @@ class TestEvaluateBDIContext:
         assert isinstance(bdi_context, BDIContext)
         assert bdi_context.pattern_detected == "BOS"
         assert bdi_context.confidence_score > 0
-        assert bdi_context.volatility_level in ("LOW", "NORMAL", "HIGH", 
+        assert bdi_context.volatility_level in ("LOW", "NORMAL", "HIGH",
                                                   "EXTREME")
 
     def test_evaluate_bdi_context_low_score(self, tmp_path):

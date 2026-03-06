@@ -505,7 +505,7 @@ class TradeExecutor:
             cursor = self.connection.cursor()
 
             cursor.execute("""
-                SELECT 
+                SELECT
                     COUNT(*) as total_trades,
                     SUM(CASE WHEN status = 'OPEN' THEN 1 ELSE 0 END) as open_trades,
                     SUM(CASE WHEN status = 'CLOSED' THEN 1 ELSE 0 END) as closed_trades,
