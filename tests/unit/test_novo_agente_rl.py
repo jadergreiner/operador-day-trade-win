@@ -792,3 +792,167 @@ class TestPipelineTreinamentoRL:
         assert "config_ambiente" in dados
         assert "config_agente" in dados
         assert "metricas_treino" in dados
+
+
+# ---------------------------------------------------------------------------
+# Testes das funções de integração MT5
+# ---------------------------------------------------------------------------
+
+
+class TestCarregarCredenciaisMt5:
+    """Testes de _carregar_credenciais_mt5() sem conexão real ao MT5."""
+
+    def test_levanta_erro_sem_variaveis(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Deve levantar ValueError quando vars de ambiente ausentes."""
+        import scripts.treinar_novo_agente_rl as mod
+
+        monkeypatch.delenv("MT5_LOGIN", raising=False)
+        monkeypatch.delenv("MT5_PASSWORD", raising=False)
+        monkeypatch.delenv("MT5_SERVER", raising=False)
+
+        with pytest.raises(ValueError, match="MT5_LOGIN"):
+            mod._carregar_credenciais_mt5()
+
+    def test_levanta_erro_login_nao_numerico(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Deve levantar ValueError quando MT5_LOGIN não é número."""
+        import scripts.treinar_novo_agente_rl as mod
+
+        monkeypatch.setenv("MT5_LOGIN", "nao_numerico")
+        monkeypatch.setenv("MT5_PASSWORD", "senha")
+        monkeypatch.setenv("MT5_SERVER", "servidor")
+
+        with pytest.raises(ValueError, match="MT5_LOGIN deve ser numérico"):
+            mod._carregar_credenciais_mt5()
+    def test_retorna_dict_correto_com_credenciais_validas(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Deve retornar dict com login int, senha e servidor."""
+        import scripts.treinar_novo_agente_rl as mod
+
+        monkeypatch.setenv("MT5_LOGIN", "123456")
+        monkeypatch.setenv("MT5_PASSWORD", "minha_senha")
+        monkeypatch.setenv("MT5_SERVER", "Clear MT5 - Live")
+
+        credenciais = mod._carregar_credenciais_mt5()
+
+        assert credenciais["login"] == 123456
+        assert credenciais["senha"] == "minha_senha"
+        assert credenciais["servidor"] == "Clear MT5 - Live"
+
+    def test_levanta_erro_apenas_login_configurado(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Deve incluir todas as vars ausentes na mensagem de erro."""
+        import scripts.treinar_novo_agente_rl as mod
+
+        monkeypatch.setenv("MT5_LOGIN", "123456")
+        monkeypatch.delenv("MT5_PASSWORD", raising=False)
+        monkeypatch.delenv("MT5_SERVER", raising=False)
+
+        with pytest.raises(ValueError, match="MT5_PASSWORD"):
+            mod._carregar_credenciais_mt5()
+
+
+class TestVerificarHorarioTrading:
+    """Testes de verificar_horario_trading() sem conexão real."""
+
+    def test_fora_do_horario_fim_de_semana(self) -> None:
+        """Sábado e Domingo devem retornar False."""
+        from datetime import datetime, timedelta, timezone
+        from unittest.mock import patch
+        import scripts.treinar_novo_agente_rl as mod
+
+        tz_brasilia = timezone(timedelta(hours=-3))
+        # 2026-03-07 = sábado
+        sabado = datetime(2026, 3, 7, 12, 0, 0, tzinfo=tz_brasilia)
+
+        with patch.object(mod, "_obter_agora", return_value=sabado):
+            assert mod.verificar_horario_trading() is False
+
+    def test_dentro_do_horario_dia_util(self) -> None:
+        """Segunda às 10h deve retornar True."""
+        from datetime import datetime, timedelta, timezone
+        from unittest.mock import patch
+        import scripts.treinar_novo_agente_rl as mod
+
+        tz_brasilia = timezone(timedelta(hours=-3))
+        # 2026-03-09 = segunda-feira
+        segunda = datetime(2026, 3, 9, 10, 0, 0, tzinfo=tz_brasilia)
+
+        with patch.object(mod, "_obter_agora", return_value=segunda):
+            assert mod.verificar_horario_trading() is True
+
+    def test_fora_do_horario_antes_abertura(self) -> None:
+        """Segunda às 8h deve retornar False (antes das 9h)."""
+        from datetime import datetime, timedelta, timezone
+        from unittest.mock import patch
+        import scripts.treinar_novo_agente_rl as mod
+
+        tz_brasilia = timezone(timedelta(hours=-3))
+        segunda = datetime(2026, 3, 9, 8, 30, 0, tzinfo=tz_brasilia)
+
+        with patch.object(mod, "_obter_agora", return_value=segunda):
+            assert mod.verificar_horario_trading() is False
+
+    def test_fora_do_horario_apos_fechamento(self) -> None:
+        """Segunda às 19h deve retornar False (após as 18h)."""
+        from datetime import datetime, timedelta, timezone
+        from unittest.mock import patch
+        import scripts.treinar_novo_agente_rl as mod
+
+        tz_brasilia = timezone(timedelta(hours=-3))
+        segunda = datetime(2026, 3, 9, 19, 0, 0, tzinfo=tz_brasilia)
+
+        with patch.object(mod, "_obter_agora", return_value=segunda):
+            assert mod.verificar_horario_trading() is False
+
+
+class TestCarregarDadosMt5SemConexao:
+    """Testes de carregar_dados_mt5() sem MT5 instalado."""
+
+    def test_retorna_none_sem_pacote_mt5(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Deve retornar None quando MetaTrader5 não está instalado."""
+        import builtins
+        from types import ModuleType
+        import scripts.treinar_novo_agente_rl as mod
+
+        original_import = builtins.__import__
+
+        def bloquear_mt5(
+            name: str,
+            globals: dict | None = None,
+            locals: dict | None = None,
+            fromlist: tuple = (),
+            level: int = 0,
+        ) -> ModuleType:
+            if name == "MetaTrader5":
+                raise ImportError("Pacote não instalado")
+            return original_import(name, globals, locals, fromlist, level)
+
+        monkeypatch.setattr(builtins, "__import__", bloquear_mt5)
+        resultado = mod.carregar_dados_mt5()
+        assert resultado is None
+
+    def test_retorna_none_com_credenciais_ausentes(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Deve retornar None quando credenciais não configuradas."""
+        import sys
+        from unittest.mock import MagicMock
+        import scripts.treinar_novo_agente_rl as mod
+
+        # Simular MetaTrader5 instalado mas credenciais ausentes
+        mock_mt5 = MagicMock()
+        monkeypatch.setitem(sys.modules, "MetaTrader5", mock_mt5)
+        monkeypatch.delenv("MT5_LOGIN", raising=False)
+        monkeypatch.delenv("MT5_PASSWORD", raising=False)
+        monkeypatch.delenv("MT5_SERVER", raising=False)
+
+        resultado = mod.carregar_dados_mt5()
+        assert resultado is None

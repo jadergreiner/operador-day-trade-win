@@ -201,6 +201,17 @@ Ver [CODING_STANDARDS.md](CODING_STANDARDS.md#11-scripts---padrão-de-localizaç
   - Modelo de Regressão (Previsão de Preço)
   - Modelo de Volatilidade
   - Ensemble (combinação de modelos)
+- **Novo Agente RL (Mini Índice)**: Agente de Reinforcement Learning
+  autônomo para day trade do Mini Índice. Aprende estratégias de trade
+  sem parâmetros pré-definidos. Treinamento com dados reais do MT5
+  via credenciais do `.env`.
+  - Módulos: `src/application/services/novo_agente/` (3 módulos)
+    - `ambiente_trading.py` — Ambiente de simulação RL
+    - `agente_q_learning.py` — Agente com Q-Learning + MLP
+    - `pipeline_treinamento.py` — Pipeline de treino e avaliação
+  - Script: `scripts/treinar_novo_agente_rl.py`
+  - Setup produção: `docs/SETUP_PRODUCAO.md`
+  - Uso: `python scripts/treinar_novo_agente_rl.py --dados-reais`
 - **SMC Confluence Engine (S2-3)**: Motor de confluência de Smart Money Concepts
   entre M1 e M5. Identifica zonas de Supply/Demand e Support/Resistance baseadas
   em cálculo real de Swing High/Low para sinais de "Convicção Máxima".
@@ -1968,10 +1979,12 @@ ARCHITECTURE.md (visão geral)
 | **Qual é o schema SQL?** | MODELAGEM_DADOS.md | DIAGRAMA_DADOS.md, REGRAS_NEGOCIO.md |
 | **Como implementar?** | CODING_STANDARDS.md | ARCHITECTURE.md, CONTRIBUTING.md |
 | **Como contribuir?** | CONTRIBUTING.md | CODING_STANDARDS.md, ARCHITECTURE.md |
+| **Como configurar MT5 produção?** | SETUP_PRODUCAO.md | ARCHITECTURE.md, .env.example |
 
-### Sincronização (Última atualização: 03/03/2026)
+### Sincronização (Última atualização: 06/03/2026)
 
-- ✅ ARCHITECTURE.md: Referências aos documentos complementares agregadas
+- ✅ ARCHITECTURE.md: Novo Agente RL adicionado (Analysis Layer)
+- ✅ SETUP_PRODUCAO.md: Criado com instruções completas MT5
 - ✅ DIAGRAMA_CLASSES.md: 347 linhas, 10 classes mapeadas
 - ✅ REGRAS_NEGOCIO.md: 413 linhas, 13 regras com criticidade
 - ✅ DIAGRAMA_DADOS.md: 447 linhas, 10 entidades com ER

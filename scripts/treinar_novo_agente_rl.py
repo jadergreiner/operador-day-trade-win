@@ -17,11 +17,21 @@ Uso:
     # Treinar com número de episódios customizado
     python scripts/treinar_novo_agente_rl.py --episodios 1000
 
-    # Treinar com dados reais do MT5
-    python scripts/treinar_novo_agente_rl.py --dados-reais
+    # Treinar com dados reais do MT5 (usa credenciais do .env)
+    python scripts/treinar_novo_agente_rl.py --dados-reais --episodios 500
+
+    # Apenas avaliar modelo existente com dados reais
+    python scripts/treinar_novo_agente_rl.py --dados-reais --apenas-avaliar
 
     # Avaliar modelo já treinado
     python scripts/treinar_novo_agente_rl.py --apenas-avaliar
+
+Configuração para dados reais:
+    Configure o arquivo .env na raiz do projeto com:
+        MT5_LOGIN=<numero_da_conta>
+        MT5_PASSWORD=<sua_senha>
+        MT5_SERVER=<nome_do_servidor>
+    Consulte docs/SETUP_PRODUCAO.md para instruções detalhadas.
 """
 
 from __future__ import annotations
@@ -29,9 +39,11 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -89,64 +101,306 @@ CONFIG_AGENTE = ConfiguracaoAgente(
 
 
 # ---------------------------------------------------------------------------
-# Carregamento de dados
+# Carregamento de dados e validações MT5
 # ---------------------------------------------------------------------------
 
+# Saldo mínimo recomendado para operar Mini Índice (R$)
+# Configurável via variável de ambiente RL_SALDO_MINIMO
+_SALDO_MINIMO_BRL: float = float(os.getenv("RL_SALDO_MINIMO", "5000.0"))
 
-def carregar_dados_mt5(simbolo: str = "WIN$N") -> Optional[pd.DataFrame]:
-    """Tenta carregar dados históricos reais do MT5.
+# Horário de funcionamento do Mini Índice (horário de Brasília)
+_HORA_ABERTURA = 9
+_HORA_FECHAMENTO = 18
+
+# Fuso horário de Brasília (UTC-3)
+_TZ_BRASILIA = timezone(timedelta(hours=-3))
+
+
+def _obter_agora() -> datetime:
+    """Retorna o datetime atual no fuso horário de Brasília.
+
+    Função auxiliar isolada para facilitar testes unitários.
+
+    Returns:
+        datetime com timezone de Brasília (UTC-3)
+    """
+    return datetime.now(_TZ_BRASILIA)
+
+
+def _carregar_credenciais_mt5() -> dict[str, Any]:
+    """Carrega credenciais MT5 a partir de variáveis de ambiente.
+
+    Tenta carregar o arquivo .env automaticamente se a biblioteca
+    python-dotenv estiver instalada.
+
+    Returns:
+        Dicionário com chaves 'login' (int), 'senha' e 'servidor'
+
+    Raises:
+        ValueError: Se alguma credencial obrigatória estiver ausente
+    """
+    # Carregar .env automaticamente se disponível
+    try:
+        from dotenv import load_dotenv
+        env_path = ROOT_DIR / ".env"
+        if env_path.exists():
+            load_dotenv(env_path)
+    except ImportError:
+        pass  # python-dotenv é opcional
+
+    login_str = os.getenv("MT5_LOGIN", "").strip()
+    senha = os.getenv("MT5_PASSWORD", "").strip()
+    servidor = os.getenv("MT5_SERVER", "").strip()
+
+    ausentes = []
+    if not login_str:
+        ausentes.append("MT5_LOGIN")
+    if not senha:
+        ausentes.append("MT5_PASSWORD")
+    if not servidor:
+        ausentes.append("MT5_SERVER")
+
+    if ausentes:
+        raise ValueError(
+            "Variáveis de ambiente ausentes no .env: "
+            + ", ".join(ausentes)
+            + ". Consulte docs/SETUP_PRODUCAO.md."
+        )
+
+    if not login_str.isdigit():
+        raise ValueError(
+            "MT5_LOGIN deve ser numérico (somente dígitos). "
+            "Verifique o valor configurado no .env."
+        )
+
+    return {
+        "login": int(login_str),
+        "senha": senha,
+        "servidor": servidor,
+    }
+
+
+def _validar_conta_mt5(mt5: Any) -> dict[str, Any]:
+    """Valida informações da conta MT5 conectada.
+
+    Verifica saldo mínimo e margem disponível para operação
+    segura do Mini Índice.
 
     Args:
-        simbolo: Símbolo do Mini Índice no MT5
+        mt5: Módulo MetaTrader5 após login bem-sucedido
+
+    Returns:
+        Dicionário com tipo_conta, saldo, margem_livre e moeda
+
+    Raises:
+        RuntimeError: Se a conta não atender os critérios mínimos
+    """
+    info = mt5.account_info()
+    if info is None:
+        raise RuntimeError(
+            "Não foi possível obter informações da conta. "
+            "Verifique se o MT5 está conectado corretamente."
+        )
+
+    # ACCOUNT_TRADE_MODE_REAL=0, DEMO=1, CONTEST=2
+    tipo_conta = "REAL" if info.trade_mode == 0 else "DEMO"
+
+    if info.balance < _SALDO_MINIMO_BRL:
+        raise RuntimeError(
+            f"Saldo insuficiente: R${info.balance:,.2f}. "
+            f"Mínimo recomendado: R${_SALDO_MINIMO_BRL:,.2f} "
+            "para operar Mini Índice."
+        )
+
+    margem_minima = _SALDO_MINIMO_BRL * 0.1
+    if info.margin_free < margem_minima:
+        raise RuntimeError(
+            f"Margem livre insuficiente: R${info.margin_free:,.2f}. "
+            "Reduza posições abertas antes de treinar."
+        )
+
+    return {
+        "login": info.login,
+        "servidor": info.server,
+        "tipo_conta": tipo_conta,
+        "saldo": info.balance,
+        "margem_livre": info.margin_free,
+        "moeda": info.currency,
+    }
+
+
+def verificar_horario_trading() -> bool:
+    """Verifica se está dentro do horário de mercado do Mini Índice.
+
+    Mini Índice (WIN): Segunda a Sexta, 9h às 18h (horário de Brasília).
+
+    Returns:
+        True se dentro do horário de trading, False caso contrário
+    """
+    agora = _obter_agora()
+
+    # Verificar se é dia útil (0=Segunda … 4=Sexta, 5=Sab, 6=Dom)
+    if agora.weekday() >= 5:
+        return False
+
+    hora_abertura = agora.replace(
+        hour=_HORA_ABERTURA, minute=0, second=0, microsecond=0
+    )
+    hora_fechamento = agora.replace(
+        hour=_HORA_FECHAMENTO, minute=0, second=0, microsecond=0
+    )
+    return hora_abertura <= agora <= hora_fechamento
+
+
+def carregar_dados_mt5(
+    simbolo: str = "WIN$N",
+    n_candles: int = 5000,
+) -> Optional[pd.DataFrame]:
+    """Carrega dados históricos reais do MT5 com login automático.
+
+    Usa credenciais do arquivo .env para autenticação. Valida saldo,
+    margem e disponibilidade do símbolo antes de baixar os dados.
+
+    Args:
+        simbolo: Símbolo do Mini Índice no MT5 (ex: 'WIN$N')
+        n_candles: Quantidade de candles de 5 minutos a carregar
 
     Returns:
         DataFrame OHLCV ou None se MT5 não disponível
     """
     try:
         import MetaTrader5 as mt5
+    except ImportError:
+        logger.warning(
+            "Pacote MetaTrader5 não instalado. "
+            "Instale com: pip install MetaTrader5"
+        )
+        return None
 
+    # Validar credenciais antes de qualquer conexão
+    try:
+        credenciais = _carregar_credenciais_mt5()
+    except ValueError as erro:
+        logger.warning(
+            "Credenciais MT5 inválidas: %s", erro
+        )
+        return None
+
+    # Aviso sobre horário de mercado (não bloqueante)
+    if not verificar_horario_trading():
+        logger.warning(
+            "Fora do horário de mercado do Mini Índice "
+            "(%dh-%dh, seg-sex, horário de Brasília). "
+            "Os dados históricos ainda serão carregados.",
+            _HORA_ABERTURA,
+            _HORA_FECHAMENTO,
+        )
+
+    try:
+        # Inicializar o terminal MT5
         if not mt5.initialize():
             logger.warning(
-                "MT5 não disponível. Usando dados sintéticos."
+                "Terminal MT5 não encontrado ou não está aberto. "
+                "Erro: %s. "
+                "Verifique se o MT5 está aberto antes de continuar.",
+                mt5.last_error(),
             )
             return None
 
-        # Carrega últimos 5000 candles de 5 minutos
-        barras = mt5.copy_rates_from_pos(
-            simbolo, mt5.TIMEFRAME_M5, 0, 5000
+        # Realizar login com credenciais (sem exibir senha no log)
+        login_ok = mt5.login(
+            credenciais["login"],
+            password=credenciais["senha"],
+            server=credenciais["servidor"],
         )
+
+        if not login_ok:
+            logger.warning(
+                "Falha no login MT5 (conta=%d, servidor=%s). "
+                "Erro: %s. "
+                "Verifique as credenciais no .env.",
+                credenciais["login"],
+                credenciais["servidor"],
+                mt5.last_error(),
+            )
+            mt5.shutdown()
+            return None
+
+        logger.info(
+            "Conectado ao MT5: conta %d em '%s'",
+            credenciais["login"],
+            credenciais["servidor"],
+        )
+
+        # Validar informações da conta
+        try:
+            info_conta = _validar_conta_mt5(mt5)
+        except RuntimeError as erro:
+            logger.warning("Validação de conta falhou: %s", erro)
+            mt5.shutdown()
+            return None
+
+        logger.info(
+            "Conta %s | Saldo: R$%,.2f | Margem livre: R$%,.2f",
+            info_conta["tipo_conta"],
+            info_conta["saldo"],
+            info_conta["margem_livre"],
+        )
+
+        # Verificar se o símbolo está disponível na conta
+        info_simbolo = mt5.symbol_info(simbolo)
+        if info_simbolo is None:
+            logger.warning(
+                "Símbolo '%s' não disponível na conta. "
+                "Adicione-o nos favoritos do MT5 e tente novamente.",
+                simbolo,
+            )
+            mt5.shutdown()
+            return None
+
+        # Garantir que o símbolo está visível no Market Watch
+        if not info_simbolo.visible:
+            if not mt5.symbol_select(simbolo, True):
+                logger.warning(
+                    "Não foi possível selecionar '%s' no MT5.",
+                    simbolo,
+                )
+                mt5.shutdown()
+                return None
+
+        # Carregar candles históricos de 5 minutos
+        barras = mt5.copy_rates_from_pos(
+            simbolo, mt5.TIMEFRAME_M5, 0, n_candles
+        )
+
         mt5.shutdown()
 
         if barras is None or len(barras) == 0:
             logger.warning(
-                "Sem dados para %s. Usando dados sintéticos.", simbolo
+                "Sem dados históricos para '%s'. "
+                "Verifique se o símbolo possui dados no MT5.",
+                simbolo,
             )
             return None
 
         df = pd.DataFrame(barras)
-        df = df.rename(
-            columns={
-                "open": "open",
-                "high": "high",
-                "low": "low",
-                "close": "close",
-                "tick_volume": "volume",
-            }
-        )
+        df = df.rename(columns={"tick_volume": "volume"})
+
         logger.info(
-            "Dados MT5 carregados: %d candles de %s", len(df), simbolo
+            "Dados MT5 carregados: %d candles de '%s'",
+            len(df),
+            simbolo,
         )
         return df[["open", "high", "low", "close", "volume"]]
 
-    except ImportError:
-        logger.warning(
-            "MetaTrader5 não instalado. Usando dados sintéticos."
-        )
-        return None
     except Exception as exc:
         logger.warning(
-            "Erro ao carregar dados MT5: %s. Usando sintéticos.", exc
+            "Erro inesperado ao carregar dados MT5: %s", exc
         )
+        try:
+            mt5.shutdown()
+        except Exception:
+            pass
         return None
 
 
