@@ -128,6 +128,18 @@ try:
 except ImportError:
     INACTIVITY_PENALTY_MANAGER_AVAILABLE = False
     InactivityPenaltyManager = None
+
+# --- P0-URGENT-2: Forced Activation Manager (06/03/2026) ---
+try:
+    from src.application.services.forced_activation_manager import (
+        ForcedActivationManager,
+        ForcedActivationConfig,
+        ForceActivationReason,
+    )
+    FORCED_ACTIVATION_MANAGER_AVAILABLE = True
+except ImportError:
+    FORCED_ACTIVATION_MANAGER_AVAILABLE = False
+    ForcedActivationManager = None
     InactivityConfig = None
 
 # --- Imports movidos para otimização de performance (S1-5) ---
@@ -185,6 +197,10 @@ _intraday_learner: "IntraDayLearner | None" = None
 # P0-URGENT-1: InactivityPenaltyManager modular (06/03/2026)
 # Fornece métricas detalhadas de inatividade para auditoria e backtest
 _inactivity_penalty_manager: "InactivityPenaltyManager | None" = None
+
+# P0-URGENT-2: ForcedActivationManager modular (06/03/2026)
+# Força ativação quando confiança colapsa ou custo operacional ultrapassa limiar
+_forced_activation_manager: "ForcedActivationManager | None" = None
 
 # ── Auditoria de Sessão ──
 _session_id: int | None = None
@@ -4537,6 +4553,28 @@ def main():
     else:
         print(f"  [i] InactivityPenaltyManager: Nao disponivel (modo tecnico apenas)")
 
+    # ── P0-URGENT-2: Inicializa ForcedActivationManager (06/03/2026) ──
+    global _forced_activation_manager
+    if FORCED_ACTIVATION_MANAGER_AVAILABLE and ForcedActivationManager and ForcedActivationConfig:
+        try:
+            forced_config = ForcedActivationConfig(
+                confidence_threshold_low=Decimal("0.35"),  # Crash detectado
+                days_inactive_threshold=3,  # 3 dias sem trade
+                cost_threshold_breach=Decimal("1000"),  # R$ 1.000 de custo
+                relaxed_signal_threshold=Decimal("0.40"),  # Limiar relaxado
+                normal_signal_threshold=Decimal("0.65"),  # Limiar normal
+                activation_window_minutes=60,  # Janela de 60 min
+                confidence_degradation_threshold=Decimal("0.50"),  # Queda de 50%
+            )
+            _forced_activation_manager = ForcedActivationManager(forced_config)
+            _forced_activation_manager.start_session(datetime.now())
+            print(f"  [*] ForcedActivationManager: Ativo (P0-URGENT-2)")
+        except Exception as e:
+            print(f"  [!] ForcedActivationManager: Falha ao inicializar ({str(e)[:40]})")
+            _forced_activation_manager = None
+    else:
+        print(f"  [i] ForcedActivationManager: Nao disponivel (modo tecnico apenas)")
+
     # ── Inicializa Modelo LightGBM (26/02/2026) ──
     global _lgbm_integrator
     if LGBM_INTEGRATOR_AVAILABLE and get_lgbm_integrator:
@@ -4778,6 +4816,31 @@ def main():
                     # Silencia erros (não há entrada de log para falhas do InactivityPenaltyManager)
                     pass
 
+            # P0-URGENT-2: Calcula métricas do ForcedActivationManager modular
+            if _forced_activation_manager:
+                try:
+                    # Extrai dados do InactivityPenaltyManager para validar ativações forçadas
+                    inactivity_stats = _inactivity_penalty_manager.get_inactivity_stats() if _inactivity_penalty_manager else None
+                    days_inactive = inactivity_stats.days_inactive if inactivity_stats else 0
+                    cost_accumulated = inactivity_stats.accumulated_cost if inactivity_stats else Decimal("0")
+                    confidence_current = Decimal(str(result.confidence if hasattr(result, 'confidence') else 0.75))
+                    
+                    # Calcula ativação forçada
+                    should_force, reason, new_threshold = _forced_activation_manager.should_force_activation(
+                        confidence_current=confidence_current,
+                        days_inactive=days_inactive,
+                        cost_accumulated=cost_accumulated,
+                        confidence_24h_ago=None,  # Será melhorado em versões futuras
+                    )
+                    
+                    if should_force:
+                        threshold_pct = float(new_threshold) * 100
+                        print(f"  ⚠️ P0-URGENT-2: FORCED ACTIVATION {reason.value} | "
+                              f"Using relaxed threshold {threshold_pct:.0f}%")
+                except Exception as e:
+                    # Silencia erros (não há entrada de log para falhas do ForcedActivationManager)
+                    pass
+
             # ⚡ IntraDayLearner: Registra motivos de rejeição de HOLDs
             if _intraday_learner and result._rejection_reasons:
                 pattern = _intraday_learner.record_rejection(result._rejection_reasons)
@@ -4838,6 +4901,9 @@ def main():
                                         signal_type=best.direction,
                                         timestamp=datetime.now()
                                     )
+                                # P0-URGENT-2: Registra entrada no ForcedActivationManager modular
+                                if _forced_activation_manager:
+                                    _forced_activation_manager.record_activation_entry(is_forced=False)
                             except Exception as e:
                                 print(f"  ✗ Erro ao logar sinal simulado: {e}")
                         else:
@@ -4879,6 +4945,9 @@ def main():
                                         signal_type=best.direction,
                                         timestamp=datetime.now()
                                     )
+                                # P0-URGENT-2: Registra entrada no ForcedActivationManager modular
+                                if _forced_activation_manager:
+                                    _forced_activation_manager.record_activation_entry(is_forced=False)
                             else:
                                 print(f"  ✗ Falha na execução da ordem")
                         else:
