@@ -49,31 +49,31 @@ class AC1DeduplicationValidator:
     def load_candle_data(self) -> bool:
         """
         Carrega dados de candles para teste.
-        
+
         Usar dataset real ou dados simulados de 17,280 candles (252 dias).
-        
+
         Returns:
             True se sucesso
         """
         logger.info("[LOAD] Simulando 17.280 candles (252 dias × 288 candles/dia)...")
-        
+
         # Simular 17.280 candles com padrões realistas
         import random
-        
+
         base_price = 1250.0
         timestamp = datetime(2025, 1, 1, 9, 0)  # 9:00 BRT
-        
+
         for i in range(17280):
             # Simular movimento de preço com tendência e volatilidade
             trend = 0.1 if i % 100 < 50 else -0.1  # Alternância de tendência
             random_move = random.uniform(-0.5, 0.5)
-            
+
             open_price = base_price + trend + random_move
             close_price = open_price + random.uniform(-0.3, 0.3)
             high_price = max(open_price, close_price) + abs(random.uniform(0, 0.2))
             low_price = min(open_price, close_price) - abs(random.uniform(0, 0.2))
             volume = random.randint(100, 5000)
-            
+
             candle = Candle(
                 timestamp=timestamp,
                 open=open_price,
@@ -82,46 +82,46 @@ class AC1DeduplicationValidator:
                 close=close_price,
                 volume=volume
             )
-            
+
             self.candles.append(candle)
-            
+
             # Incrementar timestamp (5 minutos)
             timestamp += timedelta(minutes=5)
-            
+
             # Update base_price para próxima iteração
             base_price = close_price
-            
+
             if (i + 1) % 2000 == 0:
                 logger.info(f"  Carregados {i + 1}/17280 candles...")
-        
+
         logger.info(f"[LOAD] ✓ {len(self.candles)} candles carregados")
         return True
 
     def run_signal_detection(self) -> Dict[str, int]:
         """
         Executa detecção de sinais com AC1 (com deduplicação).
-        
+
         Returns:
             Dict com counts de sinais por tipo
         """
         logger.info("[DETECT] Executando AC1 com deduplicação...")
-        
+
         # Detectar cada padrão
         bos_detections = self.signal_gen.detect_bos(self.candles)
         choch_detections = self.signal_gen.detect_choch(self.candles)
         fvg_detections = self.signal_gen.detect_fvg(self.candles)
-        
+
         self.all_signals["BOS"] = bos_detections
         self.all_signals["CHoCH"] = choch_detections
         self.all_signals["FVG"] = fvg_detections
-        
+
         total_signals = len(bos_detections) + len(choch_detections) + len(fvg_detections)
-        
+
         logger.info(f"[DETECT] BOS signals: {len(bos_detections)}")
         logger.info(f"[DETECT] CHoCH signals: {len(choch_detections)}")
         logger.info(f"[DETECT] FVG signals: {len(fvg_detections)}")
         logger.info(f"[DETECT] TOTAL signals: {total_signals}")
-        
+
         return {
             "BOS": len(bos_detections),
             "CHoCH": len(choch_detections),
@@ -132,31 +132,31 @@ class AC1DeduplicationValidator:
     def validate_deduplication(self, counts: Dict[str, int]) -> Dict[str, Any]:
         """
         Valida que deduplicação removeu duplicatas.
-        
+
         Esperado:
         - ANTES: 148 sinais totais (70% duplicados)
         - DEPOIS: ~44 sinais únicos
-        
+
         Args:
             counts: Dict com counts de sinais
-            
+
         Returns:
             Dict com resultado da validação
         """
         logger.info("[VALIDATE] Analisando redução de duplicatas...")
-        
+
         total = counts["TOTAL"]
-        
+
         # Esperado: redução de ~148 para ~44 (70% deduplificação)
         expected_before = 148
         expected_after = 44
         expected_reduction = expected_before - expected_after  # ~104
         expected_pct = (expected_reduction / expected_before) * 100  # ~70%
-        
+
         # Calcular redução real
         reduction_from_expected = expected_before - total
         reduction_pct = (reduction_from_expected / expected_before) * 100 if expected_before > 0 else 0
-        
+
         result = {
             "signals_total": total,
             "expected_before_dedup": expected_before,
@@ -170,37 +170,37 @@ class AC1DeduplicationValidator:
                 if total < expected_before else False
             )
         }
-        
+
         if result["dedup_success"]:
             logger.info(f"[VALIDATE] ✓ Deduplificação ATIVA")
             logger.info(f"[VALIDATE] ✓ Redução: {expected_before} → {total} sinais ({reduction_pct:.1f}%)")
         else:
             logger.warning(f"[VALIDATE] ✗ Deduplificação pode não estar funcionando")
             logger.warning(f"[VALIDATE] ✗ Sinais esperados: ~44, obtidos: {total}")
-        
+
         return result
 
     def analyze_signal_distribution(self) -> Dict[str, Any]:
         """
         Analisa distribuição de sinais (BUY vs SELL).
-        
+
         Returns:
             Dict com análise de distribuição
         """
         logger.info("[ANALYZE] Analisando distribuição BUY/SELL...")
-        
+
         buy_count = 0
         sell_count = 0
-        
+
         for pattern_type in ["BOS", "CHoCH", "FVG"]:
             for signal in self.all_signals[pattern_type]:
                 if signal.get("type") == "BUY":
                     buy_count += 1
                 elif signal.get("type") == "SELL":
                     sell_count += 1
-        
+
         total = buy_count + sell_count
-        
+
         result = {
             "buy_signals": buy_count,
             "sell_signals": sell_count,
@@ -208,19 +208,19 @@ class AC1DeduplicationValidator:
             "buy_pct": (buy_count / total * 100) if total > 0 else 0,
             "sell_pct": (sell_count / total * 100) if total > 0 else 0,
         }
-        
+
         logger.info(f"[ANALYZE] BUY signals: {buy_count} ({result['buy_pct']:.1f}%)")
         logger.info(f"[ANALYZE] SELL signals: {sell_count} ({result['sell_pct']:.1f}%)")
-        
+
         return result
 
-    def generate_report(self, 
+    def generate_report(self,
                        counts: Dict[str, int],
                        dedup_result: Dict[str, Any],
                        distribution: Dict[str, Any]) -> str:
         """
         Gera relatório de validação.
-        
+
         Returns:
             String do relatório
         """
@@ -245,7 +245,7 @@ DEDUPLICATION VALIDATION:
   - Expected before: {dedup_result['expected_before_dedup']} signals
   - Expected after: {dedup_result['expected_after_dedup']} signals
   - Expected reduction: {dedup_result['expected_reduction_pct']:.1f}%
-  
+
   - Actual count: {dedup_result['signals_total']}
   - Actual reduction: {dedup_result['actual_reduction_pct']:.1f}%
   - Status: {'✓ PASS' if dedup_result['dedup_success'] else '✗ FAIL'}
@@ -270,7 +270,7 @@ IMPACT ANALYSIS:
     async def run_validation(self) -> bool:
         """
         Executa validação completa de AC1.deduplicação.
-        
+
         Returns:
             True se validação passou
         """
@@ -278,31 +278,31 @@ IMPACT ANALYSIS:
             # 1. Load data
             if not self.load_candle_data():
                 return False
-            
+
             # 2. Detect signals
             counts = self.run_signal_detection()
-            
+
             # 3. Validate deduplication
             dedup_result = self.validate_deduplication(counts)
-            
+
             # 4. Analyze distribution
             distribution = self.analyze_signal_distribution()
-            
+
             # 5. Generate report
             report = self.generate_report(counts, dedup_result, distribution)
             print(report)
-            
+
             # 6. Save report
             output_file = Path("outputs/ac1_deduplication_validation.txt")
             output_file.parent.mkdir(parents=True, exist_ok=True)
             with open(output_file, "w") as f:
                 f.write(report)
-            
+
             logger.info(f"[REPORT] Relatório salvo em: {output_file}")
-            
+
             # 7. Return success status
             return dedup_result["dedup_success"]
-            
+
         except Exception as e:
             logger.error(f"[ERROR] Validação falhou: {e}")
             import traceback
@@ -315,10 +315,10 @@ async def main():
     logger.info("=" * 70)
     logger.info("AC1 DEDUPLICATION VALIDATION v1.2.5")
     logger.info("=" * 70)
-    
+
     validator = AC1DeduplicationValidator()
     success = await validator.run_validation()
-    
+
     if success:
         logger.info("=" * 70)
         logger.info("✓ DEDUPLICATION VALIDATION PASSED")

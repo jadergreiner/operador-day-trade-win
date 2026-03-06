@@ -175,7 +175,7 @@ class SignalGenerator:
 
             # BOS BUY: Current high > Previous high (depois de pullback)
             # DEDUP: Evita registrar múltiplos sinais se já registrou recentemente
-            if (curr_candle.high > prev_candle.high and 
+            if (curr_candle.high > prev_candle.high and
                     prev_candle.close < prev_candle.open):
                 # Deduplica: só registra se distância >= min_distance da última detecção BUY
                 if last_buy_index is None or (i - last_buy_index) >= min_distance:
@@ -189,7 +189,7 @@ class SignalGenerator:
 
             # BOS SELL: Current low < Previous low (depois de pullback)
             # DEDUP: Evita registrar múltiplos sinais se já registrou recentemente
-            if (curr_candle.low < prev_candle.low and 
+            if (curr_candle.low < prev_candle.low and
                     prev_candle.close > prev_candle.open):
                 # Deduplica: só registra se distância >= min_distance da última detecção SELL
                 if last_sell_index is None or (i - last_sell_index) >= min_distance:

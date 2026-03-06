@@ -54,7 +54,7 @@ class BacktestRealData:
     def __init__(self, symbol: str = "WINFUT", date_target: datetime = None):
         """
         Inicializa backtest.
-        
+
         Args:
             symbol: Símbolo a testar (WINFUT, WIN$N, etc)
             date_target: Data para backtest (default: 04/03/2026)
@@ -75,7 +75,7 @@ class BacktestRealData:
             return False
 
         logger.info(f"[MT5] Conectando ao MetaTrader5...")
-        
+
         if not mt5.initialize():
             logger.error(f"[MT5] Falha ao inicializar: {mt5.last_error()}")
             return False
@@ -88,7 +88,7 @@ class BacktestRealData:
                 logger.info(f"[MT5] ✓ Autenticado como {login}")
             else:
                 logger.warning(f"[MT5] Login falhou, tentando sem autenticação")
-        
+
         # Selecionar símbolo
         selected = mt5.symbol_select(self.symbol, True)
         if not selected:
@@ -103,7 +103,7 @@ class BacktestRealData:
         end_dt = self.date_target.replace(hour=17, minute=30, second=0)
 
         logger.info(f"[MT5] Extraindo candles M5 de {start_dt} a {end_dt}...")
-        
+
         try:
             rates = mt5.copy_rates_range(self.symbol, mt5.TIMEFRAME_M5, start_dt, end_dt)
         except Exception as e:
@@ -437,6 +437,6 @@ Sinal #{idx + 1}
 if __name__ == "__main__":
     # Usar WINFUT como padrão
     symbol = sys.argv[1] if len(sys.argv) > 1 else "WINFUT"
-    
+
     backtest = BacktestRealData(symbol=symbol)
     backtest.run_backtest()

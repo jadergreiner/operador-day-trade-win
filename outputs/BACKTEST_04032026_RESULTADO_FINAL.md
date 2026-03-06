@@ -1,4 +1,4 @@
-**RELATÓRIO BACKTEST - 04/03/2026 COM DADOS REAIS (WINJ26)**  
+**RELATÓRIO BACKTEST - 04/03/2026 COM DADOS REAIS (WINJ26)**
 Execução com AC1.DEDUP (Wave Pattern Deduplication)
 
 ---
@@ -23,7 +23,7 @@ Execução com AC1.DEDUP (Wave Pattern Deduplication)
 
 **DETALHAMENTO SINAL-A-SINAL (DADOS REAIS):**
 
-1. **09:25 - SELL (CHoCH)** 
+1. **09:25 - SELL (CHoCH)**
    - Entrada: $187.330,00
    - TP: $185.310,00 | SL: $187.330,05
    - Resultado: ❌ PERDA -$0,05 (0,00%)

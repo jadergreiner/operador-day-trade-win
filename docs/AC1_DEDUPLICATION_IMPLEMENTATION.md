@@ -1,9 +1,9 @@
 ## AC1 Wave Pattern Deduplication - Implementation Summary
 
-**Status:** ✅ IMPLEMENTED AND VALIDATED  
-**Date:** 06/03/2026  
-**Version:** AC1 v1.2.5  
-**Commit:** 531c715  
+**Status:** ✅ IMPLEMENTED AND VALIDATED
+**Date:** 06/03/2026
+**Version:** AC1 v1.2.5
+**Commit:** 531c715
 
 ---
 
@@ -62,14 +62,14 @@ def detect_bos(self, candles: List[Candle]) -> List[Dict[str, Any]]:
     last_buy_index = None
     last_sell_index = None
     min_distance = 50  # ~4h at M5
-    
+
     for i in range(2, len(candles)):
         if condition_matched:
             # DEDUP: Only register if far enough from last detection
             if last_buy_index is None or (i - last_buy_index) >= min_distance:
                 detections.append({...})
                 last_buy_index = i
-    
+
     return detections
 ```
 
@@ -259,7 +259,7 @@ min_distance=100: Too conservative, misses valid wavechanges
    - Expect: ~30-50 total signals per 252 days
    - Goal: Validate backtest metrics maintained (≥85% capture, <10% FP)
 
-2. **Update Documentation:** 
+2. **Update Documentation:**
    - STATUS_ENTREGAS.md: AC1.DEDUP section
    - docs/AC1_CODE_REVIEW.md: Update with deduplication details
    - INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat: v1.2.5 reference
@@ -318,7 +318,7 @@ min_distance=100: Too conservative, misses valid wavechanges
 
 ---
 
-Generated: 06/03/2026 00:55 UTC  
-Implementation Duration: ~30 minutes  
-Testing Duration: ~25 minutes  
+Generated: 06/03/2026 00:55 UTC
+Implementation Duration: ~30 minutes
+Testing Duration: ~25 minutes
 Total: ~55 minutes from problem identification to production-ready solution
