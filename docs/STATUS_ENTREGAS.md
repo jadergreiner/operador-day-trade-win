@@ -695,27 +695,27 @@ Fold 4: Sharpe=8.89, WR=71.4%, DD=64.25% ⚠️ (melhor, mas > 15%)
 
 ### Próximas Ações (GATE 2 RETEST - Com Timeframe M5)
 
-**Fase 1 (06-07/03): M5 Dataset Collection + Risk Management Upgrade**
+**PASSO 1: M5 Dataset Collection + Risk Management Upgrade**
 - Coletar ~252 dias dados REAIS MT5 (73.776 candles M5)
 - Implementar 3-layer circuit breakers (-3%, -5%, -8%)
 - Look-ahead bias validation (NOVA AC3 M5 spec)
 - Ref: OPERATIVE_BRIEF_BACKTEST_V1_2.md Task 2.2 ACs validam M5
 
-**Fase 2 (08/03): M5 Backtest Execution + Validation**
+**PASSO 2: M5 Backtest Execution + Validation**
 - Re-rodar backtest com 73.776 candles M5 (não H1)
 - Walk-forward validation (simulando ciclo real 2-min)
 - 10-fold cross-validation com dados reais
 - Novo AC: Timing sequence test (confirma 2-min decision cycle)
 - Ref: OPERATIVE_BRIEF_BACKTEST_V1_2.md Task 2.2 + 2.3 (Grid Search)
 
-**Fase 3 (09-10/03): Circuit Breaker + Model Refinement**
+**PASSO 3: Circuit Breaker + Model Refinement**
 - Aplicar circuit breakers nos folds (halt se DD > -8%)
 - Análise SHAP dos erros Fold 0-3 (com M5 data)
 - Retrain com regularization (L1/L2) + M5 features corretas
 - Gate 2 Re-check: DD <15%, σ<30% target (com M5)
 
-**GATE 2 Retest Target:** 08-10/03/2026 (COM TIMEFRAME M5)
-**Timeline para Go-Live:** Se PASS em retest M5 → autoriza 13/03 BETA
+**PRÓXIMO CHECKPOINT:** GATE 2 Retest (COM TIMEFRAME M5)
+**GO-LIVE:** Se PASS em retest M5 → autoriza BETA
 
 ---
 
