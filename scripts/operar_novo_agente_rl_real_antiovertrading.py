@@ -304,8 +304,91 @@ def verificar_confirmacao_sinal(sinal_atual: str, sinal_anterior: str) -> bool:
         return False
 
 
-def enviar_ordem_mt5adapter(acao: str, preco_atual: float, vol: float) -> bool:
-    """Envia ordem via MT5Adapter (com validações)."""
+def calcular_sl_tp_dinamico(dados: pd.DataFrame, acao: str, preco_atual: float, 
+                           lookback_periods: int = 20) -> tuple[float, float]:
+    """Calcula SL/TP dinamicamente baseado em topos/fundos recentes.
+    
+    Args:
+        dados: DataFrame com OHLC
+        acao: "Comprar" ou "Vender"
+        preco_atual: Preço atual de entrada
+        lookback_periods: Número de candles para analisar (padrão 20)
+    
+    Returns:
+        (stop_loss, take_profit) tupla com valores dinâmicos
+    """
+    try:
+        if len(dados) < lookback_periods:
+            # Fallback para valores fixos se não houver dados suficientes
+            if acao == "Comprar":
+                return preco_atual - STOP_LOSS_PONTOS, preco_atual + TAKE_PROFIT_PONTOS
+            else:
+                return preco_atual + STOP_LOSS_PONTOS, preco_atual - TAKE_PROFIT_PONTOS
+        
+        # Analisar últimos N candles
+        recent = dados.tail(lookback_periods)
+        ultimo_topo = recent['high'].max()
+        ultimo_fundo = recent['low'].min()
+        
+        # Margem de segurança (em pontos)
+        margem_seguranca = 20  # 20 pontos de buffer
+        
+        if acao == "Comprar":
+            # Para COMPRA:
+            # TP = último topo (dar um pouco de espaço)
+            # SL = último fundo - margem (evitar ser parado por pico acidental)
+            tp = ultimo_topo + margem_seguranca  # Um pouco acima do topo
+            sl = ultimo_fundo - margem_seguranca  # Um pouco abaixo do fundo
+            
+            # Validar relação risk/reward mínima (pelo menos 1:1.5)
+            reward = tp - preco_atual
+            risk = preco_atual - sl
+            if risk > 0 and reward / risk < 1.5:  # RR < 1.5
+                # Ajustar TP para manter RR = 1.5
+                tp = preco_atual + (risk * 1.5)
+                
+        else:  # "Vender"
+            # Para VENDA:
+            # TP = último fundo (dar um pouco de espaço)
+            # SL = último topo + margem (evitar ser parado por pico acidental)
+            tp = ultimo_fundo - margem_seguranca  # Um pouco abaixo do fundo
+            sl = ultimo_topo + margem_seguranca  # Um pouco acima do topo
+            
+            # Validar relação risk/reward mínima (pelo menos 1:1.5)
+            reward = preco_atual - tp  # Para venda, reward é negativo
+            risk = sl - preco_atual    # Para venda, risk é positivo
+            if risk > 0 and reward / risk < 1.5:  # RR < 1.5
+                # Ajustar TP para manter RR = 1.5
+                tp = preco_atual - (risk * 1.5)
+        
+        # Garantir que SL nunca está do mesmo lado que TP
+        if acao == "Comprar":
+            sl = min(sl, preco_atual - 10)  # SL sempre abaixo do preço
+            tp = max(tp, preco_atual + 10)  # TP sempre acima do preço
+        else:
+            sl = max(sl, preco_atual + 10)  # SL sempre acima do preço
+            tp = min(tp, preco_atual - 10)  # TP sempre abaixo do preço
+        
+        logger.info(f"[DINAMICO] Topos/Fundos últimas {lookback_periods} velas: "
+                   f"Topo={ultimo_topo:.2f}, Fundo={ultimo_fundo:.2f}")
+        logger.info(f"[DINAMICO] SL/TP calculados: SL={sl:.2f}, TP={tp:.2f} "
+                   f"(Risk/Reward = {abs((tp - preco_atual) / (preco_atual - sl)):.2f}:1" 
+                   if acao == "Comprar" else 
+                   f"(Risk/Reward = {abs((preco_atual - tp) / (sl - preco_atual)):.2f}:1")
+        
+        return sl, tp
+        
+    except Exception as e:
+        logger.warning(f"Erro ao calcular SL/TP dinâmico: {e}. Usando valores fixos.")
+        # Fallback para fixos em caso de erro
+        if acao == "Comprar":
+            return preco_atual - STOP_LOSS_PONTOS, preco_atual + TAKE_PROFIT_PONTOS
+        else:
+            return preco_atual + STOP_LOSS_PONTOS, preco_atual - TAKE_PROFIT_PONTOS
+
+
+def enviar_ordem_mt5adapter(acao: str, preco_atual: float, vol: float, dados: Optional[pd.DataFrame] = None) -> bool:
+    """Envia ordem via MT5Adapter (com validações e SL/TP dinâmicos)."""
     global last_trade_time
 
     try:
@@ -314,14 +397,22 @@ def enviar_ordem_mt5adapter(acao: str, preco_atual: float, vol: float) -> bool:
 
         if acao == "Comprar":
             side = OrderSide.BUY
-            sl = preco_atual - STOP_LOSS_PONTOS
-            tp = preco_atual + TAKE_PROFIT_PONTOS
         elif acao == "Vender":
             side = OrderSide.SELL
-            sl = preco_atual + STOP_LOSS_PONTOS
-            tp = preco_atual - TAKE_PROFIT_PONTOS
         else:
             return False
+        
+        # Calcular SL/TP dinamicamente se temos dados
+        if dados is not None and len(dados) >= 20:
+            sl, tp = calcular_sl_tp_dinamico(dados, acao, preco_atual)
+        else:
+            # Fallback para fixos
+            if acao == "Comprar":
+                sl = preco_atual - STOP_LOSS_PONTOS
+                tp = preco_atual + TAKE_PROFIT_PONTOS
+            else:
+                sl = preco_atual + STOP_LOSS_PONTOS
+                tp = preco_atual - TAKE_PROFIT_PONTOS
 
         logger.info(f"[ENVIO] Enviando: {acao} @ {preco_atual} (SL: {sl}, TP: {tp}, Vol: {vol:.3f}%)")
 
@@ -521,7 +612,8 @@ def loop_operacao():
             # 5. Verificar confirmação multi-vela
             if confirmado := verificar_confirmacao_sinal(acao_str, last_signal):
                 # Executar apenas se confirmado E passou todas as validações
-                enviar_ordem_mt5adapter(acao_str, preco_atual, vol)
+                # Passar dados para cálculo dinâmico de SL/TP
+                enviar_ordem_mt5adapter(acao_str, preco_atual, vol, dados=dados)
                 last_signal = acao_str
                 trades_executed_today += 1
                 # Registrar progresso apos trade
