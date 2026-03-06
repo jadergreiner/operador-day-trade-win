@@ -12,6 +12,8 @@
 
 | Componente | Status | % Completo | Próxima Ação |
 |-----------|--------|-----------|-------------|
+| **AC1: Signal Generation** | ✅ PRODUCTION READY | 100% | Em uso pelo AC2 |
+| **AC2: Signal Persistence** | ✅ PRODUCTION READY | 100% | AC3 integration pronta |
 | **Phase 6 Integration** | ✅ COMPLETO | 100% | P0-1 REST API Integrado |
 | **P0-1 REST API Gateway** | ✅ COMPLETO | 100% | Testes E2E Agente |
 | **Sprint 1 Tasks** | ✅ COMPLETO | 100% | Gate 1 Validation |
@@ -28,6 +30,62 @@
 ---
 
 ## 📋 ENTREGAS POR FASE
+
+### Foundation Layer: AC1 & AC2 - Signal Generation & Persistence (27/02-05/03) ✅ COMPLETO
+
+**Status:** 🟢 **PRODUCTION READY - 05/03/2026**
+
+#### AC1: Signal Generation (M5 Pattern Detection) ✅ COMPLETO
+
+**Status:** ✅ **PRODUCTION READY** (05/03/2026 16:00)
+
+**Componentes Entregues:**
+- `src/domain/signal_generator.py` (200+ LOC, type hints 100%)
+- `tests/test_ac1_signal_generation.py` (9 test cases)
+- `docs/AC1_SIGNAL_GENERATION_IMPLEMENTATION.md` (400+ lines)
+- `scripts/demo_signal_generation.py` (validation M5 patterns)
+
+**Features Implementadas:**
+- ✅ Detectores SMC: BOS, CHoCH, FVG (Break of Structure, Change of Character, Fair Value Gap)
+- ✅ Score múltiplo (0-100) com validação de contexto
+- ✅ MarketContext integrado: RSI, ATR, Bollinger, Volume, Spread, Trend, LastClose
+- ✅ Type hints 100%, docstrings 100%
+
+**Quality Metrics:**
+- ✅ Test coverage: 9/9 PASSED (100%)
+- ✅ Code quality: Mypy strict OK
+- ✅ Lint: Pymarkdown OK
+- ✅ Integração: AC1 → AC2 → AC3 pipeline pronto
+
+#### AC2: Signal Persistence (Market Context JSON) ✅ COMPLETO
+
+**Status:** ✅ **PRODUCTION READY** (05/03/2026 17:30)
+
+**Componentes Entregues:**
+- `src/application/signal_persistence.py` (872 LOC com market_context_json)
+- `tests/test_ac2_signal_persistence.py` (8 test cases)
+- `docs/AC2_SIGNAL_PERSISTENCE_IMPLEMENTATION.md` (400+ lines)
+- Banco de dados: SQLite signals table com market_context_json column
+
+**Features Implementadas:**
+- ✅ Serialização de 8 campos MarketContext para JSON
+- ✅ Deserialização JSON → MarketContext (bidirecional)
+- ✅ Storage otimizado com indices (timestamp, symbol_timestamp, outcome_type)
+- ✅ UNIQUE constraints + FK + CHECK constraints
+- ✅ Error handling completo para JSON parsing
+
+**Quality Metrics:**
+- ✅ Test coverage: 8/8 PASSED (100%, 9.62s total)
+- ✅ Integração AC1→AC2: Validado
+- ✅ Serialization: Bidirecional verificado
+- ✅ Type hints: 100%, docstrings: 100%
+
+**AC1 + AC2 Integration:**
+- AC1 gera Signal com MarketContext
+- AC2 serializa para JSON e persiste em DB
+- AC3 pode deserializar e reconstruir Signal completo
+
+---
 
 ### Phase 6: Integration (20/02-26/02) ✅ COMPLETO
 
