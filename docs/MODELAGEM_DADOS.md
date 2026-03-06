@@ -549,8 +549,8 @@ CREATE TABLE decisions (
     CHECK(decision_type IN ('ENTRAR', 'FICAR_DE_FORA')),
     CHECK(ml_confidence >= 0 AND ml_confidence <= 100),
     CHECK(stage_1_correctness IN ('CORRETA', 'ERRADA') OR stage_1_correctness IS NULL),
-    CHECK(stage_2_quality IN ('CORRETO_COM_RAZOES_CERTAS', 'CORRETO_POR_ACASO', 
-                               'ERRADO_MAS_MOTIVADORES_CONFIRMADOS', 'ERRADO_COM_RAZOES_ERRADAS') 
+    CHECK(stage_2_quality IN ('CORRETO_COM_RAZOES_CERTAS', 'CORRETO_POR_ACASO',
+                               'ERRADO_MAS_MOTIVADORES_CONFIRMADOS', 'ERRADO_COM_RAZOES_ERRADAS')
           OR stage_2_quality IS NULL)
 );
 
@@ -609,7 +609,7 @@ CREATE TABLE learning_feedback (
     FOREIGN KEY(decision_id) REFERENCES decisions(decision_id),
     FOREIGN KEY(signal_id) REFERENCES signals(signal_id),
     CHECK(stage_1_correctness IN ('CORRETA', 'ERRADA')),
-    CHECK(stage_2_quality IN ('CORRETO_COM_RAZOES_CERTAS', 'CORRETO_POR_ACASO', 
+    CHECK(stage_2_quality IN ('CORRETO_COM_RAZOES_CERTAS', 'CORRETO_POR_ACASO',
                                'ERRADO_MAS_MOTIVADORES_CONFIRMADOS', 'ERRADO_COM_RAZOES_ERRADAS'))
 );
 
@@ -706,7 +706,7 @@ SELECT
     lf.trade_pnl,
     lf.stage_1_correctness,
     lf.stage_2_quality,
-    CASE 
+    CASE
         WHEN lf.stage_2_quality = 'CORRETO_COM_RAZOES_CERTAS' THEN '✓ Acertou com razão'
         WHEN lf.stage_2_quality = 'CORRETO_POR_ACASO' THEN '⚠ Sorte'
         WHEN lf.stage_2_quality = 'ERRADO_MAS_MOTIVADORES_CONFIRMADOS' THEN '↔ Mercado contra'

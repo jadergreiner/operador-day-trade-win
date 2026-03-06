@@ -320,58 +320,131 @@ class SignalGenerator:
         """
         Procura estrutura SMC nos candles M5 e captura contexto de mercado.
 
-        **REFINADO (05/03/2026):**
-        Agora captura TODO o contexto de mercado no momento do sinal
-        para auditoria e aprendizado (Camada 3).
+        **REFINADO (05/03/2026) - AC1 Implementation:**
+        - Detecta BOS, CHoCH, FVG
+        - Score produzido em range [-3, +3]
+        - Captura COMPLETO contexto de mercado
+        - Sinal INDEPENDENTE de decisão de entrada
+
+        Detecção SMC:
+            BOS (Break of Structure): Close > High anterior ou < Low anterior
+            CHoCH (Change of Character): Reversão da estrutura anterior
+            FVG (Fair Value Gap): Gap entre candles (abertura de espaço)
 
         Args:
             candles_m5: Dict com OHLC (open, high, low, close, volume)
-            symbol: Código do ativo
+                        KEYS: open, high, low, close, volume, prev_high, prev_low
+            symbol: Código do ativo (ex: WIN, WDO)
             current_price: Preço atual (entry_price)
-            market_context: **NOVO** Indicadores de mercado (RSI, ATR, volume, etc)
+            market_context: Indicadores de mercado (RSI, ATR, volume, etc)
             candle_index: Índice do candle (auditoria)
 
         Returns:
-            Signal object se detectado, None caso contrário
+            Signal object se detectado, None caso contrário (fraco demais)
         """
         try:
             # Validações de entrada
             if not candles_m5 or "close" not in candles_m5:
                 return None
 
+            current_open = candles_m5.get("open", 0.0)
+            current_high = candles_m5.get("high", 0.0)
+            current_low = candles_m5.get("low", 0.0)
             current_close = candles_m5.get("close", 0.0)
-            previous_high = candles_m5.get("prev_high", 0.0)
-            previous_low = candles_m5.get("prev_low", 0.0)
+            current_volume = candles_m5.get("volume", 0)
 
-            # Detectar BOS (Break of Structure)
+            prev_high = candles_m5.get("prev_high", 0.0)
+            prev_low = candles_m5.get("prev_low", 0.0)
+            prev_close = candles_m5.get("prev_close", current_close)
+
+            # Inicializar variáveis de sinal
             smc_score = 0.0
             smc_detector = None
+            signal_type = None
 
-            if current_close > previous_high:
-                # Bullish BOS
-                smc_score = 1.5  # Score base para BOS
+            # ================================================================
+            # 1. DETECTAR BOS (Break of Structure)
+            # ================================================================
+
+            if current_close > prev_high:
+                # Bullish BOS: close rompe high anterior
+                smc_score = 1.5
                 smc_detector = SMCDetector.BOS
                 signal_type = SignalType.BUY
-            elif current_close < previous_low:
-                # Bearish BOS
-                smc_score = -1.5  # Score negativo para SELL
+
+            elif current_close < prev_low:
+                # Bearish BOS: close quebra low anterior
+                smc_score = -1.5
                 smc_detector = SMCDetector.BOS
                 signal_type = SignalType.SELL
+
+            # ================================================================
+            # 2. DETECTAR CHoCH (Change of Character)
+            # ================================================================
+
+            # CHoCH: Reversão da estrutura (low mais baixo em uptrend, ou high mais alto em downtrend)
+            elif current_low < prev_low:
+                # Bearish CHoCH: novo low
+                smc_score = -2.0  # CHoCH score mais forte que BOS puro
+                smc_detector = SMCDetector.CHOCH
+                signal_type = SignalType.SELL
+
+            elif current_high > prev_high:
+                # Bullish CHoCH: novo high
+                smc_score = 2.0  # CHoCH score mais forte
+                smc_detector = SMCDetector.CHOCH
+                signal_type = SignalType.BUY
+
+            # ================================================================
+            # 3. DETECTAR FVG (Fair Value Gap)
+            # ================================================================
+
+            # FVG Bullish: gap acima (atual low > prev high, com volume baixo)
+            elif current_low > prev_high and current_volume < 150:
+                # Gap bullish: espaço não preenchido
+                smc_score = 1.0  # FVG score base
+                smc_detector = SMCDetector.FVG
+                signal_type = SignalType.BUY
+
+            # FVG Bearish: gap abaixo (atual high < prev low, com volume baixo)
+            elif current_high < prev_low and current_volume < 150:
+                # Gap bearish: espaço não preenchido
+                smc_score = -1.0  # FVG score negativo
+                smc_detector = SMCDetector.FVG
+                signal_type = SignalType.SELL
+
             else:
-                # Sem estrutura detectada
+                # Nenhuma estrutura detectada
                 return None
 
-            # Validar se score está >= limite (|1.0|)
+            # ================================================================
+            # 4. VALIDAÇÃO DE SCORE MÍNIMO
+            # ================================================================
+
+            # Rejeitar sinais muito fracos (|score| < 1.0)
             if abs(smc_score) < 1.0:
+                self.logger.debug(
+                    f"Signal rejeitado: score {smc_score:.2f} > limite 1.0"
+                )
                 return None
 
-            # **NOVO**: Criar market_context se não fornecido
+            # Garantir que score está em [-3, +3]
+            smc_score = max(-3.0, min(3.0, smc_score))
+
+            # ================================================================
+            # 5. CAPTURAR CONTEXTO DE MERCADO
+            # ================================================================
+
+            # Criar market_context se não fornecido
             if market_context is None:
                 market_context = MarketContext()
 
-            # Gerar signal com UUID
+            # ================================================================
+            # 6. GERAR SIGNAL (Camada 1 - INDEPENDENTE de decisão)
+            # ================================================================
+
             signal = Signal(
-                signal_id=str(uuid4()),
+                signal_id=str(uuid4()),  # UUID único para cada sinal
                 timestamp=datetime.now(),
                 symbol=symbol,
                 signal_type=signal_type,
@@ -379,19 +452,19 @@ class SignalGenerator:
                 smc_detector=smc_detector,
                 entry_price=current_price,
                 candle_index=candle_index,
-                market_context=market_context,  # **NOVO**: contexto capturado
+                market_context=market_context,  # Contexto capturado
                 created_at=datetime.now(),
             )
 
             self.logger.info(
-                f"Signal detectado: {signal.signal_type} "
-                f"({signal.smc_detector}, score={signal.smc_score:.2f}) "
-                f"com contexto de mercado"
+                f"[AC1-Signal] {signal.signal_type} "
+                f"({smc_detector.value}, score={smc_score:+.2f}) "
+                f"@{symbol} - Context captured"
             )
             return signal
 
         except Exception as e:
-            self.logger.error(f"Erro detectando SMC: {e}")
+            self.logger.error(f"[AC1-Error] Erro detectando SMC: {e}")
             return None
 
 
