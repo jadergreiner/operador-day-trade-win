@@ -48,24 +48,27 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 class AntiOvertradingConfig:
-    """Configurações de proteção contra overtrading."""
+    """Configurações de proteção contra overtrading - BALANCED MODE.
     
-    # Limite de operações
-    MAX_TRADES_PER_SESSION = 5          # Máx 5 trades por dia
-    MAX_TRADES_PER_HOUR = 2             # Máx 2 trades por hora
+    BALANCED Mode:
+    - Sem limite de trades/dia
+    - Aguarda fechamento de candle
+    - Volatilidade mínima antes de entrada
+    - Continua até atingir TARGET ou STOP LOSS
+    """
     
-    # Cooldown entre operações
+    # ✅ ATIVO: Filtros BALANCED (sem limite diário)
     COOLDOWN_SECONDS = 300              # 5 minutos entre trades (evita impulsos)
-    
-    # Filtros de qualidade
     MIN_VOLATILITY_PERCENT = 0.05       # Mínimo 0.05% volatilidade para operar
-    MIN_VOLUME = 1000                   # Volume mínimo
-    MIN_CONFIDENCE_SCORE = 0.65         # Confiança mínima do modelo
-    
-    # Confirmação de sinal
     CONFIRM_SIGNAL_BARS = 2             # Esperar 2 velas confirmando sinal
     
-    # Ticket mínimo
+    # ❌ DESATIVADO: Limites diários e horários
+    # MAX_TRADES_PER_SESSION = Ilimitado (operadora até target/stop loss)
+    # MAX_TRADES_PER_HOUR = Ilimitado (apenas cooldown entre trades)
+    
+    # Qualidade mínima
+    MIN_VOLUME = 1000                   # Volume mínimo
+    MIN_CONFIDENCE_SCORE = 0.65         # Confiança mínima do modelo
     MIN_TICKET_PROFIT = 10.0            # Não faz trade se RR < 1:2
 
 # ============================================================================
@@ -243,24 +246,17 @@ def verificar_cooldown() -> bool:
 
 def verificar_limite_trades() -> bool:
     """
-    Verifica se atingiu limite de trades.
-    Retorna True se pode fazer trade.
+    MODO BALANCED: Sem limite de trades!
+    Apenas aguarda cooldown e volatilidade mínima.
+    Continua operando até atingir TARGET ou STOP LOSS.
+    
+    Retorna sempre True (nenhum limite aplicado).
     """
-    global trades_executed_today, trades_by_hour
-    
-    # Limite por sessão
-    if trades_executed_today >= AntiOvertradingConfig.MAX_TRADES_PER_SESSION:
-        logger.warning(f"🛑 Limite diário atingido: {trades_executed_today}/{AntiOvertradingConfig.MAX_TRADES_PER_SESSION}")
-        return False
-    
-    # Limite por hora
-    hora_atual = datetime.now().hour
-    trades_hora = trades_by_hour.get(hora_atual, 0)
-    
-    if trades_hora >= AntiOvertradingConfig.MAX_TRADES_PER_HOUR:
-        logger.warning(f"⏳ Limite horário atingido: {trades_hora}/{AntiOvertradingConfig.MAX_TRADES_PER_HOUR}")
-        return False
-    
+    # ✅ BALANCED: Sem limites diários/horários
+    # Operará livremente enquanto:
+    # - Houver volatilidade mínima (0.05%)
+    # - Respeitar cooldown entre trades (300s)
+    # - Sinal estiver confirmado (2 velas)
     return True
 
 
@@ -299,7 +295,7 @@ def verificar_confirmacao_sinal(sinal_atual: str, sinal_anterior: str) -> bool:
 
 def enviar_ordem_mt5adapter(acao: str, preco_atual: float, vol: float) -> bool:
     """Envia ordem via MT5Adapter (com validações)."""
-    global trades_executed_today, last_trade_time, trades_by_hour
+    global last_trade_time
     
     try:
         if acao == "Aguardar":
@@ -332,11 +328,8 @@ def enviar_ordem_mt5adapter(acao: str, preco_atual: float, vol: float) -> bool:
         ticket = mt5_adapter.send_order(order)
         logger.info(f"✅ Ordem enviada! Ticket: {ticket}")
         
-        # Atualizar contadores
-        trades_executed_today += 1
+        # Atualizar apenas o cooldown (sem limitar trades/dia)
         last_trade_time = datetime.now()
-        hora_atual = datetime.now().hour
-        trades_by_hour[hora_atual] = trades_by_hour.get(hora_atual, 0) + 1
         
         # Persistir episódio
         if rl_repo:
@@ -372,13 +365,14 @@ def monitorar_posicoes() -> bool:
 
 
 def print_status():
-    """Exibe status de proteção antióxido."""
+    """Exibe status de operação BALANCED MODE."""
     logger.info("\n" + "=" * 70)
-    logger.info("📊 STATUS ANTI-OVERTRADING")
+    logger.info("📊 STATUS OPERAÇÃO (BALANCED MODE)")
     logger.info("=" * 70)
-    logger.info(f"Trades hoje: {trades_executed_today}/{AntiOvertradingConfig.MAX_TRADES_PER_SESSION}")
+    logger.info(f"Modo: Operando livremente até TARGET ou STOP LOSS")
+    logger.info(f"Limite diário: DESATIVADO (ilimitado)")
     logger.info(f"Última operação: {last_trade_time.strftime('%H:%M:%S') if last_trade_time else 'Nenhuma'}")
-    logger.info(f"Distribuição por hora: {trades_by_hour}")
+    logger.info(f"Cooldown: {AntiOvertradingConfig.COOLDOWN_SECONDS}s entre trades")
     logger.info("=" * 70 + "\n")
 
 
@@ -387,13 +381,13 @@ def loop_operacao():
     global last_signal
     
     logger.info("\n" + "=" * 70)
-    logger.info("🚀 INICIANDO OPERAÇÃO RL v5000 (ANTI-OVERTRADING ATIVO)")
-    logger.info("=" * 70)
-    logger.info(f"Alvo: R${TARGET_LUCRO_DIARIO} | Stop: R${STOP_PERDA_DIARIA}")
-    logger.info(f"Max trades/dia: {AntiOvertradingConfig.MAX_TRADES_PER_SESSION}")
-    logger.info(f"Cooldown entre trades: {AntiOvertradingConfig.COOLDOWN_SECONDS}s")
-    logger.info(f"Min volatilidade: {AntiOvertradingConfig.MIN_VOLATILITY_PERCENT}%")
-    logger.info("=" * 70 + "\n")
+        logger.info("🚀 INICIANDO OPERAÇÃO RL v5000 (BALANCED MODE - SEM LIMITE DIÁRIO)")
+        logger.info("=" * 70)
+        logger.info(f"Alvo: R${TARGET_LUCRO_DIARIO} | Stop: R${STOP_PERDA_DIARIA}")
+        logger.info(f"Trades/dia: ILIMITADO (até target/stop loss)")
+        logger.info(f"Cooldown entre trades: {AntiOvertradingConfig.COOLDOWN_SECONDS}s")
+        logger.info(f"Min volatilidade: {AntiOvertradingConfig.MIN_VOLATILITY_PERCENT}%")
+        logger.info(f"Confirmação sinal: {AntiOvertradingConfig.CONFIRM_SIGNAL_BARS} velas")
 
     lucro_sessao = 0.0
     ciclo = 0
@@ -441,11 +435,6 @@ def loop_operacao():
         if not verificar_cooldown():
             time.sleep(60)
             continue
-
-        # 3. Verificar limite de trades
-        if not verificar_limite_trades():
-            logger.warning("🛑 Limite de trades atingido. Operação encerrada.")
-            break
 
         try:
             # 4. Obter ação do modelo
