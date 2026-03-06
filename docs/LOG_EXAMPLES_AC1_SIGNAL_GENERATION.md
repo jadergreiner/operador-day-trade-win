@@ -282,7 +282,7 @@ LOG_DETAILED_SIGNAL_FIELDS = """
   "smc_detector": "BOS",
   "entry_price": 123.600,
   "candle_index": 2845,
-  
+
   "market_context": {
     "rsi": 65.5,
     "atr": 50.0,
@@ -293,7 +293,7 @@ LOG_DETAILED_SIGNAL_FIELDS = """
     "trend_direction": "UP",
     "last_close": 123.450
   },
-  
+
   "created_at": "2026-03-05T14:24:00.012Z",
   "updated_at": null,
   "outcome_type": null,
@@ -307,7 +307,7 @@ LOG_DETAILED_SIGNAL_FIELDS = """
 ============================================================================
 
 INSERT INTO signals (
-  signal_id, timestamp, symbol, signal_type, smc_score, smc_detector, 
+  signal_id, timestamp, symbol, signal_type, smc_score, smc_detector,
   entry_price, candle_index, market_context_json, created_at
 ) VALUES (
   'd4a82f1c-3e91-4f22-9c2e-7b4a8d2e5c1f',

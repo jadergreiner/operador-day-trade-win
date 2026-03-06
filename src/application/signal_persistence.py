@@ -25,6 +25,7 @@ from typing import Optional, Tuple
 from uuid import uuid4
 import sqlite3
 import logging
+import json
 
 # ============================================================================
 # ENUMS & TYPE DEFINITIONS
@@ -519,6 +520,7 @@ class SignalPersistence:
                     smc_detector TEXT NOT NULL,
                     entry_price REAL NOT NULL,
                     candle_index INTEGER,
+                    market_context_json TEXT,
                     outcome_trade_id INTEGER,
                     outcome_pnl REAL,
                     outcome_days_open REAL,
@@ -557,9 +559,73 @@ class SignalPersistence:
             logging.error(f"Erro criando tabela signals: {e}")
             raise
 
+    def _serialize_market_context(self, market_context: Optional[MarketContext]) -> str:
+        """
+        AC2: Serializa MarketContext para JSON string para armazenamento em DB.
+
+        Converte objeto MarketContext com 8 campos em JSON:
+        {"rsi": 65.5, "atr": 50.0, "bb_upper": 123.75, ...}
+
+        Args:
+            market_context: Objeto MarketContext ou None
+
+        Returns:
+            String JSON serializada (vazio {} se None)
+        """
+        if market_context is None:
+            return json.dumps({})
+
+        context_dict = {
+            "rsi": market_context.rsi,
+            "atr": market_context.atr,
+            "bb_upper": market_context.bb_upper,
+            "bb_lower": market_context.bb_lower,
+            "volume": market_context.volume,
+            "spread": market_context.spread,
+            "trend_direction": market_context.trend_direction,
+            "last_close": market_context.last_close,
+        }
+
+        return json.dumps(context_dict)
+
+    def _deserialize_market_context(self, json_str: Optional[str]) -> Optional[MarketContext]:
+        """
+        AC2: Desserializa JSON string para objeto MarketContext.
+
+        Args:
+            json_str: String JSON do banco de dados
+
+        Returns:
+            Objeto MarketContext ou None se não houver dados
+        """
+        if not json_str:
+            return None
+
+        try:
+            data = json.loads(json_str)
+            if not data:  # String vazia ou {}
+                return None
+
+            return MarketContext(
+                rsi=data.get("rsi"),
+                atr=data.get("atr"),
+                bb_upper=data.get("bb_upper"),
+                bb_lower=data.get("bb_lower"),
+                volume=data.get("volume"),
+                spread=data.get("spread"),
+                trend_direction=data.get("trend_direction"),
+                last_close=data.get("last_close"),
+            )
+        except (json.JSONDecodeError, ValueError) as e:
+            logging.error(f"Erro desserializando market_context: {e}")
+            return None
+
     def insert(self, signal: Signal) -> bool:
         """
-        Insere novo sinal em DB.
+        AC2: Insere novo sinal em DB com contexto de mercado.
+
+        Persiste TODOS os campos do sinal incluindo market_context_json
+        para auditoria, análise posterior e aprendizado (Camada 3).
 
         Args:
             signal: Signal object a persistir
@@ -571,13 +637,16 @@ class SignalPersistence:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
 
+            # Serializar market_context
+            market_context_json = self._serialize_market_context(signal.market_context)
+
             cursor.execute(
                 """
                 INSERT INTO signals (
                     signal_id, timestamp, symbol, signal_type,
                     smc_score, smc_detector, entry_price, candle_index,
-                    outcome_type, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    market_context_json, outcome_type, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     signal.signal_id,
@@ -588,6 +657,7 @@ class SignalPersistence:
                     signal.smc_detector.value,
                     signal.entry_price,
                     signal.candle_index,
+                    market_context_json,
                     SignalOutcomeType.OPEN.value,  # Sempre começa OPEN
                     signal.created_at,
                 ),
@@ -596,14 +666,14 @@ class SignalPersistence:
             conn.commit()
             conn.close()
 
-            logging.info(f"Signal {signal.signal_id} persistido")
+            logging.info(f"[AC2-PERSISTED] Signal {signal.signal_id} inserido em DB")
             return True
 
         except sqlite3.IntegrityError as e:
-            logging.warning(f"Sinal duplicado (esperado): {e}")
+            logging.warning(f"[AC2-DUPLICATE] Sinal duplicado: {e}")
             return False
         except sqlite3.Error as e:
-            logging.error(f"Erro inserindo signal: {e}")
+            logging.error(f"[AC2-ERROR] Erro inserindo signal: {e}")
             return False
 
     def update_outcome(
@@ -708,9 +778,13 @@ class SignalPersistence:
             logging.error(f"Erro consultando signals: {e}")
             return []
 
-    @staticmethod
-    def _row_to_signal(row: sqlite3.Row) -> Signal:
-        """Converte sqlite3.Row para objeto Signal."""
+    def _row_to_signal(self, row: sqlite3.Row) -> Signal:
+        """AC2: Converte sqlite3.Row para objeto Signal com market_context desserializado."""
+        
+        # Desserializar market_context
+        market_context_json = row["market_context_json"] if "market_context_json" in row.keys() else None
+        market_context = self._deserialize_market_context(market_context_json)
+
         return Signal(
             signal_id=row["signal_id"],
             timestamp=datetime.fromisoformat(row["timestamp"]),
@@ -720,6 +794,7 @@ class SignalPersistence:
             smc_detector=SMCDetector(row["smc_detector"]),
             entry_price=row["entry_price"],
             candle_index=row["candle_index"],
+            market_context=market_context,  # AC2: Incluir market_context
             outcome_trade_id=row["outcome_trade_id"],
             outcome_pnl=row["outcome_pnl"],
             outcome_days_open=row["outcome_days_open"],

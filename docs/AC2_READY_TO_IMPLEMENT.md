@@ -1,9 +1,9 @@
 # AC2: Signal Persistence Implementation - Ready to Begin
 
-**Status:** 🟡 READY FOR IMPLEMENTATION  
-**Blocking:** AC1 ✅ COMPLETE  
-**Required For:** AC3 Signal Tracking Lifecycle  
-**Estimated Duration:** 3-4 hours  
+**Status:** 🟡 READY FOR IMPLEMENTATION
+**Blocking:** AC1 ✅ COMPLETE
+**Required For:** AC3 Signal Tracking Lifecycle
+**Estimated Duration:** 3-4 hours
 **Date Started:** 05/03/2026
 
 ---
@@ -90,39 +90,39 @@ CREATE TABLE signals (
 
 #### Step 1: Create Method Skeleton (30 minutes)
 
-**File:** `src/application/signal_persistence.py`  
+**File:** `src/application/signal_persistence.py`
 **Location:** After `SignalGenerator` class
 
 ```python
 class SignalPersistence:
     """Handles database persistence of signals (AC2)"""
-    
+
     def __init__(self, db_path: str = "data/db/trading.db"):
         """Initialize database connection"""
         self.db_path = db_path
         self.conn = None
-        
+
     def connect(self) -> None:
         """Open SQLite connection"""
         import sqlite3
         self.conn = sqlite3.connect(self.db_path)
         self.conn.row_factory = sqlite3.Row
-        
+
     def disconnect(self) -> None:
         """Close SQLite connection"""
         if self.conn:
             self.conn.close()
-            
+
     def insert(self, signal: Signal) -> bool:
         """
         MAIN AC2 METHOD: Persist signal to database with market context
-        
+
         Args:
             signal: Signal object from AC1
-            
+
         Returns:
             bool: True if successful, False otherwise
-            
+
         Process:
             1. Open DB connection
             2. Serialize market_context to JSON
@@ -148,14 +148,14 @@ from typing import Optional
 def _serialize_market_context(self, market_context: Optional[MarketContext]) -> str:
     """
     Convert MarketContext object to JSON string for DB storage
-    
+
     Input: MarketContext object with 8 fields
     Output: JSON string like:
             {"rsi": 65.5, "atr": 50.0, "bb_upper": 123.75, ...}
     """
     if market_context is None:
         return json.dumps({})
-    
+
     context_dict = {
         "rsi": market_context.rsi,
         "atr": market_context.atr,
@@ -166,7 +166,7 @@ def _serialize_market_context(self, market_context: Optional[MarketContext]) -> 
         "trend_direction": market_context.trend_direction,
         "last_close": market_context.last_close,
     }
-    
+
     return json.dumps(context_dict)
 ```
 
@@ -177,22 +177,22 @@ def _serialize_market_context(self, market_context: Optional[MarketContext]) -> 
 ```python
 def insert(self, signal: Signal) -> bool:
     """Persist signal to database"""
-    
+
     if not self.conn:
         self.connect()
-    
+
     try:
         # Serialize market context
         market_context_json = self._serialize_market_context(signal.market_context)
-        
+
         # Prepare INSERT statement
         insert_sql = """
-            INSERT INTO signals 
-            (signal_id, timestamp, symbol, signal_type, smc_score, 
+            INSERT INTO signals
+            (signal_id, timestamp, symbol, signal_type, smc_score,
              smc_detector, entry_price, market_context_json, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
-        
+
         # Data tuple
         values = (
             signal.signal_id,
@@ -205,12 +205,12 @@ def insert(self, signal: Signal) -> bool:
             market_context_json,
             "READY"  # Initial status
         )
-        
+
         # Execute INSERT
         cursor = self.conn.cursor()
         cursor.execute(insert_sql, values)
         self.conn.commit()
-        
+
         # Log success
         logging.info(f"""[AC2-PERSISTED] Signal inserted:
             signal_id: {signal.signal_id}
@@ -219,9 +219,9 @@ def insert(self, signal: Signal) -> bool:
             score: {signal.smc_score:+.1f}
             status: READY for Camada 2
         """)
-        
+
         return True
-        
+
     except Exception as e:
         logging.error(f"[AC2-ERROR] Failed to insert signal: {str(e)}")
         self.conn.rollback()
@@ -238,26 +238,26 @@ def insert(self, signal: Signal) -> bool:
 ```python
 def insert_batch(self, signals: List[Signal]) -> int:
     """Insert multiple signals in single transaction"""
-    
+
     if not self.conn:
         self.connect()
-    
+
     successful = 0
-    
+
     try:
         cursor = self.conn.cursor()
-        
+
         for signal in signals:
             try:
                 market_context_json = self._serialize_market_context(signal.market_context)
-                
+
                 insert_sql = """
-                    INSERT INTO signals 
-                    (signal_id, timestamp, symbol, signal_type, smc_score, 
+                    INSERT INTO signals
+                    (signal_id, timestamp, symbol, signal_type, smc_score,
                      smc_detector, entry_price, market_context_json, status)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """
-                
+
                 values = (
                     signal.signal_id,
                     signal.timestamp,
@@ -269,19 +269,19 @@ def insert_batch(self, signals: List[Signal]) -> int:
                     market_context_json,
                     "READY"
                 )
-                
+
                 cursor.execute(insert_sql, values)
                 successful += 1
-                
+
             except sqlite3.IntegrityError:
                 # Duplicate signal_id - skip
                 logging.warning(f"[AC2-DUPLICATE] Signal {signal.signal_id} already exists")
                 continue
-        
+
         self.conn.commit()
         logging.info(f"[AC2-BATCH] Inserted {successful}/{len(signals)} signals")
         return successful
-        
+
     except Exception as e:
         logging.error(f"[AC2-ERROR] Batch insert failed: {str(e)}")
         self.conn.rollback()
@@ -299,11 +299,11 @@ def insert_batch(self, signals: List[Signal]) -> int:
 ```python
 def test_ac2_insert_single_signal():
     """Test inserting a single signal to database"""
-    
+
     # Setup
     persistence = SignalPersistence("data/db/trading.db")
     persistence.connect()
-    
+
     # Create test signal (from AC1)
     signal = Signal(
         signal_id="test-uuid-12345",
@@ -324,30 +324,30 @@ def test_ac2_insert_single_signal():
             last_close=123.45
         )
     )
-    
+
     # Execute
     result = persistence.insert(signal)
-    
+
     # Verify
     assert result == True, "Insert should return True"
-    
+
     # Query database to confirm
     cursor = persistence.conn.cursor()
     cursor.execute("SELECT * FROM signals WHERE signal_id = ?", (signal.signal_id,))
     row = cursor.fetchone()
-    
+
     assert row is not None, "Signal should exist in database"
     assert row["symbol"] == "WIN"
     assert row["signal_type"] == "BUY"
     assert row["smc_score"] == 1.5
-    
+
     # Verify market context JSON
     import json
     context = json.loads(row["market_context_json"])
     assert context["rsi"] == 65.5
     assert context["atr"] == 50.0
     assert context["volume"] == 450
-    
+
     # Cleanup
     persistence.disconnect()
 ```
@@ -357,10 +357,10 @@ def test_ac2_insert_single_signal():
 ```python
 def test_ac2_insert_batch_signals():
     """Test inserting multiple signals atomically"""
-    
+
     persistence = SignalPersistence("data/db/trading.db")
     persistence.connect()
-    
+
     # Create 3 test signals
     signals = []
     for i in range(3):
@@ -375,18 +375,18 @@ def test_ac2_insert_batch_signals():
             market_context=MarketContext(rsi=60+i*5, atr=50, ...)
         )
         signals.append(signal)
-    
+
     # Insert batch
     successful = persistence.insert_batch(signals)
-    
+
     # Verify
     assert successful == 3, "All 3 signals should be inserted"
-    
+
     cursor = persistence.conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM signals WHERE signal_id LIKE 'test-batch-%'")
     count = cursor.fetchone()[0]
     assert count == 3
-    
+
     persistence.disconnect()
 ```
 
@@ -395,10 +395,10 @@ def test_ac2_insert_batch_signals():
 ```python
 def test_ac2_rejects_duplicate_signal_id():
     """Test that duplicate signal_id is rejected by UNIQUE constraint"""
-    
+
     persistence = SignalPersistence("data/db/trading.db")
     persistence.connect()
-    
+
     # Create signal
     signal = Signal(
         signal_id="duplicate-test-123",
@@ -410,21 +410,21 @@ def test_ac2_rejects_duplicate_signal_id():
         entry_price=123.6,
         market_context=MarketContext(...)
     )
-    
+
     # Insert first time - should succeed
     result1 = persistence.insert(signal)
     assert result1 == True
-    
+
     # Try inserting same signal again - should fail gracefully
     result2 = persistence.insert(signal)
     assert result2 == False  # Duplicate rejected
-    
+
     # Verify only ONE signal in database
     cursor = persistence.conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM signals WHERE signal_id = ?", (signal.signal_id,))
     count = cursor.fetchone()[0]
     assert count == 1  # Only one copy
-    
+
     persistence.disconnect()
 ```
 
@@ -433,9 +433,9 @@ def test_ac2_rejects_duplicate_signal_id():
 ```python
 def test_ac2_market_context_serialization():
     """Test JSON serialization of market context"""
-    
+
     persistence = SignalPersistence("data/db/trading.db")
-    
+
     # Create context with all 8 fields
     context = MarketContext(
         rsi=65.5,
@@ -447,10 +447,10 @@ def test_ac2_market_context_serialization():
         trend_direction="UP",
         last_close=123.45
     )
-    
+
     # Serialize
     json_str = persistence._serialize_market_context(context)
-    
+
     # Deserialize and verify
     import json
     data = json.loads(json_str)
@@ -477,16 +477,16 @@ class AgentExecutor:
         self.signal_generator = SignalGenerator()
         self.signal_persistence = SignalPersistence()
         self.signal_persistence.connect()
-    
+
     def on_m5_candle_close(self, candle_data: dict):
         """Called every M5 candle close"""
-        
+
         # AC1: Generate signal
         signal = self.signal_generator.detect_smc(
             candles_m5=candle_data,
             current_price=candle_data["close"]
         )
-        
+
         # AC2: Persist if signal generated
         if signal:
             success = self.signal_persistence.insert(signal)
@@ -561,7 +561,7 @@ C:\repo\operador-day-trade-win> python
 
 # Get first signal
 >>> cursor.execute("""
-    SELECT signal_id, symbol, signal_type, smc_score, 
+    SELECT signal_id, symbol, signal_type, smc_score,
            market_context_json, status
     FROM signals
     WHERE status = 'READY'
@@ -657,7 +657,7 @@ Once AC2 is complete, AC3 will:
 
 ---
 
-**Status:** 🟡 READY TO IMPLEMENT AC2  
-**Blocking:** AC1 ✅ COMPLETE  
-**Start AC2 when:** All AC1 documentation reviewed & understood  
+**Status:** 🟡 READY TO IMPLEMENT AC2
+**Blocking:** AC1 ✅ COMPLETE
+**Start AC2 when:** All AC1 documentation reviewed & understood
 **Estimated Completion:** 05/03/2026 18:00 (if starting now at 14:30)

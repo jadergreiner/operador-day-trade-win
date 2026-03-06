@@ -268,7 +268,7 @@ OPÇÃO 1: Ver logs em tempo real (novo terminal)
 ──────────────────────────────────────────────────────────────────────────
 
    C:\\repo\\operador-day-trade-win> python scripts/monitor_signals_live.py
-   
+
    Exibe:
    ├─ Sinais gerados nos últimos 30 minutos
    ├─ P&L de cada sinal
@@ -294,7 +294,7 @@ OPÇÃO 3: Web Dashboard (quando implementado)
 ──────────────────────────────────────────────────────────────────────────
 
    http://localhost:5000/dashboard/signals
-   
+
    Display:
    ├─ Live candle chart com sinais marcados
    ├─ Tabela de sinais recentes
@@ -329,7 +329,7 @@ DATABASE QUERIES: AC1 SIGNAL MONITORING
 1. ÚLTIMOS 10 SINAIS GERADOS
 ───────────────────────────────────────────────────────────────────────
 
-SELECT 
+SELECT
   signal_id,
   timestamp,
   symbol,
@@ -356,7 +356,7 @@ Resultado esperado:
 2. SINAIS POR TIPO DE DETECTOR (SMC Pattern)
 ───────────────────────────────────────────────────────────────────────
 
-SELECT 
+SELECT
   smc_detector,
   COUNT(*) as count,
   AVG(CASE WHEN outcome_pnl > 0 THEN 1 ELSE 0 END) as win_rate,
@@ -378,7 +378,7 @@ Resultado esperado:
 3. SINAIS ABERTOS (AINDA SENDO MONITORADOS)
 ───────────────────────────────────────────────────────────────────────
 
-SELECT 
+SELECT
   signal_id,
   timestamp,
   symbol,
@@ -401,7 +401,7 @@ Resultado esperado:
 4. MARKET CONTEXT ANALYSIS (RSI, ATR, etc)
 ───────────────────────────────────────────────────────────────────────
 
-SELECT 
+SELECT
   symbol,
   AVG(json_extract(market_context_json, '$.rsi')) as avg_rsi,
   AVG(json_extract(market_context_json, '$.atr')) as avg_atr,
@@ -421,11 +421,11 @@ Resultado esperado:
 5. ESTATÍSTICAS DO DIA
 ───────────────────────────────────────────────────────────────────────
 
-SELECT 
+SELECT
   DATE(timestamp) as date,
   COUNT(*) as total_signals,
   SUM(CASE WHEN outcome_pnl > 0 THEN 1 ELSE 0 END) as winners,
-  ROUND(100.0 * SUM(CASE WHEN outcome_pnl > 0 THEN 1 ELSE 0 END) / 
+  ROUND(100.0 * SUM(CASE WHEN outcome_pnl > 0 THEN 1 ELSE 0 END) /
         COUNT(*), 1) as win_rate_pct,
   SUM(outcome_pnl) as total_pnl
 FROM signals

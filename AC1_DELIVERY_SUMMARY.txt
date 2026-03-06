@@ -13,7 +13,7 @@ STATUS: ✅ IMPLEMENTATION COMPLETE & FULLY DOCUMENTED
 CODE IMPLEMENTATION:
   ✅ SignalGenerator.detect_smc() - Enhanced signal detection
      ├─ BOS Detection (Break of Structure) - Score ±1.5
-     ├─ CHoCH Detection (Change of Character) - Score ±2.0 
+     ├─ CHoCH Detection (Change of Character) - Score ±2.0
      ├─ FVG Detection (Fair Value Gap) - Score ±1.0
      ├─ Market Context Capture - 8 indicators
      └─ Score Normalization [-3.0, +3.0]
@@ -81,7 +81,7 @@ PATTERN                DETECTION RULE                      SCORE    USAGE
 ────────────────────────────────────────────────────────────────────────────
 
 BOS (Break of          Close > Prev_High (bullish)         +1.5     Primary pattern
-Structure)             Close < Prev_Low (bearish)          -1.5     
+Structure)             Close < Prev_Low (bearish)          -1.5
 
 CHoCH (Change of       High > Prev_High (new high)         +2.0     Stronger signal
 Character)             Low < Prev_Low (new low)            -2.0     (reversal indicator)
@@ -138,7 +138,7 @@ DOWNSTREAM READY:
    Phase 3: Testing (45 minutes)
    Phase 4: Integration (30 minutes)
    Phase 5: Code quality (30 minutes)
-   
+
    Total Estimated: 4 hours
 
 3. VERIFY WITH TESTS:

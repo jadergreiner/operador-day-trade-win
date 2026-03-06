@@ -12,32 +12,32 @@ Date: 05/03/2026
 # ============================================================================
 
 BEFORE = '''
-def detect_smc(self, candles_m5: dict, current_price: float, 
+def detect_smc(self, candles_m5: dict, current_price: float,
                market_context: Optional[MarketContext] = None) -> Optional[Signal]:
     """
     ANTES: Detectava apenas BOS (Break of Structure)
     Problema: Mal aproveitava padrões técnicos (CHoCH, FVG não detectados)
     """
-    
+
     # Validação básica
     if not candles_m5 or len(candles_m5) < 2:
         return None
-    
+
     # Dados do candle atual
     current_close = candles_m5["close"]
     current_high = candles_m5["high"]
     current_low = candles_m5["low"]
     current_volume = candles_m5.get("volume", 0)
-    
+
     # Dados do candle anterior
     prev_high = candles_m5.get("prev_high", 0)
     prev_low = candles_m5.get("prev_low", 0)
-    
+
     # ✗ APENAS BOS DETECTION (70 linhas totais)
     smc_score = 0.0
     smc_detector = None
     signal_type = None
-    
+
     # BOS Check: Close > Prev_High (Bullish) ou Close < Prev_Low (Bearish)
     if current_close > prev_high:
         smc_score = 1.5
@@ -47,18 +47,18 @@ def detect_smc(self, candles_m5: dict, current_price: float,
         smc_score = -1.5
         smc_detector = SMCDetector.BOS
         signal_type = SignalType.SELL
-    
+
     # ✗ Sem CHoCH detection
     # ✗ Sem FVG detection
-    
+
     # Score validation (simplista)
     if smc_score == 0 or abs(smc_score) < 1.0:
         return None  # Rejeita fraco
-    
+
     # Market context (manual ou vazio)
     if market_context is None:
         market_context = MarketContext()  # Vazio!
-    
+
     # Criar sinal
     signal = Signal(
         signal_id=str(uuid.uuid4()),
@@ -70,7 +70,7 @@ def detect_smc(self, candles_m5: dict, current_price: float,
         entry_price=current_price,
         market_context=market_context
     )
-    
+
     return signal  # Pronto para persistência (falta contexto!)
 '''
 
@@ -85,26 +85,26 @@ def detect_smc(self, candles_m5: dict, current_price: float,
     DEPOIS: Detecta 3 padrões SMC (BOS, CHoCH, FVG)
     Melhoria: Cobertura completa de estrutura de mercado
     """
-    
+
     # Validação rigorosa
     if not candles_m5 or len(candles_m5) < 2:
         return None
-    
+
     # Dados do candle atual
     current_close = candles_m5["close"]
     current_high = candles_m5["high"]
     current_low = candles_m5["low"]
     current_volume = candles_m5.get("volume", 0)
-    
+
     # Dados do candle anterior
     prev_high = candles_m5.get("prev_high", 0)
     prev_low = candles_m5.get("prev_low", 0)
-    
+
     # Inicialização
     smc_score = 0.0
     smc_detector = None
     signal_type = None
-    
+
     # ✓ PATTERN 1: BOS (Break of Structure) - Score ±1.5
     # Definição: Fechamento rompe o high/low anterior
     if current_close > prev_high:
@@ -115,7 +115,7 @@ def detect_smc(self, candles_m5: dict, current_price: float,
         smc_score = -1.5  # Bearish
         smc_detector = SMCDetector.BOS
         signal_type = SignalType.SELL
-    
+
     # ✓ PATTERN 2: CHoCH (Change of Character) - Score ±2.0
     # Definição: Novo extremo (novo high ou novo low)
     # Mais forte que BOS porque indica reversão de estrutura
@@ -127,7 +127,7 @@ def detect_smc(self, candles_m5: dict, current_price: float,
         smc_score = -2.0
         smc_detector = SMCDetector.CHOCH
         signal_type = SignalType.SELL
-    
+
     # ✓ PATTERN 3: FVG (Fair Value Gap) - Score ±1.0
     # Definição: Movimento com volume baixo (gap desprotegido)
     # Mais fraco que BOS porque precisa re-testar o gap
@@ -139,15 +139,15 @@ def detect_smc(self, candles_m5: dict, current_price: float,
         smc_score = -1.0  # Bearish FVG (gap de baixa)
         smc_detector = SMCDetector.FVG
         signal_type = SignalType.SELL
-    
+
     # ✓ Score normalization: Garantir range [-3, +3]
     smc_score = max(-3.0, min(3.0, smc_score))
-    
+
     # ✓ Threshold validation: Rejeita sinais fracos (|score| < 1.0)
     if abs(smc_score) < 1.0:
         logging.info(f"[AC1-REJECTED] Weak signal: score={smc_score} < 1.0")
         return None
-    
+
     # ✓ Market context initialization (com dados reais)
     if market_context is None:
         # Auto-populate com 8 indicadores (RSI, ATR, BB, volume, spread, trend, last_close)
@@ -157,7 +157,7 @@ def detect_smc(self, candles_m5: dict, current_price: float,
             "high": current_high,
             "low": current_low
         })
-    
+
     # ✓ Criar sinal completo com contexto
     signal = Signal(
         signal_id=str(uuid.uuid4()),
@@ -170,7 +170,7 @@ def detect_smc(self, candles_m5: dict, current_price: float,
         market_context=market_context,  # ← Com 8 campos preenchidos!
         candle_index=candles_m5.get("candle_index", -1)
     )
-    
+
     # ✓ Logging auditoria
     logging.info(f"""[AC1-SIGNAL] Generated:
         signal_id: {signal.signal_id}
@@ -178,7 +178,7 @@ def detect_smc(self, candles_m5: dict, current_price: float,
         detector: {signal.smc_detector} | price: {signal.entry_price}
         context: RSI={market_context.rsi}, ATR={market_context.atr}, Vol={market_context.volume}
     """)
-    
+
     return signal  # Pronto para AC2 (persistência)
 '''
 
@@ -370,7 +370,7 @@ BEFORE:
 AFTER:
     # Ensure always in range [-3, +3]
     smc_score = max(-3.0, min(3.0, smc_score))
-    
+
     # Possible range now:
     # -3.0 (strongest bearish)  ← CHoCH new low
     # -2.0 (strong bearish)     ← CHoCH or BOS bearish
@@ -413,7 +413,7 @@ AFTER:
             "high": current_high,
             "low": current_low
         })
-    
+
     # _capture_market_context() RETURNS:
     # {
     #     "rsi": 65.5,           # strength
