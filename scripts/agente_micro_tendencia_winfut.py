@@ -118,6 +118,18 @@ except ImportError:
     LGBM_INTEGRATOR_AVAILABLE = False
     get_lgbm_integrator = None
 
+# --- P0-URGENT-1: Inactivity Penalty Manager (06/03/2026) ---
+try:
+    from src.application.services.inactivity_penalty_manager import (
+        InactivityPenaltyManager,
+        InactivityConfig,
+    )
+    INACTIVITY_PENALTY_MANAGER_AVAILABLE = True
+except ImportError:
+    INACTIVITY_PENALTY_MANAGER_AVAILABLE = False
+    InactivityPenaltyManager = None
+    InactivityConfig = None
+
 # --- Imports movidos para otimização de performance (S1-5) ---
 try:
     from src.application.services.rl_persistence_service import RLPersistenceService
@@ -169,6 +181,10 @@ _diary_feedback: DiaryFeedback | None = None
 # IntraDayLearner para aprendizado EM TEMPO REAL (latência ~10min)
 # Forward reference: classe definida depois (linha 2489+)
 _intraday_learner: "IntraDayLearner | None" = None
+
+# P0-URGENT-1: InactivityPenaltyManager modular (06/03/2026)
+# Fornece métricas detalhadas de inatividade para auditoria e backtest
+_inactivity_penalty_manager: "InactivityPenaltyManager | None" = None
 
 # ── Auditoria de Sessão ──
 _session_id: int | None = None
@@ -4500,6 +4516,27 @@ def main():
     _intraday_learner = IntraDayLearner()
     print(f"  [-] IntraDayLearner: Ativo (latencia ~10min)")
 
+    # ── P0-URGENT-1: Inicializa InactivityPenaltyManager (06/03/2026) ──
+    global _inactivity_penalty_manager
+    if INACTIVITY_PENALTY_MANAGER_AVAILABLE and InactivityPenaltyManager and InactivityConfig:
+        try:
+            inactivity_config = InactivityConfig(
+                operational_cost_daily=Decimal("280"),  # R$ 280/dia
+                trading_minutes_per_day=390,  # 09:00-17:55 Brasília
+                inactivity_threshold_minutes=120,  # 2 horas
+                max_penalty=Decimal("0.05"),  # -5% máximo
+                confidence_min_bound=Decimal("0.0"),
+                confidence_max_bound=Decimal("1.0"),
+            )
+            _inactivity_penalty_manager = InactivityPenaltyManager(inactivity_config)
+            _inactivity_penalty_manager.start_session(datetime.now())
+            print(f"  [*] InactivityPenaltyManager: Ativo (P0-URGENT-1)")
+        except Exception as e:
+            print(f"  [!] InactivityPenaltyManager: Falha ao inicializar ({str(e)[:40]})")
+            _inactivity_penalty_manager = None
+    else:
+        print(f"  [i] InactivityPenaltyManager: Nao disponivel (modo tecnico apenas)")
+
     # ── Inicializa Modelo LightGBM (26/02/2026) ──
     global _lgbm_integrator
     if LGBM_INTEGRATOR_AVAILABLE and get_lgbm_integrator:
@@ -4723,6 +4760,24 @@ def main():
                 if inactivity_penalty < -0.001:  # Threshold para evitar noise
                     print(f"  {inactivity_msg}")
 
+            # P0-URGENT-1: Calcula métricas do InactivityPenaltyManager modular
+            if _inactivity_penalty_manager:
+                try:
+                    confidence_before = Decimal(str(result.confidence if hasattr(result, 'confidence') else 0.75))
+                    confidence_adjusted, inactivity_metrics = _inactivity_penalty_manager.calculate_inactivity_metrics(
+                        confidence_before=confidence_before,
+                        current_time=datetime.now()
+                    )
+                    # Exibe apenas se houver penalidade real (evita spam)
+                    if inactivity_metrics.penalty_applied < Decimal("-0.001"):
+                        penalty_pct = float(inactivity_metrics.penalty_applied) * 100
+                        print(f"  ⚠️ P0-URGENT-1: Inactivity penalty {penalty_pct:.1f}% | "
+                              f"Minutes inactive: {inactivity_metrics.minutes_inactive:.0f} | "
+                              f"Accumulated cost: R$ {inactivity_metrics.accumulated_cost:.0f}")
+                except Exception as e:
+                    # Silencia erros (não há entrada de log para falhas do InactivityPenaltyManager)
+                    pass
+
             # ⚡ IntraDayLearner: Registra motivos de rejeição de HOLDs
             if _intraday_learner and result._rejection_reasons:
                 pattern = _intraday_learner.record_rejection(result._rejection_reasons)
@@ -4777,6 +4832,12 @@ def main():
                                 if _intraday_learner:
                                     _intraday_learner.record_entry()
                                     print(f"  ✓ Inactivity timer reset (simulado)")
+                                # P0-URGENT-1: Registra no InactivityPenaltyManager modular
+                                if _inactivity_penalty_manager:
+                                    _inactivity_penalty_manager.record_signal_attempt(
+                                        signal_type=best.direction,
+                                        timestamp=datetime.now()
+                                    )
                             except Exception as e:
                                 print(f"  ✗ Erro ao logar sinal simulado: {e}")
                         else:
@@ -4812,6 +4873,12 @@ def main():
                                 if _intraday_learner:
                                     _intraday_learner.record_entry()
                                     print(f"  ✓ Inactivity timer reset (entrada registrada)")
+                                # P0-URGENT-1: Registra no InactivityPenaltyManager modular
+                                if _inactivity_penalty_manager:
+                                    _inactivity_penalty_manager.record_signal_attempt(
+                                        signal_type=best.direction,
+                                        timestamp=datetime.now()
+                                    )
                             else:
                                 print(f"  ✗ Falha na execução da ordem")
                         else:
