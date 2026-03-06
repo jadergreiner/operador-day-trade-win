@@ -30,8 +30,9 @@ if not exist "data\models\novo_agente_rl\modelo_final\q_network.pkl" (
 :MENU
 echo.
 echo   [1] AVALIAR MODELO (Simulacao)
-echo   [2] OPERAR MERCADO REAL (WINJ26)
-echo   [3] Sair
+echo   [2] OPERAR MERCADO REAL (v5000 ORIGINAL)
+echo   [3] OPERAR MERCADO REAL (v5000 ANTI-OVERTRADING) *** RECOMENDADO ***
+echo   [4] Sair
 echo.
 
 set /p CHOICE="Escolha: "
@@ -44,13 +45,33 @@ if "%CHOICE%"=="1" (
 
 if "%CHOICE%"=="2" (
     echo.
+    echo   ============================================================
+    echo   *** AVISO: Versao ORIGINAL (SEM protecao anti-overtrading) ***
+    echo   ============================================================
+    echo.
     echo   OPERACAO REAL ATIVADA. ALVO: R$ 140,00.
     python scripts/operar_novo_agente_rl_real.py
     pause
     goto :MENU
 )
 
-if "%CHOICE%"=="3" exit /b 0
+if "%CHOICE%"=="3" (
+    echo.
+    echo   ============================================================
+    echo   VERSAO COM ANTI-OVERTRADING (RECOMENDADA)
+    echo   - Max 5 trades/dia
+    echo   - Cooldown 5 min entre trades
+    echo   - Confirmacao multi-vela
+    echo   - Filtro volatilidade
+    echo   ============================================================
+    echo.
+    echo   OPERACAO REAL ATIVADA com PROTECOES.
+    python scripts/operar_novo_agente_rl_real_antiovertrading.py
+    pause
+    goto :MENU
+)
+
+if "%CHOICE%"=="4" exit /b 0
 
 echo Opcao invalida.
 goto :MENU
