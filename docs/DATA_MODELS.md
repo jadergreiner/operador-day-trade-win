@@ -1,11 +1,11 @@
 # 📊 Data Models - Operador Day Trade WIN
 
-**Versão:** 1.0.4
+**Versão:** 1.0.5
 **Data Criação:** 27/02/2026
-**Última Atualização:** 03/03/2026 (AC4 + AC5 + AC6 Pipeline Complete)
+**Última Atualização:** 06/03/2026 (AC1-AC6 Real Implementation Complete)
 **Responsável:** Data Engineer + Arquiteto de Sistemas
 **Sincronização:** [ARCHITECTURE.md](ARCHITECTURE.md) | [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) | [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md)
-**Status:** ✅ Sincronizado com 5 documentos arquiteturais + AC1-AC6 Implementation
+**Status:** ✅ AC1-AC6 Real Implementation Complete (6/6 Integration Tests PASSED)
 
 ⭐ **CORE DO PRODUTO**: Os modelos aqui descritos são populados/utilizados por [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) e [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat).
 
@@ -364,7 +364,7 @@ CREATE TABLE bdi_decisions (
     gate3_passed BOOLEAN NOT NULL,  -- Drawdown ≥ 85%
     justification TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    
+
     FOREIGN KEY(signal_id) REFERENCES signals(signal_id),
     CHECK(decision_type IN ('EXECUTE', 'REJECT', 'HOLD', 'CANCEL')),
     CHECK(confidence >= 0.0 AND confidence <= 1.0),
@@ -412,7 +412,7 @@ CREATE TABLE trades (
     exit_time DATETIME,
     pnl_realized DECIMAL(10, 5),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    
+
     FOREIGN KEY(signal_id) REFERENCES signals(signal_id),
     CHECK(direction IN ('BUY', 'SELL')),
     CHECK(order_type IN ('MARKET', 'LIMIT', 'STOP_MARKET')),
@@ -464,7 +464,7 @@ CREATE TABLE ml_feedback (
     label_confidence REAL,  -- 0.0-1.0
     feature_importance_json TEXT,  -- JSON com importance scores
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    
+
     FOREIGN KEY(signal_id) REFERENCES signals(signal_id),
     FOREIGN KEY(trade_id) REFERENCES trades(id),
     CHECK(signal_strength IN ('VERY_WEAK', 'WEAK', 'NEUTRAL', 'STRONG', 'VERY_STRONG')),
@@ -491,7 +491,7 @@ CREATE TABLE model_iterations (
     released_at DATETIME,
     metrics_json TEXT,  -- Additional metrics as JSON
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    
+
     CHECK(validation_accuracy >= 0.0 AND validation_accuracy <= 1.0),
     CHECK(f1_score >= 0.0 AND f1_score <= 1.0),
     INDEX idx_model_version (model_version),

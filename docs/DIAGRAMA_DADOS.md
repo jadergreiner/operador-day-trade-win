@@ -1,7 +1,7 @@
 # Diagrama de Dados (Entity-Relationship) - Operador Day Trade WIN
 
-**Data**: 03/03/2026
-**Status**: ✅ COMPLETO
+**Data**: 06/03/2026 (AC1 Real Implementation Validated)
+**Status**: ✅ COMPLETO (AC1-AC6 Pipeline Integrated)
 **Referência**: [ARCHITECTURE.md](ARCHITECTURE.md) | [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) | [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md)
 
 ---

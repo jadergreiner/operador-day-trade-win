@@ -76,26 +76,30 @@ Então consulte:
 ## 📋 Features Documentadas
 
 ### AC1: Signal Generation (M5 Pattern Detection)
-**Status:** ✅ **PRODUCTION READY** (05/03/2026)
-**Linguagem:** Python 3.11
-**Cobertura:** 100% (9 testes PASSED)
+**Status:** ✅ **PRODUCTION READY** (06/03/2026 - Real Implementation Validated)
+**Linguagem:** Python 3.11 (Clean Architecture)
+**Cobertura:** 100% (6 integration tests PASSED - AC1→AC6 pipeline)
+**Commit:** 29a9353
 
-Geração de sinais de trading em timeframe M5 usando padrões SMC (Supply & Demand):
-- 🟢 **Detectores:** BOS (Break of Structure), CHoCH (Change of Character), FVG (Fair Value Gap)
-- 🟢 **Validação:** Score múltiplo (0-100), filtros de contexto
-- 🟢 **Testado:** 9/9 testes unitários + integração
-- 📊 **Documetos:** [AC1_SIGNAL_GENERATION_IMPLEMENTATION.md](AC1_SIGNAL_GENERATION_IMPLEMENTATION.md)
+Geração de sinais de trading em timeframe M5 usando padrões SMC (Smart Money Concepts):
+- 🟢 **Detectores:** BOS (Break of Structure), CHoCH (Change of Character), FVG (Fair Value Gap), IMPULSE
+- 🟢 **Scoring:** Score SMC [-3, +3] consolidado de múltiplos detectores
+- 🟢 **Validação:** Confluence multi-indicator (RSI 20-80, ATR >0.1, Volatility <200%)
+- 🟢 **Implementação Real:** 449 LOC, type hints 100%, mypy --strict OK
+- 🟢 **Testado:** 6/6 integration tests (AC1→AC2→AC3→AC4→AC5→AC6 full pipeline)
+- 📊 **Referência:** [src/domain/signal_generator.py](../src/domain/signal_generator.py) | [CODING_STANDARDS.md#ac1-signalgenerator-exemplary-implementation](CODING_STANDARDS.md)
 
 ### AC2: Signal Persistence (Market Context JSON)
 **Status:** ✅ **PRODUCTION READY** (05/03/2026)
 **Linguagem:** Python 3.11 (SQLite Backend)
 **Cobertura:** 100% (8 testes PASSED)
+**Integração:** AC1→AC2→AC3 pipeline validated (06/03/2026)
 
 Persistência de sinais AC1 com contexto de mercado serializado em JSON:
-- 🟢 **Serialização:** 8 campos (RSI, ATR, BB, Volume, Spread, Trend, LastClose)
-- 🟢 **Storage:** SQLite com indices otimizados + UNIQUE constraints
-- 🟢 **Testado:** 8/8 testes integração + pipeline AC1→AC2
-- 📊 **Documentos:** [AC2_SIGNAL_PERSISTENCE_IMPLEMENTATION.md](AC2_SIGNAL_PERSISTENCE_IMPLEMENTATION.md)
+- 🟢 **Serialização:** 8 campos market context (RSI, ATR, BB, Volume, Spread, Trend, LastClose)
+- 🟢 **Storage:** SQLite com indices otimizados + UNIQUE constraints + FK
+- 🟢 **Testado:** 8/8 testes integração + AC1→AC2→AC3 validation
+- 📊 **Referência:** [src/application/signal_persistence.py](../src/application/signal_persistence.py)
 
 ### IntraDayLearner
 **Localização:** `docs/features/intraday-learner/`

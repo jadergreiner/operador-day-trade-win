@@ -1,8 +1,8 @@
 # 📊 STATUS DE ENTREGAS - Operador Day Trade WIN
 
-**[SYNC] ÚLTIMA ATUALIZAÇÃO:** 2026-03-05T20:05:00Z
-**Status Geral:** 🟢 **OPERACIONAL - P50 Ativo, GATE 2 Executado**
-**Versão:** v1.2.9
+**[SYNC] ÚLTIMA ATUALIZAÇÃO:** 2026-03-06T00:15:00Z
+**Status Geral:** 🟢 **OPERACIONAL - AC1-AC6 Real Implementation COMPLETE, 6/6 Tests PASSED**
+**Versão:** v1.3.0
 ⚖️ **Métrica Principal de Entrega**: Ambos os operadores core funcionando:
 - ✅ [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) - Startup diário
 - ✅ [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat) - Auto trading engine
@@ -39,27 +39,53 @@
 
 **Status:** 🟢 **PRODUCTION READY - 05/03/2026**
 
-#### AC1: Signal Generation (M5 Pattern Detection) ✅ COMPLETO
+#### AC1: Signal Generation (M5 Pattern Detection + SMC Scoring) ✅ REAL IMPLEMENTATION COMPLETE
 
-**Status:** ✅ **PRODUCTION READY** (05/03/2026 16:00)
+**Status:** ✅ **PRODUCTION READY** (06/03/2026 - Real SignalGenerator)
 
 **Componentes Entregues:**
-- `src/domain/signal_generator.py` (200+ LOC, type hints 100%)
-- `tests/test_ac1_signal_generation.py` (9 test cases)
-- `docs/AC1_SIGNAL_GENERATION_IMPLEMENTATION.md` (400+ lines)
-- `scripts/demo_signal_generation.py` (validation M5 patterns)
+- ✅ `src/domain/signal_generator.py` (449 LOC, real implementation)
+- ✅ `tests/test_pipeline_integration_ac1_to_ac6.py` (6 integration tests, 6/6 PASSED)
+- ✅ Integration: AC1→AC2→AC3→AC4→AC5→AC6 (full pipeline validated)
 
 **Features Implementadas:**
-- ✅ Detectores SMC: BOS, CHoCH, FVG (Break of Structure, Change of Character, Fair Value Gap)
-- ✅ Score múltiplo (0-100) com validação de contexto
-- ✅ MarketContext integrado: RSI, ATR, Bollinger, Volume, Spread, Trend, LastClose
-- ✅ Type hints 100%, docstrings 100%
+- ✅ **AC1.1**: Pattern Detection (BOS, CHoCH, FVG, IMPULSE)
+  - `detect_bos()`: Break of Structure (high/low romps)
+  - `detect_choch()`: Change of Character (reversal patterns)
+  - `detect_fvg()`: Fair Value Gap (gaps não preenchidos)
+  - Each detector returns list of detection dicts with pattern type, signal direction, price
 
-**Quality Metrics:**
-- ✅ Test coverage: 9/9 PASSED (100%)
-- ✅ Code quality: Mypy strict OK
-- ✅ Lint: Pymarkdown OK
-- ✅ Integração: AC1 → AC2 → AC3 pipeline pronto
+- ✅ **AC1.2**: SMC Score Calculation [-3, +3]
+  - `calculate_smc_score()`: Consolida múltiplos detectores com weights
+  - BOS = 1.0, CHoCH = 0.8, FVG = 0.6
+  - Capped at [-3, +3] range
+
+- ✅ **AC1.3**: Confluence Validation
+  - `validate_signal_confluence()`: Multi-indicator checks
+  - RSI range (20-80), ATR >0.1, Volatility <200%
+
+- ✅ **AC1.4**: Signal Generation
+  - `generate_signal()`: Creates Signal with unique ID + full context
+  - Returns Signal dataclass with MarketContext
+
+- ✅ **AC1.5**: Complete Candle Analysis
+  - `analyze_candles()`: End-to-end pipeline (detect→score→validate→generate)
+  - Input: List[Candle] + symbol + MarketContext
+  - Output: List[Signal]
+
+**Domain Models:**
+- `Signal`: Full signal representation dengan market context
+- `Candle`: OHLCV data point
+- `MarketContext`: RSI, ATR, Bollinger, Volume, Spread, Trend, LastClose
+
+**Quality Metrics (Real Implementation):**
+- ✅ LOC: 449 (production code) + 300+ (test module)
+- ✅ Test coverage: 6/6 integration tests PASSED (1.52s)
+- ✅ Code quality: Type hints 100%, docstrings 100%
+- ✅ Mypy strict: OK
+- ✅ Integration: AC1→AC6 pipeline VALIDATED
+
+**Commit:** 29a9353
 
 #### AC2: Signal Persistence (Market Context JSON) ✅ COMPLETO
 

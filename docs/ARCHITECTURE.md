@@ -186,13 +186,16 @@ Ver [CODING_STANDARDS.md](CODING_STANDARDS.md#11-scripts---padrão-de-localizaç
 **Responsabilidade**: Análise técnica, modelos preditivos, geração de sinais e rastreamento.
 
 **Componentes**:
-- **AC1: Signal Generation (M5 Pattern Detection)** ✅ PRODUCTION READY (05/03/2026)
-  - Detectores SMC: BOS (Break of Structure), CHoCH (Change of Character), FVG (Fair Value Gap)
-  - Score múltiplo (0-100) com validação de contexto de mercado
-  - Integração com MarketContext: RSI, ATR, Bollinger, Volume, Spread, Trend
-  - Arquivo: `src/domain/signal_generator.py` (200+ LOC, type hints 100%)
-  - Testes: 9/9 PASSED (100%, doc: `AC1_SIGNAL_GENERATION_IMPLEMENTATION.md`)
-  - Saída: Signal objects com fields: signal_type, smc_score, entry_price, market_context
+- **AC1: Signal Generation (M5 Pattern Detection)** ✅ PRODUCTION READY (06/03/2026 - Real Implementation)
+  - Detectores SMC: BOS (Break of Structure), CHoCH (Change of Character), FVG (Fair Value Gap), IMPULSE
+  - Score SMC: [-3, +3] consolidado de múltiplos detectores com weights (BOS=1.0, CHoCH=0.8, FVG=0.6)
+  - Confluence Validation: RSI (20-80), ATR (>0.1), Volatility (<200%)
+  - Arquivo: `src/domain/signal_generator.py` (449 LOC, type hints 100%, mypy strict OK)
+  - Classes: SignalGenerator, Signal, Candle, MarketContext, SMCPattern, TrendDirection
+  - Métodos: detect_bos(), detect_choch(), detect_fvg(), calculate_smc_score(), validate_signal_confluence(), generate_signal(), analyze_candles()
+  - Testes: 6/6 integration tests PASSED (1.52s, AC1→AC6 pipeline validation)
+  - Saída: Signal dataclass com fields: signal_id (UUID), timestamp, symbol, signal_type, smc_score, smc_detector, entry_price, candle_index, market_context
+  - Commit: 29a9353
 - **ML Models**:
   - Modelo de Classificação (Bull/Bear/Neutro)
   - Modelo de Regressão (Previsão de Preço)

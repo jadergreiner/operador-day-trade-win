@@ -4,6 +4,8 @@
 
 ⚖️ **Antes de contribuir**: Entenda que [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) e [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat) são o CORE. Qualquer mudança deve ser validada com estes dois executáveis funcionando corretamente.
 
+**Last Updated**: 06/03/2026 (AC1 Real Implementation as Reference)
+
 ## Como Contribuir
 
 Este guia ajuda desenvolvedores a contribuir para o projeto seguindo os padrões estabelecidos.

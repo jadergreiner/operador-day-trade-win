@@ -8,7 +8,49 @@
 
 **Versão**: v7.0 - Refatorada como Lista de Tarefas Entregáveis
 
-**📌 LAST UPDATE (05/03/2026 - AC3 DOCUMENTACAO SYNC + COMECO AC4):**
+**📌 LAST UPDATE (06/03/2026 - AC1 PRODUCTION READY + FULL AC1→AC6 PIPELINE):**
+
+**✅ P50: AC1 SignalGenerator Implementation Complete**
+- ✅ Código: src/domain/signal_generator.py (449 LOC) - PRODUCTION READY
+- ✅ Testes: test_pipeline_integration_ac1_to_ac6.py (6/6 PASSED em 1.52s)
+- ✅ Commit: 29a9353 (feat: AC1 SignalGenerator + Real AC1-AC6 integration)
+- ✅ Documentação: DATA_MODELS.md (v1.0.5) sincronizado
+
+**AC1→AC6 Pipeline Validado:**
+- AC1: SignalGenerator (SMC patterns BOS/CHoCH/FVG)
+- AC2: SignalPersistence (DB persistence)
+- AC3: SignalTracker (Lifecycle management)
+- AC4: BDIDecisionFilter (Risk gates + decision)
+- AC5: TradeExecutor (Order execution)
+- AC6: MLFeedbackLoop (Learning + metrics)
+
+**Classes Implementadas:**
+- `SignalGenerator`: Detector + Scorer + Validator
+- `Signal`: Domain model com MarketContext
+- `Candle`: OHLCV data
+- `MarketContext`:RSI, ATR, Bollinger, Volume, Spread, Trend
+
+**Métodos AC1:**
+- `detect_bos()`: Break of Structure detection
+- `detect_choch()`: Change of Character detection
+- `detect_fvg()`: Fair Value Gap detection
+- `calculate_smc_score()`: Consolidate SMC score [-3, +3]
+- `validate_signal_confluence()`: Multi-indicator validation
+- `generate_signal()`: Create Signal with market context
+- `analyze_candles()`: End-to-end pipeline
+
+**Status Atual:**
+- ✅ AC1: 449 LOC + 6 test scenarios
+- ✅ AC2: SignalPersistence (947 LOC)
+- ✅ AC3: SignalTracker (665 LOC)
+- ✅ AC4: BDIDecisionFilter (428 LOC + 16 tests)
+- ✅ AC5: TradeExecutor (520+ LOC + 16 tests)
+- ✅ AC6: MLFeedbackLoop (600+ LOC + 21 tests)
+- **TOTAL: 3.629+ LOC | 6/6 Integration Tests PASSED**
+
+---
+
+**📌 PREVIOUS UPDATE (05/03/2026 - AC3 DOCUMENTACAO SYNC + COMECO AC4):**
 
 **🔄 atualiza_docs: Sincronizacao DATA_MODELS + MODELAGEM_DADOS com AC3 Implementation**
 - ✅ Lint validation: pymarkdown fix aplicado (3 arquivos)

@@ -75,12 +75,45 @@ classDiagram
     class SignalGenerator {
         -smc_config: SMCConfig
         -market_context: MarketContext
-        +detect_bos(candles: List) List~Signal~
-        +detect_choch(candles: List) List~Signal~
-        +detect_fvg(candles: List) List~Signal~
-        +calculate_smc_score(detector_type: str) float
-        +generate_signal(signal_type: str, context: MarketContext) Signal
-        +validate_signal_confluence() bool
+        +detect_bos(candles: List~Candle~) List~Dict~
+        +detect_choch(candles: List~Candle~) List~Dict~
+        +detect_fvg(candles: List~Candle~) List~Dict~
+        +calculate_smc_score(detections: Dict) float
+        +validate_signal_confluence(market_context: MarketContext) bool
+        +generate_signal(symbol: str, signal_type: str, smc_score: float, smc_detector: str, entry_price: float, candle_index: int, market_context: MarketContext) Signal
+        +analyze_candles(symbol: str, candles: List~Candle~, market_context: MarketContext) List~Signal~
+    }
+
+    class Signal {
+        -signal_id: str(UUID)
+        -timestamp: datetime
+        -symbol: str
+        -signal_type: str
+        -smc_score: float
+        -smc_detector: str
+        -entry_price: float
+        -candle_index: int
+        -market_context: MarketContext
+    }
+
+    class Candle {
+        -timestamp: datetime
+        -open: float
+        -high: float
+        -low: float
+        -close: float
+        -volume: int
+    }
+
+    class MarketContext {
+        -rsi: float
+        -atr: float
+        -bb_upper: float
+        -bb_lower: float
+        -volume: int
+        -spread: float
+        -trend_direction: str
+        -last_close: float
     }
 
     class MLModels {

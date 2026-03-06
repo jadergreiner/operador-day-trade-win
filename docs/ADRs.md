@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADRs) - Operador Day Trade WIN
 
-**Data**: 03/03/2026
+**Data**: 06/03/2026 (AC1 Real Implementation Validated)
 **Status**: ✅ COMPLETO
 **Referência**: [ARCHITECTURE.md](ARCHITECTURE.md) | [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) | [DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md)
 
