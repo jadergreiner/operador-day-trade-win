@@ -65,6 +65,89 @@ Cada tarefa é avaliada por **2 personas**:
 
 ---
 
+## ✅ FEATURES COMPLETADAS (FOUNDATION LAYER)
+
+### AC1: Signal Generation (M5 Pattern Detection)
+
+**Status Atual**: ✅ **PRODUCTION READY** (05/03/2026 16:00)
+
+**O quê**: Geração de sinais de trading em timeframe M5 usando padrões SMC
+- Detectores: BOS (Break of Structure), CHoCH (Change of Character), FVG (Fair Value Gap)
+- Score múltiplo (0-100) com validação de contexto
+- Integração com MarketContext (RSI, ATR, Bollinger, Volume, Spread, Trend)
+
+**Entregáveis**:
+- ✅ src/domain/signal_generator.py (200+ LOC, type hints 100%)
+- ✅ tests/test_ac1_signal_generation.py (9 test cases, 100% PASSED)
+- ✅ docs/AC1_SIGNAL_GENERATION_IMPLEMENTATION.md (400+ lines, doc completo)
+- ✅ scripts/demo_signal_generation.py (validação M5 patterns)
+- ✅ Commit: feat: AC1 Signal Generation - SMC detection com validacao contexto
+
+**Quality Metrics**:
+- ✅ Test coverage: 9/9 PASSED (100%)
+- ✅ Type hints: 100%
+- ✅ Docstrings: 100%
+- ✅ Code quality: Mypy strict OK
+- ✅ Lint: Pymarkdown OK
+
+**Pré-requisito para**: AC2, AC3 (feedback loop)
+
+---
+
+### AC2: Signal Persistence (Market Context JSON)
+
+**Status Atual**: ✅ **PRODUCTION READY** (05/03/2026 17:30)
+
+**O quê**: Persistência de sinais AC1 em SQLite com contexto de mercado serializado em JSON
+- Serialização de 8 campos (RSI, ATR, BB_upper, BB_lower, Volume, Spread, Trend, LastClose)
+- Storage otimizado com indices + UNIQUE constraints
+- Integração bidirecional (AC1 → DB → AC3)
+
+**Entregáveis**:
+- ✅ src/application/signal_persistence.py (872 LOC, market_context_json column adicionado)
+- ✅ tests/test_ac2_signal_persistence.py (8 test cases, 100% PASSED)
+- ✅ docs/AC2_SIGNAL_PERSISTENCE_IMPLEMENTATION.md (400+ lines, doc completo)
+- ✅ Database schema updated: signals.market_context_json TEXT
+- ✅ Commit: feat: AC2 Signal Persistence - serializar market_context_json em DB
+
+**Quality Metrics**:
+- ✅ Test coverage: 8/8 PASSED (100%, 9.62s total)
+- ✅ Type hints: 100%
+- ✅ Docstrings: 100%
+- ✅ Integration: AC1→AC2 pipeline validated
+- ✅ Serialization: Bidirecional (JSON ↔ MarketContext)
+
+**Pré-requisito para**: AC3 (Signal Tracking lifecycle)
+
+**Data Persistence Examples**:
+```python
+# AC1 generates signal
+Signal(
+    signal_id="SIG-001",
+    symbol="WINFUT",
+    signal_type=SMCDetector.BOS,
+    market_context=MarketContext(
+        rsi=65.5, atr=45.2, bb_upper=100.0, bb_lower=90.0,
+        volume=1000000, spread=0.5, trend_direction="UP",
+        last_close=95.25
+    )
+)
+
+# AC2 persists to DB
+market_context_json = {
+    "rsi": 65.5, "atr": 45.2, "bb_upper": 100.0, "bb_lower": 90.0,
+    "volume": 1000000, "spread": 0.5, "trend_direction": "UP",
+    "last_close": 95.25
+}
+INSERT INTO signals (..., market_context_json) VALUES (..., '{"rsi": 65.5, ...}')
+
+# AC3 retrieves and deserializes
+SELECT * FROM signals WHERE symbol='WINFUT'
+→ Reconstrói Signal com MarketContext completo
+```
+
+---
+
 ## 📋 TAREFAS CRÍTICAS (P0)
 
 ---

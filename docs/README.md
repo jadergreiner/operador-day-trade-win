@@ -75,6 +75,28 @@ Então consulte:
 
 ## 📋 Features Documentadas
 
+### AC1: Signal Generation (M5 Pattern Detection)
+**Status:** ✅ **PRODUCTION READY** (05/03/2026)
+**Linguagem:** Python 3.11
+**Cobertura:** 100% (9 testes PASSED)
+
+Geração de sinais de trading em timeframe M5 usando padrões SMC (Supply & Demand):
+- 🟢 **Detectores:** BOS (Break of Structure), CHoCH (Change of Character), FVG (Fair Value Gap)
+- 🟢 **Validação:** Score múltiplo (0-100), filtros de contexto
+- 🟢 **Testado:** 9/9 testes unitários + integração
+- 📊 **Documetos:** [AC1_SIGNAL_GENERATION_IMPLEMENTATION.md](AC1_SIGNAL_GENERATION_IMPLEMENTATION.md)
+
+### AC2: Signal Persistence (Market Context JSON)
+**Status:** ✅ **PRODUCTION READY** (05/03/2026)
+**Linguagem:** Python 3.11 (SQLite Backend)
+**Cobertura:** 100% (8 testes PASSED)
+
+Persistência de sinais AC1 com contexto de mercado serializado em JSON:
+- 🟢 **Serialização:** 8 campos (RSI, ATR, BB, Volume, Spread, Trend, LastClose)
+- 🟢 **Storage:** SQLite com indices otimizados + UNIQUE constraints
+- 🟢 **Testado:** 8/8 testes integração + pipeline AC1→AC2
+- 📊 **Documentos:** [AC2_SIGNAL_PERSISTENCE_IMPLEMENTATION.md](AC2_SIGNAL_PERSISTENCE_IMPLEMENTATION.md)
+
 ### IntraDayLearner
 **Localização:** `docs/features/intraday-learner/`
 **Status:** ✅ Implementado
@@ -116,6 +138,8 @@ docs/features/feature-x/
 
 | Documento | Propósito |
 |-----------|-----------|
+| [AC1_SIGNAL_GENERATION_IMPLEMENTATION.md](AC1_SIGNAL_GENERATION_IMPLEMENTATION.md) | Implementação AC1: Geração de sinais M5 com padrões SMC (BOS/CHoCH/FVG) |
+| [AC2_SIGNAL_PERSISTENCE_IMPLEMENTATION.md](AC2_SIGNAL_PERSISTENCE_IMPLEMENTATION.md) | Implementação AC2: Persistência de sinais em SQLite com market_context_json |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Visão arquitetural geral do sistema |
 | [CODING_STANDARDS.md](CODING_STANDARDS.md) | Padrões de código e estilo |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Como contribuir |

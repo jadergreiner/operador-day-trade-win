@@ -157,18 +157,34 @@ Ver [CODING_STANDARDS.md](CODING_STANDARDS.md#11-scripts---padrão-de-localizaç
 **Responsabilidade**: Captura, transformação e persistência de dados de mercado em tempo real.
 
 **Componentes**:
+- **AC2: Signal Persistence (Market Context JSON)** ✅ PRODUCTION READY (05/03/2026)
+  - Persistência de sinais AC1 em SQLite com contexto de mercado serializado
+  - Serialização de 8 campos: RSI, ATR, BB_upper, BB_lower, Volume, Spread, Trend, LastClose
+  - Storage otimizado com indices (timestamp, symbol_timestamp, outcome_type)
+  - Constraints: UNIQUE(timestamp, symbol, signal_type), FK, CHECK
+  - Arquivo: `src/application/signal_persistence.py` (872 LOC com market_context_json)
+  - Testes: 8/8 PASSED (100%, 9.62s total, doc: `AC2_SIGNAL_PERSISTENCE_IMPLEMENTATION.md`)
+  - Método de deserialização: JSON ↔ MarketContext (bidirecional, com error handling)
+  - Integração: AC1 → AC2 → AC3 pipeline validado
 - **MT5Adapter**: Interface com MetaTrader 5 para captura de dados
 - **DataPipeline**: Processamento, limpeza e normalização de dados
 - **Repository Pattern**: Abstração de persistência
 - **Cache Layer**: Redis/Memória para dados em tempo real
 
-**Tecnologias**: MetaTrader5 Python API, SQLite, pandas
+**Tecnologias**: MetaTrader5 Python API, SQLite, pandas, JSON serialization
 
 ### 2. Analysis Layer (Camada de Análise)
 
 **Responsabilidade**: Análise técnica, modelos preditivos e geração de sinais.
 
 **Componentes**:
+- **AC1: Signal Generation (M5 Pattern Detection)** ✅ PRODUCTION READY (05/03/2026)
+  - Detectores SMC: BOS (Break of Structure), CHoCH (Change of Character), FVG (Fair Value Gap)
+  - Score múltiplo (0-100) com validação de contexto de mercado
+  - Integração com MarketContext: RSI, ATR, Bollinger, Volume, Spread, Trend
+  - Arquivo: `src/domain/signal_generator.py` (200+ LOC, type hints 100%)
+  - Testes: 9/9 PASSED (100%, doc: `AC1_SIGNAL_GENERATION_IMPLEMENTATION.md`)
+  - Saída: Signal objects com fields: signal_type, smc_score, entry_price, market_context
 - **ML Models**:
   - Modelo de Classificação (Bull/Bear/Neutro)
   - Modelo de Regressão (Previsão de Preço)
