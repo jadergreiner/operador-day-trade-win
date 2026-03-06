@@ -12,6 +12,7 @@ Todas as ações devem seguir estas diretrizes sem exceção:
 - **Exemplo:** `def calcular_margem()` ✅ | `def calculate_margin()` ❌
 - **Commit:** `git commit -m "feat: adicionar calculadora de margem de segurança"` ✅
 - **Documentação:** Todos os .md, .rst, docstrings devem estar em português
+- **Mudanças:** Rodar a integridade referencial nas docs do projeto `prompts\atualiza_docs.md`
 
 ### 2. 📝 Integridade de Commits (Sem Quebra de Texto)
 - **Requisito:** Mensagens de commit devem ser legíveis e sem caracteres corrompidos

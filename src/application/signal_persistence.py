@@ -52,9 +52,87 @@ class SignalOutcomeType(str, Enum):
     OPEN = "OPEN"  # Ainda em aberto
 
 
+class DecisionType(str, Enum):
+    """Tipo de decisão tomada na Camada 2."""
+    ENTRAR = "ENTRAR"  # Execute trade
+    FICAR_DE_FORA = "FICAR_DE_FORA"  # Reject signal
+
+
+class DecisionCorrectnessStage1(str, Enum):
+    """Etapa 1: A decisão foi correta (qualidade do acerto/erro)?"""
+    CORRETA = "CORRETA"  # Decisão tomada foi correta
+    ERRADA = "ERRADA"  # Decisão tomada foi errada
+
+
+class DecisionQualityStage2(str, Enum):
+    """Etapa 2: A decisão foi correta pelos motivos corretos?"""
+    CORRETO_COM_RAZOES_CERTAS = "CORRETO_COM_RAZOES_CERTAS"  # Acertou e motivos confirmados
+    CORRETO_POR_ACASO = "CORRETO_POR_ACASO"  # Acertou mas motivadores falsos
+    ERRADO_MAS_MOTIVADORES_CONFIRMADOS = "ERRADO_MAS_MOTIVADORES_CONFIRMADOS"
+    ERRADO_COM_RAZOES_ERRADAS = "ERRADO_COM_RAZOES_ERRADAS"  # Errou tudo
+
+
 # ============================================================================
 # DATA CLASSES
 # ============================================================================
+
+
+@dataclass
+class MarketContext:
+    """
+    Contexto de mercado capturado no momento do sinal.
+
+    Camada 1 captura TODOS os indicadores em tempo real
+    para auditoria e análise posterior.
+
+    Atributos:
+        rsi: Relative Strength Index (0-100)
+        atr: Average True Range (volatilidade)
+        bb_upper: Bollinger Band superior
+        bb_lower: Bollinger Band inferior
+        volume: Volume de negociação
+        spread: Diferença bid-ask em pontos
+        trend_direction: Direção da tendência (UP/DOWN/FLAT)
+        last_close: Último close antes do sinal
+    """
+
+    rsi: Optional[float] = None  # 0-100
+    atr: Optional[float] = None  # Volatilidade
+    bb_upper: Optional[float] = None  # Bollinger upper
+    bb_lower: Optional[float] = None  # Bollinger lower
+    volume: Optional[int] = None  # Negócios
+    spread: Optional[float] = None  # Bid-ask diff
+    trend_direction: Optional[str] = None  # UP/DOWN/FLAT
+    last_close: Optional[float] = None  # Preço anterior
+
+
+@dataclass
+class DecisionReasoning:
+    """
+    Motivos/explicação da decisão tomada na Camada 2.
+
+    Camada 2 persiste NÃO APENAS a decisão (ENTRAR/FICAR),
+    mas os MOTIVOS que levaram à decisão.
+
+    Atributos:
+        decision: ENTRAR ou FICAR_DE_FORA
+        ml_confidence: Score do modelo (0-100%)
+        top_features: Top 3 features que influenciaram
+        feature_scores: Dict com scores de cada feature
+        reasoning_text: Explicação em texto livre
+    """
+
+    decision: DecisionType
+    ml_confidence: float  # 0-100
+    top_features: list = None  # Top 3 ['rsi_bullish', 'volume_spike', 'atr_low']
+    feature_scores: dict = None  # {'rsi': 0.75, 'volume': 0.60, 'atr': 0.45}
+    reasoning_text: str = None  # "Alta confiança RSI, mas volume baixo"
+
+    def __post_init__(self):
+        if self.top_features is None:
+            self.top_features = []
+        if self.feature_scores is None:
+            self.feature_scores = {}
 
 
 @dataclass
@@ -65,6 +143,10 @@ class Signal:
     Um sinal é gerado quando M5 detecta estrutura SMC (BOS/CHoCH/FVG).
     Sinal é INDEPENDENTE de qualquer decisão de entrada.
 
+    **REFINADO (05/03/2026):**
+    Agora captura TODO o contexto de mercado no momento do sinal
+    para auditoria, análise posterior e aprendizado (Camada 3).
+
     Atributos:
         signal_id: UUID único (rastreamento global)
         timestamp: Quando M5 candle fechou (tempo exato)
@@ -74,6 +156,7 @@ class Signal:
         smc_detector: Qual estrutura detectou (BOS/CHoCH/FVG)
         entry_price: Preço no momento da geração
         candle_index: Índice do candle M5 (auditoria)
+        market_context: **NOVO** Indicadores de mercado em tempo real
     """
 
     signal_id: str
@@ -84,6 +167,7 @@ class Signal:
     smc_detector: SMCDetector
     entry_price: float
     candle_index: int
+    market_context: Optional[MarketContext] = None  # **NOVO**: Contexto completo
     outcome_trade_id: Optional[int] = None
     outcome_pnl: Optional[float] = None
     outcome_days_open: Optional[float] = None
@@ -95,6 +179,97 @@ class Signal:
     def is_complete(self) -> bool:
         """Signal está completo (tem outcome defini dado)."""
         return self.outcome_type is not None and self.outcome_type != SignalOutcomeType.OPEN
+
+
+# ============================================================================
+# CAMADA 2: DECISION (Motor de Decisão Independente)
+# ============================================================================
+
+
+@dataclass
+class Decision:
+    """
+    Decisão tomada por Camada 2 (Motor de Decisão).
+
+    Camada 2 toma decisão INDEPENDENTE: ENTRAR ou FICAR_DE_FORA.
+    Persiste NÃO APENAS a decisão, mas os MOTIVOS da decisão.
+
+    **REFINADO (05/03/2026):**
+    - Persiste DecisionReasoning (explainability)
+    - Vinculação com Signal ID (rastreamento)
+
+    Atributos:
+        decision_id: UUID único
+        signal_id: Referência ao sinal (FK)
+        timestamp: Quando a decisão foi tomada
+        decision: ENTRAR ou FICAR_DE_FORA
+        ml_confidence: Score do modelo (0-100%)
+        reasoning: **NOVO** Motivos da decisão
+        outcome_pnl: P&L resultado (preenchido em Camada 3)
+        outcome_correct: **NOVO** Etapa 1 - Decision correctness
+        outcome_quality: **NOVO** Etapa 2 - Decision quality
+    """
+
+    decision_id: str
+    signal_id: str  # FK para signals
+    timestamp: datetime
+    decision: DecisionType  # ENTRAR ou FICAR_DE_FORA
+    ml_confidence: float  # 0-100
+    reasoning: Optional[DecisionReasoning] = None  # Motivos da decisão
+    outcome_pnl: Optional[float] = None
+    outcome_correct: Optional[DecisionCorrectnessStage1] = None  # Etapa 1
+    outcome_quality: Optional[DecisionQualityStage2] = None  # Etapa 2
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+# ============================================================================
+# CAMADA 3: LEARNING FEEDBACK (2 Etapas de Validação)
+# ============================================================================
+
+
+@dataclass
+class LearningFeedback:
+    """
+    Feedback de aprendizado em 2 etapas (Camada 3).
+
+    Sinal encerrado após acompanhamento.
+    Feedback ocorre em DUAS ETAPAS INDEPENDENTES.
+
+    **Etapa 1: Decision Correctness**
+    - A decisão foi CORRETA ou ERRADA?
+    - ENTROU e PROFITABLE → CORRETA
+    - ENTROU e LOSS → ERRADA
+    - FICOU_DE_FORA e teria P+ → ERRADA
+    - FICOU_DE_FORA e teria L → CORRETA
+
+    **Etapa 2: Decision Quality**
+    - A decisão foi correta pelos corretos MOTIVOS?
+    - CORRETO_COM_RAZOES_CERTAS: Acertou e motivadores confirmados
+    - CORRETO_POR_ACASO: Acertou mas motivadores falsos
+    - ERRADO_MAS_MOTIVADORES_CONFIRMADOS: Errou, mas razões eram válidas (mercado foi contra)
+    - ERRADO_COM_RAZOES_ERRADAS: Errou tudo
+
+    Atributos:
+        feedback_id: UUID único
+        decision_id: FK para Decision
+        signal_id: FK para Signal
+        stage_1_correctness: CORRETA ou ERRADA (resultado)
+        stage_2_quality: Qualidade da decisão (motivadores confirmados?)
+        trade_pnl: P&L final do trade
+        motivators_analysis: Análise dos motivadores (confirmados ou não?)
+        recommendations: Recomendações para próximas decisões
+    """
+
+    feedback_id: str
+    decision_id: str  # FK
+    signal_id: str  # FK
+    stage_1_correctness: DecisionCorrectnessStage1
+    stage_2_quality: DecisionQualityStage2
+    trade_pnl: float
+    motivators_analysis: Optional[str] = None  # Confirmaram? Falharam?
+    recommendations: Optional[str] = None  # Lições aprendidas
+    created_at: Optional[datetime] = None
 
 
 # ============================================================================
@@ -139,19 +314,21 @@ class SignalGenerator:
         candles_m5: dict,
         symbol: str,
         current_price: float,
+        market_context: Optional[MarketContext] = None,
         candle_index: int = 0,
     ) -> Optional[Signal]:
         """
-        Procura estrutura SMC nos candles M5.
+        Procura estrutura SMC nos candles M5 e captura contexto de mercado.
 
-        Lógica simplificada para exemplo:
-            - BOS: close > previous high (bullish) ou close < previous low (bearish)
-            - Valida SMC score (deve estar >= |1.0| para gerar sinal)
+        **REFINADO (05/03/2026):**
+        Agora captura TODO o contexto de mercado no momento do sinal
+        para auditoria e aprendizado (Camada 3).
 
         Args:
             candles_m5: Dict com OHLC (open, high, low, close, volume)
             symbol: Código do ativo
             current_price: Preço atual (entry_price)
+            market_context: **NOVO** Indicadores de mercado (RSI, ATR, volume, etc)
             candle_index: Índice do candle (auditoria)
 
         Returns:
@@ -188,6 +365,10 @@ class SignalGenerator:
             if abs(smc_score) < 1.0:
                 return None
 
+            # **NOVO**: Criar market_context se não fornecido
+            if market_context is None:
+                market_context = MarketContext()
+
             # Gerar signal com UUID
             signal = Signal(
                 signal_id=str(uuid4()),
@@ -198,12 +379,14 @@ class SignalGenerator:
                 smc_detector=smc_detector,
                 entry_price=current_price,
                 candle_index=candle_index,
+                market_context=market_context,  # **NOVO**: contexto capturado
                 created_at=datetime.now(),
             )
 
             self.logger.info(
                 f"Signal detectado: {signal.signal_type} "
-                f"({signal.smc_detector}, score={signal.smc_score:.2f})"
+                f"({signal.smc_detector}, score={signal.smc_score:.2f}) "
+                f"com contexto de mercado"
             )
             return signal
 
@@ -272,7 +455,7 @@ class SignalPersistence:
 
                     FOREIGN KEY(outcome_trade_id) REFERENCES trades(id),
                     CHECK(signal_type IN ('BUY', 'SELL')),
-                    CHECK(outcome_type IN ('WINNING_SIGNAL', 'WHIPSAW', 
+                    CHECK(outcome_type IN ('WINNING_SIGNAL', 'WHIPSAW',
                                           'MISSED_OPPORTUNITY', 'OPEN')),
                     CHECK(smc_score >= -3.0 AND smc_score <= 3.0),
                     UNIQUE(timestamp, symbol, signal_type)

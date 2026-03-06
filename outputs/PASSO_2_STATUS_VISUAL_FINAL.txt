@@ -235,7 +235,7 @@ ML Models Performance:
 
 ---
 
-**Timestamp:** 06/03/2026 20:30 BRT  
-**Commit:** 05aef54 (docs: Executor raiz confirmado)  
-**Executor:** c:\repo\operador-day-trade-win\INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat (v1.2.3)  
+**Timestamp:** 06/03/2026 20:30 BRT
+**Commit:** 05aef54 (docs: Executor raiz confirmado)
+**Executor:** c:\repo\operador-day-trade-win\INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat (v1.2.3)
 **Status:** 🟢 OPERACIONAL - PRONTO PARA PRÓXIMO PASSO

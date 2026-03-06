@@ -33,20 +33,20 @@
 ### **PASSO 2: DEPLOY STAGING** ✅
    - [PASSO_2_CONFIRMACAO_FINAL.md](PASSO_2_CONFIRMACAO_FINAL.md) - Checklist deploy
    - [PASSO_2_STATUS_VISUAL_FINAL.txt](PASSO_2_STATUS_VISUAL_FINAL.txt) - Visual rápido
-   
+
    **Status:** 🟢 Operacional (10/10 testes ✅)
 
 ### **PASSO 3: NOTIFICAR EQUIPE** ✅
    - [PASSO_3_NOTIFICACOES_EQUIPE.md](PASSO_3_NOTIFICACOES_EQUIPE.md) - 4 emails prontos
    - [PASSO_3_STATUS_RESUMIDO.txt](PASSO_3_STATUS_RESUMIDO.txt) - Quick reference
-   
+
    **Status:** 🟢 Pronto (projeto pessoal = simbólico)
 
 ### **PASSO 4: MONITORAR 5-DIAS** ⏳
    - [PASSO_4_TEMPLATE_MONITORAMENTO.md](PASSO_4_TEMPLATE_MONITORAMENTO.md) - Guia detalhado
    - [PASSO_4_RESUMO_VISUAL.txt](PASSO_4_RESUMO_VISUAL.txt) - Quick reference
    - [PASSO_4_ACOMPANHAMENTO_DIARIO.json](PASSO_4_ACOMPANHAMENTO_DIARIO.json) - Histórico automático
-   
+
    **Status:** 🟡 Começa 07/03 09:00
 
 ---
@@ -213,7 +213,7 @@ INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
 
 **Quando:** 07/03/2026 às 09:00 BRT (amanhã)
 
-**Como:** 
+**Como:**
 ```bash
 cd c:\repo\operador-day-trade-win
 python scripts/monitorar_p0_diario.py

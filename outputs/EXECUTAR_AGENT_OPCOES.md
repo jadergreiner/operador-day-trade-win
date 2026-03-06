@@ -1,6 +1,6 @@
 # 🚀 EXECUTAR AGENT - OPÇÕES DE INICIALIZAÇÃO
 
-**Atualizado:** 06/03/2026  
+**Atualizado:** 06/03/2026
 **Status:** ✅ P0-URGENT-1 Inactivity Penalty integrado
 
 ---
@@ -14,7 +14,7 @@ cd c:\repo\operador-day-trade-win
 INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
 ```
 
-**Localização Oficial:** `c:\repo\operador-day-trade-win\INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`  
+**Localização Oficial:** `c:\repo\operador-day-trade-win\INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
 **Versão:** v1.2.3 (26/02/2026) - Full integration avec BDI + SMC + ML + P0-URGENT-1
 
 **O que faz:**

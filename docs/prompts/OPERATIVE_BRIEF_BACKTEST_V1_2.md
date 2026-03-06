@@ -11,7 +11,6 @@ volatilidade) e treinamento incremental do modelo ML.
 **Sequência:** 3 fases executadas linearmente (design → desenvolvimento → validação)
 **Sucesso:** F1 ≥ 0.65, Sharpe > 1.0, Win Rate 62-65%, Capture ≥ 85%
 
-
 ## 👥 SQUAD ALOCADA (BOARD #7 personas)
 
 ### Bloco 2: Modelo & Risco (Core Technical)
@@ -29,7 +28,6 @@ volatilidade) e treinamento incremental do modelo ML.
 
 **Total:** 7 personas | Execução em sequência contínua
 
-
 ## 📋 ARTEFATOS DE ENTRADA (Dependências)
 
 ### Código Existente
@@ -41,10 +39,10 @@ volatilidade) e treinamento incremental do modelo ML.
 ### Dados disponíveis em SQLite (`data/db/trading.db`)
 ✅ Tabelas: market_data | features | signals | trades | positions
 ✅ História: ~1 ano de candles WIN/WDO com OHLCV
-   - **M5 PRIMEIRA CAMADA** - gera sinais operacionais
-   - 1 ano M5 = 252 dias × 288 M5/dia = **73.776 candles**
-   - Suficiente para 10-fold cross-validation (73.776 ÷ 10 ≈ 7.377 por fold)
-   - Nota: H4/M15 opcionais para contexto macro (não participam geração sinal)
+- **M5 PRIMEIRA CAMADA** - gera sinais operacionais
+- 1 ano M5 = 252 dias × 288 M5/dia = **73.776 candles**
+- Suficiente para 10-fold cross-validation (73.776 ÷ 10 ≈ 7.377 por fold)
+- Nota: H4/M15 opcionais para contexto macro (não participam geração sinal)
 ✅ Features: 24 engineered (volatilidade, momentum, MA, padrões, lags, correlação) - Segunda camada
 ✅ Timing: Dados exatos com timestamps MT5 (hh:mm:ss)
 ✅ SMC M5: Estrutura (BOS/CHoCH/FVG) GERA sinal primário - Primeira camada
@@ -54,7 +52,6 @@ volatilidade) e treinamento incremental do modelo ML.
 📄 [docs/MODELAGEM_DADOS.md](docs/MODELAGEM_DADOS.md) — Schema SQLite exacto
 📄 [docs/DIAGRAMA_CLASSES.md](docs/DIAGRAMA_CLASSES.md) — UML classes
 📄 [docs/REGRAS_NEGOCIO.md](docs/REGRAS_NEGOCIO.md) — 13 regras críticas
-
 
 ## 🔧 ARTEFATOS DE SAÍDA (Deliverables)
 
@@ -150,54 +147,103 @@ volatilidade) e treinamento incremental do modelo ML.
   - Rastreia ENTRADAS executadas e REJEIÇÕES
   - Permite auditoria: quais sinais foram rejeitados e por quê?
 
-### **CAMADA 3: Aprendizado (Validação de Decisão)**
+### **CAMADA 3: Aprendizado (2 Etapas de Validação Independentes)**
 
-- [ ] **AC7: Calcular Outcome Real**
+**Etapa 1: Correção (Outcome-based)**
+
+- [ ] **AC7: Calcular Outcome Real (ETAPA 1)**
   - ENTROU: trade fechado → P&L real calculado
   - FICOU DE FORA: P&L hipotético se tivesse entrado
   - Outcome catalogado em `learning_feedback`:
     - `decision_id`: qual decisão está sendo avaliada
     - `trade_pnl`: P&L real (ou hipotético)
-    - `decision_accuracy`: CORRETA ou ERRADA
+    - `stage_1_correctness`: CORRETA ou ERRADA
 
-- [ ] **AC8: Validar Acerto de Decisão**
-  - ENTROU e fechou PROFITABLE → decisão CORRETA ✓
-  - ENTROU e fechou em LOSS → decisão ERRADA ✗
-  - FICOU DE FORA mas teria sido PROFITABLE → decisão ERRADA ✗
-  - FICOU DE FORA e teria sido LOSS → decisão CORRETA ✓
-  - Permite calcular acurácia de decisão
+- [ ] **AC8: Validar Acerto de Decisão (ETAPA 1)**
+  - **ENTROU + PROFITABLE** → `stage_1_correctness = CORRETA` ✓
+  - **ENTROU + LOSS** → `stage_1_correctness = ERRADA` ✗
+  - **FICOU DE FORA + teria P+** → `stage_1_correctness = ERRADA` ✗ (sabia e não entrou)
+  - **FICOU DE FORA + teria L** → `stage_1_correctness = CORRETA` ✓ (evitou loss)
+  - Permite calcular acurácia de decisão (outcome-based)
 
-- [ ] **AC9: Feedback Loop para Aprendizado**
-  - Calcular: % de decisões corretas vs erradas
-  - Agrupar erros por padrão (ex: alta confiança mas LOSS)
-  - Identificar: quando o modelo erra mais?
+**Etapa 2: Qualidade do Raciocínio (Reasoning Validation)**
+
+- [ ] **AC9: Validar Qualidade de Decisão (ETAPA 2)**
+  - A decisão foi correta PELOS CORRETOS MOTIVOS?
+  - Ou foi sorte? Ou foi errada mas com razão válida?
+  - `stage_2_quality` avalia 4 cenários:
+    - `CORRETO_COM_RAZOES_CERTAS`: Acertou AND motivadores confirmados
+      - Ex: alta confiança RSI ✓ + volume spike ✓ = P+ ✓
+      - → APRENDER: padrão válido, repetir
+    - `CORRETO_POR_ACASO`: Acertou BUT motivadores inválidos
+      - Ex: confiança baixa OR features fracas BUT sorte de mercado
+      - → REVISAR: ganhou mas raciocínio foi fraco (risco)
+    - `ERRADO_MAS_MOTIVADORES_CONFIRMADOS`: Errou BUT razões eram certa
+      - Ex: condições ideais (RSI ✓, volume ✓) BUT mercado foi contra
+      - → VALIDAR: padrão era correto, mercado exceção (não culpa do modelo)
+    - `ERRADO_COM_RAZOES_ERRADAS`: Errou AND motivadores inválidos
+      - Ex: confiança equivocada + features ruins = LOSS
+      - → CORRIGIR: padrão falho, ajustar features/modelo
+
+- [ ] **AC10-PARTE-1: Feedback Loop - Análise de Padrões**
+  - Agrupar decisões por `stage_1_correctness` (CORRETA/ERRADA)
+  - Dividir cada grupo por `stage_2_quality` (4 tipos acima)
+  - Calcular: frequência de cada tipo
+  - Agrupar erros por padrão de razão (feature engineered)
+  - Identificar: quando modelo erra mais? Features fracas? Sorte?
+
+- [ ] **AC10-PARTE-2: Feedback Loop - Aprendizado Contínuo**
   - Feedback serve para: evolução do modelo (próximas decisões)
+  - Agrupar padrões de `stage_2_quality`:
+    - CORRETO_COM_RAZOES_CERTAS: aumentar confiança (pattern válido)
+    - CORRETO_POR_ACASO: revisar (pattern fraco, sorte)
+    - ERRADO_MAS_MOTIVADORES_CONFIRMADOS: validar (padrão OK, mercado exceção)
+    - ERRADO_COM_RAZOES_ERRADAS: corrigir (padrão falho)
+  - Resultados em `outputs/backtest_learning_analysis.json`:
+    - Quebra por todos 4 tipos de `stage_2_quality`
+    - Win rate diferenciado por tipo (lucky wins têm menor win rate em future trades)
 
 ### **Métricas Agregadas (Camadas 1+2+3)**
 
-- [ ] **AC10: Métricas de Backtest**
-  - P&L total e por trade
-  - Drawdown máximo com cálculo rigoroso
-  - Win rate (≥60% alvo)
-  - F1 score (≥0.65 alvo)
-  - Trades mínimo: 50+ para validação estatística
+- [ ] **AC11: Métricas de Backtest (3 Camadas)**
+  - **Camada 1 Metrics**:
+    - Total de sinais gerados (COUNT distinct signal_id)
+    - Sinais processados até encerramento (outcome: WINNING, WHIPSAW, MISSED)
+  - **Camada 2 Metrics**:
+    - Sinais ENTRADOS (decision=ENTRAR, COUNT)
+    - Sinais REJEITADOS (decision=FICAR_DE_FORA, COUNT)
+    - Taxa de rejeição (rejected / total %)
+  - **Camada 3 Metrics**:
+    - P&L total e por trade
+    - Drawdown máximo com cálculo rigoroso
+    - Win rate (≥60% alvo)
+    - F1 score (≥0.65 alvo)
+    - **NOVO:** Stage 1 accuracy (% CORRETA)
+    - **NOVO:** Stage 2 quality breakdown (% cada tipo)
+    - Trades mínimo: 50+ para validação estatística
 
-- [ ] **AC11: Circuit Breakers Funcionais**
+- [ ] **AC12: Circuit Breakers Funcionais**
   - Detecta triggers -3% (aviso), -5% (slow), -8% (hard stop)
   - Valida HARD STOP em -8% (para trading imediatamente)
   - Simula 3 níveis de escalação corretamente
 
-- [ ] **AC12: Export Estruturado**
+- [ ] **AC13: Export Estruturado (3 Camadas)**
   - Armazena em `outputs/backtest_results_M5.json`:
-    - `signals[]`: lista de sinais gerados (Layer 1)
-    - `decisions[]`: lista de decisões tomadas (Layer 2)
-    - `learning[]`: feedback de acurácia (Layer 3)
-    - `metrics{}`: métricas agregadas
+    - `camada_1_signals[]`: lista de sinais gerados (Layer 1)
+      - signal_id, timestamp, signal_type, smc_score, entry_price
+      - market_context: {rsi, atr, bb_upper, bb_lower, volume, spread, trend, last_close}
+    - `camada_2_decisions[]`: lista de decisões tomadas (Layer 2)
+      - decision_id, signal_id, decision_type, ml_confidence
+      - top_features, feature_scores, reasoning_text
+    - `camada_3_learning[]`: feedback em 2 etapas (Layer 3)
+      - decision_id, stage_1_correctness, stage_2_quality, trade_pnl
+      - motivators_analysis, recommendations
+    - `metrics{}`: métricas agregadas (stage breakdown)
   - Permite auditoria: verificar cada camada independentemente
-
-
+  - Permite análise: decisões com "sorte" vs decisões com "razão"
 
 ### 2. Risk Validator (`src/application/risk_validator.py` ~ 150-200 LOC)
+
 ```
 Responsabilidades:
 ├─ Gate 1: Capital adequacy + corr limit (max 70%)
@@ -276,6 +322,7 @@ Responsabilidades:
   - ✅ Sem esperas I/O excessivas
 
 ### 4. Métricas Detalhadas (*outputs/backtest_metrics.json*)
+
 ```json
 {
   "general": {
@@ -304,6 +351,7 @@ Responsabilidades:
 ```
 
 ### 5. Documentação & Artefatos
+
 ```
 📄 outputs/BACKTEST_SYSTEM_REPORT.md ~ 400 LOC
    ├─ Executive summary (win rate, Sharpe)
@@ -318,7 +366,6 @@ Responsabilidades:
 ✅ docs/BACKLOG_UNIFICADO.md [SYNC]
    └─ Atualizado com status BACKTEST-SYSTEM
 ```
-
 
 ## ✅ ACCEPTANCE CRITERIA GLOBAIS (3 Fases Sequenciais)
 
@@ -359,6 +406,7 @@ Responsabilidades:
   - ✅ Ready for implementation
 
 **Tarefas Paralelas (Phase 1):**
+
 ```
 ┌─ [#3] Eng Sr
 │  └─ Arquitetura backtester (specs + pseudo-código)
@@ -667,7 +715,6 @@ Checklist Final:
 
 **Sign-Off:** [#3] Eng Sr, [#4] ML Expert, [#5] Risk Officer
 
-
 ## 🚪 GATES DE VALIDAÇÃO (Immovable Checkpoints)
 
 | Gate | Owner | Criterio | Status |
@@ -676,7 +723,6 @@ Checklist Final:
 | **G2: Code Complete** | Eng Sr + QA | AC2 5/5 ✅ | SIGN-OFF REQUIRED |
 | **G3: Validation OK** | Risk Officer + ML | AC3 3/3 ✅ | SIGN-OFF REQUIRED |
 | **GO: Final Decision** | Eng Sr + ML + Risk | All metrics ✅ | EXEC APPROVAL |
-
 
 ## 🔄 DEPENDÊNCIAS CRÍTICAS
 
@@ -687,6 +733,7 @@ Checklist Final:
 - [ ] Modelo v1.1 comprovado ✅
 
 **Sequência Obrigatória Executados:**
+
 ```
 FASE 1 (Paralelo)
    ├─ Eng Sr: Arquitetura specs
@@ -712,7 +759,6 @@ FASE 3 (Sequencial)
         ✅ GO / 🔴 HOLD
 ```
 
-
 ## 🎯 PRÓXIMAS AÇÕES (Imediatas - Phase 1 NOW)
 
 ### **AGORA - Team Kickoff**
@@ -722,6 +768,7 @@ FASE 3 (Sequencial)
 - [ ] Confirmar alocação de horas
 
 ### **PHASE 1 - Paralelo (Hoje/Amanhã)**
+
 ```
 ┌─ Eng Sr (#3)
 │  └─ Draft arquitetura backtester (1-2h)
@@ -744,6 +791,7 @@ FASE 3 (Sequencial)
 **Checkpoint:** GATE 1 check → Continue FASE 2?
 
 ### **PHASE 2 - Sequencial (Next Day+)**
+
 ```
 2.1 Risk Validator (4h Eng Sr)
     ↓ Approval
@@ -757,6 +805,7 @@ FASE 2 COMPLETE
 ```
 
 ### **PHASE 3 - Validation (Next Next Day)**
+
 ```
 3.1 Functional Validation (2h Risk + QA)
 3.2 Model Validation (2h ML)
@@ -766,7 +815,6 @@ FASE 2 COMPLETE
 ✅ GO or 🔴 HOLD
 ```
 
-
 ## 📚 REFERÊNCIAS OBRIGATÓRIAS
 
 **Ler AGORA antes de começar:**
@@ -775,7 +823,6 @@ FASE 2 COMPLETE
 3. [docs/DIAGRAMA_CLASSES.md](docs/DIAGRAMA_CLASSES.md) — UML
 4. [docs/REGRAS_NEGOCIO.md](docs/REGRAS_NEGOCIO.md) — Rules
 5. [docs/BACKLOG_UNIFICADO.md](docs/BACKLOG_UNIFICADO.md) — Status
-
 
 ## 🤖 INSTRUÇÕES PARA COPILOT CLAUDE HAIKU
 
@@ -793,6 +840,7 @@ Este prompt está **100% estruturado para execução sequencial agora**:
 **MODO: EXECUÇÃO IMEDIATA SEQUENCIAL**
 
 ### Passo 1: Convoque o Board
+
 ```
 Personas: [#3] Eng Sr, [#4] ML Expert, [#5] Risk Officer,
           [#6] Arquiteto, [#8] Doc Advocate, [#11] Data Eng, [#12] QA
@@ -800,6 +848,7 @@ Briefing: 1h (este prompt)
 ```
 
 ### Passo 2: Execute FASE 1 (Paralelo)
+
 ```
 Objetivo: Design review + data validation
 Duration: 2-3h
@@ -807,6 +856,7 @@ Output: 4 artefatos; GATE 1 decision
 ```
 
 ### Passo 3: Execute FASE 2 (Sequencial)
+
 ```
 Objetivo: Build backtester + grid search + reporting
 Duration: 20-24h trabalho sequencial
@@ -814,6 +864,7 @@ Output: 5 componentes; GATE 2 decision
 ```
 
 ### Passo 4: Execute FASE 3 (Sequencial)
+
 ```
 Objetivo: Validate e sign-off
 Duration: 5-6h validação

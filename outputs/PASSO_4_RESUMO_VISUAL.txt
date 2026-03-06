@@ -162,7 +162,7 @@ for date in sorted(history)[-5:]:
 Check:
   1. Agent rodando? Get-Process python
   2. Log sendo gerado? ls outputs/agent_*.log
-  
+
 Fix:
   INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
 ```
@@ -171,7 +171,7 @@ Fix:
 ```
 Check:
   Select-String "ERROR" outputs/agent_execution.log
-  
+
 Analysis:
   Qual é o erro? Decode → fix → relançar
 ```
@@ -196,13 +196,13 @@ Options:
   [ ] Rodar script: python scripts/monitorar_p0_diario.py
   [ ] Anotar: Penalties? Trades? Confidence? Erros?
   [ ] Salvo em: outputs/PASSO_4_ACOMPANHAMENTO_DIARIO.json
-  
+
 Métricas de hoje:
   Penalties: [ ] Sim [ ] Não     Quantidade: ___
   Trades:    [ ] Sim [ ] Não     Quantidade: ___
   Confidence: Trend [ ] 📈 [ ] → [ ] 📉
   Erros:     [ ] 0  [ ] > 0      Quantidade: ___
-  
+
 Status: [ ] 🟢 OK [ ] 🟡 Aviso [ ] 🔴 Crítico
 
 Notas:
@@ -334,8 +334,8 @@ Arquivo: `outputs/PASSO_4_ACOMPANHAMENTO_DIARIO.json`
 
 ---
 
-**Timestamp:** 06/03/2026 21:00 BRT  
-**Status PASSO 4:** 🟢 PRONTO PARA INICIAR  
-**Início:** 07/03/2026 (amanhã)  
-**Duração:** 5 dias (07-11/03)  
+**Timestamp:** 06/03/2026 21:00 BRT
+**Status PASSO 4:** 🟢 PRONTO PARA INICIAR
+**Início:** 07/03/2026 (amanhã)
+**Duração:** 5 dias (07-11/03)
 **Commit:** 4c8e2b5

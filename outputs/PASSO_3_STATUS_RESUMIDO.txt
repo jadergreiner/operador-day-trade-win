@@ -256,7 +256,7 @@ PRÓXIMAS 2 SEMANAS:
 **Se equipe não responder em 24h:**
 ```
 [ ] Enviar follow-up via Slack:
-    "Equipe, confirmem recebimento do email PASSO 3 
+    "Equipe, confirmem recebimento do email PASSO 3
      sobre P0-URGENT-1. Necessário para prosseguir PASSO 4.
      Reply sim/não no thread."
 
@@ -291,7 +291,7 @@ PRÓXIMAS 2 SEMANAS:
 
 ---
 
-**Timestamp:** 06/03/2026 20:50 BRT  
-**Commit:** 3e934b1 (PASSO 3 notificacoes de equipe preparadas)  
-**Status:** 🟢 PRONTO PARA ENVIO DE EMAILS  
+**Timestamp:** 06/03/2026 20:50 BRT
+**Commit:** 3e934b1 (PASSO 3 notificacoes de equipe preparadas)
+**Status:** 🟢 PRONTO PARA ENVIO DE EMAILS
 **Próximo:** PASSO 4 (Monitoramento 3-5 dias)

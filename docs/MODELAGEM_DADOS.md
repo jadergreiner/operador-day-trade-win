@@ -460,7 +460,7 @@ CREATE INDEX idx_audit_log_trades_id ON audit_log(trades_id);
 
 ---
 
-### Tabela 11: SIGNALS (Camada 1 - Geração de Sinal)
+### Tabela 11: SIGNALS (Camada 1 - Geração + Contexto de Sinal)
 
 ```sql
 CREATE TABLE signals (
@@ -473,6 +473,7 @@ CREATE TABLE signals (
     smc_detector TEXT NOT NULL,
     entry_price REAL NOT NULL,
     candle_index INTEGER,
+    market_context_json TEXT,
     outcome_trade_id INTEGER,
     outcome_pnl REAL,
     outcome_days_open REAL,
@@ -494,6 +495,11 @@ CREATE INDEX idx_signals_outcome_type ON signals(outcome_type);
 
 **Propósito**: Persistência de sinais gerados pela Camada 1 (SMC M5 detector)
 
+**Refinado (05/03/2026):**
+- Captura TODO o contexto de mercado no momento do sinal
+- market_context_json: Indicadores em tempo real (RSI, ATR, BB, volume, spread, trend)
+- Permite auditoria: quais eram as condições quando o sinal foi gerado?
+
 **Campos**:
 - `signal_id`: UUID único do sinal (rastreamento global)
 - `timestamp`: Momento exato do fechamento do candle M5
@@ -503,6 +509,14 @@ CREATE INDEX idx_signals_outcome_type ON signals(outcome_type);
 - `smc_detector`: Qual estrutura detectou (BOS, CHoCH, FVG)
 - `entry_price`: Preço no momento da geração do sinal
 - `candle_index`: Índice do candle M5 (para auditoria)
+- `market_context_json`: **NOVO** Indicadores capturados (JSON)
+  - rsi: RSI (0-100)
+  - atr: Volatilidade absoluta
+  - bb_upper, bb_lower: Bandas de Bollinger
+  - volume: Volume de negociação
+  - spread: Bid-ask em pontos
+  - trend_direction: UP/DOWN/FLAT
+  - last_close: Preço anterior
 - `outcome_trade_id`: FK para TRADES (se entrou)
 - `outcome_pnl`: P&L se tivesse entrado no sinal
 - `outcome_days_open`: Quantos dias o sinal ficou aberto
@@ -510,84 +524,257 @@ CREATE INDEX idx_signals_outcome_type ON signals(outcome_type);
 - `created_at`: Timestamp inserção
 - `closed_at`: Quando o sinal foi fechado/concluído
 
-**Índices**:
-- Por timestamp DESC: Últimos sinais (mais relevante)
-- Por (symbol, timestamp): Sinais de um ativo em período
-- Por outcome_type: Analise de acertos vs falhas do detector
+---
 
-**Constraint**:
-- UNIQUE(timestamp, symbol, signal_type): Um sinal por direção por timestamp
+### Tabela 11.5: DECISIONS (Camada 2 - Motor de Decisão Independente)
+
+```sql
+CREATE TABLE decisions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    decision_id TEXT UNIQUE NOT NULL,
+    signal_id TEXT NOT NULL,
+    timestamp DATETIME NOT NULL,
+    decision_type TEXT NOT NULL,
+    ml_confidence REAL NOT NULL,
+    top_features_json TEXT,
+    feature_scores_json TEXT,
+    reasoning_text TEXT,
+    outcome_pnl REAL,
+    stage_1_correctness TEXT,
+    stage_2_quality TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME,
+
+    FOREIGN KEY(signal_id) REFERENCES signals(signal_id),
+    CHECK(decision_type IN ('ENTRAR', 'FICAR_DE_FORA')),
+    CHECK(ml_confidence >= 0 AND ml_confidence <= 100),
+    CHECK(stage_1_correctness IN ('CORRETA', 'ERRADA') OR stage_1_correctness IS NULL),
+    CHECK(stage_2_quality IN ('CORRETO_COM_RAZOES_CERTAS', 'CORRETO_POR_ACASO', 
+                               'ERRADO_MAS_MOTIVADORES_CONFIRMADOS', 'ERRADO_COM_RAZOES_ERRADAS') 
+          OR stage_2_quality IS NULL)
+);
+
+CREATE INDEX idx_decisions_signal_id ON decisions(signal_id);
+CREATE INDEX idx_decisions_timestamp ON decisions(timestamp DESC);
+CREATE INDEX idx_decisions_correctness ON decisions(stage_1_correctness);
+```
+
+**Propósito**: Persistência de decisões tomadas pela Camada 2 (Motor ML)
+
+**Refinado (05/03/2026):**
+- Camada 2 toma decisão = ENTRAR ou FICAR_DE_FORA
+- Persiste NÃO APENAS a decisão, mas os MOTIVOS (explainability)
+- Vinculação com Signal ID (rastreamento)
+
+**Campos**:
+- `decision_id`: UUID único da decisão
+- `signal_id`: FK para signals (qual sinal gerou esta decisão)
+- `timestamp`: Quando a decisão foi tomada
+- `decision_type`: ENTRAR ou FICAR_DE_FORA
+- `ml_confidence`: Score do modelo (0-100%)
+- `top_features_json`: **NOVO** Top 3 features que influenciaram (JSON)
+  - Ex: ["rsi_bullish", "volume_spike", "atr_low"]
+- `feature_scores_json`: **NOVO** Scores de cada feature (JSON)
+  - Ex: {"rsi": 0.75, "volume": 0.60, "atr": 0.45}
+- `reasoning_text`: **NOVO** Explicação em texto livre
+  - Ex: "Alta confiança RSI, mas volume baixo"
+- `outcome_pnl`: P&L resultado (preenchido após trade fechar)
+- `stage_1_correctness`: **NOVO** Etapa 1 (preenchido em Camada 3)
+  - CORRETA: Decisão foi correta
+  - ERRADA: Decisão foi errada
+- `stage_2_quality`: **NOVO** Etapa 2 (preenchido em Camada 3)
+  - CORRETO_COM_RAZOES_CERTAS: Acertou e motivadores confirmados
+  - CORRETO_POR_ACASO: Acertou mas motivadores falsos
+  - ERRADO_MAS_MOTIVADORES_CONFIRMADOS: Errou, razões eram válidas
+  - ERRADO_COM_RAZOES_ERRADAS: Errou tudo
+- `created_at`, `updated_at`: Timestamps
 
 ---
 
-### Tabela 12: LEARNING_FEEDBACK (Camada 3 - Validação de Decisão)
+### Tabela 12: LEARNING_FEEDBACK (Camada 3 - 2 Etapas de Validação)
 
 ```sql
 CREATE TABLE learning_feedback (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    decision_id INTEGER NOT NULL,
-    signal_id INTEGER NOT NULL,
-    ml_confidence REAL NOT NULL,
-    trade_id INTEGER,
-    trade_pnl REAL,
-    trade_outcome TEXT,
-    decision_accuracy TEXT NOT NULL,
-    decision_correct BOOLEAN NOT NULL,
-    reasoning TEXT,
-    model_version TEXT,
+    feedback_id TEXT UNIQUE NOT NULL,
+    decision_id TEXT NOT NULL,
+    signal_id TEXT NOT NULL,
+    stage_1_correctness TEXT NOT NULL,
+    stage_2_quality TEXT NOT NULL,
+    trade_pnl REAL NOT NULL,
+    motivators_analysis TEXT,
+    recommendations TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY(decision_id) REFERENCES decisions(id),
-    FOREIGN KEY(signal_id) REFERENCES signals(id),
-    FOREIGN KEY(trade_id) REFERENCES trades(id),
-    CHECK(decision_accuracy IN ('CORRECT', 'INCORRECT')),
-    CHECK(decision_correct IN (0, 1)),
-    CHECK(trade_outcome IN ('PROFITABLE', 'LOSS', 'BREAKEVEN', 'HYPOTHETICAL'))
+    FOREIGN KEY(decision_id) REFERENCES decisions(decision_id),
+    FOREIGN KEY(signal_id) REFERENCES signals(signal_id),
+    CHECK(stage_1_correctness IN ('CORRETA', 'ERRADA')),
+    CHECK(stage_2_quality IN ('CORRETO_COM_RAZOES_CERTAS', 'CORRETO_POR_ACASO', 
+                               'ERRADO_MAS_MOTIVADORES_CONFIRMADOS', 'ERRADO_COM_RAZOES_ERRADAS'))
 );
 
 CREATE INDEX idx_learning_feedback_decision_id ON learning_feedback(decision_id);
-CREATE INDEX idx_learning_feedback_accuracy ON learning_feedback(decision_accuracy, created_at DESC);
+CREATE INDEX idx_learning_feedback_stage_1 ON learning_feedback(stage_1_correctness);
+CREATE INDEX idx_learning_feedback_stage_2 ON learning_feedback(stage_2_quality);
 CREATE INDEX idx_learning_feedback_signal_id ON learning_feedback(signal_id);
 ```
 
-**Propósito**: Validação de decisões da Camada 2 para feedback loop de aprendizado
+**Propósito**: Feedback de aprendizado em 2 ETAPAS INDEPENDENTES (Camada 3)
+
+**Refinado (05/03/2026) - 2 Etapas de Validação:**
+
+**Etapa 1: Decision Correctness** (Resultado)
+- A decisão foi CORRETA ou ERRADA?
+- ENTROU e PROFITABLE → CORRETA ✓
+- ENTROU e LOSS → ERRADA ✗
+- FICOU_DE_FORA e teria P+ → ERRADA ✗
+- FICOU_DE_FORA e teria L → CORRETA ✓
+
+**Etapa 2: Decision Quality** (Qualidade do raciocínio)
+- A decisão foi correta pelos CORRETOS motivos?
+- Ou foi pelos motivos ERRADOS?
+- Ou os motivadores se confirmaram mas a decisão foi contra?
+
+Opções:
+- `CORRETO_COM_RAZOES_CERTAS`: Acertou e razões confirmadas
+- `CORRETO_POR_ACASO`: Acertou mas razões não se confirmaram (sorte)
+- `ERRADO_MAS_MOTIVADORES_CONFIRMADOS`: Errou, mas condições previstas se confirmaram (mercado foi contra)
+- `ERRADO_COM_RAZOES_ERRADAS`: Errou tudo
 
 **Campos**:
-- `decision_id`: FK para DECISIONS (qual decisão está sendo avaliada)
-- `signal_id`: FK para SIGNALS (qual sinal gerou a decisão)
-- `ml_confidence`: Score de confiança do ML na momento da decisão (0-100%)
-- `trade_id`: FK para TRADES (se executada, qual foi o trade)
-- `trade_pnl`: P&L final (real se executada, hipotético se rejeitada)
-- `trade_outcome`: PROFITABLE, LOSS, BREAKEVEN, HYPOTHETICAL
-- `decision_accuracy`: CORRECT ou INCORRECT (vinculado a decision_correct)
-- `decision_correct`: 1 se acertou, 0 se errou (field booleano)
-- `reasoning`: Explicação (e.g., "Alta confiança mas pequeno loss" ou "Rejeição correta, teria sido breakeven")
-- `model_version`: Qual versão do modelo fez a decisão (v1.2.0, v1.3.0, etc)
-- `created_at`: Timestamp da avaliação (quando P&L ficou conhecido)
+- `feedback_id`: UUID único do feedback
+- `decision_id`: FK para decisions
+- `signal_id`: FK para signals
+- `stage_1_correctness`: Resultado (CORRETA/ERRADA)
+- `stage_2_quality`: Qualidade (um dos 4 tipos acima)
+- `trade_pnl`: P&L final do trade
+- `motivators_analysis`: Análise dos motivadores
+  - "RSI confirmado, ATR foi contra previsão"
+  - "Volume estava OK, momentum falhou"
+- `recommendations`: Lições aprendidas
+  - "Aumentar confiança em RSI, reduzir peso ATR"
+  - "Revisar feature engineering de volume"
+- `created_at`: Timestamp da avaliação
 
-**Indices**:
-- Por decision_id: Todas as avaliações de uma decisão
-- Por (accuracy, timestamp DESC): Análise de erros mais recentes
-- Por signal_id: Rastreamento do destino de cada sinal
-
-**Constraint**:
-- FK decision_id, signal_id, trade_id: Integridade referencial
-- decision_correct IN (0, 1): Booleano SQLite (0=false, 1=true)
-- trade_outcome enum: Categorias de resultado
-
-**Uso de Feedback Loop**:
-1. Decision executada → trade finalizado → P&L conhecido
-2. Comparar: confiança ML alta vs resultado LOSS
-3. Agrupar padrões: quando modelo erra mais?
-4. Feedback: treinar modelo com mais exemplos desse padrão
-5. Próximas decisões: modelo mais preciso
+**Uso de 2 Etapas**:
+1. **Etapa 1**: Validar se acertou/errou (P&L)
+2. **Etapa 2**: Validar se foi pelos motivos corretos (explainability)
+3. **Feedback**: Ambas as etapas usadas para evolução do modelo
 
 ---
 
 ## 🔄 Views Úteis (Lógica Reutilizável)
 
 ```sql
+-- View: Sinais com decisões e outcomes
+CREATE VIEW v_signals_with_decisions AS
+SELECT
+    s.signal_id,
+    s.timestamp,
+    s.symbol,
+    s.signal_type,
+    s.smc_score,
+    d.decision_type,
+    d.ml_confidence,
+    lf.stage_1_correctness,
+    lf.stage_2_quality,
+    lf.trade_pnl
+FROM signals s
+LEFT JOIN decisions d ON s.signal_id = d.signal_id
+LEFT JOIN learning_feedback lf ON d.decision_id = lf.decision_id
+ORDER BY s.timestamp DESC;
+
+-- View: Análise de qualidade de decisões (2 etapas)
+CREATE VIEW v_decision_quality_analysis AS
+SELECT
+    stage_1_correctness,
+    stage_2_quality,
+    COUNT(*) as count,
+    AVG(trade_pnl) as avg_pnl,
+    SUM(CASE WHEN trade_pnl > 0 THEN 1 ELSE 0 END) as winners
+FROM learning_feedback
+GROUP BY stage_1_correctness, stage_2_quality;
+
 -- View: Trades recentes com decision info
+CREATE VIEW v_recent_trades_with_decisions AS
+SELECT
+    d.decision_id,
+    d.timestamp,
+    s.symbol,
+    d.decision_type,
+    d.ml_confidence,
+    lf.trade_pnl,
+    lf.stage_1_correctness,
+    lf.stage_2_quality,
+    CASE 
+        WHEN lf.stage_2_quality = 'CORRETO_COM_RAZOES_CERTAS' THEN '✓ Acertou com razão'
+        WHEN lf.stage_2_quality = 'CORRETO_POR_ACASO' THEN '⚠ Sorte'
+        WHEN lf.stage_2_quality = 'ERRADO_MAS_MOTIVADORES_CONFIRMADOS' THEN '↔ Mercado contra'
+        WHEN lf.stage_2_quality = 'ERRADO_COM_RAZOES_ERRADAS' THEN '✗ Tudo errado'
+    END as decision_label
+FROM decisions d
+JOIN signals s ON d.signal_id = s.signal_id
+JOIN learning_feedback lf ON d.decision_id = lf.decision_id
+ORDER BY d.timestamp DESC
+LIMIT 20;
+
+-- View: Matriz de qualidade (2 etapas)
+CREATE VIEW v_decision_quality_matrix AS
+SELECT
+    stage_1_correctness,
+    stage_2_quality,
+    COUNT(*) as trades_count,
+    ROUND(AVG(trade_pnl), 2) as avg_pnl,
+    ROUND(SUM(CASE WHEN trade_pnl > 0 THEN trade_pnl ELSE 0 END), 2) as total_gains,
+    ROUND(SUM(CASE WHEN trade_pnl < 0 THEN trade_pnl ELSE 0 END), 2) as total_losses,
+    ROUND(100.0 * SUM(CASE WHEN trade_pnl > 0 THEN 1 ELSE 0 END) / COUNT(*), 1) as win_rate_pct
+FROM learning_feedback
+GROUP BY stage_1_correctness, stage_2_quality
+ORDER BY stage_1_correctness DESC, stage_2_quality;
+
+-- Query: Detectar "Sorte" (CORRETO_POR_ACASO) - sinais para revisão
+SELECT
+    lf.feedback_id,
+    d.decision_id,
+    d.decision_type,
+    d.ml_confidence,
+    STRING_AGG(d.top_features_json, ', ') as features_influenciadores,
+    COUNT(*) as lucky_wins_count
+FROM learning_feedback lf
+JOIN decisions d ON lf.decision_id = d.decision_id
+WHERE lf.stage_2_quality = 'CORRETO_POR_ACASO'
+GROUP BY d.decision_id
+HAVING COUNT(*) > 1
+ORDER BY COUNT(*) DESC;
+
+-- Query: Revisar motivadores válidos mas decisão errada
+SELECT
+    lf.feedback_id,
+    d.decision_id,
+    d.decision_type,
+    d.reasoning_text,
+    lf.trade_pnl,
+    lf.motivators_analysis,
+    lf.recommendations
+FROM learning_feedback lf
+JOIN decisions d ON lf.decision_id = d.decision_id
+WHERE lf.stage_2_quality = 'ERRADO_MAS_MOTIVADORES_CONFIRMADOS'
+ORDER BY ABS(lf.trade_pnl) DESC
+LIMIT 10;
+```
+
+**Interpretação das Views (2 Etapas)**:
+
+1. **v_signals_with_decisions**: Rastreia sinal → decisão → feedback completo
+2. **v_decision_quality_analysis**: Agrupa por 2 etapas (correctness + quality)
+3. **v_recent_trades_with_decisions**: últimos 20 com label legível
+4. **v_decision_quality_matrix**: Matriz 2×4 (CORRETA/ERRADA vs 4 quality types)
+5. **Query de "Sorte"**: Detecta CORRETO_POR_ACASO (wins to review)
+6. **Query de "Razões válidas"**: Detecta ERRADO_MAS... (lost with valid reasons)
+
+---
+
+### Tabela 13: INDICES PARA PERFORMANCE
 CREATE VIEW v_trades_with_decisions AS
 SELECT
     t.id,

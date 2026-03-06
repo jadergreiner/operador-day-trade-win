@@ -1,7 +1,7 @@
 # 📋 PASSO 4 - MONITORAR P0-URGENT-1 (3-5 dias)
 
-**Status:** 🟢 Pronto para iniciar  
-**Duração:** 3-5 dias (07/03 - 11/03)  
+**Status:** 🟢 Pronto para iniciar
+**Duração:** 3-5 dias (07/03 - 11/03)
 **Daily Time:** 5 minutos por dia
 
 ---
@@ -241,7 +241,7 @@ Formato:
 Depois de 5 dias, preencha:
 
 [ ] Penalties funcionando?        (SIM/NÃO)
-[ ] Confidence subiu?             (SIM/NÃO)  
+[ ] Confidence subiu?             (SIM/NÃO)
 [ ] Trades aumentaram?            (SIM/NÃO)
 [ ] Erros críticos?               (SIM/NÃO)
 [ ] Agent estável?                (SIM/NÃO)
@@ -261,11 +261,11 @@ Resultado:
 2. Anotar métricas (penalties, trades, confidence, errors)
 3. Após 5 dias: Decidir GO/NO-GO
 
-**Se tudo ok:** Proceed P1-LEARNING  
+**Se tudo ok:** Proceed P1-LEARNING
 **Se problem:** Debug + fix + retry
 
 ---
 
-**Timestamp:** 06/03/2026 21:00 BRT  
-**Status:** 🟢 PASSO 4 TEMPLATE PRONTO  
+**Timestamp:** 06/03/2026 21:00 BRT
+**Status:** 🟢 PASSO 4 TEMPLATE PRONTO
 **Próximo:** Executar diariamente por 3-5 dias (07-11/03)
