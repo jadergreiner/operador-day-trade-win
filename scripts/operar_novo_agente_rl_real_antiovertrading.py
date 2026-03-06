@@ -93,6 +93,7 @@ last_trade_time: Optional[datetime] = None
 trades_by_hour = {}  # {hour: count}
 last_signal: Optional[str] = None
 signal_confirmation_count = 0
+ultimo_registro_progresso: Optional[datetime] = None  # Para registrar a cada 5 min
 
 
 def inicializar_adaptador_mt5() -> MT5Adapter:
@@ -374,20 +375,34 @@ def monitorar_posicoes() -> bool:
         return False
 
 
-def registrar_progresso_objetivos(saldo_inicial: float) -> None:
-    """Registra progresso parcial em relacao aos objetivos do dia."""
+def registrar_progresso_objetivos(saldo_inicial: float, forcar: bool = False) -> None:
+    """Registra progresso parcial em relacao aos objetivos do dia.
+    
+    Args:
+        saldo_inicial: Saldo no inicio da operacao
+        forcar: Se True, registra mesmo que nao tenha passado 5 minutos
+    """
+    global ultimo_registro_progresso
+    
     try:
+        agora = datetime.now()
+        
+        # Só registra a cada 5 minutos (ou se forçado)
+        if not forcar and ultimo_registro_progresso:
+            if (agora - ultimo_registro_progresso).total_seconds() < 300:  # 5 minutos
+                return
+        
         # Obter saldo atual
         saldo_atual_decimal = mt5_adapter.get_account_balance()
         saldo_atual = float(saldo_atual_decimal) if saldo_atual_decimal else saldo_inicial
-        
+
         # Calcular P&L
         pl_atual = saldo_atual - saldo_inicial
-        
+
         # Calcular progresso
         progresso_target = (pl_atual / TARGET_LUCRO_DIARIO) * 100 if TARGET_LUCRO_DIARIO > 0 else 0
         progresso_stop = abs(pl_atual / STOP_PERDA_DIARIA) * 100 if STOP_PERDA_DIARIA != 0 else 0
-        
+
         # Construir barra visual
         barra_size = 30
         if pl_atual >= 0:
@@ -398,10 +413,16 @@ def registrar_progresso_objetivos(saldo_inicial: float) -> None:
             filled = int((abs(min(pl_atual, STOP_PERDA_DIARIA)) / abs(STOP_PERDA_DIARIA)) * barra_size)
             barra = "[" + "x" * filled + "-" * (barra_size - filled) + "]"
             status = f"{pl_atual:+.2f} / {STOP_PERDA_DIARIA:.2f} ({progresso_stop:.1f}%)"
+
+        # Informacoes adicionais
+        info_trades = f"Trades: {trades_executed_today}"
+        info_tempo = f"Tempo: {(datetime.now().hour * 60 + datetime.now().minute) // 60}h"
         
         # Registrar no log com barra de progresso
-        logger.info(f"[PROGRESSO] {barra} {status}")
+        logger.info(f"[PROGRESSO] {barra} {status} | {info_trades} | {info_tempo}")
         
+        ultimo_registro_progresso = agora
+
     except Exception as e:
         logger.debug(f"Erro ao registrar progresso: {e}")
 
@@ -472,7 +493,7 @@ def loop_operacao():
             time.sleep(30)
             continue
 
-        # Registrar progresso parcial do dia
+        # Registrar progresso parcial do dia (a cada 5 minutos)
         registrar_progresso_objetivos(saldo_inicial)
 
         # ════════════════════════════════════════════════════════════════
@@ -502,6 +523,9 @@ def loop_operacao():
                 # Executar apenas se confirmado E passou todas as validações
                 enviar_ordem_mt5adapter(acao_str, preco_atual, vol)
                 last_signal = acao_str
+                trades_executed_today += 1
+                # Registrar progresso apos trade
+                registrar_progresso_objetivos(saldo_inicial, forcar=True)
                 print_status()
                 time.sleep(AntiOvertradingConfig.COOLDOWN_SECONDS)
             else:
