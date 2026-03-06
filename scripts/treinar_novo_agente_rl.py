@@ -430,14 +430,14 @@ def executar_treinamento(
     import pandas as pd
 
     logger.info("=" * 60)
-    logger.info("NOVO AGENTE RL - MINI ÍNDICE DAY TRADE")
+    logger.info("NOVO AGENTE RL - MINI INDICE DAY TRADE")
     logger.info("=" * 60)
     logger.info(
-        "Configuração: R$%.0f perda máx | R$%.0f meta",
+        "Configuracao: R$%.0f perda max | R$%.0f meta",
         CONFIG_AMBIENTE.limite_perda_diaria_brl,
         CONFIG_AMBIENTE.meta_ganho_diaria_brl,
     )
-    logger.info("Episódios: %d | Semente: %d", n_episodios, semente)
+    logger.info("Episodios: %d | Semente: %d", n_episodios, semente)
     logger.info("-" * 60)
 
     # Carregar dados
@@ -525,14 +525,17 @@ def executar_treinamento(
     logger.info("=" * 60)
 
 
-def executar_avaliacao(nome_modelo: str = "modelo_final") -> None:
+def executar_avaliacao(
+    nome_modelo: str = "modelo_final", usar_dados_reais: bool = False
+) -> None:
     """Avalia um modelo previamente treinado.
 
     Args:
         nome_modelo: Nome do modelo a avaliar
+        usar_dados_reais: Se True, tenta usar dados do MT5
     """
     logger.info("=" * 60)
-    logger.info("AVALIAÇÃO DO AGENTE RL")
+    logger.info("AVALIACAO DO AGENTE RL - MODO OPERACAO")
     logger.info("=" * 60)
 
     pipeline = PipelineTreinamentoRL(
@@ -544,21 +547,35 @@ def executar_avaliacao(nome_modelo: str = "modelo_final") -> None:
         pipeline.carregar_modelo(nome_modelo)
     except FileNotFoundError:
         logger.error(
-            "Modelo '%s' não encontrado. Execute o treinamento primeiro.",
+            "Modelo '%s' nao encontrado. Execute o treinamento primeiro.",
             nome_modelo,
         )
         return
 
-    dados = gerar_dados_sinteticos(n_candles=1000)
-    resultados = pipeline.avaliar(dados=dados, n_episodios=100)
+    # Se usar dados reais, carregar os ultimos candles do MT5
+    dados = None
+    if usar_dados_reais:
+        dados = carregar_dados_mt5()
 
-    pnl_medio = np.mean([r.pnl_brl for r in resultados])
-    taxa_meta = np.mean([r.meta_atingida for r in resultados])
-    taxa_stop = np.mean([r.stop_acionado for r in resultados])
+    if dados is None:
+        logger.info("Usando dados sinteticos para avaliacao...")
+        dados = gerar_dados_sinteticos(n_candles=1000)
 
-    logger.info("P&L médio:     R$%.2f", pnl_medio)
-    logger.info("Taxa meta:     %.1f%%", taxa_meta * 100)
-    logger.info("Taxa stop:     %.1f%%", taxa_stop * 100)
+    # Avalia apenas 1 episodio (o dia atual simulado com os ultimos candles)
+    logger.info("Executando operacao simulada nos ultimos %d candles...", len(dados))
+    resultados = pipeline.avaliar(dados=dados, n_episodios=1)
+
+    if resultados:
+        res = resultados[0]
+        logger.info("-" * 60)
+        logger.info("RESULTADO DA SESSAO:")
+        logger.info("P&L final:      R$%.2f", res.pnl_brl)
+        logger.info("Trades realizados: %d", res.n_trades)
+        logger.info("Vitorias:          %d", res.n_vitorias)
+        logger.info("Status final:      %s", res.motivo_termino)
+        logger.info("-" * 60)
+    else:
+        logger.warning("Nenhum resultado obtido na avaliacao.")
 
 
 # ---------------------------------------------------------------------------
@@ -609,7 +626,9 @@ def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
 
     if args.apenas_avaliar:
-        executar_avaliacao(nome_modelo=args.modelo)
+        executar_avaliacao(
+            nome_modelo=args.modelo, usar_dados_reais=args.dados_reais
+        )
     else:
         executar_treinamento(
             n_episodios=args.episodios,
