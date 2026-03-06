@@ -492,10 +492,10 @@ API_TIMEOUT=30
 
 #### Documentação
 
-- 📄 [docs/ADRs.md#adr-009](docs/ADRs.md#adr-009-rest-api-gateway-com-proxy-transparente-para-mt5-orders) - Architecture Decision
-- 📋 [docs/ARCHITECTURE.md#46](docs/ARCHITECTURE.md#46-p0-1-rest-api-gateway-para-execução-de-ordens-%EF%B8%8F-implementado-0403) - Technical details
-- 🚀 [docs/BACKLOG_UNIFICADO.md#p0-1](docs/BACKLOG_UNIFICADO.md#p0-1-api-rest-mt5---infraestrutura-de-execução) - Delivery status
-- ✅ [docs/GO_LIVE_CHECKLIST.md#p0-1](docs/GO_LIVE_CHECKLIST.md#-p0-1-rest-api-gateway-validation-novo---0403) - Pre-go-live validation
+- 📄 [ADRs.md#adr-009](ADRs.md#adr-009-rest-api-gateway-com-proxy-transparente-para-mt5-orders) - Architecture Decision
+- 📋 [ARCHITECTURE.md#46](ARCHITECTURE.md#46-p0-1-rest-api-gateway-para-execução-de-ordens-%EF%B8%8F-implementado-0403) - Technical details
+- 🚀 [BACKLOG_UNIFICADO.md#p0-1](BACKLOG_UNIFICADO.md#p0-1-api-rest-mt5---infraestrutura-de-execução) - Delivery status
+- ✅ [GO_LIVE_CHECKLIST.md#p0-1](GO_LIVE_CHECKLIST.md#-p0-1-rest-api-gateway-validation-novo---0403) - Pre-go-live validation
 
 ---
 

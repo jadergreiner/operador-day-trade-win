@@ -349,10 +349,10 @@ class Settings(BaseSettings):
 5. ✅ Ordem enviada com terminal diferente → Rejeitada com exceção clara
 
 **Referências & Audits:**
-- 📊 Status & Métricas: [docs/STATUS_ENTREGAS.md#terminal-isolation-enforcer](docs/STATUS_ENTREGAS.md)
-- 🚀 Startup Quick Guide: [docs/QUICK_START.md#-configuração-de-isolamento](docs/QUICK_START.md)
-- 📋 Audit Report: [outputs/audits/AUDITORIA_MT5_ISOLAMENTO_04Mar.md](outputs/audits/AUDITORIA_MT5_ISOLAMENTO_04Mar.md)
-- 💾 Architecture Decision Record: [docs/ADRs.md#adr-008](docs/ADRs.md)
+- 📊 Status & Métricas: [STATUS_ENTREGAS.md#terminal-isolation-enforcer](STATUS_ENTREGAS.md)
+- 🚀 Startup Quick Guide: [QUICK_START.md#-configuração-de-isolamento](QUICK_START.md)
+- 📋 Audit Report: [outputs/audits/AUDITORIA_MT5_ISOLAMENTO_04Mar.md](../outputs/audits/AUDITORIA_MT5_ISOLAMENTO_04Mar.md)
+- 💾 Architecture Decision Record: [ADRs.md#adr-008](ADRs.md)
 
 **Exemplo de Uso:**
 ```python
@@ -737,9 +737,9 @@ queue.push(order)
 
 **Documentação & Referências:**
 
-- 📄 [docs/ADRs.md#adr-009](ADRs.md#adr-009-rest-api-gateway-com-proxy-transparente-para-mt5-orders) - Architecture Decision Record
+- 📄 [ADRs.md#adr-009](ADRs.md#adr-009-rest-api-gateway-com-proxy-transparente-para-mt5-orders) - Architecture Decision Record
 - 📋 [BACKLOG_UNIFICADO.md#p0-1](BACKLOG_UNIFICADO.md#p0-1-api-rest-mt5---infraestrutura-de-execução) - Delivery status
-- 🚀 [docs/deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md](docs/deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md) - Integration guide completo
+- 🚀 [deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md](deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md) - Integration guide completo
 - 👨‍💻 Code: `src/infrastructure/clients/order_api_client.py`, `src/infrastructure/adapters/mt5_adapter_proxy.py`
 
 ### 4.8. P1-CORE Etapa 3: Position Monitor + WebSocket Broadcast ✅ IMPLEMENTADO (07/03/2026)
