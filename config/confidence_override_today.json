@@ -1,9 +1,0 @@
-{
-  "timestamp": "2026-03-05T12:07:56.982760",
-  "confidence_current": 0.44,
-  "confidence_previous": 0.46,
-  "win_rate_last_trading_day": 0.0,
-  "trades_count_yesterday": 1,
-  "retraining_date": "2026-03-05",
-  "source": "p50_daily_retraining"
-}

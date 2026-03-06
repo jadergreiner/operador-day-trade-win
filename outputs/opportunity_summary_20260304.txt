@@ -1,2 +1,0 @@
-=== TEST SUMMARY ===
-Diagnóstico: Test
