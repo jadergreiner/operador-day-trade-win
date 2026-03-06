@@ -466,6 +466,217 @@ def monitorar_posicoes() -> bool:
         return False
 
 
+def modificar_sl_ordem(ticket: int, novo_sl: float) -> bool:
+    """Modifica o Stop Loss de uma posição aberta.
+    
+    Args:
+        ticket: ID do ticket da posição
+        novo_sl: Novo valor de SL
+    
+    Returns:
+        True se sucesso, False caso contrário
+    """
+    try:
+        if not hasattr(mt5_adapter, '_mt5') or mt5_adapter._mt5 is None:
+            logger.warning(f"[PROTEÇÃO] MT5 não disponível. Não foi possível modificar SL do ticket {ticket}")
+            return False
+        
+        # Busca a posição
+        positions = mt5_adapter._mt5.positions_get()
+        if not positions:
+            return False
+        
+        position = None
+        for p in positions:
+            if int(getattr(p, 'ticket', 0) or 0) == int(ticket):
+                position = p
+                break
+        
+        if position is None:
+            logger.warning(f"[PROTEÇÃO] Posição #{ticket} não encontrada")
+            return False
+        
+        # Prepa requisicao para modificação
+        request = {
+            'action': mt5_adapter._mt5.TRADE_ACTION_MODIFY,
+            'position': int(position.ticket),
+            'sl': float(novo_sl),
+            'tp': float(position.tp) if position.tp else 0,
+            'magic': 234000,
+            'comment': 'Profit Protection SL Update'
+        }
+        
+        result = mt5_adapter._mt5.order_send(request)
+        
+        if result is None:
+            logger.error(f"[PROTEÇÃO] order_send retornou None para ticket {ticket}")
+            return False
+        
+        if result.retcode != mt5_adapter._mt5.TRADE_RETCODE_DONE:
+            logger.warning(f"[PROTEÇÃO] Falha ao modificar SL do ticket {ticket}: {result.comment}")
+            return False
+        
+        logger.info(f"[PROTEÇÃO] SL modificado com sucesso para ticket {ticket}: {novo_sl:.2f}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"[PROTEÇÃO] Erro ao modificar SL: {e}")
+        return False
+
+
+def fechar_parcial_posicao(ticket: int, volume_para_fechar: float) -> bool:
+    """Fecha parcialmente uma posição.
+    
+    Args:
+        ticket: ID do ticket da posição
+        volume_para_fechar: Volume para fechar (em contratos)
+    
+    Returns:
+        True se sucesso, False caso contrário
+    """
+    try:
+        if not hasattr(mt5_adapter, '_mt5') or mt5_adapter._mt5 is None:
+            logger.warning(f"[PROTEÇÃO] MT5 não disponível. Não foi possível fechar posição {ticket}")
+            return False
+        
+        # Busca a posição
+        positions = mt5_adapter._mt5.positions_get()
+        if not positions:
+            return False
+        
+        position = None
+        for p in positions:
+            if int(getattr(p, 'ticket', 0) or 0) == int(ticket):
+                position = p
+                break
+        
+        if position is None:
+            logger.warning(f"[PROTEÇÃO] Posição #{ticket} não encontrada para fechamento")
+            return False
+        
+        # Define tipo de ordem oposta
+        if int(position.type) == mt5_adapter._mt5.ORDER_TYPE_BUY:
+            order_type = mt5_adapter._mt5.ORDER_TYPE_SELL
+        else:
+            order_type = mt5_adapter._mt5.ORDER_TYPE_BUY
+        
+        # Obtém tick atual
+        tick = mt5_adapter._mt5.symbol_info_tick(position.symbol)
+        if tick is None:
+            logger.error(f"[PROTEÇÃO] Não conseguiu obter tick para {position.symbol}")
+            return False
+        
+        close_price = tick.bid if order_type == mt5_adapter._mt5.ORDER_TYPE_SELL else tick.ask
+        
+        # Prepara requisição
+        request = {
+            'action': mt5_adapter._mt5.TRADE_ACTION_DEAL,
+            'symbol': position.symbol,
+            'volume': float(volume_para_fechar),
+            'type': order_type,
+            'position': int(position.ticket),
+            'price': float(close_price),
+            'deviation': 10,
+            'magic': 234000,
+            'comment': 'Profit Protection Partial Close',
+            'type_time': mt5_adapter._mt5.ORDER_TIME_GTC,
+            'type_filling': mt5_adapter._mt5.ORDER_FILLING_RETURN
+        }
+        
+        result = mt5_adapter._mt5.order_send(request)
+        
+        if result is None:
+            logger.error(f"[PROTEÇÃO] order_send retornou None para fechar posição {ticket}")
+            return False
+        
+        if result.retcode != mt5_adapter._mt5.TRADE_RETCODE_DONE:
+            logger.warning(f"[PROTEÇÃO] Falha ao fechar parcialmente o ticket {ticket}: {result.comment}")
+            return False
+        
+        logger.info(f"[PROTEÇÃO] Fechados {volume_para_fechar:.2f} contratos do ticket {ticket}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"[PROTEÇÃO] Erro ao fechar parcialmente: {e}")
+        return False
+
+
+def proteger_lucro_trade() -> None:
+    """Protege trades abertos com Profit Protection.
+    
+    Estratégia:
+    - Se lucro > 25% do TP: Move SL para break-even
+    - Se lucro > 50% do TP: Fecha 50% (lock in profits)
+    - Se lucro > 75% do TP: Mantém trailing (deixa correr)
+    """
+    try:
+        positions = mt5_adapter.get_positions(Symbol(SIMBOLO))
+        if not positions or len(positions) == 0:
+            return
+        
+        for pos in positions:
+            # Dados da posição aberta
+            ticket = pos.ticket
+            entry_price = pos.price_open
+            current_price = pos.price_current
+            sl = pos.sl
+            tp = pos.tp
+            side = pos.type  # 0=BUY, 1=SELL
+            volume = pos.volume
+            
+            # Calcular lucro atual da posição
+            if side == 0:  # BUY
+                lucro_pontos = current_price - entry_price
+                lucro_max = tp - entry_price
+            else:  # SELL
+                lucro_pontos = entry_price - current_price
+                lucro_max = entry_price - tp
+            
+            # Evitar divisão por zero
+            if lucro_max <= 0:
+                continue
+            
+            percent_tp = (lucro_pontos / lucro_max) * 100
+            
+            # Level 1: 25% de lucro → Move SL para break-even
+            if percent_tp > 25:
+                novo_sl = entry_price
+                if side == 0 and novo_sl > sl:  # BUY: novo SL > SL antigo
+                    logger.info(f"[PROTEÇÃO] Posição #{ticket} em +{percent_tp:.1f}% de lucro. "
+                               f"Movendo SL para break-even ({novo_sl:.2f})")
+                    modificar_sl_ordem(ticket, novo_sl)
+                elif side == 1 and novo_sl < sl:  # SELL: novo SL < SL antigo
+                    logger.info(f"[PROTEÇÃO] Posição #{ticket} em +{percent_tp:.1f}% de lucro. "
+                               f"Movendo SL para break-even ({novo_sl:.2f})")
+                    modificar_sl_ordem(ticket, novo_sl)
+            
+            # Level 2: 50% de lucro → Fecha 50% (lock in profits)
+            if percent_tp > 50:
+                half_volume = volume / 2
+                logger.info(f"[PROTEÇÃO] Posição #{ticket} em +{percent_tp:.1f}% de lucro. "
+                           f"Fechando 50% do volume ({half_volume:.2f})")
+                fechar_parcial_posicao(ticket, half_volume)
+            
+            # Level 3: 75% de lucro → Trailing stop (deixa correr)
+            if percent_tp > 75:
+                trailing_distance = 50  # 50 pontos de trailing
+                if side == 0:  # BUY
+                    novo_sl = current_price - trailing_distance
+                    if novo_sl > sl:
+                        logger.info(f"[PROTEÇÃO] Posição #{ticket} em +{percent_tp:.1f}% de lucro. "
+                                   f"Ativando trailing stop (SL={novo_sl:.2f})")
+                        modificar_sl_ordem(ticket, novo_sl)
+                else:  # SELL
+                    novo_sl = current_price + trailing_distance
+                    if novo_sl < sl:
+                        logger.info(f"[PROTEÇÃO] Posição #{ticket} em +{percent_tp:.1f}% de lucro. "
+                                   f"Ativando trailing stop (SL={novo_sl:.2f})")
+                        modificar_sl_ordem(ticket, novo_sl)
+    
+    except Exception as e:
+        logger.debug(f"Erro ao proteger lucro de trades: {e}")
+
+
 def registrar_progresso_objetivos(saldo_inicial: float, forcar: bool = False) -> None:
     """Registra progresso parcial em relacao aos objetivos do dia.
 
@@ -557,6 +768,9 @@ def loop_operacao():
 
     while True:
         ciclo += 1
+        
+        # ✅ PROTEÇÃO DE LUCRO: Monitora trades abertos continuamente
+        proteger_lucro_trade()
 
         if not verificar_horario_trading():
             logger.info("[HORA] Fora do horario. Aguardando...")
