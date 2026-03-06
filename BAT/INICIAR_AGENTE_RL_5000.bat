@@ -27,11 +27,23 @@ if not exist "data\models\novo_agente_rl\modelo_final\q_network.pkl" (
     )
 )
 
+echo.
+echo   ============================================================
+echo   VERSAO ATIVA: ANTI-OVERTRADING (BALANCED MODE)
+echo   ============================================================
+echo   - Max 5 trades/dia
+echo   - Cooldown 5 min entre trades
+echo   - Confirmacao multi-vela
+echo   - Filtro volatilidade minima
+echo   - Win rate target: 68%
+echo   ============================================================
+echo.
+
 :MENU
 echo.
 echo   [1] AVALIAR MODELO (Simulacao)
-echo   [2] OPERAR MERCADO REAL (v5000 ORIGINAL)
-echo   [3] OPERAR MERCADO REAL (v5000 ANTI-OVERTRADING) *** RECOMENDADO ***
+echo   [2] OPERAR MERCADO REAL (BALANCED) *** ATIVO ***
+echo   [3] OPERAR MERCADO REAL (ORIGINAL - SEM PROTECAO)
 echo   [4] Sair
 echo.
 
@@ -45,28 +57,18 @@ if "%CHOICE%"=="1" (
 
 if "%CHOICE%"=="2" (
     echo.
-    echo   ============================================================
-    echo   *** AVISO: Versao ORIGINAL (SEM protecao anti-overtrading) ***
-    echo   ============================================================
-    echo.
-    echo   OPERACAO REAL ATIVADA. ALVO: R$ 140,00.
-    python scripts/operar_novo_agente_rl_real.py
+    echo   OPERACAO REAL COM ANTI-OVERTRADING (BALANCED).
+    python scripts/operar_novo_agente_rl_real_antiovertrading.py
     pause
     goto :MENU
 )
 
 if "%CHOICE%"=="3" (
     echo.
-    echo   ============================================================
-    echo   VERSAO COM ANTI-OVERTRADING (RECOMENDADA)
-    echo   - Max 5 trades/dia
-    echo   - Cooldown 5 min entre trades
-    echo   - Confirmacao multi-vela
-    echo   - Filtro volatilidade
-    echo   ============================================================
+    echo   *** AVISO: Versao ORIGINAL (SEM protecao anti-overtrading) ***
     echo.
-    echo   OPERACAO REAL ATIVADA com PROTECOES.
-    python scripts/operar_novo_agente_rl_real_antiovertrading.py
+    echo   OPERACAO REAL ATIVADA. ALVO: R$ 140,00.
+    python scripts/operar_novo_agente_rl_real.py
     pause
     goto :MENU
 )
