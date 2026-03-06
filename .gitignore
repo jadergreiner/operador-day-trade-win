@@ -76,3 +76,4 @@ data/db/*.db
 data/raw/
 data/processed/
 data/fechamento_diario/
+data/db/trading.db.backup_06mar.bkp
