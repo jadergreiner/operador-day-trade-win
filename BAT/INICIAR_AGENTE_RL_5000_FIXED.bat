@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 REM ============================================================
 REM  LAUNCHER: NOVO AGENTE RL (OPERACAO REAL 5000 EPISODIOS)
-REM  Data: 06/03/2026 - v1.0.8 - ULTRA SAFE
+REM  Data: 06/03/2026 - v1.0.9 - COM SUPORTE A ARGUMENTOS
 REM ============================================================
 
 REM Garante que o script esta rodando na raiz do projeto
@@ -35,17 +35,17 @@ echo   - Max 5 trades/dia
 echo   - Cooldown 5 min entre trades
 echo   - Confirmacao multi-vela
 echo   - Filtro volatilidade minima
-echo   - Win rate target: 68%
+echo   - Win rate target: 68 percent
 echo   ============================================================
 echo.
 
-REM Suporte a argumentos de linha de comando
-REM Uso: INICIAR_AGENTE_RL_5000.bat [1|2|3|4]
+REM Se houver argumento na linha de comando, usar direto
 if not "%1"=="" (
     set CHOICE=%1
-    goto :PROCESS_CHOICE
+    goto :PROCESS
 )
 
+REM Caso contrario, mostrar menu
 :MENU
 echo.
 echo   [1] AVALIAR MODELO (Simulacao)
@@ -56,9 +56,11 @@ echo.
 
 set /p CHOICE="Escolha: "
 
-:PROCESS_CHOICE
+:PROCESS
 
 if "%CHOICE%"=="1" (
+    echo.
+    echo   Avaliando modelo em simulacao...
     python scripts/treinar_novo_agente_rl.py --dados-reais --apenas-avaliar
     pause
     goto :MENU
@@ -67,6 +69,7 @@ if "%CHOICE%"=="1" (
 if "%CHOICE%"=="2" (
     echo.
     echo   OPERACAO REAL COM ANTI-OVERTRADING (BALANCED).
+    echo   Inicializando operador...
     python scripts/operar_novo_agente_rl_real_antiovertrading.py
     pause
     goto :MENU
@@ -84,5 +87,7 @@ if "%CHOICE%"=="3" (
 
 if "%CHOICE%"=="4" exit /b 0
 
-echo Opcao invalida.
+echo.
+echo   Opcao invalida. Tente novamente.
+echo.
 goto :MENU

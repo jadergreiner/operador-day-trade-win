@@ -480,7 +480,7 @@ if __name__ == "__main__":
         loop_operacao()
 
     except KeyboardInterrupt:
-        logger.info("\n⏹️  Operação interrompida pelo usuário.")
+        logger.info("\n[STOP] Operacao interrompida pelo usuario.")
         print_status()
     except Exception as e:
         logger.error(f"[ERRO] Erro fatal: {e}")
