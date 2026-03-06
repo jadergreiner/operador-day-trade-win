@@ -322,7 +322,7 @@ def enviar_ordem_mt5adapter(acao: str, preco_atual: float, vol: float) -> bool:
         else:
             return False
 
-        logger.info(f"📤 Enviando: {acao} @ {preco_atual} (SL: {sl}, TP: {tp}, Vol: {vol:.3f}%)")
+        logger.info(f"[ENVIO] Enviando: {acao} @ {preco_atual} (SL: {sl}, TP: {tp}, Vol: {vol:.3f}%)")
 
         order = Order(
             symbol=Symbol(SIMBOLO),
@@ -374,6 +374,38 @@ def monitorar_posicoes() -> bool:
         return False
 
 
+def registrar_progresso_objetivos(saldo_inicial: float) -> None:
+    """Registra progresso parcial em relacao aos objetivos do dia."""
+    try:
+        # Obter saldo atual
+        account_info = mt5_adapter.get_account_info()
+        saldo_atual = account_info.get("balance", saldo_inicial) if account_info else saldo_inicial
+        
+        # Calcular P&L
+        pl_atual = saldo_atual - saldo_inicial
+        
+        # Calcular progresso
+        progresso_target = (pl_atual / TARGET_LUCRO_DIARIO) * 100 if TARGET_LUCRO_DIARIO > 0 else 0
+        progresso_stop = abs(pl_atual / STOP_PERDA_DIARIA) * 100 if STOP_PERDA_DIARIA != 0 else 0
+        
+        # Construir barra visual
+        barra_size = 30
+        if pl_atual >= 0:
+            filled = int((min(pl_atual, TARGET_LUCRO_DIARIO) / TARGET_LUCRO_DIARIO) * barra_size)
+            barra = "[" + "=" * filled + "-" * (barra_size - filled) + "]"
+            status = f"{pl_atual:+.2f} / {TARGET_LUCRO_DIARIO:.2f} ({progresso_target:.1f}%)"
+        else:
+            filled = int((abs(min(pl_atual, STOP_PERDA_DIARIA)) / abs(STOP_PERDA_DIARIA)) * barra_size)
+            barra = "[" + "x" * filled + "-" * (barra_size - filled) + "]"
+            status = f"{pl_atual:+.2f} / {STOP_PERDA_DIARIA:.2f} ({progresso_stop:.1f}%)"
+        
+        # Registrar no log com barra de progresso
+        logger.info(f"[PROGRESSO] {barra} {status}")
+        
+    except Exception as e:
+        logger.debug(f"Erro ao registrar progresso: {e}")
+
+
 def print_status():
     """Exibe status de operação BALANCED MODE."""
     logger.info("\n" + "=" * 70)
@@ -399,6 +431,15 @@ def loop_operacao():
     logger.info(f"Min volatilidade: {AntiOvertradingConfig.MIN_VOLATILITY_PERCENT}%")
     logger.info(f"Confirmação sinal: {AntiOvertradingConfig.CONFIRM_SIGNAL_BARS} velas")
 
+    # Capturar saldo inicial para rastreamento de P&L
+    try:
+        account_info = mt5_adapter.get_account_info()
+        saldo_inicial = account_info.get("balance", 0.0) if account_info else 0.0
+        logger.info(f"[INICIO] Saldo inicial: R${saldo_inicial:.2f}")
+    except Exception as e:
+        logger.warning(f"Nao foi possivel obter saldo inicial: {e}")
+        saldo_inicial = 0.0
+
     lucro_sessao = 0.0
     ciclo = 0
 
@@ -406,7 +447,7 @@ def loop_operacao():
         ciclo += 1
 
         if not verificar_horario_trading():
-            logger.info("⏰ Fora do horário. Aguardando...")
+            logger.info("[HORA] Fora do horario. Aguardando...")
             time.sleep(60)
             continue
 
@@ -415,7 +456,7 @@ def loop_operacao():
             break
 
         if lucro_sessao <= STOP_PERDA_DIARIA:
-            logger.warning(f"🛑 STOP LOSS ACIONADO: R${lucro_sessao:.2f}")
+            logger.warning(f"[STOP] STOP LOSS ACIONADO: R${lucro_sessao:.2f}")
             break
 
         if monitorar_posicoes():
@@ -430,6 +471,9 @@ def loop_operacao():
             logger.warning("[!] Dados insuficientes. Aguardando 30s...")
             time.sleep(30)
             continue
+
+        # Registrar progresso parcial do dia
+        registrar_progresso_objetivos(saldo_inicial)
 
         # ════════════════════════════════════════════════════════════════
         # ANTI-OVERTRADING VALIDATIONS
