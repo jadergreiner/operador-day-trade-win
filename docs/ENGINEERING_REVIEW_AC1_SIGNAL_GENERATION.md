@@ -23,7 +23,7 @@ AC1: Geração de Sinal M5
                               ou close < low anterior (bearish)
    - CHoCH (Change of Character): Detecta reversão (new high/low)
    - FVG (Fair Value Gap): Detecta gap entre candles com volume baixo
-   
+
    Test coverage:
    ✓ test_ac1_detect_bos_bullish
    ✓ test_ac1_detect_bos_bearish
@@ -36,7 +36,7 @@ AC1: Geração de Sinal M5
    - CHoCH score: ±2.0 (mais forte)
    - FVG score: ±1.0 (base)
    - Score clipped to [-3, +3] range
-   
+
    Test coverage:
    ✓ test_ac1_score_in_valid_range
 
@@ -47,7 +47,7 @@ AC1: Geração de Sinal M5
    - Signal generated without decision_type
    - Signal has unique signal_id for persistence
    - Signal ready for DB insertion regardless of whether trade will be entered
-   
+
    Test coverage:
    ✓ test_ac1_signal_independent_from_decision
    ✓ test_ac1_signal_ready_for_persistence
@@ -58,7 +58,7 @@ AC1: Geração de Sinal M5
    - Validation: 10 days × 288 M5/day = 2.880 candles minimum
    - Dataset generation: Creates 10-day synthetic candle dataset
    - Signal generation: Processes all candles, filters by strength
-   
+
    Test coverage:
    ✓ test_ac1_minimum_candles_validation
 
@@ -116,25 +116,25 @@ TEST BREAKDOWN:
 Class: TestAC1SignalGenerationM5
   ✅ test_ac1_detect_bos_bullish (11%)
      Validates: Close > high anterior generates BUY signal with BOS detector
-  
+
   ✅ test_ac1_detect_bos_bearish (22%)
      Validates: Close < low anterior generates SELL signal with BOS detector
-  
+
   ✅ test_ac1_score_in_valid_range (33%)
      Validates: Score always in [-3, +3] for multiple test cases
-  
+
   ✅ test_ac1_signal_independent_from_decision (44%)
      Validates: Signal generated without decision_type field (Camada 1 ≠ Camada 2)
-  
+
   ✅ test_ac1_minimum_candles_validation (55%)
      Validates: 2.880 candles dataset processed with signal generation
-  
+
   ✅ test_ac1_signal_properties_complete (66%)
      Validates: All required fields present (signal_id, timestamp, symbol, etc)
-  
+
   ✅ test_ac1_signals_are_unique (77%)
      Validates: Each signal has unique UUID even if identical conditions
-  
+
   ✅ test_ac1_rejects_weak_signals (88%)
      Validates: Signals with |score| < 1.0 are rejected
 
@@ -296,7 +296,7 @@ Validation Checklist:
 RECOMMENDATION:
   ✅ APPROVE for production code path
   ✅ READY for AC2 implementation (Signal Persistence)
-  
+
 BLOCKING ISSUES: NONE
 WARNINGS: None
 TECHNICAL DEBT: None
