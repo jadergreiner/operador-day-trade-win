@@ -3,10 +3,9 @@ setlocal enabledelayedexpansion
 
 REM ============================================================
 REM  LAUNCHER: NOVO AGENTE RL (OPERACAO REAL 5000 EPISODIOS)
-REM  Data: 06/03/2026 - v1.0.8 - ULTRA SAFE
+REM  Versao: 2.0 - Corrigida para compatibilidade total
 REM ============================================================
 
-REM Garante que o script esta rodando na raiz do projeto
 cd /d "%~dp0\.."
 
 echo.
@@ -15,36 +14,24 @@ echo   * OPERADOR RL - MODELO 5000 EPISODIOS (v5000)
 echo   ============================================================
 echo.
 
-REM 1. Validacao de Saude do Ambiente
 echo   [CHECK] Verificando arquivo do modelo...
-
 if not exist "data\models\novo_agente_rl\modelo_final\q_network.pkl" (
-    if not exist "q_network.pkl" (
-        echo   [FATAL] Arquivo q_network.pkl nao localizado.
-        echo.
-        pause
-        exit /b 1
-    )
+    echo   [FATAL] Arquivo q_network.pkl nao localizado.
+    pause
+    exit /b 1
 )
 
 echo.
 echo   ============================================================
 echo   VERSAO ATIVA: ANTI-OVERTRADING (BALANCED MODE)
 echo   ============================================================
-echo   - Max 5 trades/dia
+echo   - Operacao livre ate TARGET ou STOP LOSS
 echo   - Cooldown 5 min entre trades
 echo   - Confirmacao multi-vela
-echo   - Filtro volatilidade minima
-echo   - Win rate target: 68%
+echo   - Filtro volatilidade minima (0.05 porcento)
+echo   - Win rate target: 68 porcento
 echo   ============================================================
 echo.
-
-REM Suporte a argumentos de linha de comando
-REM Uso: INICIAR_AGENTE_RL_5000.bat [1|2|3|4]
-if not "%1"=="" (
-    set CHOICE=%1
-    goto :PROCESS_CHOICE
-)
 
 :MENU
 echo.
@@ -54,35 +41,47 @@ echo   [3] OPERAR MERCADO REAL (ORIGINAL - SEM PROTECAO)
 echo   [4] Sair
 echo.
 
-set /p CHOICE="Escolha: "
-
-:PROCESS_CHOICE
+set /p CHOICE="Escolha (1-4): "
 
 if "%CHOICE%"=="1" (
+    echo.
+    echo   Iniciando avaliacao do modelo...
     python scripts/treinar_novo_agente_rl.py --dados-reais --apenas-avaliar
-    pause
+    if errorlevel 1 echo. & echo   [ERRO] Avaliacao falhou. & pause
     goto :MENU
 )
 
 if "%CHOICE%"=="2" (
     echo.
-    echo   OPERACAO REAL COM ANTI-OVERTRADING (BALANCED).
+    echo   [START] OPERACAO REAL COM ANTI-OVERTRADING (BALANCED MODE)
+    echo   Objetivo: Lucro R$ 140,00 ou Prejuizo -R$ 250,00
+    echo.
     python scripts/operar_novo_agente_rl_real_antiovertrading.py
+    echo.
+    echo   [INFO] Operacao encerrada.
     pause
     goto :MENU
 )
 
 if "%CHOICE%"=="3" (
     echo.
-    echo   *** AVISO: Versao ORIGINAL (SEM protecao anti-overtrading) ***
+    echo   [AVISO] Versao ORIGINAL (SEM protecao anti-overtrading)
+    echo   Objetivo: Lucro R$ 140,00 ou Prejuizo -R$ 250,00
     echo.
-    echo   OPERACAO REAL ATIVADA. ALVO: R$ 140,00.
     python scripts/operar_novo_agente_rl_real.py
+    echo.
+    echo   [INFO] Operacao encerrada.
     pause
     goto :MENU
 )
 
-if "%CHOICE%"=="4" exit /b 0
+if "%CHOICE%"=="4" (
+    echo.
+    echo   Encerrando...
+    exit /b 0
+)
 
-echo Opcao invalida.
+echo.
+echo   [ERRO] Opcao invalida. Digite 1, 2, 3 ou 4.
+echo.
 goto :MENU
