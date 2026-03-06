@@ -496,10 +496,11 @@ def modificar_sl_ordem(ticket: int, novo_sl: float) -> bool:
             logger.warning(f"[PROTEÇÃO] Posição #{ticket} não encontrada")
             return False
 
-        # Verificação: evitar modificar se o SL já está no valor desejado (tolerância 0.1)
+        # Verificação: evitar modificar se o SL já está no valor desejado (tolerância 1.0 ponto)
         current_sl = float(position.sl) if position.sl else 0.0
-        if abs(float(novo_sl) - current_sl) < 0.1:
-            logger.debug(f"[PROTEÇÃO] SL do ticket {ticket} já está em {current_sl:.2f}. Nenhuma modif necessária")
+        if abs(float(novo_sl) - current_sl) < 1.0:
+            logger.debug(f"[PROTEÇÃO] SL do ticket {ticket} já está próximo a {current_sl:.2f}. "
+                        f"Novo valor {novo_sl:.2f} - diferença < 1.0pt. Ignorando modif.")
             return True
 
         # Prepa requisicao para modificação
@@ -512,14 +513,35 @@ def modificar_sl_ordem(ticket: int, novo_sl: float) -> bool:
             'comment': 'Profit Protection SL Update'
         }
 
+        logger.debug(f"[PROTEÇÃO] Enviando requisição modify para ticket {ticket}: "
+                    f"SL={float(novo_sl):.2f}, TP={float(position.tp) if position.tp else 0:.2f}, "
+                    f"Atual: SL={current_sl:.2f}", extra={'action': 'MODIFY_SL'})
+
         result = mt5_adapter._mt5.order_send(request)
 
         if result is None:
-            logger.error(f"[PROTEÇÃO] order_send retornou None para ticket {ticket}")
+            logger.error(f"[PROTEÇÃO] order_send retornou None para ticket {ticket}. "
+                        f"Verificar conexão MT5 ou conta bloqueada.")
             return False
 
-        if result.retcode != mt5_adapter._mt5.TRADE_RETCODE_DONE:
-            logger.warning(f"[PROTEÇÃO] Falha ao modificar SL do ticket {ticket}: {result.comment}")
+        retcode = getattr(result, 'retcode', -1)
+        comment = getattr(result, 'comment', 'Sem detalhes')
+        
+        if retcode != mt5_adapter._mt5.TRADE_RETCODE_DONE:
+            logger.warning(f"[PROTEÇÃO] Falha ao modificar SL do ticket {ticket}: "
+                          f"retcode={retcode}, mensagem={comment}. "
+                          f"Req: SL={float(novo_sl):.2f}, TP={float(position.tp) if position.tp else 0:.2f}")
+            
+            # Diagnóstico detalhado
+            if retcode == 10009:  # TRADE_RETCODE_INVALID_PRICE
+                logger.error(f"  → INVALID PRICE: novo SL {novo_sl:.2f} pode estar fora do spread")
+            elif retcode == 10010:  # TRADE_RETCODE_INVALID_STOPS
+                logger.error(f"  → INVALID STOPS: SL ou TP inválido. SL={novo_sl:.2f}, TP={float(position.tp):.2f}")
+            elif retcode == 10014:  # TRADE_RETCODE_INVALID_VOLUME
+                logger.error(f"  → INVALID VOLUME: verificar volume=1")
+            elif comment == "Invalid request":
+                logger.error(f"  → INVALID REQUEST: PROVÁVEL: SL já está neste valor ou diferença < 1 ponto")
+            
             return False
 
         logger.info(f"[PROTEÇÃO] SL modificado com sucesso para ticket {ticket}: {novo_sl:.2f}")
@@ -621,14 +643,19 @@ def proteger_lucro_trade() -> None:
             return
 
         for pos in positions:
-            # Dados da posição aberta
+            # Dados da posição aberta - com conversão explícita para float
             ticket = pos.ticket
-            entry_price = pos.price_open
-            current_price = pos.price_current
-            sl = pos.sl
-            tp = pos.tp
+            entry_price = float(pos.price_open) if pos.price_open else 0.0
+            current_price = float(pos.price_current) if pos.price_current else 0.0
+            sl = float(pos.sl) if pos.sl else 0.0
+            tp = float(pos.tp) if pos.tp else 0.0
             side = pos.type  # 0=BUY, 1=SELL
-            volume = pos.volume
+            volume = float(pos.volume) if pos.volume else 0.0
+
+            # Validação: SL inválido ou zero
+            if sl <= 0.0 or tp <= 0.0:
+                logger.debug(f"[PROTEÇÃO] Ticket {ticket}: SL ou TP inválido (SL={sl}, TP={tp}). Ignorando.")
+                continue
 
             # Calcular lucro atual da posição
             if side == 0:  # BUY
@@ -647,15 +674,30 @@ def proteger_lucro_trade() -> None:
             # Level 1: 25% de lucro → Move SL para break-even
             if percent_tp > 25:
                 novo_sl = entry_price
-                # Tolerância: não modificar se diferença < 0.5 pontos (evita "Invalid request")
-                if side == 0 and novo_sl > sl + 0.5:  # BUY: novo SL > SL antigo + tolerância
-                    logger.info(f"[PROTEÇÃO] Posição #{ticket} em +{percent_tp:.1f}% de lucro. "
-                               f"Movendo SL para break-even ({novo_sl:.2f})")
-                    modificar_sl_ordem(ticket, novo_sl)
-                elif side == 1 and novo_sl < sl - 0.5:  # SELL: novo SL < SL antigo - tolerância
-                    logger.info(f"[PROTEÇÃO] Posição #{ticket} em +{percent_tp:.1f}% de lucro. "
-                               f"Movendo SL para break-even ({novo_sl:.2f})")
-                    modificar_sl_ordem(ticket, novo_sl)
+                diferenca_sl = abs(novo_sl - sl)
+                
+                if side == 0:  # BUY
+                    # Tolerância: mínimo 1.0 ponto (padrão broker) para evitar "Invalid request"
+                    if novo_sl > sl + 1.0:
+                        logger.debug(f"[PROTEÇÃO] Ticket {ticket} (BUY): SL atual={sl:.2f}, novo={novo_sl:.2f}, "
+                                   f"diferença={diferenca_sl:.2f}, tentando modificar...")
+                        logger.info(f"[PROTEÇÃO] Posição #{ticket} em +{percent_tp:.1f}% de lucro. "
+                                   f"Movendo SL para break-even ({novo_sl:.2f})")
+                        modificar_sl_ordem(ticket, novo_sl)
+                    else:
+                        logger.debug(f"[PROTEÇÃO] Ticket {ticket} (BUY): Diferença SL={diferenca_sl:.2f} "
+                                   f"< 1.0 (inercial). Ignorando.")
+                else:  # SELL
+                    # Tolerância: mínimo 1.0 ponto (padrão broker)
+                    if novo_sl < sl - 1.0:
+                        logger.debug(f"[PROTEÇÃO] Ticket {ticket} (SELL): SL atual={sl:.2f}, novo={novo_sl:.2f}, "
+                                   f"diferença={diferenca_sl:.2f}, tentando modificar...")
+                        logger.info(f"[PROTEÇÃO] Posição #{ticket} em +{percent_tp:.1f}% de lucro. "
+                                   f"Movendo SL para break-even ({novo_sl:.2f})")
+                        modificar_sl_ordem(ticket, novo_sl)
+                    else:
+                        logger.debug(f"[PROTEÇÃO] Ticket {ticket} (SELL): Diferença SL={diferenca_sl:.2f} "
+                                   f"< 1.0 (inercial). Ignorando.")
 
             # Level 2: 50% de lucro → Fecha 50% (lock in profits)
             if percent_tp > 50:
@@ -667,21 +709,31 @@ def proteger_lucro_trade() -> None:
             # Level 3: 75% de lucro → Trailing stop (deixa correr)
             if percent_tp > 75:
                 trailing_distance = 50  # 50 pontos de trailing
+                novo_sl = 0.0
+                
                 if side == 0:  # BUY
                     novo_sl = current_price - trailing_distance
-                    if novo_sl > sl + 0.5:  # Tolerância: diferença mínima 0.5 pontos
+                    diferenca_sl = abs(novo_sl - sl)
+                    # Tolerância: mínimo 1.0 ponto (padrão broker)
+                    if novo_sl > sl + 1.0:
+                        logger.debug(f"[PROTEÇÃO] Ticket {ticket} (BUY-TRAIL): SL atual={sl:.2f}, novo={novo_sl:.2f}, "
+                                   f"diferença={diferenca_sl:.2f}, tentando trailing...")
                         logger.info(f"[PROTEÇÃO] Posição #{ticket} em +{percent_tp:.1f}% de lucro. "
                                    f"Ativando trailing stop (SL={novo_sl:.2f})")
                         modificar_sl_ordem(ticket, novo_sl)
                 else:  # SELL
                     novo_sl = current_price + trailing_distance
-                    if novo_sl < sl - 0.5:  # Tolerância: diferença mínima 0.5 pontos
+                    diferenca_sl = abs(novo_sl - sl)
+                    # Tolerância: mínimo 1.0 ponto (padrão broker)
+                    if novo_sl < sl - 1.0:
+                        logger.debug(f"[PROTEÇÃO] Ticket {ticket} (SELL-TRAIL): SL atual={sl:.2f}, novo={novo_sl:.2f}, "
+                                   f"diferença={diferenca_sl:.2f}, tentando trailing...")
                         logger.info(f"[PROTEÇÃO] Posição #{ticket} em +{percent_tp:.1f}% de lucro. "
                                    f"Ativando trailing stop (SL={novo_sl:.2f})")
                         modificar_sl_ordem(ticket, novo_sl)
 
     except Exception as e:
-        logger.debug(f"Erro ao proteger lucro de trades: {e}")
+        logger.error(f"[PROTEÇÃO] Erro ao proteger lucro de trades: {e}")
 
 
 def registrar_progresso_objetivos(saldo_inicial: float, forcar: bool = False) -> None:
