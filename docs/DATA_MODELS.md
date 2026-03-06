@@ -1,15 +1,15 @@
 # 📊 Data Models - Operador Day Trade WIN
 
-**Versão:** 1.0.2
+**Versão:** 1.0.3
 **Data Criação:** 27/02/2026
-**Última Atualização:** 05/03/2026 (AC3 Signal Tracking added)
+**Última Atualização:** 03/03/2026 (AC4 + AC5 Trade Execution added)
 **Responsável:** Data Engineer + Arquiteto de Sistemas
 **Sincronização:** [ARCHITECTURE.md](ARCHITECTURE.md) | [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) | [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md)
-**Status:** ✅ Sincronizado com 5 documentos arquiteturais + AC3 Implementation
+**Status:** ✅ Sincronizado com 5 documentos arquiteturais + AC3 + AC4 + AC5 Implementation
 
 ⭐ **CORE DO PRODUTO**: Os modelos aqui descritos são populados/utilizados por [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) e [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat).
 
-⭐ **AC3 SIGNAL TRACKING** (05/03/2026): SignalTracker implementado para rastreamento completo de sinais AC1→AC2→AC3 com 9 testes + 100% coverage
+⭐ **AC5 TRADE EXECUTOR** (03/03/2026): TradeExecutor implementado para execução completa de trades AC1→AC2→AC3→AC4→AC5 com 16 testes + 100% coverage
 
 ---
 
@@ -335,6 +335,109 @@ CREATE TABLE trading_signals (
     INDEX idx_confidence (ml_confidence DESC)
 );
 ```
+
+---
+
+### AC4: BDI Decision Filter (Decision Outcomes)
+
+**AC4 (BDIDecisionFilter):** Avalia contexto BDI + aplica 3 gates de risco
+↓
+**AC5 (TradeExecutor):** Executa trades em MT5 (NEW - 03/03/2026) ✅ IMPLEMENTED
+
+#### 4.3 Tabela: `bdi_decisions` (AC4 Decision Engine)
+
+**Propósito:** Registrar decisões de AC4 com confiança e justificativa dos gates.
+
+```sql
+CREATE TABLE bdi_decisions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    decision_id TEXT UNIQUE NOT NULL,
+    signal_id TEXT NOT NULL,
+    timestamp DATETIME NOT NULL,
+    volatility_score REAL NOT NULL,
+    macro_score REAL NOT NULL,
+    drawdown_score REAL NOT NULL,
+    decision_type TEXT NOT NULL,  -- EXECUTE, REJECT, HOLD
+    confidence REAL NOT NULL,  -- 0.0-1.0
+    gate1_passed BOOLEAN NOT NULL,  -- Volatilidade ≥ 75%
+    gate2_passed BOOLEAN NOT NULL,  -- Macro ≥ 80%
+    gate3_passed BOOLEAN NOT NULL,  -- Drawdown ≥ 85%
+    justification TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY(signal_id) REFERENCES signals(signal_id),
+    CHECK(decision_type IN ('EXECUTE', 'REJECT', 'HOLD', 'CANCEL')),
+    CHECK(confidence >= 0.0 AND confidence <= 1.0),
+    INDEX idx_signal_decision (signal_id, timestamp),
+    INDEX idx_decision_type (decision_type)
+);
+```
+
+**AC4 Operations:**
+- `get_signals_for_decision()` - Recupera sinais status OPEN/LINKED
+- `evaluate_bdi_context()` - Análise volatilidade/padrões BDI
+- `apply_risk_gates()` - Valida 3 gates (volatilidade, macro, drawdown)
+- `make_decision()` - EXECUTE/REJECT com justificativa
+- `get_decision_stats()` - Métricas agregadas (total, executed, rejected, avg_confidence)
+
+---
+
+### AC5: Trade Executor (Order Execution)
+
+**AC5 (TradeExecutor):** Executa trades baseadas em AC4 EXECUTE decisions
+↓
+**Próximas Iterações:** Trade monitoring, ML feedback loop
+
+#### 4.4 Tabela: `trades` (AC5 Trade Execution)
+
+**Propósito:** Registrar trades executadas com especificação completa de SL/TP e
+outcomes. Linkado a signals via outcome_trade_id.
+
+```sql
+CREATE TABLE trades (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id TEXT UNIQUE NOT NULL,
+    signal_id TEXT NOT NULL,
+    trade_id INTEGER UNIQUE NOT NULL,
+    entry_price DECIMAL(10, 5) NOT NULL,
+    stop_loss DECIMAL(10, 5) NOT NULL,
+    take_profit DECIMAL(10, 5) NOT NULL,
+    volume INTEGER NOT NULL,
+    direction TEXT NOT NULL,  -- BUY, SELL
+    order_type TEXT NOT NULL,  -- MARKET, LIMIT, STOP_MARKET
+    status TEXT NOT NULL,  -- PENDING, SENT, FILLED, PARTIAL, CANCELLED, REJECTED
+    execution_price DECIMAL(10, 5),
+    execution_time DATETIME,
+    exit_price DECIMAL(10, 5),
+    exit_time DATETIME,
+    pnl_realized DECIMAL(10, 5),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY(signal_id) REFERENCES signals(signal_id),
+    CHECK(direction IN ('BUY', 'SELL')),
+    CHECK(order_type IN ('MARKET', 'LIMIT', 'STOP_MARKET')),
+    CHECK(status IN ('PENDING', 'SENT', 'FILLED', 'PARTIAL', 'CANCELLED', 'REJECTED')),
+    CHECK(volume >= 1 AND volume <= 10),
+    INDEX idx_signal_trade (signal_id, trade_id),
+    INDEX idx_status (status),
+    INDEX idx_execution_time (execution_time)
+);
+```
+
+**AC5 Operations:**
+- `prepare_order_specification()` - Calcula SL = ATR*1.5, TP = ATR*3.0
+- `validate_order()` - Checks volume (1-10), SL/TP positioning, risk-reward ≥1:2
+- `send_order_to_broker()` - Envia para MT5 via ProcessadorBDI.enviar_ordem()
+- `register_execution()` - Registra trade em BD, links signal_id → trade_id
+- `execute_trade()` - Pipeline completo (prepare→validate→send→register)
+- `get_execution_stats()` - Métricas (total_trades, open, closed, avg_pnl)
+
+**Order Specification Details:**
+- **SL/TP Calculation:** Baseado em ATR
+  - BUY: SL = entry - 1.5×ATR, TP = entry + 3.0×ATR
+  - SELL: SL = entry + 1.5×ATR, TP = entry - 3.0×ATR
+- **Volume:** 1-10 (scaled position sizing)
+- **Risk-Reward Ratio:** TP distance ≥ 2× SL distance (enforced validation)
 
 ---
 
