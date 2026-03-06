@@ -49,23 +49,23 @@ logger = logging.getLogger(__name__)
 
 class AntiOvertradingConfig:
     """Configurações de proteção contra overtrading - BALANCED MODE.
-    
+
     BALANCED Mode:
     - Sem limite de trades/dia
     - Aguarda fechamento de candle
     - Volatilidade mínima antes de entrada
     - Continua até atingir TARGET ou STOP LOSS
     """
-    
+
     # ✅ ATIVO: Filtros BALANCED (sem limite diário)
     COOLDOWN_SECONDS = 300              # 5 minutos entre trades (evita impulsos)
     MIN_VOLATILITY_PERCENT = 0.05       # Mínimo 0.05% volatilidade para operar
     CONFIRM_SIGNAL_BARS = 2             # Esperar 2 velas confirmando sinal
-    
+
     # ❌ DESATIVADO: Limites diários e horários
     # MAX_TRADES_PER_SESSION = Ilimitado (operadora até target/stop loss)
     # MAX_TRADES_PER_HOUR = Ilimitado (apenas cooldown entre trades)
-    
+
     # Qualidade mínima
     MIN_VOLUME = 1000                   # Volume mínimo
     MIN_CONFIDENCE_SCORE = 0.65         # Confiança mínima do modelo
@@ -139,18 +139,28 @@ def inicializar_agente_rl() -> PipelineTreinamentoRL:
 
 
 def inicializar_rl_repo():
-    """Inicializa repositório RL."""
+    """Inicializa repositório RL com retry logic."""
     global rl_repo
-    try:
-        db_path = str(ROOT_DIR / "data" / "db" / "trading.db")
-        session = get_session(db_path)
-        rl_repo = SqliteRLRepository(session)
-        rl_repo.seed_dimension_tables()
-        logger.info("✅ RL Repository pronto")
-        return rl_repo
-    except Exception as e:
-        logger.error(f"Erro ao inicializar RL: {e}")
-        return None
+    db_path = str(ROOT_DIR / "data" / "db" / "trading.db")
+    max_retries = 3
+    retry_delay = 2
+
+    for tentativa in range(max_retries):
+        try:
+            logger.info(f"📊 Conectando RL repo (tentativa {tentativa+1}/{max_retries})...")
+            session = get_session(db_path)
+            rl_repo = SqliteRLRepository(session)
+            rl_repo.seed_dimension_tables()
+            logger.info("✅ RL Repository pronto")
+            return rl_repo
+        except Exception as e:
+            logger.warning(f"⚠️  Tentativa {tentativa+1} falhou: {str(e)[:100]}")
+            if tentativa < max_retries - 1:
+                logger.info(f"⏳ Aguardando {retry_delay}s antes de tentar novamente...")
+                time.sleep(retry_delay)
+            else:
+                logger.error(f"❌ Falha na inicialização RL após {max_retries} tentativas")
+                return None
 
 
 def verificar_horario_trading() -> bool:
@@ -191,7 +201,7 @@ def calcular_volatilidade(dados: pd.DataFrame) -> float:
     """Calcula volatilidade percentual das últimas 5 velas."""
     if len(dados) < 5:
         return 0.0
-    
+
     recent = dados.tail(5)
     high = recent['high'].max()
     low = recent['low'].min()
@@ -213,10 +223,10 @@ def obter_acao_do_modelo(dados: pd.DataFrame) -> tuple[int, float]:
 
         estado = ambiente._calcular_estado()
         acao_id = pipeline._agente.selecionar_acao(estado)
-        
+
         # Simular confidence score (0-1) baseado no Q-value
         confidence = 0.7  # TODO: extrair do Q-network
-        
+
         return acao_id, confidence
 
     except Exception as e:
@@ -230,17 +240,17 @@ def verificar_cooldown() -> bool:
     Retorna True se pode fazer trade.
     """
     global last_trade_time
-    
+
     if last_trade_time is None:
         return True
-    
+
     elapsed = (datetime.now() - last_trade_time).total_seconds()
-    
+
     if elapsed < AntiOvertradingConfig.COOLDOWN_SECONDS:
         minutos = (AntiOvertradingConfig.COOLDOWN_SECONDS - elapsed) / 60
         logger.warning(f"⏱️  Cooldown ativo. Aguarde {minutos:.1f} min...")
         return False
-    
+
     return True
 
 
@@ -249,7 +259,7 @@ def verificar_limite_trades() -> bool:
     MODO BALANCED: Sem limite de trades!
     Apenas aguarda cooldown e volatilidade mínima.
     Continua operando até atingir TARGET ou STOP LOSS.
-    
+
     Retorna sempre True (nenhum limite aplicado).
     """
     # ✅ BALANCED: Sem limites diários/horários
@@ -268,7 +278,7 @@ def verificar_volatilidade(vol: float) -> bool:
     if vol < AntiOvertradingConfig.MIN_VOLATILITY_PERCENT:
         logger.info(f"❄️  Mercado MUY estável ({vol:.4f}%). Aguardando volatilidade...")
         return False
-    
+
     return True
 
 
@@ -278,11 +288,11 @@ def verificar_confirmacao_sinal(sinal_atual: str, sinal_anterior: str) -> bool:
     Retorna True se sinal é confirmado.
     """
     global signal_confirmation_count
-    
+
     if sinal_atual == "Aguardar":
         signal_confirmation_count = 0
         return False
-    
+
     if sinal_atual == sinal_anterior:
         signal_confirmation_count += 1
         logger.info(f"📍 Sinal CONFIRMADO ({signal_confirmation_count}/{AntiOvertradingConfig.CONFIRM_SIGNAL_BARS})")
@@ -296,7 +306,7 @@ def verificar_confirmacao_sinal(sinal_atual: str, sinal_anterior: str) -> bool:
 def enviar_ordem_mt5adapter(acao: str, preco_atual: float, vol: float) -> bool:
     """Envia ordem via MT5Adapter (com validações)."""
     global last_trade_time
-    
+
     try:
         if acao == "Aguardar":
             return False
@@ -327,10 +337,10 @@ def enviar_ordem_mt5adapter(acao: str, preco_atual: float, vol: float) -> bool:
 
         ticket = mt5_adapter.send_order(order)
         logger.info(f"✅ Ordem enviada! Ticket: {ticket}")
-        
+
         # Atualizar apenas o cooldown (sem limitar trades/dia)
         last_trade_time = datetime.now()
-        
+
         # Persistir episódio
         if rl_repo:
             try:
@@ -347,7 +357,7 @@ def enviar_ordem_mt5adapter(acao: str, preco_atual: float, vol: float) -> bool:
                 rl_repo.save_episode(episode)
             except Exception as e:
                 logger.warning(f"Erro ao persistir: {e}")
-        
+
         return True
 
     except Exception as e:
@@ -379,7 +389,7 @@ def print_status():
 def loop_operacao():
     """Loop principal com proteções anti-overtrading."""
     global last_signal
-    
+
     logger.info("\n" + "=" * 70)
         logger.info("🚀 INICIANDO OPERAÇÃO RL v5000 (BALANCED MODE - SEM LIMITE DIÁRIO)")
         logger.info("=" * 70)

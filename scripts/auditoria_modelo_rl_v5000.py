@@ -44,7 +44,7 @@ def analisar_distribuicao_acoes(conn):
     logger.info("=" * 80)
 
     query = """
-    SELECT 
+    SELECT
         action,
         COUNT(*) as total,
         ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM rl_episodes), 1) as percentual
@@ -64,7 +64,7 @@ def analisar_distribuicao_acoes(conn):
             return None
 
         total_episodios = sum(r['total'] for r in resultados)
-        
+
         logger.info(f"\nTotal de episódios: {total_episodios}")
         logger.info("-" * 60)
 
@@ -72,7 +72,7 @@ def analisar_distribuicao_acoes(conn):
             acao = row['action'] or 'NULL'
             total = row['total']
             pct = row['percentual']
-            
+
             # Visual bar
             barra = "█" * int(pct / 5)
             logger.info(f"{acao:10} | {barra:20} | {total:4} ({pct:5.1f}%)")
@@ -82,7 +82,7 @@ def analisar_distribuicao_acoes(conn):
         # Verificar viés
         vendas = next((r['total'] for r in resultados if r['action'] == 'SELL'), 0)
         compras = next((r['total'] for r in resultados if r['action'] == 'BUY'), 0)
-        
+
         if vendas > 0 and compras > 0:
             razao = vendas / compras
             logger.info(f"\nRazão SELL/BUY: {razao:.2f}x")
@@ -107,7 +107,7 @@ def analisar_taxa_sucesso(conn):
     logger.info("=" * 80)
 
     query = """
-    SELECT 
+    SELECT
         action,
         COUNT(*) as total_episodios,
         ROUND(AVG(overall_confidence), 2) as confianca_media
@@ -133,7 +133,7 @@ def analisar_taxa_sucesso(conn):
             acao = row['action'] or 'NULL'
             total = row['total_episodios']
             conf = row['confianca_media'] or 0
-            
+
             logger.info(f"{acao:<10} {total:<10} {conf:<18.2f}")
 
         logger.info("-" * 60)
@@ -143,7 +143,7 @@ def analisar_taxa_sucesso(conn):
         for row in resultados:
             acao = row['action']
             conf = row['confianca_media'] or 0
-            
+
             if conf >= 0.7:
                 logger.info(f"✅ {acao}: Convicção FORTE (confiança {conf:.2f})")
             elif conf >= 0.5:
@@ -165,7 +165,7 @@ def analisar_correlacao_preco(conn):
     logger.info("=" * 80)
 
     query = """
-    SELECT 
+    SELECT
         action,
         COUNT(*) as total,
         ROUND(AVG(win_price_change_pct), 2) as media_movimento_pct,
@@ -206,7 +206,7 @@ def analisar_correlacao_preco(conn):
         for row in resultados:
             acao = row['action']
             media = row['media_movimento_pct'] or 0
-            
+
             if acao == 'BUY' and media > 0:
                 logger.info(f"✅ {acao}: Modelo compra em alta correta! (movimento +{media:.2f}%)")
             elif acao == 'BUY' and media < 0:
@@ -241,7 +241,7 @@ def calcular_score_vicios(conn):
         cursor = conn.cursor()
         cursor.execute(query_dist)
         dist = {row['action']: row['cnt'] for row in cursor.fetchall()}
-        
+
         sell_pct = dist.get('SELL', 0) / sum(dist.values()) * 100 if dist else 0
         buy_pct = dist.get('BUY', 0) / sum(dist.values()) * 100 if dist else 0
 
@@ -261,7 +261,7 @@ def calcular_score_vicios(conn):
         # Viço 2: Taxa de sucesso muito baixa em uma ação
         query_wr = """
         SELECT action,
-               ROUND(100.0 * SUM(CASE WHEN r.reward_normalized > 0 THEN 1 ELSE 0 END) / 
+               ROUND(100.0 * SUM(CASE WHEN r.reward_normalized > 0 THEN 1 ELSE 0 END) /
                      NULLIF(COUNT(r.id), 0), 1) as win_rate
         FROM rl_episodes e
         LEFT JOIN rl_rewards r ON e.episode_id = r.episode_id AND r.is_evaluated = 1

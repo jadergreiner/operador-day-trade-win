@@ -1,6 +1,6 @@
 # 🛡️ ESTRATÉGIAS ANTI-OVERTRADING - OPERADOR RL v5000
 
-**Data:** 06/03/2026 | **Problema:** Executando muitas operações desnecessárias (overtrading)  
+**Data:** 06/03/2026 | **Problema:** Executando muitas operações desnecessárias (overtrading)
 **Solução:** 7 filtros implementados no novo operador
 
 ---
@@ -84,7 +84,7 @@ MIN_VOLATILITY_PERCENT = 0.05  # Mínimo 0.05%
 ```
 15:30 - Volatilidade = 0.02% (MUY estável)
         → ❌ NÃO FAZ TRADE
-        
+
 15:35 - Volatilidade = 0.08% (Normal)
         → ✅ LIBERA PARA TRADE
 ```
@@ -112,7 +112,7 @@ Vela 1 (15:30) - Sinal: BUY
 Vela 2 (15:35) - Sinal: BUY (CONFIRMADO!)
                          ↓
                → ✅ EXECUTA ORDEM
-               
+
 Vela 2 (15:35) - Sinal: SELL (DIFERENTE!)
                  Reset counter = 1
                  → ❌ NÃO EXECUTA, ESPERA CONFIRMAÇÃO
@@ -251,5 +251,5 @@ Isso é **NORMAL e DESEJADO** - Significa que os filtros estão funcionando.
 
 ---
 
-**Next step:** Ativar nova versão e monitorar P&L por 5 dias.  
+**Next step:** Ativar nova versão e monitorar P&L por 5 dias.
 **Expectativa:** Reduzir losses, aumentar lucro consistente.

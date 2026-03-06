@@ -52,7 +52,7 @@ def analisar_distribuicao_acoes(conn) -> Dict:
 
     logger.info(f"\n{'─' * 60}")
     logger.info(f"Razão SELL/BUY: {razao:.2f}x")
-    
+
     if 0.9 <= razao <= 1.1:
         logger.info("✅ Distribuição EQUILIBRADA (sem viço evidente)")
     elif razao > 1.1:
@@ -75,7 +75,7 @@ def analisar_confianca(conn) -> Dict:
 
     cursor = conn.cursor()
     query = """
-    SELECT 
+    SELECT
         action,
         COUNT(*) as total,
         ROUND(AVG(overall_confidence), 3) as confianca_media,
@@ -137,7 +137,7 @@ def analisar_preco_mudanca(conn) -> Dict:
 
     cursor = conn.cursor()
     query = """
-    SELECT 
+    SELECT
         action,
         COUNT(*) as total,
         ROUND(AVG(ABS(CAST(win_price_change_pct AS FLOAT))), 4) as volatilidade,
@@ -179,7 +179,7 @@ def analisar_preco_mudanca(conn) -> Dict:
         if acao in dados:
             vol = dados[acao]['volatilidade']
             mov = dados[acao]['movimento_medio']
-            
+
             if vol < 0.005:
                 logger.info(f"✅ {acao}: Ambiente ESTÁVEL (volatilidade {vol:.4f})")
             elif vol < 0.01:
@@ -202,7 +202,7 @@ def calcular_score_vicios(distribuicao: Dict, confianca: Dict, preco: Dict) -> f
     # Fator 1: Desequilíbrio de distribuição (0-30 pontos)
     razao = distribuicao.get('razao_sell_buy', 1)
     desvio = abs(razao - 1.0)
-    
+
     if desvio > 0.3:  # Mais de 30% desequilibrado
         fator1 = 30
     elif desvio > 0.15:  # Mais de 15% desequilibrado
@@ -307,7 +307,7 @@ def main():
             else:
                 logger.error(f"❌ Erro ao conectar: {e}")
                 return
-    
+
     try:
 
         # Executar análises em ordem

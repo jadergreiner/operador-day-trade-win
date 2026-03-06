@@ -1,6 +1,6 @@
 # 🚀 QUICK START: ANTI-OVERTRADING
 
-**Problema:** Operador estava fazendo 15-20 trades/dia = R$750+ comissões/dia  
+**Problema:** Operador estava fazendo 15-20 trades/dia = R$750+ comissões/dia
 **Solução:** Implementado 7 filtros anti-overtrading = Máx 5 trades/dia, R$250 comissões
 
 ---
@@ -129,7 +129,7 @@ Os logs mostram:
 - **Muitos "AGUARDANDO"?** Mercado está lateral → Normal
 - **Muitos "Rejeitos"?** Volatilidade baixa → Esperar
 - **Operando?** Cooldown + confirmação = Seguro ✅
-"``` 
+"```
 
 ---
 
@@ -171,6 +171,6 @@ Os logs mostram:
 
 ---
 
-**Status:** ✅ Pronto para produção  
-**Recomendação:** USE! Proteção > Lucro máximo  
+**Status:** ✅ Pronto para produção
+**Recomendação:** USE! Proteção > Lucro máximo
 **Expectativa:** -80% overtrading, +13pp win rate

@@ -404,7 +404,11 @@ def get_session(db_path: str = "data/db/trading.db") -> Session:
     Returns:
         SQLAlchemy session
     """
-    engine = create_engine(f"sqlite:///{db_path}", echo=False)
+    engine = create_engine(
+        f"sqlite:///{db_path}",
+        echo=False,
+        connect_args={"timeout": 5}  # 5 segundos timeout
+    )
     SessionLocal = sessionmaker(bind=engine)
     return SessionLocal()
 
