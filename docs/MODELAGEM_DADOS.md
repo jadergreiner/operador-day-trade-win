@@ -460,6 +460,130 @@ CREATE INDEX idx_audit_log_trades_id ON audit_log(trades_id);
 
 ---
 
+### Tabela 11: SIGNALS (Camada 1 - Geração de Sinal)
+
+```sql
+CREATE TABLE signals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    signal_id TEXT UNIQUE NOT NULL,
+    timestamp DATETIME NOT NULL,
+    symbol TEXT NOT NULL,
+    signal_type TEXT NOT NULL,
+    smc_score REAL NOT NULL,
+    smc_detector TEXT NOT NULL,
+    entry_price REAL NOT NULL,
+    candle_index INTEGER,
+    outcome_trade_id INTEGER,
+    outcome_pnl REAL,
+    outcome_days_open REAL,
+    outcome_type TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    closed_at DATETIME,
+
+    FOREIGN KEY(outcome_trade_id) REFERENCES trades(id),
+    CHECK(signal_type IN ('BUY', 'SELL')),
+    CHECK(outcome_type IN ('WINNING_SIGNAL', 'WHIPSAW', 'MISSED_OPPORTUNITY', 'OPEN')),
+    CHECK(smc_score >= -3.0 AND smc_score <= 3.0),
+    UNIQUE(timestamp, symbol, signal_type)
+);
+
+CREATE INDEX idx_signals_timestamp ON signals(timestamp DESC);
+CREATE INDEX idx_signals_symbol_timestamp ON signals(symbol, timestamp);
+CREATE INDEX idx_signals_outcome_type ON signals(outcome_type);
+```
+
+**Propósito**: Persistência de sinais gerados pela Camada 1 (SMC M5 detector)
+
+**Campos**:
+- `signal_id`: UUID único do sinal (rastreamento global)
+- `timestamp`: Momento exato do fechamento do candle M5
+- `symbol`: Código do ativo (WIN, WDO, etc)
+- `signal_type`: BUY ou SELL (direção do sinal)
+- `smc_score`: Força do sinal [-3, +3] (SMC consolidado)
+- `smc_detector`: Qual estrutura detectou (BOS, CHoCH, FVG)
+- `entry_price`: Preço no momento da geração do sinal
+- `candle_index`: Índice do candle M5 (para auditoria)
+- `outcome_trade_id`: FK para TRADES (se entrou)
+- `outcome_pnl`: P&L se tivesse entrado no sinal
+- `outcome_days_open`: Quantos dias o sinal ficou aberto
+- `outcome_type`: Classificação final (WINNING, WHIPSAW, MISSED, OPEN)
+- `created_at`: Timestamp inserção
+- `closed_at`: Quando o sinal foi fechado/concluído
+
+**Índices**:
+- Por timestamp DESC: Últimos sinais (mais relevante)
+- Por (symbol, timestamp): Sinais de um ativo em período
+- Por outcome_type: Analise de acertos vs falhas do detector
+
+**Constraint**:
+- UNIQUE(timestamp, symbol, signal_type): Um sinal por direção por timestamp
+
+---
+
+### Tabela 12: LEARNING_FEEDBACK (Camada 3 - Validação de Decisão)
+
+```sql
+CREATE TABLE learning_feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    decision_id INTEGER NOT NULL,
+    signal_id INTEGER NOT NULL,
+    ml_confidence REAL NOT NULL,
+    trade_id INTEGER,
+    trade_pnl REAL,
+    trade_outcome TEXT,
+    decision_accuracy TEXT NOT NULL,
+    decision_correct BOOLEAN NOT NULL,
+    reasoning TEXT,
+    model_version TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY(decision_id) REFERENCES decisions(id),
+    FOREIGN KEY(signal_id) REFERENCES signals(id),
+    FOREIGN KEY(trade_id) REFERENCES trades(id),
+    CHECK(decision_accuracy IN ('CORRECT', 'INCORRECT')),
+    CHECK(decision_correct IN (0, 1)),
+    CHECK(trade_outcome IN ('PROFITABLE', 'LOSS', 'BREAKEVEN', 'HYPOTHETICAL'))
+);
+
+CREATE INDEX idx_learning_feedback_decision_id ON learning_feedback(decision_id);
+CREATE INDEX idx_learning_feedback_accuracy ON learning_feedback(decision_accuracy, created_at DESC);
+CREATE INDEX idx_learning_feedback_signal_id ON learning_feedback(signal_id);
+```
+
+**Propósito**: Validação de decisões da Camada 2 para feedback loop de aprendizado
+
+**Campos**:
+- `decision_id`: FK para DECISIONS (qual decisão está sendo avaliada)
+- `signal_id`: FK para SIGNALS (qual sinal gerou a decisão)
+- `ml_confidence`: Score de confiança do ML na momento da decisão (0-100%)
+- `trade_id`: FK para TRADES (se executada, qual foi o trade)
+- `trade_pnl`: P&L final (real se executada, hipotético se rejeitada)
+- `trade_outcome`: PROFITABLE, LOSS, BREAKEVEN, HYPOTHETICAL
+- `decision_accuracy`: CORRECT ou INCORRECT (vinculado a decision_correct)
+- `decision_correct`: 1 se acertou, 0 se errou (field booleano)
+- `reasoning`: Explicação (e.g., "Alta confiança mas pequeno loss" ou "Rejeição correta, teria sido breakeven")
+- `model_version`: Qual versão do modelo fez a decisão (v1.2.0, v1.3.0, etc)
+- `created_at`: Timestamp da avaliação (quando P&L ficou conhecido)
+
+**Indices**:
+- Por decision_id: Todas as avaliações de uma decisão
+- Por (accuracy, timestamp DESC): Análise de erros mais recentes
+- Por signal_id: Rastreamento do destino de cada sinal
+
+**Constraint**:
+- FK decision_id, signal_id, trade_id: Integridade referencial
+- decision_correct IN (0, 1): Booleano SQLite (0=false, 1=true)
+- trade_outcome enum: Categorias de resultado
+
+**Uso de Feedback Loop**:
+1. Decision executada → trade finalizado → P&L conhecido
+2. Comparar: confiança ML alta vs resultado LOSS
+3. Agrupar padrões: quando modelo erra mais?
+4. Feedback: treinar modelo com mais exemplos desse padrão
+5. Próximas decisões: modelo mais preciso
+
+---
+
 ## 🔄 Views Úteis (Lógica Reutilizável)
 
 ```sql

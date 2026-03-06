@@ -1733,18 +1733,58 @@ DB_PATH=data/db/trading.db
 - Teste de integração com MT5.
 - Teste de fluxo de dados DataLayer → DecisionLayer.
 
-### 4. Backtesting
+### 4. Backtesting with 3-Layer Independent Architecture
 
 ⚠️ **TIMEFRAME M5 (Crítico):** Sistema operacional executa em ciclo de
 2 minutos com candles M5. Backtest DEVE usar M5 (não H1) para
 compatibilidade temporal e ausência de look-ahead bias.
 
+#### **3 Camadas Independentes (05/03/2026)**
+
+Backtesting é estruturado em 3 camadas **completamente independentes**:
+
+**1️⃣ CAMADA 1: Geração + Persistência de Sinal (M5)**
+- M5 detecta SMC (BOS/CHoCH/FVG) a cada fechamento
+- Gera sinal COMPRA/VENDA (score [-3, +3]) **independente de decisão**
+- Persiste em DB (`signals` table):
+  - signal_id, timestamp, signal_type, smc_score, entry_price
+  - outcome_pnl, days_open, final_outcome
+- Permite auditoria completa do histórico de sinais
+- ✅ Ref: `src/application/signal_persistence.py`
+
+**2️⃣ CAMADA 2: Decisão Independente (ML Validator)**
+- Pré-requisito: Sinal já gerado em Camada 1
+- Extrai 24 features + XGBoost/LightGBM prediz confiança (0-100%)
+- Decisão: ENTRAR (≥45%) ou FICAR DE FORA (<45%)
+- Persiste em DB (`decisions` table):
+  - decision_id, signal_id, decision_type, confidence, timestamp
+- Permite rejeitar sinais válidos com baixa confiança
+- ✅ Independente da geração do sinal
+
+**3️⃣ CAMADA 3: Aprendizado (Validação de Decisão)**
+- Trade finalizado: P&L conhecido
+- Valida se decisão foi **correta** ou **errada**:
+  - ENTROU + PROFITABLE → ✓ | ENTROU + LOSS → ✗
+  - FICOU DE FORA + teria P+ → ✗ | FICOU DE FORA + teria L → ✓
+- Persiste feedback em DB (`learning_feedback` table):
+  - decision_id, trade_pnl, decision_accuracy
+- Feedback loop para evolução do modelo
+- ✅ Permite iteração contínua
+
+**Benefícios Arquiteturais**:
+- Sinais são reusáveis (gera uma vez, decide múltiplas vezes)
+- Decisões são auditáveis (cada layer tem saída persistida)
+- Aprendizado é contínuo (feedback após cada P&L)
+- Validação é isolada (falha em L2 não afeta L1 ou L3)
+
+**Dados & Métricas**:
 - Dados: M5 candles (~73.776 por ano), não H1 (incompatível)
 - Validação histórica de estratégias com temporal alignment
 - Walk-forward validation SEM look-ahead bias detectado
 - Capture rate >= 85%, FP <= 10%, Win Rate >= 60%
-- Referência: [docs/prompts/OPERATIVE_BRIEF_BACKTEST_V1_2.md](
-prompts/OPERATIVE_BRIEF_BACKTEST_V1_2.md) (correção M5 05/03/2026)
+- Schema DDL: [docs/MODELAGEM_DADOS.md](MODELAGEM_DADOS.md)
+- Referência Completa: [docs/prompts/OPERATIVE_BRIEF_BACKTEST_V1_2.md](
+prompts/OPERATIVE_BRIEF_BACKTEST_V1_2.md) (05/03/2026)
 
 ### 5. Paper Trading
 - Simulação em tempo real antes de produção real-money.
