@@ -843,6 +843,7 @@ SELECT
 FROM positions
 WHERE status = 'OPEN'
 ORDER BY p.symbol;
+
 ```
 
 ---

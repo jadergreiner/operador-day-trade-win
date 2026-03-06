@@ -287,7 +287,7 @@ CREATE TABLE signals (
     FOREIGN KEY(outcome_trade_id) REFERENCES trades(id),
     CHECK(signal_type IN ('BUY', 'SELL')),
     CHECK(status IN ('OPEN', 'LINKED', 'CLOSED', 'WHIPSAW', 'MISSED')),
-    CHECK(outcome_type IN ('WINNING_SIGNAL', 'LOSING_SIGNAL', 'BREAKEVEN_SIGNAL', 
+    CHECK(outcome_type IN ('WINNING_SIGNAL', 'LOSING_SIGNAL', 'BREAKEVEN_SIGNAL',
                            'WHIPSAW_SIGNAL', 'MISSED_SIGNAL', 'PARTIAL_SIGNAL', 'OPEN')),
     CHECK(smc_score >= -3.0 AND smc_score <= 3.0),
     UNIQUE(timestamp, symbol, signal_type)

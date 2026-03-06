@@ -300,7 +300,7 @@
 
 **Status:** 🟢 **IMPLEMENTAÇÃO COMPLETA - PRONTO PARA PRODUÇÃO**
 
-#### Componentes Implementados
+### Componentes Implementados
 
 | Componente | Arquivo | LOC | Status |
 |-----------|---------|-----|--------|
@@ -315,28 +315,28 @@
 #### Capacidades Implementadas
 
 ✅ **OrderAPIClient (Cliente HTTP)**
-  - Retry logic: 3x exponential backoff (1s, 2s, 4s)
-  - Métodos: create_order(), get_order(), list_orders(), health_check()
-  - APIOrderResponse dataclass com auditoria completa
-  - Fallback automático para MT5 direto se API falha
+- Retry logic: 3x exponential backoff (1s, 2s, 4s)
+- Métodos: create_order(), get_order(), list_orders(), health_check()
+- APIOrderResponse dataclass com auditoria completa
+- Fallback automático para MT5 direto se API falha
 
 ✅ **MT5AdapterProxy (Proxy Transparente)**
-  - Intercepta `mt5.send_order()` do agente
-  - Redireciona para API REST automaticamente
-  - ZERO mudanças de código no agente (compatibilidade 100%)
-  - Estatísticas: total_calls, api_success, fallback_count
+- Intercepta `mt5.send_order()` do agente
+- Redireciona para API REST automaticamente
+- ZERO mudanças de código no agente (compatibilidade 100%)
+- Estatísticas: total_calls, api_success, fallback_count
 
 ✅ **FastAPI Server (REST API)**
-  - 14+ endpoints (Health, Orders, Positions)
-  - Async execution com OrdersExecutor
-  - Dependency injection architecture
-  - Modular routes (routes/orders.py, routes/positions.py)
+- 14+ endpoints (Health, Orders, Positions)
+- Async execution com OrdersExecutor
+- Dependency injection architecture
+- Modular routes (routes/orders.py, routes/positions.py)
 
 ✅ **Integration & Testing**
-  - Launcher automática configura P0-1 via setup_integrations()
-  - Test suite com 5 testes de integração
-  - SQLite audit trail validation (api_orders, api_audit_log)
-  - Imports validation e health check
+- Launcher automática configura P0-1 via setup_integrations()
+- Test suite com 5 testes de integração
+- SQLite audit trail validation (api_orders, api_audit_log)
+- Imports validation e health check
 
 #### Fluxo de Execução Validado
 
@@ -602,14 +602,14 @@ Status: MONITORING & LEARNING ACTIVE
 
 ✅ **Calcula** WIN RATE real do pregão anterior
 ✅ **Ajusta** confiança incrementalmente:
-  - WR > 60%: +0.03 boost (capped 0.65)
-  - WR < 50%: -0.02 penalty (floored 0.25)
-  - 50-60%: sem mudança
+- WR > 60%: +0.03 boost (capped 0.65)
+- WR < 50%: -0.02 penalty (floored 0.25)
+- 50-60%: sem mudança
 
 ✅ **Recuperação** esperada (timeline):
-  - T+1: confidence 0.34 → 0.37
-  - T+5: confidence 0.45-0.50
-  - T+10: confidence >>0.50 (saudável)
+- T+1: confidence 0.34 → 0.37
+- T+5: confidence 0.45-0.50
+- T+10: confidence >>0.50 (saudável)
 
 ### P50-C: Real-Time Feedback Logger + Sumário
 
@@ -667,8 +667,6 @@ Status: MONITORING & LEARNING ACTIVE
 
 **Bloqueador?** SIM - desbloqueia P0-2, P1-2 até P1-6
 **Próximo Passo:** Validar com agente em modo simulação (05/03)
-
-
 
 ### Gate 1: Sprint 1 Features (05/03) ✅ PASSED
 
@@ -950,8 +948,6 @@ Aprendizado em tempo real (intraday) de padrões operacionais durante trading se
 
 ---
 
-
-
 ---
 
 ## 🔐 IMPROVEMENT: Terminal Isolation Enforcer (04/03) ✅ IMPLEMENTADO
@@ -1016,6 +1012,7 @@ Garantir 100% que APENAS o terminal CLEAR é utilizado, bloqueando acidentais co
 ✅ Acidente: clicar em outro MT5 → PARADO imediatamente
 
 ### Uso
+
 ```bash
 # Configurar .env (LOCAL - nunca commit)
 MT5_TERMINAL_PATH=C:\Program Files\Clear Investimentos MT5 Terminal\terminal64.exe
@@ -1045,6 +1042,7 @@ python scripts/launch_agent_with_ml_v1_2_3.py
 **Status:** 🟢 **ESTRUTURA LIMPA E ORGANIZADA**
 
 ### Nova Estrutura
+
 ```
 outputs/
 ├── audits/          (4 arquivos)  - Auditoria de isolamento terminal
@@ -1096,7 +1094,7 @@ outputs/
 
 **Status:** 🟢 **IMPLEMENTAÇÃO COMPLETA - PRONTO PARA PRODUÇÃO**
 
-#### Problema Resolvido
+### Problema Resolvido
 
 - ❌ **ANTES:** Gap de 26 dias (02/10 - 04/03) com 780+ reflexões desincronizadas
 - ✅ **DEPOIS:** Persistência resiliente com auto-recovery de 518 reflexões (97.4%)
@@ -1116,36 +1114,37 @@ outputs/
 #### Capacidades Implementadas
 
 ✅ **Dual Persistence**
-  - Primary: SQLite database (ACID guarantees)
-  - Secondary: JSONL fallback (`data/diarios/*.jsonl`)
-  - Sincronização automática entre camadas
+- Primary: SQLite database (ACID guarantees)
+- Secondary: JSONL fallback (`data/diarios/*.jsonl`)
+- Sincronização automática entre camadas
 
 ✅ **Auto-Recovery Mechanism**
-  - Detects orphaned entries em JSONL (532 encontradas)
-  - Import automático para SQLite (518 success)
-  - Recovery rate: **97.4%** (518/532)
-  - Resolução automática de conflicts
+- Detects orphaned entries em JSONL (532 encontradas)
+- Import automático para SQLite (518 success)
+- Recovery rate: **97.4%** (518/532)
+- Resolução automática de conflicts
 
 ✅ **ACID Guarantees**
-  - **Atomicity:** SQLite transactions + ROLLBACK on error
-  - **Consistency:** NOT NULL + checksum validation (SHA256)
-  - **Isolation:** WAL mode para concurrent reads
-  - **Durability:** PRAGMA synchronous=FULL + fsync()
+- **Atomicity:** SQLite transactions + ROLLBACK on error
+- **Consistency:** NOT NULL + checksum validation (SHA256)
+- **Isolation:** WAL mode para concurrent reads
+- **Durability:** PRAGMA synchronous=FULL + fsync()
 
 ✅ **Health Monitoring**
-  - Daily statistics em `persistence_stats` table
-  - Tracking: total_written, total_failed, avg_latency_ms
-  - Performance metrics: min/max latency, checkpoint times
-  - Auto-alert se failure_rate > 5%
+- Daily statistics em `persistence_stats` table
+- Tracking: total_written, total_failed, avg_latency_ms
+- Performance metrics: min/max latency, checkpoint times
+- Auto-alert se failure_rate > 5%
 
 ✅ **Audit Trail Completo**
-  - `persistence_errors` table: cada falha documentada
-  - error_type: WRITE_FAILED, VALIDATION_FAILED, FSYNC_FAILED, TIMEOUT
-  - Contextual data: timestamp, attempt_number, retry_count, resolved_at
+- `persistence_errors` table: cada falha documentada
+- error_type: WRITE_FAILED, VALIDATION_FAILED, FSYNC_FAILED, TIMEOUT
+- Contextual data: timestamp, attempt_number, retry_count, resolved_at
 
 #### Database Schema
 
 **Table 11: REFLECTIONS**
+
 ```sql
 CREATE TABLE reflections (
     entry_id TEXT PRIMARY KEY,
@@ -1165,6 +1164,7 @@ CREATE TABLE reflections (
 ```
 
 **Table 12: PERSISTENCE_ERRORS**
+
 ```sql
 CREATE TABLE persistence_errors (
     error_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1181,6 +1181,7 @@ CREATE TABLE persistence_errors (
 ```
 
 **Table 13: PERSISTENCE_STATS**
+
 ```sql
 CREATE TABLE persistence_stats (
     stats_date DATE PRIMARY KEY,
