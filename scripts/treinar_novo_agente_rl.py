@@ -106,7 +106,7 @@ CONFIG_AGENTE = ConfiguracaoAgente(
 
 # Saldo mínimo recomendado para operar Mini Índice (R$)
 # Configurável via variável de ambiente RL_SALDO_MINIMO
-_SALDO_MINIMO_BRL: float = float(os.getenv("RL_SALDO_MINIMO", "5000.0"))
+_SALDO_MINIMO_BRL: float = float(os.getenv("RL_SALDO_MINIMO", "450.0"))
 
 # Horário de funcionamento do Mini Índice (horário de Brasília)
 _HORA_ABERTURA = 9
@@ -253,7 +253,7 @@ def verificar_horario_trading() -> bool:
 
 
 def carregar_dados_mt5(
-    simbolo: str = "WIN$N",
+    simbolo: str = "WINJ26",
     n_candles: int = 5000,
 ) -> Optional[pd.DataFrame]:
     """Carrega dados históricos reais do MT5 com login automático.
@@ -262,7 +262,7 @@ def carregar_dados_mt5(
     margem e disponibilidade do símbolo antes de baixar os dados.
 
     Args:
-        simbolo: Símbolo do Mini Índice no MT5 (ex: 'WIN$N')
+        simbolo: Símbolo do Mini Índice no MT5 (ex: 'WINJ26')
         n_candles: Quantidade de candles de 5 minutos a carregar
 
     Returns:
@@ -297,12 +297,16 @@ def carregar_dados_mt5(
         )
 
     try:
-        # Inicializar o terminal MT5
-        if not mt5.initialize():
+        # Caminho fixo do terminal MT5 da Clear para evitar conexões acidentais
+        mt5_path = r"C:\Program Files\Clear Investimentos MT5 Terminal\terminal64.exe"
+
+        # Inicializar o terminal MT5 no caminho específico
+        if not mt5.initialize(path=mt5_path):
             logger.warning(
-                "Terminal MT5 não encontrado ou não está aberto. "
+                "Terminal MT5 não encontrado no caminho: %s. "
                 "Erro: %s. "
-                "Verifique se o MT5 está aberto antes de continuar.",
+                "Verifique se o MT5 da Clear está instalado e o caminho está correto.",
+                mt5_path,
                 mt5.last_error(),
             )
             return None
@@ -341,7 +345,7 @@ def carregar_dados_mt5(
             return None
 
         logger.info(
-            "Conta %s | Saldo: R$%,.2f | Margem livre: R$%,.2f",
+            "Conta %s | Saldo: R$%.2f | Margem livre: R$%.2f",
             info_conta["tipo_conta"],
             info_conta["saldo"],
             info_conta["margem_livre"],
