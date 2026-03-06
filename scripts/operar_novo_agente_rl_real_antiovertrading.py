@@ -378,8 +378,8 @@ def registrar_progresso_objetivos(saldo_inicial: float) -> None:
     """Registra progresso parcial em relacao aos objetivos do dia."""
     try:
         # Obter saldo atual
-        account_info = mt5_adapter.get_account_info()
-        saldo_atual = account_info.get("balance", saldo_inicial) if account_info else saldo_inicial
+        saldo_atual_decimal = mt5_adapter.get_account_balance()
+        saldo_atual = float(saldo_atual_decimal) if saldo_atual_decimal else saldo_inicial
         
         # Calcular P&L
         pl_atual = saldo_atual - saldo_inicial
