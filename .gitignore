@@ -55,7 +55,13 @@ data/models/*.pt
 data/models/novo_agente_rl/
 
 # Outputs gerados em runtime
-outputs/novo_agente_rl_relatorio.json
+outputs/
+data/backtest/
+data/ml/
+data/db/reflections/
+config/confidence_history.json
+config/confidence_override_today.json
+config/pessimism_mode.json
 
 # Temporary files and system artifacts
 tmpclaude-*
