@@ -57,12 +57,12 @@ class AntiOvertradingConfig:
     - Continua até atingir TARGET ou STOP LOSS
     """
 
-    # ✅ ATIVO: Filtros BALANCED (sem limite diário)
+    # [OK] ATIVO: Filtros BALANCED (sem limite diário)
     COOLDOWN_SECONDS = 300              # 5 minutos entre trades (evita impulsos)
     MIN_VOLATILITY_PERCENT = 0.05       # Mínimo 0.05% volatilidade para operar
     CONFIRM_SIGNAL_BARS = 2             # Esperar 2 velas confirmando sinal
 
-    # ❌ DESATIVADO: Limites diários e horários
+    # [X] DESATIVADO: Limites diários e horários
     # MAX_TRADES_PER_SESSION = Ilimitado (operadora até target/stop loss)
     # MAX_TRADES_PER_HOUR = Ilimitado (apenas cooldown entre trades)
 
@@ -109,7 +109,7 @@ def inicializar_adaptador_mt5() -> MT5Adapter:
     if not mt5_adapter.connect():
         raise RuntimeError("Falha ao conectar no MT5")
 
-    logger.info(f"✅ MT5 conectado: {config.mt5_server}")
+    logger.info(f"[OK] MT5 conectado: {config.mt5_server}")
     return mt5_adapter
 
 
@@ -131,7 +131,7 @@ def inicializar_agente_rl() -> PipelineTreinamentoRL:
     if (caminho_modelo / "q_network.pkl").exists():
         logger.info(f"Carregando modelo: {caminho_modelo}")
         pipeline._agente.carregar(caminho_modelo)
-        logger.info("✅ Modelo RL pronto")
+        logger.info("[OK] Modelo RL pronto")
     else:
         raise RuntimeError(f"Modelo não encontrado")
 
@@ -147,19 +147,19 @@ def inicializar_rl_repo():
 
     for tentativa in range(max_retries):
         try:
-            logger.info(f"📊 Conectando RL repo (tentativa {tentativa+1}/{max_retries})...")
+            logger.info(f"[DB] Conectando RL repo (tentativa {tentativa+1}/{max_retries})...")
             session = get_session(db_path)
             rl_repo = SqliteRLRepository(session)
             rl_repo.seed_dimension_tables()
-            logger.info("✅ RL Repository pronto")
+            logger.info("[OK] RL Repository pronto")
             return rl_repo
         except Exception as e:
-            logger.warning(f"⚠️  Tentativa {tentativa+1} falhou: {str(e)[:100]}")
+            logger.warning(f"[!] Tentativa {tentativa+1} falhou: {str(e)[:100]}")
             if tentativa < max_retries - 1:
-                logger.info(f"⏳ Aguardando {retry_delay}s antes de tentar novamente...")
+                logger.info(f"[Wait] Aguardando {retry_delay}s antes de tentar novamente...")
                 time.sleep(retry_delay)
             else:
-                logger.error(f"❌ Falha na inicialização RL após {max_retries} tentativas")
+                logger.error(f"[ERRO] Falha na inicialização RL após {max_retries} tentativas")
                 return None
 
 
@@ -262,7 +262,7 @@ def verificar_limite_trades() -> bool:
 
     Retorna sempre True (nenhum limite aplicado).
     """
-    # ✅ BALANCED: Sem limites diários/horários
+    # [OK] BALANCED: Sem limites diários/horários
     # Operará livremente enquanto:
     # - Houver volatilidade mínima (0.05%)
     # - Respeitar cooldown entre trades (300s)
@@ -299,7 +299,7 @@ def verificar_confirmacao_sinal(sinal_atual: str, sinal_anterior: str) -> bool:
         return signal_confirmation_count >= AntiOvertradingConfig.CONFIRM_SIGNAL_BARS
     else:
         signal_confirmation_count = 1
-        logger.info(f"📊 Novo sinal detectado: {sinal_atual}")
+        logger.info(f"[SINAL] Novo sinal detectado: {sinal_atual}")
         return False
 
 
@@ -336,7 +336,7 @@ def enviar_ordem_mt5adapter(acao: str, preco_atual: float, vol: float) -> bool:
         )
 
         ticket = mt5_adapter.send_order(order)
-        logger.info(f"✅ Ordem enviada! Ticket: {ticket}")
+        logger.info(f"[OK] Ordem enviada! Ticket: {ticket}")
 
         # Atualizar apenas o cooldown (sem limitar trades/dia)
         last_trade_time = datetime.now()
@@ -377,7 +377,7 @@ def monitorar_posicoes() -> bool:
 def print_status():
     """Exibe status de operação BALANCED MODE."""
     logger.info("\n" + "=" * 70)
-    logger.info("📊 STATUS OPERAÇÃO (BALANCED MODE)")
+    logger.info("[STATUS] OPERACAO (BALANCED MODE)")
     logger.info("=" * 70)
     logger.info(f"Modo: Operando livremente até TARGET ou STOP LOSS")
     logger.info(f"Limite diário: DESATIVADO (ilimitado)")
@@ -391,7 +391,7 @@ def loop_operacao():
     global last_signal
 
     logger.info("\n" + "=" * 70)
-    logger.info("🚀 INICIANDO OPERAÇÃO RL v5000 (BALANCED MODE - SEM LIMITE DIÁRIO)")
+    logger.info("[START] INICIANDO OPERACAO RL v5000 (BALANCED MODE - SEM LIMITE DIARIO)")
     logger.info("=" * 70)
     logger.info(f"Alvo: R${TARGET_LUCRO_DIARIO} | Stop: R${STOP_PERDA_DIARIA}")
     logger.info(f"Trades/dia: ILIMITADO (até target/stop loss)")
@@ -411,7 +411,7 @@ def loop_operacao():
             continue
 
         if lucro_sessao >= TARGET_LUCRO_DIARIO:
-            logger.info(f"🎯 TARGET ATINGIDO: R${lucro_sessao:.2f}")
+            logger.info(f"[TARGET] ATINGIDO: R${lucro_sessao:.2f}")
             break
 
         if lucro_sessao <= STOP_PERDA_DIARIA:
@@ -419,7 +419,7 @@ def loop_operacao():
             break
 
         if monitorar_posicoes():
-            logger.info("⏳ Posição em aberto. Aguardando fechar...")
+            logger.info("[WAIT] Posicao em aberto. Aguardando fechar...")
             time.sleep(30)
             continue
 
@@ -427,7 +427,7 @@ def loop_operacao():
         dados = carregar_dados_mt5(SIMBOLO, n_candles=100)
 
         if dados is None or len(dados) < 20:
-            logger.warning("⚠️  Dados insuficientes. Aguardando 30s...")
+            logger.warning("[!] Dados insuficientes. Aguardando 30s...")
             time.sleep(30)
             continue
 
@@ -483,10 +483,10 @@ if __name__ == "__main__":
         logger.info("\n⏹️  Operação interrompida pelo usuário.")
         print_status()
     except Exception as e:
-        logger.error(f"❌ Erro fatal: {e}")
+        logger.error(f"[ERRO] Erro fatal: {e}")
         import traceback
         logger.error(traceback.format_exc())
     finally:
         if mt5_adapter:
             mt5_adapter.disconnect()
-            logger.info("✅ MT5 desconectado.")
+            logger.info("[OK] MT5 desconectado.")
