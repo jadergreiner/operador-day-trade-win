@@ -48,6 +48,10 @@ data/logs/
 data/models/*.pkl
 data/models/*.h5
 data/models/*.pt
+data/models/novo_agente_rl/
+
+# Outputs gerados em runtime
+outputs/novo_agente_rl_relatorio.json
 
 # Temporary files and system artifacts
 tmpclaude-*
