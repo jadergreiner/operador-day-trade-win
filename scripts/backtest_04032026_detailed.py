@@ -39,6 +39,7 @@ class Backtest04032026:
         Gera candles para 04/03/2026 (dia de negociação completo).
 
         Simula dia completo (9:00 - 17:30) = 8.5h × 12 candles/h = 102 candles
+        Preços sempre múltiplos de 5 (padrão WIN/Índice)
         """
         logger.info(f"[LOAD] Gerando candles para {self.date_target.strftime('%d/%m/%Y')}...")
 
@@ -47,28 +48,35 @@ class Backtest04032026:
 
         # Começar às 09:00
         timestamp = self.date_target.replace(hour=9, minute=0, second=0)
-        base_price = 1250.5  # Preço de abertura realista
-
-        signals_expected = []
+        base_price = 125000  # Em centavos de índice (125000 = 1250,00)
 
         for i in range(102):  # 102 candles = 8.5h em M5
-            # Simular movimento realista com tendências
-            trend_strength = 0.05 if i % 20 < 10 else -0.05
-            random_move = random.uniform(-0.3, 0.3)
-            volatility = random.uniform(0.1, 0.4)
+            # Simular movimento realista com tendências e múltiplos de 5
+            trend_strength = 25 if i % 20 < 10 else -25  # 25 centavos = 0,25 pontos
+            random_move = random.randint(-30, 30) * 5  # Múltiplos de 5
+            volatility = random.randint(5, 40) * 5    # Múltiplos de 5
 
             open_price = base_price
             close_price = open_price + trend_strength + random_move
+
+            # Garantir múltiplos de 5
+            close_price = round(close_price / 5) * 5
+
             high_price = max(open_price, close_price) + volatility
             low_price = min(open_price, close_price) - volatility
+
+            # Garantir múltiplos de 5
+            high_price = round(high_price / 5) * 5
+            low_price = round(low_price / 5) * 5
+
             volume = random.randint(500, 3000)
 
             candle = Candle(
                 timestamp=timestamp,
-                open=open_price,
-                high=high_price,
-                low=low_price,
-                close=close_price,
+                open=open_price / 100,        # Converter para float decimal
+                high=high_price / 100,
+                low=low_price / 100,
+                close=close_price / 100,
                 volume=volume
             )
             self.candles.append(candle)
@@ -111,40 +119,49 @@ class Backtest04032026:
 
     def calculate_tp_sl(self, signal: Dict[str, Any]) -> tuple:
         """
-        Calcula TP e SL para um sinal.
+        Calcula TP e SL baseado no range real dos candles.
 
-        Estratégia:
-        - BUY: SL = entrada - 1.5 × ATR, TP = entrada + 3.0 × ATR
-        - SELL: SL = entrada + 1.5 × ATR, TP = entrada - 3.0 × ATR
+        Estratégia (usando múltiplos de 5):
+        - BUY: SL = low dos últimos 3-5 candles, TP = entrada + (2 × range)
+        - SELL: SL = high dos últimos 3-5 candles, TP = entrada - (2 × range)
         """
         candle_idx = signal['candle_index']
         if candle_idx < 2 or candle_idx >= len(self.candles):
             return None, None
 
-        # Calcular ATR simples (últimos 14 candles)
-        lookback = 14
+        # Usar mínimo 2 candles se disponível, senão usar todos até o índice
+        lookback = min(5, candle_idx)
         start_idx = max(0, candle_idx - lookback)
         recent_candles = self.candles[start_idx:candle_idx + 1]
 
-        atrs = []
-        for i in range(1, len(recent_candles)):
-            tr = max(
-                recent_candles[i].high - recent_candles[i].low,
-                abs(recent_candles[i].high - recent_candles[i - 1].close),
-                abs(recent_candles[i].low - recent_candles[i - 1].close)
-            )
-            atrs.append(tr)
+        # Encontrar high and low do período
+        recent_high = max(c.high for c in recent_candles)
+        recent_low = min(c.low for c in recent_candles)
+        range_size = recent_high - recent_low
 
-        atr = sum(atrs) / len(atrs) if atrs else 0.5
+        # Garantir mínimo de range
+        if range_size < 0.05:
+            range_size = 0.15  # Default mínimo
 
         entry_price = signal['price']
 
         if signal['type'] == 'BUY':
-            sl = entry_price - (1.5 * atr)
-            tp = entry_price + (3.0 * atr)
+            # SL no low dos últimos candles - margem de segurança
+            sl = recent_low - 0.05
+
+            # TP = entrada + 2 × range (mínimo 0.30)
+            tp = entry_price + max(range_size * 2.0, 0.30)
+
         else:  # SELL
-            sl = entry_price + (1.5 * atr)
-            tp = entry_price - (3.0 * atr)
+            # SL no high dos últimos candles + margem
+            sl = recent_high + 0.05
+
+            # TP = entrada - 2 × range (mínimo 0.30)
+            tp = entry_price - max(range_size * 2.0, 0.30)
+
+        # Arredondar para múltiplos de 5 centavos
+        tp = round(tp * 100 / 5) * 5 / 100
+        sl = round(sl * 100 / 5) * 5 / 100
 
         return tp, sl
 
