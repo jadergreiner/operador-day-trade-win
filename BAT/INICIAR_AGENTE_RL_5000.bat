@@ -3,14 +3,15 @@ setlocal enabledelayedexpansion
 
 REM ============================================================
 REM  LAUNCHER: NOVO AGENTE RL (OPERACAO REAL 5000 EPISODIOS)
-REM  Versao: 2.0 - Corrigida para compatibilidade total
+REM  Versao: 3.0 - SL/TP DINAMICOS + PROGRESSO REAL-TIME
+REM  Data: 06/03/2026
 REM ============================================================
 
 cd /d "%~dp0\.."
 
 echo.
 echo   ============================================================
-echo   * OPERADOR RL - MODELO 5000 EPISODIOS (v5000)
+echo   OPERADOR RL v5000 - SL/TP DINAMICOS
 echo   ============================================================
 echo.
 
@@ -23,13 +24,21 @@ if not exist "data\models\novo_agente_rl\modelo_final\q_network.pkl" (
 
 echo.
 echo   ============================================================
-echo   VERSAO ATIVA: ANTI-OVERTRADING (BALANCED MODE)
+echo   NOVA VERSAO: ANTI-OVERTRADING + SL/TP DINAMICOS
 echo   ============================================================
-echo   - Operacao livre ate TARGET ou STOP LOSS
-echo   - Cooldown 5 min entre trades
-echo   - Confirmacao multi-vela
-echo   - Filtro volatilidade minima (0.05 porcento)
-echo   - Win rate target: 68 porcento
+echo   [OK] Anti-overtrading (7 filtros de protecao)
+echo   [OK] SL/TP dinamicos (analisa ultimos topos/fundos)
+echo   [OK] Risk/Reward validado (1.5:1 minimo)
+echo   [OK] Rastreamento de progresso em tempo real
+echo   [OK] BALANCED MODE (ilimitado ate TARGET ou STOP LOSS)
+echo   [OK] Cooldown 5 min entre trades
+echo   [OK] Confirmacao multi-vela (2 candles)
+echo   [OK] Filtro volatilidade minima (0.05 porcento)
+echo   [OK] Win rate esperado: 65-68 porcento
+echo   ============================================================
+echo.
+echo   Alvo: R$140.00 / Stop Loss: -R$250.00
+echo.
 echo   ============================================================
 echo.
 

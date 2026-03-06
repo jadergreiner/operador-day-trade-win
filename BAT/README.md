@@ -61,10 +61,10 @@ double-click INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
 
 ---
 
-## 🎓 OPERADORES AVANÇADOS (RL com IA)
+## 🎓 OPERADOR PRINCIPAL COM IA (v5000 com SL/TP Dinâmicos)
 
-### ✨ INICIAR_AGENTE_SL_TP_DINAMICOS.bat (RL v5000 com SL/TP Dinâmicos)
-**Execução:** Versão melhorada com cálculo inteligente de SL/TP
+### ⭐ INICIAR_AGENTE_RL_5000.bat (Versão Completa com Todas as Features)
+**Execução:** Menu com opções de operação
 - ✅ Operador RL v5000 com anti-overtrading (7 filtros)
 - ✅ SL/TP calculados dinamicamente (não são fixos!)
 - ✅ Analisa últimos 20 candles para encontrar topos/fundos reais
@@ -72,28 +72,27 @@ double-click INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
 - ✅ Rastreamento de progresso em tempo real
 - ✅ BALANCED MODE (ilimitado, apenas até TARGET ou STOP LOSS)
 
-**Benefício vs fixo:**
+**Menu de Opções:**
 ```
-SL/TP Fixo:      150 e 300 pontos (sempre)
-SL/TP Dinâmico:  Adapta-se ao contexto do mercado
-                 └─ Volatilidade alta? Aumenta
-                 └─ Volatilidade baixa? Diminui
-                 └─ Sempre respeita topos/fundos reais
+[1] AVALIAR MODELO (Simulação) - Testar antes de operar
+[2] OPERAR MERCADO REAL (BALANCED) ← RECOMENDADO
+[3] OPERAR MERCADO REAL (ORIGINAL) - Sem proteção
+[4] Sair
 ```
 
 **Comando:**
 ```batch
-double-click INICIAR_AGENTE_SL_TP_DINAMICOS.bat
+double-click INICIAR_AGENTE_RL_5000.bat
 ```
 
 **Alvo/Stop:** R$140 ganho | R$-250 perda
 
 ---
 
-### 📊 RUN_BALANCED_TIGHT.bat (Quick Start)
-**Versão simplificada** do operador SL/TP dinâmicos
-- Mesmo operador, sem menu de seleção
-- Inicializa imediatamente
+### 📊 RUN_BALANCED_TIGHT.bat (Quick Start - Sem Menu)
+**Versão simplificada** - Inicia direto sem menu
+- Mesmo operador com SL/TP dinâmicos
+- Sem perguntas, começa logo
 - Ideal para quem quer iniciar rápido
 
 **Comando:**
