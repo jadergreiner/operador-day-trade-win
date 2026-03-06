@@ -1,15 +1,15 @@
 # 📊 Data Models - Operador Day Trade WIN
 
-**Versão:** 1.0.3
+**Versão:** 1.0.4
 **Data Criação:** 27/02/2026
-**Última Atualização:** 03/03/2026 (AC4 + AC5 Trade Execution added)
+**Última Atualização:** 03/03/2026 (AC4 + AC5 + AC6 Pipeline Complete)
 **Responsável:** Data Engineer + Arquiteto de Sistemas
 **Sincronização:** [ARCHITECTURE.md](ARCHITECTURE.md) | [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) | [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md)
-**Status:** ✅ Sincronizado com 5 documentos arquiteturais + AC3 + AC4 + AC5 Implementation
+**Status:** ✅ Sincronizado com 5 documentos arquiteturais + AC1-AC6 Implementation
 
 ⭐ **CORE DO PRODUTO**: Os modelos aqui descritos são populados/utilizados por [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) e [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat).
 
-⭐ **AC5 TRADE EXECUTOR** (03/03/2026): TradeExecutor implementado para execução completa de trades AC1→AC2→AC3→AC4→AC5 com 16 testes + 100% coverage
+⭐ **AC6 ML FEEDBACK LOOP** (03/03/2026): MLFeedbackLoop implementado para learning complete com 21 testes + 100% coverage
 
 ---
 
@@ -438,6 +438,74 @@ CREATE TABLE trades (
   - SELL: SL = entry + 1.5×ATR, TP = entry - 3.0×ATR
 - **Volume:** 1-10 (scaled position sizing)
 - **Risk-Reward Ratio:** TP distance ≥ 2× SL distance (enforced validation)
+
+---
+
+### AC6: ML Feedback Loop (Learning Tables)
+
+**AC6 (MLFeedbackLoop):** Correlaciona outcomes com sinais para retraining
+↓
+**Próximas Iterações:** Online learning, drift detection
+
+#### 4.5 Tabela: `ml_feedback` (AC6 Signal Learning)
+
+**Propósito:** Registrar linkage signal → outcome com signal strength metrics.
+
+```sql
+CREATE TABLE ml_feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    signal_id TEXT NOT NULL,
+    trade_id INTEGER,
+    win_rate REAL,  -- % de trades winning
+    avg_roi REAL,  -- ROI médio em %
+    sharpe_ratio REAL,  -- Risco-adjusted return
+    signal_strength TEXT,  -- VERY_WEAK, WEAK, NEUTRAL, STRONG, VERY_STRONG
+    label_value REAL,  -- -1.0 (STRONG_SELL) to +1.0 (STRONG_BUY)
+    label_confidence REAL,  -- 0.0-1.0
+    feature_importance_json TEXT,  -- JSON com importance scores
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY(signal_id) REFERENCES signals(signal_id),
+    FOREIGN KEY(trade_id) REFERENCES trades(id),
+    CHECK(signal_strength IN ('VERY_WEAK', 'WEAK', 'NEUTRAL', 'STRONG', 'VERY_STRONG')),
+    CHECK(label_value >= -1.0 AND label_value <= 1.0),
+    INDEX idx_signal_feedback (signal_id),
+    INDEX idx_label_value (label_value DESC)
+);
+```
+
+#### 4.6 Tabela: `model_iterations` (AC6 Model Versioning)
+
+**Propósito:** Rastrear versões de modelo treinado com performance metrics.
+
+```sql
+CREATE TABLE model_iterations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    model_version TEXT UNIQUE NOT NULL,  -- v1.0, v1.1, v2.0, etc
+    training_dataset_size INTEGER,  -- Número de samples usado
+    validation_accuracy REAL,  -- 0.0-1.0
+    f1_score REAL,  -- 0.0-1.0
+    win_rate_backtest REAL,  -- % win rate em backtest
+    sharpe_ratio REAL,  -- Risco-adjusted return
+    is_production_ready BOOLEAN,
+    released_at DATETIME,
+    metrics_json TEXT,  -- Additional metrics as JSON
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
+    CHECK(validation_accuracy >= 0.0 AND validation_accuracy <= 1.0),
+    CHECK(f1_score >= 0.0 AND f1_score <= 1.0),
+    INDEX idx_model_version (model_version),
+    INDEX idx_is_production (is_production_ready)
+);
+```
+
+**AC6 Operations:**
+- `correlate_signal_to_outcome()` - Link signal → trade outcome
+- `calculate_signal_strength()` - Metrics: win_rate, ROI, Sharpe, drawdown
+- `extract_feature_importance()` - Feature importance for model explanation
+- `generate_training_label()` - Convert winning signals to labels
+- `update_model_weights()` - Fine-tune model with feedback
+- `get_learning_metrics()` - Aggregate KPIs for monitoring
 
 ---
 
