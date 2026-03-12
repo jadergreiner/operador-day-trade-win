@@ -1,9 +1,27 @@
 # BACKLOG
 
-Backlog canonico de pendencias de entrega.
+## Indice
 
-Este e o unico arquivo a ser consultado para priorizacao de trabalho pendente.
-Arquivos legados de backlog permanecem apenas como historico.
+- [Escopo de Execucao (4 Agentes)](#escopo-de-execucao-4-agentes)
+- [Regras de uso](#regras-de-uso)
+- [P0 - Bloqueadores de entrega](#p0-bloqueadores-de-entrega)
+- [P0 - Bloqueadores de entrega — 1. P0-2 Gate 2 Retest com dados e risco confiaveis](#1-p0-2-gate-2-retest-com-dados-e-risco-confiaveis)
+- [P0 - Bloqueadores de entrega — 2. AC5.7 Integracao real de envio de ordens MT5](#2-ac57-integracao-real-de-envio-de-ordens-mt5)
+- [P0 - Bloqueadores de entrega — 3. P1-CORE Etapa 4 de operacao](#3-p1-core-etapa-4-de-operacao)
+- [P1 - Entregas de execucao e aprendizado](#p1-entregas-de-execucao-e-aprendizado)
+- [P1 - Entregas de execucao e aprendizado — 4. AC5.8 Monitoramento em tempo real de execucao](#4-ac58-monitoramento-em-tempo-real-de-execucao)
+- [P1 - Entregas de execucao e aprendizado — 5. AC5.9 Feedback de execucao para ML](#5-ac59-feedback-de-execucao-para-ml)
+- [P1 - Entregas de execucao e aprendizado — 6. AC6.7 a AC6.9 Evolucao do loop de ML](#6-ac67-a-ac69-evolucao-do-loop-de-ml)
+
+
+## Escopo de Execucao (4 Agentes)
+
+O backlog existe para evoluir os seguintes executores:
+
+- `INICIAR_DIARIOS.bat`
+- `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
+- `BAT/INICIAR_AGENTE_RL_5000.bat`
+- `BAT/INICIAR_AGENTE_RL_5000_FIXED.bat`
 
 ## Regras de uso
 
@@ -11,6 +29,7 @@ Arquivos legados de backlog permanecem apenas como historico.
 - Somente itens ainda pendentes aparecem aqui.
 - Cada item precisa resultar em codigo, testes e evidencia objetiva.
 - Itens documentais ou de suporte so entram se destravarem entrega tecnica.
+- Todo item precisa evoluir diretamente um dos quatro executores do escopo.
 
 ## P0 - Bloqueadores de entrega
 

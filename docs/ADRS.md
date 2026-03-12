@@ -1,14 +1,24 @@
 # Architecture Decision Records (ADRs) - Operador Day Trade WIN
 
-**Data**: 12/03/2026 (P0-2 Etapa 4.1 stabilization)
-**Status**: ACTIVE
-**Referencia canonica**: [ARQUITETURA_ALVO.md](ARQUITETURA_ALVO.md) | [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md) | [DIAGRAMAS.md](DIAGRAMAS.md) | [BACKLOG.md](BACKLOG.md) | [MODELAGEM_DE_DADOS.md](MODELAGEM_DE_DADOS.md)
+## Indice
+
+- [Canonical Docs Policy](#canonical-docs-policy)
+- [O que é ADR?](#o-que-adr)
+- [ADR-001: Por que SQLite vs PostgreSQL como BD Primário?](#adr-001-por-que-sqlite-vs-postgresql-como-bd-primrio)
+- [ADR-001: Por que SQLite vs PostgreSQL como BD Primário? — Contexto](#contexto)
+- [ADR-001: Por que SQLite vs PostgreSQL como BD Primário? — Decisão](#deciso)
+- [ADR-001: Por que SQLite vs PostgreSQL como BD Primário? — Consequências](#consequncias)
+- [ADR-001: Por que SQLite vs PostgreSQL como BD Primário? — Próximas Ações](#prximas-aes)
+- [ADR-001: Por que SQLite vs PostgreSQL como BD Primário? — Referências](#referncias)
+- [ADR-002: Por que 3 Gates de Risco Sequenciais?](#adr-002-por-que-3-gates-de-risco-sequenciais)
+- [ADR-002: Por que 3 Gates de Risco Sequenciais? — Contexto](#contexto)
+
 
 ## Canonical Docs Policy
 
 From this update onward, the canonical docs set is:
 
-- `docs/ADRS.md` (this file, case-insensitive with `ADRs.md` on Windows)
+- `docs/ADRS.md` (this file, case-insensitive with `ADRS.md` on Windows)
 - `docs/ARQUITETURA_ALVO.md`
 - `docs/BACKLOG.md`
 - `docs/DIAGRAMAS.md`
@@ -17,11 +27,16 @@ From this update onward, the canonical docs set is:
 
 Legacy docs remain read-only for historical traceability.
 
-⭐ **CORE DO PRODUTO**: As decisões arquiteturais aqui registradas foram tomadas para suportar a execução eficiente de [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) e [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat).
+⭐ **CORE DO PRODUTO**: As decisões arquiteturais aqui registradas foram tomadas para suportar a execução eficiente de:
+
+- [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat)
+- [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat)
+- [BAT/INICIAR_AGENTE_RL_5000.bat](../BAT/INICIAR_AGENTE_RL_5000.bat)
+- [BAT/INICIAR_AGENTE_RL_5000_FIXED.bat](../BAT/INICIAR_AGENTE_RL_5000_FIXED.bat)
 
 ---
 
-## 📖 O que é ADR?
+## O que é ADR?
 
 **ADR (Architecture Decision Record)** é um documento que captura uma decisão arquitetural importante junto com:
 - **Contexto**: Por que a decisão foi necessária?
@@ -60,8 +75,8 @@ Sistema precisa de persistência de trading com baixa latência. Trade decisions
 - **Phase 3**: Replicação SQLite → PostgreSQL (dual-write)
 
 ### Referências
-- [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) - Schema SQLite
-- [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md#r-crítica-005-order-execution-atomicity) - Atomicity rule
+- [MODELAGEM_DE_DADOS.md](MODELAGEM_DE_DADOS.md) - Schema SQLite
+- [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md#r-crítica-005-order-execution-atomicity) - Atomicity rule
 
 ---
 
@@ -115,8 +130,8 @@ return APPROVED(order)
 ```
 
 ### Referências
-- [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) - R-CRÍTICA-001, 002, 003
-- [DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md) - RiskValidator class
+- [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md) - R-CRÍTICA-001, 002, 003
+- [DIAGRAMAS.md](DIAGRAMAS.md) - RiskValidator class
 
 ---
 
@@ -165,8 +180,8 @@ response = mt5_adapter._validate_terminal_isolation():
 ```
 
 ### Referências
-- [ARCHITECTURE.md](ARCHITECTURE.md#s2-5-mt5-terminal-isolation--reconnect) - S2-5 spec
-- [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md#r-crítica-004-mt5-terminal-isolation-3-camadas) - Protection rule
+- [ARQUITETURA_ALVO.md](ARQUITETURA_ALVO.md#s2-5-mt5-terminal-isolation--reconnect) - S2-5 spec
+- [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md#r-crítica-004-mt5-terminal-isolation-3-camadas) - Protection rule
 
 ---
 
@@ -238,8 +253,8 @@ P36 (07-09/03): Dashboard operacional
 ```
 
 ### Referências
-- [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md#r-risco-004-confidence-threshold-dinâmico) - Dynamic threshold rule
-- [ARCHITECTURE.md](ARCHITECTURE.md#6-learning-layer-camada-de-aprendizado-⭐-new) - Learning Layer spec
+- [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md#r-risco-004-confidence-threshold-dinâmico) - Dynamic threshold rule
+- [ARQUITETURA_ALVO.md](ARQUITETURA_ALVO.md#6-learning-layer-camada-de-aprendizado-⭐-new) - Learning Layer spec
 
 ---
 
@@ -325,8 +340,8 @@ terminal_path = "C:\Program Files\FBS MT5\terminal64.exe"
 ```
 
 ### Referências
-- [ARCHITECTURE.md](ARCHITECTURE.md#s2-5-mt5-terminal-isolation--reconnect) - S2-5 full spec
-- [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md#r-crítica-004-mt5-terminal-isolation-3-camadas) - Protection rule
+- [ARQUITETURA_ALVO.md](ARQUITETURA_ALVO.md#s2-5-mt5-terminal-isolation--reconnect) - S2-5 full spec
+- [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md#r-crítica-004-mt5-terminal-isolation-3-camadas) - Protection rule
 
 ---
 
@@ -386,7 +401,7 @@ def check_circuit_breaker(current_balance, session_start_balance):
 ```
 
 ### Referências
-- [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md#r-risco-001-maximum-drawdown-circuit-breaker) - Rule definition
+- [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md#r-risco-001-maximum-drawdown-circuit-breaker) - Rule definition
 
 ---
 
@@ -429,7 +444,7 @@ Market Data Stream (websocket)
 - Race conditions: Múltiplos events simultâneos
 
 ### Referências
-- [ARCHITECTURE.md](ARCHITECTURE.md#princípios-arquiteturais) - Principles
+- [ARQUITETURA_ALVO.md](ARQUITETURA_ALVO.md#princípios-arquiteturais) - Principles
 
 ---
 
@@ -614,31 +629,31 @@ API_TIMEOUT=30
 
 ### Referências & Documentação
 
-- 📄 [ARCHITECTURE.md § 4.6](ARCHITECTURE.md#46-p0-1-rest-api-gateway-novo-implementado-0403) - Implementação técnica
-- 📊 [BACKLOG_UNIFICADO.md § P0-1](BACKLOG_UNIFICADO.md#p0-1-api-rest-mt5---infraestrutura-de-execução) - Delivery status
-- 🚀 [docs/deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md](docs/deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md) - Integration guide
+- 📄 [ARQUITETURA_ALVO.md § 4.6](ARQUITETURA_ALVO.md#46-p0-1-rest-api-gateway-novo-implementado-0403) - Implementação técnica
+- 📊 [BACKLOG.md § P0-1](BACKLOG.md#p0-1-api-rest-mt5---infraestrutura-de-execução) - Delivery status
+- 🚀 [docs/deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md](docs/legacy/deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md) - Integration guide
 - 🧪 [scripts/test_p0_1_integration.py](scripts/test_p0_1_integration.py) - Test suite
-- 📋 [STATUS_ENTREGAS.md § P0-1]( STATUS_ENTREGAS.md) - Delivery metrics
+- 📋 [BACKLOG.md § P0-1](docs/legacy/ BACKLOG.md) - Delivery metrics
 
 ---
 
-## 🔗 Cross-Referencing
+## Cross-Referencing
 
 | ADR | Principal Assunto | Documento Relacionado |
 |-----|-------------------|----------------------|
-| **ADR-001** | SQLite vs PostgreSQL | [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) |
-| **ADR-002** | 3 Gates de Risco | [REGRAS_NEGOCIO.md#r-crítica-001-a-003](REGRAS_NEGOCIO.md) |
-| **ADR-003** | REST vs DLL | [ARCHITECTURE.md#execution-layer](ARCHITECTURE.md) |
-| **ADR-004** | IntraDayLearner | [REGRAS_NEGOCIO.md#r-risco-004](REGRAS_NEGOCIO.md) |
-| **ADR-005** | MT5 Protection | [ARCHITECTURE.md#s2-5](ARCHITECTURE.md) |
-| **ADR-006** | Circuit Breaker | [REGRAS_NEGOCIO.md#r-risco-001](REGRAS_NEGOCIO.md) |
-| **ADR-007** | Event-Driven | [ARCHITECTURE.md#princípios](ARCHITECTURE.md) |
-| **ADR-008** | Terminal Isolation 3-Layer | [ARCHITECTURE.md#45](ARCHITECTURE.md) |
-| **ADR-009** | REST API Gateway P0-1 | [ARCHITECTURE.md#46](ARCHITECTURE.md) |
+| **ADR-001** | SQLite vs PostgreSQL | [MODELAGEM_DE_DADOS.md](MODELAGEM_DE_DADOS.md) |
+| **ADR-002** | 3 Gates de Risco | [REGRAS_DE_NEGOCIO.md#r-crítica-001-a-003](REGRAS_DE_NEGOCIO.md) |
+| **ADR-003** | REST vs DLL | [ARQUITETURA_ALVO.md#execution-layer](ARQUITETURA_ALVO.md) |
+| **ADR-004** | IntraDayLearner | [REGRAS_DE_NEGOCIO.md#r-risco-004](REGRAS_DE_NEGOCIO.md) |
+| **ADR-005** | MT5 Protection | [ARQUITETURA_ALVO.md#s2-5](ARQUITETURA_ALVO.md) |
+| **ADR-006** | Circuit Breaker | [REGRAS_DE_NEGOCIO.md#r-risco-001](REGRAS_DE_NEGOCIO.md) |
+| **ADR-007** | Event-Driven | [ARQUITETURA_ALVO.md#princípios](ARQUITETURA_ALVO.md) |
+| **ADR-008** | Terminal Isolation 3-Layer | [ARQUITETURA_ALVO.md#45](ARQUITETURA_ALVO.md) |
+| **ADR-009** | REST API Gateway P0-1 | [ARQUITETURA_ALVO.md#46](ARQUITETURA_ALVO.md) |
 
 ---
 
-## 📋 Template para Novos ADRs
+## Template para Novos ADRs
 
 ```markdown
 ## ADR-XXX: Título da Decisão
@@ -791,12 +806,12 @@ qualquer broker diferente de **Clear Investimentos**, causando:
 5. ✅ Broker pattern matching (todos 6 brokers detectados)
 6. ✅ PID & account tracking (isolamento confirmado)
 
-**Audit Report**: [outputs/audits/AUDITORIA_MT5_ISOLAMENTO_04Mar.md](../outputs/audits/AUDITORIA_MT5_ISOLAMENTO_04Mar.md)
+**Audit Report**: [outputs/audits/AUDITORIA_MT5_ISOLAMENTO_04Mar.md](docs/legacy/../outputs/audits/AUDITORIA_MT5_ISOLAMENTO_04Mar.md)
 
 **Documentação**:
-- 📄 [ARCHITECTURE.md § 4.5](ARCHITECTURE.md#45-terminal-isolation-enforcer-s2-6---novo--implementado-04032026)
-- 🚀 [QUICK_START.md § Isolamento](QUICK_START.md#-configuração-de-isolamento-de-terminal-importante)
-- 📊 [STATUS_ENTREGAS.md § Terminal Isolation](STATUS_ENTREGAS.md#-improvement-terminal-isolation-enforcer-0403-implementado)
+- 📄 [ARQUITETURA_ALVO.md § 4.5](ARQUITETURA_ALVO.md#45-terminal-isolation-enforcer-s2-6---novo--implementado-04032026)
+- 🚀 [QUICK_START.md § Isolamento](docs/legacy/QUICK_START.md#-configuração-de-isolamento-de-terminal-importante)
+- 📊 [BACKLOG.md § Terminal Isolation](BACKLOG.md#-improvement-terminal-isolation-enforcer-0403-implementado)
 
 ### Review & Sign-Off
 
@@ -1064,11 +1079,11 @@ def setup_integrations():
 
 ### Documentação & Referências
 
-- 📄 **[ARCHITECTURE.md § 4.6](ARCHITECTURE.md#46-p0-1-rest-api-gateway-para-execução-de-ordens-%EF%B8%8F-implementado-0403)** - Implementação técnica completa
-- 📋 **[BACKLOG_UNIFICADO.md § P0-1](BACKLOG_UNIFICADO.md#p0-1-api-rest-mt5---infraestrutura-de-execução)** - Status e AC
-- ✅ **[STATUS_ENTREGAS.md § P0-1](STATUS_ENTREGAS.md#-p0-1-rest-api-gateway-para-execução-de-ordens-0403-%EF%B8%8F-entregue)** - Entrega de valor
-- 🚀 **[GO_LIVE_CHECKLIST.md § P0-1](GO_LIVE_CHECKLIST.md#-p0-1-rest-api-gateway-validation-novo---0403)** - Validação pré-produção
-- 💾 **[DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md)** - SQL schema (api_orders, api_audit_log)
+- 📄 **[ARQUITETURA_ALVO.md § 4.6](ARQUITETURA_ALVO.md#46-p0-1-rest-api-gateway-para-execução-de-ordens-%EF%B8%8F-implementado-0403)** - Implementação técnica completa
+- 📋 **[BACKLOG.md § P0-1](BACKLOG.md#p0-1-api-rest-mt5---infraestrutura-de-execução)** - Status e AC
+- ✅ **[BACKLOG.md § P0-1](BACKLOG.md#-p0-1-rest-api-gateway-para-execução-de-ordens-0403-%EF%B8%8F-entregue)** - Entrega de valor
+- 🚀 **[GO_LIVE_CHECKLIST.md § P0-1](docs/legacy/GO_LIVE_CHECKLIST.md#-p0-1-rest-api-gateway-validation-novo---0403)** - Validação pré-produção
+- 💾 **[DIAGRAMAS.md](DIAGRAMAS.md)** - SQL schema (api_orders, api_audit_log)
 - 📦 **[docs/deliverables/p0-1/](docs/deliverables/p0-1/)** - 8 documentos detalhados
 
 ### Review & Sign-Off
@@ -1086,7 +1101,7 @@ def setup_integrations():
 
 **Status**: ✅ ACCEPTED
 **Data**: 04/03/2026
-**Refs**: [REGRAS_NEGOCIO.md § R-RISCO-P50-*](REGRAS_NEGOCIO.md#-regras-p50-pessimism-detection--auto-recovery) | [ARCHITECTURE.md § P50](ARCHITECTURE.md#p50-pessimism-detection--auto-recovery-v13)
+**Refs**: [REGRAS_DE_NEGOCIO.md § R-RISCO-P50-*](REGRAS_DE_NEGOCIO.md#-regras-p50-pessimism-detection--auto-recovery) | [ARQUITETURA_ALVO.md § P50](ARQUITETURA_ALVO.md#p50-pessimism-detection--auto-recovery-v13)
 
 ### Contexto
 
@@ -1174,10 +1189,10 @@ Solução necessária: Detecção automática + Auto-recovery (sem intervenção
 
 ### Referências Relacionadas
 
-- 📄 **[ARCHITECTURE.md § P50](ARCHITECTURE.md#p50-pessimism-detection--auto-recovery-v13)** - Implementação técnica
-- 📋 **[BACKLOG_UNIFICADO.md § P50](BACKLOG_UNIFICADO.md#p50-pessimism-detection--auto-recovery-sistema-inteligente-de-recuperação-automática)** - Status completo
+- 📄 **[ARQUITETURA_ALVO.md § P50](ARQUITETURA_ALVO.md#p50-pessimism-detection--auto-recovery-v13)** - Implementação técnica
+- 📋 **[BACKLOG.md § P50](BACKLOG.md#p50-pessimism-detection--auto-recovery-sistema-inteligente-de-recuperação-automática)** - Status completo
 - 🧪 **[tests/test_p50_full.py](tests/test_p50_full.py)** - 11 test cases validando todas as 3 camadas
-- 📊 **[REGRAS_NEGOCIO.md § R-RISCO-P50-*](REGRAS_NEGOCIO.md#-regras-p50-pessimism-detection--auto-recovery)** - Validações e métricas
+- 📊 **[REGRAS_DE_NEGOCIO.md § R-RISCO-P50-*](REGRAS_DE_NEGOCIO.md#-regras-p50-pessimism-detection--auto-recovery)** - Validações e métricas
 
 ---
 
@@ -1243,10 +1258,10 @@ GATE 2 Retest: 08-10/03/2026
 
 ### Referências Relacionadas
 
-- 📊 **[STATUS_ENTREGAS.md § P0-2](STATUS_ENTREGAS.md#--p0-2-backtest-validação-ml---gate-2-checkpoint-0503--fail)** - GATE 2 resultado detalha
-- 📋 **[BACKLOG_UNIFICADO.md § P0-2](BACKLOG_UNIFICADO.md#p0-2-backtest-validacao-ml---gate-2-decisao-capital)** - Status P0-2 Etapas 1-3
-- 🏗️ **[ARCHITECTURE.md § P0-3](ARCHITECTURE.md#3-p0-3--terminal-isolation-enforcer-com-3-camadas)** - Terminal Isolation design
-- 📈 **[DATA_MODELS.md](DATA_MODELS.md)** - Circuit breaker configuration storage
+- 📊 **[BACKLOG.md § P0-2](BACKLOG.md#--p0-2-backtest-validação-ml---gate-2-checkpoint-0503--fail)** - GATE 2 resultado detalha
+- 📋 **[BACKLOG.md § P0-2](BACKLOG.md#p0-2-backtest-validacao-ml---gate-2-decisao-capital)** - Status P0-2 Etapas 1-3
+- 🏗️ **[ARQUITETURA_ALVO.md § P0-3](ARQUITETURA_ALVO.md#3-p0-3--terminal-isolation-enforcer-com-3-camadas)** - Terminal Isolation design
+- 📈 **[MODELAGEM_DE_DADOS.md](MODELAGEM_DE_DADOS.md)** - Circuit breaker configuration storage
 
 ### Próximas ADRs
 
@@ -1260,7 +1275,7 @@ GATE 2 Retest: 08-10/03/2026
 
 **Status**: ✅ ACCEPTED
 **Data**: 07/03/2026
-**Documento Relacionado**: [ARCHITECTURE.md § 4.8](ARCHITECTURE.md#48-p1-core-etapa-3-position-monitor--websocket-broadcast-) | [STATUS_ENTREGAS.md § P1-CORE](STATUS_ENTREGAS.md#p1-core-integración-completa-position-monitor--websocket-broadcast-05-03--07-03-)
+**Documento Relacionado**: [ARQUITETURA_ALVO.md § 4.8](ARQUITETURA_ALVO.md#48-p1-core-etapa-3-position-monitor--websocket-broadcast-) | [BACKLOG.md § P1-CORE](BACKLOG.md#p1-core-integración-completa-position-monitor--websocket-broadcast-05-03--07-03-)
 
 ### Contexto
 
@@ -1337,7 +1352,7 @@ PositionMonitor (async loop 500ms polling)
 
 ---
 
-## 📊 Status de ADRs
+## Status de ADRs
 
 | ADR | Status | Data | Próximo Review |
 |-----|--------|------|----------------|
