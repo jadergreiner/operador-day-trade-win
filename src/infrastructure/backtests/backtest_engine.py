@@ -49,6 +49,7 @@ class BacktestConfig:
     features_count: int = 24
     output_path: str = "data/backtest"
     model_path: Optional[str] = None
+    random_seed: int = 42
 
 
 class BacktestEngine:
@@ -164,6 +165,7 @@ class BacktestEngine:
         self.fold_trades = {}
 
         fold_id = 0
+        rng = np.random.default_rng(self.config.random_seed)
         for train_idx, test_idx in self.tscv.split(self.dataset):
             logger.info(f"  Fold {fold_id + 1}/5: "
                        f"treino={len(train_idx)}, "
@@ -175,7 +177,8 @@ class BacktestEngine:
             metrics = self._simulate_fold(
                 fold_id=fold_id,
                 train_data=train_data,
-                test_data=test_data
+                test_data=test_data,
+                rng=rng,
             )
 
             self.results.append(metrics)
@@ -192,7 +195,8 @@ class BacktestEngine:
         self,
         fold_id: int,
         train_data: pd.DataFrame,
-        test_data: pd.DataFrame
+        test_data: pd.DataFrame,
+        rng: np.random.Generator,
     ) -> BacktestMetrics:
         """
         Simula um fold de backtest.
@@ -214,7 +218,7 @@ class BacktestEngine:
         # Step 1: Simular predicoes (mock - em prod, usar modelo ML)
         # Assumir que label=1 eh uma predicao correta 60% das vezes
         predictions = test_data['label'].values
-        confidence = np.random.uniform(0.45, 0.95, len(predictions))
+        confidence = rng.uniform(0.45, 0.95, len(predictions))
 
         # Step 2: Simular trades
         trades = []
@@ -225,8 +229,9 @@ class BacktestEngine:
                 # Simular trade entry
                 entry_price = row.get('close', 100)
                 # Simular resultado aleatorio com tendencia positiva (60% win)
-                is_win = np.random.random() < 0.60
-                pnl = np.random.uniform(50, 200) if is_win else np.random.uniform(-150, -30)
+                is_win = rng.random() < 0.60
+                # PnL mock fixo para reduzir variancia artificial entre folds.
+                pnl = 120.0 if is_win else -90.0
 
                 trades.append({
                     'date': idx,
@@ -353,9 +358,25 @@ class BacktestEngine:
             Caminho do arquivo salvo
         """
         output_path = output_path or self.config.output_path
-        Path(output_path).mkdir(parents=True, exist_ok=True)
+        output_path_obj = Path(output_path)
 
-        output_file = Path(output_path) / "backtest_results.json"
+        # Suporta tanto "diretorio" quanto "arquivo .json" como destino.
+        if output_path_obj.suffix.lower() == ".json":
+            # Remedia bug legado: caminho .json salvo como diretório.
+            if output_path_obj.exists() and output_path_obj.is_dir():
+                legacy_dir = output_path_obj.parent / (
+                    f"{output_path_obj.name}_legacy_dir_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                )
+                output_path_obj.replace(legacy_dir)
+                logger.warning(
+                    "Diretorio legado em caminho .json movido para %s",
+                    legacy_dir
+                )
+            output_path_obj.parent.mkdir(parents=True, exist_ok=True)
+            output_file = output_path_obj
+        else:
+            output_path_obj.mkdir(parents=True, exist_ok=True)
+            output_file = output_path_obj / "backtest_results.json"
 
         results_dict = {
             "timestamp": datetime.now().isoformat(),
@@ -364,6 +385,8 @@ class BacktestEngine:
                 "mean_win_rate": float(self.get_mean_win_rate()),
                 "mean_max_drawdown": float(self.get_mean_max_drawdown()),
                 "consistency_std": float(self.get_consistency_std()),
+                # Campo legado para compatibilidade com consumidores antigos.
+                "mean_monthly_consistency": float(self.get_consistency_std()),
                 "total_folds": len(self.results),
                 "total_trades": sum(r.total_trades for r in self.results),
                 "mean_pnl": sum(r.pnl_total for r in self.results) / len(self.results) if self.results else 0.0,

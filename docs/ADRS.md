@@ -1,8 +1,21 @@
 # Architecture Decision Records (ADRs) - Operador Day Trade WIN
 
-**Data**: 06/03/2026 (AC1 Real Implementation Validated)
-**Status**: ✅ COMPLETO
-**Referência**: [ARCHITECTURE.md](ARCHITECTURE.md) | [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) | [DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md)
+**Data**: 12/03/2026 (P0-2 Etapa 4.1 stabilization)
+**Status**: ACTIVE
+**Referencia canonica**: [ARQUITETURA_ALVO.md](ARQUITETURA_ALVO.md) | [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md) | [DIAGRAMAS.md](DIAGRAMAS.md) | [BACKLOG.md](BACKLOG.md) | [MODELAGEM_DE_DADOS.md](MODELAGEM_DE_DADOS.md)
+
+## Canonical Docs Policy
+
+From this update onward, the canonical docs set is:
+
+- `docs/ADRS.md` (this file, case-insensitive with `ADRs.md` on Windows)
+- `docs/ARQUITETURA_ALVO.md`
+- `docs/BACKLOG.md`
+- `docs/DIAGRAMAS.md`
+- `docs/MODELAGEM_DE_DADOS.md`
+- `docs/REGRAS_DE_NEGOCIO.md`
+
+Legacy docs remain read-only for historical traceability.
 
 ⭐ **CORE DO PRODUTO**: As decisões arquiteturais aqui registradas foram tomadas para suportar a execução eficiente de [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) e [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat).
 

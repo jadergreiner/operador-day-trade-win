@@ -38,6 +38,11 @@ REPORTS_OUTPUT_DIR = Path("data/backtest/reports")
 LOGS_OUTPUT_DIR = Path("data/logs")
 
 
+def _safe_ascii(text: str) -> str:
+    """Normaliza mensagem para ASCII para evitar falhas no console Windows."""
+    return text.encode("ascii", errors="replace").decode("ascii")
+
+
 def setup_logging() -> None:
     """Configura logging para arquivo + console."""
     logs_dir = LOGS_OUTPUT_DIR
@@ -49,7 +54,7 @@ def setup_logging() -> None:
         level=logging.INFO,
         format="%(asctime)s | %(levelname)-8s | %(message)s",
         handlers=[
-            logging.FileHandler(log_file),
+            logging.FileHandler(log_file, encoding="utf-8"),
             logging.StreamHandler(sys.stdout),
         ],
     )
@@ -87,11 +92,11 @@ def run_etapa_1_backtest() -> bool:
         results_file = BACKTEST_OUTPUT_DIR / "backtest_results.json"
         engine.save_results(str(results_file))
 
-        logging.info(f"[ETAPA 1] ✓ Backtest completo: {results_file}")
+        logging.info(f"[ETAPA 1] OK Backtest completo: {results_file}")
         return True
 
     except Exception as e:
-        logging.error(f"[ETAPA 1] ✗ Erro no backtest: {e}", exc_info=True)
+        logging.error(f"[ETAPA 1] ERROR no backtest: {e}", exc_info=True)
         return False
 
 
@@ -116,19 +121,19 @@ def run_etapa_2_reporting(results_path: str) -> bool:
         reporter = BacktestReporter()
         html_file = reports_dir / "backtest_report.html"
         reporter.generate_html(results_path, str(html_file))
-        logging.info(f"[ETAPA 2] ✓ Relatório HTML: {html_file}")
+        logging.info(f"[ETAPA 2] OK Relatorio HTML: {html_file}")
 
         # Gerar gráficos SVG
         logging.info("[ETAPA 2] Gerando gráficos de visualização...")
         charts_dir = reports_dir / "charts"
         viz = BacktestVisualizer()
         viz.generate_all_charts(results_path, str(charts_dir))
-        logging.info(f"[ETAPA 2] ✓ Gráficos SVG: {charts_dir}")
+        logging.info(f"[ETAPA 2] OK Graficos SVG: {charts_dir}")
 
         return True
 
     except Exception as e:
-        logging.error(f"[ETAPA 2] ✗ Erro na geração de relatórios: {e}", exc_info=True)
+        logging.error(f"[ETAPA 2] ERROR na geracao de relatorios: {e}", exc_info=True)
         return False
 
 
@@ -150,14 +155,18 @@ def run_etapa_2_validation(results_path: str) -> bool:
 
         # Salvar relatório de validação
         reports_dir = REPORTS_OUTPUT_DIR
-        validator.save_validation_report(results_path, str(reports_dir))
+        validator.save_validation_report(
+            results_path,
+            str(reports_dir),
+            decision_output_dir=str(BACKTEST_OUTPUT_DIR),
+        )
 
         # Log a decisão
         report = validator.get_validation_report()
-        logging.info(f"[ETAPA 2] GATE 2 Decision:\n{report}")
+        logging.info(f"[ETAPA 2] GATE 2 Decision:\n{_safe_ascii(report)}")
 
         is_pass = decision.value == "PASS"
-        status = "✓ PASS" if is_pass else "✗ FAIL"
+        status = "PASS" if is_pass else "FAIL"
         action = "Escalar para R$ 100k" if is_pass else "Manter em R$ 50k"
 
         logging.info(f"[ETAPA 2] {status} - {action}")
@@ -165,7 +174,7 @@ def run_etapa_2_validation(results_path: str) -> bool:
         return is_pass
 
     except Exception as e:
-        logging.error(f"[ETAPA 2] ✗ Erro na validação GATE 2: {e}", exc_info=True)
+        logging.error(f"[ETAPA 2] ERROR na validacao GATE 2: {e}", exc_info=True)
         return False
 
 
@@ -223,10 +232,10 @@ def main() -> int:
         create_status_marker(gate2_pass)
 
         if gate2_pass:
-            logging.info("[MAIN] ✓ P0-2 COMPLETOU COM SUCESSO - GATE 2 PASS")
+            logging.info("[MAIN] P0-2 COMPLETOU COM SUCESSO - GATE 2 PASS")
             return 0
         else:
-            logging.info("[MAIN] ✗ P0-2 COMPLETOU - GATE 2 FAIL")
+            logging.info("[MAIN] P0-2 COMPLETOU - GATE 2 FAIL")
             return 1
 
     except Exception as e:

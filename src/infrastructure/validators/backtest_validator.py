@@ -156,7 +156,10 @@ class BacktestValidator:
         Critério: σ (monthly returns) < 0.30
         Justificativa: Variação mês-a-mês (previsibilidade)
         """
-        actual_consistency = summary.get("mean_monthly_consistency", float("inf"))
+        actual_consistency = summary.get(
+            "consistency_std",
+            summary.get("mean_monthly_consistency", float("inf"))
+        )
         passed = actual_consistency < self.criteria.consistency_sigma_target
 
         return ValidationResult(
@@ -279,7 +282,10 @@ RECOMENDAÇÃO:
         }
 
     def save_validation_report(
-        self, results_path: str, output_dir: str
+        self,
+        results_path: str,
+        output_dir: str,
+        decision_output_dir: Optional[str] = None,
     ) -> str:
         """
         Salva relatório de validação em arquivo.
@@ -287,6 +293,7 @@ RECOMENDAÇÃO:
         Args:
             results_path: Caminho do backtest_results.json
             output_dir: Diretório para salvar relatório
+            decision_output_dir: Diretório para salvar gate2_decision.json
 
         Returns:
             Caminho do arquivo gerado
@@ -305,8 +312,10 @@ RECOMENDAÇÃO:
         with open(report_file, "w", encoding="utf-8") as f:
             f.write(self.get_validation_report())
 
-        # Salvar decisão JSON
-        decision_file = output_path / "gate2_decision.json"
+        # Salvar decisão JSON (padrão: mesmo diretório do relatório)
+        decision_path = Path(decision_output_dir) if decision_output_dir else output_path
+        decision_path.mkdir(parents=True, exist_ok=True)
+        decision_file = decision_path / "gate2_decision.json"
         with open(decision_file, "w", encoding="utf-8") as f:
             json.dump(self.get_decision_json(), f, indent=2)
 
