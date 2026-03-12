@@ -3,6 +3,7 @@
 ## Indice
 
 - [Escopo de Execucao (4 Agentes)](#escopo-de-execucao-4-agentes)
+- [Diarios e Treinamento de Modelos](#diarios-e-treinamento-de-modelos)
 - [Regras Operacionais (Fluxo do Executor)](#regras-operacionais-fluxo-do-executor)
 - [Resumo](#resumo)
 - [Como a Sessao Comeca](#como-a-sessao-comeca)
@@ -11,7 +12,6 @@
 - [Como a Sessao Comeca — Ordens reais exigem confirmacao explicita](#ordens-reais-exigem-confirmacao-explicita)
 - [Como a Sessao Comeca — O sistema tenta entrar no dia em estado saudavel](#o-sistema-tenta-entrar-no-dia-em-estado-saudavel)
 - [Quando o Sistema Pode Operar](#quando-o-sistema-pode-operar)
-- [Quando o Sistema Pode Operar — O sistema so opera dentro da janela do pregao](#o-sistema-so-opera-dentro-da-janela-do-pregao)
 
 
 ## Escopo de Execucao (4 Agentes)
@@ -22,6 +22,17 @@ As regras de negocio devem sempre evoluir um destes quatro executores:
 - `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
 - `BAT/INICIAR_AGENTE_RL_5000.bat`
 - `BAT/INICIAR_AGENTE_RL_5000_FIXED.bat`
+
+## Diarios e Treinamento de Modelos
+
+Os diarios operacionais sao obrigatorios e devem alimentar o ciclo de ML/RL.
+Sem diarios, o treinamento e a auditoria ficam incompletos.
+
+Regras:
+
+- diários devem ser gerados em toda sessao operacional;
+- diários devem ser preservados para uso em treinamento;
+- falha de geracao de diarios deve ser tratada como problema operacional.
 
 ## Regras Operacionais (Fluxo do Executor)
 

@@ -3,6 +3,7 @@
 ## Indice
 
 - [Escopo de Execucao (4 Agentes)](#escopo-de-execucao-4-agentes)
+- [Diarios e Treinamento de Modelos](#diarios-e-treinamento-de-modelos)
 - [Artefatos P0-2](#artefatos-p0-2)
 - [Artefatos P0-2 — 1) `data/backtest/backtest_results.json`](#1-databacktestbacktestresultsjson)
 - [Artefatos P0-2 — 2) `data/backtest/gate2_decision.json`](#2-databacktestgate2decisionjson)
@@ -11,7 +12,6 @@
 - [Schema SQLite Operacional](#schema-sqlite-operacional)
 - [Database Configuration](#database-configuration)
 - [️ Schema DDL (Data Definition Language)](#-schema-ddl-data-definition-language)
-- [️ Schema DDL (Data Definition Language) — Tabela 1: MARKET_DATA](#tabela-1-marketdata)
 
 
 ## Escopo de Execucao (4 Agentes)
@@ -22,6 +22,21 @@ A modelagem de dados canonica existe para evoluir estes executores:
 - `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
 - `BAT/INICIAR_AGENTE_RL_5000.bat`
 - `BAT/INICIAR_AGENTE_RL_5000_FIXED.bat`
+
+## Diarios e Treinamento de Modelos
+
+Os diarios operacionais sao insumos formais para treinamento e avaliacao de
+modelos. Eles devem ser gerados e preservados como artefatos de aprendizado.
+
+Arquivos principais:
+
+- `data/diarios/diario_head_YYYYMMDD.md` (gerado por `scripts/aplicar_licoes_bdi.py`)
+- Diarios automatizados iniciados por `INICIAR_DIARIOS.bat` (via `scripts/start_journals_full_display.py`)
+
+Uso esperado:
+
+- base para extracao de sinais, contexto e rotulos para ML/RL;
+- auditoria de decisoes e melhoria continua dos agentes.
 
 ## Artefatos P0-2
 

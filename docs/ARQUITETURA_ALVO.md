@@ -8,10 +8,10 @@
 - [Arquitetura Alvo e Contrato — Fluxo Macro](#fluxo-macro)
 - [Arquitetura Alvo e Contrato — Contrato Gate 2 (P0-2)](#contrato-gate-2-p0-2)
 - [Arquitetura Alvo e Contrato — Invariantes de Compatibilidade](#invariantes-de-compatibilidade)
+- [Arquitetura Alvo e Contrato — Diarios e Treinamento de Modelos](#diarios-e-treinamento-de-modelos)
 - [Arquitetura Executada (Fluxo Real Atual)](#arquitetura-executada-fluxo-real-atual)
 - [Resumo](#resumo)
 - [Visao Executiva do Launcher](#visao-executiva-do-launcher)
-- [Arquitetura por Camadas em Uso Real](#arquitetura-por-camadas-em-uso-real)
 
 
 ## Escopo de Execucao (4 Agentes)
@@ -65,6 +65,15 @@ Artefatos obrigatorios:
 - Gate 2 altera somente escala de capital.
 - Nenhuma regra de entrada/saida do runtime e alterada por este fluxo.
 - Falhas de pipeline nao podem liberar capital ampliado.
+
+### Diarios e Treinamento de Modelos
+
+Os diarios sao parte do contrato operacional e devem alimentar treinamento de
+modelos (ML/RL). O fluxo atual gera diarios por dois caminhos:
+
+- `INICIAR_DIARIOS.bat` inicia diarios automatizados (via `scripts/start_journals_full_display.py`).
+- `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` gera `data/diarios/diario_head_YYYYMMDD.md`
+  via `scripts/aplicar_licoes_bdi.py`.
 
 ---
 
