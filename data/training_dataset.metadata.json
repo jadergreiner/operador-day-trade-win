@@ -1,0 +1,12 @@
+{
+  "source": "local_training_dataset_placeholder",
+  "source_type": "synthetic_placeholder",
+  "symbol": "WINFUT",
+  "timeframe": "M5",
+  "rows": 1000,
+  "date_start": "2026-01-22T21:22:06.812200",
+  "date_end": "2026-03-05T12:22:06.812200",
+  "sha256": "B9960B0FCA9D6BE07AAE8E18B02760ED0CD5F486B1F0615ADE0CC675E752122C",
+  "synthetic": true,
+  "notes": "Dataset atual e apenas placeholder local. Nao pode fundamentar decisao final de Gate 2."
+}

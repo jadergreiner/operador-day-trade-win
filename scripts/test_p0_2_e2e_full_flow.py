@@ -90,7 +90,9 @@ class TestP0_2_E2E_FullFlow:
             "completed": True,
             "gate2_passed": True,
             "timestamp": time.time(),
-            "decision": "PASS"
+            "decision": "PASS",
+            "decision_is_final": True,
+            "dataset_audit": {"audit_passed": True}
         }))
 
         decision_file.write_text(json.dumps({
@@ -126,7 +128,9 @@ class TestP0_2_E2E_FullFlow:
             "completed": True,
             "gate2_passed": True,
             "decision": "PASS",
-            "timestamp": time.time()
+            "timestamp": time.time(),
+            "decision_is_final": True,
+            "dataset_audit": {"audit_passed": True}
         }))
 
         decision_file.write_text(json.dumps({
@@ -173,7 +177,9 @@ class TestP0_2_E2E_FullFlow:
         status_file.write_text(json.dumps({
             "completed": True,
             "gate2_passed": False,
-            "decision": "FAIL"
+            "decision": "FAIL",
+            "decision_is_final": True,
+            "dataset_audit": {"audit_passed": True}
         }))
 
         # Run check_p0_2_status.py to verify decision retrieval
@@ -225,6 +231,8 @@ class TestP0_2_E2E_FullFlow:
             "gate2_passed": True,
             "timestamp": "2026-03-04T12:00:00Z",
             "decision": "PASS",
+            "decision_is_final": True,
+            "dataset_audit": {"audit_passed": True},
             "backtest_dir": str(BACKTEST_DIR),
             "metrics": {
                 "sharpe": 1.23,
@@ -355,7 +363,9 @@ class TestP0_2_E2E_FullFlow:
             "completed": True,
             "gate2_passed": True,
             "decision": "PASS",
-            "timestamp": time.time()
+            "timestamp": time.time(),
+            "decision_is_final": True,
+            "dataset_audit": {"audit_passed": True}
         }))
         print("  [Step 5] ✓ P0-2 complete with GATE 2 PASS")
 

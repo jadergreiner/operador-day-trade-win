@@ -106,7 +106,9 @@ class TestEtapa3Integration:
             "completed": True,
             "gate2_passed": True,
             "timestamp": "2026-03-04T12:34:56Z",
-            "decision": "PASS"
+            "decision": "PASS",
+            "decision_is_final": True,
+            "dataset_audit": {"audit_passed": True}
         }))
 
         decision_file.write_text(json.dumps({
@@ -151,7 +153,9 @@ class TestEtapa3Integration:
             "completed": True,
             "gate2_passed": False,
             "timestamp": "2026-03-04T12:34:56Z",
-            "decision": "FAIL"
+            "decision": "FAIL",
+            "decision_is_final": True,
+            "dataset_audit": {"audit_passed": True}
         }))
 
         decision_file.write_text(json.dumps({
@@ -179,6 +183,45 @@ class TestEtapa3Integration:
 
         # Check that decision is printed
         assert "FAIL" in result.stdout or "[FAIL]" in result.stdout
+
+    def test_etapa3_check_status_requires_auditable_decision(self) -> None:
+        """Test: status sem dataset auditavel retorna erro conservador."""
+        BACKTEST_DIR.mkdir(parents=True, exist_ok=True)
+
+        status_file = BACKTEST_DIR / "p0_2_status.json"
+        decision_file = BACKTEST_DIR / "gate2_decision.json"
+
+        status_file.write_text(json.dumps({
+            "completed": True,
+            "gate2_passed": False,
+            "timestamp": "2026-03-04T12:34:56Z",
+            "decision": "FAIL",
+            "decision_is_final": False,
+            "error_code": "DATASET_AUDIT_FAILED",
+            "dataset_audit": {
+                "audit_passed": False,
+                "audit_issues": ["dataset_flagged_as_synthetic"]
+            }
+        }))
+
+        decision_file.write_text(json.dumps({
+            "gate2_passed": False,
+            "decision": "FAIL",
+            "timestamp": "2026-03-04T12:34:56Z"
+        }))
+
+        result = subprocess.run(
+            ["python", "scripts/check_p0_2_status.py"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+
+        assert result.returncode == 3, (
+            f"Expected exit code 3 (indefinido/erro), got {result.returncode}\n"
+            f"stdout: {result.stdout}"
+        )
+        assert "auditavel" in result.stdout.lower() or "conservador" in result.stdout.lower()
 
     # ====================================================================
     # Test 5: Verify BAT files are syntactically valid
@@ -233,7 +276,9 @@ class TestEtapa3Integration:
             "completed": True,
             "gate2_passed": True,
             "timestamp": "2026-03-04T12:34:56Z",
-            "decision": "PASS"
+            "decision": "PASS",
+            "decision_is_final": True,
+            "dataset_audit": {"audit_passed": True}
         }
         status_file.write_text(json.dumps(status_data))
 

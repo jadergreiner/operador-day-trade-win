@@ -15,7 +15,8 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, Optional
+import json
 
 # FIX: Adicionar project root ao PYTHONPATH se não estiver
 project_root = Path(__file__).parent.parent
@@ -23,6 +24,7 @@ if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
 from src.infrastructure.backtests.backtest_engine import BacktestEngine
+from src.infrastructure.backtests.dataset_auditor import audit_dataset
 from src.infrastructure.reports.backtest_reporter import BacktestReporter
 from src.infrastructure.reports.backtest_visualizer import BacktestVisualizer
 from src.infrastructure.validators.backtest_validator import BacktestValidator
@@ -62,6 +64,39 @@ def setup_logging() -> None:
     logging.info("=" * 70)
     logging.info("P0-2 BACKTEST VALIDATION - ETAPA 3 INTEGRATION TEST")
     logging.info("=" * 70)
+
+
+def run_dataset_audit() -> Dict[str, Any]:
+    """Audita o dataset e persiste resultado para rastreabilidade."""
+    logging.info("[AUDIT] Validando dataset historico e proveniencia...")
+    BACKTEST_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    result = audit_dataset(DATASET_PATH)
+    audit_file = BACKTEST_OUTPUT_DIR / "dataset_audit.json"
+    with open(audit_file, "w", encoding="utf-8") as handle:
+        json.dump(result.to_dict(), handle, indent=2)
+
+    if result.reliable:
+        logging.info(
+            "[AUDIT] OK Dataset confiavel: rows=%s range=%s..%s",
+            result.rows_detected,
+            result.date_start_detected,
+            result.date_end_detected,
+        )
+    else:
+        logging.error("[AUDIT] FAIL Dataset nao confiavel: %s", ", ".join(result.issues))
+
+    return {
+        "audit_passed": result.reliable,
+        "audit_file": str(audit_file),
+        "audit_issues": result.issues,
+        "dataset_rows": result.rows_detected,
+        "dataset_range": {
+            "start": result.date_start_detected,
+            "end": result.date_end_detected,
+        },
+        "metadata_path": result.metadata_path,
+    }
 
 
 def run_etapa_1_backtest() -> bool:
@@ -178,7 +213,13 @@ def run_etapa_2_validation(results_path: str) -> bool:
         return False
 
 
-def create_status_marker(gate2_pass: bool) -> None:
+def create_status_marker(
+    gate2_pass: bool,
+    *,
+    completed: bool = True,
+    audit_info: Optional[Dict[str, Any]] = None,
+    error_code: Optional[str] = None,
+) -> None:
     """
     Cria arquivo de status para outros scripts consultarem.
 
@@ -187,16 +228,18 @@ def create_status_marker(gate2_pass: bool) -> None:
     """
     status_file = BACKTEST_OUTPUT_DIR / "p0_2_status.json"
 
-    import json
-
     status = {
-        "completed": True,
+        "completed": completed,
         "gate2_passed": gate2_pass,
         "timestamp": datetime.now().isoformat(),
         "backtest_results": str(BACKTEST_OUTPUT_DIR / "backtest_results.json"),
         "reports_dir": str(REPORTS_OUTPUT_DIR),
         "decision": "PASS" if gate2_pass else "FAIL",
+        "decision_is_final": completed and (audit_info or {}).get("audit_passed", True),
+        "error_code": error_code,
     }
+    if audit_info is not None:
+        status["dataset_audit"] = audit_info
 
     with open(status_file, "w") as f:
         json.dump(status, f, indent=2)
@@ -216,10 +259,26 @@ def main() -> int:
     results_path = str(BACKTEST_OUTPUT_DIR / "backtest_results.json")
 
     try:
+        audit_info = run_dataset_audit()
+        if not audit_info["audit_passed"]:
+            logging.error("[MAIN] Dataset audit falhou - abortando Gate 2 como decisao final")
+            create_status_marker(
+                False,
+                completed=True,
+                audit_info=audit_info,
+                error_code="DATASET_AUDIT_FAILED",
+            )
+            return 2
+
         # Etapa 1: Backtest
         if not run_etapa_1_backtest():
             logging.error("[MAIN] Etapa 1 falhou - abortando")
-            create_status_marker(False)
+            create_status_marker(
+                False,
+                completed=True,
+                audit_info=audit_info,
+                error_code="BACKTEST_EXECUTION_FAILED",
+            )
             return 2
 
         # Etapa 2: Reporting
@@ -229,7 +288,7 @@ def main() -> int:
 
         # Etapa 2: Validation
         gate2_pass = run_etapa_2_validation(results_path)
-        create_status_marker(gate2_pass)
+        create_status_marker(gate2_pass, completed=True, audit_info=audit_info)
 
         if gate2_pass:
             logging.info("[MAIN] P0-2 COMPLETOU COM SUCESSO - GATE 2 PASS")
@@ -240,7 +299,11 @@ def main() -> int:
 
     except Exception as e:
         logging.error(f"[MAIN] Erro fatal: {e}", exc_info=True)
-        create_status_marker(False)
+        create_status_marker(
+            False,
+            completed=True,
+            error_code="UNHANDLED_EXCEPTION",
+        )
         return 2
 
     finally:

@@ -26,6 +26,25 @@ def is_p0_2_complete() -> bool:
     return STATUS_FILE.exists()
 
 
+def has_final_gate2_decision() -> bool:
+    """Retorna True apenas quando a decisao e auditavel e final."""
+    if not STATUS_FILE.exists() or not DECISION_FILE.exists():
+        return False
+
+    summary = get_p0_2_status_summary()
+    if not summary.get("completed", False):
+        return False
+
+    if not summary.get("decision_is_final", False):
+        return False
+
+    dataset_audit = summary.get("dataset_audit", {})
+    if dataset_audit and not dataset_audit.get("audit_passed", False):
+        return False
+
+    return True
+
+
 def get_gate2_decision() -> Optional[str]:
     """
     Retorna decisão GATE 2 (PASS/FAIL).
@@ -114,6 +133,15 @@ def main_for_bat() -> int:
             print("[P0-2] Backtest ainda em execucao (background)...")
             return 2
 
+        summary = get_p0_2_status_summary()
+        if not has_final_gate2_decision():
+            error_code = summary.get("error_code", "STATUS_INDEFINIDO")
+            print(
+                "[P0-2] [ERROR] Status sem decisao final auditavel "
+                f"({error_code}) - mantendo capital conservador"
+            )
+            return 3
+
         decision = get_gate2_decision()
         if decision == "PASS":
             print("[P0-2] [OK] GATE 2 PASSOU - Escalando para R$ 100k")
@@ -150,8 +178,14 @@ def print_p0_2_status() -> None:
     print(f"Status: ✓ COMPLETO")
     print(f"Timestamp: {summary.get('timestamp', 'N/A')}")
     print(f"GATE 2 Decision: {summary.get('decision', 'N/A')}")
+    print(f"Decision Final: {summary.get('decision_is_final', 'N/A')}")
     print(f"Backtest Results: {summary.get('backtest_results', 'N/A')}")
     print(f"Reports Dir: {summary.get('reports_dir', 'N/A')}")
+    dataset_audit = summary.get("dataset_audit", {})
+    if dataset_audit:
+        print(f"Dataset Audit: {dataset_audit.get('audit_passed', False)}")
+        if dataset_audit.get("audit_issues"):
+            print(f"Audit Issues: {', '.join(dataset_audit['audit_issues'])}")
     print("=" * 70 + "\n")
 
 
