@@ -58,6 +58,7 @@ data/models/novo_agente_rl/
 outputs/
 data/backtest/
 data/ml/
+data/diarios/
 data/db/reflections/
 config/confidence_history.json
 config/confidence_override_today.json
