@@ -1,12 +1,14 @@
 {
-  "source": "local_training_dataset_placeholder",
-  "source_type": "synthetic_placeholder",
-  "symbol": "WINFUT",
+  "source": "market_data.sqlite",
+  "source_type": "mt5_export_real",
+  "symbol": "WINJ26",
   "timeframe": "M5",
-  "rows": 1000,
-  "date_start": "2026-01-22T21:22:06.812200",
-  "date_end": "2026-03-05T12:22:06.812200",
-  "sha256": "B9960B0FCA9D6BE07AAE8E18B02760ED0CD5F486B1F0615ADE0CC675E752122C",
-  "synthetic": true,
-  "notes": "Dataset atual e apenas placeholder local. Nao pode fundamentar decisao final de Gate 2."
+  "rows": 7561,
+  "date_start": "2025-09-04T11:55:00",
+  "date_end": "2026-03-11T15:30:00",
+  "sha256": "44b0e04fd1ae13fa7dbbf8de2ec7cb50124ded7315d17926848403f7020468c8",
+  "synthetic": false,
+  "prepared_at": "2026-03-12T12:25:05.555778Z",
+  "lookback_days_requested": 365,
+  "lookback_days_actual": 188
 }

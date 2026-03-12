@@ -42,6 +42,15 @@ def has_final_gate2_decision() -> bool:
     if dataset_audit and not dataset_audit.get("audit_passed", False):
         return False
 
+    summary_decision = summary.get("decision")
+    decision_file_decision = get_gate2_decision()
+    if summary_decision not in {"PASS", "FAIL"}:
+        return False
+    if decision_file_decision not in {"PASS", "FAIL"}:
+        return False
+    if summary_decision != decision_file_decision:
+        return False
+
     return True
 
 

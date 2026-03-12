@@ -235,7 +235,11 @@ def create_status_marker(
         "backtest_results": str(BACKTEST_OUTPUT_DIR / "backtest_results.json"),
         "reports_dir": str(REPORTS_OUTPUT_DIR),
         "decision": "PASS" if gate2_pass else "FAIL",
-        "decision_is_final": completed and (audit_info or {}).get("audit_passed", True),
+        "decision_is_final": (
+            completed
+            and error_code is None
+            and (audit_info or {}).get("audit_passed", True)
+        ),
         "error_code": error_code,
     }
     if audit_info is not None:

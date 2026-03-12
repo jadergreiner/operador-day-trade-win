@@ -67,3 +67,19 @@ def test_audit_dataset_fails_without_metadata(tmp_path):
 
     assert result.reliable is False
     assert any(issue.startswith("metadata_missing:") for issue in result.issues)
+
+
+def test_audit_dataset_fails_with_placeholder_source_type(tmp_path):
+    dataset_path = _write_dataset(tmp_path, synthetic=False)
+    metadata_path = tmp_path / "training_dataset.metadata.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata["source_type"] = "synthetic_placeholder"
+    metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+
+    result = audit_dataset(dataset_path)
+
+    assert result.reliable is False
+    assert any(
+        issue.startswith("metadata_source_type_not_real:")
+        for issue in result.issues
+    )

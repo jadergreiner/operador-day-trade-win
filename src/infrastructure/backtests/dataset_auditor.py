@@ -28,6 +28,13 @@ REQUIRED_METADATA_FIELDS = {
     "synthetic",
 }
 
+SOURCE_TYPE_BLOCKLIST = {
+    "synthetic",
+    "synthetic_placeholder",
+    "placeholder",
+    "mock",
+}
+
 
 @dataclass
 class DatasetAuditResult:
@@ -102,6 +109,10 @@ def audit_dataset(dataset_path: str) -> DatasetAuditResult:
             issues.append("index_has_duplicates")
 
     if metadata:
+        source_type = str(metadata.get("source_type", "")).strip().lower()
+        if source_type in SOURCE_TYPE_BLOCKLIST or "placeholder" in source_type:
+            issues.append(f"metadata_source_type_not_real:{source_type}")
+
         if bool(metadata.get("synthetic", True)):
             issues.append("dataset_flagged_as_synthetic")
         if metadata.get("rows") != rows_detected:
