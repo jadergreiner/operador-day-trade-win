@@ -4824,7 +4824,7 @@ def main():
                     days_inactive = inactivity_stats.days_inactive if inactivity_stats else 0
                     cost_accumulated = inactivity_stats.accumulated_cost if inactivity_stats else Decimal("0")
                     confidence_current = Decimal(str(result.confidence if hasattr(result, 'confidence') else 0.75))
-                    
+
                     # Calcula ativação forçada
                     should_force, reason, new_threshold = _forced_activation_manager.should_force_activation(
                         confidence_current=confidence_current,
@@ -4832,7 +4832,7 @@ def main():
                         cost_accumulated=cost_accumulated,
                         confidence_24h_ago=None,  # Será melhorado em versões futuras
                     )
-                    
+
                     if should_force:
                         threshold_pct = float(new_threshold) * 100
                         print(f"  ⚠️ P0-URGENT-2: FORCED ACTIVATION {reason.value} | "

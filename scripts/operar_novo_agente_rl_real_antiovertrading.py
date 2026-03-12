@@ -526,12 +526,12 @@ def modificar_sl_ordem(ticket: int, novo_sl: float) -> bool:
 
         retcode = getattr(result, 'retcode', -1)
         comment = getattr(result, 'comment', 'Sem detalhes')
-        
+
         if retcode != mt5_adapter._mt5.TRADE_RETCODE_DONE:
             logger.warning(f"[PROTEÇÃO] Falha ao modificar SL do ticket {ticket}: "
                           f"retcode={retcode}, mensagem={comment}. "
                           f"Req: SL={float(novo_sl):.2f}, TP={float(position.tp) if position.tp else 0:.2f}")
-            
+
             # Diagnóstico detalhado
             if retcode == 10009:  # TRADE_RETCODE_INVALID_PRICE
                 logger.error(f"  → INVALID PRICE: novo SL {novo_sl:.2f} pode estar fora do spread")
@@ -541,7 +541,7 @@ def modificar_sl_ordem(ticket: int, novo_sl: float) -> bool:
                 logger.error(f"  → INVALID VOLUME: verificar volume=1")
             elif comment == "Invalid request":
                 logger.error(f"  → INVALID REQUEST: PROVÁVEL: SL já está neste valor ou diferença < 1 ponto")
-            
+
             return False
 
         logger.info(f"[PROTEÇÃO] SL modificado com sucesso para ticket {ticket}: {novo_sl:.2f}")
@@ -675,7 +675,7 @@ def proteger_lucro_trade() -> None:
             if percent_tp > 25:
                 novo_sl = entry_price
                 diferenca_sl = abs(novo_sl - sl)
-                
+
                 if side == 0:  # BUY
                     # Tolerância: mínimo 1.0 ponto (padrão broker) para evitar "Invalid request"
                     if novo_sl > sl + 1.0:
@@ -710,7 +710,7 @@ def proteger_lucro_trade() -> None:
             if percent_tp > 75:
                 trailing_distance = 50  # 50 pontos de trailing
                 novo_sl = 0.0
-                
+
                 if side == 0:  # BUY
                     novo_sl = current_price - trailing_distance
                     diferenca_sl = abs(novo_sl - sl)
