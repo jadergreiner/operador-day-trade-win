@@ -36,6 +36,11 @@ import sqlite3
 import logging
 from decimal import Decimal
 
+from src.application.services.processador_bdi import get_processador_bdi, ProcessadorBDI
+from src.domain.entities import Order
+from src.domain.enums.trading_enums import OrderSide as DomainOrderSide, OrderType as DomainOrderType
+from src.domain.value_objects import Symbol, Quantity, Price
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -143,7 +148,11 @@ class TradeExecutor:
     6. Retornar trade_id para AC3 (linkage)
     """
 
-    def __init__(self, db_path: str = "data/db/trading.db"):
+    def __init__(
+        self,
+        db_path: str = "data/db/trading.db",
+        processador_bdi: Optional["ProcessadorBDI"] = None,
+    ):
         """
         Inicializa executor.
 
@@ -152,6 +161,7 @@ class TradeExecutor:
         """
         self.db_path = db_path
         self.connection: Optional[sqlite3.Connection] = None
+        self.processador_bdi = processador_bdi or get_processador_bdi()
         self._connect()
         logger.info(f"[AC5-INIT] Trade Executor initialized at {db_path}")
 
@@ -309,7 +319,7 @@ class TradeExecutor:
         """
         AC5.3: Enviar ordem para MT5 via ProcessadorBDI.
 
-        TODO: Integrar com ProcessadorBDI.enviar_ordem()
+        Integra com ProcessadorBDI.enviar_ordem().
 
         Args:
             order_spec: Ordem para enviar
@@ -318,9 +328,54 @@ class TradeExecutor:
             ExecutionResult com status de execução
         """
         try:
-            # TODO: Chamar ProcessadorBDI.enviar_ordem(order_spec)
-            # Por enquanto, simular execução bem-sucedida
-            trade_id = int(datetime.now().timestamp()) + len(order_spec.order_id)
+            # Converter OrderSpecification para Order domain
+            side = DomainOrderSide.BUY if order_spec.direction == TradeDirection.BUY else DomainOrderSide.SELL
+            order = Order(
+                symbol=Symbol(order_spec.symbol),
+                side=side,
+                quantity=Quantity(int(order_spec.volume)),
+                order_type=DomainOrderType.MARKET,
+                price=Price(Decimal(str(order_spec.entry_price))),
+                stop_loss=Price(Decimal(str(order_spec.stop_loss))) if order_spec.stop_loss else None,
+                take_profit=Price(Decimal(str(order_spec.take_profit))) if order_spec.take_profit else None,
+                execution_method="automated",
+            )
+
+            success, ticket_or_error = self.processador_bdi.enviar_ordem(order)
+            if not success:
+                logger.warning(
+                    f"[AC5-SEND] Order {order_spec.order_id} rejected: {ticket_or_error}"
+                )
+                return ExecutionResult(
+                    order_id=order_spec.order_id,
+                    trade_id=-1,
+                    signal_id=order_spec.signal_id,
+                    status=OrderStatus.REJECTED,
+                    execution_price=None,
+                    execution_time=None,
+                    volume_filled=0,
+                    volume_requested=order_spec.volume,
+                    error_message=str(ticket_or_error),
+                )
+
+            try:
+                trade_id = int(str(ticket_or_error).strip())
+            except (ValueError, TypeError) as e:
+                logger.error(
+                    f"[AC5-SEND-ERROR] Non-numeric MT5 ticket: {ticket_or_error}"
+                )
+                return ExecutionResult(
+                    order_id=order_spec.order_id,
+                    trade_id=-1,
+                    signal_id=order_spec.signal_id,
+                    status=OrderStatus.REJECTED,
+                    execution_price=None,
+                    execution_time=None,
+                    volume_filled=0,
+                    volume_requested=order_spec.volume,
+                    error_message=f"Non-numeric MT5 ticket: {ticket_or_error} ({e})",
+                )
+
             execution_price = order_spec.entry_price
             execution_time = datetime.now()
 

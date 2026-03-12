@@ -109,6 +109,16 @@ maquina. Ele exige o terminal esperado para a sessao.
 
 Se o terminal permitido nao estiver disponivel, a operacao nao segue.
 
+### O envio real usa ProcessadorBDI com fallback MT5
+
+Quando o modo auto-trade esta habilitado, o envio real segue este fluxo:
+
+- `TradeExecutor` → `ProcessadorBDI.enviar_ordem()`
+- `MT5AdapterProxy` (REST P0-1) com fallback automatico
+- `MT5Adapter` direto (se API falhar ou ticket nao numerico)
+
+Isso garante rastreabilidade, resiliencia e isolamento antes do envio real.
+
 ## Como o Sistema se Protege
 
 ### Ele bloqueia terminal MT5 de corretora errada

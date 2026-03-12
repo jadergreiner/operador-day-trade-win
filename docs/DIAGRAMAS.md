@@ -248,6 +248,15 @@ classDiagram
         -_handle_network_error(error: Exception) void
     }
 
+    class ProcessadorBDI {
+        +enviar_ordem(order: Order) Tuple~bool,str~
+    }
+
+    class MT5AdapterProxy {
+        +send_order(order: Order) str
+        +get_stats() Dict
+    }
+
     %% Feedback Layer (Future - P33)
     class PredictionTracker {
         -predictions: Dict
@@ -324,7 +333,9 @@ classDiagram
     OrderManager --|> ExecutionOrder: "gerencia"
     ExecutionOrder --|> SendToMT5Command: "executa"
     SendToMT5Command --|> TerminalIsolationEnforcer: "valida isolamento ANTES"
-    SendToMT5Command --|> MT5Adapter: "envia"
+    SendToMT5Command --|> ProcessadorBDI: "envia"
+    ProcessadorBDI --|> MT5AdapterProxy: "proxy REST + fallback"
+    MT5AdapterProxy --|> MT5Adapter: "envia"
     SendToMT5Command --|> Repository: "persiste"
     PositionMonitor --|> SendToMT5Command: "monitora resultado"
     IntraDayLearner --|> PredictionTracker: "integração P33"

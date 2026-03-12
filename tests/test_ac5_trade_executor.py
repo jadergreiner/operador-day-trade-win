@@ -197,7 +197,9 @@ class TestSendOrderToBroker:
 
     def test_send_order_returns_execution_result(self, tmp_path):
         """AC5.3.1: Retorna ExecutionResult."""
-        executor = TradeExecutor(str(tmp_path / "test.db"))
+        processador_bdi = Mock()
+        processador_bdi.enviar_ordem.return_value = (True, "123456")
+        executor = TradeExecutor(str(tmp_path / "test.db"), processador_bdi=processador_bdi)
 
         order_spec = executor.prepare_order_specification(
             signal_id="SIG-001",
@@ -215,7 +217,9 @@ class TestSendOrderToBroker:
 
     def test_send_order_generates_trade_id(self, tmp_path):
         """AC5.3.2: Gera trade_id único."""
-        executor = TradeExecutor(str(tmp_path / "test.db"))
+        processador_bdi = Mock()
+        processador_bdi.enviar_ordem.return_value = (True, "123456")
+        executor = TradeExecutor(str(tmp_path / "test.db"), processador_bdi=processador_bdi)
 
         order_spec = executor.prepare_order_specification(
             signal_id="SIG-002",
@@ -229,6 +233,46 @@ class TestSendOrderToBroker:
 
         assert result.trade_id > 0
         assert result.status == OrderStatus.FILLED
+
+    def test_send_order_rejected(self, tmp_path):
+        """AC5.3.3: Rejeita ordem quando MT5 retorna falha."""
+        processador_bdi = Mock()
+        processador_bdi.enviar_ordem.return_value = (False, "REJECTED_BY_MT5")
+        executor = TradeExecutor(str(tmp_path / "test.db"), processador_bdi=processador_bdi)
+
+        order_spec = executor.prepare_order_specification(
+            signal_id="SIG-003",
+            symbol="WINFUT",
+            direction=TradeDirection.BUY,
+            entry_price=100.0,
+            atr_value=10.0,
+        )
+
+        result = executor.send_order_to_broker(order_spec)
+
+        assert result.status == OrderStatus.REJECTED
+        assert result.trade_id == -1
+        assert "REJECTED" in (result.error_message or "")
+
+    def test_send_order_operational_error(self, tmp_path):
+        """AC5.3.4: Trata erro operacional no envio."""
+        processador_bdi = Mock()
+        processador_bdi.enviar_ordem.side_effect = Exception("MT5 timeout")
+        executor = TradeExecutor(str(tmp_path / "test.db"), processador_bdi=processador_bdi)
+
+        order_spec = executor.prepare_order_specification(
+            signal_id="SIG-004",
+            symbol="WINFUT",
+            direction=TradeDirection.BUY,
+            entry_price=100.0,
+            atr_value=10.0,
+        )
+
+        result = executor.send_order_to_broker(order_spec)
+
+        assert result.status == OrderStatus.REJECTED
+        assert result.trade_id == -1
+        assert "MT5 timeout" in (result.error_message or "")
 
 
 class TestRegisterExecution:
@@ -302,7 +346,9 @@ class TestExecuteTrade:
     def test_execute_trade_valid(self, tmp_path):
         """AC5.5.1: Executa trade com validações."""
         db_file = tmp_path / "execute.db"
-        executor = TradeExecutor(str(db_file))
+        processador_bdi = Mock()
+        processador_bdi.enviar_ordem.return_value = (True, "123456")
+        executor = TradeExecutor(str(db_file), processador_bdi=processador_bdi)
 
         # Setup schema
         cursor = executor.connection.cursor()
@@ -344,7 +390,7 @@ class TestExecuteTrade:
 
     def test_execute_trade_invalid_volume(self, tmp_path):
         """AC5.5.2: Rejeita trade com volume inválido."""
-        executor = TradeExecutor(str(tmp_path / "test.db"))
+        executor = TradeExecutor(str(tmp_path / "test.db"), processador_bdi=Mock())
 
         # Forçar volume inválido (mock)
         with patch.object(executor, 'prepare_order_specification') as mock_prep:
@@ -405,7 +451,9 @@ class TestAC5Integration:
     def test_ac5_complete_pipeline(self, tmp_path):
         """AC5.9: Pipeline completo AC5."""
         db_file = tmp_path / "integration.db"
-        executor = TradeExecutor(str(db_file))
+        processador_bdi = Mock()
+        processador_bdi.enviar_ordem.return_value = (True, "123456")
+        executor = TradeExecutor(str(db_file), processador_bdi=processador_bdi)
 
         # Setup
         cursor = executor.connection.cursor()

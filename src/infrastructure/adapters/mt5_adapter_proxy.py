@@ -69,6 +69,41 @@ class MT5AdapterProxy:
         self.api_success_count = 0
         self.fallback_count = 0
 
+    def _coerce_float(self, value) -> Optional[float]:
+        """Converte value object ou primitivo para float."""
+        if value is None:
+            return None
+        if hasattr(value, "value"):
+            try:
+                return float(value.value)
+            except (TypeError, ValueError):
+                return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    def _coerce_symbol(self, symbol) -> str:
+        """Extrai string de símbolo para API."""
+        if hasattr(symbol, "code"):
+            return symbol.code
+        if hasattr(symbol, "value"):
+            return str(symbol.value)
+        return str(symbol)
+
+    def _coerce_side(self, side) -> str:
+        """Normaliza side para BUY/SELL."""
+        raw = side.value if hasattr(side, "value") else str(side)
+        raw_upper = str(raw).upper()
+        return "BUY" if "BUY" in raw_upper else "SELL"
+
+    def _is_numeric_ticket(self, ticket: object) -> bool:
+        """Valida se ticket é numérico."""
+        try:
+            return str(ticket).strip().isdigit()
+        except Exception:
+            return False
+
     def send_order(self, order) -> Optional[str]:
         """
         Envia ordem usando API REST P0-1 (com fallback optional para MT5).
@@ -117,12 +152,17 @@ class MT5AdapterProxy:
 
         try:
             # Converte Order domain para parâmetros API
-            symbol = str(order.symbol)
-            order_type = "BUY" if str(order.side).upper() == "BUY" else "SELL"
-            volume = float(order.quantity)
-            entry_price = float(order.price)
-            stop_loss = float(order.stop_loss)
-            take_profit = float(order.take_profit)
+            symbol = self._coerce_symbol(order.symbol)
+            order_type = self._coerce_side(order.side)
+            volume = self._coerce_float(getattr(order, "quantity", None))
+            entry_price = self._coerce_float(getattr(order, "price", None))
+            stop_loss = self._coerce_float(getattr(order, "stop_loss", None))
+            take_profit = self._coerce_float(getattr(order, "take_profit", None))
+
+            if volume is None or entry_price is None:
+                raise ValueError("Order missing volume or entry_price for API send")
+            if stop_loss is None or take_profit is None:
+                raise ValueError("Order missing stop_loss/take_profit for API send")
 
             # ML score e detector (values padrão se não disponível)
             ml_score = getattr(order, 'ml_score', 0.5)
@@ -147,7 +187,17 @@ class MT5AdapterProxy:
                     f"✅ Ordem enviada via API: {api_response.order_id} "
                     f"(status: {api_response.status})"
                 )
-                return api_response.order_id  # Retorna order_id como ticket
+                ticket = api_response.order_id
+                if not self._is_numeric_ticket(ticket):
+                    logger.warning(
+                        "⚠️  API retornou ticket não numérico. "
+                        "Forçando fallback para MT5 direto."
+                    )
+                    if self.fallback_to_mt5:
+                        self.fallback_count += 1
+                        return self.original_adapter.send_order(order)
+                    return None
+                return ticket  # Retorna ticket MT5 numérico
 
             # ❌ Falha na API
             else:

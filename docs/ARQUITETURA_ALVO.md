@@ -187,6 +187,7 @@ Responsabilidades:
 - persistir snapshots do ciclo;
 - decidir se entra, simula ou rejeita a oportunidade;
 - executar e acompanhar posicoes, quando permitido;
+- enviar ordens reais via `ProcessadorBDI.enviar_ordem()` (MT5AdapterProxy + fallback MT5);
 - registrar feedback de aprendizado.
 
 ### 4. Servicos de Apoio e Protecao
@@ -217,6 +218,7 @@ Componentes centrais:
 - `scripts/start_api_server.py`
 - `src/interfaces/api/fastapi_server.py`
 - `src/application/orders_executor.py`
+- `src/application/services/processador_bdi.py`
 
 Responsabilidades:
 

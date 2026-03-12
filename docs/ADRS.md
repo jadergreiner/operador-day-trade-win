@@ -516,6 +516,14 @@ class MT5AdapterProxy:
         # 3. return response (agente vê resposta normal)
 ```
 
+**Integração AC5.7 (Execução Real via TradeExecutor)**:
+```text
+TradeExecutor.send_order_to_broker()
+  → ProcessadorBDI.enviar_ordem()
+    → MT5AdapterProxy (REST P0-1 + fallback MT5 direto)
+      → MT5Adapter (MT5 real)
+```
+
 **Integração com Agente (Zero Changes Pattern)**:
 ```python
 # scripts/launch_agent_with_ml_v1_2_3.py
@@ -1212,6 +1220,11 @@ GATE 2 Backtest Validation executado em 05/03/2026 12:22:22 resultou em **FAIL**
 
 **Capital Decision:** R$ 50k baseline (sem escalabilidade até melhorias)
 
+### Atualizacao (12/03/2026)
+
+Reteste P0-2 executado com dataset real e GATE 2 **PASS**. Capital escalavel
+para R$ 100k.
+
 ### Decisão
 
 **Priorizar Risk Management Upgrade ANTES de Model Tuning:**
@@ -1231,7 +1244,7 @@ Phase 3 (09-10/03): Model Refinement
 ├─ Retrain com regularization L1/L2
 └─ 10-fold cross-validation (vs 5-fold atual)
 
-GATE 2 Retest: 08-10/03/2026
+GATE 2 Retest (historico): 08-10/03/2026
 ```
 
 ### Consequências
@@ -1240,7 +1253,7 @@ GATE 2 Retest: 08-10/03/2026
 - Circuit breakers reduzem risco máximo de 92.8% para <8%
 - Operação segura mesmo com modelo inconsistente
 - Não requer retraining de modelo (testado no dia)
-- Go-Live possível em 13/03 se GATE 2 retest PASS
+- Go-Live possível em 13/03 (status historico) se GATE 2 retest PASS
 
 ❌ **Risco de dataset sintético:**
 - 435 samples originais não generalizam bem cross-timeframes
@@ -1253,13 +1266,14 @@ GATE 2 Retest: 08-10/03/2026
 |----------|---------|-------|
 | Model Tuning | **DEFER** | Risk Management = immediate safety |
 | Risk Management | **PRIORITIZE** | Circuit breakers = live-safe agora |
-| Capital Escalabilidade | **HOLD** | R$ 50k até GATE 2 retest PASS |
-| Go-Live Target | **MANTER** | 13/03 possível se Risk + GATE 2 completam |
+| Capital Escalabilidade (05/03) | **HOLD** | R$ 50k até GATE 2 retest PASS |
+| Capital Escalabilidade (12/03) | **LIBERADA** | GATE 2 PASS definitivo (capital escalavel) |
+| Go-Live Target (05/03) | **MANTER** | 13/03 possível se Risk + GATE 2 completam |
 
 ### Referências Relacionadas
 
-- 📊 **[BACKLOG.md § P0-2](BACKLOG.md#--p0-2-backtest-validação-ml---gate-2-checkpoint-0503--fail)** - GATE 2 resultado detalha
-- 📋 **[BACKLOG.md § P0-2](BACKLOG.md#p0-2-backtest-validacao-ml---gate-2-decisao-capital)** - Status P0-2 Etapas 1-3
+- 📊 **[BACKLOG.md § P0-2](BACKLOG.md#1-p0-2-gate-2-retest-com-dados-e-risco-confiaveis)** - Status P0-2 atualizado
+- 📋 **[BACKLOG.md § P0-2](BACKLOG.md#1-p0-2-gate-2-retest-com-dados-e-risco-confiaveis)** - Status P0-2 Etapas 1-3
 - 🏗️ **[ARQUITETURA_ALVO.md § P0-3](ARQUITETURA_ALVO.md#3-p0-3--terminal-isolation-enforcer-com-3-camadas)** - Terminal Isolation design
 - 📈 **[MODELAGEM_DE_DADOS.md](MODELAGEM_DE_DADOS.md)** - Circuit breaker configuration storage
 
@@ -1366,7 +1380,7 @@ PositionMonitor (async loop 500ms polling)
 | ADR-008 | ✅ ACCEPTED | 04/03/2026 | GO-LIVE 10/04/2026 (validation) |
 | ADR-009 | ✅ ACCEPTED | 04/03/2026 | Sprint 1 (27/02+) - Proxy stability |
 | ADR-010 | ✅ ACCEPTED | 04/03/2026 | Phase 3 (13/03) - Root cause analysis |
-| ADR-011 | ✅ ACCEPTED | 05/03/2026 | 08/03/2026 - GATE 2 retest |
+| ADR-011 | ✅ ACCEPTED | 05/03/2026 | 12/03/2026 - GATE 2 PASS (reteste) |
 | ADR-012 | ✅ ACCEPTED | 07/03/2026 | 08/03/2026 - Etapa 4 load testing |
 
 **ÚLTIMA ATUALIZAÇÃO:** 07/03/2026 14:30 BRT | **STATUS**: ✅ P1-CORE INTEGRADO

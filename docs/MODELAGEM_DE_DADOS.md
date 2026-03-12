@@ -339,7 +339,7 @@ CREATE INDEX idx_trades_decisions_id ON trades(decisions_id);
 
 **Campos**:
 - `id`: PK
-- `broker_trade_id`: Ticket único do MT5 (e.g., "12345678")
+- `broker_trade_id`: Ticket único do MT5 (numérico; ex: "12345678")
 - `decisions_id`: FK para DECISIONS (qual decisão levou ao trade)
 - `timestamp_entry`: Quando o trade foi executado
 - `timestamp_exit`: Quando foi fechado
@@ -639,6 +639,7 @@ CREATE INDEX idx_signals_status ON signals(status);
   - `WHIPSAW`: Trade aberta mas logo revertida
   - `MISSED`: Nunca foi executada (expirou)
 - `outcome_trade_id`: FK para TRADES (se entrou)
+  - AC5.7: ticket MT5 é tratado como inteiro no executor e rastreável via este campo
 - `outcome_pnl`: P&L se tivesse entrado no sinal
 - `outcome_days_open`: Quantos dias o sinal ficou aberto
 - **`outcome_type` (AC3 expandido)**: Classificação final

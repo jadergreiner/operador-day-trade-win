@@ -9,13 +9,17 @@ import asyncio
 import logging
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 from src.application.services.detector_volatilidade import DetectorVolatilidade
 from src.application.services.detector_padroes_tecnico import DetectorPadroesTecnico
 from src.infrastructure.providers.fila_alertas import FilaAlertas
 from src.infrastructure.config.alerta_config import get_config
 from src.domain.entities.alerta import AlertaOportunidade
+from config.settings import get_config as get_trading_config
+from src.domain.entities import Order
+from src.infrastructure.adapters.mt5_adapter_proxy import MT5AdapterProxy
+from src.infrastructure.adapters.mt5_adapter import MT5Adapter
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +42,8 @@ class ProcessadorBDI:
         )
         self.detector_padroes = DetectorPadroesTecnico()
         self.fila = FilaAlertas()
+        self._mt5_adapter: Optional[MT5Adapter] = None
+        self._mt5_proxy: Optional[MT5AdapterProxy] = None
         logger.info("ProcessadorBDI inicializado")
 
     async def processar_vela(
@@ -105,6 +111,51 @@ class ProcessadorBDI:
     async def parar(self) -> None:
         """Parar processador."""
         logger.info("Parando ProcessadorBDI")
+
+    def _init_mt5_stack(self) -> None:
+        """Inicializa stack MT5 (adapter direto + proxy REST)."""
+        if self._mt5_proxy is not None:
+            return
+
+        trading_config = get_trading_config()
+        self._mt5_adapter = MT5Adapter(
+            login=trading_config.mt5_login,
+            password=trading_config.mt5_password,
+            server=trading_config.mt5_server,
+            terminal_exe_path=trading_config.mt5_terminal_path,
+        )
+        self._mt5_proxy = MT5AdapterProxy(
+            original_adapter=self._mt5_adapter,
+            use_api_rest=True,
+            fallback_to_mt5=True,
+        )
+
+    def enviar_ordem(self, order: Order) -> Tuple[bool, str]:
+        """
+        Envia ordem real para MT5 via proxy REST com fallback MT5 direto.
+
+        Returns:
+            (True, ticket) se sucesso
+            (False, erro) se falha
+        """
+        try:
+            self._init_mt5_stack()
+
+            if self._mt5_adapter and not self._mt5_adapter.is_connected():
+                self._mt5_adapter.connect()
+
+            if not self._mt5_proxy:
+                return False, "MT5 proxy not initialized"
+
+            ticket = self._mt5_proxy.send_order(order)
+            if not ticket:
+                return False, "MT5 send_order returned empty ticket"
+
+            return True, str(ticket)
+
+        except Exception as e:
+            logger.error(f"Erro ao enviar ordem via MT5: {e}", exc_info=True)
+            return False, str(e)
 
 
 # Instancia global para uso facil

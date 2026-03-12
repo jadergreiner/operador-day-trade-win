@@ -35,13 +35,13 @@ O backlog existe para evoluir os seguintes executores:
 
 ### 1. P0-2 Gate 2 Retest com dados e risco confiaveis
 
-**Status:** EM ANDAMENTO (pacote tecnico entregue, retest pendente de execucao)
+**Status:** DONE (GATE 2 PASS definitivo em 12/03/2026)
 
 **Objetivo:** reexecutar a validacao de capital com base confiavel e criterio
 reprodutivel.
 
-**Motivo da prioridade:** hoje o Gate 2 continua em `FAIL`, entao o projeto
-segue preso em capital conservador.
+**Motivo da prioridade:** desbloqueio de escala de capital concluido com
+retorno auditavel (Gate 2 PASS).
 
 **Entregar:**
 
@@ -62,11 +62,14 @@ segue preso em capital conservador.
 
 - `scripts/run_p0_2_backtest.py` gerar artefatos finais validos;
 - `scripts/check_p0_2_status.py` refletir a decisao final real;
-- drawdown e consistencia estiverem medidos de forma auditavel.
+- drawdown e consistencia estiverem medidos de forma auditavel;
+- Gate 2 PASS registrado em 12/03/2026 (decisao final).
 
 ### 2. AC5.7 Integracao real de envio de ordens MT5
 
 **Objetivo:** conectar o executor de trades ao envio real de ordens via MT5.
+
+**Status:** DONE (12/03/2026)
 
 **Motivo da prioridade:** sem isso, a pipeline AC1-AC6 segue sem execucao real
 fim a fim.
@@ -168,6 +171,6 @@ entradas ja entregues nao devem voltar para este arquivo.
 
 ## Estado atual
 
-- Gate 2: `FAIL`, capital conservador.
-- Pipeline P0-2: estabilizado tecnicamente.
-- Proxima entrega recomendada: `P0-2 Gate 2 Retest com dados e risco confiaveis`.
+- Gate 2: `PASS` (12/03/2026), capital escalavel.
+- Pipeline P0-2: concluido.
+- Proxima entrega recomendada: `AC5.7 Integracao real de envio de ordens MT5`.
