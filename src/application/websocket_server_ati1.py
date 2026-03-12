@@ -7,12 +7,13 @@ Duration: 4-6 hours
 Success Criteria: P95 latency <100ms + 6/6 AC tests passing
 """
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 import json
 import time
-from typing import Dict, List, Optional
+import os
+from typing import Dict, List, Optional, Any
 from datetime import datetime
 from pydantic import BaseModel
 import jwt
@@ -23,6 +24,7 @@ JWT_SECRET = "your-secret-key"
 JWT_ALGORITHM = "HS256"
 HEARTBEAT_INTERVAL = 30  # seconds
 MAX_CONNECTIONS_PER_TRADER = 5
+INTERNAL_BROADCAST_TOKEN = os.getenv("ATI1_BROADCAST_TOKEN")
 
 
 class ConnectionManager:
@@ -285,6 +287,32 @@ async def health_check():
         "total_connections": sum(len(conns) for conns in connection_manager.active_connections.values()),
         "timestamp": datetime.utcnow().isoformat()
     }
+
+
+@app.post("/api/v1/broadcast")
+async def broadcast_message(payload: Dict[str, Any], request: Request):
+    """
+    Endpoint interno para broadcast de mensagens (AC5.8).
+
+    Body:
+    {
+      "message": {...},
+      "trader_id": "TRADER_001" (optional)
+    }
+    """
+    if INTERNAL_BROADCAST_TOKEN:
+        token = request.headers.get("X-Internal-Token")
+        if token != INTERNAL_BROADCAST_TOKEN:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+
+    message = payload.get("message")
+    trader_id = payload.get("trader_id")
+
+    if not isinstance(message, dict):
+        raise HTTPException(status_code=400, detail="Invalid message")
+
+    await connection_manager.broadcast(message, trader_id=trader_id)
+    return {"status": "ok"}
 
 
 if __name__ == "__main__":

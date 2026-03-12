@@ -15,15 +15,15 @@ Usage:
     python cleanup_old_orders_scheduler.py --help
 """
 
-import json
-import sqlite3
 import argparse
+import json
 import logging
+import shutil
+import sqlite3
+import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Dict, Tuple
-import shutil
-import sys
+from typing import Dict, List
 
 # Setup logging
 logging.basicConfig(
@@ -42,6 +42,8 @@ class OrderCleanupScheduler:
             "orders_found": 0,
             "orders_deleted": 0,
             "backup_created": False,
+            "db_size_before_bytes": None,
+            "db_size_after_bytes": None,
             "errors": [],
         }
 
@@ -54,6 +56,12 @@ class OrderCleanupScheduler:
         conn.row_factory = sqlite3.Row
         return conn
 
+    def _get_db_size(self) -> int:
+        try:
+            return self.db_path.stat().st_size
+        except Exception:
+            return 0
+
     def find_old_orders(self, days: int = 7) -> List[Dict]:
         """Encontra ordens mais antigas que N dias"""
 
@@ -64,12 +72,13 @@ class OrderCleanupScheduler:
         cursor = conn.cursor()
 
         try:
-            # Tenta tabela 'orders'
+            # Prioriza tabela 'order_queue' com executed_at e status final
             cursor.execute("""
-                SELECT id, symbol, quantity, status, created_at
-                FROM orders
-                WHERE created_at < ?
-                ORDER BY created_at ASC
+                SELECT id, symbol, volume as quantity, status, executed_at
+                FROM order_queue
+                WHERE status IN ('EXECUTED', 'FAILED')
+                AND datetime(executed_at) < datetime(?)
+                ORDER BY executed_at ASC
             """, (cutoff_iso,))
 
             old_orders = [dict(row) for row in cursor.fetchall()]
@@ -79,12 +88,12 @@ class OrderCleanupScheduler:
             return old_orders
 
         except sqlite3.OperationalError as e:
-            # Tabela 'orders' pode não existir, tenta 'order_queue'
-            logger.warning(f"Table 'orders' not found, trying 'order_queue'...")
+            # Tabela 'order_queue' pode nao existir, tenta 'orders'
+            logger.warning("Table 'order_queue' not found, trying 'orders'...")
             try:
                 cursor.execute("""
                     SELECT id, symbol, quantity, status, created_at
-                    FROM order_queue
+                    FROM orders
                     WHERE created_at < ?
                     ORDER BY created_at ASC
                 """, (cutoff_iso,))
@@ -98,7 +107,23 @@ class OrderCleanupScheduler:
                 return old_orders
 
             except sqlite3.OperationalError:
-                logger.error("Neither 'orders' nor 'order_queue' table exists")
+                try:
+                    cursor.execute("""
+                        SELECT id, symbol, quantity, status, created_at
+                        FROM orders
+                        WHERE created_at < ?
+                        ORDER BY created_at ASC
+                    """, (cutoff_iso,))
+
+                    old_orders = [dict(row) for row in cursor.fetchall()]
+                    self.stats["orders_found"] = len(old_orders)
+
+                    logger.info(
+                        f"✓ Found {len(old_orders)} orders older than {days} days"
+                    )
+                    return old_orders
+                except sqlite3.OperationalError:
+                    logger.error("Neither 'order_queue' nor 'orders' table exists")
                 self.stats["errors"].append(
                     "Database schema incompatible - no orders table"
                 )
@@ -157,27 +182,31 @@ class OrderCleanupScheduler:
             cutoff_date = datetime.now() - timedelta(days=days)
             cutoff_iso = cutoff_date.isoformat()
 
-            # Delete from 'orders' if exists
+            # Delete from 'order_queue' if exists
             try:
                 cursor.execute(
-                    "DELETE FROM orders WHERE created_at < ?",
+                    """
+                    DELETE FROM order_queue
+                    WHERE status IN ('EXECUTED', 'FAILED')
+                    AND datetime(executed_at) < datetime(?)
+                    """,
                     (cutoff_iso,)
                 )
                 deleted = cursor.rowcount
                 self.stats["orders_deleted"] = deleted
-                logger.info(f"✓ Deleted {deleted} orders from 'orders' table")
+                logger.info(f"✓ Deleted {deleted} orders from 'order_queue' table")
 
             except sqlite3.OperationalError:
-                # Try 'order_queue' table
+                # Try 'orders' table
                 try:
                     cursor.execute(
-                        "DELETE FROM order_queue WHERE created_at < ?",
+                        "DELETE FROM orders WHERE created_at < ?",
                         (cutoff_iso,)
                     )
                     deleted = cursor.rowcount
                     self.stats["orders_deleted"] = deleted
                     logger.info(
-                        f"✓ Deleted {deleted} orders from 'order_queue' table"
+                        f"✓ Deleted {deleted} orders from 'orders' table"
                     )
 
                 except sqlite3.OperationalError:
@@ -254,12 +283,15 @@ def cleanup_command(args) -> int:
     logger.info("-" * 60)
 
     scheduler = OrderCleanupScheduler(db_path=args.db)
+    scheduler.stats["db_size_before_bytes"] = scheduler._get_db_size()
 
     # Busca ordens antigas
     old_orders = scheduler.find_old_orders(days=args.days)
 
     if not old_orders:
         logger.info("✓ No cleanup needed")
+        report_path = _write_cleanup_report(scheduler, args, dry_run=True)
+        logger.info(f"Report saved: {report_path}")
         return 0
 
     # Showtime?
@@ -267,8 +299,11 @@ def cleanup_command(args) -> int:
     logger.info("Sample of old orders to be deleted:")
     logger.info("-" * 60)
     for order in old_orders[:5]:  # Mostra primeiras 5
-        logger.info(f"  ID: {order['id']}, Status: {order['status']}, "
-                   f"Created: {order['created_at']}")
+        order_time = order.get("executed_at") or order.get("created_at")
+        logger.info(
+            f"  ID: {order['id']}, Status: {order['status']}, "
+            f"Created: {order_time}"
+        )
     if len(old_orders) > 5:
         logger.info(f"  ... and {len(old_orders) - 5} more")
 
@@ -277,6 +312,8 @@ def cleanup_command(args) -> int:
         logger.info("-" * 60)
         logger.info("DRY RUN: No changes made")
         logger.info(f"Would delete {len(old_orders)} orders")
+        report_path = _write_cleanup_report(scheduler, args, dry_run=True)
+        logger.info(f"Report saved: {report_path}")
         return 0
 
     # Real deletion
@@ -288,6 +325,8 @@ def cleanup_command(args) -> int:
 
     if not success:
         logger.error("✗ Cleanup failed")
+        report_path = _write_cleanup_report(scheduler, args, dry_run=False)
+        logger.info(f"Report saved: {report_path}")
         return 1
 
     # Validate
@@ -298,10 +337,32 @@ def cleanup_command(args) -> int:
         stats = scheduler.get_stats()
         logger.info(f"Orders deleted: {stats['orders_deleted']}")
         logger.info(f"Backup created: {stats['backup_created']}")
+        report_path = _write_cleanup_report(scheduler, args, dry_run=False)
+        logger.info(f"Report saved: {report_path}")
         return 0
     else:
         logger.error("✗ Integrity validation failed")
+        report_path = _write_cleanup_report(scheduler, args, dry_run=False)
+        logger.info(f"Report saved: {report_path}")
         return 1
+
+
+def _write_cleanup_report(scheduler: OrderCleanupScheduler, args, dry_run: bool) -> Path:
+    output_dir = Path("outputs")
+    output_dir.mkdir(exist_ok=True, parents=True)
+    scheduler.stats["db_size_after_bytes"] = scheduler._get_db_size()
+    payload = {
+        "timestamp": datetime.now().isoformat(),
+        "db": args.db,
+        "days": args.days,
+        "dry_run": dry_run,
+        "backup": args.backup,
+        "stats": scheduler.get_stats(),
+    }
+    report_path = output_dir / f"cleanup_report_{int(datetime.now().timestamp())}.json"
+    with open(report_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+    return report_path
 
 
 def main():

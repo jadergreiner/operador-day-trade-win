@@ -421,12 +421,28 @@ class TestAcceptanceCriteria:
             assert ws.send_json.called
 
         # AC-5: Cleanup
+        for ws, trader_id in connections[:10]:
+            await hb_manager.stop_heartbeat(ws, trader_id)
+
         for ws, trader_id in connections:
             await manager.disconnect(ws, trader_id)
 
         assert len(manager.active_connections) == 0
 
         logger.info("✅ All 6 AC tests PASSED")
+
+
+class TestBroadcastEndpoint:
+    """Test internal broadcast endpoint for AC5.8"""
+
+    def test_broadcast_endpoint(self, client):
+        payload = {
+            "message": {"type": "ORDER_STATUS_UPDATE", "data": {"order_id": "ORD-1"}},
+            "trader_id": "TRADER_001",
+        }
+        response = client.post("/api/v1/broadcast", json=payload)
+        assert response.status_code == 200
+        assert response.json()["status"] == "ok"
 
 
 if __name__ == "__main__":

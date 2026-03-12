@@ -16,8 +16,8 @@ Os diagramas canonicos servem exclusivamente para evoluir estes executores:
 
 - `INICIAR_DIARIOS.bat`
 - `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
-- `BAT/INICIAR_AGENTE_RL_5000.bat`
-- `BAT/INICIAR_AGENTE_RL_5000_FIXED.bat`
+- `INICIAR_AGENTE_RL_5000.bat`
+- `INICIAR_AGENTE_RL_5000_FIXED.bat`
 
 ## Visao de Fluxo - Gate 2
 
@@ -34,6 +34,17 @@ INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
   -> check_p0_2_status.py
     -> CAPITAL_SCALE (100k ou 50k)
   -> launch_agent_with_ml_v1_2_3.py
+    -> start_execution_monitor.py
+      -> ExecutionMonitor
+      -> WebSocket ATI-1 (ORDER_STATUS_UPDATE, POSITION_UPDATE, RISK_VIOLATION)
+
+Etapa 4 (Manutencao Operacional)
+  -> load_test_order_queue.py
+    -> outputs/load_test_results_*.json
+    -> outputs/memory_profile_*.json (opcional)
+  -> cleanup_old_orders_scheduler.py
+    -> outputs/cleanup_report_*.json
+  -> BAT/AGENDA_LIMPEZA_DIARIA.bat (Task Scheduler 23:00)
 ```
 
 ## Diagrama de Classes (Mermaid)
@@ -257,6 +268,28 @@ classDiagram
         +get_stats() Dict
     }
 
+    class OrderQueue {
+        -db_path: str
+        +push(order: Order) bool
+        +poll(limit: int) List~Order~
+        +cleanup_old_orders(days: int) int
+    }
+
+    class OrderCleanupScheduler {
+        -db_path: str
+        +find_old_orders(days: int) List~Dict~
+        +delete_old_orders(days: int, backup: bool) bool
+        +validate_integrity() bool
+    }
+
+    class ExecutionMonitor {
+        -db_path: str
+        -trader_id: str
+        +start() void
+        +stop() void
+        +emit_order_status_update() void
+    }
+
     %% Feedback Layer (Future - P33)
     class PredictionTracker {
         -predictions: Dict
@@ -340,6 +373,10 @@ classDiagram
     PositionMonitor --|> SendToMT5Command: "monitora resultado"
     IntraDayLearner --|> PredictionTracker: "integração P33"
     PositionMonitor --|> IntraDayLearner: "registra outcome"
+    OrderCleanupScheduler --|> OrderQueue: "limpeza programada"
+    ExecutionMonitor --|> OrderQueue: "observa transicoes"
+    ExecutionMonitor --|> PositionMonitor: "observa posicoes"
+    ExecutionMonitor --|> PositionBroadcaster: "broadcast"
 
     %% P50 Relationships (Pessimism Detection & Recovery)
     ConfidenceHealthChecker --|> IntraDayLearner: "monitora confidence"
@@ -571,3 +608,4 @@ BACKLOG.md
 
 - Diagramas legados completos ficam em `docs/legacy/` (somente leitura).
 - Este documento e a visao canonica de alto nivel para P0-2 Gate 2.
+

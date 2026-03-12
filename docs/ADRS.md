@@ -31,8 +31,8 @@ Legacy docs remain read-only for historical traceability.
 
 - [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat)
 - [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat)
-- [BAT/INICIAR_AGENTE_RL_5000.bat](../BAT/INICIAR_AGENTE_RL_5000.bat)
-- [BAT/INICIAR_AGENTE_RL_5000_FIXED.bat](../BAT/INICIAR_AGENTE_RL_5000_FIXED.bat)
+- [INICIAR_AGENTE_RL_5000.bat](../INICIAR_AGENTE_RL_5000.bat)
+- [INICIAR_AGENTE_RL_5000_FIXED.bat](../INICIAR_AGENTE_RL_5000_FIXED.bat)
 
 ---
 
@@ -1366,6 +1366,94 @@ PositionMonitor (async loop 500ms polling)
 
 ---
 
+## ADR-013: Etapa 4 - Load Testing, Memory Profiling e Cleanup Scheduler
+
+**Status**: ✅ ACCEPTED
+**Data**: 12/03/2026
+
+### Contexto
+
+O runtime principal depende de SQLite para fila de ordens e auditoria.
+Sem evidencias de throughput minimo e sem limpeza automatica, o sistema
+fica exposto a:
+- lentidao sob carga,
+- crescimento descontrolado do banco,
+- necessidade de manutencao manual.
+
+### Decisao
+
+**Implementar Etapa 4 com tres pilares:**
+
+1. **Load test real** via `OrderQueue` + SQLite com alvo minimo de 100 ordens/min.
+2. **Memory profiling opcional** usando `tracemalloc`, com evidencia em JSON.
+3. **Cleanup scheduler** para remover ordens antigas com backup e integridade.
+
+### Consequencias
+
+✅ **Beneficios**:
+- throughput comprovado antes de go-live;
+- evidencias versionadas em `outputs/`;
+- limpeza automatica reduz risco de locks e crescimento do DB.
+
+⚠️ **Trade-offs**:
+- tempo extra de validacao em ambiente local;
+- aumento de scripts operacionais a manter.
+
+### Referencias
+
+- `scripts/load_test_order_queue.py`
+- `scripts/cleanup_old_orders_scheduler.py`
+- `BAT/AGENDA_LIMPEZA_DIARIA.bat`
+- `docs/ARQUITETURA_ALVO.md`
+- `docs/REGRAS_DE_NEGOCIO.md`
+- `docs/DIAGRAMAS.md`
+- `docs/MODELAGEM_DE_DADOS.md`
+
+---
+
+## ADR-014: AC5.8 - Monitoramento em Tempo Real de Execucao
+
+**Status**: ✅ ACCEPTED
+**Data**: 12/03/2026
+
+### Contexto
+
+A execucao real precisa de visibilidade em tempo real para evitar operacao
+as cegas. Sem monitoramento continuo, ordens e risco podem ficar invisiveis
+ate revisao manual.
+
+### Decisao
+
+Implementar monitoramento em tempo real com tres trilhas:
+
+1. **Transicoes de ordens** via leitura do `order_queue` (SQLite).
+2. **Posicoes abertas** com `PositionMonitor` e PnL agregado.
+3. **Alertas de risco** (drawdown <= -15%) via WebSocket ATI-1.
+
+O canal oficial de entrega e o WebSocket ATI-1, com endpoint interno
+`/api/v1/broadcast` para publicacao segura.
+
+### Consequencias
+
+✅ **Beneficios**:
+- visibilidade instantanea de ordens e risco;
+- operacao menos dependente de verificacao manual;
+- base para feedback em ML (AC5.9).
+
+⚠️ **Trade-offs**:
+- necessidade de manter processo de monitoramento ativo;
+- dependencia de WebSocket ATI-1 para broadcast.
+
+### Referencias
+
+- `src/infrastructure/execution_monitor.py`
+- `src/infrastructure/position_monitor.py`
+- `src/infrastructure/position_broadcaster.py`
+- `src/application/websocket_server_ati1.py`
+- `scripts/start_execution_monitor.py`
+
+---
+
 ## Status de ADRs
 
 | ADR | Status | Data | Próximo Review |
@@ -1382,7 +1470,10 @@ PositionMonitor (async loop 500ms polling)
 | ADR-010 | ✅ ACCEPTED | 04/03/2026 | Phase 3 (13/03) - Root cause analysis |
 | ADR-011 | ✅ ACCEPTED | 05/03/2026 | 12/03/2026 - GATE 2 PASS (reteste) |
 | ADR-012 | ✅ ACCEPTED | 07/03/2026 | 08/03/2026 - Etapa 4 load testing |
+| ADR-013 | ✅ ACCEPTED | 12/03/2026 | Go-live 10/04/2026 |
+| ADR-014 | ✅ ACCEPTED | 12/03/2026 | AC5.8 monitoramento em tempo real |
 
-**ÚLTIMA ATUALIZAÇÃO:** 07/03/2026 14:30 BRT | **STATUS**: ✅ P1-CORE INTEGRADO
+**ÚLTIMA ATUALIZAÇÃO:** 12/03/2026 17:30 BRT | **STATUS**: ✅ P1-CORE INTEGRADO
 
 ```
+

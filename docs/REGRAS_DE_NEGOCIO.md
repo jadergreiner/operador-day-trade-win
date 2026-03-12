@@ -20,8 +20,8 @@ As regras de negocio devem sempre evoluir um destes quatro executores:
 
 - `INICIAR_DIARIOS.bat`
 - `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
-- `BAT/INICIAR_AGENTE_RL_5000.bat`
-- `BAT/INICIAR_AGENTE_RL_5000_FIXED.bat`
+- `INICIAR_AGENTE_RL_5000.bat`
+- `INICIAR_AGENTE_RL_5000_FIXED.bat`
 
 ## Diarios e Treinamento de Modelos
 
@@ -199,6 +199,50 @@ de espera antes de aceitar nova entrada na mesma direcao. Hoje essa espera esta
 configurada em 30 minutos.
 
 Essa regra existe para evitar reacao impulsiva e repeticao imediata do erro.
+
+## Manutencao Operacional (Etapa 4)
+
+### Retencao minima de ordens antigas
+
+- o sistema deve manter, no minimo, 7 dias de historico de ordens (configuravel);
+- a limpeza so remove ordens em status final (EXECUTED/FAILED).
+
+### Backup obrigatorio antes de limpeza real
+
+- toda limpeza real deve criar backup do SQLite antes de deletar;
+- dry-run nao altera o banco, apenas informa o que seria removido.
+
+### Limpeza fora do pregao
+
+- a limpeza automatica deve rodar fora do pregao;
+- janela padrao: 23:00 (ajustavel via scheduler).
+
+### Load test obrigatorio antes de go-live
+
+- toda mudanca de infraestrutura ou base de dados requer load test;
+- criterio minimo: 100 ordens/min, p95 < 500ms, CPU < 80%, memoria < 50MB.
+
+## Monitoramento em Tempo Real (AC5.8)
+
+### Inicio automatico do monitor
+
+- o monitor deve iniciar junto da sessao do executor;
+- o monitor deve parar junto com o encerramento do agente.
+
+### Transicoes de ordem obrigatorias
+
+- toda transicao de ordem deve gerar evento em tempo real;
+- eventos minimos: ENQUEUED, VALIDATED, SENT_TO_MT5, ACCEPTED, EXECUTED,
+  PARTIALLY_CLOSED, CLOSED, REJECTED, CANCELLED.
+
+### Alertas de risco
+
+- drawdown <= -15% deve gerar RISK_VIOLATION imediato via WebSocket ATI-1.
+
+### Modo degradado
+
+- se o monitor nao estiver ativo, a sessao segue operando, mas registra alerta
+  de degradacao (sem bloqueio automatico).
 
 ## Como o Sistema Decide Entrar
 
@@ -410,3 +454,4 @@ Qualquer falha de pipeline P0-2 deve resultar em postura conservadora
 
 - Inicio e fim da sessao devem manter sincronizacao com historico local.
 - Decisao Gate 2 deve ficar persistida em artefatos locais de `data/backtest`.
+

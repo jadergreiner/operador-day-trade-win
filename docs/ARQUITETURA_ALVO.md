@@ -20,8 +20,8 @@ Todas as decisoes arquiteturais e evolucoes devem ter como alvo um destes quatro
 
 - `INICIAR_DIARIOS.bat`
 - `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
-- `BAT/INICIAR_AGENTE_RL_5000.bat`
-- `BAT/INICIAR_AGENTE_RL_5000_FIXED.bat`
+- `INICIAR_AGENTE_RL_5000.bat`
+- `INICIAR_AGENTE_RL_5000_FIXED.bat`
 
 ## Arquitetura Alvo e Contrato
 
@@ -31,8 +31,8 @@ Definir o contrato arquitetural ativo para operacao dos launchers:
 
 - `INICIAR_DIARIOS.bat`
 - `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
-- `BAT/INICIAR_AGENTE_RL_5000.bat`
-- `BAT/INICIAR_AGENTE_RL_5000_FIXED.bat`
+- `INICIAR_AGENTE_RL_5000.bat`
+- `INICIAR_AGENTE_RL_5000_FIXED.bat`
 
 Este documento e canonico para decisoes de fluxo operacional.
 
@@ -44,6 +44,7 @@ Este documento e canonico para decisoes de fluxo operacional.
 4. Consulta de status P0-2 (Gate 2) para escala de capital.
 5. Bootstrap Python e execucao do agente.
 6. Sincronizacao final e encerramento rastreavel.
+7. Manutencao operacional: load test e cleanup programado (Etapa 4).
 
 ### Contrato Gate 2 (P0-2)
 
@@ -226,6 +227,43 @@ Responsabilidades:
 - sincronizar historico do MT5 com o banco local;
 - expor uma API REST local para ordens e health check;
 - permitir fallback entre API local e envio direto ao MT5.
+
+### 6. Manutencao Operacional (Etapa 4)
+
+Responsavel por garantir throughput minimo, perfil de memoria e limpeza segura
+do banco de ordens.
+
+Componentes centrais:
+
+- `scripts/load_test_order_queue.py`
+- `scripts/cleanup_old_orders_scheduler.py`
+- `BAT/AGENDA_LIMPEZA_DIARIA.bat`
+
+Responsabilidades:
+
+- validar 100+ ordens/min com evidencia em `outputs/`;
+- registrar perfil de memoria e CPU;
+- remover ordens antigas com backup e verificacao de integridade;
+- executar limpeza fora do pregao (agendada para 23:00).
+
+### 7. Monitoramento de Execucao (AC5.8)
+
+Responsavel por acompanhar ordens, posicoes e risco em tempo real durante a
+sessao.
+
+Componentes centrais:
+
+- `src/infrastructure/execution_monitor.py`
+- `src/infrastructure/position_monitor.py`
+- `src/infrastructure/position_broadcaster.py`
+- `src/application/websocket_server_ati1.py`
+
+Responsabilidades:
+
+- emitir eventos de transicao de ordens (ORDER_STATUS_UPDATE);
+- atualizar posicoes abertas e PnL em tempo real;
+- disparar alertas de risco (RISK_VIOLATION) via WebSocket ATI-1;
+- manter um status de saude do monitor (MONITOR_STATUS).
 
 ## Fluxo de Execucao Fim a Fim
 
@@ -535,3 +573,4 @@ Este documento assume como fonte principal de verdade:
 
 Por isso, a arquitetura aqui descrita representa a operacao local observavel do
 executor, mesmo quando isso diverge de backlog, roadmap ou documentacao antiga.
+

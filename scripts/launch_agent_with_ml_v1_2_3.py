@@ -34,8 +34,10 @@ root_dir = Path(current_dir).parent
 if str(root_dir) not in sys.path:
     sys.path.insert(0, str(root_dir))
 
-# ─ Global API process handle ─
+# ─ Global process handles ─
 _api_process = None
+_ati1_process = None
+_execution_monitor_process = None
 
 # ─ Imports ─
 try:
@@ -167,6 +169,132 @@ def _cleanup_api_process():
             print("  [OK] API Server finalizado")
         except Exception as e:
             print(f"  [WARN] Erro ao finalizar API: {e}")
+
+
+def start_ati1_ws_subprocess():
+    """
+    Inicia ATI-1 WebSocket Server em subprocess.
+    """
+    global _ati1_process
+
+    try:
+        ati1_port = os.getenv("ATI1_PORT", "8000")
+        ati1_host = os.getenv("ATI1_HOST", "127.0.0.1")
+
+        print("  [START] Iniciando ATI-1 WebSocket Server...")
+
+        _ati1_process = subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "src.application.websocket_server_ati1:app",
+                "--host",
+                ati1_host,
+                "--port",
+                ati1_port,
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+
+        # Aguarda alguns segundos
+        time.sleep(2)
+
+        if _ati1_process.poll() is not None:
+            stdout, stderr = _ati1_process.communicate()
+            print("  [ERRO] ATI-1 WS falhou ao iniciar")
+            if stderr:
+                print(f"     Erro: {stderr[:200]}")
+            return None
+
+        print(f"  [OK] ATI-1 WS iniciado (PID={_ati1_process.pid})")
+        atexit.register(_cleanup_ati1_process)
+        return _ati1_process
+    except Exception as e:
+        print(f"  [WARN] Erro ao iniciar ATI-1 WS: {e}")
+        return None
+
+
+def _cleanup_ati1_process():
+    """Finaliza ATI-1 WS server."""
+    global _ati1_process
+    if _ati1_process and _ati1_process.poll() is None:
+        try:
+            print("\n  [STOP] Encerrando ATI-1 WebSocket...")
+            _ati1_process.terminate()
+            try:
+                _ati1_process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                _ati1_process.kill()
+            print("  [OK] ATI-1 WebSocket finalizado")
+        except Exception as e:
+            print(f"  [WARN] Erro ao finalizar ATI-1 WS: {e}")
+
+
+def start_execution_monitor_subprocess():
+    """
+    Inicia Execution Monitor (AC5.8) em subprocess.
+    """
+    global _execution_monitor_process
+
+    try:
+        trader_id = os.getenv("TRADER_ID", "TRADER_001")
+        ati1_port = os.getenv("ATI1_PORT", "8000")
+        ati1_host = os.getenv("ATI1_HOST", "127.0.0.1")
+        ati1_url = os.getenv("ATI1_URL", f"http://{ati1_host}:{ati1_port}")
+        token = os.getenv("ATI1_BROADCAST_TOKEN", "")
+
+        monitor_script = root_dir / "scripts" / "start_execution_monitor.py"
+        cmd = [
+            sys.executable,
+            str(monitor_script),
+            "--db", "data/db/trading.db",
+            "--trader-id", trader_id,
+            "--ati1-url", ati1_url,
+        ]
+        if token:
+            cmd.extend(["--ati1-token", token])
+
+        print("  [START] Iniciando Execution Monitor (AC5.8)...")
+        _execution_monitor_process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+
+        time.sleep(1)
+        if _execution_monitor_process.poll() is not None:
+            stdout, stderr = _execution_monitor_process.communicate()
+            print("  [ERRO] Execution Monitor falhou ao iniciar")
+            if stderr:
+                print(f"     Erro: {stderr[:200]}")
+            return None
+
+        print(f"  [OK] Execution Monitor iniciado (PID={_execution_monitor_process.pid})")
+        atexit.register(_cleanup_execution_monitor)
+        return _execution_monitor_process
+    except Exception as e:
+        print(f"  [WARN] Erro ao iniciar Execution Monitor: {e}")
+        return None
+
+
+def _cleanup_execution_monitor():
+    """Finaliza Execution Monitor."""
+    global _execution_monitor_process
+    if _execution_monitor_process and _execution_monitor_process.poll() is None:
+        try:
+            print("\n  [STOP] Encerrando Execution Monitor...")
+            _execution_monitor_process.terminate()
+            try:
+                _execution_monitor_process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                _execution_monitor_process.kill()
+            print("  [OK] Execution Monitor finalizado")
+        except Exception as e:
+            print(f"  [WARN] Erro ao finalizar Execution Monitor: {e}")
 
 
 def load_ml_features():
@@ -534,6 +662,8 @@ def main():
     print("\n  STARTUP AUTOMATICO")
     print("  " + "=" * 60)
     api_process = start_api_server_subprocess()
+    ati1_process = start_ati1_ws_subprocess()
+    monitor_process = start_execution_monitor_subprocess()
     print("  " + "=" * 60)
 
     # Setup integrações

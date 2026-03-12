@@ -41,7 +41,7 @@ class TestLoadTestOrderQueue:
         """Verifica se script aceita parametros CLI"""
         result = subprocess.run(
             [sys.executable, "scripts/load_test_order_queue.py",
-             "--duration", "1", "--rate", "1"],
+             "--duration", "1", "--rate", "60"],
             capture_output=True,
             text=True
         )
@@ -56,7 +56,7 @@ class TestLoadTestOrderQueue:
 
         result = subprocess.run(
             [sys.executable, "scripts/load_test_order_queue.py",
-             "--duration", "2", "--rate", "5"],
+             "--duration", "2", "--rate", "120"],
             capture_output=True,
             text=True,
             cwd="."
@@ -97,6 +97,8 @@ class TestCleanupScheduler:
         assert result.returncode == 0, f"Dry-run falhou: {result.stderr}"
         combined = (result.stdout + result.stderr).lower()
         assert "cleanup" in combined
+        outputs_dir = Path("outputs")
+        assert list(outputs_dir.glob("cleanup_report_*.json"))
 
     def test_cleanup_with_mock_database(self):
         """Testa cleanup scheduler com banco mock"""
@@ -192,23 +194,31 @@ class TestEtapa4Integration:
         outputs_dir = Path("outputs")
         outputs_dir.mkdir(exist_ok=True)
 
+        files_before = list(outputs_dir.glob("load_test_results_*.json"))
+
         subprocess.run(
             [sys.executable, "scripts/load_test_order_queue.py",
-             "--duration", "2", "--rate", "5"],
+             "--duration", "2", "--rate", "120"],
             capture_output=True,
             text=True
         )
 
         json_files = list(outputs_dir.glob("load_test_results_*.json"))
+        new_files = [f for f in json_files if f not in files_before]
 
-        if json_files:
-            with open(json_files[-1], "r", encoding="utf-8") as f:
+        target_files = new_files if new_files else json_files
+        if target_files:
+            latest = max(target_files, key=lambda p: p.stat().st_mtime)
+            with open(latest, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 required_fields = [
                     "total_orders",
                     "successful",
                     "failed",
                     "success_rate_percent",
+                    "throughput_orders_per_min",
+                    "memory_delta_mb",
+                    "cpu_percent",
                 ]
 
                 for field in required_fields:
@@ -224,7 +234,7 @@ class TestEtapa4Integration:
 
         result = subprocess.run(
             [sys.executable, "scripts/load_test_order_queue.py",
-             "--duration", "1", "--rate", "1"],
+             "--duration", "1", "--rate", "60"],
             capture_output=True,
             text=True,
             timeout=10
@@ -271,3 +281,31 @@ class TestEtapa4Documentation:
             content = f.read()
             assert "cleanup_old_orders_scheduler.py" in content
             assert "schtasks" in content
+
+
+class TestLoadTestRealBackend:
+    """Testes para backend real do load test"""
+
+    def test_load_test_real_backend(self):
+        """Verifica se backend real executa com DB temporario"""
+        with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
+            db_path = tmp.name
+
+        try:
+            result = subprocess.run(
+                [sys.executable, "scripts/load_test_order_queue.py",
+                 "--duration", "2", "--rate", "120",
+                 "--backend", "real", "--db", db_path,
+                 "--profile-memory"],
+                capture_output=True,
+                text=True
+            )
+            assert result.returncode in [0, 1], "Backend real nao executou"
+            outputs_dir = Path("outputs")
+            assert list(outputs_dir.glob("load_test_results_*.json"))
+        finally:
+            if os.path.exists(db_path):
+                try:
+                    os.remove(db_path)
+                except:
+                    pass

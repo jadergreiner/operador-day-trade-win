@@ -20,8 +20,8 @@ A modelagem de dados canonica existe para evoluir estes executores:
 
 - `INICIAR_DIARIOS.bat`
 - `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
-- `BAT/INICIAR_AGENTE_RL_5000.bat`
-- `BAT/INICIAR_AGENTE_RL_5000_FIXED.bat`
+- `INICIAR_AGENTE_RL_5000.bat`
+- `INICIAR_AGENTE_RL_5000_FIXED.bat`
 
 ## Diarios e Treinamento de Modelos
 
@@ -361,6 +361,42 @@ CREATE INDEX idx_trades_decisions_id ON trades(decisions_id);
 - UNIQUE broker_trade_id: Não há duplicatas MT5
 - FK decisions_id: Toda trade tem decisão
 - CHECK side, status, quantity, pnl_percent: Validações
+
+---
+
+### Tabela 5.5: ORDER_QUEUE (P1-CORE)
+
+```sql
+CREATE TABLE order_queue (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id TEXT UNIQUE NOT NULL,
+    symbol TEXT NOT NULL,
+    order_type TEXT NOT NULL,
+    volume REAL NOT NULL,
+    price REAL, sl REAL, tp REAL,
+    comment TEXT,
+    status TEXT NOT NULL DEFAULT 'PENDING',
+    payload TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    attempt_count INTEGER DEFAULT 0,
+    last_error TEXT,
+    mt5_ticket INTEGER,
+    executed_price REAL,
+    executed_at TEXT
+);
+
+CREATE INDEX idx_status ON order_queue(status);
+```
+
+**Campos**:
+- `order_id`: UUID da ordem (unique)
+- `status`: PENDING/PROCESSING/EXECUTED/FAILED/CANCELLED
+- `payload`: JSON completo da ordem
+- `executed_at`: timestamp de execucao (quando aplicavel)
+
+**Retencao**:
+- limpeza automatica remove ordens EXECUTED/FAILED com `executed_at` > 7 dias.
 
 ---
 
@@ -1444,3 +1480,4 @@ CREATE INDEX idx_circuit_breaker_history_session ON circuit_breaker_history(time
 ---
 
 **ÚLTIMA ATUALIZAÇÃO:** 05/03/2026 12:30 BRT | **STATUS**: ✅ COMPLETO (19 tabelas SQL + P50 JSON configs)
+
