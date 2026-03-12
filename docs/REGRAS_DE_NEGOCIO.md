@@ -380,6 +380,17 @@ Gate 2 e uma regra de **escala de capital**, nao de entrada de trade.
 - Em execucao -> mantem capital conservador.
 - Indefinido/erro -> mantem capital conservador.
 
+## Regra de Auditabilidade do Gate 2
+
+- A decisao Gate 2 so e considerada final se o dataset for auditavel (nao sintetico).
+- `data/backtest/dataset_audit.json` deve indicar `audit_passed=true`.
+- Falha de auditoria ou dataset sintetico => decisao conservadora.
+
+## Regra de PnL Realista
+
+- PnL e drawdown do Gate 2 devem ser calculados com trades reais (1-bar hold) e custos aplicados.
+- Custos incluem slippage e taxas por lado, conforme perfil de custo.
+
 ## Regra de Falha Segura
 
 Qualquer falha de pipeline P0-2 deve resultar em postura conservadora

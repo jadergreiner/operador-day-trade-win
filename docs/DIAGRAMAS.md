@@ -24,10 +24,11 @@ Os diagramas canonicos servem exclusivamente para evoluir estes executores:
 ```text
 INICIAR_DIARIOS.bat
   -> run_p0_2_backtest.py (background)
+    -> prepare_p0_2_mt5_dataset.py (se dataset/auditoria falhar)
     -> backtest_engine.py
     -> backtest_reporter.py
     -> backtest_validator.py
-    -> data/backtest/{backtest_results.json, gate2_decision.json, p0_2_status.json}
+    -> data/backtest/{dataset_audit.json, backtest_results.json, gate2_decision.json, p0_2_status.json}
 
 INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
   -> check_p0_2_status.py

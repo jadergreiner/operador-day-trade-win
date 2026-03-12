@@ -61,15 +61,42 @@ class BacktestVisualizer:
 
     def _generate_equity_curve_svg(self, results: Dict[str, Any]) -> str:
         """Gera SVG da curva de patrimônio simulado."""
+        summary = results.get("summary", {})
+        equity_curve = summary.get("equity_curve", [])
         folds = results.get("folds", [])
-        if not folds:
+        if not equity_curve and not folds:
             return "<p>Sem dados para visualização</p>"
 
-        # Simular dados de patrimônio (exemplo)
-        fold_data = folds[0] if folds else {}
-        pnl_total = fold_data.get("pnl_total", 0)
-        max_dd = fold_data.get("max_drawdown", 0)
-        num_trades = fold_data.get("total_trades", 0)
+        pnl_total = summary.get("total_pnl", 0)
+        max_dd = summary.get("mean_max_drawdown", 0)
+        num_trades = summary.get("trade_count", 0)
+
+        if equity_curve:
+            curve = [float(v) for v in equity_curve]
+        else:
+            fold_data = folds[0] if folds else {}
+            pnl_total = fold_data.get("pnl_total", 0)
+            max_dd = fold_data.get("max_drawdown", 0)
+            num_trades = fold_data.get("total_trades", 0)
+            curve = [1.0, 1.01, 0.99, 1.05]
+
+        curve_min = min(curve) if curve else 1.0
+        curve_max = max(curve) if curve else 1.0
+        if curve_max == curve_min:
+            curve_max = curve_min + 1e-6
+
+        points = []
+        width, height = 600, 300
+        left, right = 50, 580
+        top, bottom = 20, 280
+        x_span = right - left
+        y_span = bottom - top
+        for i, value in enumerate(curve):
+            x = left + (x_span * i / max(1, len(curve) - 1))
+            y = bottom - ((value - curve_min) / (curve_max - curve_min)) * y_span
+            points.append(f"{x:.1f},{y:.1f}")
+
+        polyline = " ".join(points)
 
         # SVG simplificado (sem matplotlib)
         width, height = 600, 300
@@ -98,12 +125,8 @@ class BacktestVisualizer:
             <!-- X-axis label -->
             <text x="315" y="310" font-size="12" text-anchor="middle">Dias de Negociação (252)</text>
 
-            <!-- Equity path (simplified curve) -->
-            <path d="M 50,{280 - (equity_start - equity_start) * 200 / (equity_end - lowest)}
-                     L 200,{280 - (equity_start * 0.95 - equity_start) * 200 / (equity_end - lowest)}
-                     L 350,{280 - (equity_start * 1.05 - equity_start) * 200 / (equity_end - lowest)}
-                     L 580,{280 - (equity_end - equity_start) * 200 / (equity_end - lowest)}"
-                  stroke="#4caf50" stroke-width="2" fill="none"/>
+            <!-- Equity path -->
+            <polyline points="{polyline}" stroke="#4caf50" stroke-width="2" fill="none"/>
 
             <!-- Markers -->
             <circle cx="50" cy="280" r="4" fill="#2196f3"/>
@@ -114,6 +137,7 @@ class BacktestVisualizer:
             <text x="60" y="70" font-size="11" fill="#666">Patrimônio Final: R$ {equity_end:,.0f}</text>
             <text x="60" y="90" font-size="11" fill="#666">Ganho: R$ {pnl_total:,.0f} ({pnl_total/equity_start*100:.1f}%)</text>
             <text x="60" y="110" font-size="11" fill="#666">Trades Executados: {num_trades}</text>
+            <text x="60" y="130" font-size="11" fill="#666">Drawdown Médio: {max_dd*100:.1f}%</text>
         </svg>
         """
 

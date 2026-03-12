@@ -40,7 +40,22 @@ Uso esperado:
 
 ## Artefatos P0-2
 
-### 1) `data/backtest/backtest_results.json`
+### 1) `data/backtest/dataset_audit.json`
+
+Campos minimos:
+
+- `dataset_path`: string
+- `metadata_path`: string
+- `reliable`: bool
+- `rows_detected`: int
+- `date_start_detected`: string ISO-8601
+- `date_end_detected`: string ISO-8601
+- `sha256_detected`: string
+- `issues`: lista de strings
+- `metadata`: objeto com `source`, `source_type`, `symbol`, `timeframe`, `rows`, `date_start`, `date_end`, `sha256`, `synthetic`
+- `auto_prepare`: objeto opcional com comando, exit code e logs do preparo automatico
+
+### 2) `data/backtest/backtest_results.json`
 
 Campos minimos:
 
@@ -54,9 +69,20 @@ Campos minimos:
   - `total_folds`: int
   - `total_trades`: int
   - `mean_pnl`: float
+  - `total_pnl`: float
+  - `mean_sortino_ratio`: float
+  - `mean_profit_factor`: float
+  - `mean_recovery_factor`: float
+  - `mean_expectancy`: float
+  - `min_confidence`: float
+  - `hold_period_bars`: int
+  - `trade_count`: int
+  - `mean_return_per_trade`: float
+  - `cost_profile`: objeto com parametros de custo (fees, slippage, point_value)
+  - `equity_curve`: lista compacta de floats (base 1.0)
 - `folds`: lista de objetos com metricas por fold
 
-### 2) `data/backtest/gate2_decision.json`
+### 3) `data/backtest/gate2_decision.json`
 
 Campos minimos:
 
@@ -65,7 +91,7 @@ Campos minimos:
 - `all_passed`: bool
 - `recommendation`: string
 
-### 3) `data/backtest/p0_2_status.json`
+### 4) `data/backtest/p0_2_status.json`
 
 Campos minimos:
 
@@ -75,6 +101,7 @@ Campos minimos:
 - `backtest_results`: path string
 - `reports_dir`: path string
 - `decision`: `"PASS"` ou `"FAIL"`
+- `dataset_audit`: objeto com resumo da auditoria do dataset
 
 ## Contrato de Compatibilidade
 

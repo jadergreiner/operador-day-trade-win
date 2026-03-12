@@ -35,6 +35,8 @@ O backlog existe para evoluir os seguintes executores:
 
 ### 1. P0-2 Gate 2 Retest com dados e risco confiaveis
 
+**Status:** EM ANDAMENTO (pacote tecnico entregue, retest pendente de execucao)
+
 **Objetivo:** reexecutar a validacao de capital com base confiavel e criterio
 reprodutivel.
 
@@ -47,6 +49,14 @@ segue preso em capital conservador.
 - execucao completa do backtest sem dados sinteticos como base principal;
 - relatorio final de Gate 2 com decisao `PASS` ou `FAIL`;
 - evidencia de drawdown e consistencia dentro do contrato.
+- impacto explicito nos executores do escopo (Gate 2 afeta capital).
+
+**Impacto nos executores:**
+
+- `INICIAR_DIARIOS.bat`: impactado (dispara `run_p0_2_backtest.py` e prepara dataset real).
+- `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`: impactado (consulta `check_p0_2_status.py` e escala capital).
+- `BAT/INICIAR_AGENTE_RL_5000.bat`: nao impactado (nao depende de Gate 2).
+- `BAT/INICIAR_AGENTE_RL_5000_FIXED.bat`: nao impactado (nao depende de Gate 2).
 
 **Pronto quando:**
 

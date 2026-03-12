@@ -56,6 +56,7 @@ Entrada: `scripts/check_p0_2_status.py` (exit code).
 
 Artefatos obrigatorios:
 
+- `data/backtest/dataset_audit.json`
 - `data/backtest/backtest_results.json`
 - `data/backtest/gate2_decision.json`
 - `data/backtest/p0_2_status.json`

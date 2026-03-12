@@ -65,7 +65,17 @@ class BacktestReporter:
             raise FileNotFoundError(f"Results file não encontrado: {results_path}")
 
         with open(path, "r") as f:
-            return json.load(f)
+            results = json.load(f)
+
+        audit_path = path.parent / "dataset_audit.json"
+        if audit_path.exists():
+            try:
+                with open(audit_path, "r", encoding="utf-8") as handle:
+                    results["dataset_audit"] = json.load(handle)
+            except json.JSONDecodeError:
+                results["dataset_audit"] = {"audit_passed": False, "error": "invalid_json"}
+
+        return results
 
     def _create_header(self) -> str:
         """Cria seção de header do relatório."""
@@ -112,15 +122,26 @@ class BacktestReporter:
     def _create_executive_summary(self, results: Dict[str, Any]) -> str:
         """Cria sumário executivo com métricas principais."""
         summary = results.get("summary", {})
+        dataset_audit = results.get("dataset_audit", {})
 
         # Determinar status Gate 2
         sharpe_pass = summary.get("mean_sharpe", 0) >= 1.0
         wr_pass = summary.get("mean_win_rate", 0) >= 0.59
         dd_pass = summary.get("mean_max_drawdown", 1.0) < 0.15
-        consistency_pass = summary.get("mean_monthly_consistency", float("inf")) < 0.30
+        consistency_value = summary.get(
+            "consistency_std",
+            summary.get("mean_monthly_consistency", float("inf"))
+        )
+        consistency_pass = consistency_value < 0.30
 
         all_pass = sharpe_pass and wr_pass and dd_pass and consistency_pass
         gate_status = '<span class="pass">PASS ✓</span>' if all_pass else '<span class="fail">FAIL ✗</span>'
+
+        audit_status = "AUDIT OK" if dataset_audit.get("audit_passed", False) else "AUDIT PENDENTE/FAIL"
+        cost_profile = summary.get("cost_profile", {})
+        cost_label = cost_profile.get("name", "n/a")
+        min_confidence = summary.get("min_confidence", 0)
+        hold_period = summary.get("hold_period_bars", 1)
 
         return f"""
         <div class="section">
@@ -143,13 +164,15 @@ class BacktestReporter:
                 </div>
                 <div class="metric-card {'success' if consistency_pass else 'warning'}">
                     <div class="metric-label">Consistência σ</div>
-                    <div class="metric-value">{summary.get('mean_monthly_consistency', 0):.2f}</div>
+                    <div class="metric-value">{consistency_value:.2f}</div>
                     <div class="metric-unit">Target: < 0.30</div>
                 </div>
             </div>
             <h3>Decisão GATE 2</h3>
             <p><strong>Status:</strong> {gate_status}</p>
             <p><strong>Recomendação:</strong> {'✓ Escalar para R$ 100k (FASE 2)' if all_pass else '✗ Manter em R$ 50k (revalidar modelo)'}</p>
+            <p><strong>Dataset Audit:</strong> {audit_status}</p>
+            <p><strong>Custos:</strong> {cost_label} | <strong>Min Confidence:</strong> {min_confidence:.2f} | <strong>Hold:</strong> {hold_period} barra</p>
         </div>
         """
 
@@ -194,7 +217,7 @@ class BacktestReporter:
                         <td>{summary.get('mean_sharpe', 0):.2f}</td>
                         <td>{summary.get('mean_win_rate', 0)*100:.1f}%</td>
                         <td>{summary.get('mean_max_drawdown', 0)*100:.1f}%</td>
-                        <td>{summary.get('total_pnl', 0):.2f}</td>
+                <td>{summary.get('total_pnl', 0):.2f}</td>
                     </tr>
                 </tbody>
             </table>
@@ -205,6 +228,8 @@ class BacktestReporter:
                 <li><strong>Profit Factor:</strong> {summary.get('mean_profit_factor', 0):.2f}</li>
                 <li><strong>Recovery Factor:</strong> {summary.get('mean_recovery_factor', 0):.2f}</li>
                 <li><strong>Expectancy:</strong> {summary.get('mean_expectancy', 0):.2f}</li>
+                <li><strong>Trades (média):</strong> {summary.get('trade_count', 0)}</li>
+                <li><strong>Retorno médio/trade:</strong> {summary.get('mean_return_per_trade', 0):.2f}</li>
             </ul>
         </div>
         """
@@ -212,7 +237,10 @@ class BacktestReporter:
     def _create_risk_analysis(self, results: Dict[str, Any]) -> str:
         """Cria análise de risco com detalhes mensais."""
         folds = results.get("folds", [])
-        consistency_values = [f.get("monthly_consistency", 0) for f in folds]
+        consistency_values = [
+            f.get("pnl_monthly_std", f.get("monthly_consistency", 0))
+            for f in folds
+        ]
         avg_consistency = (
             sum(consistency_values) / len(consistency_values)
             if consistency_values

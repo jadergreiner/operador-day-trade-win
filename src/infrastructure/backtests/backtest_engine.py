@@ -10,13 +10,19 @@ Architecture: Data Layer (DDD)
 import json
 import logging
 from dataclasses import dataclass, asdict
-from typing import Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Tuple, Optional
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import TimeSeriesSplit
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+from src.application.services.sl_tp_ab_backtest import CostProfile, get_cost_profile
+from src.infrastructure.backtests.metrics_calculator import MetricsCalculator
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +42,8 @@ class BacktestMetrics:
     pnl_monthly_std: float
     sortino_ratio: float
     recovery_factor: float
+    profit_factor: float
+    expectancy: float
 
 
 @dataclass
@@ -50,6 +58,8 @@ class BacktestConfig:
     output_path: str = "data/backtest"
     model_path: Optional[str] = None
     random_seed: int = 42
+    min_confidence: float = 0.55
+    cost_profile_name: str = "realista"
 
 
 class BacktestEngine:
@@ -84,6 +94,9 @@ class BacktestEngine:
         self.tscv = TimeSeriesSplit(n_splits=self.config.cv_folds)
         self.results: List[BacktestMetrics] = []
         self.fold_trades: Dict[int, List[Dict]] = {}
+        self.equity_curve_compact: List[float] = []
+        self.metrics_calculator = MetricsCalculator()
+        self.cost_profile = get_cost_profile(self.config.cost_profile_name)
 
         logger.info(
             f"BacktestEngine inicializado: "
@@ -129,6 +142,10 @@ class BacktestEngine:
                 raise ValueError(
                     "Dataset deve ter coluna 'label' (0=SKIP, 1=BUY)"
                 )
+            if 'close' not in df.columns:
+                raise ValueError(
+                    "Dataset deve ter coluna 'close' (preco de referencia)"
+                )
 
             self.dataset = df.sort_index()
             return self.dataset
@@ -163,9 +180,9 @@ class BacktestEngine:
         logger.info("Iniciando backtest 5-fold cross-validation...")
         self.results = []
         self.fold_trades = {}
+        all_trade_returns: List[float] = []
 
         fold_id = 0
-        rng = np.random.default_rng(self.config.random_seed)
         for train_idx, test_idx in self.tscv.split(self.dataset):
             logger.info(f"  Fold {fold_id + 1}/5: "
                        f"treino={len(train_idx)}, "
@@ -174,20 +191,22 @@ class BacktestEngine:
             train_data = self.dataset.iloc[train_idx]
             test_data = self.dataset.iloc[test_idx]
 
-            metrics = self._simulate_fold(
+            metrics, trade_returns = self._simulate_fold(
                 fold_id=fold_id,
                 train_data=train_data,
                 test_data=test_data,
-                rng=rng,
             )
 
             self.results.append(metrics)
+            all_trade_returns.extend(trade_returns)
             fold_id += 1
 
         logger.info(
             f"Backtest concluido: {len(self.results)} folds, "
             f"media Sharpe = {self.get_mean_sharpe():.2f}"
         )
+
+        self.equity_curve_compact = self._build_compact_equity_curve(all_trade_returns)
 
         return self.results
 
@@ -196,15 +215,14 @@ class BacktestEngine:
         fold_id: int,
         train_data: pd.DataFrame,
         test_data: pd.DataFrame,
-        rng: np.random.Generator,
-    ) -> BacktestMetrics:
+    ) -> Tuple[BacktestMetrics, List[float]]:
         """
         Simula um fold de backtest.
 
         Algoritmo simplificado:
-        1. Treina classifier em train_data
+        1. Treina classifier em train_data (StandardScaler + LogisticRegression)
         2. Prediz em test_data
-        3. Simula trades baseado em predicoes
+        3. Simula trades baseado em probas (long-only)
         4. Calcula metricas (P&L, Win Rate, Sharpe, etc)
 
         Args:
@@ -213,78 +231,89 @@ class BacktestEngine:
             test_data: Dados de teste
 
         Returns:
-            BacktestMetrics com resultados do fold
+            Tuple[BacktestMetrics, trade_returns]
         """
-        # Step 1: Simular predicoes (mock - em prod, usar modelo ML)
-        # Assumir que label=1 eh uma predicao correta 60% das vezes
-        predictions = test_data['label'].values
-        confidence = rng.uniform(0.45, 0.95, len(predictions))
+        feature_cols = self._select_feature_columns(train_data)
+        X_train = train_data[feature_cols].to_numpy(dtype=float)
+        y_train = train_data["label"].to_numpy(dtype=int)
 
-        # Step 2: Simular trades
-        trades = []
-        pnl_list = []
+        X_test = test_data[feature_cols].to_numpy(dtype=float)
+        close_test = test_data["close"].to_numpy(dtype=float)
+        timestamps = test_data.index.to_list()
 
-        for i, (idx, row) in enumerate(test_data.iterrows()):
-            if predictions[i] == 1 and confidence[i] > 0.50:
-                # Simular trade entry
-                entry_price = row.get('close', 100)
-                # Simular resultado aleatorio com tendencia positiva (60% win)
-                is_win = rng.random() < 0.60
-                # PnL mock fixo para reduzir variancia artificial entre folds.
-                pnl = 120.0 if is_win else -90.0
+        model = make_pipeline(
+            StandardScaler(),
+            LogisticRegression(
+                max_iter=1000,
+                class_weight="balanced",
+                random_state=self.config.random_seed,
+            ),
+        )
+        model.fit(X_train, y_train)
+        probas = model.predict_proba(X_test)[:, 1]
 
-                trades.append({
-                    'date': idx,
-                    'entry_price': entry_price,
-                    'pnl': pnl,
-                    'is_win': is_win,
-                    'confidence': confidence[i]
-                })
+        cost_points = self._compute_cost_points(self.cost_profile)
+        trades: List[Dict[str, Any]] = []
+        trade_returns: List[float] = []
+        trade_pnls: List[float] = []
+        trade_dates: List[pd.Timestamp] = []
 
-                pnl_list.append(pnl)
+        for i in range(len(close_test) - 1):
+            if probas[i] < self.config.min_confidence:
+                continue
 
-        # Step 3: Calcular metricas
+            entry_price = close_test[i]
+            exit_price = close_test[i + 1]
+            if entry_price == 0:
+                continue
+
+            gross_points = exit_price - entry_price
+            net_points = gross_points - cost_points
+            net_return = net_points / entry_price
+            is_win = net_points > 0
+
+            trades.append(
+                {
+                    "date": timestamps[i],
+                    "entry_price": float(entry_price),
+                    "exit_price": float(exit_price),
+                    "pnl_points": float(net_points),
+                    "pnl_return": float(net_return),
+                    "is_win": is_win,
+                    "confidence": float(probas[i]),
+                }
+            )
+            trade_returns.append(float(net_return))
+            trade_pnls.append(float(net_points))
+            trade_dates.append(pd.Timestamp(timestamps[i]))
+
         total_trades = len(trades)
-        winning_trades = sum(1 for t in trades if t['is_win'])
+        winning_trades = sum(1 for t in trades if t["is_win"])
         win_rate = winning_trades / total_trades if total_trades > 0 else 0.0
-        pnl_total = sum(pnl_list) if pnl_list else 0.0
+        pnl_total = float(np.sum(trade_pnls)) if trade_pnls else 0.0
+        avg_return = pnl_total / total_trades if total_trades > 0 else 0.0
 
-        # Sharpe ratio (aproximado)
-        if len(pnl_list) > 1:
-            returns = np.array(pnl_list) / 100.0
-            expected_return = np.mean(returns)
-            std_return = np.std(returns)
-            sharpe = (expected_return / std_return * np.sqrt(252)) if std_return > 1e-6 else 0.0
-        else:
-            sharpe = 0.0
+        equity_curve = self._build_equity_curve(trade_returns)
+        returns_array = np.array(trade_returns, dtype=float)
+        returns_series = (
+            pd.Series(trade_returns, index=pd.DatetimeIndex(trade_dates))
+            if trade_returns
+            else pd.Series(dtype=float)
+        )
+        metrics = self.metrics_calculator.calculate_all_metrics(
+            pnl_trades=trade_pnls,
+            equity_curve=np.array(equity_curve, dtype=float),
+            daily_returns=returns_array,
+            returns_series=returns_series if not returns_series.empty else None,
+        )
 
-        # Max Drawdown
-        cumulative = np.cumsum(pnl_list) if pnl_list else np.array([0])
-        peak = np.maximum.accumulate(cumulative)
-        # Calcular drawdown como percentual do pico
-        drawdown_pct = (cumulative - peak) / (peak + 1e-6)
-        max_drawdown = abs(np.min(drawdown_pct)) if len(drawdown_pct) > 0 else 0.0
-        max_drawdown = min(max_drawdown, 1.0)  # Clamp a 100%
-
-        # Consistencia mensal (std dos retornos mensais)
-        if test_data.shape[0] > 20 and pnl_list:
-            monthly_pnl = []
-            for m in range(1, 13):
-                month_trades = [p for t, p in zip(test_data.index, pnl_list)
-                               if t.month == m]
-                if month_trades:
-                    monthly_pnl.append(sum(month_trades))
-            pnl_monthly_std = float(np.std(monthly_pnl)) if len(monthly_pnl) > 1 else 0.0
-        else:
-            pnl_monthly_std = 0.0
-
-        # Sortino ratio (desvio apenas de retornos negativos)
-        negative_returns = [r for r in (np.array(pnl_list) / 100.0) if r < 0]
-        downside_std = np.std(negative_returns) if negative_returns else 0.0
-        sortino = (np.mean(np.array(pnl_list) / 100.0) / (downside_std + 1e-6) * np.sqrt(252)) if pnl_list else 0.0
-
-        # Recovery factor (total P&L / max drawdown)
-        recovery = pnl_total / (max_drawdown * 100) if max_drawdown > 0 else pnl_total
+        sharpe = float(metrics.get("sharpe_ratio", 0.0))
+        sortino = float(metrics.get("sortino_ratio", 0.0))
+        max_drawdown = float(metrics.get("max_drawdown", 0.0))
+        pnl_monthly_std = float(metrics.get("monthly_std", 0.0))
+        recovery = float(metrics.get("recovery_factor", 0.0))
+        profit_factor = float(metrics.get("profit_factor", 0.0))
+        expectancy = float(metrics.get("expectancy", 0.0))
 
         metrics = BacktestMetrics(
             fold_id=fold_id,
@@ -293,11 +322,13 @@ class BacktestEngine:
             max_drawdown=abs(max_drawdown),
             total_trades=total_trades,
             winning_trades=winning_trades,
-            avg_return=pnl_total / total_trades if total_trades > 0 else 0.0,
+            avg_return=avg_return,
             pnl_total=pnl_total,
             pnl_monthly_std=pnl_monthly_std,
             sortino_ratio=sortino,
-            recovery_factor=recovery
+            recovery_factor=recovery,
+            profit_factor=profit_factor,
+            expectancy=expectancy,
         )
 
         self.fold_trades[fold_id] = trades
@@ -307,7 +338,41 @@ class BacktestEngine:
             f"WR={win_rate:.1%}, DD={max_drawdown:.1%}"
         )
 
-        return metrics
+        return metrics, trade_returns
+
+    def _select_feature_columns(self, df: pd.DataFrame) -> List[str]:
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        feature_cols = [c for c in numeric_cols if c not in {"label", "close"}]
+        if not feature_cols:
+            raise ValueError("Dataset sem features numéricas válidas")
+        return feature_cols
+
+    @staticmethod
+    def _compute_cost_points(cost_profile: CostProfile) -> float:
+        fixed_brl = (cost_profile.fees_per_side_brl + cost_profile.commission_per_side_brl) * 2
+        fixed_pts = fixed_brl / cost_profile.point_value_brl
+        slippage_pts = cost_profile.slippage_points_per_side * 2
+        return float(fixed_pts + slippage_pts)
+
+    @staticmethod
+    def _build_equity_curve(returns: List[float]) -> List[float]:
+        equity = 1.0
+        curve = [equity]
+        for r in returns:
+            equity *= (1.0 + r)
+            curve.append(float(equity))
+        return curve
+
+    def _build_compact_equity_curve(self, returns: List[float]) -> List[float]:
+        curve = self._build_equity_curve(returns)
+        if len(curve) <= 200:
+            return curve
+        # Amostrar no maximo 200 pontos para manter JSON compacto
+        step = max(1, len(curve) // 200)
+        sampled = curve[::step]
+        if sampled[-1] != curve[-1]:
+            sampled.append(curve[-1])
+        return sampled
 
     def get_mean_sharpe(self) -> float:
         """Retorna Sharpe medio entre folds."""
@@ -390,6 +455,17 @@ class BacktestEngine:
                 "total_folds": len(self.results),
                 "total_trades": sum(r.total_trades for r in self.results),
                 "mean_pnl": sum(r.pnl_total for r in self.results) / len(self.results) if self.results else 0.0,
+                "total_pnl": sum(r.pnl_total for r in self.results),
+                "mean_sortino_ratio": float(np.mean([r.sortino_ratio for r in self.results])) if self.results else 0.0,
+                "mean_profit_factor": float(np.mean([r.profit_factor for r in self.results])) if self.results else 0.0,
+                "mean_recovery_factor": float(np.mean([r.recovery_factor for r in self.results])) if self.results else 0.0,
+                "mean_expectancy": float(np.mean([r.expectancy for r in self.results])) if self.results else 0.0,
+                "min_confidence": self.config.min_confidence,
+                "hold_period_bars": 1,
+                "trade_count": sum(r.total_trades for r in self.results),
+                "mean_return_per_trade": float(np.mean([r.avg_return for r in self.results])) if self.results else 0.0,
+                "cost_profile": asdict(self.cost_profile),
+                "equity_curve": self.equity_curve_compact,
             },
             "folds": [asdict(r) for r in self.results],
         }

@@ -13,6 +13,7 @@ Designed para ser chamado via: start /B python scripts/run_p0_2_backtest.py
 
 import logging
 import sys
+import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -38,6 +39,11 @@ DATASET_PATH = "data/training_dataset.csv"
 BACKTEST_OUTPUT_DIR = Path("data/backtest")
 REPORTS_OUTPUT_DIR = Path("data/backtest/reports")
 LOGS_OUTPUT_DIR = Path("data/logs")
+DEFAULT_DB_PATH = "data/db/trading.db"
+DEFAULT_SYMBOL = "WINJ26"
+DEFAULT_TIMEFRAME = "M5"
+DEFAULT_LOOKBACK_DAYS = 365
+DEFAULT_MIN_ROWS = 1000
 
 
 def _safe_ascii(text: str) -> str:
@@ -66,15 +72,62 @@ def setup_logging() -> None:
     logging.info("=" * 70)
 
 
+def _prepare_dataset() -> Dict[str, Any]:
+    """Executa preparação do dataset real via script dedicado."""
+    script_path = project_root / "scripts" / "prepare_p0_2_mt5_dataset.py"
+    command = [
+        sys.executable,
+        str(script_path),
+        "--db-path",
+        DEFAULT_DB_PATH,
+        "--symbol",
+        DEFAULT_SYMBOL,
+        "--timeframe",
+        DEFAULT_TIMEFRAME,
+        "--lookback-days",
+        str(DEFAULT_LOOKBACK_DAYS),
+        "--min-rows",
+        str(DEFAULT_MIN_ROWS),
+    ]
+    logging.warning("[AUDIT] Dataset nao confiavel - preparando dataset real automaticamente...")
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        cwd=str(project_root),
+    )
+    return {
+        "prepare_command": " ".join(command),
+        "prepare_exit_code": result.returncode,
+        "prepare_stdout": result.stdout.strip(),
+        "prepare_stderr": result.stderr.strip(),
+        "prepare_success": result.returncode == 0,
+    }
+
+
 def run_dataset_audit() -> Dict[str, Any]:
     """Audita o dataset e persiste resultado para rastreabilidade."""
     logging.info("[AUDIT] Validando dataset historico e proveniencia...")
     BACKTEST_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     result = audit_dataset(DATASET_PATH)
+    prepare_info = None
+    if not result.reliable:
+        prepare_info = _prepare_dataset()
+        if prepare_info.get("prepare_success"):
+            logging.info("[AUDIT] Dataset preparado. Reexecutando auditoria...")
+            result = audit_dataset(DATASET_PATH)
+        else:
+            logging.error(
+                "[AUDIT] Falha ao preparar dataset automaticamente (exit=%s)",
+                prepare_info.get("prepare_exit_code"),
+            )
     audit_file = BACKTEST_OUTPUT_DIR / "dataset_audit.json"
     with open(audit_file, "w", encoding="utf-8") as handle:
-        json.dump(result.to_dict(), handle, indent=2)
+        payload = result.to_dict()
+        if prepare_info is not None:
+            payload["auto_prepare"] = prepare_info
+        json.dump(payload, handle, indent=2)
 
     if result.reliable:
         logging.info(
@@ -96,6 +149,7 @@ def run_dataset_audit() -> Dict[str, Any]:
             "end": result.date_end_detected,
         },
         "metadata_path": result.metadata_path,
+        "auto_prepare": prepare_info,
     }
 
 
