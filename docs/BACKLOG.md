@@ -1,42 +1,144 @@
-# Backlog Canonico
+# BACKLOG
 
-## Escopo Atual
+Backlog canonico de pendencias de entrega.
 
-Este backlog consolida a atividade ativa: **P0-2 Etapa 4.1**.
+Este e o unico arquivo a ser consultado para priorizacao de trabalho pendente.
+Arquivos legados de backlog permanecem apenas como historico.
 
-## P0-2 Etapa 4.1 - Estabilizacao Gate 2
+## Regras de uso
 
-### Objetivo
+- A ordem abaixo e a ordem oficial de execucao.
+- Somente itens ainda pendentes aparecem aqui.
+- Cada item precisa resultar em codigo, testes e evidencia objetiva.
+- Itens documentais ou de suporte so entram se destravarem entrega tecnica.
 
-Estabilizar pipeline de backtest P0-2 e retestar Gate 2 com contrato confiavel.
+## P0 - Bloqueadores de entrega
 
-### Entregas Tecnicas
+### 1. P0-2 Gate 2 Retest com dados e risco confiaveis
 
-- Persistencia corrigida para `data/backtest/backtest_results.json` como arquivo.
-- Contrato de consistencia padronizado para `consistency_std` com compatibilidade legada.
-- Caminho de decisao unificado em `data/backtest/gate2_decision.json`.
-- Execucao deterministica com `random_seed` para reduzir flakiness.
-- Logging operacional seguro em ASCII para console Windows.
-- Fallback conservador preservado em erro/indefinido/em execucao.
+**Objetivo:** reexecutar a validacao de capital com base confiavel e criterio
+reprodutivel.
 
-### Criterios de Aceitacao
+**Motivo da prioridade:** hoje o Gate 2 continua em `FAIL`, entao o projeto
+segue preso em capital conservador.
 
-1. Suites P0-2 passam:
-   - `scripts/test_p0_2_backtest_validation.py`
-   - `scripts/test_p0_2_etapa2_reporting.py`
-   - `scripts/test_p0_2_etapa3_integration.py`
-2. `scripts/run_p0_2_backtest.py` gera os 3 artefatos obrigatorios.
-3. `scripts/check_p0_2_status.py` respeita contrato de capital conservador por default.
+**Entregar:**
 
-### Fora de Escopo
+- dataset/historico confiavel para reteste;
+- execucao completa do backtest sem dados sinteticos como base principal;
+- relatorio final de Gate 2 com decisao `PASS` ou `FAIL`;
+- evidencia de drawdown e consistencia dentro do contrato.
 
-- Otimizacao de estrategia para forcar PASS de metricas.
-- Mudancas em regras operacionais de runtime.
+**Pronto quando:**
 
-## Referencias Canonicas
+- `scripts/run_p0_2_backtest.py` gerar artefatos finais validos;
+- `scripts/check_p0_2_status.py` refletir a decisao final real;
+- drawdown e consistencia estiverem medidos de forma auditavel.
 
-- [ARQUITETURA_ALVO.md](ARQUITETURA_ALVO.md)
-- [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md)
-- [MODELAGEM_DE_DADOS.md](MODELAGEM_DE_DADOS.md)
-- [DIAGRAMAS.md](DIAGRAMAS.md)
-- [ADRS.md](ADRS.md)
+### 2. AC5.7 Integracao real de envio de ordens MT5
+
+**Objetivo:** conectar o executor de trades ao envio real de ordens via MT5.
+
+**Motivo da prioridade:** sem isso, a pipeline AC1-AC6 segue sem execucao real
+fim a fim.
+
+**Entregar:**
+
+- integracao do `TradeExecutor` com `ProcessadorBDI.enviar_ordem()`;
+- tratamento de falha, timeout e retorno de ordem;
+- persistencia correta de `signal_id -> trade_id`;
+- testes cobrindo sucesso, rejeicao e erro operacional.
+
+**Pronto quando:**
+
+- uma decisao `EXECUTE` gerar tentativa real de envio com rastreabilidade;
+- a falha operacional nao quebrar a sessao;
+- a execucao ficar auditavel no banco e nos logs.
+
+### 3. P1-CORE Etapa 4 de operacao
+
+**Objetivo:** concluir os bloqueios tecnicos restantes da trilha core.
+
+**Entregar:**
+
+- load testing `100+ ordens/min`;
+- memory profiling;
+- cleanup scheduler de ordens antigas;
+- evidencia de throughput e manutencao segura do banco.
+
+**Pronto quando:**
+
+- throughput, memoria e CPU tiverem resultado registrado;
+- limpeza automatizada estiver implementada e testada;
+- nao houver dependencia manual para manutencao basica do runtime.
+
+## P1 - Entregas de execucao e aprendizado
+
+### 4. AC5.8 Monitoramento em tempo real de execucao
+
+**Objetivo:** acompanhar ordens abertas, transicoes e risco em runtime.
+
+**Entregar:**
+
+- trade manager/position monitor em tempo real;
+- atualizacao de status de ordem e posicao;
+- reacao a erro, parcial, cancelamento e encerramento.
+
+### 5. AC5.9 Feedback de execucao para ML
+
+**Objetivo:** fechar o ciclo entre ordem executada e dado de aprendizado.
+
+**Entregar:**
+
+- outcome de execucao convertido em sinal rotulado;
+- persistencia pronta para reuso pelo loop ML;
+- testes de correlacao entre trade e signal.
+
+### 6. AC6.7 a AC6.9 Evolucao do loop de ML
+
+**Objetivo:** sair do feedback estatico para aprendizado operacional.
+
+**Entregar:**
+
+- treino real com XGBoost/LightGBM;
+- online learning controlado;
+- drift detection contra baseline.
+
+## P2 - Capacidade futura
+
+### 7. Trilha RL operacional
+
+**Objetivo:** preparar a trilha de reinforcement learning sem competir com os
+bloqueadores do core.
+
+**Entregar:**
+
+- ambiente Gym compativel;
+- episode callback por trade;
+- training loop;
+- save/load versionado;
+- scheduler de retrain;
+- rollback de modelo ruim;
+- metricas de recompensa e melhoria.
+
+### 8. Observabilidade e governanca tecnica
+
+**Objetivo:** reduzir manutencao manual e risco documental.
+
+**Entregar:**
+
+- `validate_documentation.py`;
+- `SYNC_MANIFEST.json`;
+- health-checks de CI/CD;
+- lint documental quando nao conflitar com artefatos historicos.
+
+## Fora do backlog ativo
+
+Itens historicos, checklists de ambiente, reunioes antigas, sprints fechadas e
+entradas ja entregues nao devem voltar para este arquivo.
+
+## Estado atual
+
+- Gate 2: `FAIL`, capital conservador.
+- Pipeline P0-2: estabilizado tecnicamente.
+- Proxima entrega recomendada: `P0-2 Gate 2 Retest com dados e risco confiaveis`.
