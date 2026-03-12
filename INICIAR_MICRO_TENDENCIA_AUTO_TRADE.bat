@@ -184,13 +184,13 @@ python scripts/check_p0_2_status.py
 set GATE2_STATUS=!ERRORLEVEL!
 
 if !GATE2_STATUS! equ 0 (
-    echo   [GATE2] ✓ GATE 2 PASSED - Escalando para R$ 100k
+    echo   [GATE2] [OK] GATE 2 PASSED - Escalando para R$ 100k
     set CAPITAL_SCALE=100000
 ) else if !GATE2_STATUS! equ 1 (
-    echo   [GATE2] ✗ GATE 2 FAILED - Mantendo R$ 50k
+    echo   [GATE2] [FAIL] GATE 2 FAILED - Mantendo R$ 50k
     set CAPITAL_SCALE=50000
 ) else if !GATE2_STATUS! equ 2 (
-    echo   [GATE2] ⏳ P0-2 Ainda rodando em background - Continuando normal
+    echo   [GATE2] [WAIT] P0-2 Ainda rodando em background - Continuando normal
     set CAPITAL_SCALE=50000
 ) else (
     echo   [GATE2] ? Status indefinido - Continuando com capital padrao
@@ -202,15 +202,15 @@ REM ============================================================
 REM NOTA: P0-1 REST API é iniciada automaticamente no launcher
 REM       (transparente - sem mudança na rotina)
 REM ============================================================
-echo   [API] P0-1 REST API será iniciado automaticamente...
+echo   [API] P0-1 REST API sera iniciado automaticamente...
 echo.
 
 REM Launch agent with ML v1.2.3 + Risk framework + P0-1 API auto-startup
 echo   [AGENT] Iniciando Operador Quantico v1.2.3 com P0-1 API...
-echo   ✅ ML Classifier: v1.2.3 (14/14 tests, 94% coverage)
-echo   ✅ Risk Framework: 3 validation gates
-echo   ✅ Capital Scale: R$ !CAPITAL_SCALE! (via GATE 2)
-echo   ✅ WebSocket: Sprint 1 (incoming 27/02)
+echo   [OK] ML Classifier: v1.2.3 (14/14 tests, 94% coverage)
+echo   [OK] Risk Framework: 3 validation gates
+echo   [OK] Capital Scale: R$ !CAPITAL_SCALE! (via GATE 2)
+echo   [OK] WebSocket: Sprint 1 (incoming 27/02)
 echo.
 
 python scripts/launch_agent_with_ml_v1_2_3.py !MODE! --account 1000346516 --ml-version 1.2.3 --capital !CAPITAL_SCALE!
@@ -242,24 +242,24 @@ echo   OPERADOR QUANTICO - VERSAO v1.2.3 (26/02/2026)
 echo   ============================================================
 echo.
 echo   [ GATE 1 VALIDATION (06/03/2026) ]
-echo     ✅ AC1 Code Review: APPROVED
-echo     ✅ AC1-AC6 Integration: 6/6 tests PASSED
-echo     ✅ Type Hints: 100%% coverage
-echo     ✅ Docstrings: 100%% in Portuguese
-echo     ✅ SOLID Principles: 5/5 atendidos
-echo     ✅ Production Ready: SIM
+echo     [OK] AC1 Code Review: APPROVED
+echo     [OK] AC1-AC6 Integration: 6/6 tests PASSED
+echo     [OK] Type Hints: 100%% coverage
+echo     [OK] Docstrings: 100%% in Portuguese
+echo     [OK] SOLID Principles: 5/5 atendidos
+echo     [OK] Production Ready: SIM
 echo.
 echo   [ INFRAESTRUTURA v1.2.0 - TASK-CRITICA-0 ]
-echo     ✅ ORM SQLAlchemy integrado
-echo     ✅ Data persistence layer completo
-echo     ✅ BDI analytics + reflection logging
+echo     [OK] ORM SQLAlchemy integrado
+echo     [OK] Data persistence layer completo
+echo     [OK] BDI analytics + reflection logging
 echo.
 echo   [ ML PIPELINE v1.2.3 - INTEGRATION-ML-001 ]
-echo     ✅ Dataset loading (load_and_label function)
-echo     ✅ 24 engineered features (volatility, momentum, patterns)
-echo     ✅ Automatic labeling (54.9%% BUY / 45.1%% SKIP balanced)
-echo     ✅ Feature persistence (feature_names.json + statistics.json)
-echo     ✅ 14/14 tests PASSING ^| 94%% code coverage
+echo     [OK] Dataset loading (load_and_label function)
+echo     [OK] 24 engineered features (volatility, momentum, patterns)
+echo     [OK] Automatic labeling (54.9%% BUY / 45.1%% SKIP balanced)
+echo     [OK] Feature persistence (feature_names.json + statistics.json)
+echo     [OK] 14/14 tests PASSING ^| 94%% code coverage
 echo.
 echo   [ OPERACIONAL ]
 echo     - BDI Detection, SMC Confluence (M1/M5 validation)

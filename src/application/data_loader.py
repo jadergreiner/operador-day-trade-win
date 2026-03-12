@@ -70,7 +70,22 @@ def load_and_label(
         raise FileNotFoundError(f"Dataset não encontrado: {results_path}")
 
     if results_path.endswith('.json'):
-        df = pd.read_json(results_path)
+        # Use json.load to handle nested structures safely
+        with open(results_path, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+
+        if isinstance(raw, list):
+            df = pd.DataFrame(raw)
+        elif isinstance(raw, dict):
+            if isinstance(raw.get("folds"), list):
+                df = pd.DataFrame(raw["folds"])
+            elif isinstance(raw.get("results"), list):
+                df = pd.DataFrame(raw["results"])
+            else:
+                # Fallback: wrap dict as single-row dataframe
+                df = pd.DataFrame([raw])
+        else:
+            raise ValueError("Formato JSON nao suportado para dataset ML")
     elif results_path.endswith('.csv'):
         df = pd.read_csv(results_path)
     else:
@@ -177,10 +192,15 @@ def load_and_label(
 
     print(f"[AC-6] Persistindo feature names...")
 
+    # Resolve output directory
+    output_dir = Path(output_path).resolve() if output_path else Path("data").resolve()
+    if output_dir.suffix:
+        output_dir = output_dir.parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     # AC-6: Save feature names
     feature_names_dict = {'features': feature_cols}
-    feature_names_path = Path('data/feature_names.json')
-    feature_names_path.parent.mkdir(parents=True, exist_ok=True)
+    feature_names_path = output_dir / "feature_names.json"
 
     with open(feature_names_path, 'w') as f:
         json.dump(feature_names_dict, f, indent=2)
@@ -193,8 +213,7 @@ def load_and_label(
         'std': df[feature_cols].std().to_dict(),
         'skewness': df[feature_cols].skew().to_dict(),
     }
-    stats_path = Path('data/statistics.json')
-    stats_path.parent.mkdir(parents=True, exist_ok=True)
+    stats_path = output_dir / "statistics.json"
     with open(stats_path, 'w') as f:
         json.dump(statistics, f, indent=2)
     logger.info(f"✓ Estatísticas salvas em {stats_path}")
@@ -204,10 +223,12 @@ def load_and_label(
 
     # AC-7: Save to file (optional)
     if output_path:
-        output_path_obj = Path(output_path)
+        output_path_obj = Path(output_path).resolve()
+        if output_path_obj.is_dir() or not output_path_obj.suffix:
+            output_path_obj = output_path_obj / "training_dataset.csv"
         output_path_obj.parent.mkdir(parents=True, exist_ok=True)
-        output_df.to_csv(output_path, index=False)
-        logger.info(f"✓ Dataset salvo em {output_path}")
+        output_df.to_csv(output_path_obj, index=False)
+        logger.info(f"✓ Dataset salvo em {output_path_obj}")
 
     # Performance check
     elapsed_ms = (time.perf_counter() - start_time) * 1000

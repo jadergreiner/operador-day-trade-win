@@ -18,7 +18,7 @@ Uso:
     python launch_agent_with_ml_v1_2_3.py --simulate
     python launch_agent_with_ml_v1_2_3.py --account 456789 --ml-version 1.2.3
 
-Status: ✅ PRODUÇÃO
+Status: PRODUCAO
 """
 
 import sys
@@ -107,7 +107,7 @@ def start_api_server_subprocess():
     try:
         api_script = root_dir / "scripts" / "start_api_server.py"
 
-        print("  🚀 Iniciando servidor P0-1 API em background...")
+        print("  [START] Iniciando servidor P0-1 API em background...")
 
         # Inicia API em subprocess
         _api_process = subprocess.Popen(
@@ -118,13 +118,13 @@ def start_api_server_subprocess():
         )
 
         # Aguarda API iniciar (timeout 5 segundos)
-        print("  ⏳ Aguardando API carregar (timeout=5s)...")
+        print("  [WAIT] Aguardando API carregar (timeout=5s)...")
         for i in range(5):
             time.sleep(1)
             if _api_process.poll() is not None:
                 # Processo terminou unexpectedly
                 stdout, stderr = _api_process.communicate()
-                print(f"  ❌ API falhou ao iniciar")
+                print("  [ERRO] API falhou ao iniciar")
                 if stderr:
                     print(f"     Erro: {stderr[:200]}")
                 return None
@@ -134,19 +134,19 @@ def start_api_server_subprocess():
             from src.infrastructure.clients.order_api_client import OrderAPIClient
             test_client = OrderAPIClient(timeout=2, max_retries=1)
             if test_client.health_check():
-                print(f"  ✅ API Server iniciado com sucesso (PID={_api_process.pid})")
+                print(f"  [OK] API Server iniciado com sucesso (PID={_api_process.pid})")
 
                 # Registra cleanup automático
                 atexit.register(_cleanup_api_process)
 
                 return _api_process
         except Exception as e:
-            print(f"  ⚠️  API não respondendo: {e}")
+            print(f"  [WARN] API nao respondendo: {e}")
 
         return None
 
     except Exception as e:
-        print(f"  ❌ Erro ao iniciar API subprocess: {e}")
+        print(f"  [ERRO] Erro ao iniciar API subprocess: {e}")
         return None
 
 
@@ -158,15 +158,15 @@ def _cleanup_api_process():
 
     if _api_process and _api_process.poll() is None:
         try:
-            print("\n  🛑 Encerrando servidor API...")
+            print("\n  [STOP] Encerrando servidor API...")
             _api_process.terminate()
             try:
                 _api_process.wait(timeout=3)
             except subprocess.TimeoutExpired:
                 _api_process.kill()
-            print("  ✅ API Server finalizado")
+            print("  [OK] API Server finalizado")
         except Exception as e:
-            print(f"  ⚠️  Erro ao finalizar API: {e}")
+            print(f"  [WARN] Erro ao finalizar API: {e}")
 
 
 def load_ml_features():
@@ -188,7 +188,7 @@ def load_ml_features():
         return None
 
     try:
-        print("\n  🤖 LOADING ML FEATURES (v1.2.3 - INTEGRATION-ML-001)")
+        print("\n  [ML] LOADING ML FEATURES (v1.2.3 - INTEGRATION-ML-001)")
         print("  " + "=" * 60)
 
         # Paths
@@ -198,16 +198,16 @@ def load_ml_features():
 
         # Validations
         if not backtest_results.exists():
-            print(f"  ⚠️  backtest_results.json nao encontrado em {backtest_results}")
+            print(f"  [WARN] backtest_results.json nao encontrado em {backtest_results}")
             print(f"     Pulando ML data load...")
             return None
 
         # Load data
-        print(f"  📂 Carregando dados de: {backtest_results}")
+        print(f"  [LOAD] Carregando dados de: {backtest_results}")
         df = load_and_label(str(backtest_results), str(ml_output_dir))
 
         if df is None or len(df) == 0:
-            print(f"  ⚠️  Dataset vazio ou nao carregado")
+            print("  [WARN] Dataset vazio ou nao carregado")
             return None
 
         # Get feature names
@@ -228,12 +228,12 @@ def load_ml_features():
                 statistics = json.load(f)
 
         # Summary
-        print(f"  ✅ Dataset carregado: {len(df)} samples")
-        print(f"  ✅ Features: {len(df.columns)} colunas")
+        print(f"  [OK] Dataset carregado: {len(df)} samples")
+        print(f"  [OK] Features: {len(df.columns)} colunas")
         if feature_names:
-            print(f"  ✅ Feature names: 24 nomes persisted")
+            print("  [OK] Feature names: 24 nomes persisted")
         if statistics:
-            print(f"  ✅ Statistics: quantidades calculadas")
+            print("  [OK] Statistics: quantidades calculadas")
 
         # Label distribution
         if 'label' in df.columns:
@@ -241,7 +241,7 @@ def load_ml_features():
             skip_count = (df['label'] == 'SKIP').sum()
             buy_pct = 100 * buy_count / len(df)
             skip_pct = 100 * skip_count / len(df)
-            print(f"  ✅ Label distribution: BUY={buy_pct:.1f}% | SKIP={skip_pct:.1f}%")
+            print(f"  [OK] Label distribution: BUY={buy_pct:.1f}% | SKIP={skip_pct:.1f}%")
 
         print("  " + "=" * 60)
 
@@ -253,7 +253,7 @@ def load_ml_features():
         }
 
     except Exception as e:
-        print(f"  ❌ Erro ao carregar ML features: {e}")
+        print(f"  [ERRO] Erro ao carregar ML features: {e}")
         import traceback
         traceback.print_exc()
         return None
@@ -270,23 +270,23 @@ def inject_ml_into_environment(ml_data):
         return
 
     try:
-        print("\n  💉 INJECTING ML FEATURES INTO AGENT ENVIRONMENT")
+        print("\n  [INJECT] INJECTING ML FEATURES INTO AGENT ENVIRONMENT")
         print("  " + "=" * 60)
 
         # Set global variables
         if hasattr(agente_module, 'ML_FEATURES'):
             agente_module.ML_FEATURES = ml_data
-            print(f"  ✅ ML_FEATURES.dataframe: {len(ml_data['dataframe'])} rows")
+            print(f"  [OK] ML_FEATURES.dataframe: {len(ml_data['dataframe'])} rows")
 
         if hasattr(agente_module, 'ML_FEATURE_NAMES'):
             agente_module.ML_FEATURE_NAMES = ml_data['feature_names']
             if ml_data['feature_names']:
-                print(f"  ✅ ML_FEATURE_NAMES: {len(ml_data['feature_names'])} features")
+                print(f"  [OK] ML_FEATURE_NAMES: {len(ml_data['feature_names'])} features")
 
         if hasattr(agente_module, 'ML_STATISTICS'):
             agente_module.ML_STATISTICS = ml_data['statistics']
             if ml_data['statistics']:
-                print(f"  ✅ ML_STATISTICS: quantidades carregadas")
+                print("  [OK] ML_STATISTICS: quantidades carregadas")
 
         # Also set in sys.modules for easy access
         sys.modules['ML_DATA'] = type(sys)('ML_DATA')
@@ -295,11 +295,11 @@ def inject_ml_into_environment(ml_data):
         sys.modules['ML_DATA'].statistics = ml_data['statistics']
         sys.modules['ML_DATA'].count = ml_data['count']
 
-        print("  ✅ ML data injected into agent environment")
+        print("  [OK] ML data injected into agent environment")
         print("  " + "=" * 60)
 
     except Exception as e:
-        print(f"  ⚠️  Erro ao injetar ML data: {e}")
+        print(f"  [WARN] Erro ao injetar ML data: {e}")
 
 
 def setup_integrations():
@@ -309,7 +309,7 @@ def setup_integrations():
     Returns:
         dict: Status das integrações
     """
-    print("\n\n  🔗 SETUP INTEGRAÇÕES: Terminal Isolation + S2-6 + ML v1.2.3")
+    print("\n\n  [SETUP] INTEGRACOES: Terminal Isolation + S2-6 + ML v1.2.3")
     print("  " + "=" * 60)
 
     status = {
@@ -322,7 +322,7 @@ def setup_integrations():
 
     # ⚡ FIRST: Initialize Terminal Isolation Enforcer (HARD STOP MODE)
     if ENFORCER_AVAILABLE:
-        print("\n  🔐 TERMINAL ISOLATION ENFORCEMENT (HARD STOP MODE)")
+        print("\n  [SECURITY] TERMINAL ISOLATION ENFORCEMENT (HARD STOP MODE)")
         print("  " + "=" * 60)
         try:
             from config.settings import get_config
@@ -331,30 +331,30 @@ def setup_integrations():
             config = get_config()
 
             if not config.mt5_terminal_path:
-                print(f"  ⚠️  MT5_TERMINAL_PATH não configurado em .env")
+                print("  [WARN] MT5_TERMINAL_PATH nao configurado em .env")
                 print(f"     Adicione a linha (exemplo):")
                 print(f"     MT5_TERMINAL_PATH=C:\\Program Files\\Clear Investimentos MT5 Terminal\\terminal64.exe")
-                print(f"  ℹ️  Terminal isolation: DESATIVADO (você configura quando quiser)")
+                print("  [INFO] Terminal isolation: DESATIVADO (voce configura quando quiser)")
             else:
                 # Initializa enforcer com HARD_STOP mode
                 enforcer = initialize_enforcer(config.mt5_terminal_path)
-                print(f"  ✅ Enforcer inicializado: {config.mt5_terminal_path}")
+                print(f"  [OK] Enforcer inicializado: {config.mt5_terminal_path}")
 
                 # Valida imediatamente (BLOQUEIO ATIVO)
                 try:
                     enforcer.validate_before_operation("launcher:startup")
                     isolation_status = enforcer.get_isolation_status()
-                    print(f"  ✅ Terminal isolado: {isolation_status['is_isolated']}")
-                    print(f"  ✅ PID(s) CLEAR: {isolation_status['clear_pids']}")
-                    print(f"  ✅ Terminais perigosos: {isolation_status['dangerous_terminals_detected'] or 'Nenhum'}")
+                    print(f"  [OK] Terminal isolado: {isolation_status['is_isolated']}")
+                    print(f"  [OK] PID(s) CLEAR: {isolation_status['clear_pids']}")
+                    print(f"  [OK] Terminais perigosos: {isolation_status['dangerous_terminals_detected'] or 'Nenhum'}")
                     status['terminal_isolation'] = True
                 except TerminalIsolationViolation as e:
                     # HARD STOP: Falha imediata se isolamento viola
-                    print(f"  ❌ FALHA CRÍTICA: {e}")
+                    print(f"  [ERRO] FALHA CRITICA: {e}")
                     print("  " + "=" * 60)
                     sys.exit(1)
         except Exception as e:
-            print(f"  ⚠️  Erro no setup de terminal isolation: {e}")
+            print(f"  [WARN] Erro no setup de terminal isolation: {e}")
             # Continue anyway - enforcer é opcional
 
         print("  " + "=" * 60)
@@ -364,12 +364,12 @@ def setup_integrations():
         if AGENT_AVAILABLE and hasattr(s2_6_module, 'initialize_s2_6_adapter'):
             api_url = os.getenv("S2_6_API_URL", "http://localhost:8000")
             adapter = s2_6_module.initialize_s2_6_adapter(api_url)
-            print(f"  ✅ S2-6 Analytics: {'ONLINE' if adapter else 'FALLBACK'}")
+            print(f"  [OK] S2-6 Analytics: {'ONLINE' if adapter else 'FALLBACK'}")
             status['s2_6'] = True
         else:
-            print(f"  ⚠️  S2-6 module nao disponivel")
+            print("  [WARN] S2-6 module nao disponivel")
     except Exception as e:
-        print(f"  ⚠️  S2-6 setup error: {e}")
+        print(f"  [WARN] S2-6 setup error: {e}")
 
     # ML v1.2.3 setup
     try:
@@ -377,22 +377,22 @@ def setup_integrations():
         if ml_data:
             inject_ml_into_environment(ml_data)
             status['ml'] = True
-            print(f"\n  ✅ ML v1.2.3 Integrado")
+            print("\n  [OK] ML v1.2.3 Integrado")
         else:
-            print(f"\n  ⚠️  ML v1.2.3 Nao disponivel (continuaremos sem)")
+            print("\n  [WARN] ML v1.2.3 Nao disponivel (continuaremos sem)")
     except Exception as e:
-        print(f"\n  ⚠️  ML setup error: {e}")
+        print(f"\n  [WARN] ML setup error: {e}")
 
     # P0-1 REST API setup
     try:
         result = inject_p0_1_proxy()
         status['p0_1_api'] = result
         if result:
-            print(f"\n  ✅ P0-1 REST API Integrado")
+            print("\n  [OK] P0-1 REST API Integrado")
         else:
-            print(f"\n  ℹ️  P0-1 não configurado (usando MT5 direto)")
+            print("\n  [INFO] P0-1 nao configurado (usando MT5 direto)")
     except Exception as e:
-        print(f"\n  ⚠️  P0-1 setup error: {e}")
+        print(f"\n  [WARN] P0-1 setup error: {e}")
 
     print("\n  " + "=" * 60)
     print(f"  Sistema pronto: S2-6={status['s2_6']} | ML={status['ml']} | P0-1={status['p0_1_api']} | Agent={status['agent']}")
@@ -412,16 +412,16 @@ def setup_p0_1_api():
         MT5AdapterProxy ou None se falha
     """
     if not P0_1_AVAILABLE:
-        print(f"  ⚠️  P0-1 API não disponível - usando MT5 direto")
+        print("  [WARN] P0-1 API nao disponivel - usando MT5 direto")
         return None
 
     try:
-        print(f"\n  🌐 P0-1 REST API INTEGRATION")
+        print("\n  [API] P0-1 REST API INTEGRATION")
         print("  " + "=" * 60)
 
         # API config
         api_url = os.getenv("P0_1_API_URL", "http://localhost:8888")
-        print(f"  📍 API URL: {api_url}")
+        print(f"  [INFO] API URL: {api_url}")
 
         # Create API client
         api_client = OrderAPIClient(api_url=api_url, timeout=5, max_retries=3)
@@ -429,16 +429,16 @@ def setup_p0_1_api():
         # Health check
         is_healthy = api_client.health_check()
         if not is_healthy:
-            print(f"  ⚠️  API não respondendo. Será usado fallback (MT5 direto)")
+            print("  [WARN] API nao respondendo. Sera usado fallback (MT5 direto)")
             return None
 
-        print(f"  ✅ API Health: OK")
+        print("  [OK] API Health: OK")
         print("  " + "=" * 60)
 
         return api_client
 
     except Exception as e:
-        print(f"  ⚠️  Erro ao setup P0-1 API: {e}")
+        print(f"  [WARN] Erro ao setup P0-1 API: {e}")
         return None
 
 
@@ -454,17 +454,17 @@ def inject_p0_1_proxy():
                                  → POST /api/v1/orders
     """
     if not AGENT_AVAILABLE or not P0_1_AVAILABLE:
-        print(f"  ⚠️  Nao consegue injetar P0-1 proxy (deps unavailable)")
+        print("  [WARN] Nao consegue injetar P0-1 proxy (deps unavailable)")
         return False
 
     try:
-        print(f"\n  🔌 INJETANDO P0-1 PROXY NO AGENTE")
+        print("\n  [INJECT] INJETANDO P0-1 PROXY NO AGENTE")
         print("  " + "=" * 60)
 
         # Get API client
         api_client = setup_p0_1_api()
         if not api_client:
-            print(f"  ℹ️  API não disponível - usando MT5 direto")
+            print("  [INFO] API nao disponivel - usando MT5 direto")
             return False
 
         # Procura por MT5Adapter (pode estar em diferentes módulos)
@@ -494,7 +494,7 @@ def inject_p0_1_proxy():
                             fallback_to_mt5=True
                         )
                     except Exception as e:
-                        print(f"  ⚠️  Falha ao criar proxy, usando MT5 direto: {e}")
+                        print(f"  [WARN] Falha ao criar proxy, usando MT5 direto: {e}")
                         return original_send_order(self, order)
 
                 # Usa proxy para enviar
@@ -503,16 +503,16 @@ def inject_p0_1_proxy():
             # Monkey-patch: substitui método na classe
             mt5_adapter_class.send_order = patched_send_order
 
-            print(f"  ✅ P0-1 Proxy injetado em MT5Adapter.send_order")
+            print("  [OK] P0-1 Proxy injetado em MT5Adapter.send_order")
             print(f"     Todas as chamadas mt5.send_order() usarão API REST com fallback MT5")
             print("  " + "=" * 60)
             return True
         else:
-            print(f"  ⚠️  MT5Adapter nao encontrado no agente ou sys.modules")
+            print("  [WARN] MT5Adapter nao encontrado no agente ou sys.modules")
             return False
 
     except Exception as e:
-        print(f"  ⚠️  Erro ao injetar proxy: {e}")
+        print(f"  [WARN] Erro ao injetar proxy: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -523,7 +523,7 @@ def main():
 
     print("\n")
     print("  " + "=" * 60)
-    print("  🚀 AGENTE MICRO TENDÊNCIA v1.2.3")
+    print("  AGENTE MICRO TENDENCIA v1.2.3")
     print("  " + "=" * 60)
     print(f"  Release: INTEGRATION-ML-001 Phase 3 (25/02/2026)")
     print(f"  Status: 14/14 tests PASSING | 94% coverage")
@@ -531,7 +531,7 @@ def main():
     print("  " + "=" * 60)
 
     # Inicia servidor API em background (automatic startup)
-    print("\n  💻 STARTUP AUTOMÁTICO")
+    print("\n  STARTUP AUTOMATICO")
     print("  " + "=" * 60)
     api_process = start_api_server_subprocess()
     print("  " + "=" * 60)
@@ -541,17 +541,17 @@ def main():
 
     # Executa agente
     if not AGENT_AVAILABLE:
-        print("\n  ❌ AGENT module nao disponivel")
+        print("\n  [ERRO] AGENT module nao disponivel")
         sys.exit(1)
 
     try:
-        print(f"\n  🎯 Iniciando agente com integrações ativas...\n")
+        print("\n  [RUN] Iniciando agente com integracoes ativas...\n")
         agente_module.main()
     except KeyboardInterrupt:
-        print("\n\n  🛑 Agente interrompido pelo usuário")
+        print("\n\n  [STOP] Agente interrompido pelo usuario")
         sys.exit(0)
     except Exception as e:
-        print(f"\n  ❌ Erro no agente: {e}")
+        print(f"\n  [ERRO] Erro no agente: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)

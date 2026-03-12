@@ -196,10 +196,18 @@ class MT5Executor:
         """Envia diretamente ao MT5 (direct library call)."""
         try:
             import MetaTrader5 as mt5
+            import os
 
-            # Garantir conexão
-            if not mt5.initialize():
-                raise MT5ExecutionError("MT5 initialize failed")
+            # Garantir conexão no terminal correto (se configurado)
+            terminal_path = os.getenv("MT5_TERMINAL_PATH")
+            if terminal_path:
+                if not os.path.isfile(terminal_path):
+                    raise MT5ExecutionError(f"MT5_TERMINAL_PATH inválido: {terminal_path}")
+                if not mt5.initialize(path=terminal_path):
+                    raise MT5ExecutionError(f"MT5 initialize failed: {mt5.last_error()}")
+            else:
+                if not mt5.initialize():
+                    raise MT5ExecutionError("MT5 initialize failed")
 
             # Obter symbol info
             symbol = self._resolve_symbol(order.symbol)

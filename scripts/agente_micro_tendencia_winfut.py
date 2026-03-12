@@ -4760,10 +4760,10 @@ def main():
                 print(f"       • Terminal: {config.mt5_terminal_path}")
                 print(f"       • Login: {config.mt5_login}")
                 print(f"     \n     Por favor:")
-                print(f"       1. Feche todos outros terminais MT5 (FBS, Zero, etc)")
-                print(f"       2. Abra APENAS o terminal CLEAR")
+                print(f"       1. Confirme o MT5 correto (CLEAR) aberto e logado")
+                print(f"       2. Verifique MT5_TERMINAL_PATH no .env")
                 print(f"       3. Reconecte com Ctrl+C e reinicie o script")
-                print(f"     \n     🛑 Abortando ciclo — sistema aguardando terminal CLEAR")
+                print(f"     \n     [STOP] Abortando ciclo — aguardando terminal CLEAR")
                 mt5.disconnect()
                 time.sleep(5)
                 continue

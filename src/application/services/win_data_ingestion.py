@@ -274,18 +274,45 @@ def ingest_from_mt5(
             errors=[f"MetaTrader5 indisponível: {exc}"],
         )
 
-    if not mt5.initialize():
-        return IngestionStats(
-            source="mt5",
-            timeframe=timeframe,
-            start_date=start_dt.date().isoformat(),
-            end_date=end_dt.date().isoformat(),
-            symbols_processed=0,
-            rows_loaded=0,
-            rows_inserted=0,
-            rows_skipped_existing=0,
-            errors=[f"mt5.initialize falhou: {mt5.last_error()}"],
-        )
+    terminal_path = os.environ.get("MT5_TERMINAL_PATH")
+    if terminal_path:
+        if not os.path.isfile(terminal_path):
+            return IngestionStats(
+                source="mt5",
+                timeframe=timeframe,
+                start_date=start_dt.date().isoformat(),
+                end_date=end_dt.date().isoformat(),
+                symbols_processed=0,
+                rows_loaded=0,
+                rows_inserted=0,
+                rows_skipped_existing=0,
+                errors=[f"MT5_TERMINAL_PATH invalido: {terminal_path}"],
+            )
+        if not mt5.initialize(path=terminal_path):
+            return IngestionStats(
+                source="mt5",
+                timeframe=timeframe,
+                start_date=start_dt.date().isoformat(),
+                end_date=end_dt.date().isoformat(),
+                symbols_processed=0,
+                rows_loaded=0,
+                rows_inserted=0,
+                rows_skipped_existing=0,
+                errors=[f"mt5.initialize falhou: {mt5.last_error()}"],
+            )
+    else:
+        if not mt5.initialize():
+            return IngestionStats(
+                source="mt5",
+                timeframe=timeframe,
+                start_date=start_dt.date().isoformat(),
+                end_date=end_dt.date().isoformat(),
+                symbols_processed=0,
+                rows_loaded=0,
+                rows_inserted=0,
+                rows_skipped_existing=0,
+                errors=[f"mt5.initialize falhou: {mt5.last_error()}"],
+            )
 
     login, password, server = _load_mt5_credentials()
     if login and password and server:
@@ -391,4 +418,3 @@ def ingest_win_history_auto(
         end_dt=end_dt,
         timeframe=timeframe,
     )
-

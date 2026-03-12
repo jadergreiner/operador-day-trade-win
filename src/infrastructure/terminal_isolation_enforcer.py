@@ -67,11 +67,12 @@ class TerminalIsolationEnforcer:
             expected_terminal_path: Caminho esperado do terminal Clear
             enforce_mode: Modo de enforcement (HARD_STOP = falha se viola)
         """
-        self.expected_terminal_path = expected_terminal_path.lower()
+        self.expected_terminal_path = os.path.normcase(os.path.abspath(expected_terminal_path))
         self.enforce_mode = enforce_mode
+        self._trading_halted = False
 
         # Validação básica
-        if "clear" not in self.expected_terminal_path.upper():
+        if "clear" not in self.expected_terminal_path.lower():
             raise ValueError(
                 f"Terminal path deve conter 'CLEAR', recebido: {expected_terminal_path}"
             )
@@ -113,17 +114,13 @@ class TerminalIsolationEnforcer:
             )
             self._fail(msg)
 
-        # 2. Procurar outros terminais MT5 PERIGOSOS
+        # 2. Não bloqueia outros terminais; apenas valida o terminal esperado
         dangerous_terminals = self._find_dangerous_terminals()
         if dangerous_terminals:
-            msg = (
-                f"❌ BLOQUEIO: Detectado terminal(is) PERIGOSO(s) rodando!\n"
-                f"   {dangerous_terminals}\n"
-                f"   Feche TODOS os outros terminais MT5 (FBS/XP/Zero/etc).\n"
-                f"   Operação VETADA: {operation_name}\n"
-                f"   Comando: Get-Process terminal64 | Stop-Process -Force"
+            logger.warning(
+                "Terminais adicionais detectados, mas ignorados pelo modo exclusivo: "
+                f"{dangerous_terminals}"
             )
-            self._fail(msg)
 
         # 3. Verificar que terminal Clear está rodando
         clear_pids = self._find_clear_terminal_pids()
@@ -151,17 +148,7 @@ class TerminalIsolationEnforcer:
         Raises:
             TerminalIsolationViolation: Se isolamento violado
         """
-        # 1. Procurar outros terminais
-        dangerous = self._find_dangerous_terminals()
-        if dangerous:
-            msg = (
-                f"❌ KILL SWITCH: Detectado terminal PERIGOSO durante execução!\n"
-                f"   {dangerous}\n"
-                f"   Sistema PARANDO imediatamente para proteger sua conta."
-            )
-            self._fail(msg)
-
-        # 2. Verificar que Clear ainda está rodando
+        # 1. Verificar que Clear ainda está rodando
         clear_pids = self._find_clear_terminal_pids()
         if not clear_pids:
             msg = (
@@ -169,6 +156,14 @@ class TerminalIsolationEnforcer:
                 f"   Sistema PARANDO. Reconecte e reinicie o agente."
             )
             self._fail(msg)
+
+        # 2. Outros terminais MT5 podem estar abertos; apenas loga
+        dangerous = self._find_dangerous_terminals()
+        if dangerous:
+            logger.warning(
+                "Terminais adicionais detectados (ignorados): "
+                f"{dangerous}"
+            )
 
         return True
 
@@ -185,7 +180,7 @@ class TerminalIsolationEnforcer:
         dangerous = self._find_dangerous_terminals()
 
         return {
-            "is_isolated": not dangerous and bool(clear_pids),
+            "is_isolated": bool(clear_pids) and not self._trading_halted,
             "clear_terminal_running": bool(clear_pids),
             "clear_pids": clear_pids,
             "dangerous_terminals_detected": dangerous,
@@ -204,21 +199,33 @@ class TerminalIsolationEnforcer:
         dangerous_found = []
 
         try:
-            for proc in psutil.process_iter(["pid", "name", "exe"]):
+            for proc in psutil.process_iter(["pid", "name", "exe", "cmdline"]):
                 try:
-                    exe = proc.info.get("exe", "").lower()
+                    exe_raw = proc.info.get("exe") or ""
+                    exe = os.path.normcase(exe_raw) if exe_raw else ""
+                    cmdline = proc.info.get("cmdline") or []
+                    cmdline_joined = " ".join(cmdline).lower() if cmdline else ""
 
                     # Skip se é nosso terminal Clear esperado
                     if exe == self.expected_terminal_path:
                         continue
 
-                    # Procurar por padrões perigosos
+                    # Procurar por quaisquer terminais MT5 que NÃO sejam o esperado
                     if "terminal64.exe" in proc.info.get("name", "").lower():
-                        # É um terminal MT5, mas qual broker?
+                        # Se cmdline aponta para o terminal esperado, ignora
+                        if cmdline_joined and self.expected_terminal_path.lower() in cmdline_joined:
+                            continue
 
+                        if exe and exe != self.expected_terminal_path:
+                            dangerous_found.append(
+                                f"UNEXPECTED_MT5 (PID:{proc.pid}, exe:{exe})"
+                            )
+                            continue
+
+                        # É o terminal esperado, mas ainda valida padrões perigosos por segurança
                         for broker, patterns in self.DANGEROUS_PATTERNS.items():
                             for pattern in patterns:
-                                if pattern in exe.lower():
+                                if exe and pattern in exe.lower():
                                     dangerous_found.append(
                                         f"{broker.upper()} (PID:{proc.pid}, exe:{exe})"
                                     )
@@ -239,18 +246,19 @@ class TerminalIsolationEnforcer:
         clear_pids = []
 
         try:
-            for proc in psutil.process_iter(["pid", "name", "exe"]):
+            for proc in psutil.process_iter(["pid", "name", "exe", "cmdline"]):
                 try:
-                    exe = proc.info.get("exe", "").lower()
+                    exe_raw = proc.info.get("exe") or ""
+                    exe = os.path.normcase(exe_raw) if exe_raw else ""
+                    cmdline = proc.info.get("cmdline") or []
+                    cmdline_joined = " ".join(cmdline).lower() if cmdline else ""
 
-                    # Procurar por qualquer terminal64.exe from Clear
-                    if (
-                        exe == self.expected_terminal_path or
-                        (
-                            "terminal64.exe" in proc.info.get("name", "").lower() and
-                            "clear" in exe
-                        )
-                    ):
+                    # Aceita apenas o terminal com o PATH esperado
+                    if exe and exe == self.expected_terminal_path:
+                        clear_pids.append(proc.pid)
+                        continue
+
+                    if cmdline_joined and self.expected_terminal_path.lower() in cmdline_joined:
                         clear_pids.append(proc.pid)
                 except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                     pass

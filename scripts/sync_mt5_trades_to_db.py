@@ -66,8 +66,15 @@ def _parse_args() -> argparse.Namespace:
 def _connect_mt5() -> tuple[bool, str]:
     cfg = get_config()
 
-    if not mt5.initialize():
-        return False, f"Falha no initialize: {mt5.last_error()}"
+    terminal_path = cfg.mt5_terminal_path
+    if terminal_path:
+        if not Path(terminal_path).is_file():
+            return False, f"MT5_TERMINAL_PATH invalido: {terminal_path}"
+        if not mt5.initialize(path=terminal_path):
+            return False, f"Falha no initialize: {mt5.last_error()}"
+    else:
+        if not mt5.initialize():
+            return False, f"Falha no initialize: {mt5.last_error()}"
 
     ok = mt5.login(login=cfg.mt5_login, password=cfg.mt5_password, server=cfg.mt5_server)
     if not ok:

@@ -6,7 +6,7 @@ AGENTE MICRO TENDÊNCIA + S2-6 ANALYTICS INTEGRADO
 Wrapper que injeta S2-6 Analytics no agente de micro tendências sem modificar
 o código original. Funciona como drop-in replacement.
 
-Status: ✅ PRODUÇÃO
+Status: PRODUCAO
 Sincronização: ↔ Monitor Operador v2.0 (real-time)
 Commits: Integração Phase 6 - S2-6 Analytics
 """
@@ -70,7 +70,7 @@ try:
             return {"status": "offline", "mode": "fallback"}
 
 except ImportError:
-    print("  ⚠️  S2-6 Analytics Adapter não encontrado. Modo fallback ativo.")
+    print("  [WARN] S2-6 Analytics Adapter nao encontrado. Modo fallback ativo.")
     ADAPTER_AVAILABLE = False
 
     # Fallback: criar dummy adapter
@@ -123,7 +123,7 @@ class MicroTradingManagerS2_6(OriginalMicroTradingManager):
         super().__init__(mt5, symbol)
         self.analytics_adapter = analytics_adapter or AnalyticsAdapter()
         self.trades_with_s2_6 = {}  # {ticket: TradeWithS2_6}
-        self._log(f"🔗 S2-6 Analytics: {'ATIVO' if ADAPTER_AVAILABLE else 'FALLBACK'}")
+        self._log(f"[S2-6] Analytics: {'ATIVO' if ADAPTER_AVAILABLE else 'FALLBACK'}")
 
     def _log(self, msg):
         """Helper para logging."""
@@ -161,10 +161,10 @@ class MicroTradingManagerS2_6(OriginalMicroTradingManager):
                             intervention_id=intervention_id,
                             logged_at=datetime.now().isoformat()
                         )
-                        self._log(f"✅ Entrada logada em S2-6: {intervention_id[:8]}... "
+                        self._log(f"[OK] Entrada logada em S2-6: {intervention_id[:8]}... "
                                  f"(Ticket: {ticket}, {opportunity.direction})")
             except Exception as e:
-                self._log(f"⚠️  Erro ao logar em S2-6: {str(e)[:40]}... (ignorado)")
+                self._log(f"[WARN] Erro ao logar em S2-6: {str(e)[:40]}... (ignorado)")
 
         return ticket
 
@@ -204,11 +204,11 @@ class MicroTradingManagerS2_6(OriginalMicroTradingManager):
                         p_and_l=float(unrealized_pnl)
                     )
                     tracked.result_updated = True
-                    self._log(f"📊 Resultado atualizado: {result} {unrealized_pnl:+.0f}pts "
+                    self._log(f"[INFO] Resultado atualizado: {result} {unrealized_pnl:+.0f}pts "
                              f"({tracked.intervention_id[:8]}...)")
 
             except Exception as e:
-                self._log(f"⚠️  Erro ao atualizar S2-6 (ticket {ticket}): {str(e)[:40]}...")
+                self._log(f"[WARN] Erro ao atualizar S2-6 (ticket {ticket}): {str(e)[:40]}...")
 
         # ─ 3) Executa fechamento (chama original) ─
         for ticket, trade, reason in trades_to_close:
@@ -275,11 +275,11 @@ def initialize_s2_6_adapter(api_url: str = "http://localhost:8000") -> Analytics
 
         # Verifica se stats é None ou não tem status
         if stats and isinstance(stats, dict) and stats.get("status") == "online":
-            print(f"  ✅ S2-6 Analytics CONECTADO ({api_url})")
+            print(f"  [OK] S2-6 Analytics CONECTADO ({api_url})")
         else:
-            print(f"  ⚠️  S2-6 Analytics OFFLINE ({api_url}) - Modo fallback ativo")
+            print(f"  [WARN] S2-6 Analytics OFFLINE ({api_url}) - Modo fallback ativo")
     except Exception as e:
-        print(f"  ⚠️  S2-6 Analytics indisponível ({api_url})")
+        print(f"  [WARN] S2-6 Analytics indisponivel ({api_url})")
         print(f"     Erro: {str(e)[:60]}...")
         print(f"     Operando em modo fallback (sem logging em S2-6)")
 
@@ -325,11 +325,11 @@ def integrate_s2_6_into_main():
 
 if __name__ == "__main__":
     # ─ Para testes rápidos ─
-    print("\n  🔗 AGENTE MICRO TENDÊNCIA + S2-6 ANALYTICS")
+    print("\n  [AGENT] MICRO TENDENCIA + S2-6 ANALYTICS")
     print("  =" * 60)
-    print("\n  ✅ Módulo carregado com sucesso")
-    print(f"  📌 MicroTradingManagerS2_6: Pronto para integração")
-    print(f"  📌 S2-6 AnalyticsAdapter: {'DISPONÍVEL' if ADAPTER_AVAILABLE else 'FALLBACK'}")
+    print("\n  [OK] Modulo carregado com sucesso")
+    print("  [INFO] MicroTradingManagerS2_6: Pronto para integracao")
+    print(f"  [INFO] S2-6 AnalyticsAdapter: {'DISPONIVEL' if ADAPTER_AVAILABLE else 'FALLBACK'}")
     print("\n  Uso: from agente_micro_tendencia_s2_6_integrated import MicroTradingManagerS2_6")
     print("  Ou: python agente_micro_tendencia_winfut.py --auto-trade [com patch]")
     print("\n")

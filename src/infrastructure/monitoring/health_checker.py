@@ -13,6 +13,7 @@ except ImportError:
     psutil = None
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 # Configuração de Logs
 logging.basicConfig(
@@ -27,7 +28,38 @@ class HealthChecker:
     def __init__(self, workspace_root=None):
         self.workspace_root = workspace_root or str(Path(__file__).parent.parent.parent.parent)
         self.db_path = os.path.join(self.workspace_root, "data", "db", "trading.db")
-        self.status_entregas_path = os.path.join(self.workspace_root, "docs", "STATUS_ENTREGAS.md")
+        self.status_entregas_path = self._resolve_status_entregas_path()
+
+    def _resolve_status_entregas_path(self) -> Optional[str]:
+        """
+        Resolve caminho do STATUS_ENTREGAS.md considerando a nova estrutura de docs.
+
+        Ordem:
+        1) ENV STATUS_ENTREGAS_PATH (override)
+        2) docs/STATUS_ENTREGAS.md
+        3) docs/legacy/STATUS_ENTREGAS.md
+        4) Busca recursiva em docs/**/STATUS_ENTREGAS.md
+        """
+        override = os.getenv("STATUS_ENTREGAS_PATH")
+        if override and os.path.exists(override):
+            logger.info(f"STATUS_ENTREGAS.md override: {override}")
+            return override
+
+        candidates = [
+            os.path.join(self.workspace_root, "docs", "STATUS_ENTREGAS.md"),
+            os.path.join(self.workspace_root, "docs", "legacy", "STATUS_ENTREGAS.md"),
+        ]
+        for path in candidates:
+            if os.path.exists(path):
+                return path
+
+        docs_root = os.path.join(self.workspace_root, "docs")
+        if os.path.isdir(docs_root):
+            for root, _, files in os.walk(docs_root):
+                if "STATUS_ENTREGAS.md" in files:
+                    return os.path.join(root, "STATUS_ENTREGAS.md")
+
+        return None
 
     def check_governance_sync(self):
         """
@@ -35,8 +67,8 @@ class HealthChecker:
         Criterio: Presença da tag [SYNC] e status != ⏳ no STATUS_ENTREGAS.md
         """
         logger.info("🔍 Verificando Gate de Governança...")
-        if not os.path.exists(self.status_entregas_path):
-            logger.error(f"❌ Erro: STATUS_ENTREGAS.md não encontrado em {self.status_entregas_path}!")
+        if not self.status_entregas_path or not os.path.exists(self.status_entregas_path):
+            logger.error("❌ Erro: STATUS_ENTREGAS.md não encontrado na estrutura de docs!")
             return False, "Documento de status ausente"
 
         with open(self.status_entregas_path, 'r', encoding='utf-8') as f:
