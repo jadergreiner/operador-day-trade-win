@@ -483,165 +483,80 @@ ls -la outputs/ && echo "✅ Outputs OK"
 
 ---
 
-## 📋 CONSOLIDAÇÃO DE DOCUMENTAÇÃO (03/03/2026) - LOTE 1 & 2
+## � Status Consolidação (Evergreen)
 
-### Lote 1 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P19)
+**Histórico Completo:** Consultar `docs/BACKLOG_UNIFICADO.md` (P19-P49)
+- ✅ 440+ arquivos consolidados
+- ✅ 100% scripts em `scripts/`
+- ✅ 100% outputs em `outputs/`  
+- ✅ 100% .bat em `BAT/`
+- ✅ Padrão de pasta = PRODUCTION-READY
 
-**Origem:** 5 arquivos analisados, tarefas consolidadas em BACKLOG
+**Próximas Consolidações (Padrão P50+):**
 
-#### P19 - Arquivos Consolidados:
-
-1. **BOARD_SIGN_OFF_GO_LIVE_27FEV.txt**
-   - Status: ✅ CONSOLIDADO em P19-1
-   - Conteúdo: Aprovação board (6/6 unânime), 31/31 testes
-   - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-1
-
-2. **CHECKLIST_EXECUTIVA_US004.md**
-   - Status: ✅ CONSOLIDADO em P19-2
-   - Conteúdo: US-004 alertas (11 arquivos código)
-   - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-2
-
-3. **CHECKLIST_INTEGRACAO_PHASE6.md**
-   - Status: ✅ CONSOLIDADO em P19-3
-   - Conteúdo: 4 integration tasks (BDI, WebSocket, Email)
-   - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-3
-
-4. **check_episode_ids.py** (Script)
-   - Status: ✅ MOVIDO para `scripts/check_episode_ids.py`
-   - Conteúdo: Validação episode IDs em SQLite
-   - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-4
-
-5. **check_interseção.py** (Script)
-   - Status: ✅ MOVIDO para `scripts/check_interseção.py`
-   - Conteúdo: Validação reward ↔ episode intersection
-   - Localização: `docs/BACKLOG_UNIFICADO.md` → P19-4
-
-### Lote 2 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P20)
-
-**Origem:** 5 arquivos analisados, tarefas consolidadas em BACKLOG
-
-#### P20 - Arquivos Consolidados:
-
-1. **cleanup_dados_automatico.py** (Script)
-   - Status: ✅ MOVIDO para `scripts/cleanup_dados_automatico.py`
-   - Conteúdo: Cleanup automático de dados antigos (Task Scheduler/Cron)
-   - Localização: `docs/BACKLOG_UNIFICADO.md` → P20-1
-
-2. **COMECE_DEPLOYMENT_AGORA.md**
-   - Status: ✅ CONSOLIDADO em P20-2
-   - Conteúdo: Instruções Stage 1 deployment (23/02, ~2 horas)
-   - Localização: `docs/BACKLOG_UNIFICADO.md` → P20-2
-
-3. **COMO_SISTEMA_VAI_APRENDER.md**
-   - Status: ✅ CONSOLIDADO em P20-3
-   - Conteúdo: Estratégia ML learning em 3 fases (histórica, online, feedback)
-   - Localização: `docs/BACKLOG_UNIFICADO.md` → P20-3
-
-4. **COMUNICADO_FINAL_GO_LIVE.txt**
-   - Status: ✅ CONSOLIDADO em P20-4
-   - Conteúdo: Comunicado GO-LIVE (31/31 testes, 6/6 board)
-   - Localização: `docs/BACKLOG_UNIFICADO.md` → P20-4
-
-5. **COMECE_AQUI.md**
-   - Status: ✅ CONSOLIDADO em P20-5
-   - Conteúdo: Guia navegação para 5 personas (CFO, Eng Sr, ML, Operador, Stakeholder)
-   - Localização: `docs/BACKLOG_UNIFICADO.md` → P20-5
-
-#### Processo de Consolidação
-- **Fase 1:** Análise de 10 arquivos (5 em P19 + 5 em P20)
-- **Fase 2:** Scripts Python movidos para `scripts/` (3 scripts: check_*.py, cleanup_*)
-- **Fase 3:** Tarefas+conteúdo incorporado em BACKLOG_UNIFICADO.md
-- **Fase 4:** Arquivos origem deletados após consolidação
-
-#### Instrução para Próximas Consolidações
-
-Padrão estabelecido 03/03/2026 para TODAS consolidações futuras:
-
-1. **Scripts Python:**
-   - Localização OBRIGATÓRIA: `scripts/` (usar `git mv`)
-   - Nunca na raiz do projeto
-   - Documentar em seção P(N) do BACKLOG
-
-2. **Outputs/Resultados:**
-   - Localização OBRIGATÓRIA: `outputs/` (usar `git mv`)
-   - JSON, CSV, TXT, MD (resultados) → `outputs/`
-   - Nunca na raiz do projeto
-   - Documentar em seção P(N) do BACKLOG
-
-3. **Arquivo de Teste (conftest.py):**
-   - Localização OBRIGATÓRIA: `scripts/conftest.py` (pytest fixtures)
-   - Pytest configuration deve estar em scripts/ folder
-   - Nunca deixar na raiz do projeto
-
-4. **Batch Files (.bat):**
-   - Localização OBRIGATÓRIA: `BAT/` folder
-   - Scripts Windows automation → BAT/
-   - Nunca deixar na raiz do projeto
-
-4.1 **Wrapper Files (.bat - Subdivisão):**
-   - Tipo Especial de Batch File para ambiente setup
-   - Exemplos: eng_sr_wrapper.bat, ml_expert_wrapper.bat, git_monitor_wrapper.bat
-   - Localização: `BAT/` folder (mesmo padrão de .bat regular)
-   - Propósito: Set PYTHONPATH, validar imports, chamar scripts de execução
-   - Padrão de Nomeação: {PERSONA/FUNCAO}_wrapper.bat
-   - Integração: Frequentemente chamados por master launchers (ex: INICIAR_PHASE6.bat)
-   - Guideline: Wrapper files devem ser pequenos (<50 LOC), sem lógica de negócio
-   - Função Principal: Environment setup + next-step guidance para usuário
-
-5. **Output/Resultado Files (.json, .csv, .txt, .md gerados):**
-   - Localização OBRIGATÓRIA: `outputs/` (usar `git mv`)
-   - Tipos: Backtest results, analytics, análises, relatórios gerados
-   - Nomeação: descritivo_tipo_timestamp (ex: backtest_results_20260303.json)
-   - Convenção: Se arquivo é RESULTADO/SAÍDA de script → `outputs/`
-   - Exemplo CORRETO:
-     - Análise executada: `scripts/analisa_risco.py` → resultado: `outputs/analise_risco_20260303.md`
-     - Backtest rodado: `scripts/backtest_optimizer.py` → arquivo: `outputs/backtest_results.json`
-   - Nunca salvar outputs na raiz do projeto
-   - Documentar em seção P(N) do BACKLOG se consolidar
-
-6. **Documentação de Entrega/Consolidação (.md consolidados):**
-   - Localização OBRIGATÓRIA: Consolidar em `docs/BACKLOG_UNIFICADO.md`
-   - Tipo: Relatórios de entrega, auditorias, consolidações de tarefas
-   - Padrão: Criar seção P(N) em BACKLOG com conteúdo resumido
-   - Fonte de Verdade: BACKLOG_UNIFICADO.md é o SOUTH (Single Source of Truth)
-   - Nunca deixar documentos de consolidação na raiz (ex: ENTREGA_*.md)
-   - Após consolidação:
-     1. Ler arquivo origem completamente
-     2. Consolidar em nova seção P(N) do BACKLOG
-     3. Estruturar com Status, Conteúdo, Métricas, Padrão
-     4. Deletar arquivo origem com `git rm`
-     5. Commitar: `docs: Consolidacao PN - nome_arquivo consolidado em BACKLOG`
-   - Exemplo Consolidação (P38):
-     - Origem: ENTREGA_CONSOLIDACAO_BACKLOG.md (373 LOC) + ENTREGA_FINAL_AUDITORIA_S2_5_27FEV.md (262 LOC)
-     - Resultado: P38-1 (consolidação backlog) + P38-2 (auditoria final) em BACKLOG
-     - Deletados: Ambos os arquivos orfãos removidos após consolidação
-     - Commit: `docs: Consolidacao P38 - ENTREGA_CONSOLIDACAO_BACKLOG e ENTREGA_FINAL_AUDITORIA consolidadas`
-
-7. **Consolidação Final (Workflow Geral):**
-   - Criar seção P(N) em BACKLOG_UNIFICADO.md com TODO conteúdo relevante
-   - Deletar arquivo origem após confirmar consolidação
-   - Commitar com mensagem: `docs: Consolidacao PN - tasks de X arquivos movidos para BACKLOG`
-   - Validar: Arquivo origem não deve existir na raiz após commit
+1. Novo script Python → `scripts/` (usar `git mv`)
+2. Output/resultado → `outputs/` (usar `git mv`)
+3. Arquivo .bat → `BAT/` (usar `git mv`)
+4. Documentar em BACKLOG_UNIFICADO.md seção P(N)
+5. Commit: `docs: Consolidacao PN - descrição`
 
 ---
 
-### Lote 3 - Tarefas Consolidadas em docs/BACKLOG_UNIFICADO.md (Seção P21 - 03/03/2026)
+## 📚 Referência Histórica (Consolidação 03/03-15/03/2026)
 
-**Origem:** 5 arquivos pendentes analisados, consolidação final
+**TODOS os detalhes de consolidação (P19-P49) estão documentados em:**
+- [`docs/BACKLOG_UNIFICADO.md`](../docs/BACKLOG_UNIFICADO.md)
 
-#### P21 - Arquivos Consolidados:
+**Resumo compacto:**
+- ✅ 440+ arquivos consolidados (P43-P49)
+- ✅ 200+ scripts em `scripts/`
+- ✅ 100+ outputs em `outputs/`
+- ✅ 30+ .bat em `BAT/`
+- ✅ 100+ docs consolidados em BACKLOG
 
-1. **conftest.py** (Script Python de Testes)
-   - Status: ✅ MOVIDO para `scripts/conftest.py`
-   - Conteúdo: Pytest fixture framework (372 LOC)
-   - Framework fixtures: database, RabbitMQ, Redis, FastAPI, ML
-   - Localização: `scripts/conftest.py` (novo padrão fixture location)
+**Nunca recriar arquivos deletados** - Sempre verificar BACKLOG_UNIFICADO.md
+se precisar de informações sobre consolidações anteriores.
 
-2. **CONSOLIDACAO_PHASE5_CONCLUIDA.txt** (Documento)
-   - Status: ✅ CONSOLIDADO em P21-1
-   - Conteúdo: Consolidação Phase 5 (12 arquivos, 38 tarefas)
-   - 3 scripts movidos para scripts/, 9 docs consolidados
-   - Localização: `docs/BACKLOG_UNIFICADO.md` → P21-1
+---
+
+## 🤖 Agentes Customizados Disponíveis
+
+Use estes agentes especializados para tarefas específicas:
+
+### 1. `/agente-trading` — Implementador de Features de Trading
+**Especialidade:** Implementar funcionalidades de trading (ordens, risk validators, MT5)
+**Quando usar:** Código novo para ordem, risk management, MT5 integration
+**Exemplo:** `/agente-trading implementar circuit breaker para -5%`
+
+### 2. `/agente-ml` — Especialista em Modelos e Validação
+**Especialidade:** Treinar, validar e otimizar modelos ML (backtest, grid search)
+**Quando usar:** Feature engineering, XGBoost training, backtest validation
+**Exemplo:** `/agente-ml validar backtest com F1 >= 0.65`
+
+### 3. `/agente-auditoria` — Auditor de Operações
+**Especialidade:** Verificar, validar e auditar operações de trading
+**Quando usar:** Validar ordem execution, reconciliar trades, audit compliance
+**Exemplo:** `/agente-auditoria validar sincronizacao de ordens`
+
+### 4. `/agente-aprendizado` — Especialista em Aprendizado com Mercado
+**Especialidade:** Análise de performance, lições aprendidas, otimizações
+**Quando usar:** Post-trade analysis, performance metrics, feedback loops
+**Exemplo:** `/agente-aprendizado analisar performance diaria`
+
+### 5. `/agente-governanca` — Curador de Documentação
+**Especialidade:** Manter BACKLOG_UNIFICADO.md e documentação sincronizados
+**Quando usar:** Consolidar novos documentos, atualizar padrões, manter sync
+**Exemplo:** `/agente-governanca consolidar novo script em BACKLOG`
+
+---
+
+## 📝 Boas Práticas ao Usar Agentes
+
+- **Contexto Claro:** Sempre forneça contexto específico (quais arquivos, qual resultado esperado)
+- **Objetivos Mensáveis:** Defina acceptance criteria ou métricas esperadas
+- **Português:** Todos os agentes comunicam 100% em Português
+- **Commits Limpos:** Commits sem acentos (padrão do projeto)
+- **Validação:** Sempre validar output contra padrões (lint, type hints, tests)
 
 3. **CONSOLIDACAO_PHASE6_CONCLUIDA.txt** (Documento)
    - Status: ✅ CONSOLIDADO em P21-2
