@@ -10,18 +10,26 @@ Padrão:
 3. Tenta executar em MT5 (async)
 4. Marca EXECUTED ou FAILED (com retry)
 5. Notifica via broadcast (WebSocket)
+6. AC5.9: Persiste feedback de execução para ML
 
 Retry strategy:
 - 3 tentativas com backoff exponencial (1s, 2s, 4s)
 - Após 3 falhas, marca FAILED e avisa operador
+
+AC5.9 Integration:
+- Após execução bem-sucedida, process_trade_outcome() calcula PnL
+- Rotula sinal como GOOD/BAD para retraining online
+- Persistido em EXECUTION_FEEDBACK table para ML usar
 """
 
 import asyncio
 import logging
+import sqlite3
 from typing import Optional, Callable
 from datetime import datetime
 
 from src.application.order_queue_sqlite import OrderQueue, Order, OrderStatus
+from src.trade_outcome_feedback import TradeOutcomeFeedbackDB
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +43,7 @@ class QueueProcessor:
         mt5_executor: Optional[Callable] = None,
         poll_interval_ms: float = 100,
         max_batch_size: int = 10,
+        db_path: str = "data/db/trading.db",
     ):
         """
         Args:
@@ -42,11 +51,13 @@ class QueueProcessor:
             mt5_executor: Função async para executar ordem em MT5
             poll_interval_ms: Intervalo de polling (default: 100ms)
             max_batch_size: Max ordens processadas por batch
+            db_path: Path para trading.db (para AC5.9 feedback)
         """
         self.queue = queue
         self.mt5_executor = mt5_executor or self._default_executor
         self.poll_interval_ms = poll_interval_ms / 1000  # Converter para segundos
         self.max_batch_size = max_batch_size
+        self.feedback_db = TradeOutcomeFeedbackDB(db_path)  # AC5.9 integration
         self.running = False
         self.task: Optional[asyncio.Task] = None
         self.stats = {
@@ -54,6 +65,7 @@ class QueueProcessor:
             "executed": 0,
             "failed": 0,
             "retried": 0,
+            "feedback_processed": 0,  # AC5.9 stat
         }
 
     async def start(self) -> None:
@@ -173,9 +185,63 @@ class QueueProcessor:
         }
 
     async def _notify_order_executed(self, order: Order, ticket: int) -> None:
-        """Notifica operador (via WebSocket, logging, etc)."""
+        """
+        Notifica operador e processa feedback para ML (AC5.9).
+
+        Fluxo AC5.9:
+        1. Obter trade_id da ordem executada
+        2. Chamar process_trade_outcome()
+        3. Rotular sinal como GOOD/BAD
+        4. Persistir para ML retraining
+        """
         logger.info(f"NOTIFICATION: Order {order.order_id} executed! "
                    f"Ticket={ticket} | Price={order.price}")
+
+        # AC5.9: Processar feedback de execução
+        try:
+            # Obter trade_id da ordem
+            conn = sqlite3.connect(self.queue.db_path, check_same_thread=False)
+            cursor = conn.execute(
+                "SELECT id, executed_price FROM order_queue WHERE order_id = ?",
+                (order.order_id,)
+            )
+            row = cursor.fetchone()
+            conn.close()
+
+            if row:
+                trade_id, executed_price = row
+
+                # Extrair informações da ordem para feedback
+                prediction_direction = (
+                    order.payload.get("direction", "UNKNOWN")
+                    if isinstance(order.payload, dict) else "UNKNOWN"
+                )
+                confidence = (
+                    order.payload.get("confidence", 0.5)
+                    if isinstance(order.payload, dict) else 0.5
+                )
+
+                # Chamar AC5.9 com preço atual ao open (será atualizado pelo position_monitor)
+                outcome = self.feedback_db.process_trade_outcome(
+                    trade_id=trade_id,
+                    executed_price=executed_price,
+                    current_price=executed_price,  # Preço atual no momento de execução
+                    prediction_direction=prediction_direction,
+                    confidence=confidence,
+                )
+
+                if outcome:
+                    self.stats["feedback_processed"] += 1
+                    logger.info(
+                        f"AC5.9 Feedback processed: trade_id={trade_id} "
+                        f"label={outcome.signal_label} "
+                        f"feedback_id={outcome.feedback_id}"
+                    )
+
+        except Exception as e:
+            logger.error(f"Error processing AC5.9 feedback for {order.order_id}: {e}")
+            # Não falha execução se feedback falhar
+
         # TODO: Broadcast via WebSocket se implementado
 
     async def _notify_order_failed(self, order: Order, error: str) -> None:

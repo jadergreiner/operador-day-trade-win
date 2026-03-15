@@ -150,13 +150,13 @@ fim a fim.
   - FeedbackValidator: classe principal com 5 metodos de validacao
   - FeedbackValidationResult: dataclass com resultado estruturado
   - FeedbackHealthReport: relatorio com status (HEALTHY/WARNING/CRITICAL)
-  
+
 - `tests/unit/test_ac5_9_feedback_validator.py`: Suite de 21 testes
   - 21/21 PASSING (100%)
   - Cobertura: Correlacao, tipos de outcome, consistencia PnL
   - Edge cases testados
   - Type hints: 100%, docstrings 100%, pytest --cov OK
-  
+
 - Codigo: 100% type hints, 100% portugues, docstrings completos
 - Validacao: mypy --strict OK (modulo importa sem erros)
 - Arquitetura: Validacoes multiplasou (correlacao, tipos, PnL)
@@ -179,13 +179,30 @@ fim a fim.
 
 #### 6. AC6.7 a AC6.9 Evolucao do loop de ML
 
+**Status:** INICIADO - AC6.7 Drift Detection implementado (15/03/2026)
+
+**AC6.7 - Drift Detector:** ✅ DONE (15/03/2026)
+
 **Objetivo:** sair do feedback estatico para aprendizado operacional.
 
 **Entregar:**
 
-- treino real com XGBoost/LightGBM;
-- online learning controlado;
-- drift detection contra baseline.
+- AC6.7: Detector de drift contra baseline (Z-score baseado); ✅ DONE
+  - Sliding window de ultimos N trades
+  - Calculo de metricas (win_rate, sharpe, F1)
+  - Deteccao de degradacao com alertas estruturados
+  - Relatorios JSON + Markdown
+  - 24 testes unitarios, 100% cobertura type hints
+  - Localizacao: `src/application/ac6_7_drift_detector.py`
+  - Commit: feat: Implementar AC6.7 Drift Detector com testes 24/24
+
+- AC6.8: Online learning controlado (PENDENTE)
+  - Treino real com XGBoost/LightGBM
+  - Ajuste de parametros durante operacao
+
+- AC6.9: Comparacao contra baseline e feedback ao sistema (PENDENTE)
+  - Historico de baseline e degradacao
+  - Rollback automatico se necessario
 
 ### P2 - Capacidade futura
 
@@ -214,10 +231,13 @@ fim a fim.
   - 7 classes de teste
   - Cobertura de funcionalidades: folder structure, type hints, localizacoes
 - Checks implementados:
-  1. folder_structure: Valida pastas obrigatorias (scripts, tests, src, docs, data, outputs, BAT)
-  2. python_files_location: Garante scripts em scripts/ (nao na raiz)
-  3. markdown_files_location: Valida .md em docs/ ou raiz permitida (README.md)
-  4. outputs_location: Garante outputs em outputs/
+  1. folder_structure: Valida pastas obrigatorias
+     (scripts, tests, src, docs, data, outputs, BAT)
+  2. python_files_location: Garante scripts em scripts/
+     (nao na raiz)
+  3. markdown_files_location: Valida .md em docs/ ou raiz
+     permitida (README.md)
+  4. outputs_location: Garantes outputs em outputs/
   5. type_hints: Scan basico de type hints em scripts
 - Saida: JSON estruturado com timestamp, status geral, recomendacoes
 - Execucao: `python scripts/health_check_ci_cd.py` gera relatorio em outputs/
