@@ -10,7 +10,6 @@
 - [Backlog — INICIAR_AGENTE_RL_5000.bat](#backlog--iniciar_agente_rl_5000bat)
 - [Backlog — INICIAR_AGENTE_RL_5000_FIXED.bat](#backlog--iniciar_agente_rl_5000_fixedbat)
 
-
 ## Escopo de Execucao (4 Agentes)
 
 O backlog existe para evoluir os seguintes executores:
@@ -155,14 +154,33 @@ fim a fim.
 
 #### 7. Observabilidade e governanca tecnica
 
+**Status:** ✅ DONE (15/03/2026)
+
 **Objetivo:** reduzir manutencao manual e risco documental.
 
 **Entregar:**
 
-- `validate_documentation.py`;
-- `SYNC_MANIFEST.json`;
+- `validate_documentation.py`; ✅
+- `SYNC_MANIFEST.json` (validacao); ✅
 - health-checks de CI/CD;
 - lint documental quando nao conflitar com artefatos historicos.
+
+**Implementacao Concluida:**
+
+- Arquivo: `scripts/validate_documentation.py` (515 LOC)
+- Testes: `tests/unit/test_validate_documentation.py` (24 testes, 24/24 PASS)
+- Cobertura: 82% (alvo >=80%)
+- Type hints: 100% (mypy --strict OK)
+- Funcionalidades:
+  - Validacao de markdown (MD013, MD001, MD022)
+  - Deteccao de referencias cruzadas
+  - Validacao de SYNC_MANIFEST
+  - Extraction de items por status
+  - Relatorio em JSON
+  - Encoding UTF-8 validation
+  - Aviso de acentos em commit messages
+- Commit: feat: Implementar validate_documentation.py (P2)
+    com 24/24 testes + 82% coverage
 
 ## Backlog — INICIAR_DIARIOS.bat
 
@@ -209,8 +227,10 @@ retorno auditavel (Gate 2 PASS).
 
 **Evidencias de Entrega:**
 
-- `src/trade_outcome_feedback.py`: Implementação completa (ExecutionOutcome dataclass + TradeOutcomeFeedbackDB)
-- `src/infrastructure/queue_processor.py`: Integração AC5.9 com callback em _notify_order_executed()
+- `src/trade_outcome_feedback.py`: Implementação completa
+  (ExecutionOutcome dataclass + TradeOutcomeFeedbackDB)
+- `src/infrastructure/queue_processor.py`: Integração AC5.9
+  com callback em _notify_order_executed()
 - `tests/test_ac5_9_final.py`: Suite de 10 testes (10/10 PASSING)
   - Testes de WIN/LOSS/BREAKEVEN classifications
   - Validação de confidence preservation
@@ -221,15 +241,20 @@ retorno auditavel (Gate 2 PASS).
   - Type hints validation
 - Código: 100% type hints, 100% português, docstrings completos
 - Validação: mypy --strict OK (sem erros em trade_outcome_feedback.py)
-- Arquitetura: EXECUTION_FEEDBACK table com UNIQUE(trade_id), FK para trades, CHECK constraints
+- Arquitetura: EXECUTION_FEEDBACK table com UNIQUE(trade_id),
+  FK para trades, CHECK constraints
 - Lógica: Trade outcome → GOOD/BAD label + WIN/LOSS/BREAKEVEN classification
 - Métodos principais:
-  - `process_trade_outcome(trade_id)` → ExecutionOutcome com feedback_id
+  - `process_trade_outcome(trade_id)` → ExecutionOutcome com
+    feedback_id
   - `_determine_outcome_type(pnl)` → WIN/LOSS/BREAKEVEN
-  - `_save_execution_feedback(...)` → Persistência com IntegrityError handling
+  - `_save_execution_feedback(...)` → Persistência com
+    IntegrityError handling
   - `get_feedback_stats()` → Agregação de estatísticas para ML
-- Agentes impactados: INICIAR_DIARIOS.bat + INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
-- Commit: feat: Implementar AC5.9 Feedback Execucao QueueProcessor com testes 10/10
+- Agentes impactados: INICIAR_DIARIOS.bat +
+  INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
+- Commit: feat: Implementar AC5.9 Feedback Execucao
+  QueueProcessor com testes 10/10
 
 ### P2 - Capacidade futura
 
@@ -314,4 +339,5 @@ entradas ja entregues nao devem voltar para este arquivo.
 - Gate 2: `PASS` (12/03/2026), capital escalavel.
 - Pipeline P0-2: concluido.
 - AC5.8: ✅ IMPLEMENTED (15/03/2026) - Monitoramento em tempo real
-- Proxima entrega recomendada: `AC6.7 a AC6.9 Evolucao do loop de ML` (P1 - Entregas sequenciais)
+- Proxima entrega recomendada: `AC6.7 a AC6.9 Evolucao do loop de
+  ML` (P1 - Entregas sequenciais)
