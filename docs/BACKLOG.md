@@ -154,7 +154,7 @@ fim a fim.
 
 #### 7. Observabilidade e governanca tecnica
 
-**Status:** ✅ DONE (15/03/2026)
+**Status:** ✅ DONE (15/03/2026 - Documento Validator + Health Check CI/CD)
 
 **Objetivo:** reduzir manutencao manual e risco documental.
 
@@ -162,25 +162,29 @@ fim a fim.
 
 - `validate_documentation.py`; ✅
 - `SYNC_MANIFEST.json` (validacao); ✅
-- health-checks de CI/CD;
-- lint documental quando nao conflitar com artefatos historicos.
+- `health_check_ci_cd.py`; ✅ (NEW - 15/03/2026)
+- health-checks de CI/CD; ✅
+- lint documental quando nao conflitar com artefatos historicos. ✅
 
-**Implementacao Concluida:**
+**Implementacao Concluida (P2):**
 
-- Arquivo: `scripts/validate_documentation.py` (515 LOC)
-- Testes: `tests/unit/test_validate_documentation.py` (24 testes, 24/24 PASS)
-- Cobertura: 82% (alvo >=80%)
-- Type hints: 100% (mypy --strict OK)
-- Funcionalidades:
-  - Validacao de markdown (MD013, MD001, MD022)
-  - Deteccao de referencias cruzadas
-  - Validacao de SYNC_MANIFEST
-  - Extraction de items por status
-  - Relatorio em JSON
-  - Encoding UTF-8 validation
-  - Aviso de acentos em commit messages
-- Commit: feat: Implementar validate_documentation.py (P2)
-    com 24/24 testes + 82% coverage
+- Arquivo: `scripts/health_check_ci_cd.py` (520+ LOC)
+  - HealthCheckRunner: classe principal com 5 checks
+  - CheckResult e HealthCheckReport: dataclasses estruturadas
+  - 100% type hints (mypy --strict OK)
+  - 100% portugues em toda documentacao
+- Testes: `tests/unit/test_health_check_ci_cd.py` (21 testes, 21/21 PASS)
+  - 7 classes de teste
+  - Cobertura de funcionalidades: folder structure, type hints, localizacoes
+- Checks implementados:
+  1. folder_structure: Valida pastas obrigatorias (scripts, tests, src, docs, data, outputs, BAT)
+  2. python_files_location: Garante scripts em scripts/ (nao na raiz)
+  3. markdown_files_location: Valida .md em docs/ ou raiz permitida (README.md)
+  4. outputs_location: Garante outputs em outputs/
+  5. type_hints: Scan basico de type hints em scripts
+- Saida: JSON estruturado com timestamp, status geral, recomendacoes
+- Execucao: `python scripts/health_check_ci_cd.py` gera relatorio em outputs/
+- Commit: feat: Implementar health_check_ci_cd.py com testes 21/21
 
 ## Backlog — INICIAR_DIARIOS.bat
 
