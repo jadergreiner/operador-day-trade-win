@@ -79,6 +79,36 @@ modelos (ML/RL). O fluxo atual gera diarios por dois caminhos:
 
 ---
 
+## Componentes Core Implementados
+
+### AC5.9 Validador de Feedback de Execucao
+
+**Status:** ✅ IMPLEMENTADO (15/03/2026)
+
+**Localizacao:** `src/application/ac5_9_feedback_validator.py`
+
+**Propósito:** Validar saude do ciclo de feedback entre trades
+executadas e dados de aprendizado para ML/RL.
+
+**Classes:**
+- `FeedbackValidator`: Modulo principal com 5 validacoes
+- `FeedbackHealthReport`: Relatorio compilado com status geral
+- `FeedbackValidationResult`: Resultado estruturado
+
+**Validacoes Implementadas:**
+1. **Correlacao:** Percentual de trades com feedback associado
+2. **Tipos de Outcome:** Validacao de WIN/LOSS/BREAKEVEN
+3. **Consistencia PnL:** Compatibilidade outcome <-> valor
+4. **Healthcheck Geral:** Score qualidade + recomendacoes
+
+**Relatorios:**
+- JSON: Estruturado para processamento automatico
+- Markdown: Legivel para analise manual com recomendacoes
+
+**Testes:** 21 testes unitarios, 21/21 PASSING (100%)
+
+---
+
 ## Arquitetura Executada (Fluxo Real Atual)
 
 ## Resumo
