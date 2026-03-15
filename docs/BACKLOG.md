@@ -193,11 +193,28 @@ retorno auditavel (Gate 2 PASS).
 
 **Objetivo:** fechar o ciclo entre ordem executada e dado de aprendizado.
 
+**Status:** ✅ DONE (03/03/2026)
+
 **Entregar:**
 
-- outcome de execucao convertido em sinal rotulado;
-- persistencia pronta para reuso pelo loop ML;
-- testes de correlacao entre trade e signal.
+- outcome de execucao convertido em sinal rotulado; ✅
+- persistencia pronta para reuso pelo loop ML; ✅
+- testes de correlacao entre trade e signal. ✅
+
+**Evidencias de Entrega:**
+
+- `src/trade_outcome_feedback.py`: Implementação completa (ExecutionOutcome dataclass + TradeOutcomeFeedbackDB)
+- `tests/test_trade_outcome_feedback.py`: Suite de 8 testes (8/8 PASSING em 1.54s)
+- Código: 100% type hints, 100% português, docstrings completos
+- Arquitetura: EXECUTION_FEEDBACK table com UNIQUE(trade_id), FK para trades, CHECK constraints
+- Lógica: Trade outcome → GOOD/BAD label + WIN/LOSS/BREAKEVEN classification
+- Métodos principais:
+  - `process_trade_outcome(trade_id)` → ExecutionOutcome com feedback_id
+  - `_determine_outcome_type(pnl)` → WIN/LOSS/BREAKEVEN
+  - `_save_execution_feedback(...)` → Persistência com IntegrityError handling
+  - `get_feedback_stats()` → Agregação de estatísticas para ML
+- Agentes impactados: INICIAR_DIARIOS.bat + INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
+- Commit: feat: Implementar AC5.9 Feedback Execucao ML com testes 8/8
 
 ### P2 - Capacidade futura
 
