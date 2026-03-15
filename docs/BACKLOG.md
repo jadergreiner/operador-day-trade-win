@@ -196,9 +196,14 @@ fim a fim.
   - Localizacao: `src/application/ac6_7_drift_detector.py`
   - Commit: feat: Implementar AC6.7 Drift Detector com testes 24/24
 
-- AC6.8: Online learning controlado (PENDENTE)
-  - Treino real com XGBoost/LightGBM
-  - Ajuste de parametros durante operacao
+- AC6.8: Online learning controlado (DONE - 15/03/2026) ✅
+  - Treino incremental com batch de dados ✅
+  - Validacao contra baseline com Z-score ✅
+  - Persistencia versionada (semantic versioning) ✅
+  - Rollback automatico por degradacao ✅
+  - 18 testes unitarios, 18/18 PASSING ✅
+  - Localizacao: `src/application/ac6_8_online_learning.py` ✅
+  - Commit: feat: Implementar AC6.8 Online Learning com testes 18/18
 
 - AC6.9: Comparacao contra baseline e feedback ao sistema (PENDENTE)
   - Historico de baseline e degradacao
