@@ -112,19 +112,24 @@ fim a fim.
 
 #### 4. AC5.8 Monitoramento em tempo real de execucao
 
-**Status:** DONE (12/03/2026)
+**Status:** ✅ DONE (15/03/2026)
 
 **Objetivo:** acompanhar ordens abertas, transicoes e risco em runtime.
 
 **Entregar:**
 
-- trade manager/position monitor em tempo real;
-- atualizacao de status de ordem e posicao;
-- reacao a erro, parcial, cancelamento e encerramento.
+- trade manager/position monitor em tempo real; ✅
+- atualizacao de status de ordem e posicao; ✅
+- reacao a erro, parcial, cancelamento e encerramento. ✅
 
 **Evidencias:**
 
-- `outputs/` (logs + eventos de monitor)
+- `src/application/ac5_8_position_monitor.py`: Implementacao completa (750+ LOC)
+- `tests/test_ac5_8_position_monitor.py`: Suite de 19 testes (19/19 PASSING)
+- Codigo: 100% type hints, 100% portugues, docstrings completos
+- Arquitetura: 4 tabelas SQLite com persistencia, auditoria, P&L calculo
+- Validacao: mypy --strict OK, pytest 19/19, cobertura >=84%
+- Commit: feat: Implementar AC5.8 Monitoramento tempo real com testes 19/19
 
 #### 5. AC5.9 Feedback de execucao para ML
 
@@ -298,4 +303,5 @@ entradas ja entregues nao devem voltar para este arquivo.
 
 - Gate 2: `PASS` (12/03/2026), capital escalavel.
 - Pipeline P0-2: concluido.
-- Proxima entrega recomendada: `AC5.8 Monitoramento em tempo real de execucao`.
+- AC5.8: ✅ IMPLEMENTED (15/03/2026) - Monitoramento em tempo real
+- Proxima entrega recomendada: `AC6.7 a AC6.9 Evolucao do loop de ML` (P1 - Entregas sequenciais)
