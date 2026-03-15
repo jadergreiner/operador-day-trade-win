@@ -198,19 +198,29 @@ retorno auditavel (Gate 2 PASS).
 
 **Objetivo:** fechar o ciclo entre ordem executada e dado de aprendizado.
 
-**Status:** ✅ DONE (03/03/2026)
+**Status:** ✅ DONE (15/03/2026 - Integração completa com QueueProcessor)
 
 **Entregar:**
 
 - outcome de execucao convertido em sinal rotulado; ✅
 - persistencia pronta para reuso pelo loop ML; ✅
 - testes de correlacao entre trade e signal. ✅
+- Integração no executor de ordens (QueueProcessor); ✅
 
 **Evidencias de Entrega:**
 
 - `src/trade_outcome_feedback.py`: Implementação completa (ExecutionOutcome dataclass + TradeOutcomeFeedbackDB)
-- `tests/test_trade_outcome_feedback.py`: Suite de 8 testes (8/8 PASSING em 1.54s)
+- `src/infrastructure/queue_processor.py`: Integração AC5.9 com callback em _notify_order_executed()
+- `tests/test_ac5_9_final.py`: Suite de 10 testes (10/10 PASSING)
+  - Testes de WIN/LOSS/BREAKEVEN classifications
+  - Validação de confidence preservation
+  - Timestamp ISO format validation
+  - Feedback ID uniqueness validation
+  - Direction (BUY/SELL) preservation
+  - ExecutionOutcome dataclass fields
+  - Type hints validation
 - Código: 100% type hints, 100% português, docstrings completos
+- Validação: mypy --strict OK (sem erros em trade_outcome_feedback.py)
 - Arquitetura: EXECUTION_FEEDBACK table com UNIQUE(trade_id), FK para trades, CHECK constraints
 - Lógica: Trade outcome → GOOD/BAD label + WIN/LOSS/BREAKEVEN classification
 - Métodos principais:
@@ -219,7 +229,7 @@ retorno auditavel (Gate 2 PASS).
   - `_save_execution_feedback(...)` → Persistência com IntegrityError handling
   - `get_feedback_stats()` → Agregação de estatísticas para ML
 - Agentes impactados: INICIAR_DIARIOS.bat + INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
-- Commit: feat: Implementar AC5.9 Feedback Execucao ML com testes 8/8
+- Commit: feat: Implementar AC5.9 Feedback Execucao QueueProcessor com testes 10/10
 
 ### P2 - Capacidade futura
 

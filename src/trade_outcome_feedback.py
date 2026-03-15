@@ -19,7 +19,7 @@ Tabelas SQLite:
 import sqlite3
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, asdict
 from pathlib import Path
 
@@ -250,6 +250,8 @@ class TradeOutcomeFeedbackDB:
             ))
             conn.commit()
             feedback_id = cursor.lastrowid
+            if feedback_id is None:
+                raise RuntimeError("Failed to insert execution feedback")
             return feedback_id
         except sqlite3.IntegrityError as e:
             logger.warning(f"Feedback já existe para trade {trade_id}: {e}")
@@ -259,7 +261,7 @@ class TradeOutcomeFeedbackDB:
                 (trade_id,)
             )
             row = cursor.fetchone()
-            return row["id"] if row else -1
+            return int(row["id"]) if row else -1
 
     def process_multiple_trades(
         self, trade_ids: List[int]
@@ -293,7 +295,7 @@ class TradeOutcomeFeedbackDB:
 
         return results
 
-    def get_feedback_stats(self) -> Dict[str, any]:
+    def get_feedback_stats(self) -> Dict[str, Any]:
         """
         Obter estatísticas de feedback persistido.
 
