@@ -381,12 +381,91 @@ fim a fim.
   - Code quality: Clean architecture, zero technical debt
 
 - Próximas fases (Etapa 4-7):
-  - Etapa 4: Closure (outcome + exit reason)
+  - Etapa 4: Closure (outcome + exit reason) ✅ DONE (16/03/2026)
   - Etapa 5: L1 Analysis (decision correctness)
   - Etapa 6: L2 Causal Analysis (market drift detection)
   - Etapa 7: Learning Rule Generation
 
 - Commit: feat: Implementar P1-LEARNING Etapa 3 (Monitoring) com testes 12/12
+
+#### 8.1 P1-LEARNING Etapa 4: Closure (outcome + exit reason)
+
+**Status:** ✅ DONE (16/03/2026)
+
+**Objetivo:** Registrar o resultado final de cada episodio causal com
+outcome (WIN/LOSS/BREAKEVEN), motivo de saida, P&L realizado e duracao.
+
+**Entregar:** ✅
+
+- EpisodeClosureEngine com persistencia SQLite; ✅
+- ClosureRecord dataclass JSON-serializable; ✅
+- Enums OutcomeType (3) e MotivoFechamento (6); ✅
+- Determinacao automatica de outcome por pnl_pct; ✅
+- Filtros por outcome e motivo em listar_fechamentos(); ✅
+- Estatisticas agregadas (win_rate, pnl_total, distribuicao motivos); ✅
+- Relatorios JSON + Markdown; ✅
+- Type hints 100% (mypy --strict OK, 0 erros no modulo); ✅
+- Testes 27/27 PASSING; ✅
+
+**Implementacao Completa:**
+
+- **Arquivo:** `src/application/p1_learning_closure.py` (400+ LOC)
+  - `OutcomeType`: Enum com WIN, LOSS, BREAKEVEN
+  - `MotivoFechamento`: Enum com 6 motivos
+    (TP_ATINGIDO, SL_ATINGIDO, FECHAMENTO_MANUAL, TIMEOUT,
+    CANCELADO, SISTEMA)
+  - `ClosureRecord`: Dataclass com 14 campos + para_dict()
+  - `EpisodeClosureEngine`: Motor principal com 8 metodos
+    - registrar_fechamento(): Registra e determina outcome auto
+    - obter_fechamento(): Busca por closure_id
+    - obter_fechamento_por_episode(): Busca por episode_id
+    - listar_fechamentos(): Lista com filtros opcionais
+    - calcular_estatisticas_fechamentos(): 11 metricas agregadas
+    - contar_fechamentos(): Contagem total
+    - gerar_relatorio_json(): Exporta JSON estruturado
+    - gerar_relatorio_markdown(): Relatorio Markdown legivel
+  - Tabela SQLite: `episode_closures` (14 campos + indices)
+  - Threshold de breakeven: +/- 0.05% de P&L
+  - 100% type hints (mypy --strict sem erros no modulo)
+  - 100% portugues (docstrings, variaveis, comentarios)
+
+- **Testes:** `tests/unit/test_p1_learning_etapa4_closure.py`
+  (450+ LOC, 27 testes)
+  - TestOutcomeType (3): Valores, contagem, compatibilidade str
+  - TestMotivoFechamento (2): Valores, contagem
+  - TestClosureRecord (3): WIN, para_dict, BREAKEVEN
+  - TestEpisodeClosureEngine (9):
+    - test_inicializar_engine
+    - test_registrar_fechamento_win
+    - test_registrar_fechamento_loss
+    - test_determinar_outcome_automatico_breakeven
+    - test_registrar_fechamento_com_market_conditions
+    - test_obter_fechamento_por_episode
+    - test_obter_fechamento_inexistente
+    - test_listar_fechamentos_sem_filtro
+    - test_listar_fechamentos_filtro_outcome
+  - TestEstatisticasFechamentos (4):
+    - test_estatisticas_sem_dados
+    - test_estatisticas_com_dados
+    - test_estatisticas_contem_campos_obrigatorios
+    - test_estatisticas_contagem_por_motivo
+  - TestRelatorios (4):
+    - test_gerar_relatorio_json_estrutura
+    - test_gerar_relatorio_json_com_dados
+    - test_gerar_relatorio_markdown
+    - test_gerar_relatorio_json_salva_arquivo
+  - TestIntegracaoCompleta (2):
+    - test_fluxo_completo_ciclo_fechamento (3 episodios)
+    - test_type_hints_100_porcento
+
+- **Validacao:**
+  - ✅ pytest: 27/27 PASSING (100%)
+  - ✅ mypy --strict: 0 erros no modulo
+  - ✅ Type hints: 100% compliant
+  - ✅ Codigo: 100% portugues
+  - ✅ Vinculo: episode_id liga Etapa 4 às Etapas 1-3
+
+- **Commit:** feat: Implementar P1-LEARNING Etapa 4 (Closure) com testes 27/27
 
 #### 8. P1-PROFIT_PROTECTION Protecao de Lucros em Tempo Real
 
