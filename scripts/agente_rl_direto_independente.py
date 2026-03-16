@@ -96,9 +96,9 @@ try:
     logger.info('[INIT] Importando módulos core...')
     
     from src.infrastructure.adapters.mt5_adapter import MT5Adapter
-    from src.application.services.novo_agente.agente_q_learning import AgenteQLearning
-    from src.application.services.novo_agente.pipeline_treinamento import PipelineRLTrainamento
-    from src.infrastructure.database.adapters.rl_repository import RLRepository
+    from src.application.services.novo_agente.agente_q_learning import AgenteQLearningMiniIndice
+    from src.application.services.novo_agente.pipeline_treinamento import PipelineTreinamentoRL
+    from src.infrastructure.repositories.rl_repository import SqliteRLRepository
     from src.application.profit_protection_engine import ProfitProtectionEngine
     
     logger.info('[OK] Módulos importados com sucesso')
@@ -128,13 +128,13 @@ def inicializar_componentes():
         
         # 2. RL Repository (com isolamento por session)
         logger.info('[INIT] Inicializando RL Repository...')
-        rl_repo = RLRepository()
+        rl_repo = SqliteRLRepository()
         
         logger.info('[OK] RL Repository pronto')
         
         # 3. Pipeline RL
         logger.info('[INIT] Inicializando Pipeline RL...')
-        pipeline = PipelineRLTrainamento(
+        pipeline = PipelineTreinamentoRL(
             limite_perda_reais=250.0,
             meta_lucro=100.0
         )
@@ -143,7 +143,7 @@ def inicializar_componentes():
         
         # 4. Agente QL
         logger.info('[INIT] Inicializando Agente Q-Learning...')
-        agente = AgenteQLearning(
+        agente = AgenteQLearningMiniIndice(
             num_features=15,
             num_actions=3
         )
