@@ -9,10 +9,10 @@ Cada agente tem:
   - Logs separados em outputs/agente_direto_*.log
   - Configuração própria via environment variables
   - Isolamento de posições/trades no banco de dados
-  
+
 Uso:
   python scripts/agente_rl_direto_independente.py [--mode dinamico|fixo]
-  
+
 Argumentos:
   --mode: define SL/TP como 'dinamico' (padrão) ou 'fixo'
 """
@@ -94,16 +94,16 @@ logger.info('')
 # ============================================================================
 try:
     logger.info('[INIT] Importando módulos core...')
-    
+
     from config.settings import TradingConfig
     from src.infrastructure.adapters.mt5_adapter import MT5Adapter
     from src.application.services.novo_agente.agente_q_learning import AgenteQLearningMiniIndice
     from src.application.services.novo_agente.pipeline_treinamento import PipelineTreinamentoRL
     from src.infrastructure.repositories.rl_repository import SqliteRLRepository
     from src.application.profit_protection_engine import ProfitProtectionEngine
-    
+
     logger.info('[OK] Módulos importados com sucesso')
-    
+
 except Exception as e:
     logger.error(f'[FATAL] Erro ao importar módulos: {e}', exc_info=True)
     sys.exit(1)
@@ -113,50 +113,51 @@ except Exception as e:
 # ============================================================================
 def inicializar_componentes():
     """Inicializa todos os componentes da aplicação."""
-    
+
     logger.info('[INIT] Inicializando componentes...')
-    
+
     try:
         # 0. Carregar configuração
         logger.info('[INIT] Carregando configuração TradingConfig...')
         config = TradingConfig()
-        
+
         # 1. MT5 Adapter
         logger.info('[INIT] Conectando ao MT5...')
         mt5_adapter = MT5Adapter(
             login=config.mt5_login,
             password=config.mt5_password,
             server=config.mt5_server,
+            terminal_exe_path=config.mt5_terminal_path,
         )
-        
-        if not mt5_adapter.inicializar():
+
+        if not mt5_adapter.connect():
             logger.error('[FATAL] Falha ao conectar ao MT5')
             return None
-            
+
         logger.info('[OK] MT5 conectado')
-        
+
         # 2. RL Repository (com isolamento por session)
         logger.info('[INIT] Inicializando RL Repository...')
         rl_repo = SqliteRLRepository()
-        
+
         logger.info('[OK] RL Repository pronto')
-        
+
         # 3. Pipeline RL
         logger.info('[INIT] Inicializando Pipeline RL...')
         pipeline = PipelineTreinamentoRL(
             limite_perda_reais=250.0,
             meta_lucro=100.0
         )
-        
+
         logger.info('[OK] Pipeline RL pronto')
-        
+
         # 4. Agente QL
         logger.info('[INIT] Inicializando Agente Q-Learning...')
         agente = AgenteQLearningMiniIndice(
             num_features=15,
             num_actions=3
         )
-        
+
         # Carregar modelo pré-treinado
         modelo_path = ROOT_DIR / 'data' / 'models' / 'novo_agente_rl' / 'modelo_final'
         if modelo_path.exists():
@@ -165,7 +166,7 @@ def inicializar_componentes():
             logger.info('[OK] Modelo carregado')
         else:
             logger.warning(f'[WARN] Modelo não encontrado em {modelo_path}')
-        
+
         # 5. Profit Protection Engine
         logger.info('[INIT] Inicializando Profit Protection Engine...')
         profit_protection = ProfitProtectionEngine(
@@ -176,12 +177,12 @@ def inicializar_componentes():
             reversao_threshold_pct=0.75,
             cooldown_seconds=5,
         )
-        
+
         logger.info('[OK] Profit Protection ativado')
-        
+
         logger.info('[OK] Todos os componentes inicializados com sucesso!')
         logger.info('')
-        
+
         return {
             'config': config,
             'mt5_adapter': mt5_adapter,
@@ -190,7 +191,7 @@ def inicializar_componentes():
             'agente': agente,
             'profit_protection': profit_protection,
         }
-        
+
     except Exception as e:
         logger.error(f'[FATAL] Erro ao inicializar componentes: {e}', exc_info=True)
         return None
@@ -200,17 +201,17 @@ def inicializar_componentes():
 # ============================================================================
 def main():
     """Loop principal do agente direto."""
-    
+
     # Inicializar componentes
     componentes = inicializar_componentes()
     if not componentes:
         logger.error('[FATAL] Falha na inicialização. Encerrando.')
         sys.exit(1)
-    
+
     config = componentes['config']
     mt5_adapter = componentes['mt5_adapter']
     profit_protection = componentes['profit_protection']
-    
+
     logger.info('=' * 80)
     logger.info('INICIANDO LOOP OPERACIONAL')
     logger.info('=' * 80)
@@ -219,54 +220,54 @@ def main():
     logger.info(f"Session: {AGENT_SESSION_ID}")
     logger.info('=' * 80)
     logger.info('')
-    
+
     ciclo = 0
     start_time = time.time()
-    
+
     try:
         while True:
             ciclo += 1
-            
+
             try:
                 logger.info(f'[CICLO {ciclo}] Iniciando iteração...')
                 logger.debug(f'[CICLO {ciclo}] Tempo decorrido: {time.time() - start_time:.1f}s')
-                
+
                 # 1. Proteção de lucros
                 logger.debug(f'[CICLO {ciclo}] Verificando proteção de lucros...')
-                
+
                 # 2. Monitorar posições
                 logger.debug(f'[CICLO {ciclo}] Monitorando posições abertas...')
                 posicoes = mt5_adapter.get_positions()
-                
+
                 if posicoes:
                     logger.info(f'[CICLO {ciclo}] Posição em aberto. Aguardando...')
                     time.sleep(30)
                 else:
                     logger.debug(f'[CICLO {ciclo}] Nenhuma posição aberta')
                     time.sleep(5)
-                
+
             except KeyboardInterrupt:
                 logger.info('[HALT] Interrupção do usuário (Ctrl+C)')
                 break
-                
+
             except Exception as e:
                 logger.error(f'[CICLO {ciclo}] Erro: {e}', exc_info=True)
                 time.sleep(5)
                 continue
-    
+
     except KeyboardInterrupt:
         logger.info('\n[HALT] Encerrando agente direto...')
-    
+
     finally:
         # Cleanup
         logger.info('[CLEANUP] Encerrando componentes...')
-        
+
         try:
             mt5_adapter.desconectar()
             logger.info('[OK] Desconectado do MT5')
         except Exception:
             pass
-        
+
         logger.info('=' * 80)
         logger.info(f'AGENTE DIRETO ENCERRADO - Session: {AGENT_SESSION_ID}')
         logger.info(f'Total de ciclos: {ciclo}')
