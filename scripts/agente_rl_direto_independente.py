@@ -21,6 +21,7 @@ import sys
 import os
 import logging
 import time
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -201,6 +202,69 @@ def inicializar_componentes():
         return None
 
 # ============================================================================
+# RASTREAMENTO DE POSIÇÕES POR SESSION
+# ============================================================================
+class AgentePosicaoStatus:
+    """Rastreador de posições isolado por session ID do agente."""
+    
+    def __init__(self, session_id: str, data_dir: Path):
+        self.session_id = session_id
+        self.status_file = data_dir / f'agente_posicao_{session_id}.json'
+        self.posicao_aberta = False
+        self.posicao_open_time = None
+        self.carregar_status()
+    
+    def carregar_status(self):
+        """Carrega status de posição anterior se existir."""
+        try:
+            if self.status_file.exists():
+                with open(self.status_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    self.posicao_aberta = data.get('aberta', False)
+                    self.posicao_open_time = data.get('open_time')
+                    logger.info(f'[STATUS] Posição anterior restaurada: {self.posicao_aberta}')
+        except Exception as e:
+            logger.warning(f'[WARN] Erro ao carregar status: {e}')
+    
+    def registrar_posicao_aberta(self):
+        """Registra que uma posição foi aberta por ESTE agente."""
+        self.posicao_aberta = True
+        self.posicao_open_time = datetime.now().isoformat()
+        
+        try:
+            with open(self.status_file, 'w', encoding='utf-8') as f:
+                json.dump({
+                    'session_id': self.session_id,
+                    'aberta': True,
+                    'open_time': self.posicao_open_time,
+                    'timestamp': datetime.now().isoformat()
+                }, f, indent=2)
+            logger.info(f'[REGISTRO] Posição aberta registrada para session {self.session_id}')
+        except Exception as e:
+            logger.error(f'[ERRO] Falha ao registrar posição: {e}')
+    
+    def registrar_posicao_fechada(self):
+        """Registra que a posição foi fechada por ESTE agente."""
+        self.posicao_aberta = False
+        self.posicao_open_time = None
+        
+        try:
+            with open(self.status_file, 'w', encoding='utf-8') as f:
+                json.dump({
+                    'session_id': self.session_id,
+                    'aberta': False,
+                    'open_time': None,
+                    'timestamp': datetime.now().isoformat()
+                }, f, indent=2)
+            logger.info(f'[REGISTRO] Posição fechada registrada para session {self.session_id}')
+        except Exception as e:
+            logger.error(f'[ERRO] Falha ao registrar fechamento: {e}')
+    
+    def tem_posicao_aberta(self) -> bool:
+        """Retorna True se ESTE agente tem uma posição aberta."""
+        return self.posicao_aberta
+
+# ============================================================================
 # LOOP PRINCIPAL
 # ============================================================================
 def main():
@@ -216,12 +280,16 @@ def main():
     mt5_adapter = componentes['mt5_adapter']
     profit_protection = componentes['profit_protection']
 
+    # Inicializar rastreador de posições deste agente
+    posicao_tracker = AgentePosicaoStatus(AGENT_SESSION_ID, OUTPUTS_DIR)
+
     logger.info('=' * 80)
     logger.info('INICIANDO LOOP OPERACIONAL')
     logger.info('=' * 80)
     logger.info(f"Target: R$140.00 / Stop Loss: -R$250.00")
     logger.info(f"SL/TP Mode: {AGENT_MODE.upper()}")
     logger.info(f"Session: {AGENT_SESSION_ID}")
+    logger.info(f"Rastreamento de posição isolado: ATIVADO")
     logger.info('=' * 80)
     logger.info('')
 
@@ -239,15 +307,14 @@ def main():
                 # 1. Proteção de lucros
                 logger.debug(f'[CICLO {ciclo}] Verificando proteção de lucros...')
 
-                # 2. Monitorar posições
-                logger.debug(f'[CICLO {ciclo}] Monitorando posições abertas...')
-                posicoes = mt5_adapter.get_positions()
-
-                if posicoes:
-                    logger.info(f'[CICLO {ciclo}] Posição em aberto. Aguardando...')
+                # 2. Monitorar posições isoladamente por session
+                logger.debug(f'[CICLO {ciclo}] Verificando posições deste agente (session isolado)...')
+                
+                if posicao_tracker.tem_posicao_aberta():
+                    logger.info(f'[CICLO {ciclo}] Posição DESTE AGENTE em aberto. Aguardando...')
                     time.sleep(30)
                 else:
-                    logger.debug(f'[CICLO {ciclo}] Nenhuma posição aberta')
+                    logger.debug(f'[CICLO {ciclo}] ESTE AGENTE não tem posição aberta')
                     time.sleep(5)
 
             except KeyboardInterrupt:
