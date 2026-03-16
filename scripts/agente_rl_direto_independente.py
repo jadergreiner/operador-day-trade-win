@@ -118,11 +118,9 @@ except Exception as e:
 # IMPORTS SPECIFICIZADOS - Domain Models
 # ============================================================================
 try:
-    from src.domain.value_objects import Symbol
-    from src.domain.enums.trading_enums import TimeFrame
-    from src.infrastructure.adapters.domain_models import (
-        OrderSide, OrderType, Order, Price, Quantity
-    )
+    from src.domain.value_objects import Symbol, Price, Quantity
+    from src.domain.entities.trade import Order
+    from src.domain.enums.trading_enums import OrderSide, OrderType, TimeFrame
     logger.info('[OK] Domain models importados')
 except Exception as e:
     logger.error(f'[WARN] Domain models import falhou: {e}')
