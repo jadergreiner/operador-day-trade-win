@@ -51,6 +51,9 @@ def create_app(orders_executor: OrdersExecutor) -> FastAPI:
     from src.interfaces.api.routes import orders
     app.include_router(orders.router, prefix="/api/v1", tags=["orders"])
 
+    from src.interfaces.api.routes import dashboard
+    app.include_router(dashboard.roteador, prefix="/api/v1", tags=["dashboard"])
+
     return app
 
 

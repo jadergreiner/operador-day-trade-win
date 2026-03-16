@@ -1001,14 +1001,26 @@ fechadas: pelo TP, pelo SL, manual ou timeout.
 8. Status proteções: trades/hora, bloqueios, cooldown
 9. JSON exportação: Serialização completa para API REST
 
-**TODO (Fase 2 - Frontend & Integration):**
+**Fase 2 - FastAPI Endpoints:** ✅ DONE (16/03/2026)
+
+- **Status:** ✅ COMPLETO
+- **Arquivo:** `src/interfaces/api/routes/dashboard.py` (75 LOC)
+  - `GET /api/v1/stats/snapshot` → DashboardDataSnapshot completo
+  - `GET /api/v1/stats/recentes?quantidade=N` → Lista de TradeRecente
+  - `GET /api/v1/stats/periodo/{hoje|7dias|30dias}` → TradeStats por periodo
+- **Integracao:** `src/interfaces/api/fastapi_server.py` inclui router dashboard
+- **Testes:** `tests/unit/test_dashboard_routes.py`
+  (11 testes, 11/11 PASS, 100% cobertura)
+- **Validacao:** black OK, mypy OK, portugues 100%, type hints 100%
+- **Agente impactado:** INICIAR_AGENTE_RL_5000_FIXED.bat
+
+**TODO (Fase 3 - Frontend HTML/JS):**
 - HTML Dashboard: `templates/agente_direto_stats.html` (300+ LOC HTML/JS)
-- FastAPI endpoints: Expor StatsQueryService via REST (Painel 1-4)
 - Auto-refresh: 10s refresh client-side
 - Botoes acao: Pausar, Reset, Export CSV
 - CSS responsivo: Mobile friendly layout
 
-- **Prioridade (Backend):** ALTA - ✅ Crítico para visibilidade operador dados
+- **Prioridade (Backend):** ALTA - ✅ Critico para visibilidade operador dados
 - **Prioridade (Frontend):** MEDIA - Nice-to-have para UI
 
 **Próximos Passos:**

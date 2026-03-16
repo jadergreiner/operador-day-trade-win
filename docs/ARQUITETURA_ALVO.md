@@ -1080,7 +1080,13 @@ Interfaces publicas visiveis nessa camada:
 
 - `GET /health`
 - `GET /api/v1/orders`
-- rotas sob `/api/v1/*`
+- `GET /api/v1/stats/snapshot` — snapshot completo (dashboard)
+- `GET /api/v1/stats/recentes` — ultimos N trades fechados
+- `GET /api/v1/stats/periodo/{periodo}` — stats por periodo
+- demais rotas sob `/api/v1/*`
+
+Implementado em `src/interfaces/api/routes/dashboard.py`
+via `StatsQueryService` (`src/application/dashboard_stats_server.py`).
 
 ## Configuracao e Contratos Relevantes
 
@@ -1094,6 +1100,9 @@ Para entendimento da arquitetura, os contratos mais importantes sao:
 - API local FastAPI:
   - `GET /health`
   - `GET /api/v1/orders`
+  - `GET /api/v1/stats/snapshot`
+  - `GET /api/v1/stats/recentes`
+  - `GET /api/v1/stats/periodo/{periodo}`
   - demais rotas em `/api/v1/*`.
 
 ## Pontos de Arquitetura e Limitacoes Atuais
