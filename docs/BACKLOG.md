@@ -276,7 +276,64 @@ fim a fim.
   - Etapa 6: L2 Causal Analysis (market drift detection)
   - Etapa 7: Learning Rule Generation
 
-- Commit: feat: Implementar P1-LEARNING Etapas 1-2 (Signal + Decision) com testes 16/16
+#### 8. P1-LEARNING Etapa 3: Monitoring (position evolution log)
+
+**Status:** ✅ DONE (16/03/2026 - Etapa 3 implementada)
+
+**Objetivo:** Rastrear evolução de posição durante seu ciclo de vida.
+
+**Entregar:**
+
+- Monitoramento contínuo de preço, P&L e condições mercado; ✅
+- Registro temporal de cada update; ✅
+- Cálculo de estatísticas agregadas; ✅
+- Geração de logs estruturados em JSON; ✅
+- Type hints 100% + português 100%; ✅
+
+**Implementação Completa:**
+
+- Arquivo: `src/application/p1_learning_monitoring.py` (475 LOC)
+  - PositionUpdate: dataclass para snapshot de posição
+  - PositionMonitor: classe principal com 8 métodos
+  - Schema SQLite: position_monitoring (24 campos)
+  - Métodos:
+    - registrar_atualizacao_posicao(): Registra atualização
+    - listar_atualizacoes_posicao(): Lista cronológica
+    - obter_ultima_atualizacao(): Status atual
+    - calcular_estatisticas_posicao(): Métricas agregadas (9 campos)
+    - gerar_log_monitoramento(): Relatório JSON
+  - 100% type hints (mypy --strict OK)
+  - 100% português (docstrings, comments)
+
+- Testes: `tests/unit/test_p1_learning_etapa3_monitoring.py` (12 testes, 12/12 PASS)
+  - TestPositionMonitoringDataClass (2 testes):
+    - test_criar_position_update_completo
+    - test_position_update_para_dict
+  - TestPositionMonitor (10 testes):
+    - test_inicializar_position_monitor
+    - test_registrar_position_update_simples
+    - test_registrar_multiplas_atualizacoes
+    - test_listar_atualizacoes_por_episode
+    - test_obter_ultima_atualizacao
+    - test_calcular_estatisticas_posicao
+    - test_estatisticas_contem_campos_obrigatorios
+    - test_gerar_log_monitoramento
+    - test_validar_integridade_timestamp
+    - test_type_hints_100_porcento
+
+- Validação:
+  - Tests: 12/12 PASSING (100% success rate)
+  - Type hints: 100% conforme mypy
+  - Imports: ✅ Clean without errors
+  - Code quality: Clean architecture, zero technical debt
+
+- Próximas fases (Etapa 4-7):
+  - Etapa 4: Closure (outcome + exit reason)
+  - Etapa 5: L1 Analysis (decision correctness)
+  - Etapa 6: L2 Causal Analysis (market drift detection)
+  - Etapa 7: Learning Rule Generation
+
+- Commit: feat: Implementar P1-LEARNING Etapa 3 (Monitoring) com testes 12/12
 
 ### P2 - Capacidade futura
 

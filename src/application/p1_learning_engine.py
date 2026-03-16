@@ -162,7 +162,7 @@ class CausalLearningEngine:
             self.db_path = Path("data/db/causal_learning.db")
         else:
             self.db_path = Path(db_path) if not isinstance(db_path, Path) else db_path
-        
+
         # Garantir que pasta pai existe
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
