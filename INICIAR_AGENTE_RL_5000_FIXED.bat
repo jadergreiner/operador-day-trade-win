@@ -70,7 +70,19 @@ if "%CHOICE%"=="2" (
     echo.
     echo   OPERACAO REAL COM ANTI-OVERTRADING (BALANCED).
     echo   Inicializando operador...
-    python scripts/operar_novo_agente_rl_real_antiovertrading.py
+    echo.
+    echo   [!] Usando versao com supervisao completa...
+    echo   [!] Logs salvos em: outputs/agente_supervision.log
+    echo.
+    python scripts/agente_com_supervision.py
+    if errorlevel 1 (
+        echo.
+        echo   *** ERRO DETECTADO ***
+        echo   Verifique os logs em:
+        echo   - outputs/agente_supervision.log
+        echo   - outputs/agente_debug.log
+        echo.
+    )
     pause
     goto :MENU
 )
