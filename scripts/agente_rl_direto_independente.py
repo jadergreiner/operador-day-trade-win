@@ -397,7 +397,14 @@ class AgentePosicaoStatus:
                     data = json.load(f)
                     self.posicao_aberta = data.get('aberta', False)
                     self.posicao_open_time = data.get('open_time')
-                    logger.info(f'[STATUS] Posição anterior restaurada: {self.posicao_aberta}')
+                    if self.posicao_aberta:
+                        logger.debug(f'[STATUS] ✅ Posição ABERTA detectada (open_time: {self.posicao_open_time})')
+                    else:
+                        logger.debug(f'[STATUS] ✅ Nenhuma posição aberta')
+            else:
+                self.posicao_aberta = False
+                self.posicao_open_time = None
+                logger.debug(f'[STATUS] Arquivo não existe: {self.status_file}')
         except Exception as e:
             logger.warning(f'[WARN] Erro ao carregar status: {e}')
 
@@ -414,7 +421,7 @@ class AgentePosicaoStatus:
                     'open_time': self.posicao_open_time,
                     'timestamp': datetime.now().isoformat()
                 }, f, indent=2)
-            logger.info(f'[REGISTRO] Posição aberta registrada para session {self.session_id}')
+            logger.info(f'[REGISTRO] ✅ Posição aberta REGISTRADA: {self.status_file}')
         except Exception as e:
             logger.error(f'[ERRO] Falha ao registrar posição: {e}')
 
@@ -483,6 +490,10 @@ def main():
                 logger.info(f'[CICLO {ciclo}] Iniciando iteração...')
                 logger.debug(f'[CICLO {ciclo}] Tempo decorrido: {time.time() - start_time:.1f}s')
 
+                # 🔴 CRITICAL: Recarregar status de posição do arquivo a cada ciclo
+                posicao_tracker.carregar_status()
+                logger.debug(f'[CICLO {ciclo}] Status posição recarregado: {posicao_tracker.tem_posicao_aberta()}')
+
                 # Verificar conexão MT5 antes de cada ciclo
                 if not mt5_adapter.is_connected():
                     logger.warning(f'[CICLO {ciclo}] Detectada perda de conexão MT5, tentando reconectar...')
@@ -527,11 +538,10 @@ def main():
 
                 # 2. Proteção de lucros (se tem posição)
                 if posicao_tracker.tem_posicao_aberta():
-                    logger.debug(f'[CICLO {ciclo}] Verificando proteção de lucros...')
+                    logger.info(f'[CICLO {ciclo}] ⏸️  Posição DESTE AGENTE em aberto. Aguardando 60s antes de próxima operação...')
+                    logger.debug(f'[CICLO {ciclo}] Open time: {posicao_tracker.posicao_open_time}')
                     # TODO: Integrar profit_protection aqui
-
-                    logger.info(f'[CICLO {ciclo}] Posição DESTE AGENTE em aberto. Aguardando...')
-                    time.sleep(30)
+                    time.sleep(60)  # 🔴 Aumentado de 30s para 60s para garantir uma ordem por vez
                     continue
 
                 # 3. Se sem posição, tentar obter ação do RL
