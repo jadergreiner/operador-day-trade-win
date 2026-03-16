@@ -113,13 +113,22 @@ except Exception as e:
     logger.error(f'[FATAL] Erro ao importar módulos: {e}', exc_info=True)
     sys.exit(1)
 
-# Imports específicos para decisão e envio
+# ============================================================================
+# IMPORTS SPECIFICIZADOS - Domain Models
+# ============================================================================
 try:
     from src.infrastructure.adapters.domain_models import (
         Symbol, OrderSide, OrderType, Order, Price, Quantity
     )
-except ImportError:
-    logger.warning('[WARN] Usando imports diretos de domain_models')
+    logger.info('[OK] Domain models importados')
+except Exception as e:
+    logger.error(f'[WARN] Domain models import falhou: {e}')
+    try:
+        # Alternativa
+        from src.domain.models import Symbol, OrderSide, OrderType, Order, Price, Quantity
+        logger.info('[OK] Domain models importados (alternativa)')
+    except Exception as e2:
+        logger.error(f'[FATAL] Domain models não encontrados: {e2}')
 
 # ============================================================================
 # CONSTANTES DE TRADING
@@ -143,22 +152,22 @@ def obter_acao_do_modelo(dados: pd.DataFrame, pipeline: object, agente: object) 
     """Obtém ação do modelo RL treinado."""
     try:
         from src.application.services.novo_agente.ambiente_trading import AmbienteTradingMiniIndice
-        
+
         if not isinstance(dados, pd.DataFrame) or len(dados) == 0:
             logger.debug('[RL] Dados insuficientes, retornando aguardar')
             return 0, 0.0  # Aguardar
-        
+
         ambiente = AmbienteTradingMiniIndice(dados=dados)
         ambiente.reset()
         ambiente._indice = len(dados) - 1
-        
+
         estado = ambiente._calcular_estado()
         acao_id = agente.selecionar_acao(estado)
         confidence = 0.7  # Placeholder
-        
+
         logger.debug(f'[RL] Ação obtida: {acao_id} (confiança: {confidence:.2%})')
         return acao_id, confidence
-    
+
     except Exception as e:
         logger.error(f'[RL] Erro ao obter ação: {e}')
         return 0, 0.0
@@ -173,11 +182,11 @@ def mapear_acao(acao_id: int) -> str:
 def verificar_confirmacao_sinal(sinal_atual: str, sinal_anterior: str) -> bool:
     """Verifica se o sinal se repete em múltiplas velas."""
     global signal_confirmation_count
-    
+
     if sinal_atual == "Aguardar":
         signal_confirmation_count = 0
         return False
-    
+
     if sinal_atual == sinal_anterior:
         signal_confirmation_count += 1
         logger.info(f'[OK] Sinal CONFIRMADO ({signal_confirmation_count}/{CONFIRM_SIGNAL_BARS})')
@@ -198,7 +207,7 @@ def calcular_sl_tp(acao: str, preco_atual: float) -> Tuple[float, float]:
         tp = preco_atual - TAKE_PROFIT_PONTOS
     else:
         sl = tp = preco_atual
-    
+
     return sl, tp
 
 
@@ -206,10 +215,10 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
                  posicao_tracker: object, rl_repo: object) -> bool:
     """Envia ordem para abrir posição no MT5."""
     global last_trade_time
-    
+
     if acao == "Aguardar":
         return False
-    
+
     try:
         # Mapear ação para OrderSide
         if acao == "Comprar":
@@ -218,31 +227,31 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
             side = OrderSide.SELL
         else:
             return False
-        
+
         # Calcular SL/TP
         sl, tp = calcular_sl_tp(acao, preco_atual)
-        
+
         logger.info(f'[ENVIO] {acao} @ {preco_atual} | SL: {sl} | TP: {tp}')
+
+        # Criar e enviar ordem (usar Symbol se disponível)
+        try:
+            symbol_obj = Symbol(SIMBOLO)
+        except:
+            symbol_obj = SIMBOLO  # Fallback para string
         
-        # Criar e enviar ordem
         order = Order(
-            symbol=Symbol(SIMBOLO),
-            side=side,
-            quantity=Quantity(1),
-            order_type=OrderType.MARKET,
-            price=Price(preco_atual),
-            stop_loss=Price(sl),
+            symbol=symbol_obj,
             take_profit=Price(tp),
             execution_method="automated",
         )
-        
+
         ticket = mt5_adapter.send_order(order)
         if ticket:
             logger.info(f'[OK] Ordem enviada! Ticket: {ticket}')
-            
+
             # Registrar posição no rastreador
             posicao_tracker.registrar_posicao_aberta()
-            
+
             # Persistir no RL Repository
             if rl_repo:
                 try:
@@ -258,13 +267,13 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
                     rl_repo.save_episode(episode)
                 except Exception as e:
                     logger.warning(f'[WARN] Erro ao persistir episódio: {e}')
-            
+
             last_trade_time = datetime.now()
             return True
         else:
             logger.error(f'[ERRO] Falha ao enviar ordem')
             return False
-    
+
     except Exception as e:
         logger.error(f'[ERRO] Exceção ao enviar ordem: {e}', exc_info=True)
         return False
@@ -469,7 +478,7 @@ def main():
 
                 # 1. Carregar dados de mercado (últimas 30 velas)
                 try:
-                    dados = mt5_adapter.get_candles(Symbol(SIMBOLO), 30)
+                    dados = mt5_adapter.get_candles(SIMBOLO, 30)
                     if dados is None or len(dados) == 0:
                         logger.debug('[CICLO] Aguardando dados de mercado...')
                         time.sleep(5)
@@ -482,25 +491,26 @@ def main():
                     logger.warning(f'[CICLO {ciclo}] Erro ao obter dados: {e}')
                     time.sleep(5)
                     continue
+                    continue
 
                 # 2. Proteção de lucros (se tem posição)
                 if posicao_tracker.tem_posicao_aberta():
                     logger.debug(f'[CICLO {ciclo}] Verificando proteção de lucros...')
                     # TODO: Integrar profit_protection aqui
-                    
+
                     logger.info(f'[CICLO {ciclo}] Posição DESTE AGENTE em aberto. Aguardando...')
                     time.sleep(30)
                     continue
 
                 # 3. Se sem posição, tentar obter ação do RL
                 logger.debug(f'[CICLO {ciclo}] Verificando oportunidade de entrada...')
-                
+
                 try:
                     acao_id, confidence = obter_acao_do_modelo(dados, pipeline, agente)
                     acao_str = mapear_acao(acao_id)
-                    
+
                     logger.debug(f'[CICLO {ciclo}] Ação RL: {acao_str} (confiança: {confidence:.2%})')
-                    
+
                 except Exception as e:
                     logger.warning(f'[CICLO {ciclo}] Erro ao obter ação RL: {e}')
                     acao_str = "Aguardar"
@@ -508,10 +518,10 @@ def main():
                 # 4. Validar confirmação do sinal
                 if acao_str != "Aguardar":
                     confirmado = verificar_confirmacao_sinal(acao_str, last_signal)
-                    
+
                     if confirmado:
                         logger.info(f'[CICLO {ciclo}] SINAL CONFIRMADO: {acao_str}')
-                        
+
                         # 5. Enviar ordem
                         if enviar_ordem(mt5_adapter, acao_str, preco_atual, posicao_tracker, rl_repo):
                             logger.info(f'[CICLO {ciclo}] Ordem aberta com sucesso!')
