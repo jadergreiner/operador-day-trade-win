@@ -21,12 +21,12 @@ Data: 16/03/2026 | Hora: 10:03 BRT
   Problema original: Scripts procurados em C:\repo\scripts\ (não existem)
   Foram procurados realmente em:
     ❌ C:\repo\scripts\operar_novo_agente_rl_real_antiovertrading.py (não existe)
-  
+
   Solução: Atualizar paths no .bat para:
     ✅ operador-day-trade-win\scripts\operar_novo_agente_rl_real_antiovertrading.py
     ✅ operador-day-trade-win\scripts\operar_novo_agente_rl_real.py
     ✅ operador-day-trade-win\scripts\treinar_novo_agente_rl.py
-  
+
   Verificação: ✅ Scripts encontrados no caminho correto
 
 [✅ TEST] EXECUCAO DO SCRIPT
@@ -53,7 +53,7 @@ Data: 16/03/2026 | Hora: 10:03 BRT
   ✅ Paths do script corretos
   ✅ Script consegue executar e conectar em MT5
   ✅ Pipeline RL inicializando corretamente
-  
+
   🟢 PRONTO PARA OPERACAO
 
 [📋 PROXIMAS ACOES]
@@ -73,12 +73,12 @@ Data: 16/03/2026 | Hora: 10:03 BRT
   Se ainda houver erros:
     python scripts/diagnostico_modelo_rl.py
     → Verificará se modelo está correto
-  
+
   Se script não encontrar MT5:
     - Verificar que MT5 Terminal está aberto
     - Verificar credenciais ClearInvestimentos-CLEAR
     - Rodar scripts/check_mt5_connection.py
-  
+
   Se pipeline não carregar q_network.pkl:
     - Ejecutar scripts/verificar_integridade_modelo_rl.py
     - Verificar tamanho do arquivo (deve ser ~392 KB)
