@@ -30,6 +30,10 @@ from src.domain.enums.trading_enums import OrderSide, TimeFrame, OrderType
 from src.application.services.novo_agente.pipeline_treinamento import PipelineTreinamentoRL
 from src.infrastructure.repositories.rl_repository import SqliteRLRepository
 from src.infrastructure.database.schema import get_session
+from src.application.profit_protection_engine import (
+    ProfitProtectionEngine,
+    ProfitProtectionResult,
+)
 from config.settings import TradingConfig
 import uuid
 
@@ -97,6 +101,17 @@ config = TradingConfig()
 mt5_adapter: Optional[MT5Adapter] = None
 pipeline: Optional[PipelineTreinamentoRL] = None
 rl_repo: Optional[SqliteRLRepository] = None
+
+# Profit Protection Engine (proteção dinâmica de lucros)
+profit_protection_engine = ProfitProtectionEngine(
+    profit_target_pct=2.0,
+    stop_loss_pct=1.0,
+    partial_close_pct=0.75,
+    break_even_offset_pct=0.10,
+    reversao_threshold_pct=0.75,
+    cooldown_seconds=5,
+)
+logger.info("Motor de proteção de lucros ativado (P1-PROFIT_PROTECTION)")
 
 # Anti-overtrading state
 trades_executed_today = 0
@@ -478,6 +493,66 @@ def enviar_ordem_mt5adapter(acao: str, preco_atual: float, vol: float, dados: Op
         return False
 
 
+def processar_protecao_lucros() -> None:
+    """
+    Processa proteção de lucros para todas as posições abertas.
+
+    Monitora:
+    - Reversões agudas após ganho inicial
+    - Ativa break-even stop quando lucro robusto
+    - Sugere fechamento parcial para ganho protegido
+    """
+    try:
+        positions = mt5_adapter.get_positions(Symbol(SIMBOLO))
+        if not positions or len(positions) == 0:
+            return
+
+        for position in positions:
+            try:
+                # Construir trade dict para o motor de proteção
+                entry_price = float(getattr(position, 'price_open', 0.0))
+                current_price = float(getattr(position, 'price_current', 0.0))
+                direcion = "BUY" if getattr(position, 'type', 0) == 0 else "SELL"
+                ticket = int(getattr(position, 'ticket', 0))
+                
+                trade_dict = {
+                    "trade_id": f"T{ticket}",
+                    "symbol": SIMBOLO,
+                    "entry_price": entry_price,
+                    "entry_time": datetime.now(),
+                    "direction": direcion,
+                    "quantity": float(getattr(position, 'volume', 0.0)),
+                    "initial_sl": float(getattr(position, 'sl', 0.0)),
+                    "initial_tp": float(getattr(position, 'tp', 0.0)),
+                }
+                
+                # Processar através do motor de proteção
+                resultado = profit_protection_engine.processar_protecao(
+                    trade=trade_dict,
+                    preco_atual=current_price,
+                )
+                
+                # Log de proteção
+                if resultado.acao_sugerida in ["ATIVAR_BREAK_EVEN_STOP", "FECHAR_PARCIAL"]:
+                    logger.info(
+                        f"[PROTEÇÃO] Ticket#{ticket} | Lucro:{resultado.profit_atual:.2f}% | "
+                        f"Status:{resultado.status.value} | Ação:{resultado.acao_sugerida}"
+                    )
+                    
+                # Implementar ação (break-even stop)
+                if resultado.acao_sugerida == "ATIVAR_BREAK_EVEN_STOP":
+                    # Break-even stop: SL = entry_price + offset
+                    offset = entry_price * (profit_protection_engine.config["break_even_offset_pct"] / 100)
+                    novo_sl = entry_price + offset if direcion == "BUY" else entry_price - offset
+                    modificar_sl_ordem(ticket, novo_sl)
+                    
+            except Exception as e:
+                logger.debug(f"Erro ao processar proteção para posição: {e}")
+                
+    except Exception as e:
+        logger.error(f"Erro em processar_protecao_lucros: {e}")
+
+
 def monitorar_posicoes() -> bool:
     """Verifica se há posições abertas."""
     try:
@@ -851,10 +926,15 @@ def loop_operacao():
         ciclo += 1
         logger.info(f"\n[CICLO {ciclo}] Iniciando iteração do loop...")
 
-        # ✅ PROTEÇÃO DE LUCRO: Monitora trades abertos continuamente
+        # ✅ PROTEÇÃO DE LUCRO: Monitora trades abertos continuamente (sistema existente)
         logger.debug(f"[CICLO {ciclo}] Executando proteger_lucro_trade()...")
         proteger_lucro_trade()
         logger.debug(f"[CICLO {ciclo}] proteger_lucro_trade() concluído.")
+
+        # ✅ PROTEÇÃO DE LUCRO: Motor dinâmico (P1-PROFIT_PROTECTION) - NEW
+        logger.debug(f"[CICLO {ciclo}] Executando processar_protecao_lucros()...")
+        processar_protecao_lucros()
+        logger.debug(f"[CICLO {ciclo}] processar_protecao_lucros() concluído.")
 
         logger.debug(f"[CICLO {ciclo}] Verificando horário de trading...")
         if not verificar_horario_trading():
