@@ -1749,13 +1749,77 @@ bloqueadores do core.
   - ✅ Codigo: 100% portugues, docstrings completos
   - ✅ Arquitetura: Clean Architecture pattern
 
+#### 1.1 P2-RETRAIN_SCHEDULER Scheduler de Retrain Automatico
+
+**Status:** ✅ DONE (16/03/2026 - 24/24 testes PASSING)
+
+**Objetivo:** Detectar degradacao de modelo vs baseline e agendar retrain
+em horario off-peak para melhorar performance operacional.
+
+**Entregar:** ✅
+
+- Deteccao de degradacao (win_rate drop >5%, sharpe <0.8); ✅
+- Agendamento inteligente de retrain off-peak (18:30-23:00); ✅
+- Persistencia de jobs em JSON file-based; ✅
+- Relatorios JSON + Markdown; ✅
+- Type hints 100% (mypy --strict OK); ✅
+- Testes 24/24 PASSING; ✅
+
+**Implementacao Completa:**
+
+- **Arquivo:** `src/application/rl_retrain_scheduler.py` (350+ LOC)
+  - Enums: JobStatus (4 tipos), DegradationDetectionMethod (3 tipos)
+  - Dataclasses: RLSchedulerConfig, TrainingJob
+  - RLScheduler: classe principal com 10 metodos
+    - detectar_degradacao(): Identifica queda de metricas
+    - agendar_retrain(): Cria job agendado
+    - salvar_job() / obter_job() / listar_jobs(): Persistencia JSON
+    - gerar_relatorio_json() / gerar_relatorio_markdown(): Relatorios
+    - contar_jobs_por_status(): Estatisticas agregadas
+  - 100% type hints (mypy --strict OK)
+  - 100% portugues (docstrings, comments)
+
+- **Testes:** `tests/unit/test_rl_retrain_scheduler.py` (550+ LOC, 24 testes)
+  - TestRLSchedulerConfigDataclass (2)
+  - TestTrainingJobDataclass (2)
+  - TestJobStatusEnum (2)
+  - TestDegradationDetectionMethodEnum (2)
+  - TestRLSchedulerInit (2)
+  - TestRLSchedulerDeteccaoDegradacao (3)
+  - TestRLSchedulerAgendamento (2)
+  - TestRLSchedulerPersistencia (2)
+  - TestRLSchedulerListagemJobs (2)
+  - TestRLSchedulerObterJob (2)
+  - TestRLSchedulerAtualizarStatus (2)
+  - TestRLSchedulerRelatorios (1)
+
+- **Validacao:**
+  - Tests: 24/24 PASSING (100% success rate)
+  - Type hints: 100% conforme mypy --strict
+  - Coverage: >= 80% (todos metodos e branches testados)
+  - Importacao: sem erros ou warnings
+  - Arquitetura: Clean Architecture pattern respected
+
+- **Capacidades Entregues:**
+  1. Detecta degradacao win_rate (drop > threshold, ex: 65% -> 58%)
+  2. Detecta degradacao sharpe (< minimo, ex: Sharpe < 0.8)
+  3. Agenda retrain em horario customizavel (ex: 18:30-23:00)
+  4. Persiste jobs com metadata completa (motivo, metodo, timestamps)
+  5. Suporta 3 metodos de deteccao (Z-score, percentual, threshold)
+  6. Gera relatorios JSON e Markdown estruturados
+  7. Permite atualizar status de job (scheduled -> running -> completed)
+  8. Carrega jobs previamente agendados de arquivo persistido
+
+**Commits:**
+
+- feat: Implementar P2 Scheduler Retrain com testes 24/24
+
 **Proximos Passos Opcionais (P2-RL):**
 
-1. **Scheduler de Retrain Automatico**
-   - Detectar quando modelo degradou vs baseline
-   - Agendar retrain em horario off-peak
-   - Implementacao em `scripts/rl_scheduler.py`
-   - Testes: mocks de scheduler, timing validation
+1. **Integrar com BaselineComparator** (para Z-score automatico)
+   - Usar stats existentes em BaselineComparator
+   - Calcular Z-score de forma estatistica
+   - Atualizar baseline periodicamente
 
 2. **Rollback Automatico por Degradacao**
    - Comparar performance modelo novo vs anterior
