@@ -62,7 +62,7 @@ set /p CHOICE="Escolha (1-4): "
 if "%CHOICE%"=="1" (
     echo.
     echo   Iniciando avaliacao do modelo...
-    python scripts/treinar_novo_agente_rl.py --dados-reais --apenas-avaliar
+    python operador-day-trade-win\scripts\treinar_novo_agente_rl.py --dados-reais --apenas-avaliar
     if errorlevel 1 echo. & echo   [ERRO] Avaliacao falhou. & pause
     goto :MENU
 )
@@ -72,7 +72,7 @@ if "%CHOICE%"=="2" (
     echo   [START] OPERACAO REAL COM ANTI-OVERTRADING (BALANCED MODE)
     echo   Objetivo: Lucro R$ 140,00 ou Prejuizo -R$ 250,00
     echo.
-    python scripts/operar_novo_agente_rl_real_antiovertrading.py
+    python operador-day-trade-win\scripts\operar_novo_agente_rl_real_antiovertrading.py
     echo.
     echo   [INFO] Operacao encerrada.
     pause
@@ -84,7 +84,7 @@ if "%CHOICE%"=="3" (
     echo   [AVISO] Versao ORIGINAL (SEM protecao anti-overtrading)
     echo   Objetivo: Lucro R$ 140,00 ou Prejuizo -R$ 250,00
     echo.
-    python scripts/operar_novo_agente_rl_real.py
+    python operador-day-trade-win\scripts\operar_novo_agente_rl_real.py
     echo.
     echo   [INFO] Operacao encerrada.
     pause

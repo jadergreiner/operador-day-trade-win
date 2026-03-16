@@ -6,7 +6,7 @@ OPERADOR RL v5000 - GUIA RAPIDO DE INICIALIZACAO
 [📁 LOCALIZACOES DO MODELO]
   ✓ C:\repo\operador-day-trade-win\data\models\novo_agente_rl\modelo_final\q_network.pkl
   ✓ C:\repo\data\models\novo_agente_rl\modelo_final\q_network.pkl
-  
+
 [📊 MODELO INFO]
   • Tipo: Q-Learning (Q-Table)
   • Estados: 5000
