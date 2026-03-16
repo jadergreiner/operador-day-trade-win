@@ -338,7 +338,89 @@ rm c:\repo\projeto\analisa_gap_precificacao.py
 
 ---
 
-### 5. 📂 Estrutura de Pasta - Padrão Completo (03/03/2026+)
+### 5. 🤖 Escopo de Execução - 4 Agentes Operacionais (16/03/2026)
+
+**FUNDAMENTAL:** Todas as decisões arquiteturais e operacionais devem ter como
+alvo **um destes 4 agentes executores**:
+
+#### Agentes Operacionais:
+
+1. **INICIAR_DIARIOS.bat** 📝
+   - Script: `start_journals_full_display.py`
+   - Propósito: Captura operacional em 3 streams (Trading Journal, AI
+     Reflection, RL Performance)
+   - Frequência: Contínuo (durante horário de operação)
+   - Saída: `data/diarios/consolidated_[DATA].json`
+   - Status: ✅ Production Ready
+
+2. **INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat** 📊
+   - Script: `agente_micro_tendencia_winfut.py`
+   - Propósito: Geração de sinais intraday (~29/dia) com Score Macro + ML
+   - Componentes: MacroScoreEngine, LightGBM Filter, Anti-OT (7 filtros)
+   - Saída: `data/diarios/micro_trend_decisions_[DATA].json`
+   - Gate: ✅ AC1-AC6 aprovado (06/03/2026)
+   - Status: ✅ Production Ready
+
+3. **INICIAR_AGENTE_RL_5000.bat** 🤖
+   - Script: `operar_novo_agente_rl_real_antiovertrading.py`
+   - Propósito: Execução automática com Q-Learning (5000 episódios)
+   - Proteção: SL/TP dinâmicos, Anti-OT (7 filtros), Profit Protection
+   - Modelo: `data/models/novo_agente_rl/modelo_final/q_network.pkl`
+   - Win Rate: 65-68% (histórico)
+   - Status: ✅ v3.0 Production Ready
+
+4. **INICIAR_AGENTE_RL_DIRETO.bat** 🚀
+   - Script: `agente_rl_direto_independente.py`
+   - Propósito: Execução paralela isolada (alternativa ao RL_5000)
+   - Isolamento: Session ID próprio, posições independentes
+   - Uso: Teste/validação multípla do mesmo modelo RL
+   - Status: ✅ v3.0 Production Ready (paralelo sem conflitos)
+
+#### Arquitetura Operacional:
+
+```
+MT5 (WIN$N)
+    ├─ [Agente Diários]       → Logs (5 min)
+    ├─ [Micro Tendência]      → Sinais (~29/dia)
+    ├─ [RL 5000]              → Trades (automático)
+    └─ [RL Direto] (paralelo) → Trades isolado
+            ↓
+        trading.db (SQLite)
+            ↓
+    [Feedback RL] para próximo dia
+```
+
+#### Documentação Operacional:
+
+- 📖 **INIT_DO_PROJETO.md** (raiz) - Quick Start (5 min)
+- 📖 **docs/OPERACAO_4_AGENTES.md** - Guia detalhado por agente
+- 📖 **ARQUITETURA_ALVO.md** - Contrato arquitetural
+- 📖 **REGRAS_DE_NEGOCIO.md** - Regras operacionais
+
+#### Checklist Pré-Operação:
+
+```bash
+□ MT5 aberto e logado
+□ Modelo RL existe: data/models/novo_agente_rl/modelo_final/q_network.pkl
+□ BD inicializado: python scripts/diagnostico_modelo_rl.py
+□ Saldo > R$ 1.000 (mínimo recomendado)
+□ Network estável (ping google.com OK)
+□ Timeframe servidor = BRT
+□ Nenhum processo Python anterior rodando
+```
+
+#### Referência Rápida:
+
+| **Agente** | **Função** | **Launcher** | **Executável** |
+|---|---|---|---|
+| Diários | Auditoria | `INICIAR_DIARIOS.bat` | Python script |
+| Micro Tendência | Sinais | `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | Python script |
+| RL 5000 | Trades | `INICIAR_AGENTE_RL_5000.bat` | Python script |
+| RL Direto | Trades (paralelo) | `INICIAR_AGENTE_RL_DIRETO.bat` | Python script |
+
+---
+
+### 6. 📂 Estrutura de Pasta - Padrão Completo (03/03/2026+)
 
 **OBRIGATÓRIO:** Todos os arquivos do projeto DEVEM seguir a estrutura abaixo:
 
@@ -488,7 +570,7 @@ ls -la outputs/ && echo "✅ Outputs OK"
 **Histórico Completo:** Consultar `docs/BACKLOG_UNIFICADO.md` (P19-P49)
 - ✅ 440+ arquivos consolidados
 - ✅ 100% scripts em `scripts/`
-- ✅ 100% outputs em `outputs/`  
+- ✅ 100% outputs em `outputs/`
 - ✅ 100% .bat em `BAT/`
 - ✅ Padrão de pasta = PRODUCTION-READY
 

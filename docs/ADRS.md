@@ -1144,6 +1144,84 @@ Solução necessária: Detecção automática + Auto-recovery (sem intervenção
 
 ### Consequências
 
+---
+
+## ADR-011: Isolamento de Posicoes entre Agentes RL (RL 5000 vs RL Direto)
+
+**Status**: ✅ ACCEPTED
+
+**Data**: 16/03/2026
+
+**Refs**: [ARQUITETURA_ALVO.md § P0](ARQUITETURA_ALVO.md#p0-isolamento-de-posicoes-entre-agentes-rl) | [src/application/posicao_isolamento.py](../src/application/posicao_isolamento.py)
+
+### Contexto
+
+Quando operando RL 5000 e RL Direto em paralelo, ambos compartilhavam
+o mesmo mecanismo de rastreamento de posicoes. Isto causava:
+
+- RL Direto detectar posicoes criadas pelo RL 5000
+- Bloqueio desnecessário de operacoes
+- Impossibilidade de operacao paralela isolada
+- Conflitos de session ID
+
+**Sintoma Observado (16/03/2026 14:38:08):**
+
+```
+[CICLO 127] Status posição recarregado: True
+[CICLO 127] ⏸️  Posição DESTE AGENTE em aberto.
+```
+
+(Posição foi criada pelo RL 5000, não pelo Direto → bloqueio incorreto)
+
+### Decisão
+
+**Implementar classe `PosicaoIsoladaManager` com isolamento total:**
+
+1. **Session ID por Agente:**
+   - RL 5000: `agente_5000_{TIMESTAMP}_v1`
+   - RL Direto: `agente_direto_{TIMESTAMP}_v2`
+
+2. **Arquivo Isolado:** `outputs/agente_posicao_{session_id}.json`
+
+3. **Validacao de Ownership:**
+   - Campo `owner` no JSON (agente_version)
+   - Verificacao ao carregar arquivo
+   - Log de erro se violacao detectada
+
+4. **Metadados Completos:**
+   - session_id, owner, open_time, close_time
+   - ticket, lado, quantidade, preco_entrada
+
+### Justificativa
+
+**Escalabilidade:** Suporta múltiplos agentes RL em paralelo
+
+**Segurança:** Impede interferencia entre agentes
+
+**Auditoria:** Rastreamento completo de ownership
+
+**Type Safety:** 100% type hints, mypy --strict OK
+
+**Testabilidade:** 7/7 testes unitarios passando, cobertura >80%
+
+### Implementacao
+
+**Arquivo:** `src/application/posicao_isolamento.py` (387 LOC)
+
+**Classe:** `PosicaoIsoladaManager`
+
+**Testes:** `tests/test_posicao_isolamento.py` → 7/7 ✅ PASSANDO
+
+### Status
+
+✅ **ACCEPTED e IMPLEMENTED (16/03/2026)**
+
+- Implementação: ✅ COMPLETO
+- Testes: ✅ 7/7 PASSANDO
+- Documentação: ✅ ATUALIZADA
+- Type Hints: ✅ 100%
+- Lint MD: ✅ OK (novas linhas)
+
 ✅ **Prós**:
 - Pessimismo detectado & resolvido em T+0 (automático)
 - Operador continua operando mesmo durante degradação
