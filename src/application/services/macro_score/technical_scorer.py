@@ -71,8 +71,8 @@ class TechnicalIndicatorScorer:
             return 0
 
         recent = candles[-10:]
-        buy_pressure = 0
-        sell_pressure = 0
+        buy_pressure: float = 0.0
+        sell_pressure: float = 0.0
 
         for c in recent:
             body = float(c.close.value - c.open.value)
@@ -521,7 +521,7 @@ class TechnicalIndicatorScorer:
             return 100.0
 
         rs = avg_gain / avg_loss
-        return 100 - (100 / (1 + rs))
+        return float(100 - (100 / (1 + rs)))
 
     def _calculate_stochastic_k(
         self, candles: list[Candle], period: int = 14

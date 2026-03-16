@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
+from typing import Any, Optional
 import json
 import logging
 import os
@@ -148,7 +148,7 @@ class MT5Adapter(IBrokerAdapter):
         self.server = server
         self.timeout = timeout
         self.terminal_exe_path = terminal_exe_path
-        self._mt5 = None
+        self._mt5: Any = None
         self._time_offset_seconds: Optional[int] = -3 * 3600
         self._session_fingerprint: Optional[dict] = None
         self._trading_halted: bool = False
@@ -156,7 +156,8 @@ class MT5Adapter(IBrokerAdapter):
     def _normalize_timestamp(self, epoch_seconds: int) -> datetime:
         """Normaliza timestamps do MT5 para horario de Brasilia (UTC-3)."""
         ts = int(epoch_seconds)
-        return datetime.utcfromtimestamp(ts + self._time_offset_seconds)
+        offset = self._time_offset_seconds or 0
+        return datetime.utcfromtimestamp(ts + offset)
 
     def _get_mt5_terminal_pid(self) -> Optional[int]:
         """
@@ -187,7 +188,7 @@ class MT5Adapter(IBrokerAdapter):
                             logger.debug(f"Terminal mismatch: expected {self.terminal_exe_path}, got {exe_path}")
                             continue
 
-                    return proc.info['pid']
+                    return int(proc.info['pid'])
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
 
@@ -627,7 +628,7 @@ class MT5Adapter(IBrokerAdapter):
         """Obtém o tick size (variação mínima de preço) do símbolo."""
         info = self._mt5.symbol_info(symbol_code)
         if info and hasattr(info, 'trade_tick_size') and info.trade_tick_size > 0:
-            return info.trade_tick_size
+            return float(info.trade_tick_size)
         # Fallback para WIN: tick = 5 pontos
         if 'WIN' in symbol_code.upper():
             return 5.0
@@ -652,7 +653,7 @@ class MT5Adapter(IBrokerAdapter):
         if hasattr(info, 'basis') and info.basis:
             basis_info = self._mt5.symbol_info(info.basis)
             if basis_info and basis_info.trade_mode == self._mt5.SYMBOL_TRADE_MODE_FULL:
-                return info.basis
+                return str(info.basis)
 
         # Fallback: busca contratos WIN ativos
         symbols = self._mt5.symbols_get(group="*WIN*")
@@ -661,7 +662,7 @@ class MT5Adapter(IBrokerAdapter):
                 if (s.trade_mode == self._mt5.SYMBOL_TRADE_MODE_FULL
                         and s.name.startswith("WIN")
                         and not s.name.endswith("$N")):
-                    return s.name
+                    return str(s.name)
 
         return symbol_code
 

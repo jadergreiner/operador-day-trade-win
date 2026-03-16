@@ -65,7 +65,7 @@ class MacroAnalysisService:
     de HOJE para trading no mercado brasileiro.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Inicializa o servico de analise macro."""
         self._last_analysis: Optional[MacroSnapshot] = None
 

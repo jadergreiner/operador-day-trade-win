@@ -84,7 +84,7 @@ class SentimentAnalysisService:
     Determina se o mercado esta altista, baixista ou neutro para HOJE.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Inicializa servico de analise de sentimento."""
         self._last_analysis: Optional[SentimentAnalysis] = None
 
@@ -119,10 +119,9 @@ class SentimentAnalysisService:
         low_of_day = min(c.low.value for c in candles)
 
         # Variacao de preco desde a abertura
+        price_change: Decimal = Decimal("0")
         if opening_price and opening_price > 0:
             price_change = ((current_price - opening_price) / opening_price) * 100
-        else:
-            price_change = 0.0
 
         # Determina sentimento
         sentiment = self._determine_sentiment(
@@ -255,10 +254,9 @@ class SentimentAnalysisService:
     ) -> MarketCondition:
         """Determina condicao do mercado (tendencia vs lateralizado)."""
         # Calcula amplitude
+        price_range: Decimal = Decimal("0")
         if low and low > 0:
             price_range = ((high - low) / low) * 100
-        else:
-            price_range = 0.0
 
         # Verifica direcao clara
         closes = [c.close.value for c in candles]
@@ -266,12 +264,12 @@ class SentimentAnalysisService:
             return MarketCondition.UNKNOWN
 
         # Deteccao simples de tendencia
-        first_half_avg = sum(closes[: len(closes) // 2]) / (len(closes) // 2)
-        second_half_avg = sum(closes[len(closes) // 2 :]) / (
-            len(closes) - len(closes) // 2
-        )
+        first_half = closes[: len(closes) // 2]
+        second_half = closes[len(closes) // 2 :]
+        first_half_avg: Decimal = sum(first_half, Decimal("0")) / len(first_half)
+        second_half_avg: Decimal = sum(second_half, Decimal("0")) / len(second_half)
 
-        change = ((second_half_avg - first_half_avg) / first_half_avg) * 100
+        change: Decimal = ((second_half_avg - first_half_avg) / first_half_avg) * 100
 
         if change > 0.5:
             return MarketCondition.BULLISH
@@ -309,10 +307,9 @@ class SentimentAnalysisService:
         opening: Decimal,
     ) -> str:
         """Avalia volatilidade do mercado."""
+        daily_range: Decimal = Decimal("0")
         if opening and opening > 0:
             daily_range = ((high - low) / opening) * 100
-        else:
-            daily_range = 0.0
 
         if daily_range > 2.5:
             return "HIGH"

@@ -75,7 +75,7 @@ class FundamentalAnalysisService:
     Avalia como investidores estrangeiros veem o Brasil e a dinamica do fluxo de capital.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Inicializa servico de analise fundamental."""
         self._last_analysis: Optional[BrazilFundamentals] = None
 

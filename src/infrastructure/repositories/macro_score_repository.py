@@ -244,9 +244,9 @@ class SqliteMacroScoreRepository(IMacroScoreRepository):
         )
 
         if model:
-            model.win_price_at_evaluation = win_price_at_evaluation
-            model.actual_direction = actual_direction
-            model.decision_correct = 1 if decision_correct else 0
-            model.price_change_points = price_change_points
-            model.evaluated_at = datetime.now()
+            model.win_price_at_evaluation = win_price_at_evaluation  # type: ignore[assignment]
+            model.actual_direction = actual_direction  # type: ignore[assignment]
+            model.decision_correct = 1 if decision_correct else 0  # type: ignore[assignment]
+            model.price_change_points = price_change_points  # type: ignore[assignment]
+            model.evaluated_at = datetime.now()  # type: ignore[assignment]
             self.session.commit()

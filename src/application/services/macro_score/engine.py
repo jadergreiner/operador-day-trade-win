@@ -5,7 +5,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Optional
+from typing import Any, Optional, cast
 
 from src.application.services.macro_score.forex_handler import ForexScoreHandler
 from src.application.services.macro_score.futures_resolver import (
@@ -406,8 +406,8 @@ class MacroScoreEngine:
                 )
 
             # Spread = longo - curto (em pontos-base de taxa)
-            spread_now = long_current - short_current
-            spread_open = long_open - short_open
+            spread_now = cast(Decimal, long_current) - cast(Decimal, short_current)
+            spread_open = cast(Decimal, long_open) - cast(Decimal, short_open)
 
             # Variacao do spread: abertura = mais risco = bearish WIN
             spread_change = spread_now - spread_open
@@ -611,7 +611,7 @@ class MacroScoreEngine:
     def _save_tick_to_db(
         self,
         symbol: str,
-        tick,
+        tick: Any,
         timestamp_override: Optional[datetime] = None,
     ) -> None:
         """Persiste tick como candle M1 para uso futuro."""
@@ -650,7 +650,7 @@ class MacroScoreEngine:
         finally:
             session.close()
 
-    def _save_candle_to_db(self, symbol: str, candle) -> None:
+    def _save_candle_to_db(self, symbol: str, candle: Any) -> None:
         """Persiste candle M1 para uso futuro."""
         session = get_session()
         try:
@@ -682,7 +682,7 @@ class MacroScoreEngine:
         finally:
             session.close()
 
-    def _get_current_m1_candle(self, symbol: str):
+    def _get_current_m1_candle(self, symbol: str) -> Any:
         """Busca candle M1 atual para um simbolo."""
         try:
             candles = self._mt5.get_candles(
@@ -712,7 +712,7 @@ class MacroScoreEngine:
                 .first()
             )
             if row:
-                return Decimal(row.open)
+                return Decimal(str(row.open))
             daily = (
                 session.query(MarketDataModel)
                 .filter(MarketDataModel.symbol == symbol)
@@ -723,7 +723,7 @@ class MacroScoreEngine:
                 .first()
             )
             if daily:
-                return Decimal(daily.open)
+                return Decimal(str(daily.open))
             return None
         finally:
             session.close()
@@ -744,7 +744,7 @@ class MacroScoreEngine:
                 .first()
             )
             if row:
-                return Decimal(row.close)
+                return Decimal(str(row.close))
             daily = (
                 session.query(MarketDataModel)
                 .filter(MarketDataModel.symbol == symbol)
@@ -755,7 +755,7 @@ class MacroScoreEngine:
                 .first()
             )
             if daily:
-                return Decimal(daily.close)
+                return Decimal(str(daily.close))
             return None
         finally:
             session.close()
@@ -987,6 +987,7 @@ class MacroScoreEngine:
     def _persist_result(self, result: MacroScoreResult) -> None:
         """Persiste resultado no repositorio."""
         try:
+            assert self._repository is not None
             # Salvar items individuais
             items_data = [
                 {

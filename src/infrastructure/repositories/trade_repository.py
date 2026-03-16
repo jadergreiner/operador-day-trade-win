@@ -108,22 +108,21 @@ class SqliteTradeRepository(ITradeRepository):
             raise ValueError(f"Trade not found: {trade.trade_id}")
 
         # Atualiza campos
-        model.exit_price = (
-            trade.exit_price.value if trade.exit_price else None
-        )
-        model.exit_time = trade.exit_time
-        model.status = trade.status.value
-        model.commission = trade.commission.amount
+        exit_val = trade.exit_price.value if trade.exit_price else None
+        model.exit_price = exit_val  # type: ignore[assignment]
+        model.exit_time = trade.exit_time  # type: ignore[assignment]
+        model.status = trade.status.value  # type: ignore[assignment]
+        model.commission = trade.commission.amount  # type: ignore[assignment]
 
         # Calcula P&L se fechado
         if trade.status == TradeStatus.CLOSED:
             pl = trade.calculate_profit_loss()
             if pl:
-                model.profit_loss = pl.amount
+                model.profit_loss = pl.amount  # type: ignore[assignment]
 
             return_pct = trade.calculate_return_percentage()
             if return_pct:
-                model.return_percentage = float(return_pct)
+                model.return_percentage = float(return_pct)  # type: ignore[assignment]
 
         self.session.commit()
 
@@ -151,20 +150,20 @@ class SqliteTradeRepository(ITradeRepository):
     def _to_entity(self, model: TradeModel) -> Trade:
         """Converte modelo de banco de dados para entidade de dominio."""
         return Trade(
-            trade_id=UUID(model.trade_id),
-            symbol=Symbol(model.symbol),
+            trade_id=UUID(model.trade_id),  # type: ignore[arg-type]
+            symbol=Symbol(model.symbol),  # type: ignore[arg-type]
             side=OrderSide(model.side),
-            quantity=Quantity(model.quantity),
-            entry_price=Price(model.entry_price),
-            entry_time=model.entry_time,
-            exit_price=Price(model.exit_price) if model.exit_price else None,
-            exit_time=model.exit_time,
-            stop_loss=Price(model.stop_loss) if model.stop_loss else None,
+            quantity=Quantity(model.quantity),  # type: ignore[arg-type]
+            entry_price=Price(model.entry_price),  # type: ignore[arg-type]
+            entry_time=model.entry_time,  # type: ignore[arg-type]
+            exit_price=Price(model.exit_price) if model.exit_price else None,  # type: ignore[arg-type]
+            exit_time=model.exit_time,  # type: ignore[arg-type]
+            stop_loss=Price(model.stop_loss) if model.stop_loss else None,  # type: ignore[arg-type]
             take_profit=(
-                Price(model.take_profit) if model.take_profit else None
+                Price(model.take_profit) if model.take_profit else None  # type: ignore[arg-type]
             ),
             status=TradeStatus(model.status),
-            broker_trade_id=model.broker_trade_id,
-            commission=Money(model.commission),
-            notes=model.notes or "",
+            broker_trade_id=str(model.broker_trade_id) if model.broker_trade_id else None,
+            commission=Money(model.commission),  # type: ignore[arg-type]
+            notes=str(model.notes) if model.notes else "",
         )

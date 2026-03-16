@@ -113,7 +113,7 @@ class TechnicalAnalysisService:
     - Trading em faixa lateral
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Inicializa servico de analise tecnica."""
         self._last_analysis: Optional[TechnicalAnalysis] = None
 
@@ -439,7 +439,7 @@ class TechnicalAnalysisService:
         current_price: Price,
     ) -> list[EntryPoint]:
         """Encontra pontos de entrada para seguimento de tendencia."""
-        entries = []
+        entries: list[EntryPoint] = []
 
         if not indicators.ema_9 or not indicators.ema_21:
             return entries
@@ -503,7 +503,7 @@ class TechnicalAnalysisService:
         resistance_levels: list[Decimal],
     ) -> list[EntryPoint]:
         """Encontra pontos de entrada de reversao em extremos."""
-        entries = []
+        entries: list[EntryPoint] = []
 
         if not indicators.rsi_14:
             return entries
@@ -569,7 +569,7 @@ class TechnicalAnalysisService:
         resistance_levels: list[Decimal],
     ) -> list[EntryPoint]:
         """Encontra entradas de trading em faixa lateral."""
-        entries = []
+        entries: list[EntryPoint] = []
 
         if not support_levels or not resistance_levels:
             return entries

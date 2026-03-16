@@ -308,7 +308,7 @@ class StatsQueryService:
         # Sharpe não pode ser negativo
         if sharpe < 0.0:
             return 0.0
-        return sharpe
+        return float(sharpe)
 
     def exportar_para_json(self) -> Dict[str, Any]:
         """Exporta snapshot dashboard em JSON estruturado."""

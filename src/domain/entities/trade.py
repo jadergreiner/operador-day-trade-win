@@ -193,8 +193,9 @@ class Position:
         if not open_trades:
             raise InvalidOperationError("No open trades in position")
 
-        total_value = sum(
-            trade.entry_price.value * trade.quantity.value for trade in open_trades
+        total_value: Decimal = sum(
+            (trade.entry_price.value * trade.quantity.value for trade in open_trades),
+            Decimal("0"),
         )
         total_quantity = sum(trade.quantity.value for trade in open_trades)
 

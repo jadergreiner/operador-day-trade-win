@@ -6,7 +6,7 @@ This is the main entry point for users to interact with the Quantum Operator.
 
 import sys
 from decimal import Decimal
-from typing import Optional
+from typing import Any, Optional
 
 from config import get_config
 from src.application.services.quantum_operator import QuantumOperatorEngine
@@ -18,7 +18,7 @@ from src.domain.enums.trading_enums import TimeFrame
 class QuantumOperatorCLI:
     """Command-line interface for the Quantum Operator."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize CLI."""
         self.config = get_config()
         self.operator = QuantumOperatorEngine()
@@ -112,7 +112,7 @@ class QuantumOperatorCLI:
 
             traceback.print_exc()
 
-    def _display_decision(self, decision) -> None:
+    def _display_decision(self, decision: Any) -> None:
         """Display trading decision in a beautiful format."""
         print(decision.executive_summary)
         print()
@@ -230,7 +230,7 @@ class QuantumOperatorCLI:
                 print(f"❌ Erro: {e}\n")
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     cli = QuantumOperatorCLI()
     cli.run_interactive()

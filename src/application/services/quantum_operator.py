@@ -8,7 +8,7 @@ para tomar decisoes inteligentes de trading como Head Financeiro.
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
+from typing import Any, Optional
 
 from src.application.services.fundamental_analysis import (
     BrazilFundamentals,
@@ -98,9 +98,9 @@ class QuantumOperatorEngine:
     def __init__(
         self,
         mt5_adapter: Optional[MT5Adapter] = None,
-        macro_score_repository=None,
-        rl_persistence_service=None,
-    ):
+        macro_score_repository: Optional[Any] = None,
+        rl_persistence_service: Optional[Any] = None,
+    ) -> None:
         """Inicializa o Operador Quantico.
 
         Args:
@@ -113,14 +113,14 @@ class QuantumOperatorEngine:
         self._rl_service = rl_persistence_service
         # Macro: usa MacroScoreEngine se MT5 disponivel, senao fallback legado
         self._mt5_adapter = mt5_adapter
+        self.macro_score_engine: Optional[MacroScoreEngine] = None
+        self.macro_service: Optional[MacroAnalysisService] = None
         if mt5_adapter is not None:
             self.macro_score_engine = MacroScoreEngine(
                 mt5_adapter=mt5_adapter,
                 repository=macro_score_repository,
             )
-            self.macro_service = None  # Nao usa o legado
         else:
-            self.macro_score_engine = None
             self.macro_service = MacroAnalysisService()
 
         self.fundamental_service = FundamentalAnalysisService()
@@ -171,6 +171,7 @@ class QuantumOperatorEngine:
             macro = self._macro_score_to_snapshot(macro_score_result)
         else:
             # LEGADO: MacroAnalysisService com dados manuais
+            assert self.macro_service is not None
             macro = self.macro_service.analyze_current_macro_conditions(
                 us_futures=us_futures,
                 treasury_yield=treasury_yield,
@@ -247,6 +248,7 @@ class QuantumOperatorEngine:
         if self.macro_score_engine is not None:
             macro_bias = self.macro_score_engine.get_trading_bias()
         else:
+            assert self.macro_service is not None
             macro_bias = self.macro_service.get_trading_bias_from_macro()
         fundamental_bias = (
             self.fundamental_service.get_trading_bias_from_fundamentals()

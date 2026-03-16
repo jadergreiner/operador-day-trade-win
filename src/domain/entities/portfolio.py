@@ -9,7 +9,7 @@ from uuid import UUID, uuid4
 from src.domain.entities.trade import Position, Trade
 from src.domain.enums.trading_enums import OrderSide
 from src.domain.exceptions import InsufficientCapitalError, InvalidOperationError
-from src.domain.value_objects import Money, Percentage, Symbol
+from src.domain.value_objects import Money, Percentage, Price, Symbol
 
 
 @dataclass
@@ -85,7 +85,7 @@ class Portfolio:
             position.add_trade(trade)
             self._positions[position_key] = position
 
-    def close_trade(self, trade: Trade, exit_price) -> None:
+    def close_trade(self, trade: Trade, exit_price: Price) -> None:
         """Fecha um trade e atualiza o capital."""
         if trade not in self._trade_history:
             raise InvalidOperationError("Trade not found in portfolio")
@@ -146,7 +146,7 @@ class Portfolio:
             for t in winning_trades
         )
         avg = total_profit / len(winning_trades)
-        return Money(avg)
+        return Money(Decimal(str(avg)))
 
     def calculate_average_loss(self) -> Optional[Money]:
         """Calcula o prejuizo medio dos trades perdedores."""
@@ -164,7 +164,7 @@ class Portfolio:
             for t in losing_trades
         )
         avg = total_loss / len(losing_trades)
-        return Money(avg)
+        return Money(Decimal(str(avg)))
 
     def calculate_max_drawdown(self) -> Percentage:
         """

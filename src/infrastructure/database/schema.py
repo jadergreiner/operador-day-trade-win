@@ -13,10 +13,11 @@ from sqlalchemy import (
     String,
     create_engine,
 )
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    pass
 
 
 class MarketDataModel(Base):

@@ -191,7 +191,7 @@ def get_config() -> TradingConfig:
     """
     global _config
     if _config is None:
-        _config = TradingConfig()
+        _config = TradingConfig()  # type: ignore[call-arg]
         _config.ensure_directories()
     return _config
 
