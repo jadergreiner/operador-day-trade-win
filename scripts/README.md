@@ -1,7 +1,7 @@
 # Scripts - Guia de Padrão e Localização
 
-**Versão:** 1.0
-**Data:** 02/03/2026
+**Versão:** 1.1
+**Data:** 16/03/2026
 **Responsável:** Product Owner / GitHub Copilot
 
 ---
@@ -290,6 +290,94 @@ schtasks /create /tn "TaskName" /tr "python scripts/run_daily_cleanup.py" /sc da
 # Add to crontab
 0 4 * * * cd /repo/operador-day-trade-win && python scripts/run_daily_cleanup.py
 ```
+
+---
+
+## 🤖 Scripts de Agentes RL
+
+### `operar_novo_agente_rl_real_antiovertrading.py`
+
+**Propósito:** Agente RL principal com proteção contra overtrading
+
+**Tipo:** run
+**Uso:**
+```bash
+python scripts/operar_novo_agente_rl_real_antiovertrading.py
+
+# Com wrapper de supervisão (recomendado)
+python scripts/agente_com_supervision.py --sl-tp-mode dinamico
+```
+
+**Características:**
+- Q-Learning com 3 ações (BUY, SELL, HOLD)
+- Anti-overtrading (7 filtros de proteção)
+- SL/TP dinâmicos (análise de topos/fundos)
+- Profit Protection Engine (break-even stop automático)
+- Session ID via environment variable
+
+**Modelos:** `data/models/novo_agente_rl/modelo_final/`
+
+---
+
+### `agente_rl_direto_independente.py` (NOVO - 16/03/2026)
+
+**Propósito:** Agente RL com posição ISOLADA e INDEPENDENTE do agente 5000
+
+**Tipo:** run (direto, sem wrapper)
+**Uso:**
+```bash
+python scripts/agente_rl_direto_independente.py --mode dinamico
+
+# Via batch file (recomendado)
+INICIAR_AGENTE_RL_DIRETO.bat
+```
+
+**Características:**
+- Session ID único: `agente_direto_TIMESTAMP`
+- Logs separados por instância
+- Pode rodar em PARALELO com operar_novo_agente_rl_real_antiovertrading.py
+- Estado totalmente isolado (posições, trades, histórico)
+- Inicialização própria de componentes
+- Mesmo modelo RL compartilhado
+
+**Arguments:**
+- `--mode dinamico|fixo`: Define modo de SL/TP (padrão: dinamico)
+
+**Logs:**
+- `outputs/agente_direto_[TIMESTAMP].log`
+- `outputs/agente_direto_debug_[TIMESTAMP].log`
+
+**Diferença vs agente 5000:**
+| Aspecto | Agente 5000 | Agente Direto |
+|---------|---|---|
+| Wrapper | Com supervisão | Sem wrapper |
+| Session ID | Via environment | Via geração de ID |
+| Paralelo | ✅ Sim | ✅ Sim |
+| Heartbeat | ✅ Sim | ❌ Não |
+| Complexidade | Média | Simples |
+
+---
+
+### `agente_com_supervision.py`
+
+**Propósito:** Wrapper de supervisão para `operar_novo_agente_rl_real_antiovertrading.py`
+
+**Tipo:** launch
+**Uso:**
+```bash
+python scripts/agente_com_supervision.py --sl-tp-mode [dinamico|fixo]
+```
+
+**Características:**
+- Monitoramento contínuo (heartbeat)
+- Tratamento centralizado de exceções
+- Logging unificado
+- Recuperação automática de falhas
+- Redirection de stdout/stderr
+
+**Logs:**
+- `outputs/agente_supervision.log` (saída completa)
+- `outputs/agente_debug.log` (logs DEBUG detalhados)
 
 ---
 
