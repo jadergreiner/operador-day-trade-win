@@ -205,9 +205,15 @@ fim a fim.
   - Localizacao: `src/application/ac6_8_online_learning.py` ✅
   - Commit: feat: Implementar AC6.8 Online Learning com testes 18/18
 
-- AC6.9: Comparacao contra baseline e feedback ao sistema (PENDENTE)
-  - Historico de baseline e degradacao
-  - Rollback automatico se necessario
+- AC6.9: Comparacao contra baseline e feedback ao sistema (✅ DONE - 16/03/2026)
+  - ✅ Historico de baseline e degradacao implementado
+  - ✅ Rollback automatico se necessario (feedback estruturado)
+  - ✅ BaselineComparator: 450+ LOC com 6 métodos principais
+  - ✅ Dataclasses: BaselineRecord, ComparisonResult, SystemFeedback
+  - ✅ Testes: 20 testes unitários (20/20 PASSING)
+  - ✅ Type hints: 100% conforme mypy --strict
+  - ✅ Documentação: Relatórios JSON + Markdown
+  - Commit: feat: Implementar AC6.9 Comparacao Baseline com testes 20/20
 
 ### P2 - Capacidade futura
 
