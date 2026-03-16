@@ -401,6 +401,73 @@ movimentos amplos do mercado (problema: win rapido + reversao aguda).
 
 - Commit: feat: Implementar P1-PROFIT_PROTECTION com testes 23/23
 
+#### Proximos Passos Opcionais (P1-PROFIT_PROTECTION)
+
+**1. Ajustar Thresholds - Modificar profit_protection_engine config**
+
+- **Objetivo:** Fine-tuning dos parametros de protecao baseado em
+  resultados de live trading.
+- **Atividades:**
+  - Coletar dados de operacoes reais (P&L, reversoes detectadas)
+  - Analisar distribuicao de ganhos e reversoes
+  - Testar novos valores para:
+    - `profit_target_pct`: Atualmente 2.0%
+    - `stop_loss_pct`: Atualmente 1.0%
+    - `reversao_threshold_pct`: Atualmente 0.75%
+    - `break_even_offset_pct`: Atualmente 0.10%
+  - Validar impacto em win rate e drawdown
+- **Entregar:**
+  - Analise de threshold effectiveness (JSON + Markdown)
+  - Parametros otimizados baseados em dados
+  - Validacao de impacto com backtest dos novos valores
+- **Estimativa:** 4-6 horas (coleta + teste + validacao)
+
+**2. Adicionar Alertas - Webhook/Email quando reversao detectada**
+
+- **Objetivo:** Notificar operador em tempo real de movimentos de risco
+  ou protecao acionada.
+- **Atividades:**
+  - Implementar AlertDispatcher para reversoes (ex: ganha 1.8% → cai
+    0.5%)
+  - Webhook para Slack/Discord com detalhes:
+    - Trade ticket, simbolo, direcao (BUY/SELL)
+    - Ganho inicial, gangho atual, reversao detectada
+    - Acao sugerida (break-even stop, fechar parcial, etc)
+  - Email via `alert_dispatcher.yaml` com relatorio estruturado
+  - Configuracao de thresholds para cada tipo de alerta
+- **Entregar:**
+  - AlertReversaoHandler class (webhook + email)
+  - Testes unitarios de dispatch (mocks de webhook/email)
+  - Configuracao em `config/alert_reversoes.yaml`
+  - Documentacao de setup para operador
+- **Estimativa:** 6-8 horas (implementacao + testes + integracao)
+
+**3. Backtest - Testar protecao em historico completo**
+
+- **Objetivo:** Validar efetividade da protecao sobre datasets historicos
+  e entender seu impacto na curva de lucro/perda.
+- **Atividades:**
+  - Executar serie historica (6-12 meses) com sinal ML + protecao
+  - Comparar resultados: COM vs SEM protecao
+  - Metricas de comparacao:
+    - Win rate delta (+%)
+    - Drawdown maximo (reducao esperada ~30-50%)
+    - Sharpe ratio improvement
+    - Tempo medio de exposicao
+    - Quantidade de ordens fechadas por break-even
+  - Gerar relatorio visual com graficos de equity curve
+  - Validar consistencia de protecao em diferentes periodos
+- **Entregar:**
+  - Script: `scripts/backtest_profit_protection.py`
+  - Saida JSON com metricas de comparison (com/sem protecao)
+  - Graficos em HTML/PNG: equity curves, drawdown, estatisticas
+  - Documento de analise (Markdown) com recomendacoes
+- **Estimativa:** 8-10 horas (desenvolvimento + parametrizacao +
+  validacao)
+
+**Prioridade:** OPCIONAL - Execucao recomendada apos Fase 1 live data
+disponivel (primeira semana de operacao ao vivo).
+
 ### P2 - Capacidade futura
 
 #### 7. Observabilidade e governanca tecnica
