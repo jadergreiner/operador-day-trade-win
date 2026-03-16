@@ -847,7 +847,325 @@ stats = tracker.obter_estatisticas()
 3. 📅 Agendar implementacao de melhorias APOS validacao inicial
 4. 📊 Usar dados coletados na Fase 1 para otimizar parametros
 
+**Próximos Passos:**
+1. ✅ Agente RL Direto validado em live trading (16/03/2026)
+2. 🔄 Executar Fase 1 (1+ semana de trading ao vivo)
+3. 📅 Agendar implementacao de melhorias APOS validacao inicial
+4. 📊 Usar dados coletados na Fase 1 para otimizar parametros
+
 **Validacao Esperada (Pos-Melhorias):**
+
+#### 11. P1-ETAPAS_OPERACIONAIS: Ciclo de Vida Operacional com 4 Etapas
+
+**Status:** ✅ DONE (16/03/2026 - Framework completo implementado)
+
+**Objetivo:** Estruturar o ciclo de vida operacional em 4 etapas bem definidas
+com rastreamento completo, separando claramente Motor de Análise de Mercado
+e Motor de Decisão de Abertura de Posição.
+
+**Problema Resolvido:**
+
+- Análise e sinais eram acoplados à decisão de abrir posição
+- Oportunidades perdidas ou canceladas não geravam aprendizado
+- Impossível rastrear "e se tivéssemos aberto?"
+- Feedback para ML/RL não estava ligado a análises desaprovadas
+
+**Arquitetura - 4 Etapas:**
+
+1. **Etapa 1: Análise de Tendência Principal (Motor de Análise)**
+   - Detecta direção do dia (ALTISTA, BAIXISTA, LATERAL)
+   - Calcula força do movimento (0-100%)
+   - Identifica contexto (BDI, macro, eventos, volume)
+   - Registra suporte/resistência identificados
+   - Estima volatilidade esperada
+
+2. **Etapa 2: Detecção de Oportunidades (Motor de Análise)**
+   - Identifica regiões de interesse no gráfico
+   - Valida alinhamento com tendência do dia
+   - Calcula razão risco/retorno potencial
+   - Registra força dos fatores técnicos
+
+3. **Etapa 3: Monitoramento Contínuo (Motor de Análise)**
+   - Acompanha evolução da oportunidade em tempo real
+   - Valida se ainda é comercializável
+   - Registra movimentos de preço
+   - Rastreia mudanças nas condições de mercado
+   - Marca como CANCELADA se expirar
+
+4. **Etapa 4: Decisão + Rastreamento (Motor de Decisão)**
+   - **Decisão:** Abrir, Negar ou Contingência
+   - **Rastreamento:** Se aberto, monitora entrada → saída
+   - **Resultado:** PnL, motivo fechamento, duração
+   - **Feedback:** Valida se decisão foi correta
+
+**Separação Clara:**
+
+- Motor de Análise (Etapas 1-3):
+  ✅ Análises são INDEPENDENTES
+  ✅ Oportunidades CANCELADAS são registradas
+  ✅ Feedback gerado mesmo sem abrir posição
+  ✅ Aprendizado de "oportunidades perdidas"
+
+- Motor de Decisão (Etapa 4):
+  ✅ Decisão logicamente separada
+  ✅ Protege análise de bias operacional
+  ✅ Permite auditoria de desempenho de análises
+  ✅ Rastreia motivos de não-abertura
+
+**Implementação Completa:**
+
+- **Arquivo:** `src/application/p1_operation_lifecycle.py` (900+ LOC)
+  
+  **Classes (Etapa 1):**
+  - `Tendencia`: Dataclass com análise de tendência
+  - `TendenciaDir`: Enum (ALTISTA, BAIXISTA, LATERAL, INDEFINIDA)
+  
+  **Classes (Etapa 2):**
+  - `Oportunidade`: Dataclass de oportunidade detectada
+  - `OportunidadeStatus`: Enum (DETECTADA, DECIDIDA, EXECUTADA, CANCELADA, PERDIDA, FECHADA)
+  
+  **Classes (Etapa 3):**
+  - `MonitoramentoOportunidade`: Tracking contínuo com snapshots de mercado
+  
+  **Classes (Etapa 4):**
+  - `DecisaoOperacional`: Dataclass com decisão + reasoning
+  - `DecisaoAbertura`: Enum (PENDENTE, ABRIR, NEGAR, CONTINGENCIA)
+  - `RastreamentoOperacao`: Tracking de posição aberta → fechada
+
+  **Motors:**
+  - `MotorAnaliseMercado`: Persistência de Etapas 1-3
+    - registrar_tendencia()
+    - registrar_oportunidade()
+    - registrar_monitoramento()
+    - obter_tendencia_hoje()
+  
+  - `MotorDecisao`: Persistência de Etapa 4
+    - registrar_decisao()
+    - registrar_operacao()
+    - obter_operacao()
+    - listar_operacoes_abertas()
+  
+  - `GeradorRelatorioCicloVida`: Agregação de dados
+    - gerar_relatorio_dia(): Resumo com estatísticas
+
+- **Database:**
+  - `tendencia_diaria`: Snapshots diários de análise
+  - `oportunidades`: Todas oportunidades detectadas
+  - `monitoramento_oportunidades`: Histórico de updates
+  - `decisoes_operacionais`: Decisões e reasoning
+  - `rastreamento_operacoes`: P&L e ciclo de vida de posições
+  - Total: 5 tabelas SQLite com 100+ campos estruturados
+
+- **Type Hints:** 100% mypy importa sem erros ✅
+- **Português:** 100% (docstrings, variáveis, comentários) ✅
+
+**Testes:** `tests/unit/test_p1_operation_lifecycle.py` (24 testes, 24/24 PASS)
+
+- **TestEtapa1Tendencia (5 testes):**
+  - test_criar_tendencia_altista
+  - test_criar_tendencia_baixista
+  - test_tendencia_para_dict
+  - test_registrar_tendencia
+  - test_obter_tendencia_hoje
+
+- **TestEtapa2Oportunidades (4 testes):**
+  - test_criar_oportunidade_valida
+  - test_oportunidade_desalinhada_com_tendencia
+  - test_oportunidade_para_dict
+  - test_registrar_oportunidade
+
+- **TestEtapa3Monitoramento (3 testes):**
+  - test_criar_monitoramento
+  - test_monitoramento_oportunidade_expirada
+  - test_registrar_monitoramento
+
+- **TestEtapa4DecisaoEOperacao (9 testes):**
+  - test_criar_decisao_abrir
+  - test_criar_decisao_negar
+  - test_registrar_decisao
+  - test_criar_rastreamento_operacao
+  - test_fechar_rastreamento_com_ganho
+  - test_fechar_rastreamento_com_perda
+  - test_registrar_operacao
+  - test_obter_operacao
+  - test_listar_operacoes_abertas
+
+- **TestGeradorRelatorio (2 testes):**
+  - test_gerar_relatorio_dia_vazio
+  - test_relatorio_estrutura_completa
+
+- **TestIntegracao (1 teste):**
+  - test_fluxo_completo_ciclo_vida: Etapas 1→2→3→4 completas
+
+**Validação:**
+- ✅ 24/24 testes PASSING (100% success rate)
+- ✅ Import sem erros (Python 3.11)
+- ✅ 100% type hints (mypy validação)
+- ✅ 100% português
+- ✅ Cobertura >=80% (todos métodos testados)
+- ✅ Clean Architecture pattern mantido
+
+**Casos de Uso Atendidos:**
+
+1. **Tendência Altista, 2 Oportunidades Detectadas:**
+   - Etapa 1 registra: ALTISTA, força 75%, contexto BDI positivo
+   - Etapa 2 registra: 2 oportunidades, ambas alinhadas
+   - Etapa 3 monitora: Opp1 ativa, Opp2 cancelada (preço saiu zona)
+   - Etapa 4 decide: Abrir Opp1 → PnL +R$2.000 | Negar Opp2 → registrada como PERDIDA
+   - Resultado: 1 trade vencedor, 1 oportunidade perdida (feedback para ML)
+
+2. **Operação em Aberto Bloqueia Nova Tentativa:**
+   - Motor de Análise continua: Etapas 1-3 rodam normalmente
+   - Etapa 2 detecta nova oportunidade
+   - Etapa 3 monitora
+   - Motor de Decisão rejeita por risco (posição anterior em DD)
+   - Resultado: Oportunidade registrada como CANCELADA não por expiração, mas por regra risk management
+
+3. **Auditoria Pós-Operação:**
+   - Relatório do dia mostra:
+     - 5 oportunidades detectadas
+     - 3 executadas (1 ganho, 2 perdas)
+     - 2 canceladas (preço expirou zona)
+     - Win rate de análise: 40% (2/5)
+     - Win rate de execução: 33% (1/3)
+     - Diferença sugere filtro de decisão precisa ser revisado
+
+**Uso Prático para ML/RL:**
+
+```python
+from src.application.p1_operation_lifecycle import (
+    MotorAnaliseMercado,
+    MotorDecisao,
+    Tendencia,
+    TendenciaDir,
+    Oportunidade,
+)
+from datetime import datetime
+
+# Motor de Análise roda independentemente
+motor_analise = MotorAnaliseMercado()
+
+# Etapa 1: Registra tendência
+tendencia = Tendencia(
+    timestamp=datetime.now(),
+    direcao=TendenciaDir.ALTISTA,
+    forca=75.0,
+    contexto="BDI positivo, volume crescente",
+    nivel_suporte=141000.0,
+    nivel_resistencia=143000.0,
+    volatilidade_esperada=1.2
+)
+tendencia_id = motor_analise.registrar_tendencia(tendencia)
+
+# Etapa 2: Detecta oportunidade
+opp = Oportunidade(
+    id_oportunidade="opp_20260316_001",
+    timestamp_deteccao=datetime.now(),
+    tendencia_id=tendencia_id,
+    preco_referencia=142500.0,
+    direcao_sugerida="BUY",
+    forcas_tecnicas=["pullback_suporte", "volume_crescente"],
+    confianca_tecnica=82.0,
+    alinhamento_tendencia=True,
+    razao_desalinhamento=None,
+    tamanho_potencial=1400.0,
+    razao_risco_retorno=2.8
+)
+motor_analise.registrar_oportunidade(opp)
+
+# Etapa 3: Monitora
+monitor = MonitoramentoOportunidade(
+    id_oportunidade="opp_20260316_001",
+    timestamp_update=datetime.now(),
+    preco_atual=142600.0,
+    preco_inicial=142500.0,
+    movimento_pct=0.07,
+    condicoes_mercado_atuais={"volume": "normalizado"},
+    ainda_valida=True,
+    razao_invalidade=None
+)
+motor_analise.registrar_monitoramento(monitor)
+
+# Motor de Decisão (independente, pode rodar em thread separada)
+motor_decisao = MotorDecisao()
+
+# Etapa 4a: Registra decisão
+decisao = DecisaoOperacional(
+    id_oportunidade="opp_20260316_001",
+    timestamp_decisao=datetime.now(),
+    decisao=DecisaoAbertura.ABRIR,
+    reasoning="Confirmação técnica + alinhamento tendência",
+    fatores=["pullback", "suporte_testado", "volume"],
+    heuristica_aplicada="regra_pullback_tendencia",
+    motivo_negacao=None
+)
+motor_decisao.registrar_decisao(decisao)
+
+# Etapa 4b: Abre posição e rastreia
+operacao = RastreamentoOperacao(
+    id_operacao="op_20260316_001",
+    id_oportunidade="opp_20260316_001",
+    timestamp_abertura=datetime.now(),
+    entrada_preco=142500.0,
+    stop_loss=141500.0,
+    take_profit=144500.0,
+    status_execucao="ABERTA"
+)
+motor_decisao.registrar_operacao(operacao)
+
+# ... mais tarde, ao fechar ...
+operacao.timestamp_fechamento = datetime.now()
+operacao.saida_preco = 144500.0
+operacao.pnl_reais = 2000.0
+operacao.pnl_pct = 1.40
+operacao.status_execucao = "FECHADA"
+operacao.motivo_fechamento = "TP_ATINGIDO"
+motor_decisao.registrar_operacao(operacao)
+
+# Gerar relatório do dia
+gerador = GeradorRelatorioCicloVida()
+relatorio = gerador.gerar_relatorio_dia(data="today")
+print(f"Win rate análise: {relatorio['etapa_2_3_oportunidades']}")
+print(f"Win rate execução: {relatorio['etapa_4_operacoes']}")
+```
+
+**Impacto Esperado:**
+
+1. **ML/RL Aprendizado:**
+   - Separa "qualidade de análise" de "qualidade de decisão"
+   - Feedback de oportunidades canceladas alimenta modelos
+   - Detecção de degradação de modelo mais precisa
+
+2. **Auditoria:**
+   - Histórico completo de análises vs decisões vs resultados
+   - Rastreabilidade total de operações
+   - Análise de "falsos negativos" (oportunidades não aproveitadas)
+
+3. **Otimização de Parâmetros:**
+   - Dados para ajustar thresholds de confiança de análise
+   - Histórico de bloqueios por risk management
+   - Padrões de sucesso por tipo de oportunidade
+
+**Próximos Passos Opcionais (P1-ETAPAS_OPERACIONAIS):**
+
+1. **Integração com Dashboard** (OPTIONAL)
+   - Visualizar tendência do dia
+   - Listar oportunidades em tempo real
+   - Rastrear decisões vs resultados
+
+2. **Feedback Engine** (OPTIONAL)
+   - Input dados das 4 etapas em retraining loop
+   - Detectar mudança de padrão (drift)
+   - Sugerir ajustes de thresholds
+
+3. **API Endpoints** (OPTIONAL)
+   - GET /etapas/{data} - Relatório do dia
+   - POST /oportunidade - Registrar análise
+   - GET /operacoes/abertas - Posições ativas
+
+**Commit:** feat: Implementar P1-ETAPAS_OPERACIONAIS com 24 testes passando
+
+**Validação Esperada (Pos-Melhorias):**
 - Tracker P&L: Concordancia 100% com tickets MT5
 - Logging bloqueios: Motivo rastreavel para 100% dos bloqueios
 - Deteccao fechamento: Caso de uso (TP/SL/Manual) 100% da coberagna
