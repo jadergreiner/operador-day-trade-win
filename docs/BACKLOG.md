@@ -60,7 +60,60 @@ retorno auditavel (Gate 2 PASS).
 - drawdown e consistencia estiverem medidos de forma auditavel;
 - Gate 2 PASS registrado em 12/03/2026 (decisao final).
 
-#### 2. AC5.7 Integracao real de envio de ordens MT5
+#### 2. P0-NOVO Motor de Decisao Isolado por Agent ID
+
+**Status:** ✅ DONE (16/03/2026)
+
+**Objetivo:** Eliminar bloqueios falsos entre agentes RL paralelos causados
+por compartilhamento de estado de posicao. Implementar isolamento completo
+de decisoes e rastreamento de posicoes por agent_id.
+
+**Motivo da prioridade:** Agentes RL_5000 e RL_DIRETO nao conseguem operar
+em paralelo - cada um bloqueia o outro quando um abre posicao, mesmo que
+pertenham a agentes diferentes.
+
+**Problema tecnico:** Arquivo `agente_posicao_status.json` compartilhado
+causava bloqueio falso de 60s no segundo agente. Cada agente precisa seu
+proprio executor ISOLADO.
+
+**Entregar:**
+
+- Motor de decisao isolado por agent_id (100% isolamento); ✅
+- 4 dataclasses para dominio (PosicaoAberta, DecisaoRegistrada, HistoricoFechamento); ✅
+- MotorDecisaoIsolado com 10+ metodos (abrir, atualizar, fechar, estatisticas); ✅
+- Persistencia file-based por agent (posicoes_ativas_{agent_id}.json); ✅
+- Suite com 24 testes (24/24 PASSING); ✅
+- Validacao mypy --strict (100% type compliant); ✅
+- Documentacao 100% Portugues, docstrings completos. ✅
+
+**Pronto quando:**
+
+- Motor funciona com 0 interferencia entre agentes paralelos;
+- 24 testes PASSING (unit + integration);
+- mypy --strict OK sem erros;
+- Posicoes abertas por agente_5000 NAO bloqueiam agente_direto;
+- P&L calculado corretamente (pontos_por_contrato=100 para WINFUT).
+
+**Evidencias:**
+
+- `src/application/motor_decisao_isolado.py`: Modulo completo (750+ LOC)
+  - 4 dataclasses: PosicaoAberta, DecisaoRegistrada, HistoricoFechamento, (Enums)
+  - 3 Enums: DecisaoOperacional (6), TipoPosicao (2), MotivoFechamento (6)
+  - MotorDecisaoIsolado: 10+ metodos, arquivo-based persistence
+- `tests/unit/test_motor_decisao_isolado.py`: Suite (500+ LOC, 24 testes)
+  - TestDataClasses (4): dataclass creation/serialization
+  - TestMotorIsolamento (3): agent isolation verification
+  - TestAbrirPosicao (4): position opening
+  - TestAtualizarPosicao (2): P&L updates
+  - TestFecharPosicao (3): position closure
+  - TestEstatisticas (3): performance metrics
+  - TestPersistencia (3): JSON load/save
+  - TestIntegracaoCompleta (2): full workflows
+- Codigo: 100% type hints, 100% Portugues, docstrings
+- Validacao: pytest 24/24 PASSING, mypy --strict OK
+- Commit: feat: Implementar P0-NOVO Motor de Decisao Isolado com testes 24/24
+
+#### 3. AC5.7 Integracao real de envio de ordens MT5
 
 **Status:** DONE (12/03/2026)
 
@@ -915,18 +968,18 @@ e Motor de Decisão de Abertura de Posição.
 **Implementação Completa:**
 
 - **Arquivo:** `src/application/p1_operation_lifecycle.py` (900+ LOC)
-  
+
   **Classes (Etapa 1):**
   - `Tendencia`: Dataclass com análise de tendência
   - `TendenciaDir`: Enum (ALTISTA, BAIXISTA, LATERAL, INDEFINIDA)
-  
+
   **Classes (Etapa 2):**
   - `Oportunidade`: Dataclass de oportunidade detectada
   - `OportunidadeStatus`: Enum (DETECTADA, DECIDIDA, EXECUTADA, CANCELADA, PERDIDA, FECHADA)
-  
+
   **Classes (Etapa 3):**
   - `MonitoramentoOportunidade`: Tracking contínuo com snapshots de mercado
-  
+
   **Classes (Etapa 4):**
   - `DecisaoOperacional`: Dataclass com decisão + reasoning
   - `DecisaoAbertura`: Enum (PENDENTE, ABRIR, NEGAR, CONTINGENCIA)
@@ -938,13 +991,13 @@ e Motor de Decisão de Abertura de Posição.
     - registrar_oportunidade()
     - registrar_monitoramento()
     - obter_tendencia_hoje()
-  
+
   - `MotorDecisao`: Persistência de Etapa 4
     - registrar_decisao()
     - registrar_operacao()
     - obter_operacao()
     - listar_operacoes_abertas()
-  
+
   - `GeradorRelatorioCicloVida`: Agregação de dados
     - gerar_relatorio_dia(): Resumo com estatísticas
 
