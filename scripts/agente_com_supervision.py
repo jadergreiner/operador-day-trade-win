@@ -2,6 +2,9 @@
 """
 Wrapper de supervisão para agente RL.
 Captura TUDO - exceptions, erros, warnings, etc.
+
+Args:
+    --sl-tp-mode: 'dinamico' ou 'fixo' (padrão: dinamico)
 """
 
 import sys
@@ -12,13 +15,32 @@ import signal
 import traceback
 from pathlib import Path
 
+# Parse argumentos ANTES de limpar sys.argv
+SL_TP_MODE = 'dinamico'  # Padrão
+if '--sl-tp-mode' in sys.argv:
+    try:
+        idx = sys.argv.index('--sl-tp-mode')
+        SL_TP_MODE = sys.argv[idx + 1]
+        if SL_TP_MODE not in ['dinamico', 'fixo']:
+            print(f"[ERRO] Modo invalido: {SL_TP_MODE}. Use 'dinamico' ou 'fixo'.")
+            sys.exit(1)
+    except (IndexError, ValueError):
+        print("[ERRO] Argumento --sl-tp-mode requer um valor")
+        sys.exit(1)
+
 # Setup path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 os.chdir(ROOT_DIR)
 
+# Remover argumentos personalizados antes de importar script agente
+sys.argv = [sys.argv[0]]
+
 import logging
 from io import StringIO
+
+# Passar modo via variável de ambiente
+os.environ['AGENTE_SL_TP_MODE'] = SL_TP_MODE
 
 # Redirecionar stderr para capturar tudo
 class DualWriter:

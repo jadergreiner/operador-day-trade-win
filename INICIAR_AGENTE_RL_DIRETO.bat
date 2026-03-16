@@ -49,12 +49,13 @@ if errorlevel 1 (
   exit /b 1
 )
 
-REM Executa agente com supervisao
-echo   [*] Executando agente...
+REM Executa agente com supervisao (SL/TP FIXO)
+echo   [*] Executando agente com SL/TP FIXO...
+echo   [*] Modo: Valores fixos (150 pontos SL, 300 pontos TP)
 echo.
 
 cd /d "%~dp0"
-python scripts\agente_com_supervision.py
+python scripts\agente_com_supervision.py --sl-tp-mode fixo
 
 REM Verifica resultado da execucao
 if errorlevel 1 (

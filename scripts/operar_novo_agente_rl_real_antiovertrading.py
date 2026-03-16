@@ -82,6 +82,17 @@ STOP_LOSS_PONTOS = 150
 TAKE_PROFIT_PONTOS = 300
 MAGIC_NUMBER = 234500
 
+# Modo de calculo SL/TP (dinamico ou fixo)
+SL_TP_MODE = os.getenv('AGENTE_SL_TP_MODE', 'dinamico').lower()
+if SL_TP_MODE not in ['dinamico', 'fixo']:
+    SL_TP_MODE = 'dinamico'
+
+# ID unico para este agente (para controlar posicoes em paralelo)
+AGENTE_ID = f"agente_{SL_TP_MODE}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+logger.info(f"Modo SL/TP: {SL_TP_MODE.upper()}")
+logger.info(f"ID do Agente: {AGENTE_ID}")
+
 config = TradingConfig()
 mt5_adapter: Optional[MT5Adapter] = None
 pipeline: Optional[PipelineTreinamentoRL] = None
@@ -306,7 +317,7 @@ def verificar_confirmacao_sinal(sinal_atual: str, sinal_anterior: str) -> bool:
 
 def calcular_sl_tp_dinamico(dados: pd.DataFrame, acao: str, preco_atual: float,
                            lookback_periods: int = 20) -> tuple[float, float]:
-    """Calcula SL/TP dinamicamente baseado em topos/fundos recentes.
+    """Calcula SL/TP baseado no modo configurado (dinamico ou fixo).
 
     Args:
         dados: DataFrame com OHLC
@@ -315,8 +326,18 @@ def calcular_sl_tp_dinamico(dados: pd.DataFrame, acao: str, preco_atual: float,
         lookback_periods: Número de candles para analisar (padrão 20)
 
     Returns:
-        (stop_loss, take_profit) tupla com valores dinâmicos
+        (stop_loss, take_profit) tupla com valores
     """
+    
+    # SE MODO FOR FIXO, RETORNA VALORES FIXOS DIRETO
+    if SL_TP_MODE == 'fixo':
+        logger.info(f"[FIXO] Usando SL/TP fixo para {acao}")
+        if acao == "Comprar":
+            return preco_atual - STOP_LOSS_PONTOS, preco_atual + TAKE_PROFIT_PONTOS
+        else:
+            return preco_atual + STOP_LOSS_PONTOS, preco_atual - TAKE_PROFIT_PONTOS
+    
+    # MODO DINAMICO - Calcula baseado em topos/fundos
     try:
         if len(dados) < lookback_periods:
             # Fallback para valores fixos se não houver dados suficientes
@@ -414,7 +435,7 @@ def enviar_ordem_mt5adapter(acao: str, preco_atual: float, vol: float, dados: Op
                 sl = preco_atual + STOP_LOSS_PONTOS
                 tp = preco_atual - TAKE_PROFIT_PONTOS
 
-        logger.info(f"[ENVIO] Enviando: {acao} @ {preco_atual} (SL: {sl}, TP: {tp}, Vol: {vol:.3f}%)")
+        logger.info(f"[ENVIO] Enviando: {acao} @ {preco_atual} (SL: {sl}, TP: {tp}, Vol: {vol:.3f}%) [Agente: {AGENTE_ID}, Modo: {SL_TP_MODE.upper()}]")
 
         order = Order(
             symbol=Symbol(SIMBOLO),
@@ -793,6 +814,8 @@ def print_status():
     logger.info("\n" + "=" * 70)
     logger.info("[STATUS] OPERACAO (BALANCED MODE)")
     logger.info("=" * 70)
+    logger.info(f"Agente ID: {AGENTE_ID}")
+    logger.info(f"Modo SL/TP: {SL_TP_MODE.upper()}")
     logger.info(f"Modo: Operando livremente até TARGET ou STOP LOSS")
     logger.info(f"Limite diário: DESATIVADO (ilimitado)")
     logger.info(f"Última operação: {last_trade_time.strftime('%H:%M:%S') if last_trade_time else 'Nenhuma'}")

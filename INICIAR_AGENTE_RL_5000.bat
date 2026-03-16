@@ -71,8 +71,9 @@ if "%CHOICE%"=="2" (
     echo.
     echo   [START] OPERACAO REAL COM ANTI-OVERTRADING (BALANCED MODE)
     echo   Objetivo: Lucro R$ 140,00 ou Prejuizo -R$ 250,00
+    echo   Modo SL/TP: DINAMICO (adapta-se aos topos/fundos)
     echo.
-    python operador-day-trade-win\scripts\operar_novo_agente_rl_real_antiovertrading.py
+    python operador-day-trade-win\scripts\operar_novo_agente_rl_real_antiovertrading.py --sl-tp-mode dinamico
     echo.
     echo   [INFO] Operacao encerrada.
     pause
