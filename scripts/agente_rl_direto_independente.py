@@ -478,24 +478,33 @@ def main():
                 logger.info(f'[CICLO {ciclo}] Iniciando iteração...')
                 logger.debug(f'[CICLO {ciclo}] Tempo decorrido: {time.time() - start_time:.1f}s')
 
-                # 1. Carregar dados de mercado (últimas 30 velas M5)
+                # 1. Carregar dados de mercado (últimas 100 velas M5 para contexto RL)
                 try:
                     if Symbol is None or TimeFrame is None:
                         logger.debug('[CICLO] Domain models não estão disponíveis')
                         time.sleep(5)
                         continue
 
-                    # Usar padrão correto: Symbol(string), TimeFrame.M5, count
-                    dados = mt5_adapter.get_candles(Symbol(SIMBOLO), TimeFrame.M5, 30)
+                    # Usar padrão correto: Symbol(string), TimeFrame.M5, count=100
+                    candles_raw = mt5_adapter.get_candles(Symbol(SIMBOLO), TimeFrame.M5, 100)
 
-                    if dados is None or len(dados) == 0:
+                    if candles_raw is None or len(candles_raw) == 0:
                         logger.debug('[CICLO] Aguardando dados de mercado (MT5 pode estar offline)...')
                         time.sleep(5)
                         continue
 
-                    # Dados são lista de Candle objects com atributos .close, .high, etc
-                    preco_atual = float(dados[-1].close.value)
-                    logger.debug(f'[CICLO {ciclo}] Preço atual: {preco_atual}')
+                    # Converter lista de Candle objects para DataFrame para RL environment
+                    dados_df = pd.DataFrame({
+                        'open': [c.open.value for c in candles_raw],
+                        'high': [c.high.value for c in candles_raw],
+                        'low': [c.low.value for c in candles_raw],
+                        'close': [c.close.value for c in candles_raw],
+                        'volume': [c.volume for c in candles_raw],
+                    })
+
+                    # Preço atual vem do último candle
+                    preco_atual = float(candles_raw[-1].close.value)
+                    logger.debug(f'[CICLO {ciclo}] Preço atual: {preco_atual} | Velas disponíveis: {len(dados_df)}')
 
                 except Exception as e:
                     logger.warning(f'[CICLO {ciclo}] Erro ao obter dados: {e}')
@@ -515,7 +524,7 @@ def main():
                 logger.debug(f'[CICLO {ciclo}] Verificando oportunidade de entrada...')
 
                 try:
-                    acao_id, confidence = obter_acao_do_modelo(dados, pipeline, agente)
+                    acao_id, confidence = obter_acao_do_modelo(dados_df, pipeline, agente)
                     acao_str = mapear_acao(acao_id)
 
                     logger.debug(f'[CICLO {ciclo}] Ação RL: {acao_str} (confiança: {confidence:.2%})')
