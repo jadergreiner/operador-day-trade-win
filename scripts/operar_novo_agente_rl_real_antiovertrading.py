@@ -628,15 +628,15 @@ def modificar_sl_ordem(ticket: int, novo_sl: float) -> bool:
                           f"retcode={retcode}, mensagem={comment}. "
                           f"Req: SL={float(novo_sl):.2f}, TP={float(position.tp) if position.tp else 0:.2f}")
 
-            # Diagnóstico detalhado
+            # Diagnostico detalhado
             if retcode == 10009:  # TRADE_RETCODE_INVALID_PRICE
-                logger.error(f"  → INVALID PRICE: novo SL {novo_sl:.2f} pode estar fora do spread")
+                logger.error(f"  -> INVALID PRICE: novo SL {novo_sl:.2f} pode estar fora do spread")
             elif retcode == 10010:  # TRADE_RETCODE_INVALID_STOPS
-                logger.error(f"  → INVALID STOPS: SL ou TP inválido. SL={novo_sl:.2f}, TP={float(position.tp):.2f}")
+                logger.error(f"  -> INVALID STOPS: SL ou TP invalido. SL={novo_sl:.2f}, TP={float(position.tp):.2f}")
             elif retcode == 10014:  # TRADE_RETCODE_INVALID_VOLUME
-                logger.error(f"  → INVALID VOLUME: verificar volume=1")
+                logger.error(f"  -> INVALID VOLUME: verificar volume=1")
             elif comment == "Invalid request":
-                logger.error(f"  → INVALID REQUEST: PROVÁVEL: SL já está neste valor ou diferença < 1 ponto")
+                logger.error(f"  -> INVALID REQUEST: PROVAVEL: SL ja esta neste valor ou diferenca < 1 ponto")
 
             return False
 
@@ -767,7 +767,7 @@ def proteger_lucro_trade() -> None:
 
             percent_tp = (lucro_pontos / lucro_max) * 100
 
-            # Level 1: 25% de lucro → Move SL para break-even
+            # Level 1: 25% de lucro -> Move SL para break-even
             if percent_tp > 25:
                 novo_sl = entry_price
                 diferenca_sl = abs(novo_sl - sl)
@@ -795,14 +795,14 @@ def proteger_lucro_trade() -> None:
                         logger.debug(f"[PROTEÇÃO] Ticket {ticket} (SELL): Diferença SL={diferenca_sl:.2f} "
                                    f"< 1.0 (inercial). Ignorando.")
 
-            # Level 2: 50% de lucro → Fecha 50% (lock in profits)
+            # Level 2: 50% de lucro -> Fecha 50% (lock in profits)
             if percent_tp > 50:
                 half_volume = volume / 2
                 logger.info(f"[PROTEÇÃO] Posição #{ticket} em +{percent_tp:.1f}% de lucro. "
                            f"Fechando 50% do volume ({half_volume:.2f})")
                 fechar_parcial_posicao(ticket, half_volume)
 
-            # Level 3: 75% de lucro → Trailing stop (deixa correr)
+            # Level 3: 75% de lucro -> Trailing stop (deixa correr)
             if percent_tp > 75:
                 trailing_distance = 50  # 50 pontos de trailing
                 novo_sl = 0.0

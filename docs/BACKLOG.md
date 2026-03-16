@@ -880,6 +880,47 @@ retorno auditavel (Gate 2 PASS).
 
 ## Backlog — INICIAR_AGENTE_RL_5000.bat
 
+### P0 - Bloqueadores criticos
+
+#### 1. Corrigir UnicodeEncodeError em logging de protecao SL/TP
+
+**Status:** ✅ DONE (16/03/2026 12:45)
+
+**Objetivo:** remover caracteres Unicode que causam UnicodeEncodeError em
+Windows (encoding cp1252) quando logger tenta escrever mensagens de erro.
+
+**Problema:** script falhava em `modificar_sl_ordem()` quando tentava logar
+mensagens com seta Unicode (→) e acentos (PROVAVEL, etc).
+
+```
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2192'
+in position 34: character maps to <undefined>
+```
+
+**Solucao Implementada:**
+
+- Substituir 7 ocorrencias de seta Unicode (→) por ASCII arrow (->)
+- Remover acentos em mensagens de logger (PROVAVEL, DIFERENCA, INVALIDO)
+- Manter UTF-8-3 no arquivo fonte (codificacao declarada)
+- Adicionar testes de regressao para encoding Windows
+
+**Entregar:**
+
+- `scripts/operar_novo_agente_rl_real_antiovertrading.py`: Corrigido (7 linhas)
+- `tests/unit/test_logging_encoding_fix.py`: Suite de 4 testes de regressao
+  - test_logger_with_cp1252_handler_accepts_arrow_character: PASS
+  - test_logger_messages_are_cp1252_compatible: PASS
+  - test_ascii_arrow_is_equivalent_to_unicode_arrow: PASS
+  - test_logger_without_unicode_handles_windows_encoding: PASS
+- Validacao: pytest 4/4 testes passando
+- Commit: `fix: Corrigir UnicodeEncodeError em logging SL/TP (cp1252 compat)`
+
+**Impacto:**
+- ✅ Script agora pode logar em Windows sem crashes de encoding
+- ✅ Proteção de lucro funciona end-to-end
+- ✅ Nenhuma perda de funcionalidade (apenas formatos de mensagem)
+- ✅ Mensagens ainda sao legaiveis e informaticas em Portugues
+
 ### P2 - Capacidade futura
 
 #### 1. Trilha RL operacional

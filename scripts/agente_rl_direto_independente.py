@@ -402,23 +402,23 @@ class AntiOvertradingProtection:
         self.max_consecutive_losses = max_consecutive_losses
         self.trading_hours_start = trading_hours_start
         self.trading_hours_end = trading_hours_end
-        
+
         self.trades_this_hour = []
         self.last_trade_time = None
         self.consecutive_losses = 0
         self.is_in_cooldown = False
         self.cooldown_until = None
-        
+
     def pode_tradear(self) -> tuple[bool, str]:
         """Verifica se é permitido fazer um novo trade. Retorna (permitido, motivo)."""
         from datetime import datetime, timedelta
-        
+
         now = datetime.now()
-        
+
         # 1. Verificar horário de operação
         if now.hour < self.trading_hours_start or now.hour >= self.trading_hours_end:
             return False, f"❌ Fora do horário de operação ({self.trading_hours_start}h-{self.trading_hours_end}h)"
-        
+
         # 2. Verificar cooldown global
         if self.is_in_cooldown and self.cooldown_until and now < self.cooldown_until:
             remaining = (self.cooldown_until - now).total_seconds()
@@ -426,43 +426,43 @@ class AntiOvertradingProtection:
         else:
             self.is_in_cooldown = False
             self.cooldown_until = None
-        
+
         # 3. Verificar limite de trades por hora
         one_hour_ago = now - timedelta(hours=1)
         self.trades_this_hour = [t for t in self.trades_this_hour if t > one_hour_ago]
-        
+
         if len(self.trades_this_hour) >= self.max_trades_per_hour:
             return False, f"❌ Limite de {self.max_trades_per_hour} trades/hora atingido ({len(self.trades_this_hour)}/{self.max_trades_per_hour})"
-        
+
         # 4. Verificar cooldown mínimo entre trades
         if self.last_trade_time:
             seconds_since_last = (now - self.last_trade_time).total_seconds()
             if seconds_since_last < self.min_cooldown_seconds:
                 return False, f"❌ Cooldown mínimo: {self.min_cooldown_seconds}s (apenas {seconds_since_last:.0f}s se passaram)"
-        
+
         # 5. Verificar perdas consecutivas
         if self.consecutive_losses >= self.max_consecutive_losses:
             return False, f"❌ {self.max_consecutive_losses} perdas consecutivas - pausando operações"
-        
+
         return True, "✅ Permitido tradear"
-    
+
     def registrar_trade(self):
         """Registra que um novo trade foi aberto."""
         self.trades_this_hour.append(datetime.now())
         self.last_trade_time = datetime.now()
         logger.info(f"[ANTIOVERTRADING] Trade #{len(self.trades_this_hour)} registrado nesta hora")
-    
+
     def registrar_perda(self):
         """Registra uma perda e incrementa contador consecutivo."""
         self.consecutive_losses += 1
         logger.warning(f"[ANTIOVERTRADING] ⚠️  Perda registrada ({self.consecutive_losses}/{self.max_consecutive_losses})")
-        
+
         if self.consecutive_losses >= self.max_consecutive_losses:
             # Activar cooldown de 30 minutos após max perdas consecutivas
             self.is_in_cooldown = True
             self.cooldown_until = datetime.now() + timedelta(minutes=30)
             logger.warning(f"[ANTIOVERTRADING] 🛑 Cooldown de 30min ativado após {self.max_consecutive_losses} perdas")
-    
+
     def registrar_ganho(self):
         """Registra um ganho e reseta contador de perdas consecutivas."""
         self.consecutive_losses = 0
@@ -660,7 +660,7 @@ def main():
                         # 4.5. 🛑 Verificar proteção contra overtrading
                         pode_tradear, motivo = anti_overtrading.pode_tradear()
                         logger.info(f'[CICLO {ciclo}] {motivo}')
-                        
+
                         if not pode_tradear:
                             logger.warning(f'[CICLO {ciclo}] Ordem BLOQUEADA pela proteção anti-overtrading')
                             time.sleep(5)
