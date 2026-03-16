@@ -1,7 +1,7 @@
 # ⚙️ Configuração Paralela - Dois Agentes com Estratégias Distintas
 
-**Data:** 16/03/2026  
-**Status:** ✅ Implementado  
+**Data:** 16/03/2026
+**Status:** ✅ Implementado
 **Objetivo:** Operar dois agentes em paralelo, cada um com estratégia de SL/TP diferente
 
 ---
@@ -22,7 +22,7 @@
 
 ## 🎯 Configuração de Cada Agente
 
-### **Agente 1: DINAMICO** 
+### **Agente 1: DINAMICO**
 ```batch
 INICIAR_AGENTE_RL_5000.bat
 └─ Opção [2]
@@ -111,7 +111,7 @@ Trigger: 09:05 (5 min depois)
 Cada operação é registrada com:
 
 ```
-[ENVIO] Enviando: Comprar @ 103.800 (SL: 103.180, TP: 104.530, Vol: 0.100%) 
+[ENVIO] Enviando: Comprar @ 103.800 (SL: 103.180, TP: 104.530, Vol: 0.100%)
         [Agente: agente_dinamico_20260316_100530, Modo: DINAMICO]
 
 [ENVIO] Enviando: Vender @ 104.200 (SL: 104.350, TP: 103.900, Vol: 0.100%)
@@ -289,5 +289,5 @@ RISCO TOTAL: -500 por dia
 
 ---
 
-**Status:** ✅ Pronto para uso em paralelo  
+**Status:** ✅ Pronto para uso em paralelo
 **Commit:** [Hash do commit que implementou isso]

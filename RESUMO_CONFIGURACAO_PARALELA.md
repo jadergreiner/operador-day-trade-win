@@ -1,7 +1,7 @@
 # 🚀 CONFIGURAÇÃO PARALELA DE AGENTES - RESUMO EXECUTIVO
 
-**Data:** 16/03/2026  
-**Commit:** c131475 + 6ff9fca  
+**Data:** 16/03/2026
+**Commit:** c131475 + 6ff9fca
 **Status:** ✅ **IMPLEMENTADO E TESTADO**
 
 ---
@@ -107,7 +107,7 @@ TERMINAL 1                              TERMINAL 2
 +     if SL_TP_MODE not in ['dinamico', 'fixo']:
 +         print(f"[ERRO] Modo invalido: {SL_TP_MODE}. Use 'dinamico' ou 'fixo'.")
 +         sys.exit(1)
-+ 
++
 + # Passar modo via variável de ambiente
 + os.environ['AGENTE_SL_TP_MODE'] = SL_TP_MODE
 ```
@@ -213,7 +213,7 @@ INICIAR_AGENTE_RL_DIRETO.bat
 2026-03-16 09:10:00 [INFO] [DINAMICO] [CICLO 1] Iniciando iteração do loop...
 2026-03-16 09:10:00 [INFO] [DINAMICO] Topos/Fundos últimas 20 velas: Topo=104.500, Fundo=103.200
 2026-03-16 09:10:00 [INFO] [DINAMICO] SL/TP calculados: SL=103.180, TP=104.730 (Risk/Reward = 1.50:1)
-2026-03-16 09:10:05 [INFO] [DINAMICO] [ENVIO] Enviando: Comprar @ 103.800 (SL: 103.180, TP: 104.730, Vol: 0.100%) 
+2026-03-16 09:10:05 [INFO] [DINAMICO] [ENVIO] Enviando: Comprar @ 103.800 (SL: 103.180, TP: 104.730, Vol: 0.100%)
                               [Agente: agente_dinamico_20260316_090000, Modo: DINAMICO]
 
 2026-03-16 09:10:10 [INFO] [FIXO] [FIXO] Usando SL/TP fixo para Comprar
@@ -237,9 +237,9 @@ INICIAR_AGENTE_RL_DIRETO.bat
 
 ## 📝 Arquivos Novosdocumentados
 
-✅ Criado: `CONFIGURACAO_PARALELA_AGENTES.md` - Guia completo  
-✅ Criado: `teste_modos_sl_tp.py` - Validação de modos  
-✅ Modificado: 3 arquivos `.bat` + 2 arquivos Python  
+✅ Criado: `CONFIGURACAO_PARALELA_AGENTES.md` - Guia completo
+✅ Criado: `teste_modos_sl_tp.py` - Validação de modos
+✅ Modificado: 3 arquivos `.bat` + 2 arquivos Python
 
 ---
 

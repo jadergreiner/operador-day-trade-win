@@ -328,7 +328,7 @@ def calcular_sl_tp_dinamico(dados: pd.DataFrame, acao: str, preco_atual: float,
     Returns:
         (stop_loss, take_profit) tupla com valores
     """
-    
+
     # SE MODO FOR FIXO, RETORNA VALORES FIXOS DIRETO
     if SL_TP_MODE == 'fixo':
         logger.info(f"[FIXO] Usando SL/TP fixo para {acao}")
@@ -336,7 +336,7 @@ def calcular_sl_tp_dinamico(dados: pd.DataFrame, acao: str, preco_atual: float,
             return preco_atual - STOP_LOSS_PONTOS, preco_atual + TAKE_PROFIT_PONTOS
         else:
             return preco_atual + STOP_LOSS_PONTOS, preco_atual - TAKE_PROFIT_PONTOS
-    
+
     # MODO DINAMICO - Calcula baseado em topos/fundos
     try:
         if len(dados) < lookback_periods:
