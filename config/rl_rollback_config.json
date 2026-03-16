@@ -1,0 +1,9 @@
+{
+  "win_rate_threshold_pct": 5.0,
+  "sharpe_threshold": -0.5,
+  "f1_threshold": 0.05,
+  "rolling_window_trades": 50,
+  "max_rollback_frequency_hours": 24,
+  "notification_slack": false,
+  "log_file": "data/logs/rl_rollback.log"
+}

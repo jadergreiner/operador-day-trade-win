@@ -1670,6 +1670,79 @@ in position 34: character maps to <undefined>
 - ✅ Nenhuma perda de funcionalidade (apenas formatos de mensagem)
 - ✅ Mensagens ainda sao legaiveis e informaticas em Portugues
 
+#### 2. P2-RL-1: Rollback Automatico de Modelo
+
+**Status:** ✅ DONE (16/03/2026 20:45 BRT)
+
+**Objetivo:** Detectar degradacao automatica do modelo RL (win_rate cair >5%) e executar rollback atomico para checkpoint anterior, protegendo capital em operacao.
+
+**Problema Resolvido:**
+
+- Sem rollback, modelo degradado continua em producao
+- Sem deteccao automatica, operador precisa monitorar manualmente
+- Sem proteção contra rollback excessivo, pode entrar em loop
+
+**Solucao Implementada:**
+
+- Classe `ModelRollbackManager` com deteccao + execucao (376 LOC)
+  - `check_degradation()`: Compara metricas atuais vs baseline via Z-score
+  - `executar_rollback()`: Copia checkpoint com validacao e auditoria
+  - `obter_historico_rollbacks()`: Rastreamento de todos rollbacks
+  - `gerar_relatorio()`: Relatorios JSON + Markdown
+
+- Dataclass `RollbackDecision` com resultados estruturados
+  - Campos: razao, versao_rollback, metricas, delta_win_rate, confidence
+
+- Config `config/rl_rollback_config.json`:
+  - win_rate_threshold_pct: 5.0
+  - sharpe_threshold: -0.5
+  - f1_threshold: 0.05
+  - max_rollback_frequency_hours: 24
+
+- Script `scripts/validate_rl_rollback_integrity.py` para validacao
+
+**Validacao Completa:**
+
+- ✅ Testes: 17/17 PASSING (100% success rate)
+- ✅ Type hints: 100% conforme mypy --strict
+- ✅ Docstrings: 100% em Portugues
+- ✅ LOC: 376 linhas de codigo
+- ✅ Imports: 100% resolviveis
+- ✅ Integracao: Clean com BaselineComparator + RLScheduler existentes
+
+**Testes Implementados:**
+
+- test_inicializar_manager_com_config_valida
+- test_inicializar_manager_diretorio_nao_existe
+- test_check_degradation_sem_degradacao
+- test_check_degradation_com_degradacao_win_rate
+- test_check_degradation_sharpe_negativo
+- test_check_degradation_f1_degradacao
+- test_check_degradation_metricas_invalidas
+- test_executar_rollback_sucesso
+- test_executar_rollback_checkpoint_nao_existe
+- test_executar_rollback_checkpoint_invalido_tamanho
+- test_executar_rollback_frequencia_maxima
+- test_obter_historico_rollbacks
+- test_gerar_relatorio_json
+- test_gerar_relatorio_markdown
+- test_gerar_relatorio_formato_invalido
+- test_rollback_decision_para_dict
+- test_fluxo_completo_check_e_rollback
+
+**Capacidades Entregues:**
+
+1. Deteccao automatica de degradacao (3 criterios: win_rate, sharpe, F1)
+2. Decisao estruturada com metadata completa
+3. Execucao atomica de rollback com backup + validacao
+4. Persistencia de auditoria em formato JSONL
+5. Historico versionado em JSON
+6. Relatorios legaveis (JSON + Markdown)
+7. Protecao contra rollback excessivo (max 1/dia)
+8. Integracao limpa (nenhum breaking change)
+
+**Commit:** feat: Implementar P2-RL-1 Rollback Automatico de Modelo com testes 17/17
+
 ### P2 - Capacidade futura
 
 #### 1. Trilha RL operacional
@@ -1684,7 +1757,6 @@ bloqueadores do core.
 - training loop;
 - save/load versionado;
 - scheduler de retrain;
-- rollback de modelo ruim;
 - metricas de recompensa e melhoria.
 
 #### 2. Observabilidade e governanca tecnica
