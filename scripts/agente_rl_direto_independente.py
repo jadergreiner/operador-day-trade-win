@@ -360,6 +360,17 @@ def inicializar_componentes():
 
         logger.info('[OK] Profit Protection ativado')
 
+        # 6. Anti-Overtrading Protection
+        logger.info('[INIT] Inicializando proteção contra overtrading...')
+        anti_overtrading = AntiOvertradingProtection(
+            max_trades_per_hour=3,           # Máximo 3 trades por hora
+            min_cooldown_seconds=300,        # Mínimo 5 min entre trades
+            max_consecutive_losses=2,        # 2 perdas seguidas = pausa
+            trading_hours_start=9,           # Operação: 9h-16h
+            trading_hours_end=16,
+        )
+        logger.info('[OK] Anti-Overtrading ativado')
+
         logger.info('[OK] Todos os componentes inicializados com sucesso!')
         logger.info('')
 
@@ -370,11 +381,92 @@ def inicializar_componentes():
             'pipeline': pipeline,
             'agente': agente,
             'profit_protection': profit_protection,
+            'anti_overtrading': anti_overtrading,
         }
 
     except Exception as e:
         logger.error(f'[FATAL] Erro ao inicializar componentes: {e}', exc_info=True)
         return None
+
+# ============================================================================
+# PROTEÇÃO CONTRA OVERTRADING
+# ============================================================================
+class AntiOvertradingProtection:
+    """Proteção contra overtrading com limites de frequência e risco."""
+
+    def __init__(self, max_trades_per_hour: int = 3, min_cooldown_seconds: int = 300,
+                 max_consecutive_losses: int = 2, trading_hours_start: int = 9,
+                 trading_hours_end: int = 16):
+        self.max_trades_per_hour = max_trades_per_hour
+        self.min_cooldown_seconds = min_cooldown_seconds
+        self.max_consecutive_losses = max_consecutive_losses
+        self.trading_hours_start = trading_hours_start
+        self.trading_hours_end = trading_hours_end
+        
+        self.trades_this_hour = []
+        self.last_trade_time = None
+        self.consecutive_losses = 0
+        self.is_in_cooldown = False
+        self.cooldown_until = None
+        
+    def pode_tradear(self) -> tuple[bool, str]:
+        """Verifica se é permitido fazer um novo trade. Retorna (permitido, motivo)."""
+        from datetime import datetime, timedelta
+        
+        now = datetime.now()
+        
+        # 1. Verificar horário de operação
+        if now.hour < self.trading_hours_start or now.hour >= self.trading_hours_end:
+            return False, f"❌ Fora do horário de operação ({self.trading_hours_start}h-{self.trading_hours_end}h)"
+        
+        # 2. Verificar cooldown global
+        if self.is_in_cooldown and self.cooldown_until and now < self.cooldown_until:
+            remaining = (self.cooldown_until - now).total_seconds()
+            return False, f"❌ Em cooldown global ({remaining:.0f}s restantes)"
+        else:
+            self.is_in_cooldown = False
+            self.cooldown_until = None
+        
+        # 3. Verificar limite de trades por hora
+        one_hour_ago = now - timedelta(hours=1)
+        self.trades_this_hour = [t for t in self.trades_this_hour if t > one_hour_ago]
+        
+        if len(self.trades_this_hour) >= self.max_trades_per_hour:
+            return False, f"❌ Limite de {self.max_trades_per_hour} trades/hora atingido ({len(self.trades_this_hour)}/{self.max_trades_per_hour})"
+        
+        # 4. Verificar cooldown mínimo entre trades
+        if self.last_trade_time:
+            seconds_since_last = (now - self.last_trade_time).total_seconds()
+            if seconds_since_last < self.min_cooldown_seconds:
+                return False, f"❌ Cooldown mínimo: {self.min_cooldown_seconds}s (apenas {seconds_since_last:.0f}s se passaram)"
+        
+        # 5. Verificar perdas consecutivas
+        if self.consecutive_losses >= self.max_consecutive_losses:
+            return False, f"❌ {self.max_consecutive_losses} perdas consecutivas - pausando operações"
+        
+        return True, "✅ Permitido tradear"
+    
+    def registrar_trade(self):
+        """Registra que um novo trade foi aberto."""
+        self.trades_this_hour.append(datetime.now())
+        self.last_trade_time = datetime.now()
+        logger.info(f"[ANTIOVERTRADING] Trade #{len(self.trades_this_hour)} registrado nesta hora")
+    
+    def registrar_perda(self):
+        """Registra uma perda e incrementa contador consecutivo."""
+        self.consecutive_losses += 1
+        logger.warning(f"[ANTIOVERTRADING] ⚠️  Perda registrada ({self.consecutive_losses}/{self.max_consecutive_losses})")
+        
+        if self.consecutive_losses >= self.max_consecutive_losses:
+            # Activar cooldown de 30 minutos após max perdas consecutivas
+            self.is_in_cooldown = True
+            self.cooldown_until = datetime.now() + timedelta(minutes=30)
+            logger.warning(f"[ANTIOVERTRADING] 🛑 Cooldown de 30min ativado após {self.max_consecutive_losses} perdas")
+    
+    def registrar_ganho(self):
+        """Registra um ganho e reseta contador de perdas consecutivas."""
+        self.consecutive_losses = 0
+        logger.info(f"[ANTIOVERTRADING] ✅ Ganho registrado - contador de perdas resetado")
 
 # ============================================================================
 # RASTREAMENTO DE POSIÇÕES POR SESSION
@@ -465,6 +557,7 @@ def main():
     agente = componentes['agente']
     profit_protection = componentes['profit_protection']
     rl_repo = componentes['rl_repo']
+    anti_overtrading = componentes['anti_overtrading']  # 🛑 CRITICAL: Proteção contra overtrading
 
     # Inicializar rastreador de posições deste agente
     posicao_tracker = AgentePosicaoStatus(AGENT_SESSION_ID, OUTPUTS_DIR)
@@ -564,9 +657,19 @@ def main():
                     if confirmado:
                         logger.info(f'[CICLO {ciclo}] SINAL CONFIRMADO: {acao_str}')
 
+                        # 4.5. 🛑 Verificar proteção contra overtrading
+                        pode_tradear, motivo = anti_overtrading.pode_tradear()
+                        logger.info(f'[CICLO {ciclo}] {motivo}')
+                        
+                        if not pode_tradear:
+                            logger.warning(f'[CICLO {ciclo}] Ordem BLOQUEADA pela proteção anti-overtrading')
+                            time.sleep(5)
+                            continue
+
                         # 5. Enviar ordem
                         if enviar_ordem(mt5_adapter, acao_str, preco_atual, posicao_tracker, rl_repo):
                             logger.info(f'[CICLO {ciclo}] Ordem aberta com sucesso!')
+                            anti_overtrading.registrar_trade()  # 📝 Registrar trade na proteção
                             last_signal = acao_str
                             time.sleep(5)
                             continue
