@@ -97,6 +97,7 @@ try:
 
     from config.settings import TradingConfig
     from src.infrastructure.adapters.mt5_adapter import MT5Adapter
+    from src.infrastructure.database.schema import get_session
     from src.application.services.novo_agente.agente_q_learning import AgenteQLearningMiniIndice
     from src.application.services.novo_agente.pipeline_treinamento import PipelineTreinamentoRL
     from src.infrastructure.repositories.rl_repository import SqliteRLRepository
@@ -138,7 +139,10 @@ def inicializar_componentes():
 
         # 2. RL Repository (com isolamento por session)
         logger.info('[INIT] Inicializando RL Repository...')
-        rl_repo = SqliteRLRepository()
+        db_path = str(ROOT_DIR / 'data' / 'db' / 'trading.db')
+        session = get_session(db_path)
+        rl_repo = SqliteRLRepository(session)
+        rl_repo.seed_dimension_tables()
 
         logger.info('[OK] RL Repository pronto')
 
