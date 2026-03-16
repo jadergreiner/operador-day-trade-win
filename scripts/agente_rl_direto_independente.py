@@ -106,6 +106,7 @@ try:
     from src.application.services.novo_agente.pipeline_treinamento import PipelineTreinamentoRL
     from src.infrastructure.repositories.rl_repository import SqliteRLRepository
     from src.application.profit_protection_engine import ProfitProtectionEngine
+    from src.application.trade_tracker_integration import TradeTrackerIntegration
     from src.domain.enums.trading_enums import TimeFrame
 
     logger.info('[OK] Módulos importados com sucesso')
@@ -214,7 +215,7 @@ def calcular_sl_tp(acao: str, preco_atual: float) -> Tuple[float, float]:
 
 
 def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
-                 posicao_tracker: object, rl_repo: object) -> bool:
+                 posicao_tracker: object, rl_repo: object, trade_tracker: object) -> bool:
     """Envia ordem para abrir posição no MT5."""
     global last_trade_time
 
@@ -225,8 +226,10 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
         # Mapear ação para OrderSide
         if acao == "Comprar":
             side = OrderSide.BUY
+            direcao_str = "BUY"
         elif acao == "Vender":
             side = OrderSide.SELL
+            direcao_str = "SELL"
         else:
             return False
 
@@ -257,6 +260,19 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
 
             # Registrar posição no rastreador
             posicao_tracker.registrar_posicao_aberta()
+
+            # Registrar entrada no rastreador de performance
+            if trade_tracker:
+                try:
+                    trade_tracker.registrar_entrada(
+                        ticket=ticket,
+                        simbolo=SIMBOLO,
+                        direcao=direcao_str,
+                        preco_entrada=preco_atual,
+                    )
+                    logger.info(f'[TRACKER] Entrada registrada para ticket {ticket}')
+                except Exception as e:
+                    logger.warning(f'[WARN] Erro ao registrar entrada no tracker: {e}')
 
             # Persistir no RL Repository
             if rl_repo:
@@ -371,6 +387,14 @@ def inicializar_componentes():
         )
         logger.info('[OK] Anti-Overtrading ativado')
 
+        # 7. Trade Performance Tracker - Rastreamento de P&L
+        logger.info('[INIT] Inicializando rastreador de performance de trades...')
+        trade_tracker = TradeTrackerIntegration(
+            session_id=AGENT_SESSION_ID,
+            output_dir=OUTPUTS_DIR,
+        )
+        logger.info('[OK] Trade Performance Tracker ativado')
+
         logger.info('[OK] Todos os componentes inicializados com sucesso!')
         logger.info('')
 
@@ -382,6 +406,7 @@ def inicializar_componentes():
             'agente': agente,
             'profit_protection': profit_protection,
             'anti_overtrading': anti_overtrading,
+            'trade_tracker': trade_tracker,
         }
 
     except Exception as e:
@@ -558,6 +583,7 @@ def main():
     profit_protection = componentes['profit_protection']
     rl_repo = componentes['rl_repo']
     anti_overtrading = componentes['anti_overtrading']  # 🛑 CRITICAL: Proteção contra overtrading
+    trade_tracker = componentes['trade_tracker']  # 📊 Rastreamento de performance
 
     # Inicializar rastreador de posições deste agente
     posicao_tracker = AgentePosicaoStatus(AGENT_SESSION_ID, OUTPUTS_DIR)
@@ -667,7 +693,7 @@ def main():
                             continue
 
                         # 5. Enviar ordem
-                        if enviar_ordem(mt5_adapter, acao_str, preco_atual, posicao_tracker, rl_repo):
+                        if enviar_ordem(mt5_adapter, acao_str, preco_atual, posicao_tracker, rl_repo, trade_tracker):
                             logger.info(f'[CICLO {ciclo}] Ordem aberta com sucesso!')
                             anti_overtrading.registrar_trade()  # 📝 Registrar trade na proteção
                             last_signal = acao_str
@@ -711,6 +737,18 @@ def main():
     finally:
         # Cleanup
         logger.info('[CLEANUP] Encerrando componentes...')
+
+        # Gravar relatorio de performance de trades
+        try:
+            if trade_tracker:
+                arquivo_relatorio = trade_tracker.gerar_relatorio_json()
+                logger.info(f'[OK] Relatório de performance gravado: {arquivo_relatorio}')
+                stats = trade_tracker.obter_estatisticas()
+                logger.info(f'[STATS] Total trades: {stats.get("total_trades", 0)} | '
+                           f'Win rate: {stats.get("win_rate", 0):.1f}% | '
+                           f'PnL total: R$ {stats.get("pnl_total_reais", 0):.2f}')
+        except Exception as e:
+            logger.warning(f'[WARN] Erro ao gravar relatório: {e}')
 
         try:
             mt5_adapter.desconectar()
