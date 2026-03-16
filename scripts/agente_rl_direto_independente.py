@@ -246,6 +246,7 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
             side=side,  # BUY ou SELL
             quantity=Quantity(1),  # 1 contrato
             order_type=OrderType.MARKET,  # Ordem de mercado
+            stop_loss=Price(sl),  # 🔴 CRITICAL: Stop Loss obrigatório
             take_profit=Price(tp),
             execution_method="automated",
         )
@@ -298,7 +299,7 @@ def inicializar_componentes():
 
         # 1. MT5 Adapter - usar caminho do .env (Clear Investimentos)
         logger.info('[INIT] Conectando ao MT5...')
-        
+
         mt5_adapter = MT5Adapter(
             login=config.mt5_login,
             password=config.mt5_password,
@@ -576,7 +577,7 @@ def main():
 
             except Exception as e:
                 logger.error(f'[CICLO {ciclo}] Erro inesperado: {e}', exc_info=True)
-                
+
                 # Tentar reconectar se a conexão caiu
                 try:
                     if not mt5_adapter.is_connected():
@@ -587,7 +588,7 @@ def main():
                             logger.error('[RECONEXAO] Falha ao reconectar')
                 except:
                     pass
-                    
+
                 time.sleep(5)
                 continue
 
