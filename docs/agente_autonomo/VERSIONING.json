@@ -1,0 +1,21 @@
+{
+  "components": {
+    "Fechamento_Diario": {
+      "version": "1.0.0",
+      "status": "PRODUCTION",
+      "last_change": "2026-03-16T22:25:00Z",
+      "changelog": [
+        {
+          "version": "1.0.0",
+          "date": "2026-02-20",
+          "changes": [
+            "Prompt de fechamento diário implementado",
+            "Script executor com parâmetro --foco",
+            "Schema de validação JSON",
+            "Integração automática com backlog"
+          ]
+        }
+      ]
+    }
+  }
+}

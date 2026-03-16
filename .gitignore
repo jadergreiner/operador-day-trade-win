@@ -64,6 +64,14 @@ config/confidence_history.json
 config/confidence_override_today.json
 config/pessimism_mode.json
 
+# Claude Code internal
+.claude/
+
+# Artefatos de treinamento ML gerados em runtime
+feature_names.json
+statistics.json
+training_dataset.csv
+
 # Temporary files and system artifacts
 tmpclaude-*
 trading.pid
