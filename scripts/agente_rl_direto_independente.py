@@ -118,18 +118,21 @@ except Exception as e:
 # IMPORTS SPECIFICIZADOS - Domain Models
 # ============================================================================
 try:
+    from src.domain.value_objects import Symbol
+    from src.domain.enums.trading_enums import TimeFrame
     from src.infrastructure.adapters.domain_models import (
-        Symbol, OrderSide, OrderType, Order, Price, Quantity
+        OrderSide, OrderType, Order, Price, Quantity
     )
     logger.info('[OK] Domain models importados')
 except Exception as e:
     logger.error(f'[WARN] Domain models import falhou: {e}')
-    try:
-        # Alternativa
-        from src.domain.models import Symbol, OrderSide, OrderType, Order, Price, Quantity
-        logger.info('[OK] Domain models importados (alternativa)')
-    except Exception as e2:
-        logger.error(f'[FATAL] Domain models não encontrados: {e2}')
+    Symbol = None
+    TimeFrame = None
+    OrderSide = None
+    OrderType = None
+    Order = None
+    Price = None
+    Quantity = None
 
 # ============================================================================
 # CONSTANTES DE TRADING
@@ -477,28 +480,28 @@ def main():
                 logger.info(f'[CICLO {ciclo}] Iniciando iteração...')
                 logger.debug(f'[CICLO {ciclo}] Tempo decorrido: {time.time() - start_time:.1f}s')
 
-                # 1. Carregar dados de mercado (últimas 30 velas)
+                # 1. Carregar dados de mercado (últimas 30 velas M5)
                 try:
-                    # Symbol pode não estar disponível, usar SIMBOLO string diretamente
-                    try:
-                        from src.infrastructure.adapters.domain_models import Symbol
-                        dados = mt5_adapter.get_candles(Symbol(SIMBOLO), TimeFrame.M5, 30)
-                    except Exception:
-                        # Fallback: tentar com string
-                        logger.warning('[DEBUG] Symbol import falhou, usando string')
-                        # Se o MT5Adapter pode receber string, tenta assim
-                        dados = None
-
-                    if dados is None or len(dados) == 0:
-                        logger.debug('[CICLO] Aguardando dados de mercado...')
+                    if Symbol is None or TimeFrame is None:
+                        logger.debug('[CICLO] Domain models não estão disponíveis')
                         time.sleep(5)
                         continue
 
-                    preco_atual = dados[-1].close.value if hasattr(dados[-1], 'close') else dados[-1]['close']
+                    # Usar padrão correto: Symbol(string), TimeFrame.M5, count
+                    dados = mt5_adapter.get_candles(Symbol(SIMBOLO), TimeFrame.M5, 30)
+
+                    if dados is None or len(dados) == 0:
+                        logger.debug('[CICLO] Aguardando dados de mercado (MT5 pode estar offline)...')
+                        time.sleep(5)
+                        continue
+
+                    # Dados são lista de Candle objects com atributos .close, .high, etc
+                    preco_atual = float(dados[-1].close.value)
+                    logger.debug(f'[CICLO {ciclo}] Preço atual: {preco_atual}')
+
                 except Exception as e:
                     logger.warning(f'[CICLO {ciclo}] Erro ao obter dados: {e}')
                     time.sleep(5)
-                    continue
                     continue
 
                 # 2. Proteção de lucros (se tem posição)
