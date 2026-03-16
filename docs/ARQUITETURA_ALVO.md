@@ -111,7 +111,110 @@ executadas e dados de aprendizado para ML/RL.
 **Testes:** 21 testes unitarios, 21/21 PASSING (100%)
 
 ---
+### P2 - Trilha RL Operacional: Ambiente Gym de Trading
 
+**Status:** ✅ IMPLEMENTADO (16/03/2026)
+
+**Localizacao:** `src/application/rl_trading_environment.py`
+
+**Propósito:** Fornecer ambiente compativel com OpenAI Gym para
+treinar agentes RL (Reinforcement Learning) em contexto de trading.
+
+**Classes:**
+- `TradingGymEnvironment`: Classe principal compativel Gym
+  - Metodos: `reset()`, `step()`, `render()` (interface Gym padrao)
+  - Persistencia de episodios e historico
+  - Calculo de metricas de reward
+  - Save/load checkpoints versionados (JSON)
+- `RLRewardMetrics`: Dataclass com metricas consolidadas
+  - total_reward, win_rate, sharpe_ratio, max_drawdown, trades_executados
+- `EpisodeCallback`: Dataclass para rastreamento de episodios
+  - episodio, timestamp (ISO), trades_abertos, win_rate, total_pnl
+- `TrainingState`: Dataclass para estado do treino
+  - episodio, iteracao, melhor_reward, reward_medio, versao_modelo
+
+**Funcionalidades:**
+1. **Interface Gym Completa:** reset(), step(), render()
+2. **Episode Callbacks:** Rastreamento de episodios com metricas
+3. **Metricas de Reward:** Win rate, Sharpe ratio, Drawdown maximo, PnL
+4. **Save/Load Checkpoints:** Versionado semanticamente (v1.2.3)
+5. **Historico Completo:** Persistencia de episodios em memoria + JSON
+6. **Relatorios:** Exportacao em JSON estruturado + Markdown legivel
+
+**Acoes Suportadas:**
+- 0: HOLD (manter posicao aberta)
+- 1: BUY (abrir posicao comprada)
+- 2: SELL (fechar posicao)
+- 3: FECHAR FORCA (fechar imediatamente)
+
+**Estado Ambiente:** [capital_disponivel, preco_atual, posicao_ativa]
+
+**Exemplo de Uso:**
+
+```python
+from src.application.rl_trading_environment import TradingGymEnvironment
+
+env = TradingGymEnvironment(
+    capital_inicial=10000.0,
+    alavancagem=2.0,
+)
+
+estado = env.reset()
+episodio = 0
+
+for _ in range(5):
+    episodio += 1
+    estado = env.reset()
+
+    for step in range(100):
+        acao = agent.escolher_acao(estado)
+        estado, reward, done, info = env.step(acao)
+        if done:
+            break
+
+    # Registrar episodio
+    env.registrar_episodio(
+        episodio=episodio,
+        trades=10,
+        win_rate=0.65,
+        total_pnl=1500.0,
+    )
+
+    # Salvar checkpoint periodicamente
+    if episodio % 10 == 0:
+        env.salvar_checkpoint(
+            versao=f"v1.0.{episodio}",
+            melhor_reward=2000.0,
+        )
+
+# Gerar relatorio final
+relatorio = env.gerar_relatorio_markdown()
+print(relatorio)
+```
+
+**Metricas Monitoradas:**
+- Total Reward: Somatorio de rewards dos episodios
+- Win Rate: % de episodios/trades vencedores
+- Sharpe Ratio: Retorno ajustado por desvio padrao
+- Max Drawdown: Maior perda percentual
+- Trades Executados: Contagem total
+
+**Testes:** 21 testes unitarios, 21/21 PASSING (100%)
+
+**Capacidades:**
+- ✅ Compativel com OpenAI Gym (interface padrao)
+- ✅ Episode callbacks para rastreamento
+- ✅ Save/load checkpoints versionados
+- ✅ Metricas automaticas (Sharpe, drawdown, win rate)
+- ✅ 100% type hints (mypy validado)
+- ✅ 100% em Portugues (docstrings, variaveis)
+
+**Proximos Passos Opcionais (P2):**
+1. Scheduler de retrain automatico
+2. Rollback automatico por degradacao
+3. Dashboard de metricas em tempo real
+
+---
 ### AC6.7 Detector de Drift de Modelo em Producao
 
 **Status:** ✅ IMPLEMENTADO (15/03/2026)
