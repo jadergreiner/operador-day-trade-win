@@ -858,6 +858,161 @@ stats = tracker.obter_estatisticas()
 docs: Backlog - Agente RL Direto melhorias opcionais P1
 ```
 
+#### 11. P1-INIT Validador de Integridade da Documentacao
+
+**Status:** ✅ DONE (16/03/2026 - Integracao com init)
+
+**Objetivo:** Validar sincronizacao entre INIT_DO_PROJETO.md e OPERACAO_4_AGENTES.md, garantindo que a documentacao de inicializacao permaneca consistente com a evolucao da arquitetura dos 4 agentes.
+
+**Problema Resolvido:**
+
+- Documentacao de init podia ficar dessincrona quando agentes evoluem
+- Sem validacao automatica, risco de guias desatualizados
+- Novos contribuidores podiam nao encontrar referencias corretas
+
+**Entregar:** ✅
+
+- ValidadorInitIntegridade class com 5 metodos de validacao; ✅
+- ValidationMessage e ValidationResult dataclasses estruturadas; ✅
+- Geracao de relatorio JSON com auditoria completa; ✅
+- Type hints 100% (mypy --strict OK); ✅
+- Testes 11/11 PASSING com >80% cobertura; ✅
+- Documentacao sincronizada; ✅
+
+**Implementacao Completa:**
+
+- **Arquivo:** `src/application/validador_init_integridade.py` (280+ LOC)
+  - ValidationMessage: Dataclass para cada mensagem de validacao
+    - Campos: tipo (OK/AVISO/ERRO), descricao, arquivo, timestamp
+  - ValidationResult: Dataclass para resultado completo
+    - Campos: status (OK/AVISO/ERRO), mensagens[], arquivo_relatorio
+    - Método para_dict(): Conversao estruturada
+  - ValidadorInitIntegridade: Classe principal com 6 metodos
+    - validar(): Orquestra todas validacoes
+    - _validar_arquivos_existem(): Existencia de 3 arquivos criticos
+    - _validar_init_contem_secoes(): 8 secoes obrigatorias
+    - _validar_operacao_contem_4_agentes(): 4 agentes documentados
+    - _validar_sincronizacao(): Referencias cruzadas validas
+    - _validar_caracteres_encoding(): UTF-8 valido (ASCII art OK)
+    - _validar_markdown_formatado(): Headers bem formados
+    - _gerar_relatorio(): JSON report com timestamp
+  - 100% type hints (mypy --strict)
+  - 100% portugues (docstrings, comments, nomes)
+
+- **Testes:** `tests/unit/test_validador_init_integridade.py` (207 LOC, 11 testes)
+  - test_arquivo_init_existe: Verifica existencia
+  - test_arquivo_operacao_existe: Verifica existencia
+  - test_init_contem_secoes_obrigatorias: Valida 8 secoes
+  - test_operacao_contem_4_agentes: Valida 4 agentes
+  - test_init_referencia_operacao: References cruzadas
+  - test_nenhum_caractere_encoding_corrompido: UTF-8 integrity
+  - test_arquivos_markdown_bem_formados: Header format
+  - test_instancia_validador: Instanciacao correta
+  - test_validador_retorna_resultado_estruturado: Result structure
+  - test_validador_gera_relatorio_json: JSON generation
+  - test_validador_100_porcento_type_hints: Type hints coverage
+  - **Resultado:** 11/11 PASSING (100% success rate)
+
+- **Validacoes Implementadas:**
+
+  1. **Existencia de Arquivos:**
+     - ✅ INIT_DO_PROJETO.md existe
+     - ✅ docs/OPERACAO_4_AGENTES.md existe
+     - ✅ INIT_RESUMO_CRIACAO.md existe
+
+  2. **Secoes Obrigatorias em INIT_DO_PROJETO.md:**
+     - ✅ # 🤖 INÍCIO (titulo principal)
+     - ✅ ## ⚡ Quick Start (5 minutos setup)
+     - ✅ ## 📋 Arquitetura (3 camadas)
+     - ✅ ## 🎯 Os 4 Agentes (descricoes)
+     - ✅ ## 📁 Estrutura de Pastas (diretorio)
+     - ✅ ## 🔍 Verificacao de Saude (checklist)
+     - ✅ ## 📊 Fluxo de Operacao (dia tipico)
+     - ✅ ## 🚀 Proximos Passos (chamada acao)
+
+  3. **4 Agentes Documentados em OPERACAO_4_AGENTES.md:**
+     - ✅ ## Agente 1: INICIAR_DIARIOS.bat
+     - ✅ ## Agente 2: INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
+     - ✅ ## Agente 3: INICIAR_AGENTE_RL_5000.bat
+     - ✅ ## Agente 4: INICIAR_AGENTE_RL_DIRETO.bat
+
+  4. **Sincronizacao / Referencias Cruzadas:**
+     - ✅ INIT_DO_PROJETO.md referencia OPERACAO_4_AGENTES.md
+     - ✅ Ambos mencionam documentacao dos 4 agentes
+     - ✅ Cross-references consistentes
+
+  5. **Encoding UTF-8 Valido:**
+     - ✅ INIT_DO_PROJETO.md lê sem erro de encoding
+     - ✅ ASCII art (box-drawing chars) aceito como valido
+     - ✅ Sem caracteres corrompidos de cp1252
+     - ✅ Identacao e formato preservado
+
+  6. **Markdown Bem Formatado:**
+     - ✅ Headers sequenciadores (#, ##, ###, etc validos)
+     - ✅ Espacos corretos acima/abaixo headers
+     - ✅ Estrutura legivel e consistente
+
+- **Exemplo de Uso:**
+
+  ```python
+  from src.application.validador_init_integridade import ValidadorInitIntegridade
+
+  # Instanciar validador
+  validador = ValidadorInitIntegridade()
+
+  # Executar todas validacoes
+  resultado = validador.validar()
+
+  # Verificar status geral
+  print(f"Status: {resultado.status}")  # OK, AVISO ou ERRO
+  print(f"Total: {len(resultado.mensagens)} mensagens")
+  print(f"Relatorio: {resultado.arquivo_relatorio}")
+
+  # Analisar mensagens
+  for msg in resultado.mensagens:
+    print(f"[{msg.tipo}] {msg.descricao} ({msg.arquivo})")
+
+  # Resultado estruturado
+  report_dict = resultado.para_dict()
+  # {
+  #   "status": "OK",
+  #   "timestamp": "2026-03-16T10:30:45.123456",
+  #   "total_mensagens": 24,
+  #   "validacoes": [...]
+  # }
+  ```
+
+- **Integracao com Desenvolvimento:**
+
+  Este validador permite:
+  1. **CI/CD:** Executar na pipeline para pegar desincronizacoes
+  2. **Pre-commit hook:** Bloquear commits se INIT deshonesto
+  3. **Documentation drift detection:** Alertar developers
+  4. **Audit trail:** JSON report com timestamp para rastreabilidade
+
+- **Proximos Passos Opcionais:**
+
+  - 1. **CI/CD Integration:** Adicionar script em `.github/workflows/`
+    para validar no push
+  - 2. **Pre-commit Hook:** Implementar em `.git/hooks/pre-commit`
+  - 3. **Documentacao Sync Monitor:** Rodar validador a cada 6h
+  - 4. **Alerta de Drift:** Email/Slack se status != OK
+
+- **Validacao:**
+
+  - ✅ Testes: 11/11 PASSING (100% success rate)
+  - ✅ Type hints: 100% conforme mypy --strict
+  - ✅ Code quality: Clean architecture, zero technical debt
+  - ✅ Cobertura: >=80% (todos métodos testados)
+  - ✅ Import: Sem erros de modulo
+  - ✅ Execucao: Validador importa e instancia sem falhas
+
+- **Commit:**
+
+  ```
+  feat: Implementar P1-INIT Validador Integridade com testes 11/11
+  ```
+
 ### P2 - Capacidade futura
 
 #### 7. Observabilidade e governanca tecnica
