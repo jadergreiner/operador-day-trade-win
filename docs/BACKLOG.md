@@ -621,6 +621,137 @@ total de estado, posicoes e trades.
 **Prioridade:** OPCIONAL - Recomendado implementar APOS Fase 1 validacao
 (quando ambos agentes estiverem validados em live trading por 1+ semana).
 
+#### 10. P1-AGENTES_PARALELOS Melhorias - Agente RL Direto
+
+**Objetivo:** Aprimorar o Agente RL Direto com tracked de performance,
+logging detalhado e analytics em tempo real.
+
+**Status:** PENDENTE (16/03/2026 - Preparado para implementacao)
+
+**1. Implementar Tracker de Ganhos/Perdas por Trade**
+
+- **Objetivo:** Rastrear P&L de cada trade aberto, com preco entrada, exit
+  e percentual de ganho/perda.
+- **Atividades:**
+  - Criar TradePerformanceTracker class que monitora cada trade
+  - Persistencia em JSON por session: `outputs/agente_performance_SESSION_ID.json`
+  - Campos: ticket, entrada (preco+horario), saida (preco+horario),
+    PnL (R$), percentual, ganho/perda, duracao
+  - Integracao com AntiOvertradingProtection.registrar_ganho/perda()
+  - Agregacao de estatisticas (total P&L, numero trades, win rate)
+  - Logging a cada fechamento de posicao
+- **Entregar:**
+  - TradePerformanceTracker class (150+ LOC)
+  - Integracao no agente_rl_direto_independente.py
+  - Testes unitarios (8+ casos)
+  - Relatorio JSON com historico trades
+  - Documentacao de campos
+- **Estimativa:** 3-4 horas (implementacao + testes + validacao)
+- **Prioridade:** ALTA - Essencial para analytics e debugging
+
+**2. Adicionar Logging de Motivos de Bloqueio**
+
+- **Objetivo:** Detalhar EXATAMENTE POR QUE cada tentativa de trade foi
+  bloqueada pela AntiOvertradingProtection.
+- **Atividades:**
+  - Expandir AntiOvertradingProtection para retornar motivo estruturado
+  - Categorias de bloqueio:
+    - `HOURLY_LIMIT_EXCEEDED`: 3+ trades na ultima hora
+    - `COOLDOWN_ACTIVE`: 5min entre trades nao atendido
+    - `LOSS_STREAK_COOLDOWN`: 2+ perdas consecutivas (30min wait)
+    - `OUTSIDE_TRADING_HOURS`: Fora do horario 9h-16h BRT
+  - Salvar bloqueios em arquivo CSV para analise offline
+  - Logging detalhado com timestamp e parametros relevantes
+  - Endpoint ou script para gerar relatorio de bloqueios
+- **Entregar:**
+  - BlockageReason enum com 4 tipos
+  - CSV export em `outputs/agente_bloqueios_SESSION_ID.csv`
+  - Script `scripts/analyze_blockages.py` para relatorio
+  - Testes unitarios (6+ casos)
+  - Documentacao de categorias
+- **Estimativa:** 2-3 horas (implementacao + testes + relatorio)
+- **Prioridade:** MEDIA - Importante para otimizacao de parametros
+
+**3. Integrar com TP/SL para Detectar Como Posicao Fechou**
+
+- **Objetivo:** Monitorar posicoes abertas e determinar como foram
+  fechadas: pelo TP, pelo SL, manual ou timeout.
+- **Atividades:**
+  - Monitorar ticket via MT5 a cada ciclo para mudancas de status
+  - Detectar fechamento por:
+    - `TP_HIT`: Preco atingiu Take Profit
+    - `SL_HIT`: Preco atingiu Stop Loss
+    - `MANUAL_CLOSE`: Operador fechou manualmente
+    - `TIMEOUT`: Posicao aberta >24h sem fechar (auto-close)
+    - `CANCELLED`: Ordem cancelada antes de executar
+  - Calcular P&L real (entrada vs fecha) com spread/comissao
+  - Alimentar motivo de fechamento no TradePerformanceTracker
+  - Validar se TP/SL funcionou como esperado (ou foi TP errado)
+  - Logar evidencia completa para auditoria
+- **Entregar:**
+  - PositionClosureDetector class com monitor de tickets
+  - Integracao com MT5Adapter para obter dados reais
+  - Enum ClosureReason com 5 tipos
+  - Persistencia em JSON com todos detalhes
+  - Testes mock MT5 (simular TP hit, SL hit, etc) - 10+ casos
+  - Relatorio markdown com estatisticas por tipo fechamento
+- **Estimativa:** 5-6 horas (implementacao + mock MT5 + testes + validacao)
+- **Prioridade:** ALTA - Crítico para validar regras de SL/TP
+
+**4. Dashboard de Estatísticas de Trading**
+
+- **Objetivo:** Visualizar em tempo real (ou refresh 10s) estatisticas
+  de performance e comportamento do agente direto.
+- **Atividades:**
+  - Criar dashboard HTML + Chart.js em `templates/agente_direto_stats.html`
+  - Backend REST em `scripts/agente_stats_server.py` (Query dados SQLite)
+  - Painel 1 - Resumo Execucao:
+    - Data/hora inicio
+    - Total trades abertos (count)
+    - Total ganhos (R$) e Win rate (%)
+    - Drawdown atual vs maximo
+    - Proxima tentativa de trade (contador cooldown)
+  - Painel 2 - Metricas Operacionais:
+    - Sharpe ratio (último N trades)
+    - Profit facto (ganho bruto vs comissoes)
+    - Tempo medio posicao aberta
+    - Tipo de fechamento (TP%, SL%, Manual%, outros%)
+  - Painel 3 - Proteções Ativas:
+    - Status anti-overtrading (trades/hora, cooldown)
+    - Total bloqueios (por motivo)
+    - Contador perda consecutiva
+    - Horario permite tradear (sim/nao)
+  - Painel 4 - Historico Recente:
+    - Lista de ultimos 10 trades fechados
+    - Tabela: ticket, entrada, saida, PnL, duracao, motivo fecha
+  - Auto-refresh a cada 10s
+  - Botoes de acao: Pausar agente, Reset P&L, Export CSV
+- **Entregar:**
+  - `templates/agente_direto_stats.html` (300+ LOC HTML/JS)
+  - `scripts/agente_stats_server.py` (200+ LOC backend FastAPI)
+  - Testes backend (10+ casos mock data)
+  - Documentacao de acesso (http://localhost:8080/dashboard)
+  - CSS responsivo (mobile friendly)
+- **Estimativa:** 6-8 horas (backend + frontend + integracao + testes)
+- **Prioridade:** MEDIA - Nice-to-have para visibilidade operador
+
+**Próximos Passos:**
+1. ✅ Agente RL Direto validado em live trading (16/03/2026)
+2. 🔄 Executar Fase 1 (1+ semana de trading ao vivo)
+3. 📅 Agendar implementacao de melhorias APOS validacao inicial
+4. 📊 Usar dados coletados na Fase 1 para otimizar parametros
+
+**Validacao Esperada (Pos-Melhorias):**
+- Tracker P&L: Concordancia 100% com tickets MT5
+- Logging bloqueios: Motivo rastreavel para 100% dos bloqueios
+- Deteccao fechamento: Caso de uso (TP/SL/Manual) 100% da coberagna
+- Dashboard: Real-time visualizacao de performance + alertas
+
+**Commit sugerido:**
+```
+docs: Backlog - Agente RL Direto melhorias opcionais P1
+```
+
 ### P2 - Capacidade futura
 
 #### 7. Observabilidade e governanca tecnica
