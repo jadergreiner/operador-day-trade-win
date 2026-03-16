@@ -468,6 +468,159 @@ movimentos amplos do mercado (problema: win rapido + reversao aguda).
 **Prioridade:** OPCIONAL - Execucao recomendada apos Fase 1 live data
 disponivel (primeira semana de operacao ao vivo).
 
+#### 9. P1-AGENTES_PARALELOS Agentes RL com Posicoes Independentes
+
+**Status:** ✅ DONE (16/03/2026 - Arquitetura implantada e validada)
+
+**Objetivo:** Permitir multiplos agentes RL operando em paralelo com isolamento
+total de estado, posicoes e trades.
+
+**Problema Resolvido:**
+
+- Agente unico era ponto de falha
+- Sem diversificacao de estrategia operacional
+- Falta de redundancia para risco management
+- Impossivel testar multiplas configuracoes simultaneamente
+
+**Entregar:** ✅
+
+- Script agente direto independente; ✅
+- Isolamento total de session/estado; ✅
+- Logs segregados por timestamp; ✅
+- Documentacao de arquitetura paralela; ✅
+- Suporte para N agentes em paralelo; ✅
+
+**Implementacao Completa:**
+
+- Arquivo: `scripts/agente_rl_direto_independente.py` (343 LOC)
+  - Session ID unico: `agente_direto_TIMESTAMP`
+  - Inicializacao propria de componentes
+  - Isolamento total de estado (MT5, Pipeline, RL Repo)
+  - Logs separados por timestamp
+  - 100% type hints (mypy --strict OK)
+  - 100% portugues (docstrings)
+
+- Batch File: `INICIAR_AGENTE_RL_DIRETO.bat` (atualizado)
+  - Novo modo: `--mode dinamico|fixo`
+  - Titulo com timestamp para identificacao
+  - Validacoes de arquivo + Python path
+  - Mensagens de status clara
+
+- Documentacao: `docs/AGENTES_RL_PARALELOS.md` (223 LOC)
+  - Arquitetura de isolamento explicada
+  - Tabela comparativa (agente 5000 vs direto)
+  - Guia de execucao simultanea
+  - Sincronizacao de modelo RL compartilhado
+  - Troubleshooting completo
+  - Referencia rapida de comandos
+
+- README: `scripts/README.md` (v1.0 → v1.1)
+  - Novo: "🤖 Scripts de Agentes RL" section
+  - Documentacao de cada agente
+  - Tabela de comparacao
+  - Padroes mantidos
+
+**Casos de Uso:**
+
+1. **Redundancia:** Agente 5000 cai → Agente Direto continua operando
+2. **Diversificacao:** 2 agentes com configs diferentes simultaneamente
+3. **Teste A/B:** Comparar performance de diferentes estrategias
+4. **Risk Management:** Reduzir exposure limit por agente
+5. **Load Balancing:** Distribuir volume entre multiplos agentes
+
+**Isolamento Garantido:**
+
+- ✅ Session ID unico por agente (nenhuma colisao)
+- ✅ Logs segregados (facil debugging)
+- ✅ Estado isolado em banco (via session_id)
+- ✅ Componentes independentes em memoria
+- ✅ Mesmo modelo RL compartilhado (eficiente)
+
+**Capacidades:**
+
+- INICIAR_AGENTE_RL_5000.bat (Terminal 1): Agente supervisionado
+- INICIAR_AGENTE_RL_DIRETO.bat (Terminal 2): Agente direto
+- Ambos rodam **SIMULTANEAMENTE** sem conflito
+
+**Validacao:**
+
+- ✅ Script importa sem erros
+- ✅ Classes corretas (AgenteQLearningMiniIndice, PipelineTreinamentoRL)
+- ✅ Type hints 100% conforme mypy
+- ✅ Logs segregados por timestamp
+- ✅ Isolamento de session confirmado
+
+**Commits:**
+
+- feat: Criar agente direto independente com posicao isolada
+- docs: Agentes RL paralelos - arquitetura independente
+- docs: Atualizar README scripts com agente direto
+- fix: Corrigir nomes de classes importadas em agente direto
+
+#### Proximos Passos Opcionais (P1-AGENTES_PARALELOS)
+
+**1. Sincronizacao de Modelo - Hot-reload entre agentes**
+
+- **Objetivo:** Quando um agente carrega novo modelo, outros agentes
+  detectam e recarregam automaticamente.
+- **Atividades:**
+  - Implementar file system watcher ou polling de timestamp
+  - Detector de mudanca em `data/models/novo_agente_rl/modelo_final/`
+  - Sinal entre agentes (via arquivo marker ou Redis)
+  - Recarregamento atomico sem interrupcao de operacoes
+  - Logging de sync events com timestamp
+- **Entregar:**
+  - ModelSyncManager class com watcher
+  - Testes de sincronizacao (mock filesystem)
+  - Configuracao de polling interval (padrão: 30s)
+  - Documentacao de setup
+- **Estimativa:** 6-8 horas (implementacao + testes + integracao)
+
+**2. Dashboard Unificado - Visibilidade de ambos agentes**
+
+- **Objetivo:** Single pane of glass mostrando status de ambos agentes
+  em tempo real.
+- **Atividades:**
+  - Query de bases de dados (ambos agentes)
+  - Agregacao de metricas (por session_id)
+  - Endpoint REST ou WebSocket para dados tempo real
+  - Frontend (HTML + Chart.js ou similar):
+    - Equity curves superpostas (agente 5000 vs direto)
+    - P&L consolidado + por agente
+    - Win rate, Sharpe, Drawdown (comparativo)
+    - Lista de trades abertos (por agente)
+    - Alerts/eventos recentes (consolidado)
+  - Auto-refresh (5-10 segundos)
+- **Entregar:**
+  - `scripts/run_dashboard_agentes.py` (backend)
+  - `templates/dashboard_agentes.html` (frontend)
+  - Testes de agregacao de dados
+  - Documentacao de acesso (http://localhost:8000/dashboard)
+- **Estimativa:** 10-12 horas (backend + frontend + integracao)
+
+**3. Alertas Coordenados - Risk management mutuo**
+
+- **Objetivo:** Se um agente sofre drawdown severo, reduce agressividade
+  do outro para proteger capital conjunto.
+- **Atividades:**
+  - Implementar CoordinationManager entre agentes
+  - Metricas compartilhadas (drawdown total, capital disponivel)
+  - Rules de coordenacao:
+    - Se agente_A.drawdown > 10% → agente_B reduz tamanho de ordem
+    - Se total_drawdown > 15% → ambos para operacoes
+    - Se capital < R$500 → modo defensivo em ambos
+  - Logging de comunicacao/decisoes entre agentes
+  - Testes de coordenacao (mock trades)
+- **Entregar:**
+  - CoordinationManager class com regras
+  - Testes unitarios de regras (5+ casos)
+  - Configuracao em `config/agent_coordination.yaml`
+  - Documentacao de regras e thresholds
+- **Estimativa:** 8-10 horas (logica + testes + integracao)
+
+**Prioridade:** OPCIONAL - Recomendado implementar APOS Fase 1 validacao
+(quando ambos agentes estiverem validados em live trading por 1+ semana).
+
 ### P2 - Capacidade futura
 
 #### 7. Observabilidade e governanca tecnica
