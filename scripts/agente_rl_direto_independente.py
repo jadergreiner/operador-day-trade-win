@@ -22,8 +22,11 @@ import os
 import logging
 import time
 import json
+import uuid
 from datetime import datetime
 from pathlib import Path
+import pandas as pd
+from typing import Optional, Tuple
 
 # ============================================================================
 # SETUP PATH e VARIÁVEIS DE AMBIENTE
@@ -109,6 +112,162 @@ try:
 except Exception as e:
     logger.error(f'[FATAL] Erro ao importar módulos: {e}', exc_info=True)
     sys.exit(1)
+
+# Imports específicos para decisão e envio
+try:
+    from src.infrastructure.adapters.domain_models import (
+        Symbol, OrderSide, OrderType, Order, Price, Quantity
+    )
+except ImportError:
+    logger.warning('[WARN] Usando imports diretos de domain_models')
+
+# ============================================================================
+# CONSTANTES DE TRADING
+# ============================================================================
+SIMBOLO = "WINM25"
+STOP_LOSS_PONTOS = 100
+TAKE_PROFIT_PONTOS = 150
+CONFIRM_SIGNAL_BARS = 2  # Confirmação em N velas
+TARGET_PROFIT = 140.00
+STOP_LOSS_MAX = -250.00
+
+# Variáveis globais para estado do agente
+last_signal = "Aguardar"
+signal_confirmation_count = 0
+last_trade_time = None
+
+# ============================================================================
+# FUNÇÕES DE DECISÃO E TRADING (RL)
+# ============================================================================
+def obter_acao_do_modelo(dados: pd.DataFrame, pipeline: object, agente: object) -> Tuple[int, float]:
+    """Obtém ação do modelo RL treinado."""
+    try:
+        from src.application.services.novo_agente.ambiente_trading import AmbienteTradingMiniIndice
+        
+        if not isinstance(dados, pd.DataFrame) or len(dados) == 0:
+            logger.debug('[RL] Dados insuficientes, retornando aguardar')
+            return 0, 0.0  # Aguardar
+        
+        ambiente = AmbienteTradingMiniIndice(dados=dados)
+        ambiente.reset()
+        ambiente._indice = len(dados) - 1
+        
+        estado = ambiente._calcular_estado()
+        acao_id = agente.selecionar_acao(estado)
+        confidence = 0.7  # Placeholder
+        
+        logger.debug(f'[RL] Ação obtida: {acao_id} (confiança: {confidence:.2%})')
+        return acao_id, confidence
+    
+    except Exception as e:
+        logger.error(f'[RL] Erro ao obter ação: {e}')
+        return 0, 0.0
+
+
+def mapear_acao(acao_id: int) -> str:
+    """Mapeia ID numérico para ação: 0=Aguardar, 1=Comprar, 2=Vender."""
+    mapeamento = {0: "Aguardar", 1: "Comprar", 2: "Vender"}
+    return mapeamento.get(acao_id, "Aguardar")
+
+
+def verificar_confirmacao_sinal(sinal_atual: str, sinal_anterior: str) -> bool:
+    """Verifica se o sinal se repete em múltiplas velas."""
+    global signal_confirmation_count
+    
+    if sinal_atual == "Aguardar":
+        signal_confirmation_count = 0
+        return False
+    
+    if sinal_atual == sinal_anterior:
+        signal_confirmation_count += 1
+        logger.info(f'[OK] Sinal CONFIRMADO ({signal_confirmation_count}/{CONFIRM_SIGNAL_BARS})')
+        return signal_confirmation_count >= CONFIRM_SIGNAL_BARS
+    else:
+        signal_confirmation_count = 1
+        logger.info(f'[SINAL] Novo sinal detectado: {sinal_atual}')
+        return False
+
+
+def calcular_sl_tp(acao: str, preco_atual: float) -> Tuple[float, float]:
+    """Calcula SL/TP baseado na ação."""
+    if acao == "Comprar":
+        sl = preco_atual - STOP_LOSS_PONTOS
+        tp = preco_atual + TAKE_PROFIT_PONTOS
+    elif acao == "Vender":
+        sl = preco_atual + STOP_LOSS_PONTOS
+        tp = preco_atual - TAKE_PROFIT_PONTOS
+    else:
+        sl = tp = preco_atual
+    
+    return sl, tp
+
+
+def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
+                 posicao_tracker: object, rl_repo: object) -> bool:
+    """Envia ordem para abrir posição no MT5."""
+    global last_trade_time
+    
+    if acao == "Aguardar":
+        return False
+    
+    try:
+        # Mapear ação para OrderSide
+        if acao == "Comprar":
+            side = OrderSide.BUY
+        elif acao == "Vender":
+            side = OrderSide.SELL
+        else:
+            return False
+        
+        # Calcular SL/TP
+        sl, tp = calcular_sl_tp(acao, preco_atual)
+        
+        logger.info(f'[ENVIO] {acao} @ {preco_atual} | SL: {sl} | TP: {tp}')
+        
+        # Criar e enviar ordem
+        order = Order(
+            symbol=Symbol(SIMBOLO),
+            side=side,
+            quantity=Quantity(1),
+            order_type=OrderType.MARKET,
+            price=Price(preco_atual),
+            stop_loss=Price(sl),
+            take_profit=Price(tp),
+            execution_method="automated",
+        )
+        
+        ticket = mt5_adapter.send_order(order)
+        if ticket:
+            logger.info(f'[OK] Ordem enviada! Ticket: {ticket}')
+            
+            # Registrar posição no rastreador
+            posicao_tracker.registrar_posicao_aberta()
+            
+            # Persistir no RL Repository
+            if rl_repo:
+                try:
+                    episode_id = str(uuid.uuid4())
+                    episode = {
+                        "episode_id": episode_id,
+                        "timestamp": datetime.now(),
+                        "source": "AGENTE_DIRETO",
+                        "win_price": preco_atual,
+                        "action": acao.upper(),
+                        "symbol": SIMBOLO,
+                    }
+                    rl_repo.save_episode(episode)
+                except Exception as e:
+                    logger.warning(f'[WARN] Erro ao persistir episódio: {e}')
+            
+            last_trade_time = datetime.now()
+            return True
+        else:
+            logger.error(f'[ERRO] Falha ao enviar ordem')
+            return False
+    
+    except Exception as e:
+        logger.error(f'[ERRO] Exceção ao enviar ordem: {e}', exc_info=True)
+        return False
 
 # ============================================================================
 # INICIALIZAÇÃO DE COMPONENTES
@@ -206,14 +365,14 @@ def inicializar_componentes():
 # ============================================================================
 class AgentePosicaoStatus:
     """Rastreador de posições isolado por session ID do agente."""
-    
+
     def __init__(self, session_id: str, data_dir: Path):
         self.session_id = session_id
         self.status_file = data_dir / f'agente_posicao_{session_id}.json'
         self.posicao_aberta = False
         self.posicao_open_time = None
         self.carregar_status()
-    
+
     def carregar_status(self):
         """Carrega status de posição anterior se existir."""
         try:
@@ -225,12 +384,12 @@ class AgentePosicaoStatus:
                     logger.info(f'[STATUS] Posição anterior restaurada: {self.posicao_aberta}')
         except Exception as e:
             logger.warning(f'[WARN] Erro ao carregar status: {e}')
-    
+
     def registrar_posicao_aberta(self):
         """Registra que uma posição foi aberta por ESTE agente."""
         self.posicao_aberta = True
         self.posicao_open_time = datetime.now().isoformat()
-        
+
         try:
             with open(self.status_file, 'w', encoding='utf-8') as f:
                 json.dump({
@@ -242,12 +401,12 @@ class AgentePosicaoStatus:
             logger.info(f'[REGISTRO] Posição aberta registrada para session {self.session_id}')
         except Exception as e:
             logger.error(f'[ERRO] Falha ao registrar posição: {e}')
-    
+
     def registrar_posicao_fechada(self):
         """Registra que a posição foi fechada por ESTE agente."""
         self.posicao_aberta = False
         self.posicao_open_time = None
-        
+
         try:
             with open(self.status_file, 'w', encoding='utf-8') as f:
                 json.dump({
@@ -259,7 +418,7 @@ class AgentePosicaoStatus:
             logger.info(f'[REGISTRO] Posição fechada registrada para session {self.session_id}')
         except Exception as e:
             logger.error(f'[ERRO] Falha ao registrar fechamento: {e}')
-    
+
     def tem_posicao_aberta(self) -> bool:
         """Retorna True se ESTE agente tem uma posição aberta."""
         return self.posicao_aberta
@@ -268,7 +427,8 @@ class AgentePosicaoStatus:
 # LOOP PRINCIPAL
 # ============================================================================
 def main():
-    """Loop principal do agente direto."""
+    """Loop principal do agente direto com lógica de RL."""
+    global last_signal
 
     # Inicializar componentes
     componentes = inicializar_componentes()
@@ -278,18 +438,21 @@ def main():
 
     config = componentes['config']
     mt5_adapter = componentes['mt5_adapter']
+    pipeline = componentes['pipeline']
+    agente = componentes['agente']
     profit_protection = componentes['profit_protection']
+    rl_repo = componentes['rl_repo']
 
     # Inicializar rastreador de posições deste agente
     posicao_tracker = AgentePosicaoStatus(AGENT_SESSION_ID, OUTPUTS_DIR)
 
     logger.info('=' * 80)
-    logger.info('INICIANDO LOOP OPERACIONAL')
+    logger.info('INICIANDO LOOP OPERACIONAL COM RL')
     logger.info('=' * 80)
-    logger.info(f"Target: R$140.00 / Stop Loss: -R$250.00")
+    logger.info(f"Target: R${TARGET_PROFIT:.2f} | Stop Loss: R${STOP_LOSS_MAX:.2f}")
     logger.info(f"SL/TP Mode: {AGENT_MODE.upper()}")
     logger.info(f"Session: {AGENT_SESSION_ID}")
-    logger.info(f"Rastreamento de posição isolado: ATIVADO")
+    logger.info(f"Isolamento de posições: ATIVADO")
     logger.info('=' * 80)
     logger.info('')
 
@@ -304,25 +467,74 @@ def main():
                 logger.info(f'[CICLO {ciclo}] Iniciando iteração...')
                 logger.debug(f'[CICLO {ciclo}] Tempo decorrido: {time.time() - start_time:.1f}s')
 
-                # 1. Proteção de lucros
-                logger.debug(f'[CICLO {ciclo}] Verificando proteção de lucros...')
-
-                # 2. Monitorar posições isoladamente por session
-                logger.debug(f'[CICLO {ciclo}] Verificando posições deste agente (session isolado)...')
+                # 1. Carregar dados de mercado (últimas 30 velas)
+                try:
+                    dados = mt5_adapter.get_candles(Symbol(SIMBOLO), 30)
+                    if dados is None or len(dados) == 0:
+                        logger.debug('[CICLO] Aguardando dados de mercado...')
+                        time.sleep(5)
+                        continue
+                    
+                    preco_atual = dados.iloc[-1]['close']
+                    logger.debug(f'[CICLO {ciclo}] Preço atual: {preco_atual}')
                 
+                except Exception as e:
+                    logger.warning(f'[CICLO {ciclo}] Erro ao obter dados: {e}')
+                    time.sleep(5)
+                    continue
+
+                # 2. Proteção de lucros (se tem posição)
                 if posicao_tracker.tem_posicao_aberta():
+                    logger.debug(f'[CICLO {ciclo}] Verificando proteção de lucros...')
+                    # TODO: Integrar profit_protection aqui
+                    
                     logger.info(f'[CICLO {ciclo}] Posição DESTE AGENTE em aberto. Aguardando...')
                     time.sleep(30)
+                    continue
+
+                # 3. Se sem posição, tentar obter ação do RL
+                logger.debug(f'[CICLO {ciclo}] Verificando oportunidade de entrada...')
+                
+                try:
+                    acao_id, confidence = obter_acao_do_modelo(dados, pipeline, agente)
+                    acao_str = mapear_acao(acao_id)
+                    
+                    logger.debug(f'[CICLO {ciclo}] Ação RL: {acao_str} (confiança: {confidence:.2%})')
+                    
+                except Exception as e:
+                    logger.warning(f'[CICLO {ciclo}] Erro ao obter ação RL: {e}')
+                    acao_str = "Aguardar"
+
+                # 4. Validar confirmação do sinal
+                if acao_str != "Aguardar":
+                    confirmado = verificar_confirmacao_sinal(acao_str, last_signal)
+                    
+                    if confirmado:
+                        logger.info(f'[CICLO {ciclo}] SINAL CONFIRMADO: {acao_str}')
+                        
+                        # 5. Enviar ordem
+                        if enviar_ordem(mt5_adapter, acao_str, preco_atual, posicao_tracker, rl_repo):
+                            logger.info(f'[CICLO {ciclo}] Ordem aberta com sucesso!')
+                            last_signal = acao_str
+                            time.sleep(5)
+                            continue
+                    else:
+                        last_signal = acao_str
+                        logger.debug(f'[SINAL] Aguardando confirmação: {acao_str}')
                 else:
-                    logger.debug(f'[CICLO {ciclo}] ESTE AGENTE não tem posição aberta')
-                    time.sleep(5)
+                    signal_confirmation_count = 0
+                    last_signal = "Aguardar"
+
+                # Default: aguardar
+                logger.debug(f'[CICLO {ciclo}] Aguardando...')
+                time.sleep(5)
 
             except KeyboardInterrupt:
                 logger.info('[HALT] Interrupção do usuário (Ctrl+C)')
                 break
 
             except Exception as e:
-                logger.error(f'[CICLO {ciclo}] Erro: {e}', exc_info=True)
+                logger.error(f'[CICLO {ciclo}] Erro inesperado: {e}', exc_info=True)
                 time.sleep(5)
                 continue
 

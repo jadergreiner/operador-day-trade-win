@@ -1,0 +1,47 @@
+2026-03-16 11:39:08,098 [INFO] __main__: ================================================================================
+2026-03-16 11:39:08,099 [INFO] __main__: AGENTE RL DIRETO - POSIÃ├O INDEPENDENTE
+2026-03-16 11:39:08,100 [INFO] __main__: ================================================================================
+2026-03-16 11:39:08,100 [INFO] __main__: Timestamp: 20260316_113908
+2026-03-16 11:39:08,100 [INFO] __main__: Session ID: agente_direto_20260316_113908
+2026-03-16 11:39:08,100 [INFO] __main__: Modo SL/TP: DINAMICO
+2026-03-16 11:39:08,101 [INFO] __main__: Diret¾rio: C:\repo\operador-day-trade-win
+2026-03-16 11:39:08,103 [INFO] __main__: Log Principal: C:\repo\operador-day-trade-win\outputs\agente_direto_20260316_113908.log
+2026-03-16 11:39:08,103 [INFO] __main__: Log Debug: C:\repo\operador-day-trade-win\outputs\agente_direto_debug_20260316_113908.log
+2026-03-16 11:39:08,103 [INFO] __main__: ================================================================================
+2026-03-16 11:39:08,103 [INFO] __main__: 
+2026-03-16 11:39:08,104 [INFO] __main__: [INIT] Importando m¾dulos core...
+2026-03-16 11:39:15,238 [INFO] __main__: [OK] M¾dulos importados com sucesso
+2026-03-16 11:39:15,238 [INFO] __main__: [INIT] Inicializando componentes...
+2026-03-16 11:39:15,238 [INFO] __main__: [INIT] Carregando configuraþÒo TradingConfig...
+2026-03-16 11:39:15,267 [INFO] __main__: [INIT] Conectando ao MT5...
+2026-03-16 11:39:15,546 [DEBUG] src.infrastructure.adapters.mt5_adapter: Terminal mismatch: expected C:\Program Files\Clear Investimentos MT5 Terminal\terminal64.exe, got C:\Program Files\FBS MetaTrader 5\terminal64.exe
+2026-03-16 11:39:15,550 [INFO] src.infrastructure.adapters.mt5_adapter: MT5 session fingerprint saved: PID=32056, Login=1000346516
+2026-03-16 11:39:15,550 [INFO] src.infrastructure.adapters.mt5_adapter: MT5 connection established successfully
+2026-03-16 11:39:15,550 [INFO] __main__: [OK] MT5 conectado
+2026-03-16 11:39:15,550 [INFO] __main__: [INIT] Inicializando RL Repository...
+2026-03-16 11:39:15,648 [INFO] __main__: [OK] RL Repository pronto
+2026-03-16 11:39:15,649 [INFO] __main__: [INIT] Inicializando Pipeline RL...
+2026-03-16 11:39:15,649 [INFO] src.application.services.novo_agente.pipeline_treinamento: Pipeline RL inicializado. Limite perda: R$250.00 | Meta: R$100.00
+2026-03-16 11:39:15,650 [INFO] __main__: [OK] Pipeline RL pronto
+2026-03-16 11:39:15,650 [INFO] __main__: [INIT] Inicializando Agente Q-Learning...
+2026-03-16 11:39:15,651 [INFO] src.application.services.novo_agente.agente_q_learning: Agente Q-Learning inicializado. Estado: 15 dims, Aþ§es: 3
+2026-03-16 11:39:15,652 [INFO] __main__: [LOAD] Carregando modelo de C:\repo\operador-day-trade-win\data\models\novo_agente_rl\modelo_final...
+2026-03-16 11:39:15,661 [INFO] src.application.services.novo_agente.agente_q_learning: Modelo carregado de C:\repo\operador-day-trade-win\data\models\novo_agente_rl\modelo_final (epis¾dios=5000, epsilon=0.100)
+2026-03-16 11:39:15,662 [INFO] __main__: [OK] Modelo carregado
+2026-03-16 11:39:15,662 [INFO] __main__: [INIT] Inicializando Profit Protection Engine...
+2026-03-16 11:39:15,662 [INFO] __main__: [OK] Profit Protection ativado
+2026-03-16 11:39:15,662 [INFO] __main__: [OK] Todos os componentes inicializados com sucesso!
+2026-03-16 11:39:15,663 [INFO] __main__: 
+2026-03-16 11:39:15,663 [INFO] __main__: ================================================================================
+2026-03-16 11:39:15,663 [INFO] __main__: INICIANDO LOOP OPERACIONAL
+2026-03-16 11:39:15,663 [INFO] __main__: ================================================================================
+2026-03-16 11:39:15,663 [INFO] __main__: Target: R$140.00 / Stop Loss: -R$250.00
+2026-03-16 11:39:15,663 [INFO] __main__: SL/TP Mode: DINAMICO
+2026-03-16 11:39:15,664 [INFO] __main__: Session: agente_direto_20260316_113908
+2026-03-16 11:39:15,664 [INFO] __main__: ================================================================================
+2026-03-16 11:39:15,664 [INFO] __main__: 
+2026-03-16 11:39:15,664 [INFO] __main__: [CICLO 1] Iniciando iteraþÒo...
+2026-03-16 11:39:15,665 [DEBUG] __main__: [CICLO 1] Tempo decorrido: 0.0s
+2026-03-16 11:39:15,666 [DEBUG] __main__: [CICLO 1] Verificando proteþÒo de lucros...
+2026-03-16 11:39:15,666 [DEBUG] __main__: [CICLO 1] Monitorando posiþ§es abertas...
+2026-03-16 11:39:15,667 [INFO] __main__: [CICLO 1] PosiþÒo em aberto. Aguardando...

@@ -514,7 +514,7 @@ def processar_protecao_lucros() -> None:
                 current_price = float(getattr(position, 'price_current', 0.0))
                 direcion = "BUY" if getattr(position, 'type', 0) == 0 else "SELL"
                 ticket = int(getattr(position, 'ticket', 0))
-                
+
                 trade_dict = {
                     "trade_id": f"T{ticket}",
                     "symbol": SIMBOLO,
@@ -525,30 +525,30 @@ def processar_protecao_lucros() -> None:
                     "initial_sl": float(getattr(position, 'sl', 0.0)),
                     "initial_tp": float(getattr(position, 'tp', 0.0)),
                 }
-                
+
                 # Processar através do motor de proteção
                 resultado = profit_protection_engine.processar_protecao(
                     trade=trade_dict,
                     preco_atual=current_price,
                 )
-                
+
                 # Log de proteção
                 if resultado.acao_sugerida in ["ATIVAR_BREAK_EVEN_STOP", "FECHAR_PARCIAL"]:
                     logger.info(
                         f"[PROTEÇÃO] Ticket#{ticket} | Lucro:{resultado.profit_atual:.2f}% | "
                         f"Status:{resultado.status.value} | Ação:{resultado.acao_sugerida}"
                     )
-                    
+
                 # Implementar ação (break-even stop)
                 if resultado.acao_sugerida == "ATIVAR_BREAK_EVEN_STOP":
                     # Break-even stop: SL = entry_price + offset
                     offset = entry_price * (profit_protection_engine.config["break_even_offset_pct"] / 100)
                     novo_sl = entry_price + offset if direcion == "BUY" else entry_price - offset
                     modificar_sl_ordem(ticket, novo_sl)
-                    
+
             except Exception as e:
                 logger.debug(f"Erro ao processar proteção para posição: {e}")
-                
+
     except Exception as e:
         logger.error(f"Erro em processar_protecao_lucros: {e}")
 
