@@ -485,6 +485,15 @@ def main():
                 logger.info(f'[CICLO {ciclo}] Iniciando iteração...')
                 logger.debug(f'[CICLO {ciclo}] Tempo decorrido: {time.time() - start_time:.1f}s')
 
+                # Verificar conexão MT5 antes de cada ciclo
+                if not mt5_adapter.is_connected():
+                    logger.warning(f'[CICLO {ciclo}] Detectada perda de conexão MT5, tentando reconectar...')
+                    if not mt5_adapter.connect():
+                        logger.error(f'[CICLO {ciclo}] Falha ao reconectar ao MT5')
+                        time.sleep(5)
+                        continue
+                    logger.info(f'[CICLO {ciclo}] MT5 reconectado com sucesso')
+
                 # 1. Carregar dados de mercado (últimas 100 velas M5 para contexto RL)
                 try:
                     if Symbol is None or TimeFrame is None:
@@ -570,6 +579,18 @@ def main():
 
             except Exception as e:
                 logger.error(f'[CICLO {ciclo}] Erro inesperado: {e}', exc_info=True)
+                
+                # Tentar reconectar se a conexão caiu
+                try:
+                    if not mt5_adapter.is_connected():
+                        logger.warning('[RECONEXAO] Detectada perda de conexão MT5, tentando reconectar...')
+                        if mt5_adapter.connect():
+                            logger.info('[RECONEXAO] MT5 reconectado com sucesso')
+                        else:
+                            logger.error('[RECONEXAO] Falha ao reconectar')
+                except:
+                    pass
+                    
                 time.sleep(5)
                 continue
 
