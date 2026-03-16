@@ -148,28 +148,28 @@ def inicializar_componentes():
 
         # 3. Pipeline RL
         logger.info('[INIT] Inicializando Pipeline RL...')
-        pipeline = PipelineTreinamentoRL(
-            limite_perda_reais=250.0,
-            meta_lucro=100.0
-        )
+        pipeline = PipelineTreinamentoRL()
 
         logger.info('[OK] Pipeline RL pronto')
 
         # 4. Agente QL
         logger.info('[INIT] Inicializando Agente Q-Learning...')
-        agente = AgenteQLearningMiniIndice(
-            num_features=15,
-            num_actions=3
+        pipeline._agente = AgenteQLearningMiniIndice(
+            tamanho_estado=15,
+            n_acoes=3,
+            config=pipeline.config_agente
         )
 
         # Carregar modelo pré-treinado
         modelo_path = ROOT_DIR / 'data' / 'models' / 'novo_agente_rl' / 'modelo_final'
-        if modelo_path.exists():
+        if (modelo_path / 'q_network.pkl').exists():
             logger.info(f'[LOAD] Carregando modelo de {modelo_path}...')
-            agente.carregar(str(modelo_path))
+            pipeline._agente.carregar(modelo_path)
             logger.info('[OK] Modelo carregado')
         else:
             logger.warning(f'[WARN] Modelo não encontrado em {modelo_path}')
+
+        agente = pipeline._agente
 
         # 5. Profit Protection Engine
         logger.info('[INIT] Inicializando Profit Protection Engine...')
