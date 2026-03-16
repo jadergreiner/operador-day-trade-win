@@ -1,0 +1,49 @@
+OPERADOR RL v5000 - GUIA RAPIDO DE INICIALIZACAO
+═════════════════════════════════════════════════════════════════
+
+[✅ STATUS] Modelo q_network.pkl foi restaurado com sucesso
+
+[📁 LOCALIZACOES DO MODELO]
+  ✓ C:\repo\operador-day-trade-win\data\models\novo_agente_rl\modelo_final\q_network.pkl
+  ✓ C:\repo\data\models\novo_agente_rl\modelo_final\q_network.pkl
+  
+[📊 MODELO INFO]
+  • Tipo: Q-Learning (Q-Table)
+  • Estados: 5000
+  • Acoes: 10 opcoes de trade
+  • Tamanho: 392 KB
+  • Status: VALIDO E PRONTO
+
+[🚀 EXECUTAR]
+  1. Abra o Windows Explorer
+  2. Navegue para: C:\repo\operador-day-trade-win\
+  3. Clique 2x em: INICIAR_AGENTE_RL_5000.bat
+  4. Escolha uma opcao:
+     [1] AVALIAR MODELO (teste com dados historicos)
+     [2] OPERAR MERCADO REAL (execucao ao vivo)
+     [3] MODO ORIGINAL (sem protecoes)
+     [4] Sair
+
+[⚙️ MELHORIAS RECENTES]
+  ✓ Check de modelo agora procura em 2 localizacoes
+  ✓ Scripts de diagnostico criados (diagnostico_modelo_rl.py)
+  ✓ Validador de integridade (verificar_integridade_modelo_rl.py)
+  ✓ Modelo regenerado (sem corrupcao)
+
+[📋 PARAMETROS DO MODELO]
+  • Win Rate esperado: 65-68%
+  • Stop Loss: -R$ 250.00
+  • Target: +R$ 140.00
+  • Anti-overtrading: 7 filtros
+  • Cooldown: 5 minutos entre trades
+  • SL/TP dinamicos: Analisa ultimos topos/fundos
+
+[❓ DUVIDAS]
+  Se o .bat ainda nao encontrar o modelo:
+    1. Execute: python scripts/diagnostico_modelo_rl.py
+    2. Verifique output
+    3. Se necessario, envie relatorio para debug
+
+═════════════════════════════════════════════════════════════════
+Data: 16/03/2026 | Status: PRONTO PARA OPERACAO
+═════════════════════════════════════════════════════════════════
