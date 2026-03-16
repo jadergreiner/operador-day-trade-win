@@ -1,0 +1,182 @@
+{
+  "versao": "1.0.0",
+  "descricao": "Manifesto de sincronizacao de documentacao do projeto operador-day-trade-win",
+  "ultima_validacao": "2026-03-16T20:45:00-03:00",
+  "documentos": [
+    {
+      "nome": "BACKLOG.md",
+      "descricao": "Fonte de verdade dos itens de desenvolvimento",
+      "versao": "v3.0",
+      "status": "PRONTO",
+      "agentes_impactados": [
+        "INICIAR_DIARIOS.bat",
+        "INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat",
+        "INICIAR_AGENTE_RL_5000.bat",
+        "INICIAR_AGENTE_RL_DIRETO.bat"
+      ],
+      "sincronizar_com": [
+        "ARQUITETURA_ALVO.md",
+        "ADRS.md"
+      ]
+    },
+    {
+      "nome": "ARQUITETURA_ALVO.md",
+      "descricao": "Contrato arquitetural dos 4 agentes e fluxo de execucao",
+      "versao": "v2.0",
+      "status": "PRONTO",
+      "agentes_impactados": [
+        "INICIAR_DIARIOS.bat",
+        "INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat",
+        "INICIAR_AGENTE_RL_5000.bat",
+        "INICIAR_AGENTE_RL_DIRETO.bat"
+      ],
+      "sincronizar_com": [
+        "BACKLOG.md",
+        "DIAGRAMAS.md",
+        "OPERACAO_4_AGENTES.md"
+      ]
+    },
+    {
+      "nome": "REGRAS_DE_NEGOCIO.md",
+      "descricao": "Regras operacionais canonicas: gates, limites, entry/exit",
+      "versao": "v2.0",
+      "status": "PRONTO",
+      "agentes_impactados": [
+        "INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat",
+        "INICIAR_AGENTE_RL_5000.bat",
+        "INICIAR_AGENTE_RL_DIRETO.bat"
+      ],
+      "sincronizar_com": [
+        "ARQUITETURA_ALVO.md",
+        "BACKLOG.md"
+      ]
+    },
+    {
+      "nome": "MODELAGEM_DE_DADOS.md",
+      "descricao": "Schema SQLite: tabelas, campos, indices e relacionamentos",
+      "versao": "v2.0",
+      "status": "PRONTO",
+      "agentes_impactados": [
+        "INICIAR_DIARIOS.bat",
+        "INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat",
+        "INICIAR_AGENTE_RL_5000.bat",
+        "INICIAR_AGENTE_RL_DIRETO.bat"
+      ],
+      "sincronizar_com": [
+        "ARQUITETURA_ALVO.md"
+      ]
+    },
+    {
+      "nome": "DIAGRAMAS.md",
+      "descricao": "Diagramas visuais de dados, classes, funcoes e decisoes",
+      "versao": "v1.0",
+      "status": "PRONTO",
+      "agentes_impactados": [
+        "INICIAR_DIARIOS.bat",
+        "INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat",
+        "INICIAR_AGENTE_RL_5000.bat",
+        "INICIAR_AGENTE_RL_DIRETO.bat"
+      ],
+      "sincronizar_com": [
+        "ARQUITETURA_ALVO.md",
+        "MODELAGEM_DE_DADOS.md"
+      ]
+    },
+    {
+      "nome": "OPERACAO_4_AGENTES.md",
+      "descricao": "Guia operacional: como iniciar, monitorar e encerrar os 4 agentes",
+      "versao": "v1.1",
+      "status": "PRONTO",
+      "agentes_impactados": [
+        "INICIAR_DIARIOS.bat",
+        "INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat",
+        "INICIAR_AGENTE_RL_5000.bat",
+        "INICIAR_AGENTE_RL_DIRETO.bat"
+      ],
+      "sincronizar_com": [
+        "ARQUITETURA_ALVO.md"
+      ]
+    },
+    {
+      "nome": "ADRS.md",
+      "descricao": "Architecture Decision Records: decisoes arquiteturais registradas",
+      "versao": "v1.0",
+      "status": "PRONTO",
+      "agentes_impactados": [
+        "INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat",
+        "INICIAR_AGENTE_RL_5000.bat",
+        "INICIAR_AGENTE_RL_DIRETO.bat"
+      ],
+      "sincronizar_com": [
+        "BACKLOG.md",
+        "ARQUITETURA_ALVO.md"
+      ]
+    },
+    {
+      "nome": "AGENTES_RL_PARALELOS.md",
+      "descricao": "Arquitetura de isolamento e operacao paralela dos agentes RL",
+      "versao": "v1.0",
+      "status": "PRONTO",
+      "agentes_impactados": [
+        "INICIAR_AGENTE_RL_5000.bat",
+        "INICIAR_AGENTE_RL_DIRETO.bat"
+      ],
+      "sincronizar_com": [
+        "ARQUITETURA_ALVO.md",
+        "OPERACAO_4_AGENTES.md"
+      ]
+    }
+  ],
+  "grupos_sincronizacao": [
+    {
+      "nome": "nucleo-arquitetural",
+      "descricao": "Docs que devem ser atualizados juntos quando ha mudanca de fluxo",
+      "documentos": [
+        "ARQUITETURA_ALVO.md",
+        "DIAGRAMAS.md",
+        "OPERACAO_4_AGENTES.md"
+      ]
+    },
+    {
+      "nome": "regras-e-dados",
+      "descricao": "Docs que devem ser atualizados juntos quando ha mudanca de regra ou schema",
+      "documentos": [
+        "REGRAS_DE_NEGOCIO.md",
+        "MODELAGEM_DE_DADOS.md"
+      ]
+    },
+    {
+      "nome": "decisoes-e-backlog",
+      "descricao": "Docs que devem ser atualizados juntos quando ha nova decisao arquitetural",
+      "documentos": [
+        "ADRS.md",
+        "BACKLOG.md"
+      ]
+    },
+    {
+      "nome": "agentes-rl",
+      "descricao": "Docs especificos dos agentes RL paralelos",
+      "documentos": [
+        "AGENTES_RL_PARALELOS.md",
+        "ARQUITETURA_ALVO.md"
+      ]
+    }
+  ],
+  "regras_atualizacao": {
+    "ao_implementar_item_backlog": [
+      "Atualizar BACKLOG.md (status DONE + evidencia + agente impactado)",
+      "Atualizar ARQUITETURA_ALVO.md se houver mudanca de fluxo",
+      "Atualizar DIAGRAMAS.md se houver mudanca de estrutura",
+      "Atualizar MODELAGEM_DE_DADOS.md se houver mudanca de schema",
+      "Atualizar REGRAS_DE_NEGOCIO.md se houver mudanca de regra",
+      "Criar ADR em ADRS.md se houver nova decisao arquitetural",
+      "Rodar lint: python -m pymarkdown scan docs/"
+    ],
+    "frequencia_revisao": {
+      "diaria": "Monitor de metricas live (win rate, drawdown)",
+      "semanal": "Revisao de BACKLOG.md vs performance",
+      "quinzenal": "Revisao completa de todos os docs",
+      "mensal": "Auditoria de consistencia entre todos os docs"
+    }
+  }
+}

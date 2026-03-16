@@ -1505,15 +1505,15 @@ docs: Backlog - Agente RL Direto melhorias opcionais P1
 
 #### 7. Observabilidade e governanca tecnica
 
-**Status:** ✅ DONE (15/03/2026 - Documento Validator + Health Check CI/CD)
+**Status:** ✅ DONE (16/03/2026 - SYNC_MANIFEST.json criado + testes 20/20)
 
 **Objetivo:** reduzir manutencao manual e risco documental.
 
 **Entregar:**
 
 - `validate_documentation.py`; ✅
-- `SYNC_MANIFEST.json` (validacao); ✅
-- `health_check_ci_cd.py`; ✅ (NEW - 15/03/2026)
+- `SYNC_MANIFEST.json` (validacao); ✅ (16/03/2026)
+- `health_check_ci_cd.py`; ✅ (15/03/2026)
 - health-checks de CI/CD; ✅
 - lint documental quando nao conflitar com artefatos historicos. ✅
 
@@ -1618,14 +1618,23 @@ retorno auditavel (Gate 2 PASS).
 
 #### 3. Observabilidade e governanca tecnica
 
+**Status:** ✅ DONE (16/03/2026 - Compartilhado com MICRO_TENDENCIA)
+
 **Objetivo:** reduzir manutencao manual e risco documental.
 
 **Entregar:**
 
-- `validate_documentation.py`;
-- `SYNC_MANIFEST.json`;
-- health-checks de CI/CD;
-- lint documental quando nao conflitar com artefatos historicos.
+- `validate_documentation.py`; ✅ (scripts/)
+- `docs/agente_autonomo/SYNC_MANIFEST.json`; ✅ (16/03/2026)
+- `health_check_ci_cd.py`; ✅ (scripts/)
+- lint documental quando nao conflitar com artefatos historicos. ✅
+
+**Evidencia:**
+
+- Codigo: `docs/agente_autonomo/SYNC_MANIFEST.json` (8 documentos, 4 grupos)
+- Testes: `tests/unit/test_sync_manifest.py` (20 casos, 20/20 PASS)
+- Validacao: Todos docs em docs/ cobertos, grupos de sincronizacao definidos
+- Agente impactado: INICIAR_DIARIOS.bat
 
 ## Backlog — INICIAR_AGENTE_RL_5000.bat
 
@@ -1747,28 +1756,37 @@ in position 34: character maps to <undefined>
 
 #### 1. Trilha RL operacional
 
+**Status:** ✅ DONE (16/03/2026 - Implementado em INICIAR_AGENTE_RL_5000_FIXED)
+
 **Objetivo:** preparar a trilha de reinforcement learning sem competir com os
 bloqueadores do core.
 
 **Entregar:**
 
-- ambiente Gym compativel;
-- episode callback por trade;
-- training loop;
-- save/load versionado;
-- scheduler de retrain;
-- metricas de recompensa e melhoria.
+- ambiente Gym compativel; ✅ (`src/application/rl_trading_environment.py`)
+- episode callback por trade; ✅
+- training loop; ✅
+- save/load versionado; ✅
+- scheduler de retrain; ✅ (`src/application/rl_retrain_scheduler.py`)
+- metricas de recompensa e melhoria. ✅
+
+**Evidencia:** Ver item 1 do backlog INICIAR_AGENTE_RL_5000_FIXED.bat (mesma
+implementacao, compartilhada via src/).
 
 #### 2. Observabilidade e governanca tecnica
+
+**Status:** ✅ DONE (16/03/2026 - Compartilhado com MICRO_TENDENCIA)
 
 **Objetivo:** reduzir manutencao manual e risco documental.
 
 **Entregar:**
 
-- `validate_documentation.py`;
-- `SYNC_MANIFEST.json`;
-- health-checks de CI/CD;
-- lint documental quando nao conflitar com artefatos historicos.
+- `validate_documentation.py`; ✅ (scripts/)
+- `docs/agente_autonomo/SYNC_MANIFEST.json`; ✅ (16/03/2026)
+- `health_check_ci_cd.py`; ✅ (scripts/)
+- lint documental quando nao conflitar com artefatos historicos. ✅
+
+**Evidencia:** Ver item 7 do backlog INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat.
 
 ## Backlog — INICIAR_AGENTE_RL_5000_FIXED.bat
 
@@ -1909,14 +1927,18 @@ em horario off-peak para melhorar performance operacional.
 
 #### 2. Observabilidade e governanca tecnica
 
+**Status:** ✅ DONE (16/03/2026 - Compartilhado com MICRO_TENDENCIA)
+
 **Objetivo:** reduzir manutencao manual e risco documental.
 
 **Entregar:**
 
-- `validate_documentation.py`;
-- `SYNC_MANIFEST.json`;
-- health-checks de CI/CD;
-- lint documental quando nao conflitar com artefatos historicos.
+- `validate_documentation.py`; ✅ (scripts/)
+- `docs/agente_autonomo/SYNC_MANIFEST.json`; ✅ (16/03/2026)
+- `health_check_ci_cd.py`; ✅ (scripts/)
+- lint documental quando nao conflitar com artefatos historicos. ✅
+
+**Evidencia:** Ver item 7 do backlog INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat.
 
 ## Fora do backlog ativo
 
