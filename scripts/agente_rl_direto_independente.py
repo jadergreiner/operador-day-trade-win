@@ -243,6 +243,9 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
 
         order = Order(
             symbol=symbol_obj,
+            side=side,  # BUY ou SELL
+            quantity=Quantity(1),  # 1 contrato
+            order_type=OrderType.MARKET,  # Ordem de mercado
             take_profit=Price(tp),
             execution_method="automated",
         )
