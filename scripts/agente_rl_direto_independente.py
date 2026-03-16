@@ -296,8 +296,12 @@ def inicializar_componentes():
         logger.info('[INIT] Carregando configuração TradingConfig...')
         config = TradingConfig()
 
-        # 1. MT5 Adapter
+        # 1. MT5 Adapter - usar FBS terminal
         logger.info('[INIT] Conectando ao MT5...')
+        
+        # Definir explicit terminal path para evitar conflito entre Clear e FBS
+        config.mt5_terminal_path = r"C:\Program Files\FBS MetaTrader 5\terminal64.exe"
+        
         mt5_adapter = MT5Adapter(
             login=config.mt5_login,
             password=config.mt5_password,
