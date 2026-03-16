@@ -135,7 +135,7 @@ except Exception as e:
 # ============================================================================
 # CONSTANTES DE TRADING
 # ============================================================================
-SIMBOLO = "WINM25"
+SIMBOLO = "WINJ26"
 STOP_LOSS_PONTOS = 100
 TAKE_PROFIT_PONTOS = 150
 CONFIRM_SIGNAL_BARS = 2  # Confirmação em N velas
