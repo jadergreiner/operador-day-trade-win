@@ -19,9 +19,9 @@ N_ACTIONS = 3    # Ações: HOLD, BUY, SELL
 
 def regenerar_modelo_rl() -> bool:
     """Regenera modelo RL no formato esperado (MLPRegressor)."""
-    
+
     print("[INFO] Regenerando modelo RL...")
-    
+
     # Criar MLPRegressor (conforme agente_q_learning.py)
     modelo = MLPRegressor(
         hidden_layer_sizes=(128, 64, 32),
@@ -36,33 +36,33 @@ def regenerar_modelo_rl() -> bool:
         early_stopping=False,
         verbose=False,
     )
-    
+
     # Fazer um fit dummy para inicializar o modelo
     # (MLPRegressor precisa de fit antes de usar)
     X_dummy = np.random.randn(100, N_FEATURES)
     y_dummy = np.random.randn(100, N_ACTIONS)
-    
+
     print("   [*] Inicializando modelo com dados dummy...")
     modelo.fit(X_dummy, y_dummy)
-    
+
     # Definir diretórios
     model_dir_1 = ROOT_DIR / "data" / "models" / "novo_agente_rl" / "modelo_final"
     model_dir_2 = Path("C:") / "repo" / "data" / "models" / "novo_agente_rl" / "modelo_final"
-    
+
     # Salvar no primeiro local
     print(f"\n   [*] Salvando modelo em: {model_dir_1}")
     model_dir_1.mkdir(parents=True, exist_ok=True)
-    
+
     try:
         joblib.dump(modelo, model_dir_1 / "q_network.pkl")
         print(f"       ✅ Modelo salvo com sucesso")
-        
+
         arquivo_size = (model_dir_1 / "q_network.pkl").stat().st_size
         print(f"       📦 Tamanho: {arquivo_size / 1024:.1f} KB")
     except Exception as e:
         print(f"       ❌ Erro ao salvar: {e}")
         return False
-    
+
     # Salvar metadados
     print(f"   [*] Salvando metadados...")
     metadados = {
@@ -80,7 +80,7 @@ def regenerar_modelo_rl() -> bool:
             "taxa_decaimento_epsilon": 0.995,
         },
     }
-    
+
     try:
         with open(model_dir_1 / "metadados.json", "w", encoding="utf-8") as f:
             json.dump(metadados, f, indent=2, ensure_ascii=False)
@@ -88,7 +88,7 @@ def regenerar_modelo_rl() -> bool:
     except Exception as e:
         print(f"       ❌ Erro ao salvar metadados: {e}")
         return False
-    
+
     # Tentar copiar para segunda localização (C:\repo\data\...)
     if model_dir_2 != model_dir_1:
         print(f"\n   [*] Copiando para segundo local: {model_dir_2}")
@@ -100,7 +100,7 @@ def regenerar_modelo_rl() -> bool:
             print(f"       ✅ Modelo copiado para segundo local")
         except Exception as e:
             print(f"       ⚠️  Aviso: Não foi possível copiar para segundo local: {e}")
-    
+
     # Validar modelo carregando
     print(f"\n   [*] Validando modelo carregado...")
     try:
@@ -112,13 +112,13 @@ def regenerar_modelo_rl() -> bool:
     except Exception as e:
         print(f"       ❌ Erro ao validar: {e}")
         return False
-    
+
     print(f"\n✅ Regeneracao de modelo RL concluída com sucesso!")
     print(f"\n   Modelo localizações:")
     print(f"   1. {model_dir_1}")
     print(f"   2. {model_dir_2}")
     print(f"\n   Próximo passo: Execute INICIAR_AGENTE_RL_5000.bat")
-    
+
     return True
 
 if __name__ == "__main__":

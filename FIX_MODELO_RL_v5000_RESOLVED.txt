@@ -87,7 +87,7 @@ Agora o sistema está pronto para operação:
 2. Opção B: Operação em tempo real (BALANCED MODE)
    ./INICIAR_AGENTE_RL_5000.bat
    → Escolher [2]
-   
+
    Target: R$ 140,00
    Stop Loss: -R$ 250,00
    Limite: ILIMITADO até atingir target ou stop

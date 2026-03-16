@@ -815,8 +815,7 @@ def loop_operacao():
 
     # Capturar saldo inicial para rastreamento de P&L
     try:
-        account_info = mt5_adapter.get_account_info()
-        saldo_inicial = account_info.get("balance", 0.0) if account_info else 0.0
+        saldo_inicial = float(mt5_adapter.get_account_balance())
         logger.info(f"[INICIO] Saldo inicial: R${saldo_inicial:.2f}")
     except Exception as e:
         logger.warning(f"Nao foi possivel obter saldo inicial: {e}")

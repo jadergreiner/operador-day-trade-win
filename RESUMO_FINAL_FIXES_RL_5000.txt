@@ -11,12 +11,12 @@ Data: 16/03/2026 | Status: ✅ TUDO OPERACIONAL
 1️⃣  ERRO: "Can't get attribute 'TradeRLModel'"
    ─────────────────────────────────────────────────────────────────
    Problema: Modelo salvp como classe customizada não implementada
-   
+
    Solução:
    • Criado script regenerar_modelo_rl_correto.py
    • Regenerado modelo como MLPRegressor sklearn (formato correto)
    • Validado: MLPRegressor carregado com sucesso
-   
+
    Status: ✅ RESOLVIDO
    Commit: b811adc "fix: Regenerar modelo RL no formato MLPRegressor"
 
@@ -24,12 +24,12 @@ Data: 16/03/2026 | Status: ✅ TUDO OPERACIONAL
 2️⃣  ERRO: Script path incorreto em INICIAR_AGENTE_RL_5000.bat
    ─────────────────────────────────────────────────────────────────
    Problema: Scripts procurados em C:\repo\scripts\ (não existem)
-   
+
    Solução:
    • Atualizado paths no .bat para operador-day-trade-win\scripts\
    • Testado execução do script
    • Validado: MT5 connection OK, Pipeline inicializado
-   
+
    Status: ✅ RESOLVIDO
    Commit: a8542be "fix: Corrigir paths dos scripts Python"
 
@@ -44,23 +44,23 @@ Data: 16/03/2026 | Status: ✅ TUDO OPERACIONAL
       - 3 output actions (HOLD, BUY, SELL)
       - Arquivo: q_network.pkl (400.3 KB)
       - Localização: 2 locais backup
-   
+
    ✅ Pipeline de Carregamento
       - Carrega modelo sem erros de deserialização
       - Metadados restaurados corretamente
       - Config agente (epsilon=0.1, episódios=5000)
-   
+
    ✅ MT5 Adapter
       - Conectado: ClearInvestimentos-CLEAR
       - Session fingerprint salvo
       - Connection OK
-   
+
    ✅ Ambiente de Trading
       - Anti-overtrading: 7 filtros
       - SL/TP dinâmicos: sim
       - Volatilidade mínima: 0.05%
       - Win rate alvo: 65-68%
-   
+
    ✅ RL Repository
       - Conectado em 1ª tentativa
       - Pronto para persistência
