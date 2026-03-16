@@ -16,8 +16,15 @@ echo   ============================================================
 echo.
 
 echo   [CHECK] Verificando arquivo do modelo...
-if not exist "data\models\novo_agente_rl\modelo_final\q_network.pkl" (
-    echo   [FATAL] Arquivo q_network.pkl nao localizado.
+REM Verificar em ambos os locais possiveis
+if exist "data\models\novo_agente_rl\modelo_final\q_network.pkl" (
+    echo   [OK] Arquivo encontrado em: data\models\novo_agente_rl\modelo_final\
+) else if exist "..\operador-day-trade-win\data\models\novo_agente_rl\modelo_final\q_network.pkl" (
+    echo   [OK] Arquivo encontrado em: ..\operador-day-trade-win\data\models\novo_agente_rl\modelo_final\
+) else (
+    echo   [FATAL] Arquivo q_network.pkl nao localizado em:
+    echo     - data\models\novo_agente_rl\modelo_final\
+    echo     - ..\operador-day-trade-win\data\models\novo_agente_rl\modelo_final\
     pause
     exit /b 1
 )
