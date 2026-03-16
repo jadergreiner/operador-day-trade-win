@@ -56,7 +56,7 @@ class DecisaoAbertura(Enum):
 @dataclass
 class Tendencia:
     """Análise de Tendência Principal do Dia (Etapa 1)."""
-    
+
     timestamp: datetime
     direcao: TendenciaDir
     forca: float  # 0-100, força do movimento (correlação, impulso)
@@ -64,7 +64,7 @@ class Tendencia:
     nivel_suporte: float  # Nível de suporte identificado
     nivel_resistencia: float  # Nível de resistência identificado
     volatilidade_esperada: float  # ATR ou similar
-    
+
     def para_dict(self) -> Dict[str, Any]:
         """Converte para dicionário."""
         resultado = asdict(self)
@@ -76,27 +76,27 @@ class Tendencia:
 @dataclass
 class Oportunidade:
     """Detecção de Oportunidade (Etapa 2)."""
-    
+
     id_oportunidade: str  # UUID ou seq único
     timestamp_deteccao: datetime
     tendencia_id: str  # Link para Etapa 1
     preco_referencia: float
     direcao_sugerida: str  # BUY ou SELL
-    
+
     # Fatores técnicos
     forcas_tecnicas: List[str]  # ["pullback", "divergencia", "rompimento"]
     confianca_tecnica: float  # 0-100
-    
+
     # Contexto de mercado
     alinhamento_tendencia: bool  # Alinhada com tendência do dia?
     razao_desalinhamento: Optional[str]
-    
+
     # Características da oportunidade
     tamanho_potencial: float  # R$ estimado
     razao_risco_retorno: float  # retorno_esperado / risco_esperado
-    
+
     status: OportunidadeStatus = OportunidadeStatus.DETECTADA
-    
+
     def para_dict(self) -> Dict[str, Any]:
         """Converte para dicionário."""
         resultado = asdict(self)
@@ -108,17 +108,17 @@ class Oportunidade:
 @dataclass
 class MonitoramentoOportunidade:
     """Monitoramento contínuo de Oportunidade (Etapa 3)."""
-    
+
     id_oportunidade: str
     timestamp_update: datetime
     preco_atual: float
     preco_inicial: float
     movimento_pct: float  # % movimento desde detecção
-    
+
     condicoes_mercado_atuais: Dict[str, Any]  # Snapshot mercado
     ainda_valida: bool  # Oportunidade ainda é viável?
     razao_invalidade: Optional[str]
-    
+
     def para_dict(self) -> Dict[str, Any]:
         """Converte para dicionário."""
         resultado = asdict(self)
@@ -129,19 +129,19 @@ class MonitoramentoOportunidade:
 @dataclass
 class DecisaoOperacional:
     """Decisão sobre abertura de posição (Etapa 2-4)."""
-    
+
     id_oportunidade: str
     timestamp_decisao: datetime
     decisao: DecisaoAbertura
-    
+
     # Raciocínio
     reasoning: str  # Explicação da decisão
     fatores: List[str]  # Fatores que influenciaram
     heuristica_aplicada: str  # Qual regra/modelo foi usado
-    
+
     # Se negada
     motivo_negacao: Optional[str]
-    
+
     def para_dict(self) -> Dict[str, Any]:
         """Converte para dicionário."""
         resultado = asdict(self)
@@ -153,26 +153,26 @@ class DecisaoOperacional:
 @dataclass
 class RastreamentoOperacao:
     """Rastreamento de Operação/Posição (Etapa 4)."""
-    
+
     id_operacao: str  # ticket MT5 ou ticket gerado
     id_oportunidade: str
     timestamp_abertura: datetime
     entrada_preco: float
     stop_loss: float
     take_profit: float
-    
+
     # Execução
     status_execucao: str  # ABERTA, PARCIAL, FECHADA, ERRO
     timestamp_fechamento: Optional[datetime] = None
     saida_preco: Optional[float] = None
-    
+
     # Resultado
     pnl_reais: float = 0.0
     pnl_pct: float = 0.0
     tempo_posicao_min: int = 0
-    
+
     motivo_fechamento: Optional[str] = None
-    
+
     def para_dict(self) -> Dict[str, Any]:
         """Converte para dicionário."""
         resultado = asdict(self)
@@ -184,12 +184,12 @@ class RastreamentoOperacao:
 
 class MotorAnaliseMercado:
     """Motor de Análise de Mercado (Etapas 1-3)."""
-    
+
     def __init__(self, db_path: str = "data/db/trading.db"):
         """Inicializa motor de análise."""
         self.db_path = db_path
         self._criar_tabelas()
-    
+
     def _criar_tabelas(self) -> None:
         """Cria tabelas SQLite para análise."""
         with sqlite3.connect(self.db_path) as conn:
@@ -206,7 +206,7 @@ class MotorAnaliseMercado:
                     volatilidade_esperada REAL
                 )
             """)
-            
+
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS oportunidades (
                     id TEXT PRIMARY KEY,
@@ -223,7 +223,7 @@ class MotorAnaliseMercado:
                     FOREIGN KEY(tendencia_id) REFERENCES tendencia_diaria(id)
                 )
             """)
-            
+
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS monitoramento_oportunidades (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -237,16 +237,16 @@ class MotorAnaliseMercado:
                     FOREIGN KEY(id_oportunidade) REFERENCES oportunidades(id)
                 )
             """)
-            
+
             conn.commit()
-    
+
     def registrar_tendencia(self, tendencia: Tendencia) -> str:
         """Registra análise de tendência (Etapa 1)."""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT OR REPLACE INTO tendencia_diaria
-                (data, timestamp, direcao, forca, contexto, 
+                (data, timestamp, direcao, forca, contexto,
                  nivel_suporte, nivel_resistencia, volatilidade_esperada)
                 VALUES (date('now'), ?, ?, ?, ?, ?, ?, ?)
             """, (
@@ -259,11 +259,11 @@ class MotorAnaliseMercado:
                 tendencia.volatilidade_esperada
             ))
             conn.commit()
-            
+
             # Retorna ID da tendência registrada
             cursor.execute("SELECT id FROM tendencia_diaria WHERE data = date('now')")
             return str(cursor.fetchone()[0])
-    
+
     def registrar_oportunidade(self, oportunidade: Oportunidade) -> None:
         """Registra detecção de oportunidade (Etapa 2)."""
         with sqlite3.connect(self.db_path) as conn:
@@ -288,7 +288,7 @@ class MotorAnaliseMercado:
                 oportunidade.status.value
             ))
             conn.commit()
-    
+
     def registrar_monitoramento(self, monitor: MonitoramentoOportunidade) -> None:
         """Registra monitoramento contínuo (Etapa 3)."""
         with sqlite3.connect(self.db_path) as conn:
@@ -308,22 +308,22 @@ class MotorAnaliseMercado:
                 monitor.razao_invalidade
             ))
             conn.commit()
-    
+
     def obter_tendencia_hoje(self) -> Optional[Tendencia]:
         """Obtém tendência registrada para hoje."""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT timestamp, direcao, forca, contexto, 
+                SELECT timestamp, direcao, forca, contexto,
                        nivel_suporte, nivel_resistencia, volatilidade_esperada
                 FROM tendencia_diaria
                 WHERE data = date('now')
             """)
             row = cursor.fetchone()
-            
+
             if not row:
                 return None
-            
+
             return Tendencia(
                 timestamp=datetime.fromisoformat(row[0]),
                 direcao=TendenciaDir(row[1]),
@@ -337,12 +337,12 @@ class MotorAnaliseMercado:
 
 class MotorDecisao:
     """Motor de Decisão de Abertura de Posição."""
-    
+
     def __init__(self, db_path: str = "data/db/trading.db"):
         """Inicializa motor de decisão."""
         self.db_path = db_path
         self._criar_tabelas()
-    
+
     def _criar_tabelas(self) -> None:
         """Cria tabelas SQLite para decisões e operações."""
         with sqlite3.connect(self.db_path) as conn:
@@ -358,7 +358,7 @@ class MotorDecisao:
                     motivo_negacao TEXT
                 )
             """)
-            
+
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS rastreamento_operacoes (
                     id_operacao TEXT PRIMARY KEY,
@@ -377,9 +377,9 @@ class MotorDecisao:
                     FOREIGN KEY(id_oportunidade) REFERENCES oportunidades(id)
                 )
             """)
-            
+
             conn.commit()
-    
+
     def registrar_decisao(self, decisao: DecisaoOperacional) -> None:
         """Registra decisão sobre abertura de posição."""
         with sqlite3.connect(self.db_path) as conn:
@@ -399,7 +399,7 @@ class MotorDecisao:
                 decisao.motivo_negacao
             ))
             conn.commit()
-    
+
     def registrar_operacao(self, operacao: RastreamentoOperacao) -> None:
         """Registra rastreamento de operação/posição."""
         with sqlite3.connect(self.db_path) as conn:
@@ -426,7 +426,7 @@ class MotorDecisao:
                 operacao.motivo_fechamento
             ))
             conn.commit()
-    
+
     def obter_operacao(self, id_operacao: str) -> Optional[RastreamentoOperacao]:
         """Obtém rastreamento de operação."""
         with sqlite3.connect(self.db_path) as conn:
@@ -438,11 +438,11 @@ class MotorDecisao:
                 FROM rastreamento_operacoes
                 WHERE id_operacao = ?
             """, (id_operacao,))
-            
+
             row = cursor.fetchone()
             if not row:
                 return None
-            
+
             return RastreamentoOperacao(
                 id_operacao=row[0],
                 id_oportunidade=row[1],
@@ -458,7 +458,7 @@ class MotorDecisao:
                 tempo_posicao_min=row[11],
                 motivo_fechamento=row[12]
             )
-    
+
     def listar_operacoes_abertas(self) -> List[RastreamentoOperacao]:
         """Lista todas operações ainda abertas."""
         with sqlite3.connect(self.db_path) as conn:
@@ -470,7 +470,7 @@ class MotorDecisao:
                 FROM rastreamento_operacoes
                 WHERE status_execucao = 'ABERTA'
             """)
-            
+
             operacoes = []
             for row in cursor.fetchall():
                 operacoes.append(RastreamentoOperacao(
@@ -488,18 +488,18 @@ class MotorDecisao:
                     tempo_posicao_min=row[11],
                     motivo_fechamento=row[12]
                 ))
-            
+
             return operacoes
 
 
 class GeradorRelatorioCicloVida:
     """Gerador de relatórios do ciclo de vida operacional."""
-    
+
     def __init__(self, db_path: str = "data/db/trading.db"):
         """Inicializa gerador de relatórios."""
         self.db_path = db_path
         self._criar_tabelas()
-    
+
     def _criar_tabelas(self) -> None:
         """Cria tabelas SQLite se não existirem."""
         with sqlite3.connect(self.db_path) as conn:
@@ -516,7 +516,7 @@ class GeradorRelatorioCicloVida:
                     volatilidade_esperada REAL
                 )
             """)
-            
+
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS oportunidades (
                     id TEXT PRIMARY KEY,
@@ -533,7 +533,7 @@ class GeradorRelatorioCicloVida:
                     FOREIGN KEY(tendencia_id) REFERENCES tendencia_diaria(id)
                 )
             """)
-            
+
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS rastreamento_operacoes (
                     id_operacao TEXT PRIMARY KEY,
@@ -552,24 +552,24 @@ class GeradorRelatorioCicloVida:
                     FOREIGN KEY(id_oportunidade) REFERENCES oportunidades(id)
                 )
             """)
-            
+
             conn.commit()
-    
+
     def gerar_relatorio_dia(self, data: str = "today") -> Dict[str, Any]:
         """Gera relatório completo do dia (Etapas 1-4)."""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            
+
             # Etapa 1
             cursor.execute("""
                 SELECT direcao, forca, contexto FROM tendencia_diaria
                 WHERE data = CASE WHEN ? = 'today' THEN date('now') ELSE ? END
             """, (data, data))
             tendencia_row = cursor.fetchone()
-            
+
             # Etapas 2-3
             cursor.execute("""
-                SELECT COUNT(*), 
+                SELECT COUNT(*),
                        SUM(CASE WHEN status = 'EXECUTADA' THEN 1 ELSE 0 END),
                        SUM(CASE WHEN status = 'CANCELADA' THEN 1 ELSE 0 END),
                        SUM(CASE WHEN status = 'PERDIDA' THEN 1 ELSE 0 END)
@@ -577,7 +577,7 @@ class GeradorRelatorioCicloVida:
                 WHERE date(timestamp_deteccao) = CASE WHEN ? = 'today' THEN date('now') ELSE ? END
             """, (data, data))
             oportunidades_row = cursor.fetchone()
-            
+
             # Etapa 4
             cursor.execute("""
                 SELECT COUNT(*),
@@ -591,7 +591,7 @@ class GeradorRelatorioCicloVida:
                   AND status_execucao = 'FECHADA'
             """, (data, data))
             operacoes_row = cursor.fetchone()
-            
+
             return {
                 "data": data if data != "today" else datetime.now().strftime("%Y-%m-%d"),
                 "etapa_1_tendencia": {
