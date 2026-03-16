@@ -826,80 +826,116 @@ def loop_operacao():
 
     while True:
         ciclo += 1
+        logger.info(f"\n[CICLO {ciclo}] Iniciando iteração do loop...")
 
         # ✅ PROTEÇÃO DE LUCRO: Monitora trades abertos continuamente
+        logger.debug(f"[CICLO {ciclo}] Executando proteger_lucro_trade()...")
         proteger_lucro_trade()
+        logger.debug(f"[CICLO {ciclo}] proteger_lucro_trade() concluído.")
 
+        logger.debug(f"[CICLO {ciclo}] Verificando horário de trading...")
         if not verificar_horario_trading():
             logger.info("[HORA] Fora do horario. Aguardando...")
+            logger.debug(f"[CICLO {ciclo}] Dormindo 60s (fora do horário)...")
             time.sleep(60)
+            logger.debug(f"[CICLO {ciclo}] Retornando ao início do loop após sleep.")
             continue
 
+        logger.debug(f"[CICLO {ciclo}] Verificando lucro vs TARGET...")
         if lucro_sessao >= TARGET_LUCRO_DIARIO:
             logger.info(f"[TARGET] ATINGIDO: R${lucro_sessao:.2f}")
             break
 
+        logger.debug(f"[CICLO {ciclo}] Verificando stop loss...")
         if lucro_sessao <= STOP_PERDA_DIARIA:
             logger.warning(f"[STOP] STOP LOSS ACIONADO: R${lucro_sessao:.2f}")
             break
 
+        logger.debug(f"[CICLO {ciclo}] Monitorando posições abertas...")
         if monitorar_posicoes():
             logger.info("[WAIT] Posicao em aberto. Aguardando fechar...")
+            logger.debug(f"[CICLO {ciclo}] Dormindo 30s (posição aberta)...")
             time.sleep(30)
+            logger.debug(f"[CICLO {ciclo}] Retornando ao início do loop após sleep.")
             continue
 
         logger.info(f"\n[Ciclo {ciclo}] Consultando mercado...")
+        logger.debug(f"[CICLO {ciclo}] Carregando dados do MT5...")
         dados = carregar_dados_mt5(SIMBOLO, n_candles=100)
+        logger.debug(f"[CICLO {ciclo}] Dados carregados: {len(dados) if dados is not None else 0} candles")
 
         if dados is None or len(dados) < 20:
             logger.warning("[!] Dados insuficientes. Aguardando 30s...")
+            logger.debug(f"[CICLO {ciclo}] Dormindo 30s (dados insuficientes)...")
             time.sleep(30)
+            logger.debug(f"[CICLO {ciclo}] Retornando ao início do loop após sleep.")
             continue
 
         # Registrar progresso parcial do dia (a cada 5 minutos)
+        logger.debug(f"[CICLO {ciclo}] Registrando progresso...")
         registrar_progresso_objetivos(saldo_inicial)
+        logger.debug(f"[CICLO {ciclo}] Progresso registrado.")
 
         # ════════════════════════════════════════════════════════════════
         # ANTI-OVERTRADING VALIDATIONS
         # ════════════════════════════════════════════════════════════════
 
         # 1. Verificar volatilidade
+        logger.debug(f"[CICLO {ciclo}] Calculando volatilidade...")
         vol = calcular_volatilidade(dados)
+        logger.debug(f"[CICLO {ciclo}] Volatilidade calculada: {vol:.3f}%")
+
         if not verificar_volatilidade(vol):
+            logger.debug(f"[CICLO {ciclo}] Volatilidade insuficiente. Aguardando 60s...")
             time.sleep(60)
             continue
 
         # 2. Verificar cooldown
+        logger.debug(f"[CICLO {ciclo}] Verificando cooldown...")
         if not verificar_cooldown():
+            logger.debug(f"[CICLO {ciclo}] Cooldown ativo. Aguardando 60s...")
             time.sleep(60)
             continue
 
+        logger.debug(f"[CICLO {ciclo}] Entrando na seção de decisão do modelo...")
         try:
             # 4. Obter ação do modelo
+            logger.debug(f"[CICLO {ciclo}] Obtendo ação do modelo...")
             acao_id, confidence = obter_acao_do_modelo(dados)
             mapeamento = {1: "Comprar", 0: "Aguardar", 2: "Vender"}
             acao_str = mapeamento.get(acao_id, "Aguardar")
             preco_atual = float(dados['close'].iloc[-1])
+            logger.debug(f"[CICLO {ciclo}] Ação obtida: {acao_str} (confiança: {confidence:.2%})")
 
             # 5. Verificar confirmação multi-vela
+            logger.debug(f"[CICLO {ciclo}] Verificando confirmação do sinal...")
             if confirmado := verificar_confirmacao_sinal(acao_str, last_signal):
                 # Executar apenas se confirmado E passou todas as validações
                 # Passar dados para cálculo dinâmico de SL/TP
+                logger.info(f"[CICLO {ciclo}] Sinal CONFIRMADO! Enviando ordem...")
+                logger.debug(f"[CICLO {ciclo}] Chamando enviar_ordem_mt5adapter()...")
                 enviar_ordem_mt5adapter(acao_str, preco_atual, vol, dados=dados)
+                logger.debug(f"[CICLO {ciclo}] Ordem enviada com sucesso.")
                 last_signal = acao_str
                 trades_executed_today += 1
                 # Registrar progresso apos trade
                 registrar_progresso_objetivos(saldo_inicial, forcar=True)
                 print_status()
+                logger.debug(f"[CICLO {ciclo}] Cooldown por {AntiOvertradingConfig.COOLDOWN_SECONDS}s...")
                 time.sleep(AntiOvertradingConfig.COOLDOWN_SECONDS)
+                logger.debug(f"[CICLO {ciclo}] Cooldown finalizado.")
             else:
                 last_signal = acao_str
                 logger.info(f"[SINAL] Sinal: {acao_str} (confiança: {confidence:.2%}, vol: {vol:.3f}%)")
+                logger.debug(f"[CICLO {ciclo}] Sinal não confirmado. Aguardando 60s...")
                 time.sleep(60)
+                logger.debug(f"[CICLO {ciclo}] Aguardo finalizado.")
 
         except Exception as e:
-            logger.error(f"Erro no ciclo: {e}")
+            logger.error(f"[ERRO] Erro no ciclo {ciclo}: {e}", exc_info=True)
+            logger.debug(f"[CICLO {ciclo}] Dormindo 30s após erro...")
             time.sleep(30)
+            logger.debug(f"[CICLO {ciclo}] Retornando ao início do loop após erro.")
 
 
 if __name__ == "__main__":
