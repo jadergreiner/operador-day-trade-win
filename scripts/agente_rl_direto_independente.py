@@ -95,6 +95,7 @@ logger.info('')
 try:
     logger.info('[INIT] Importando módulos core...')
     
+    from config.settings import TradingConfig
     from src.infrastructure.adapters.mt5_adapter import MT5Adapter
     from src.application.services.novo_agente.agente_q_learning import AgenteQLearningMiniIndice
     from src.application.services.novo_agente.pipeline_treinamento import PipelineTreinamentoRL
@@ -116,9 +117,17 @@ def inicializar_componentes():
     logger.info('[INIT] Inicializando componentes...')
     
     try:
+        # 0. Carregar configuração
+        logger.info('[INIT] Carregando configuração TradingConfig...')
+        config = TradingConfig()
+        
         # 1. MT5 Adapter
         logger.info('[INIT] Conectando ao MT5...')
-        mt5_adapter = MT5Adapter()
+        mt5_adapter = MT5Adapter(
+            login=config.mt5_login,
+            password=config.mt5_password,
+            server=config.mt5_server,
+        )
         
         if not mt5_adapter.inicializar():
             logger.error('[FATAL] Falha ao conectar ao MT5')
@@ -174,6 +183,7 @@ def inicializar_componentes():
         logger.info('')
         
         return {
+            'config': config,
             'mt5_adapter': mt5_adapter,
             'rl_repo': rl_repo,
             'pipeline': pipeline,
@@ -197,6 +207,7 @@ def main():
         logger.error('[FATAL] Falha na inicialização. Encerrando.')
         sys.exit(1)
     
+    config = componentes['config']
     mt5_adapter = componentes['mt5_adapter']
     profit_protection = componentes['profit_protection']
     
@@ -253,7 +264,7 @@ def main():
         try:
             mt5_adapter.desconectar()
             logger.info('[OK] Desconectado do MT5')
-        except:
+        except Exception:
             pass
         
         logger.info('=' * 80)
