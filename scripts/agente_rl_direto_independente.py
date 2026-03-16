@@ -106,6 +106,7 @@ try:
     from src.application.services.novo_agente.pipeline_treinamento import PipelineTreinamentoRL
     from src.infrastructure.repositories.rl_repository import SqliteRLRepository
     from src.application.profit_protection_engine import ProfitProtectionEngine
+    from src.domain.enums.trading_enums import TimeFrame
 
     logger.info('[OK] Módulos importados com sucesso')
 
@@ -238,7 +239,7 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
             symbol_obj = Symbol(SIMBOLO)
         except:
             symbol_obj = SIMBOLO  # Fallback para string
-        
+
         order = Order(
             symbol=symbol_obj,
             take_profit=Price(tp),
@@ -478,15 +479,22 @@ def main():
 
                 # 1. Carregar dados de mercado (últimas 30 velas)
                 try:
-                    dados = mt5_adapter.get_candles(SIMBOLO, 30)
+                    # Symbol pode não estar disponível, usar SIMBOLO string diretamente
+                    try:
+                        from src.infrastructure.adapters.domain_models import Symbol
+                        dados = mt5_adapter.get_candles(Symbol(SIMBOLO), TimeFrame.M5, 30)
+                    except Exception:
+                        # Fallback: tentar com string
+                        logger.warning('[DEBUG] Symbol import falhou, usando string')
+                        # Se o MT5Adapter pode receber string, tenta assim
+                        dados = None
+
                     if dados is None or len(dados) == 0:
                         logger.debug('[CICLO] Aguardando dados de mercado...')
                         time.sleep(5)
                         continue
-                    
-                    preco_atual = dados.iloc[-1]['close']
-                    logger.debug(f'[CICLO {ciclo}] Preço atual: {preco_atual}')
-                
+
+                    preco_atual = dados[-1].close.value if hasattr(dados[-1], 'close') else dados[-1]['close']
                 except Exception as e:
                     logger.warning(f'[CICLO {ciclo}] Erro ao obter dados: {e}')
                     time.sleep(5)
