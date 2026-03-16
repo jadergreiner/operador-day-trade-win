@@ -109,3 +109,21 @@ Arguments: ()
 2026-03-16 10:26:52,268 [INFO] 
 [\U0001f504 CICLO 5] Iniciando iteraþÒo do loop...
 2026-03-16 10:26:52,346 [INFO] [WAIT] Posicao em aberto. Aguardando fechar...
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\logging\__init__.py", line 1113, in emit
+    stream.write(msg + self.terminator)
+  File "C:\Users\Usuario\AppData\Local\Programs\Python\Python311\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\U0001f504' in position 34: character maps to <undefined>
+Call stack:
+  File "C:\repo\operador-day-trade-win\scripts\operar_novo_agente_rl_real_antiovertrading.py", line 948, in <module>
+    loop_operacao()
+  File "C:\repo\operador-day-trade-win\scripts\operar_novo_agente_rl_real_antiovertrading.py", line 829, in loop_operacao
+    logger.info(f"\n[CICLO {ciclo}] Iniciando iteraþÒo do loop...")
+Message: '\n[\U0001f504 CICLO 6] Iniciando iteraþÒo do loop...'
+Arguments: ()
+2026-03-16 10:27:22,348 [INFO] 
+[\U0001f504 CICLO 6] Iniciando iteraþÒo do loop...
+2026-03-16 10:27:22,371 [INFO] [WAIT] Posicao em aberto. Aguardando fechar...
