@@ -215,6 +215,69 @@ fim a fim.
   - ✅ Documentação: Relatórios JSON + Markdown
   - Commit: feat: Implementar AC6.9 Comparacao Baseline com testes 20/20
 
+#### 7. P1-LEARNING Etapas 1-2 (Signal Detection + Decision Recording)
+
+**Status:** ✅ DONE (16/03/2026 - Foundation completo)
+
+**Objetivo:** framework causal de 7 etapas para capturar causação vs correlação.
+
+**Entregar:**
+
+- Etapa 1: Signal Detection (detectar sinal + contexto mercado); ✅
+- Etapa 2: Decision Recording (registrar decisão + reasoning); ✅
+- Persistência em SQLite com `causal_learning_episodes` table; ✅
+- Testes unitários abrangentes; ✅
+- Type hints 100% (mypy --strict); ✅
+
+**Implementação Completa:**
+
+- Arquivo: `src/application/p1_learning_engine.py` (530+ LOC)
+  - CausalLearningEngine: classe principal com 8+ métodos
+  - DataClasses: SignalDetection, DecisionRecord, CausalEpisode
+  - SQLite persistence com 27 campos estruturados
+  - Methods:
+    - registrar_signal_detection(): Etapa 1 capture
+    - registrar_decision(): Etapa 2 capture
+    - listar_episodes(): List all recorded episodes
+    - obter_episode(): Retrieve by ID
+    - contar_episodios() / contar_com_decision(): Statistics
+  - 100% type hints (mypy --strict OK)
+  - 100% português (docstrings, comments)
+
+- Testes: `tests/unit/test_p1_learning_engine.py` (16 tests, 16/16 PASS)
+  - TestSignalDetection (3 tests): Dataclass creation, dict conversion
+  - TestDecisionRecord (3 tests): Dataclass creation, action types
+  - TestCausalEpisode (1 test): Container creation
+  - TestCausalLearningEngine (9 tests):
+    - Inicialização com DB creation
+    - Registro signal detection (Etapa 1)
+    - Registro decision (Etapa 2)
+    - Listagem e retrieval de episódios
+    - Persistência multi-campo
+    - Type hints validation
+    - Full sequence 1→2
+
+- Database Schema:
+  - Table: `causal_learning_episodes` (27 fields)
+  - Etapa 1 fields: timestamp, technical_factors, market_conditions, context_score
+  - Etapa 2 fields: action, confidence, reasoning, threshold_values
+  - Future stages (3-7) fields pre-allocated for extension
+
+- Validação:
+  - Tests: 16/16 PASSING (100% success rate)
+  - Type hints: 0 errors (mypy --strict clean)
+  - pytest --tb=no: "16 passed in 1.26s"
+  - Coverage: >=85% (all methods tested)
+
+- Próximas fases:
+  - Etapa 3: Monitoring (position evolution log)
+  - Etapa 4: Closure (outcome + exit reason)
+  - Etapa 5: L1 Analysis (decision correctness)
+  - Etapa 6: L2 Causal Analysis (market drift detection)
+  - Etapa 7: Learning Rule Generation
+
+- Commit: feat: Implementar P1-LEARNING Etapas 1-2 (Signal + Decision) com testes 16/16
+
 ### P2 - Capacidade futura
 
 #### 7. Observabilidade e governanca tecnica
