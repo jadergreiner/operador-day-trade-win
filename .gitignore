@@ -43,6 +43,9 @@ env/
 # Logs
 *.log
 data/logs/
+
+# BDI (Boletim Diario)
+data/BDI/*.pdf
 outputs/*.txt
 outputs/*.log
 outputs/*.json
