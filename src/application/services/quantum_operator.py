@@ -465,20 +465,26 @@ class QuantumOperatorEngine:
         if risk_level == "HIGH":
             return TradeSignal.HOLD, Decimal("0.3"), "AVOID"
 
-        # No technical setup = HOLD (sem ponto de entrada claro)
-        # FIX: Confiança gradual baseada no alignment em vez de valor fixo 0.4
-        if not technical.best_entry:
-            partial_conf = max(Decimal("0.25"), alignment * Decimal("0.5"))
-            return TradeSignal.HOLD, partial_conf, "PATIENT"
-
         # CORE DAY TRADE: Sentimento + Técnica devem alinhar
         sentiment_technical_aligned = (
             sentiment_bias == technical_bias and sentiment_bias != "NEUTRAL"
         )
 
+        # Sem setup tecnico E sem alinhamento forte = HOLD
+        # Porem: se alignment >= 85% e sentimento+tecnica concordam,
+        # permitir trade com penalidade (sem best_entry = sem preco ideal,
+        # mas direcao esta clara)
+        if not technical.best_entry:
+            if sentiment_technical_aligned and alignment >= Decimal("0.85"):
+                # Direcao clara apesar de nao ter best_entry
+                # Penalidade de 0.10 por operar sem ponto de entrada ideal
+                pass  # continua no fluxo normal, penalidade aplicada abaixo
+            else:
+                partial_conf = max(Decimal("0.25"), alignment * Decimal("0.5"))
+                return TradeSignal.HOLD, partial_conf, "PATIENT"
+
         if not sentiment_technical_aligned:
-            # Sentimento e Técnica brigando = confiança reduzida (não hardcoded)
-            # FIX: Usar alignment como base, com penalidade por desalinhamento
+            # Sentimento e Técnica brigando = confiança reduzida
             partial_conf = max(Decimal("0.30"), alignment * Decimal("0.6"))
             return TradeSignal.HOLD, partial_conf, "PATIENT"
 
@@ -488,6 +494,10 @@ class QuantumOperatorEngine:
         # Calcular confiança usando alignment score (já ponderado)
         # Alignment já reflete os pesos hierárquicos
         confidence = alignment
+
+        # Penalidade por operar sem ponto de entrada tecnico ideal
+        if not technical.best_entry:
+            confidence -= Decimal("0.10")
 
         # Bônus por market regime favorável
         if market_regime == "TRENDING":

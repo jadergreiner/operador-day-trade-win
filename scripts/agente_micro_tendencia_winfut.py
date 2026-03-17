@@ -1829,8 +1829,9 @@ def _generate_opportunities(
                 pass
 
     # Região de suporte mais próxima
-    supports = [r for r in result.regions if r.tipo == "SUPORTE" and r.distance_pct < Decimal("0")]
-    resistances = [r for r in result.regions if r.tipo == "RESISTENCIA" and r.distance_pct > Decimal("0")]
+    # distance_pct = (price - region) / price: positivo = abaixo, negativo = acima
+    supports = [r for r in result.regions if r.tipo == "SUPORTE" and r.distance_pct > Decimal("0")]
+    resistances = [r for r in result.regions if r.tipo == "RESISTENCIA" and r.distance_pct < Decimal("0")]
     # Confiança macro em percentual (0-100)
     macro_conf_pct = result.macro_confidence * Decimal("100")
     # Tick size do WIN = 5 pts
@@ -1856,7 +1857,27 @@ def _generate_opportunities(
         and result.smc_multi_tf.alignment_score <= -2
         and ("BAIXA" in m5_bos)
     )
-    structure_confirmed = structure_confirmed_bull or structure_confirmed_bear
+    # FIX 17/03/2026: Em macro muito forte (>=20) + tendência (ADX>25),
+    # aceitar confirmação parcial (M15 alinhado com macro) em vez de
+    # exigir alinhamento completo H4+M15+M5.
+    # H4 pode estar bearish por legado multi-dia enquanto intraday é
+    # fortemente bullish — isso não deve bloquear o agente o dia todo.
+    partial_bull = (
+        abs(result.macro_score) >= 20
+        and trend_strong
+        and result.smc_multi_tf.m15.bias == "BULLISH"
+        and result.macro_score > 0
+    )
+    partial_bear = (
+        abs(result.macro_score) >= 20
+        and trend_strong
+        and result.smc_multi_tf.m15.bias == "BEARISH"
+        and result.macro_score < 0
+    )
+    structure_confirmed = (
+        structure_confirmed_bull or structure_confirmed_bear
+        or partial_bull or partial_bear
+    )
     reduced_exposure_mode = macro_directional_strong and not structure_confirmed
 
     # Alerta de repique de distribuição (sobe contra macro de baixa forte)
@@ -2339,8 +2360,12 @@ def _generate_opportunities(
     # ── Oportunidade TREND FOLLOWING — comprar pullbacks em tendência forte ──
     # Condições: ADX>25 (tendência), score>5 (direção), micro negativo (pullback)
     # Isso captura o cenário "mercado subindo, agente esperando DISCOUNT que nunca vem"
-    if (trend_strong and result.macro_score >= 5 and result.micro_score < 0
-            and result.smc.equilibrium == "PREMIUM"
+    # FIX 17/03/2026: Trend following também ativa em consolidação
+    # (micro_score == 0), não só em pullback (micro < 0).
+    # Em tendência forte, consolidação lateral é pausa natural antes de
+    # continuação — exigir pullback faz o agente perder a maioria dos moves.
+    if (trend_strong and result.macro_score >= 5 and result.micro_score <= 0
+            and result.smc.equilibrium in ("PREMIUM", "NEUTRO")
             and not guardian_kill):
         if not _has_min_confluence(supports):
             result._rejection_reasons.append(
@@ -2413,8 +2438,8 @@ def _generate_opportunities(
                         region="TREND_FOLLOW",
                     ))
 
-    if (trend_strong and result.macro_score <= -5 and result.micro_score > 0
-            and result.smc.equilibrium == "DISCOUNT"
+    if (trend_strong and result.macro_score <= -5 and result.micro_score >= 0
+            and result.smc.equilibrium in ("DISCOUNT", "NEUTRO")
             and not guardian_kill):
         if not _has_min_confluence(resistances):
             result._rejection_reasons.append(

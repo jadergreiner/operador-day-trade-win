@@ -494,3 +494,68 @@ def construir_episodio(
         max_ganho_pts=float(max_ganho),
         eficiencia=eficiencia,
     )
+
+
+def construir_episodio_neutro(
+    sinal: object,
+    session_id: str,
+    preco_decisao: float,
+    preco_avaliacao: float,
+    direcao_sugerida: str,
+    resultado_hipotetico: float,
+    foi_acerto_ficar_fora: bool,
+) -> EpisodioOperador:
+    """
+    Constroi episodio para decisoes NEUTRO (ficou fora do mercado).
+
+    Registra o que TERIA acontecido se tivesse entrado, para que o
+    agente aprenda se ficar fora foi a decisao correta.
+
+    motivo_saida = "ficou_fora_<motivo_bloqueio>"
+    direcao = direcao que o momentum/macro sugeriam
+    resultado_pts = resultado hipotetico (negativo = bom ter ficado fora)
+    foi_acerto = True se ficou fora e mercado reverteu ou andou pouco
+    """
+    agora = datetime.now().isoformat()
+    motivo_bloqueio = getattr(sinal, "motivo_bloqueio", "neutro")
+    leitura = getattr(sinal, "leitura", None)
+    fase = getattr(leitura, "fase_sessao", "") if leitura else ""
+    qualidade = getattr(leitura, "qualidade_movimento", "") if leitura else ""
+    exaustao = getattr(leitura, "exaustao_detectada", False) if leitura else False
+    pullback = getattr(leitura, "pullback_saudavel", False) if leitura else False
+    corr = getattr(leitura, "correlacao_estado", "") if leitura else ""
+    div = getattr(leitura, "divergencia_critica", False) if leitura else False
+    risco = getattr(leitura, "risco_armadilha", "") if leitura else ""
+    extremo = getattr(leitura, "preco_extremo", False) if leitura else False
+    desvio = getattr(leitura, "desvio_vwap_pts", 0.0) if leitura else 0.0
+    ajuste = getattr(leitura, "ajuste_confianca", 0.0) if leitura else 0.0
+
+    return EpisodioOperador(
+        session_id=session_id,
+        timestamp_entrada=agora,
+        timestamp_saida=agora,
+        direcao=direcao_sugerida,
+        preco_entrada=preco_decisao,
+        preco_saida=preco_avaliacao,
+        sl=0.0,
+        tp=0.0,
+        atr_entrada=float(getattr(sinal, "atr", 100.0)),
+        resultado_pts=resultado_hipotetico,
+        motivo_saida=f"ficou_fora_{motivo_bloqueio}",
+        fase_sessao=fase,
+        qualidade_movimento=qualidade,
+        exaustao=exaustao,
+        pullback=pullback,
+        correlacao_estado=corr,
+        divergencia_critica=div,
+        risco_armadilha=risco,
+        preco_extremo=extremo,
+        desvio_vwap_pts=desvio,
+        ajuste_confianca_leitura=ajuste,
+        confianca_entrada=float(getattr(sinal, "confianca", 0.0)),
+        alinhamento_entrada=float(getattr(sinal, "alinhamento", 0.0)),
+        momentum_entrada=float(getattr(sinal, "momentum", 0.0)),
+        foi_acerto=foi_acerto_ficar_fora,
+        max_ganho_pts=abs(resultado_hipotetico),
+        eficiencia=0.0,
+    )

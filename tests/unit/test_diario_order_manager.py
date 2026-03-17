@@ -124,6 +124,8 @@ def _make_manager(tmp_path: Path, rewards: list = None) -> DiarioOrderManager:
     manager._aprendizado = aprendizado
 
     manager._sinal_abertura = None
+    manager._ultimo_neutro_registrado = 0
+    manager._candles_no_neutro = None
 
     return manager
 

@@ -454,6 +454,29 @@ def enviar_ordem_mt5adapter(acao: str, preco_atual: float, vol: float, dados: Op
         if acao == "Aguardar":
             return False
 
+        # ══════════════════════════════════════════════════════════════
+        # GUARDA CRÍTICA: Verificar no MT5 se já existe posição aberta
+        # deste agente (por magic number). Evita ordens duplicadas
+        # causadas por race condition entre JSON e estado real do MT5.
+        # ══════════════════════════════════════════════════════════════
+        try:
+            posicoes_mt5 = mt5_adapter.get_positions(Symbol(SIMBOLO))
+            minhas_posicoes = [
+                p for p in (posicoes_mt5 or [])
+                if int(getattr(p, 'magic', 0) or 0) == MAGIC_NUMBER
+            ]
+            if minhas_posicoes:
+                tickets = [int(getattr(p, 'ticket', 0)) for p in minhas_posicoes]
+                logger.warning(
+                    f'[GUARDA] BLOQUEADO: Já existe(m) {len(minhas_posicoes)} '
+                    f'posição(ões) aberta(s) com magic={MAGIC_NUMBER} '
+                    f'(tickets={tickets}). Ordem NÃO enviada.'
+                )
+                return False
+        except Exception as e:
+            logger.warning(f'[GUARDA] Erro ao verificar posições MT5: {e}. '
+                          f'Prosseguindo com cautela.')
+
         if acao == "Comprar":
             side = OrderSide.BUY
         elif acao == "Vender":

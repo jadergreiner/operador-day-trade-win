@@ -109,8 +109,14 @@ try:
     from src.application.trade_tracker_integration import TradeTrackerIntegration
     from src.application.trade_performance_tracker import TradeClosureReason
     from src.domain.enums.trading_enums import TimeFrame
+    from src.application.motor_decisao_isolado import (
+        MotorDecisaoIsolado,
+        TipoPosicao,
+        MotivoFechamento,
+    )
+    from src.application.posicao_isolamento import PosicaoIsoladaManager
 
-    logger.info('[OK] Módulos importados com sucesso')
+    logger.info('[OK] Módulos importados com sucesso (incl. isolamento formal)')
 
 except Exception as e:
     logger.error(f'[FATAL] Erro ao importar módulos: {e}', exc_info=True)
@@ -278,6 +284,29 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
         return False
 
     try:
+        # ══════════════════════════════════════════════════════════════
+        # GUARDA CRÍTICA: Verificar no MT5 se já existe posição aberta
+        # deste agente (por magic number). Evita ordens duplicadas
+        # causadas por race condition entre JSON e estado real do MT5.
+        # ══════════════════════════════════════════════════════════════
+        try:
+            posicoes_mt5 = mt5_adapter.get_positions(Symbol(SIMBOLO))
+            minhas_posicoes = [
+                p for p in (posicoes_mt5 or [])
+                if int(getattr(p, 'magic', 0) or 0) == MAGIC_NUMBER
+            ]
+            if minhas_posicoes:
+                tickets = [int(getattr(p, 'ticket', 0)) for p in minhas_posicoes]
+                logger.warning(
+                    f'[GUARDA] BLOQUEADO: Já existe(m) {len(minhas_posicoes)} '
+                    f'posição(ões) aberta(s) com magic={MAGIC_NUMBER} '
+                    f'(tickets={tickets}). Ordem NÃO enviada.'
+                )
+                return False
+        except Exception as e:
+            logger.warning(f'[GUARDA] Erro ao verificar posições MT5: {e}. '
+                          f'Prosseguindo com cautela.')
+
         # Mapear ação para OrderSide
         if acao == "Comprar":
             side = OrderSide.BUY
@@ -314,11 +343,25 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
         if ticket:
             logger.info(f'[OK] Ordem enviada! Ticket: {ticket}')
 
-            # Registrar posição no rastreador (com ticket, preço e direção)
+            # Registrar posição via módulos formais de isolamento
             posicao_tracker.registrar_posicao_aberta(
-                ticket=ticket,
                 preco_entrada=preco_atual,
-                direcao=direcao_str,
+                ticket=int(ticket),
+                lado=direcao_str,
+                quantidade=1,
+            )
+            tipo = TipoPosicao.COMPRADA if direcao_str == 'BUY' else TipoPosicao.VENDIDA
+            motor_decisao.abrir_posicao(
+                ticket=int(ticket),
+                tipo=tipo,
+                preco_entrada=preco_atual,
+                volume=1.0,
+                stop_loss=sl,
+                take_profit=tp,
+            )
+            logger.info(
+                f'[ISOLAMENTO] Ticket {ticket} registrado via '
+                f'MotorDecisaoIsolado + PosicaoIsoladaManager'
             )
 
             # Registrar entrada no rastreador de performance
@@ -554,150 +597,49 @@ class AntiOvertradingProtection:
         logger.info(f"[ANTIOVERTRADING] ✅ Ganho registrado - contador de perdas resetado")
 
 # ============================================================================
-# RASTREAMENTO DE POSIÇÕES POR SESSION
+# RASTREAMENTO DE POSIÇÕES — Usa módulos formais de isolamento
+# (PosicaoIsoladaManager + MotorDecisaoIsolado de src/application/)
 # ============================================================================
-class AgentePosicaoStatus:
-    """Rastreador de posições isolado por session ID do agente.
 
-    Armazena ticket, preço de entrada e direção no JSON.
-    Verifica diretamente no MT5 se a posição ainda existe.
+
+def verificar_posicao_no_mt5(posicao_mgr: PosicaoIsoladaManager,
+                              motor: MotorDecisaoIsolado,
+                              mt5_adapter_local) -> bool:
+    """Consulta MT5 pelo ticket p/ verificar se posição ainda existe.
+
+    Retorna True se posição AINDA aberta. False caso contrário.
     """
+    if not posicao_mgr.tem_posicao_aberta():
+        return False
 
-    def __init__(self, session_id: str, data_dir: Path):
-        self.session_id = session_id
-        self.status_file = data_dir / f'agente_posicao_{session_id}.json'
-        self.posicao_aberta = False
-        self.posicao_open_time = None
-        self.ticket: Optional[int] = None
-        self.preco_entrada: Optional[float] = None
-        self.direcao: Optional[str] = None  # "BUY" ou "SELL"
-        self.carregar_status()
+    posicoes = motor.obter_posicoes_abertas()
+    if not posicoes:
+        return False
 
-    def carregar_status(self):
-        """Carrega status de posição anterior se existir."""
-        try:
-            if self.status_file.exists():
-                with open(self.status_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    self.posicao_aberta = data.get('aberta', False)
-                    self.posicao_open_time = data.get('open_time')
-                    self.ticket = data.get('ticket')
-                    self.preco_entrada = data.get('preco_entrada')
-                    self.direcao = data.get('direcao')
-                    if self.posicao_aberta:
-                        logger.debug(
-                            f'[STATUS] Posição ABERTA detectada '
-                            f'(ticket={self.ticket}, dir={self.direcao}, '
-                            f'entrada={self.preco_entrada})'
-                        )
-                    else:
-                        logger.debug('[STATUS] Nenhuma posição aberta')
-            else:
-                self._resetar_campos()
-                logger.debug(f'[STATUS] Arquivo não existe: {self.status_file}')
-        except Exception as e:
-            logger.warning(f'[WARN] Erro ao carregar status: {e}')
+    ticket = posicoes[0].ticket  # 1 posição por agente
+    try:
+        positions = mt5_adapter_local.get_positions(Symbol(SIMBOLO))
+        for pos in positions:
+            pos_ticket = int(getattr(pos, 'ticket', 0) or 0)
+            pos_magic = int(getattr(pos, 'magic', 0) or 0)
+            if pos_ticket == ticket and pos_magic == MAGIC_NUMBER:
+                preco_atual = float(getattr(pos, 'price_current', 0))
+                motor.atualizar_posicao(ticket, preco_atual)
+                logger.debug(
+                    f'[MT5-CHECK] Ticket {ticket} CONFIRMADO aberto '
+                    f'(magic={pos_magic}, profit={getattr(pos, "profit", 0):.2f})'
+                )
+                return True
 
-    def _resetar_campos(self):
-        """Limpa todos os campos de posição."""
-        self.posicao_aberta = False
-        self.posicao_open_time = None
-        self.ticket = None
-        self.preco_entrada = None
-        self.direcao = None
-
-    def registrar_posicao_aberta(self, ticket: int, preco_entrada: float, direcao: str):
-        """Registra que uma posição foi aberta por ESTE agente."""
-        self.posicao_aberta = True
-        self.posicao_open_time = datetime.now().isoformat()
-        self.ticket = ticket
-        self.preco_entrada = preco_entrada
-        self.direcao = direcao
-
-        try:
-            with open(self.status_file, 'w', encoding='utf-8') as f:
-                json.dump({
-                    'session_id': self.session_id,
-                    'aberta': True,
-                    'ticket': ticket,
-                    'preco_entrada': preco_entrada,
-                    'direcao': direcao,
-                    'open_time': self.posicao_open_time,
-                    'timestamp': datetime.now().isoformat()
-                }, f, indent=2)
-            logger.info(
-                f'[REGISTRO] Posição aberta REGISTRADA: '
-                f'ticket={ticket} {direcao} @ {preco_entrada} | {self.status_file}'
-            )
-        except Exception as e:
-            logger.error(f'[ERRO] Falha ao registrar posição: {e}')
-
-    def registrar_posicao_fechada(self, resultado: str = '', pnl: float = 0.0):
-        """Registra que a posição foi fechada por ESTE agente."""
-        ticket_anterior = self.ticket
-        self._resetar_campos()
-
-        try:
-            with open(self.status_file, 'w', encoding='utf-8') as f:
-                json.dump({
-                    'session_id': self.session_id,
-                    'aberta': False,
-                    'ticket': None,
-                    'preco_entrada': None,
-                    'direcao': None,
-                    'open_time': None,
-                    'ultimo_fechamento': {
-                        'ticket': ticket_anterior,
-                        'resultado': resultado,
-                        'pnl': pnl,
-                        'timestamp': datetime.now().isoformat()
-                    },
-                    'timestamp': datetime.now().isoformat()
-                }, f, indent=2)
-            logger.info(
-                f'[REGISTRO] Posição FECHADA: ticket={ticket_anterior} '
-                f'resultado={resultado} pnl=R${pnl:.2f}'
-            )
-        except Exception as e:
-            logger.error(f'[ERRO] Falha ao registrar fechamento: {e}')
-
-    def verificar_posicao_no_mt5(self, mt5_adapter) -> bool:
-        """Consulta MT5 pelo ticket para verificar se posição ainda existe.
-
-        Retorna True se a posição AINDA está aberta no MT5.
-        Retorna False se foi fechada (SL/TP atingido ou fechamento manual).
-        Se não há ticket registrado, retorna False.
-        """
-        if not self.posicao_aberta or self.ticket is None:
-            return False
-
-        try:
-            positions = mt5_adapter.get_positions(Symbol(SIMBOLO))
-            for pos in positions:
-                pos_ticket = int(getattr(pos, 'ticket', 0) or 0)
-                pos_magic = int(getattr(pos, 'magic', 0) or 0)
-                if pos_ticket == int(self.ticket) and pos_magic == MAGIC_NUMBER:
-                    logger.debug(
-                        f'[MT5-CHECK] Ticket {self.ticket} CONFIRMADO aberto no MT5 '
-                        f'(magic={pos_magic}, profit={getattr(pos, "profit", 0):.2f})'
-                    )
-                    return True
-
-            # Ticket não encontrado no MT5 = posição foi fechada (SL/TP/manual)
-            logger.info(
-                f'[MT5-CHECK] Ticket {self.ticket} NAO encontrado no MT5. '
-                f'Posição foi FECHADA (SL/TP ou manual).'
-            )
-            return False
-
-        except Exception as e:
-            logger.warning(f'[MT5-CHECK] Erro ao consultar MT5: {e}')
-            # Em caso de erro, manter estado atual para não perder rastreio
-            return self.posicao_aberta
-
-    def tem_posicao_aberta(self) -> bool:
-        """Retorna True se ESTE agente tem uma posição aberta (estado local)."""
-        return self.posicao_aberta
+        # Não encontrado → fechado por SL/TP/manual
+        logger.info(
+            f'[MT5-CHECK] Ticket {ticket} NAO encontrado no MT5. '
+            f'Posição FECHADA (SL/TP ou manual).'
+        )
+        return False
+    except Exception as e:
+        logger.warning(f'[MT5-CHECK] Erro ao consultar MT5: {e}')
+        return posicao_mgr.tem_posicao_aberta()
 
 # ============================================================================
 # LOOP PRINCIPAL
@@ -721,8 +663,20 @@ def main():
     anti_overtrading = componentes['anti_overtrading']  # 🛑 CRITICAL: Proteção contra overtrading
     trade_tracker = componentes['trade_tracker']  # 📊 Rastreamento de performance
 
-    # Inicializar rastreador de posições deste agente
-    posicao_tracker = AgentePosicaoStatus(AGENT_SESSION_ID, OUTPUTS_DIR)
+    # Inicializar módulos formais de isolamento
+    posicao_tracker = PosicaoIsoladaManager(
+        session_id=AGENT_SESSION_ID,
+        agent_version='rl_direto_v3.0',
+        outputs_dir=OUTPUTS_DIR,
+    )
+    motor_decisao = MotorDecisaoIsolado(
+        agent_id=AGENT_SESSION_ID,
+        data_dir=OUTPUTS_DIR,
+    )
+    logger.info(
+        f'[ISOLAMENTO] PosicaoIsoladaManager + MotorDecisaoIsolado '
+        f'inicializados para session {AGENT_SESSION_ID}'
+    )
 
     logger.info('=' * 80)
     logger.info('INICIANDO LOOP OPERACIONAL COM RL')
@@ -730,7 +684,7 @@ def main():
     logger.info(f"Target: R${TARGET_PROFIT:.2f} | Stop Loss: R${STOP_LOSS_MAX:.2f}")
     logger.info(f"SL/TP Mode: {AGENT_MODE.upper()}")
     logger.info(f"Session: {AGENT_SESSION_ID}")
-    logger.info(f"Isolamento de posições: ATIVADO")
+    logger.info(f"Isolamento: MotorDecisaoIsolado + PosicaoIsoladaManager")
     logger.info('=' * 80)
     logger.info('')
 
@@ -746,7 +700,7 @@ def main():
                 logger.debug(f'[CICLO {ciclo}] Tempo decorrido: {time.time() - start_time:.1f}s')
 
                 # 🔴 CRITICAL: Recarregar status de posição do arquivo a cada ciclo
-                posicao_tracker.carregar_status()
+                posicao_tracker._carregar_status()
                 logger.debug(f'[CICLO {ciclo}] Status posição recarregado: {posicao_tracker.tem_posicao_aberta()}')
 
                 # Verificar conexão MT5 antes de cada ciclo
@@ -793,24 +747,29 @@ def main():
 
                 # 2. Se JSON diz posição aberta, verificar no MT5 pelo ticket
                 if posicao_tracker.tem_posicao_aberta():
-                    ainda_aberta = posicao_tracker.verificar_posicao_no_mt5(mt5_adapter)
+                    ainda_aberta = verificar_posicao_no_mt5(
+                        posicao_tracker, motor_decisao, mt5_adapter,
+                    )
 
                     if not ainda_aberta:
-                        # Posição foi fechada no MT5 (SL/TP atingido ou manual)
+                        # Obter dados da posição do motor antes de fechar
+                        posicoes_motor = motor_decisao.obter_posicoes_abertas()
+                        ticket_aberto = posicoes_motor[0].ticket if posicoes_motor else None
+                        preco_entrada_reg = posicoes_motor[0].preco_entrada if posicoes_motor else None
+                        tipo_reg = posicoes_motor[0].tipo if posicoes_motor else None
+
                         logger.info(
-                            f'[CICLO {ciclo}] Posição ticket={posicao_tracker.ticket} '
+                            f'[CICLO {ciclo}] Posição ticket={ticket_aberto} '
                             f'FECHADA no MT5 (SL/TP ou manual)'
                         )
 
                         # Determinar resultado (win/loss) pelo preço atual vs entrada
                         resultado = 'DESCONHECIDO'
                         pnl_estimado = 0.0
-                        if posicao_tracker.preco_entrada and posicao_tracker.direcao:
-                            diff = preco_atual - posicao_tracker.preco_entrada
-                            if posicao_tracker.direcao == 'SELL':
+                        if preco_entrada_reg and tipo_reg:
+                            diff = preco_atual - preco_entrada_reg
+                            if tipo_reg == TipoPosicao.VENDIDA:
                                 diff = -diff
-                            # Se diferença é negativa, provavelmente SL
-                            # Usar sinal da diferença como indicador
                             resultado = 'WIN' if diff > 0 else 'LOSS'
                             pnl_estimado = diff * 0.20  # mini-índice: R$ 0.20/ponto
 
@@ -821,7 +780,7 @@ def main():
                             anti_overtrading.registrar_ganho()
 
                         # Registrar saída no trade tracker
-                        if trade_tracker and posicao_tracker.ticket:
+                        if trade_tracker and ticket_aberto:
                             try:
                                 motivo = (
                                     TradeClosureReason.SL_HIT
@@ -829,18 +788,24 @@ def main():
                                     else TradeClosureReason.TP_HIT
                                 )
                                 trade_tracker.registrar_saida(
-                                    ticket=posicao_tracker.ticket,
+                                    ticket=ticket_aberto,
                                     preco_saida=preco_atual,
                                     motivo_fechamento=motivo,
                                 )
                             except Exception as e:
                                 logger.warning(f'[WARN] Erro ao registrar saída: {e}')
 
-                        # Marcar posição como fechada no JSON
-                        posicao_tracker.registrar_posicao_fechada(
-                            resultado=resultado,
-                            pnl=pnl_estimado,
-                        )
+                        # Fechar posição nos módulos formais
+                        if ticket_aberto:
+                            motivo_motor = (
+                                MotivoFechamento.SL_ATINGIDO
+                                if resultado == 'LOSS'
+                                else MotivoFechamento.TP_ATINGIDO
+                            )
+                            motor_decisao.fechar_posicao(
+                                ticket_aberto, preco_atual, motivo_motor,
+                            )
+                        posicao_tracker.registrar_posicao_fechada()
 
                         logger.info(
                             f'[CICLO {ciclo}] Resultado: {resultado} | '
@@ -850,8 +815,10 @@ def main():
                         # Não fazer continue — deixar seguir para buscar novo sinal
                     else:
                         # Posição ainda aberta no MT5 — aguardar
+                        posicoes_m = motor_decisao.obter_posicoes_abertas()
+                        tk = posicoes_m[0].ticket if posicoes_m else '?'
                         logger.info(
-                            f'[CICLO {ciclo}] Posição ticket={posicao_tracker.ticket} '
+                            f'[CICLO {ciclo}] Posição ticket={tk} '
                             f'AINDA ABERTA no MT5. Aguardando 15s...'
                         )
                         time.sleep(15)

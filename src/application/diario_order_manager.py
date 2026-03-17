@@ -37,6 +37,7 @@ from src.application.diario_episodio_operador import (
     EpisodioOperadorRepo,
     AprendizadoOperador,
     construir_episodio,
+    construir_episodio_neutro,
 )
 
 logger = logging.getLogger("diario_order_manager")
@@ -321,6 +322,8 @@ class DiarioOrderManager:
         self._sinal_abertura: Optional[SinalDiario] = None  # sinal quando abriu posicao
         self._n_ciclos = 0
         self._ultimo_sinal: Optional[SinalDiario] = None
+        self._ultimo_neutro_registrado: int = 0  # ciclo do ultimo episodio neutro
+        self._candles_no_neutro: Optional[list] = None  # snapshot para avaliar decisao
 
         if rl_reader is not None:
             self._rl_reader = rl_reader
@@ -762,6 +765,9 @@ class DiarioOrderManager:
         if not sinal.pode_operar:
             resultado["acao"] = "BLOQUEADO"
             resultado["detalhe"] = sinal.motivo_bloqueio
+            # Registrar episodio neutro a cada ~5 min (10 ciclos de 30s)
+            # para aprender se ficar fora foi sabio
+            self._registrar_episodio_neutro(sinal, candles)
             return resultado
 
         abriu = self._abrir_posicao(sinal)
@@ -804,3 +810,77 @@ class DiarioOrderManager:
             logger.error("Erro ao registrar episodio: %s", e)
         finally:
             self._sinal_abertura = None
+
+    def _registrar_episodio_neutro(
+        self, sinal: SinalDiario, candles: list
+    ) -> None:
+        """
+        Registra episodio quando o agente decidiu ficar fora (NEUTRO).
+
+        A cada ~5 min (10 ciclos de 30s), avalia o que teria acontecido
+        se tivesse entrado. Isso permite aprender se ficar fora foi
+        uma decisao sabia ou se perdeu oportunidade.
+
+        Resultado: compara preco no momento da decisao com preco 10
+        ciclos (~5 min) depois. Se o mercado andou na direcao que os
+        indicadores sugeriam (macro, momentum), registra como 'perda
+        de oportunidade'. Se o mercado ficou lateral ou reverteu,
+        registra como 'decisao correta'.
+        """
+        # Avaliar episodio neutro anterior (se houver)
+        if (self._candles_no_neutro is not None
+                and self._n_ciclos - self._ultimo_neutro_registrado >= 10):
+            self._avaliar_episodio_neutro(sinal, candles)
+
+        # Registrar novo snapshot neutro a cada 10 ciclos
+        if self._n_ciclos - self._ultimo_neutro_registrado >= 10:
+            self._candles_no_neutro = candles[-5:] if candles else None
+            self._ultimo_neutro_registrado = self._n_ciclos
+
+    def _avaliar_episodio_neutro(
+        self, sinal_atual: SinalDiario, candles_atuais: list
+    ) -> None:
+        """
+        Avalia o que teria acontecido se o agente tivesse operado
+        no momento em que decidiu ficar fora.
+        """
+        if not self._candles_no_neutro or not candles_atuais:
+            return
+
+        try:
+            preco_decisao = float(self._candles_no_neutro[-1].close.value)
+            preco_agora = float(candles_atuais[-1].close.value)
+            variacao = preco_agora - preco_decisao
+
+            # Inferir direcao que o mercado sugeria (momentum do sinal)
+            direcao_sugerida = "BUY" if sinal_atual.momentum > 0 else "SELL"
+
+            # Se tivesse entrado na direcao do momentum:
+            if direcao_sugerida == "BUY":
+                resultado_hipotetico = variacao
+            else:
+                resultado_hipotetico = -variacao
+
+            # Positivo = perdeu oportunidade, Negativo = decisao sábia
+            foi_acerto_ficar_fora = resultado_hipotetico <= 0
+
+            ep = construir_episodio_neutro(
+                sinal=sinal_atual,
+                session_id=self._session_id,
+                preco_decisao=preco_decisao,
+                preco_avaliacao=preco_agora,
+                direcao_sugerida=direcao_sugerida,
+                resultado_hipotetico=resultado_hipotetico,
+                foi_acerto_ficar_fora=foi_acerto_ficar_fora,
+            )
+            self._ep_repo.salvar(ep)
+            logger.info(
+                "Episodio neutro registrado: sugestao=%s var=%.0f "
+                "hipotetico=%.0f acerto_fora=%s motivo=%s",
+                direcao_sugerida, variacao, resultado_hipotetico,
+                foi_acerto_ficar_fora, sinal_atual.motivo_bloqueio,
+            )
+        except Exception as e:
+            logger.error("Erro ao avaliar episodio neutro: %s", e)
+        finally:
+            self._candles_no_neutro = None
