@@ -85,6 +85,15 @@ def _fetch_live_macro() -> dict:
 
 
 # ────────────────────────────────────────────────────────────────
+# EA ID (Magic Number) reservado para Agente Diários
+# Hoje este agente NÃO envia ordens. Se no futuro enviar,
+# usar este magic para isolar das demais:
+#   RL 5000=234500 | Direto=234600 | Micro Tendência=234700
+# ────────────────────────────────────────────────────────────────
+MAGIC_NUMBER = 234800
+
+
+# ────────────────────────────────────────────────────────────────
 # DB Path helper
 # ────────────────────────────────────────────────────────────────
 def _get_db_path() -> str:

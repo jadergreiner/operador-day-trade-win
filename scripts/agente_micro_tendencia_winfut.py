@@ -244,6 +244,10 @@ COOLING_OFF_MINUTES = 30  # Minutos de espera após stop loss na mesma direção
 WATCHDOG_HEDGE_ENABLED = True
 WATCHDOG_AUTO_CLOSE_HEDGE_ORPHAN = True
 
+# EA ID (Magic Number) exclusivo do Agente Micro Tendência
+# Isola ordens deste agente dos demais (RL 5000=234500, Direto=234600)
+MAGIC_NUMBER = 234700
+
 # Plano de lições aprendidas — execução operacional
 REVERSAL_BLOCK_ADX = Decimal("24")
 REVERSAL_BLOCK_MACRO_SCORE = 7
@@ -2851,8 +2855,9 @@ class MicroTradingManager:
                 FROM trades
                 WHERE substr(entry_time, 1, 10) = ?
                   AND symbol LIKE ?
+                  AND magic_number = ?
                 """,
-                (today, f"{symbol_prefix}%"),
+                (today, f"{symbol_prefix}%", MAGIC_NUMBER),
             )
             total_trades_today = int(cur.fetchone()[0] or 0)
 
@@ -2862,10 +2867,11 @@ class MicroTradingManager:
                 FROM trades
                 WHERE substr(entry_time, 1, 10) = ?
                   AND symbol LIKE ?
+                  AND magic_number = ?
                   AND status = 'CLOSED'
                 ORDER BY exit_time ASC
                 """,
-                (today, f"{symbol_prefix}%"),
+                (today, f"{symbol_prefix}%", MAGIC_NUMBER),
             )
             closed_rows = cur.fetchall()
 
@@ -3031,6 +3037,7 @@ class MicroTradingManager:
             stop_loss=Price(opp.stop_loss),
             take_profit=Price(opp.take_profit),
             execution_method="automated",
+            magic_number=MAGIC_NUMBER,
         )
 
         try:
@@ -3126,6 +3133,10 @@ class MicroTradingManager:
         for pos in broker_positions:
             ticket = int(getattr(pos, "ticket", 0) or 0)
             if ticket <= 0:
+                continue
+            # Ignora posições de outros agentes (magic number diferente)
+            pos_magic = int(getattr(pos, "magic", 0) or 0)
+            if pos_magic != MAGIC_NUMBER:
                 continue
             if ticket in local_tickets:
                 continue
@@ -3236,6 +3247,7 @@ class MicroTradingManager:
             quantity=Quantity(trade.quantity),
             price=Price(exit_price),
             close_position_ticket=close_position_ticket,
+            magic_number=MAGIC_NUMBER,
         )
 
         try:

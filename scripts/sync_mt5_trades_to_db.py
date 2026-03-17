@@ -43,6 +43,7 @@ class SyncTrade:
     profit_loss: float | None
     return_percentage: float | None
     notes: str
+    magic_number: int = 234000
 
 
 def _parse_args() -> argparse.Namespace:
@@ -154,6 +155,8 @@ def _build_sync_trade(position_id: int, deals: list, account_login: int) -> Sync
         f"orders={[int(d.order) for d in deals]}"
     )
 
+    magic = int(getattr(first_in, "magic", 0) or 0)
+
     return SyncTrade(
         trade_id=trade_id,
         symbol=str(first_in.symbol),
@@ -169,6 +172,7 @@ def _build_sync_trade(position_id: int, deals: list, account_login: int) -> Sync
         profit_loss=float(profit_loss),
         return_percentage=float(return_pct) if return_pct is not None else None,
         notes=notes,
+        magic_number=magic,
     )
 
 
@@ -188,8 +192,13 @@ def _upsert_trade(conn: sqlite3.Connection, trade: SyncTrade) -> tuple[str, int]
                 stop_loss, take_profit,
                 status, broker_trade_id,
                 commission, profit_loss, return_percentage,
-                notes, execution_method, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                notes, execution_method, magic_number,
+                created_at, updated_at
+            ) VALUES (
+                ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL,
+                ?, ?, ?, ?, ?, ?, ?, ?,
+                CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            )
             """,
             (
                 trade.trade_id,
@@ -206,7 +215,8 @@ def _upsert_trade(conn: sqlite3.Connection, trade: SyncTrade) -> tuple[str, int]
                 trade.profit_loss,
                 trade.return_percentage,
                 trade.notes,
-                "automated",  # Trades sincronizadas do MT5 (automáticas)
+                "automated",
+                trade.magic_number,
             ),
         )
         return "inserted", 1
@@ -225,7 +235,8 @@ def _upsert_trade(conn: sqlite3.Connection, trade: SyncTrade) -> tuple[str, int]
             exit_price = ?, exit_time = ?,
             status = ?, broker_trade_id = ?,
             commission = ?, profit_loss = ?, return_percentage = ?,
-            notes = ?, execution_method = ?, updated_at = CURRENT_TIMESTAMP
+            notes = ?, execution_method = ?, magic_number = ?,
+            updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
         """,
         (
@@ -242,7 +253,8 @@ def _upsert_trade(conn: sqlite3.Connection, trade: SyncTrade) -> tuple[str, int]
             trade.profit_loss,
             trade.return_percentage,
             trade.notes,
-            "automated",  # Atualizar para automático
+            "automated",
+            trade.magic_number,
             existing_id,
         ),
     )

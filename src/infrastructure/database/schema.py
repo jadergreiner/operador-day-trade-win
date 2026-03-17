@@ -108,6 +108,7 @@ class TradeModel(Base):
     return_percentage = Column(Float, nullable=True)
     notes = Column(String(1000), nullable=True)
     execution_method = Column(String(20), default="manual", nullable=False)
+    magic_number = Column(Integer, default=234000)
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 

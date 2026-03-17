@@ -94,6 +94,9 @@ if SL_TP_MODE not in ['dinamico', 'fixo']:
 # ID unico para este agente (para controlar posicoes em paralelo)
 AGENTE_ID = f"agente_{SL_TP_MODE}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
+# Tickets abertos POR ESTE agente (isolamento entre agentes paralelos)
+tickets_proprios: set[int] = set()
+
 logger.info(f"Modo SL/TP: {SL_TP_MODE.upper()}")
 logger.info(f"ID do Agente: {AGENTE_ID}")
 
@@ -460,11 +463,18 @@ def enviar_ordem_mt5adapter(acao: str, preco_atual: float, vol: float, dados: Op
             price=Price(preco_atual),
             stop_loss=Price(sl),
             take_profit=Price(tp),
+            magic_number=MAGIC_NUMBER,
             execution_method="automated",
         )
 
         ticket = mt5_adapter.send_order(order)
         logger.info(f"[OK] Ordem enviada! Ticket: {ticket}")
+
+        # Rastrear ticket como pertencente a ESTE agente
+        if ticket:
+            tickets_proprios.add(int(ticket))
+            logger.info(f"[ISOLAMENTO] Ticket {ticket} registrado para {AGENTE_ID} "
+                       f"(total próprios: {len(tickets_proprios)})")
 
         # Atualizar apenas o cooldown (sem limitar trades/dia)
         last_trade_time = datetime.now()
@@ -495,7 +505,7 @@ def enviar_ordem_mt5adapter(acao: str, preco_atual: float, vol: float, dados: Op
 
 def processar_protecao_lucros() -> None:
     """
-    Processa proteção de lucros para todas as posições abertas.
+    Processa proteção de lucros apenas para posições DESTE agente.
 
     Monitora:
     - Reversões agudas após ganho inicial
@@ -508,6 +518,10 @@ def processar_protecao_lucros() -> None:
             return
 
         for position in positions:
+            ticket_pos = int(getattr(position, 'ticket', 0))
+            pos_magic = int(getattr(position, 'magic', 0) or 0)
+            if pos_magic != MAGIC_NUMBER:
+                continue  # Ignorar posições de outros agentes (magic diferente)
             try:
                 # Construir trade dict para o motor de proteção
                 entry_price = float(getattr(position, 'price_open', 0.0))
@@ -554,10 +568,44 @@ def processar_protecao_lucros() -> None:
 
 
 def monitorar_posicoes() -> bool:
-    """Verifica se há posições abertas."""
+    """Verifica se há posições abertas DESTE agente (por magic number + ticket)."""
     try:
         positions = mt5_adapter.get_positions(Symbol(SIMBOLO))
-        return len(positions) > 0 if positions else False
+        if not positions:
+            # Nenhuma posição no símbolo → limpar tickets próprios fechados
+            if tickets_proprios:
+                logger.info(f"[ISOLAMENTO] Nenhuma posição aberta no {SIMBOLO}. "
+                           f"Limpando {len(tickets_proprios)} tickets próprios.")
+                tickets_proprios.clear()
+            return False
+
+        # Filtrar apenas posições com NOSSO magic number
+        minhas_posicoes = [
+            p for p in positions
+            if int(getattr(p, 'magic', 0) or 0) == MAGIC_NUMBER
+        ]
+
+        # Atualizar set de tickets próprios com base no MT5
+        tickets_mt5_meus = {int(getattr(p, 'ticket', 0)) for p in minhas_posicoes}
+
+        # Recuperar tickets que são nossos (magic) mas não estavam no set
+        # (recuperação após restart do agente)
+        novos = tickets_mt5_meus - tickets_proprios
+        if novos:
+            for t in novos:
+                logger.info(f"[ISOLAMENTO] Ticket #{t} (magic={MAGIC_NUMBER}) "
+                           f"recuperado do MT5 após restart.")
+                tickets_proprios.add(t)
+
+        # Remover tickets que já foram fechados
+        tickets_fechados = tickets_proprios - tickets_mt5_meus
+        if tickets_fechados:
+            for t in tickets_fechados:
+                logger.info(f"[ISOLAMENTO] Ticket #{t} foi fechado (SL/TP/manual). "
+                           f"Removendo do rastreamento.")
+                tickets_proprios.discard(t)
+
+        return len(minhas_posicoes) > 0
     except Exception:
         return False
 
@@ -605,7 +653,7 @@ def modificar_sl_ordem(ticket: int, novo_sl: float) -> bool:
             'position': int(position.ticket),
             'sl': float(novo_sl),
             'tp': float(position.tp) if position.tp else 0,
-            'magic': 234000,
+            'magic': MAGIC_NUMBER,
             'comment': 'Profit Protection SL Update'
         }
 
@@ -701,7 +749,7 @@ def fechar_parcial_posicao(ticket: int, volume_para_fechar: float) -> bool:
             'position': int(position.ticket),
             'price': float(close_price),
             'deviation': 10,
-            'magic': 234000,
+            'magic': MAGIC_NUMBER,
             'comment': 'Profit Protection Partial Close',
             'type_time': mt5_adapter._mt5.ORDER_TIME_GTC,
             'type_filling': mt5_adapter._mt5.ORDER_FILLING_RETURN
@@ -741,6 +789,12 @@ def proteger_lucro_trade() -> None:
         for pos in positions:
             # Dados da posição aberta - com conversão explícita para float
             ticket = pos.ticket
+
+            # Ignorar posições de outros agentes (filtro por magic number)
+            pos_magic = int(getattr(pos, 'magic', 0) or 0)
+            if pos_magic != MAGIC_NUMBER:
+                continue
+
             entry_price = float(pos.price_open) if pos.price_open else 0.0
             current_price = float(pos.price_current) if pos.price_current else 0.0
             sl = float(pos.sl) if pos.sl else 0.0

@@ -27,6 +27,7 @@ class Order:
     stop_loss: Optional[Price] = None
     take_profit: Optional[Price] = None
     close_position_ticket: Optional[int] = None
+    magic_number: int = 234000
     order_id: UUID = field(default_factory=uuid4)
     created_at: datetime = field(default_factory=datetime.now)
     broker_order_id: Optional[str] = None

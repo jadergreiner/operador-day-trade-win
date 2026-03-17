@@ -7,7 +7,7 @@ REM  Versao: 3.0 - SL/TP DINAMICOS + PROGRESSO REAL-TIME
 REM  Data: 06/03/2026
 REM ============================================================
 
-cd /d "%~dp0\.."
+cd /d "%~dp0"
 
 echo.
 echo   ============================================================
@@ -62,7 +62,7 @@ set /p CHOICE="Escolha (1-4): "
 if "%CHOICE%"=="1" (
     echo.
     echo   Iniciando avaliacao do modelo...
-    python operador-day-trade-win\scripts\treinar_novo_agente_rl.py --dados-reais --apenas-avaliar
+    python scripts\treinar_novo_agente_rl.py --dados-reais --apenas-avaliar
     if errorlevel 1 echo. & echo   [ERRO] Avaliacao falhou. & pause
     goto :MENU
 )
@@ -73,7 +73,7 @@ if "%CHOICE%"=="2" (
     echo   Objetivo: Lucro R$ 140,00 ou Prejuizo -R$ 250,00
     echo   Modo SL/TP: DINAMICO (adapta-se aos topos/fundos)
     echo.
-    python operador-day-trade-win\scripts\operar_novo_agente_rl_real_antiovertrading.py --sl-tp-mode dinamico
+    python scripts\operar_novo_agente_rl_real_antiovertrading.py --sl-tp-mode dinamico
     echo.
     echo   [INFO] Operacao encerrada.
     pause
@@ -85,7 +85,7 @@ if "%CHOICE%"=="3" (
     echo   [AVISO] Versao ORIGINAL (SEM protecao anti-overtrading)
     echo   Objetivo: Lucro R$ 140,00 ou Prejuizo -R$ 250,00
     echo.
-    python operador-day-trade-win\scripts\operar_novo_agente_rl_real.py
+    python scripts\operar_novo_agente_rl_real.py
     echo.
     echo   [INFO] Operacao encerrada.
     pause
