@@ -78,20 +78,37 @@ outputs/                  → Arquivos gerados em runtime (logs, JSON posição)
 | `ac5_9_feedback_validator.py` | Validação ciclo feedback ML/RL | 21/21 ✅ |
 | `ac6_7_drift_detector.py` | Detecção de degradação de modelo | 24/24 ✅ |
 | `ac6_8_online_learning.py` | Treino incremental com rollback | 18/18 ✅ |
+| `ac6_9_baseline_comparator.py` | Comparação baseline vs modelo atual | ✅ |
 | `rl_trading_environment.py` | Ambiente Gym-compatível para RL | 21/21 ✅ |
 | `rl_retrain_scheduler.py` | Agendamento inteligente de retrain | 24/24 ✅ |
 | `rl_model_rollback_manager.py` | Rollback automático de modelo RL | 17/17 ✅ |
 | `posicao_isolamento.py` | Isolamento de posições entre agentes | 7/7 ✅ |
+| `motor_decisao_isolado.py` | Motor de decisão isolado por agent_id | ✅ |
+| `p1_learning_engine.py` | Engine de aprendizado P1 (online) | ✅ |
+| `p1_learning_closure.py` | Fechamento de ciclo aprendizado P1 | 27/27 ✅ |
+| `p1_operation_lifecycle.py` | Ciclo de vida de operação P1 | ✅ |
 | `ml_classifier.py` | Classificador LightGBM para sinais | ✅ |
 | `orders_executor.py` | Command Pattern para ciclo de vida de ordem | ✅ |
 | `risk_validator.py` | Chain of Responsibility (3 Gates de risco) | ✅ |
 | `profit_protection_engine.py` | Proteção de lucros (trailing) | ✅ |
+| `dashboard_stats_server.py` | FastAPI: endpoints de estatísticas RT | ✅ |
 
 ### Isolamento entre Agentes RL
 
 Cada agente possui Session ID único (timestamp). Posições e logs ficam em
 arquivos separados (`outputs/agente_posicao_*.json`, `outputs/agente_*.log`)
 para evitar conflitos quando múltiplos agentes rodam em paralelo.
+
+### Gate 2 (P0-2) — Controle de Capital
+
+`scripts/check_p0_2_status.py` retorna exit code que define escala de capital:
+
+- `0`: PASS → capital ampliado
+- `1/2/3`: FAIL/em execução/erro → capital conservador
+
+Artefatos obrigatórios em `data/backtest/`: `dataset_audit.json`,
+`backtest_results.json`, `gate2_decision.json`, `p0_2_status.json`.
+Falhas de pipeline nunca liberam capital ampliado.
 
 ## Padrões de Código
 
@@ -103,6 +120,10 @@ para evitar conflitos quando múltiplos agentes rodam em paralelo.
 - **Cobertura mínima:** 80% por módulo, 85% para merge, 100% em críticos
 - Novos scripts executáveis vão em `scripts/`, outputs gerados em `outputs/`
 - Código reutilizável e importável vai em `src/`
+- Scripts `.bat` usam MAIÚSCULAS: `INICIAR_*.bat`, `SETUP_*.bat`,
+  `DIAGNOSTICO_*.bat`
+- Scripts Python em `scripts/` seguem snake_case; prefixos convencionados:
+  `check_`, `debug_`, `diagnostico_`, `util_`
 
 ### Padrão de Docstring (obrigatório)
 
@@ -172,8 +193,12 @@ Copie `.env.example` para `.env` e preencha:
 ## Documentação
 
 - [docs/ARQUITETURA_ALVO.md](docs/ARQUITETURA_ALVO.md) — Arquitetura
-  operacional
+  operacional e contrato Gate 2
+- [docs/BACKLOG.md](docs/BACKLOG.md) — Backlog único por agente (source of
+  truth)
 - [docs/REGRAS_DE_NEGOCIO.md](docs/REGRAS_DE_NEGOCIO.md) — Regras canônicas
 - [docs/OPERACAO_4_AGENTES.md](docs/OPERACAO_4_AGENTES.md) — Como operar
 - [docs/MODELAGEM_DE_DADOS.md](docs/MODELAGEM_DE_DADOS.md) — Schema SQLite
+- [docs/AGENTES_RL_PARALELOS.md](docs/AGENTES_RL_PARALELOS.md) — Isolamento
+  entre agentes RL
 - [START_HERE.md](START_HERE.md) — Quick start em 5 minutos
