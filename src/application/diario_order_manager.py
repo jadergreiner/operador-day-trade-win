@@ -1,0 +1,806 @@
+"""
+Diario Order Manager — Motor de Execucao Autonomo do Agente Diarios.
+
+O Agente Diarios e INDEPENDENTE. Opera como um head de tesouraria:
+  - QuantumOperatorEngine: 106 ativos correlacionados, macro, tecnico
+  - LeituraDeOperador: percepcao contextual (fase, exaustao, armadilhas,
+    barato/caro, correlacoes inter-mercado, mudanca de cenario)
+  - EpisodioOperador: aprende com seus proprios trades — o que funcionou,
+    em qual fase do dia, em qual contexto de mercado
+  - GuardianState: kill_switch e alertas macros criticos
+
+Nao depende de sinais de outros agentes. "Sente o mercado."
+
+Pipeline (ciclo de 30s):
+    candles M15 + macro + guardian
+    → LeituraDeOperador.ler() → percepcao contextual
+    → consolidar_sinal() → decisao com leitura integrada
+    → monitorar_posicao() ou abrir_posicao()
+    → registrar_episodio() → aprendizado proprio
+
+Magic Number: 234800
+Status: v3.0 (17/03/2026) — head de tesouraria, aprende com episodios
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import threading
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+from src.application.diario_leitura_operador import LeituraDeOperador, LeituraOperador
+from src.application.diario_episodio_operador import (
+    EpisodioOperadorRepo,
+    AprendizadoOperador,
+    construir_episodio,
+)
+
+logger = logging.getLogger("diario_order_manager")
+
+# ── Identidade ──────────────────────────────────────────────────
+MAGIC_NUMBER = 234800
+SIMBOLO = "WIN$N"
+VOLUME = 1
+
+# ── Parametros de entrada ────────────────────────────────────────
+# Confianca minima do QuantumOperatorEngine para considerar entrada
+CONFIANCA_MINIMA = 0.60
+# Alinhamento minimo entre macro/tecnico/sentimento (0-1)
+ALINHAMENTO_MINIMO = 0.55
+# Multiplicadores de ATR para SL e TP
+SL_ATR_MULT = 1.5   # SL = preco +/- 1.5 * ATR
+TP_ATR_MULT = 2.5   # TP = preco +/- 2.5 * ATR (R:R ~1.67)
+# ATR minimo em pontos (proteção contra mercado parado)
+ATR_MINIMO = 80
+# ATR maximo em pontos (proteção contra volatilidade extrema)
+ATR_MAXIMO = 800
+# Reversao: pontos contra a posicao para fechar antecipado
+REVERSAO_ATR_MULT = 1.2   # fecha se preco reverteu 1.2*ATR desde o ultimo tick
+# Devolucao de ganho: % do ganho maximo que aciona fechamento
+REVERSAO_PCT_GANHO = 0.60
+# Horario de pregao
+HORA_INICIO = (9, 0)
+HORA_FIM = (17, 30)
+
+
+# ────────────────────────────────────────────────────────────────
+# ATR a partir de candles
+# ────────────────────────────────────────────────────────────────
+
+def calcular_atr(candles: list, periodo: int = 14) -> float:
+    """
+    Calcula ATR (Average True Range) a partir dos candles.
+
+    Cada candle deve ter atributos .high, .low, .close com .value.
+    Retorna ATR em pontos. Retorna ATR_MINIMO se dados insuficientes.
+    """
+    if len(candles) < periodo + 1:
+        return float(ATR_MINIMO)
+
+    trs = []
+    for i in range(1, len(candles)):
+        h = float(candles[i].high.value)
+        l = float(candles[i].low.value)
+        c_ant = float(candles[i - 1].close.value)
+        tr = max(h - l, abs(h - c_ant), abs(l - c_ant))
+        trs.append(tr)
+
+    # Media dos ultimos `periodo` TRs
+    atr = sum(trs[-periodo:]) / periodo
+    return max(float(ATR_MINIMO), min(float(ATR_MAXIMO), atr))
+
+
+def calcular_momentum(candles: list, janela: int = 5) -> float:
+    """
+    Momentum simples: variacao de preco nas ultimas `janela` velas.
+    Retorna pontos (positivo = alta, negativo = baixa).
+    """
+    if len(candles) < janela + 1:
+        return 0.0
+    preco_atual = float(candles[-1].close.value)
+    preco_passado = float(candles[-janela].close.value)
+    return preco_atual - preco_passado
+
+
+# ────────────────────────────────────────────────────────────────
+# Sinal consolidado
+# ────────────────────────────────────────────────────────────────
+
+@dataclass
+class SinalDiario:
+    """Decisao consolidada do Agente Diarios para um ciclo."""
+    timestamp: str
+    direcao: str          # "BUY", "SELL", "NEUTRO"
+    confianca: float      # 0.0-1.0 (ajustada pelos episodios proprios)
+    alinhamento: float    # alignment_score do QuantumOperatorEngine
+    macro_bias: str
+    tecnico_bias: str
+    sentimento_bias: str
+    atr: float            # ATR da sessao atual em pontos
+    momentum: float       # momentum das ultimas 5 velas
+    preco_atual: float
+    sl: float             # stop loss calculado
+    tp: float             # take profit calculado
+    guardian_ok: bool
+    guardian_penalty: float
+    win_rate_propria: float   # win rate dos episodios proprios do Diarios
+    n_episodios_proprios: int
+    leitura: Optional[LeituraOperador] = None  # percepcao contextual do operador
+    pode_operar: bool = False
+    motivo_bloqueio: str = ""
+
+
+# ────────────────────────────────────────────────────────────────
+# Estado da posicao (JSON — mesmo padrao dos outros agentes)
+# ────────────────────────────────────────────────────────────────
+
+@dataclass
+class DiarioPosicao:
+    aberta: bool = False
+    ticket: Optional[int] = None
+    direcao: str = ""
+    preco_entrada: float = 0.0
+    sl: float = 0.0
+    tp: float = 0.0
+    atr_entrada: float = 0.0    # ATR no momento da entrada
+    abertura_ts: str = ""
+    session_id: str = ""
+    max_ganho_pts: float = 0.0
+    ultimo_preco: float = 0.0
+    n_checks: int = 0
+
+    def to_dict(self) -> dict:
+        return {
+            "aberta": self.aberta,
+            "ticket": self.ticket,
+            "direcao": self.direcao,
+            "preco_entrada": self.preco_entrada,
+            "sl": self.sl,
+            "tp": self.tp,
+            "atr_entrada": self.atr_entrada,
+            "abertura_ts": self.abertura_ts,
+            "session_id": self.session_id,
+            "max_ganho_pts": self.max_ganho_pts,
+            "ultimo_preco": self.ultimo_preco,
+            "n_checks": self.n_checks,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "DiarioPosicao":
+        obj = cls()
+        obj.aberta = d.get("aberta", False)
+        obj.ticket = d.get("ticket")
+        obj.direcao = d.get("direcao", "")
+        obj.preco_entrada = float(d.get("preco_entrada", 0))
+        obj.sl = float(d.get("sl", 0))
+        obj.tp = float(d.get("tp", 0))
+        obj.atr_entrada = float(d.get("atr_entrada", 0))
+        obj.abertura_ts = d.get("abertura_ts", "")
+        obj.session_id = d.get("session_id", "")
+        obj.max_ganho_pts = float(d.get("max_ganho_pts", 0))
+        obj.ultimo_preco = float(d.get("ultimo_preco", 0))
+        obj.n_checks = int(d.get("n_checks", 0))
+        return obj
+
+
+class DiarioPosicaoStatus:
+    """
+    Rastreia posicao aberta do Agente Diarios em arquivo JSON.
+
+    Arquivo: outputs/agente_posicao_diarios_{session_id}.json
+    """
+
+    def __init__(self, session_id: str, outputs_dir: str = "outputs"):
+        self.session_id = session_id
+        self._path = Path(outputs_dir) / f"agente_posicao_diarios_{session_id}.json"
+        self._lock = threading.Lock()
+        self._posicao = DiarioPosicao(session_id=session_id)
+        self._carregar()
+
+    def _carregar(self) -> None:
+        if self._path.exists():
+            try:
+                data = json.loads(self._path.read_text(encoding="utf-8"))
+                self._posicao = DiarioPosicao.from_dict(data)
+            except Exception as e:
+                logger.warning("Erro ao carregar posicao JSON: %s", e)
+
+    def _salvar(self) -> None:
+        try:
+            self._path.parent.mkdir(parents=True, exist_ok=True)
+            self._path.write_text(
+                json.dumps(self._posicao.to_dict(), indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+        except Exception as e:
+            logger.error("Erro ao salvar posicao JSON: %s", e)
+
+    @property
+    def posicao(self) -> DiarioPosicao:
+        with self._lock:
+            return self._posicao
+
+    def tem_posicao_aberta(self) -> bool:
+        with self._lock:
+            return self._posicao.aberta
+
+    def registrar_abertura(
+        self,
+        ticket: int,
+        direcao: str,
+        preco_entrada: float,
+        sl: float,
+        tp: float,
+        atr_entrada: float = 0.0,
+    ) -> None:
+        with self._lock:
+            self._posicao.aberta = True
+            self._posicao.ticket = ticket
+            self._posicao.direcao = direcao
+            self._posicao.preco_entrada = preco_entrada
+            self._posicao.sl = sl
+            self._posicao.tp = tp
+            self._posicao.atr_entrada = atr_entrada
+            self._posicao.abertura_ts = datetime.now().isoformat()
+            self._posicao.max_ganho_pts = 0.0
+            self._posicao.ultimo_preco = preco_entrada
+            self._posicao.n_checks = 0
+            self._salvar()
+        logger.info(
+            "Posicao aberta: ticket=%s dir=%s entrada=%.0f SL=%.0f TP=%.0f ATR=%.0f",
+            ticket, direcao, preco_entrada, sl, tp, atr_entrada,
+        )
+
+    def atualizar_preco(self, preco_atual: float) -> None:
+        with self._lock:
+            self._posicao.ultimo_preco = preco_atual
+            self._posicao.n_checks += 1
+            if self._posicao.direcao == "BUY":
+                ganho = preco_atual - self._posicao.preco_entrada
+            else:
+                ganho = self._posicao.preco_entrada - preco_atual
+            if ganho > self._posicao.max_ganho_pts:
+                self._posicao.max_ganho_pts = ganho
+            self._salvar()
+
+    def registrar_fechamento(self, motivo: str = "") -> None:
+        with self._lock:
+            logger.info(
+                "Posicao fechada: ticket=%s dir=%s entrada=%.0f ultimo=%.0f motivo=%s",
+                self._posicao.ticket,
+                self._posicao.direcao,
+                self._posicao.preco_entrada,
+                self._posicao.ultimo_preco,
+                motivo,
+            )
+            self._posicao.aberta = False
+            self._posicao.ticket = None
+            self._salvar()
+
+
+# ────────────────────────────────────────────────────────────────
+# Motor principal
+# ────────────────────────────────────────────────────────────────
+
+class DiarioOrderManager:
+    """
+    Motor de execucao autonomo do Agente Diarios.
+
+    Toma decisoes proprias com base em:
+      - QuantumOperatorEngine (macro + tecnico + alinhamento)
+      - Candles M15 (ATR, momentum, preco atual)
+      - GuardianState (kill_switch, bias)
+      - Win rate dos proprios episodios (auto-ajuste de confianca)
+
+    Nao depende de oportunidades ou sinais de outros agentes.
+
+    Uso:
+        manager = DiarioOrderManager(mt5, db_path, session_id)
+        resultado = manager.ciclo(decisao, candles, guardian, dir_analysis)
+    """
+
+    def __init__(
+        self,
+        mt5_adapter: object,
+        db_path: str,
+        session_id: str,
+        outputs_dir: str = "outputs",
+        rl_reader: Optional[object] = None,
+    ):
+        self._mt5 = mt5_adapter
+        self._db_path = db_path
+        self._session_id = session_id
+        self._posicao = DiarioPosicaoStatus(session_id, outputs_dir)
+        self._leitor = LeituraDeOperador()
+        self._ep_repo = EpisodioOperadorRepo(db_path)
+        self._aprendizado = AprendizadoOperador(self._ep_repo)
+        self._sinal_abertura: Optional[SinalDiario] = None  # sinal quando abriu posicao
+        self._n_ciclos = 0
+        self._ultimo_sinal: Optional[SinalDiario] = None
+
+        if rl_reader is not None:
+            self._rl_reader = rl_reader
+        else:
+            from scripts.start_journals_full_display import RLPerformanceReader
+            self._rl_reader = RLPerformanceReader(db_path)
+
+    # ── Horario de pregao ────────────────────────────────────────
+
+    def _no_pregao(self) -> bool:
+        agora = datetime.now()
+        inicio = agora.replace(hour=HORA_INICIO[0], minute=HORA_INICIO[1], second=0)
+        fim = agora.replace(hour=HORA_FIM[0], minute=HORA_FIM[1], second=0)
+        return inicio <= agora <= fim
+
+    # ── Win rate dos episodios proprios (magic=234800) ───────────
+
+    def _win_rate_propria(self) -> tuple[float, int]:
+        """
+        Calcula win rate baseado nos proprios episodios do Agente Diarios.
+
+        Usa rewards avaliados do dia. Retorna (win_rate 0-100, n_episodios).
+        """
+        try:
+            rewards = self._rl_reader.get_today_rewards()
+            avaliados = [r for r in rewards if r.get("is_evaluated") == 1]
+            if len(avaliados) < 3:
+                return 50.0, 0  # neutro se poucos dados
+            corretos = sum(1 for r in avaliados if r.get("was_correct") == 1)
+            wr = corretos / len(avaliados) * 100
+            return wr, len(avaliados)
+        except Exception:
+            return 50.0, 0
+
+    # ── Ajuste de confianca pelos proprios resultados ────────────
+
+    def _ajustar_confianca(
+        self,
+        confianca_base: float,
+        guardian_penalty: float,
+    ) -> float:
+        """
+        Ajusta confianca com base no proprio historico e penalidade Guardian.
+
+        Win rate > 65%: bonus +0.08
+        Win rate 50-65%: sem ajuste
+        Win rate < 40%: penalidade -0.12 (agente aprendeu que estava errando)
+        Guardian penalty: -penalty/100
+        """
+        wr, n = self._win_rate_propria()
+
+        if n >= 3:
+            if wr >= 65.0:
+                confianca_base = min(0.95, confianca_base + 0.08)
+            elif wr < 40.0:
+                confianca_base = max(0.0, confianca_base - 0.12)
+
+        confianca_base = max(0.0, confianca_base - guardian_penalty / 100.0)
+        return confianca_base
+
+    # ── Consolidar decisao propria ───────────────────────────────
+
+    def consolidar_sinal(
+        self,
+        decisao: object,        # OperatorDecision
+        candles: list,          # Candles M15 ao vivo
+        guardian_state: object,
+        dir_analysis: Optional[dict] = None,
+    ) -> SinalDiario:
+        """
+        Consolida todas as fontes proprias em um SinalDiario.
+
+        Logica de direcao (hierarquia):
+        1. Guardian kill_switch → NEUTRO (para tudo)
+        2. Guardian bias_override CONTRA → inverte sinal macro
+        3. Alinhamento abaixo do minimo → NEUTRO (sinais contraditórios)
+        4. analyze_directional_critical: se confianca_ajustada < 50 e
+           tem contradicoes → penalidade adicional na confianca
+        5. Momentum confirma ou contradiz a direcao macro? Se contradiz
+           fortemente (>2*ATR), penalidade de 0.10
+        """
+        agora = datetime.now().isoformat()
+
+        # ── Dados do QuantumOperatorEngine ──
+        acao = str(getattr(decisao, "action", "HOLD"))
+        if hasattr(getattr(decisao, "action", None), "value"):
+            acao = decisao.action.value
+        confianca_base = float(getattr(decisao, "confidence", 0.0))
+        alinhamento = float(getattr(decisao, "alignment_score", 0.0))
+        macro_bias = str(getattr(decisao, "macro_bias", "NEUTRO"))
+        tecnico_bias = str(getattr(decisao, "technical_bias", "NEUTRO"))
+        sentimento_bias = str(getattr(decisao, "sentiment_bias", "NEUTRO"))
+
+        # ── Guardian ──
+        kill_switch = getattr(guardian_state, "active_kill_switch", False)
+        bias_override = str(getattr(guardian_state, "bias_override", ""))
+        guardian_penalty = float(getattr(guardian_state, "confidence_penalty", 0.0))
+        guardian_ok = not kill_switch
+
+        # ── Mercado: ATR e momentum ──
+        atr = calcular_atr(candles)
+        momentum = calcular_momentum(candles)
+        preco_atual = float(candles[-1].close.value) if candles else 0.0
+
+        # ── Direcao base ──
+        if kill_switch:
+            direcao = "NEUTRO"
+        elif bias_override == "CONTRA":
+            direcao = "SELL" if acao == "BUY" else "BUY" if acao == "SELL" else "NEUTRO"
+        elif bias_override == "NEUTRO":
+            direcao = "NEUTRO"
+        else:
+            direcao = acao if acao in ("BUY", "SELL") else "NEUTRO"
+
+        # ── Penalidade de momentum contraditorio ──
+        # Se momentum forte na direcao oposta (> 1.5*ATR), reduz confianca
+        if direcao == "BUY" and momentum < -(atr * 1.5):
+            confianca_base = max(0.0, confianca_base - 0.10)
+            logger.debug("Momentum BUY contradiz: %.0f pts, penalidade aplicada", momentum)
+        elif direcao == "SELL" and momentum > (atr * 1.5):
+            confianca_base = max(0.0, confianca_base - 0.10)
+            logger.debug("Momentum SELL contradiz: %.0f pts, penalidade aplicada", momentum)
+
+        # ── Penalidade de contradicoes macro ──
+        if dir_analysis:
+            contradicoes = dir_analysis.get("contradicoes", [])
+            conf_dir = float(dir_analysis.get("confianca_ajustada", 100))
+            if len(contradicoes) >= 2 and conf_dir < 50:
+                confianca_base = max(0.0, confianca_base - 0.08)
+
+        # ── Leitura de operador: percepcao contextual ──
+        # Obter items macro do MacroScoreResult (se disponivel via dir_analysis)
+        macro_items = dir_analysis.get("detalhes_categorias") if dir_analysis else None
+        leitura = self._leitor.ler(
+            candles=candles,
+            decisao=decisao,
+            guardian_state=guardian_state,
+            macro_items=macro_items,
+            atr=atr,
+        )
+
+        # Aplicar ajuste da leitura na confianca
+        confianca_base = max(0.0, confianca_base + leitura.ajuste_confianca)
+
+        # Se leitura indica direcao preferida diferente da macro → NEUTRO
+        if (leitura.direcao_preferida not in ("NEUTRO", "") and
+                leitura.direcao_preferida != direcao and
+                direcao != "NEUTRO"):
+            # Leitura e macro divergem: reduzir confianca adicionalmente
+            confianca_base = max(0.0, confianca_base - 0.10)
+            logger.debug(
+                "Leitura diverge da macro: leitura=%s macro=%s, penalidade -0.10",
+                leitura.direcao_preferida, direcao,
+            )
+
+        # ── Confianca final (ajustada pelos proprios episodios) ──
+        confianca_final = self._ajustar_confianca(confianca_base, guardian_penalty)
+        wr, n_ep = self._win_rate_propria()
+
+        # ── SL e TP por ATR ──
+        if preco_atual > 0 and direcao in ("BUY", "SELL"):
+            sl_dist = atr * SL_ATR_MULT
+            tp_dist = atr * TP_ATR_MULT
+            if direcao == "BUY":
+                sl = preco_atual - sl_dist
+                tp = preco_atual + tp_dist
+            else:
+                sl = preco_atual + sl_dist
+                tp = preco_atual - tp_dist
+        else:
+            sl = tp = 0.0
+
+        # ── Decisao final ──
+        pode_operar = True
+        motivo_bloqueio = ""
+
+        if not self._no_pregao():
+            pode_operar = False
+            motivo_bloqueio = "fora_do_pregao"
+        elif kill_switch:
+            pode_operar = False
+            motivo_bloqueio = "guardian_kill_switch"
+        elif direcao == "NEUTRO":
+            pode_operar = False
+            motivo_bloqueio = "direcao_neutro"
+        elif alinhamento < ALINHAMENTO_MINIMO:
+            pode_operar = False
+            motivo_bloqueio = f"alinhamento_baixo:{alinhamento:.2f}<{ALINHAMENTO_MINIMO}"
+        elif confianca_final < CONFIANCA_MINIMA:
+            pode_operar = False
+            motivo_bloqueio = f"confianca_baixa:{confianca_final:.2f}<{CONFIANCA_MINIMA}"
+        elif atr < ATR_MINIMO:
+            pode_operar = False
+            motivo_bloqueio = f"mercado_parado:ATR={atr:.0f}<{ATR_MINIMO}"
+        elif preco_atual == 0.0:
+            pode_operar = False
+            motivo_bloqueio = "sem_preco"
+        elif leitura.divergencia_critica:
+            pode_operar = False
+            motivo_bloqueio = "divergencia_critica_correlatos"
+        elif not leitura.momento_favoravel and leitura.risco_armadilha == "ALTA":
+            pode_operar = False
+            motivo_bloqueio = f"armadilha_alta:{leitura.armadilhas[0][:60] if leitura.armadilhas else ''}"
+
+        return SinalDiario(
+            timestamp=agora,
+            direcao=direcao,
+            confianca=confianca_final,
+            alinhamento=alinhamento,
+            macro_bias=macro_bias,
+            tecnico_bias=tecnico_bias,
+            sentimento_bias=sentimento_bias,
+            atr=atr,
+            momentum=momentum,
+            preco_atual=preco_atual,
+            sl=sl,
+            tp=tp,
+            guardian_ok=guardian_ok,
+            guardian_penalty=guardian_penalty,
+            win_rate_propria=wr,
+            n_episodios_proprios=n_ep,
+            leitura=leitura,
+            pode_operar=pode_operar,
+            motivo_bloqueio=motivo_bloqueio,
+        )
+
+    # ── Verificar posicao no MT5 ─────────────────────────────────
+
+    def _posicao_existe_no_mt5(self, ticket: int) -> tuple[bool, float]:
+        try:
+            from src.domain.value_objects import Symbol
+            posicoes = self._mt5.get_positions(Symbol(SIMBOLO))
+            for pos in posicoes:
+                t = getattr(pos, "ticket", None) or (pos.get("ticket") if isinstance(pos, dict) else None)
+                magic = getattr(pos, "magic", None) or (pos.get("magic") if isinstance(pos, dict) else None)
+                if t == ticket and magic == MAGIC_NUMBER:
+                    preco = getattr(pos, "price_current", 0) or (pos.get("price_current", 0) if isinstance(pos, dict) else 0)
+                    return True, float(preco)
+            return False, 0.0
+        except Exception as e:
+            logger.error("Erro ao verificar posicao MT5: %s", e)
+            return True, 0.0  # assume aberta em caso de erro
+
+    # ── Deteccao de reversao / exaustao ─────────────────────────
+
+    def _deve_fechar_por_reversao(self, preco_atual: float) -> tuple[bool, str]:
+        """
+        Fecha posicao se detectar reversao ou exaustao.
+
+        Criterio 1 (reversao rapida): preco reverteu >= 1.2 * ATR_entrada
+        desde o ultimo tick registrado.
+
+        Criterio 2 (devolucao de ganho): devolveu >= 60% do ganho maximo
+        (so ativa se ganho_max >= 0.8 * ATR_entrada).
+        """
+        pos = self._posicao.posicao
+        if not pos.aberta:
+            return False, ""
+
+        atr_ref = pos.atr_entrada if pos.atr_entrada > 0 else float(ATR_MINIMO)
+        reversao_limite = atr_ref * REVERSAO_ATR_MULT
+
+        # Criterio 1: reversao absoluta desde ultimo tick
+        if pos.direcao == "BUY":
+            move_contra = pos.ultimo_preco - preco_atual
+        else:
+            move_contra = preco_atual - pos.ultimo_preco
+
+        if move_contra >= reversao_limite:
+            return True, f"reversao_{move_contra:.0f}pts_lim{reversao_limite:.0f}"
+
+        # Criterio 2: devolucao de ganho maximo
+        ganho_minimo_para_ativar = atr_ref * 0.8
+        if pos.max_ganho_pts >= ganho_minimo_para_ativar:
+            if pos.direcao == "BUY":
+                ganho_atual = preco_atual - pos.preco_entrada
+            else:
+                ganho_atual = pos.preco_entrada - preco_atual
+
+            ganho_devolvido = pos.max_ganho_pts - ganho_atual
+            if ganho_devolvido >= pos.max_ganho_pts * REVERSAO_PCT_GANHO:
+                return True, f"devolucao_{ganho_devolvido:.0f}pts_de_{pos.max_ganho_pts:.0f}"
+
+        return False, ""
+
+    # ── Fechar posicao ───────────────────────────────────────────
+
+    def _fechar_posicao(self, motivo: str) -> bool:
+        pos = self._posicao.posicao
+        if not pos.aberta or pos.ticket is None:
+            return False
+        try:
+            sucesso = self._mt5.close_position_by_ticket(int(pos.ticket))
+            if sucesso:
+                self._posicao.registrar_fechamento(motivo)
+            else:
+                logger.warning("Falha ao fechar posicao: ticket=%s", pos.ticket)
+            return sucesso
+        except Exception as e:
+            logger.error("Erro ao fechar posicao: %s", e)
+            return False
+
+    # ── Abrir posicao ────────────────────────────────────────────
+
+    def _abrir_posicao(self, sinal: SinalDiario) -> bool:
+        try:
+            from src.domain.entities.trade import Order
+            from src.domain.value_objects import Symbol, Price, Quantity
+            from src.domain.enums.trading_enums import OrderSide, OrderType
+
+            side = OrderSide.BUY if sinal.direcao == "BUY" else OrderSide.SELL
+
+            order = Order(
+                symbol=Symbol(SIMBOLO),
+                side=side,
+                quantity=Quantity(VOLUME),
+                order_type=OrderType.MARKET,
+                stop_loss=Price(sinal.sl),
+                take_profit=Price(sinal.tp),
+                magic_number=MAGIC_NUMBER,
+                execution_method="automated",
+            )
+
+            ticket_str = self._mt5.send_order(order)
+            if ticket_str:
+                ticket = int(ticket_str) if str(ticket_str).isdigit() else 0
+                self._posicao.registrar_abertura(
+                    ticket=ticket,
+                    direcao=sinal.direcao,
+                    preco_entrada=sinal.preco_atual,
+                    sl=sinal.sl,
+                    tp=sinal.tp,
+                    atr_entrada=sinal.atr,
+                )
+                logger.info(
+                    "Ordem enviada: dir=%s preco=%.0f SL=%.0f TP=%.0f "
+                    "ATR=%.0f conf=%.2f align=%.2f ticket=%s",
+                    sinal.direcao, sinal.preco_atual, sinal.sl, sinal.tp,
+                    sinal.atr, sinal.confianca, sinal.alinhamento, ticket_str,
+                )
+                return True
+            else:
+                logger.warning("MT5 rejeitou a ordem")
+                return False
+        except Exception as e:
+            logger.error("Erro ao abrir posicao: %s", e)
+            return False
+
+    # ── Ciclo principal ──────────────────────────────────────────
+
+    def ciclo(
+        self,
+        decisao: object,
+        candles: list,
+        guardian_state: object,
+        dir_analysis: Optional[dict] = None,
+    ) -> dict:
+        """
+        Executa um ciclo completo (30s).
+
+        1. Consolida sinal proprio
+        2. Se posicao aberta: verifica MT5, Guardian, reversao/exaustao
+        3. Se sem posicao: avalia entrada autonoma
+
+        Returns dict com status para display na Thread 5.
+        """
+        self._n_ciclos += 1
+        resultado = {
+            "ciclo": self._n_ciclos,
+            "timestamp": datetime.now().isoformat(),
+            "sinal": None,
+            "acao": "NENHUMA",
+            "posicao_aberta": False,
+            "detalhe": "",
+        }
+
+        sinal = self.consolidar_sinal(decisao, candles, guardian_state, dir_analysis)
+        self._ultimo_sinal = sinal
+        resultado["sinal"] = sinal
+
+        # ── Posicao aberta: monitorar ──
+        if self._posicao.tem_posicao_aberta():
+            resultado["posicao_aberta"] = True
+            pos = self._posicao.posicao
+
+            existe, preco_atual = self._posicao_existe_no_mt5(pos.ticket or 0)
+
+            if not existe:
+                # Registrar episodio: SL/TP atingido pelo MT5
+                preco_saida_est = pos.ultimo_preco if pos.ultimo_preco > 0 else pos.preco_entrada
+                self._registrar_episodio(pos, "sl_tp_mt5", preco_saida_est)
+                self._posicao.registrar_fechamento("sl_tp_mt5")
+                resultado["acao"] = "POSICAO_FECHADA_MT5"
+                resultado["detalhe"] = "SL ou TP atingido pelo MT5"
+                resultado["posicao_aberta"] = False
+                return resultado
+
+            # Guardian kill switch com posicao aberta: fechar imediatamente
+            if not sinal.guardian_ok:
+                fechou = self._fechar_posicao("guardian_kill_switch")
+                if fechou:
+                    self._registrar_episodio(pos, "guardian_kill_switch", preco_atual)
+                resultado["acao"] = "FECHAMENTO_GUARDIAN" if fechou else "ERRO_FECHAR_GUARDIAN"
+                resultado["detalhe"] = "Guardian ativo"
+                resultado["posicao_aberta"] = not fechou
+                return resultado
+
+            # Verificar reversao/exaustao ANTES de atualizar ultimo_preco
+            if preco_atual > 0:
+                deve_fechar, motivo_rev = self._deve_fechar_por_reversao(preco_atual)
+                if deve_fechar:
+                    fechou = self._fechar_posicao(motivo_rev)
+                    if fechou:
+                        self._registrar_episodio(pos, motivo_rev, preco_atual)
+                    resultado["acao"] = "FECHAMENTO_REVERSAO" if fechou else "ERRO_FECHAR_REVERSAO"
+                    resultado["detalhe"] = f"Reversao: {motivo_rev}"
+                    resultado["posicao_aberta"] = not fechou
+                    return resultado
+
+            # Atualizar preco apos verificacoes
+            if preco_atual > 0:
+                self._posicao.atualizar_preco(preco_atual)
+
+            pos_atual = self._posicao.posicao
+            if preco_atual > 0:
+                ganho = (preco_atual - pos_atual.preco_entrada) if pos_atual.direcao == "BUY" \
+                    else (pos_atual.preco_entrada - preco_atual)
+                resultado["detalhe"] = (
+                    f"dir={pos_atual.direcao} entrada={pos_atual.preco_entrada:.0f} "
+                    f"atual={preco_atual:.0f} ganho={ganho:+.0f}pts "
+                    f"max={pos_atual.max_ganho_pts:.0f}pts ATR={pos_atual.atr_entrada:.0f}"
+                )
+            resultado["acao"] = "MONITORANDO"
+            return resultado
+
+        # ── Sem posicao: avaliar entrada ──
+        resultado["posicao_aberta"] = False
+
+        if not sinal.pode_operar:
+            resultado["acao"] = "BLOQUEADO"
+            resultado["detalhe"] = sinal.motivo_bloqueio
+            return resultado
+
+        abriu = self._abrir_posicao(sinal)
+        if abriu:
+            self._sinal_abertura = sinal  # guardar para registrar episodio no fechamento
+            resultado["acao"] = "ORDEM_ENVIADA"
+            resultado["detalhe"] = (
+                f"dir={sinal.direcao} preco={sinal.preco_atual:.0f} "
+                f"SL={sinal.sl:.0f} TP={sinal.tp:.0f} "
+                f"ATR={sinal.atr:.0f} conf={sinal.confianca:.0%} "
+                f"align={sinal.alinhamento:.0%}"
+            )
+            resultado["posicao_aberta"] = True
+        else:
+            resultado["acao"] = "ERRO_ORDEM"
+            resultado["detalhe"] = "MT5 rejeitou ou erro interno"
+
+        return resultado
+
+    # ── Aprendizado ──────────────────────────────────────────────────────────
+
+    def _registrar_episodio(
+        self, pos: DiarioPosicao, motivo: str, preco_saida: float
+    ) -> None:
+        """Constroi e persiste episodio apos fechamento de posicao."""
+        if self._sinal_abertura is None:
+            return
+        try:
+            ep = construir_episodio(
+                pos, motivo, preco_saida, self._sinal_abertura, self._session_id
+            )
+            self._ep_repo.salvar(ep)
+            logger.info(
+                "Episodio registrado: ticket=%s motivo=%s resultado=%s",
+                pos.ticket,
+                motivo,
+                ep.resultado,
+            )
+        except Exception as e:
+            logger.error("Erro ao registrar episodio: %s", e)
+        finally:
+            self._sinal_abertura = None

@@ -39,6 +39,7 @@ from src.application.services.macro_scenario_guardian import (
     guardian_state_to_feedback_fields,
     GUARDIAN_INTERVAL_SEC,
 )
+from src.application.diario_order_manager import DiarioOrderManager
 
 # ────────────────────────────────────────────────────────────────
 # Macro Data Provider (REC2/REC6: dados ao vivo, não hardcoded)
@@ -2772,6 +2773,144 @@ def run_macro_guardian():
 
 
 # ────────────────────────────────────────────────────────────────
+# Thread 5 — Diario Order Manager (execucao de ordens, a cada 30s)
+# ────────────────────────────────────────────────────────────────
+
+# Intervalo do ciclo de execucao em segundos
+EXECUCAO_INTERVAL_SEC = 30
+
+
+def run_diario_order_manager():
+    """Thread 5 — executa o DiarioOrderManager a cada 30s.
+
+    Consolida sinais do QuantumOperatorEngine, Guardian e oportunidades
+    micro, depois decide se abre/monitora/fecha posicao.
+    Compartilha o GuardianState com a Thread 4 via get_guardian_state().
+    """
+    config = get_config()
+    symbol = Symbol(config.trading_symbol)
+
+    mt5 = MT5Adapter(
+        login=config.mt5_login,
+        password=config.mt5_password,
+        server=config.mt5_server,
+        terminal_exe_path=r"C:\Program Files\Clear Investimentos MT5 Terminal\terminal64.exe",
+    )
+
+    if not mt5.connect():
+        print("[DIARIO EXECUCAO] Erro ao conectar MT5")
+        return
+
+    db_path = _get_db_path()
+    session_id = f"diarios_{int(time.time())}"
+    operator = QuantumOperatorEngine()
+    rl_reader = RLPerformanceReader(db_path)
+
+    # Injetar rl_reader para evitar import circular (DiarioOrderManager
+    # nao precisa reimportar o script que ja esta rodando)
+    manager = DiarioOrderManager(mt5, db_path, session_id, rl_reader=rl_reader)
+
+    print(f"\n[DIARIO EXECUCAO] Iniciado | session={session_id} | magic=234800")
+    print(f"[DIARIO EXECUCAO] Ciclo: {EXECUCAO_INTERVAL_SEC}s | "
+          f"Confianca minima: 60% | SL/TP: por ATR | Autonomo")
+
+    # Aguardar os outros threads estabilizarem
+    time.sleep(15)
+
+    try:
+        while True:
+            agora = datetime.now()
+
+            try:
+                # ── Obter candles e decisao macro ──
+                candles = mt5.get_candles(symbol, TimeFrame.M15, count=100)
+                if not candles:
+                    print(f"[DIARIO EXECUCAO] {agora.strftime('%H:%M:%S')} "
+                          "Sem candles, aguardando...")
+                    time.sleep(EXECUCAO_INTERVAL_SEC)
+                    continue
+
+                macro = _fetch_live_macro()
+                decisao_macro = operator.analyze_and_decide(
+                    symbol=symbol,
+                    candles=candles,
+                    dollar_index=macro["dxy"],
+                    vix=macro["vix"],
+                    selic=macro["selic"],
+                    ipca=macro["ipca"],
+                    usd_brl=macro["usd_brl"],
+                    embi_spread=250,
+                )
+
+                # ── Obter estado do Guardian (compartilhado com Thread 4) ──
+                guardian_state = get_guardian_state()
+
+                # ── Analise critica do direcional macro ──
+                dir_analysis: dict | None = None
+                try:
+                    dir_analysis = rl_reader.analyze_directional_critical()
+                except Exception:
+                    pass
+
+                # ── Executar ciclo do motor (autonomo) ──
+                resultado = manager.ciclo(decisao_macro, candles, guardian_state, dir_analysis)
+
+                # ── Display do ciclo ──
+                sinal = resultado.get("sinal")
+                acao = resultado.get("acao", "?")
+                detalhe = resultado.get("detalhe", "")
+                pos_aberta = resultado.get("posicao_aberta", False)
+
+                icone = {
+                    "ORDEM_ENVIADA": "🟢",
+                    "MONITORANDO": "📊",
+                    "FECHAMENTO_REVERSAO": "🔴",
+                    "FECHAMENTO_GUARDIAN": "🛡️",
+                    "POSICAO_FECHADA_MT5": "✅",
+                    "BLOQUEADO": "⏸️",
+                    "NENHUMA": "─",
+                    "ERRO_ORDEM": "⚠️",
+                }.get(acao, "?")
+
+                print(f"\n[DIARIO EXECUCAO] {agora.strftime('%H:%M:%S')} "
+                      f"{icone} {acao}")
+
+                if sinal:
+                    print(f"  dir={sinal.direcao} conf={sinal.confianca:.0%} "
+                          f"align={sinal.alinhamento:.0%} "
+                          f"ATR={sinal.atr:.0f} mom={sinal.momentum:+.0f} "
+                          f"guardian={'OK' if sinal.guardian_ok else 'KILL'} "
+                          f"wr_propria={sinal.win_rate_propria:.0f}% "
+                          f"ep={sinal.n_episodios_proprios}")
+                    if sinal.leitura:
+                        L = sinal.leitura
+                        print(f"  leitura: {L.fase_sessao} | {L.qualidade_movimento} | "
+                              f"corr={L.correlacao_estado} | arm={L.risco_armadilha} | "
+                              f"ajuste={L.ajuste_confianca:+.2f}")
+                        print(f"  \"{L.resumo}\"")
+
+                if detalhe:
+                    print(f"  {detalhe}")
+
+                if not pos_aberta and sinal and not sinal.pode_operar and sinal.motivo_bloqueio:
+                    print(f"  Bloqueio: {sinal.motivo_bloqueio}")
+
+            except Exception as ciclo_err:
+                print(f"[DIARIO EXECUCAO] Erro no ciclo: {ciclo_err}")
+                import traceback
+                traceback.print_exc()
+
+            time.sleep(EXECUCAO_INTERVAL_SEC)
+
+    except Exception as e:
+        print(f"[DIARIO EXECUCAO] Erro fatal: {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        mt5.disconnect()
+
+
+# ────────────────────────────────────────────────────────────────
 # Main
 # ────────────────────────────────────────────────────────────────
 
@@ -2782,15 +2921,17 @@ def main():
     print("DIÁRIOS AUTOMÁTICOS — COM ANÁLISE RL + GUARDIAN MACRO")
     print("=" * 80)
     print()
-    print("Iniciando 4 diários em paralelo...")
+    print("Iniciando 5 diários em paralelo...")
     print()
     print("  1. Trading Storytelling    — a cada 5 minutos (narrativa macro)")
     print("  2. AI Reflection           — a cada 10 minutos (auto-avaliação)")
     print("  3. RL Performance Diary    — a cada 15 minutos (rewards + diagnóstico)")
     print("  4. Macro Scenario Guardian — a cada 2 minutos (monitor de cenário)")
+    print("  5. Diario Order Manager    — a cada 30 segundos (execucao de ordens)")
     print()
     print(f"  DB: {_get_db_path()}")
     print(f"  Macro Provider: {'LIVE' if HAS_MACRO_PROVIDER else 'FALLBACK (hardcoded)'}")
+    print(f"  Magic Number (Diarios): 234800")
     print()
     print("Pressione Ctrl+C para parar")
     print()
@@ -2800,6 +2941,7 @@ def main():
     ai_thread = threading.Thread(target=run_ai_reflection, daemon=True, name="AIReflection")
     rl_thread = threading.Thread(target=run_rl_performance_diary, daemon=True, name="RLDiary")
     guardian_thread = threading.Thread(target=run_macro_guardian, daemon=True, name="MacroGuardian")
+    execucao_thread = threading.Thread(target=run_diario_order_manager, daemon=True, name="DiarioExecucao")
 
     trading_thread.start()
     time.sleep(2)
@@ -2808,8 +2950,10 @@ def main():
     rl_thread.start()
     time.sleep(2)
     guardian_thread.start()
+    time.sleep(2)
+    execucao_thread.start()
 
-    print("[OK] 4 diários rodando!")
+    print("[OK] 5 diários rodando!")
     print()
 
     try:
