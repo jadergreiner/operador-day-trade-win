@@ -312,6 +312,12 @@ fim a fim.
 - RL 5000 (AC5.8 apenas):
   - `MonitorPositionManager` — registra ordens e
     atualiza precos em `monitorar_posicoes()`
+- RL Direto (todos os 5 modulos - 17/03/2026):
+  - AC5.8: registra abertura/fechamento de ordens
+  - AC5.9: health check a cada 10 ciclos
+  - AC6.7: deteccao de drift a cada 10 ciclos
+  - AC6.8: treino incremental se drift detectado
+  - AC6.9: comparacao vs baseline a cada 10 ciclos
 - Diarios (AC5.9 apenas):
   - `FeedbackValidator` — health check periodico
     no `run_rl_performance_diary()`
@@ -2141,4 +2147,9 @@ entradas ja entregues nao devem voltar para este arquivo.
 - Pipeline P0-2: concluido.
 - AC5.8: ✅ IMPLEMENTED (15/03/2026) - Monitoramento em tempo real
 - Modulo 3 Grupo 1 (Isolamento): ✅ INTEGRADO (17/03/2026) nos 2 agentes RL
-- Proxima entrega recomendada: Integracao Grupo 2 (AC5.8-AC6.9) nos agentes
+- Modulo 3 Grupo 2 (Feedback/Aprendizado): ✅ INTEGRADO (17/03/2026)
+  - Micro Tendencia: AC5.8/AC5.9/AC6.7/AC6.8/AC6.9 (pipeline completo)
+  - RL Direto: AC5.8/AC5.9/AC6.7/AC6.8/AC6.9 (pipeline completo)
+  - Diarios: AC5.9 (health check periodico)
+  - RL 5000: AC5.8 (monitor de posicoes)
+- Proxima entrega recomendada: AC5.9/AC6 para RL 5000

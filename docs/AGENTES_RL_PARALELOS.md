@@ -133,6 +133,8 @@ Função:
 | **Modelo** | Q-Learning | Q-Learning | LightGBM+MacroScore |
 | **Filtro pos.** | `monitorar_pos` | `verif_posicao_mt5` | `hedge_orphans` |
 | **Isolamento** | `MotorDecisao` | `MotorDecisao`+`PosIsolada` | N/A |
+| **AC5.8** | ✅ | ✅ | ✅ |
+| **AC5.9/AC6** | ❌ | ✅ | ✅ |
 | **SL/TP** | Dinâmicos | Dinâmicos | ATR calibrado |
 | **Heartbeat** | ✅ (thread) | ❌ | ❌ |
 | **Recuperação** | Automática | Manual | Manual |
@@ -145,18 +147,21 @@ Função:
 ### Cenário: Executar ambos os agentes simultaneamente
 
 **Terminal 1:**
+
 ```bash
 # Agente supervisionado
 cmd /c "cd C:\repo\operador-day-trade-win && INICIAR_AGENTE_RL_5000.bat"
 ```
 
 **Terminal 2:**
+
 ```bash
 # Agente direto (simultâneos)
 cmd /c "cd C:\repo\operador-day-trade-win && INICIAR_AGENTE_RL_DIRETO.bat"
 ```
 
 **Resultado:**
+
 - Dois agentes operando **SIMULTANEAMENTE**
 - Cada um com seu próprio **session ID**
 - Posições **COMPLETAMENTE ISOLADAS**
@@ -165,7 +170,7 @@ cmd /c "cd C:\repo\operador-day-trade-win && INICIAR_AGENTE_RL_DIRETO.bat"
 
 ### Logs de Cada Agent
 
-```
+```text
 outputs/
 ├── agente_supervision.log           ← Agente RL 5000 (supervisão)
 ├── agente_debug.log                 ← Agente RL 5000 (debug)
@@ -239,24 +244,29 @@ pelos scripts dos agentes (ADR-015).
 em tempo real de posições com SQLite (4 tabelas).
 - Micro Tendência: registra/atualiza posições
 - RL 5000: registra/atualiza posições
+- RL Direto: registra abertura e fechamento
 
 **`ac5_9_feedback_validator.py`** — Valida saúde
 do ciclo trade→feedback→ML. Health check com
 score e recomendações.
 - Micro Tendência: a cada 10 ciclos
 - Diários: no `run_rl_performance_diary()`
+- RL Direto: a cada 10 ciclos
 
 **`ac6_7_drift_detector.py`** — Detecta
 degradação de modelo via Z-score contra baseline.
 - Micro Tendência: a cada 10 ciclos
+- RL Direto: a cada 10 ciclos
 
 **`ac6_8_online_learning.py`** — Treino
 incremental com rollback automático.
 - Micro Tendência: ativado quando drift detectado
+- RL Direto: ativado quando drift detectado
 
 **`ac6_9_baseline_comparator.py`** — Compara
 métricas atuais vs baseline histórico.
 - Micro Tendência: a cada 10 ciclos
+- RL Direto: a cada 10 ciclos
 
 Ref: ADR-015, P1 (BACKLOG), AC5.8-AC6.9.
 
@@ -327,7 +337,8 @@ grep ERROR outputs/agente*.log
 if exist scripts\agente_rl_direto_independente.py (echo OK) else (echo MISSING)
 
 # Testar import manual
-python -c "import sys; sys.path.insert(0, '.'); from scripts.agente_rl_direto_independente import *; print('OK')"
+python -c "import sys; sys.path.insert(0, '.'); \
+  from scripts.agente_rl_direto_independente import *; print('OK')"
 ```
 
 ### Posições ficando misturadas?

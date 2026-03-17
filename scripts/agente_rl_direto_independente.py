@@ -123,6 +123,45 @@ except Exception as e:
     sys.exit(1)
 
 # ============================================================================
+# IMPORTS OPCIONAIS — Grupo 2: Feedback e Aprendizado (AC5.8/AC5.9/AC6)
+# ============================================================================
+_AC5_8_DISPONIVEL = False
+_AC5_9_DISPONIVEL = False
+_AC6_DISPONIVEL = False
+try:
+    from src.application.ac5_8_position_monitor import (
+        MonitorPositionManager,
+        StatusOrdem,
+        DirecaoOperacao,
+    )
+    _AC5_8_DISPONIVEL = True
+    logger.info('[OK] AC5.8 MonitorPositionManager disponivel')
+except ImportError as _e:
+    MonitorPositionManager = None  # type: ignore[assignment,misc]
+    logger.warning(f'[WARN] AC5.8 nao disponivel: {_e}')
+
+try:
+    from src.application.ac5_9_feedback_validator import (
+        FeedbackValidator,
+    )
+    from src.application.ac6_7_drift_detector import DriftDetector
+    from src.application.ac6_8_online_learning import (
+        OnlineLearningController,
+    )
+    from src.application.ac6_9_baseline_comparator import (
+        BaselineComparator,
+    )
+    _AC5_9_DISPONIVEL = True
+    _AC6_DISPONIVEL = True
+    logger.info('[OK] AC5.9/AC6.7/AC6.8/AC6.9 disponiveis')
+except ImportError as _e:
+    FeedbackValidator = None  # type: ignore[assignment,misc]
+    DriftDetector = None  # type: ignore[assignment,misc]
+    OnlineLearningController = None  # type: ignore[assignment,misc]
+    BaselineComparator = None  # type: ignore[assignment,misc]
+    logger.warning(f'[WARN] AC5.9/AC6 nao disponiveis: {_e}')
+
+# ============================================================================
 # IMPORTS SPECIFICIZADOS - Domain Models
 # ============================================================================
 try:
@@ -163,6 +202,13 @@ STOP_LOSS_MAX = -250.00
 last_signal = "Aguardar"
 signal_confirmation_count = 0
 last_trade_time = None
+
+# Variáveis globais — Grupo 2: Feedback e Aprendizado
+_monitor_posicao_rl = None
+_feedback_validator_rl = None
+_drift_detector_rl = None
+_online_learning_rl = None
+_baseline_comparator_rl = None
 
 # ============================================================================
 # FUNÇÕES DE DECISÃO E TRADING (RL)
@@ -274,6 +320,77 @@ def calcular_sl_tp(acao: str, preco_atual: float,
     return sl, tp
 
 
+def _executar_pipeline_feedback_rl(trades_fechados: list) -> None:
+    """Executa pipeline AC5.9→AC6.7→AC6.8→AC6.9 a cada 10 ciclos.
+
+    Alimentado com trades fechados do ciclo operacional para fechar
+    o loop de aprendizado: execucao → feedback → deteccao de drift
+    → treino incremental → comparacao com baseline.
+    """
+    trades_data = [
+        {
+            'trade_id': str(t.get('ticket', '')),
+            'outcome': t.get('resultado', 'BREAKEVEN'),
+            'pnl': float(t.get('pnl', 0.0)),
+            'direction': t.get('direcao', ''),
+        }
+        for t in trades_fechados
+    ]
+
+    # AC5.9: Validacao de saude do feedback
+    if _feedback_validator_rl and trades_data:
+        try:
+            relatorio = _feedback_validator_rl.validate_feedback_health(
+                trades=trades_data, feedback=trades_data,
+            )
+            status_icon = {'HEALTHY': 'OK', 'WARNING': 'AVISO', 'CRITICAL': 'CRITICO'}.get(
+                relatorio.overall_status, '?',
+            )
+            logger.info(
+                f'[AC5.9] Feedback {status_icon} | '
+                f'Correlacao: {relatorio.correlation_rate:.0%} | '
+                f'Qualidade: {relatorio.data_quality_score:.0%}'
+            )
+        except Exception as e:
+            logger.warning(f'[AC5.9] Erro: {e}')
+
+    # AC6.7: Deteccao de drift
+    if _drift_detector_rl and trades_data:
+        try:
+            alertas = _drift_detector_rl.detectar_drift(trades_data)
+            if alertas:
+                for a in alertas[:2]:
+                    logger.warning(
+                        f'[AC6.7] Drift detectado: {a.metric} '
+                        f'z={a.z_score:.2f} (limiar={a.threshold:.2f})'
+                    )
+            else:
+                logger.info('[AC6.7] Sem drift detectado')
+        except Exception as e:
+            logger.warning(f'[AC6.7] Erro: {e}')
+
+    # AC6.8: Aprendizagem online (so executa se drift detectado)
+    if _online_learning_rl and trades_data:
+        try:
+            resultado = _online_learning_rl.train_incremental(trades_data)
+            if resultado:
+                logger.info(f'[AC6.8] Treino incremental: {resultado}')
+        except Exception as e:
+            logger.warning(f'[AC6.8] Erro: {e}')
+
+    # AC6.9: Comparacao com baseline
+    if _baseline_comparator_rl and trades_data:
+        try:
+            comparacao = _baseline_comparator_rl.comparar_metricas(
+                metricas_atuais={'pnl_medio': sum(t['pnl'] for t in trades_data)},
+            )
+            fb = _baseline_comparator_rl.gerar_feedback(comparacao)
+            if fb:
+                logger.info(f'[AC6.9] Baseline: {fb}')
+        except Exception as e:
+            logger.warning(f'[AC6.9] Erro: {e}')
+
+
 def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
                  posicao_tracker: object, rl_repo: object, trade_tracker: object,
                  dados: Optional[pd.DataFrame] = None) -> bool:
@@ -363,6 +480,25 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
                 f'[ISOLAMENTO] Ticket {ticket} registrado via '
                 f'MotorDecisaoIsolado + PosicaoIsoladaManager'
             )
+
+            # AC5.8: Registrar abertura de ordem no monitor de posicoes
+            if _monitor_posicao_rl:
+                try:
+                    direcao_ac58 = (
+                        DirecaoOperacao.COMPRA if direcao_str == 'BUY'
+                        else DirecaoOperacao.VENDA
+                    )
+                    _monitor_posicao_rl.registrar_ordem({
+                        'trade_id': str(ticket),
+                        'direcao': direcao_ac58,
+                        'preco_entrada': preco_atual,
+                        'stop_loss': sl,
+                        'take_profit': tp,
+                        'volume': 1,
+                        'status': StatusOrdem.ABERTA,
+                    })
+                except Exception as e:
+                    logger.warning(f'[AC5.8] Erro ao registrar ordem: {e}')
 
             # Registrar entrada no rastreador de performance
             if trade_tracker:
@@ -647,6 +783,8 @@ def verificar_posicao_no_mt5(posicao_mgr: PosicaoIsoladaManager,
 def main():
     """Loop principal do agente direto com lógica de RL."""
     global last_signal
+    global _monitor_posicao_rl, _feedback_validator_rl, _drift_detector_rl
+    global _online_learning_rl, _baseline_comparator_rl
 
     # Inicializar componentes
     componentes = inicializar_componentes()
@@ -678,6 +816,51 @@ def main():
         f'inicializados para session {AGENT_SESSION_ID}'
     )
 
+    # Inicializar Grupo 2: Feedback e Aprendizado (AC5.8/AC5.9/AC6)
+    if _AC5_8_DISPONIVEL and MonitorPositionManager:
+        try:
+            _monitor_posicao_rl = MonitorPositionManager(
+                db_path=str(ROOT_DIR / 'data' / 'db' / 'trading.db'),
+            )
+            logger.info('[OK] AC5.8 MonitorPositionManager: Ativo')
+        except Exception as e:
+            logger.warning(f'[WARN] AC5.8 init falhou: {e}')
+
+    if _AC5_9_DISPONIVEL and FeedbackValidator:
+        try:
+            _feedback_validator_rl = FeedbackValidator()
+            logger.info('[OK] AC5.9 FeedbackValidator: Ativo')
+        except Exception as e:
+            logger.warning(f'[WARN] AC5.9 init falhou: {e}')
+
+    if _AC6_DISPONIVEL and DriftDetector:
+        try:
+            _drift_detector_rl = DriftDetector(
+                agent_id=AGENT_SESSION_ID,
+                drift_threshold_zscore=2.0,
+            )
+            logger.info('[OK] AC6.7 DriftDetector: Ativo')
+        except Exception as e:
+            logger.warning(f'[WARN] AC6.7 init falhou: {e}')
+
+    if _AC6_DISPONIVEL and OnlineLearningController:
+        try:
+            _online_learning_rl = OnlineLearningController(
+                agent_id=AGENT_SESSION_ID,
+            )
+            logger.info('[OK] AC6.8 OnlineLearningController: Ativo')
+        except Exception as e:
+            logger.warning(f'[WARN] AC6.8 init falhou: {e}')
+
+    if _AC6_DISPONIVEL and BaselineComparator:
+        try:
+            _baseline_comparator_rl = BaselineComparator(
+                agent_id=AGENT_SESSION_ID,
+            )
+            logger.info('[OK] AC6.9 BaselineComparator: Ativo')
+        except Exception as e:
+            logger.warning(f'[WARN] AC6.9 init falhou: {e}')
+
     logger.info('=' * 80)
     logger.info('INICIANDO LOOP OPERACIONAL COM RL')
     logger.info('=' * 80)
@@ -690,6 +873,7 @@ def main():
 
     ciclo = 0
     start_time = time.time()
+    trades_fechados_rl: list = []  # Acumulador para pipeline AC5.9/AC6
 
     try:
         while True:
@@ -772,6 +956,23 @@ def main():
                                 diff = -diff
                             resultado = 'WIN' if diff > 0 else 'LOSS'
                             pnl_estimado = diff * 0.20  # mini-índice: R$ 0.20/ponto
+
+                        # Acumular trade para pipeline AC5.9/AC6
+                        trades_fechados_rl.append({
+                            'ticket': ticket_aberto,
+                            'resultado': resultado,
+                            'pnl': pnl_estimado,
+                            'direcao': 'BUY' if tipo_reg == TipoPosicao.COMPRADA else 'SELL',
+                        })
+
+                        # AC5.8: Atualizar status da ordem para fechada
+                        if _monitor_posicao_rl and ticket_aberto:
+                            try:
+                                _monitor_posicao_rl.atualizar_status_ordem(
+                                    str(ticket_aberto), StatusOrdem.FECHADA,
+                                )
+                            except Exception as e:
+                                logger.warning(f'[AC5.8] Erro ao atualizar status: {e}')
 
                         # Atualizar anti-overtrading
                         if resultado == 'LOSS':
@@ -866,6 +1067,13 @@ def main():
                 else:
                     signal_confirmation_count = 0
                     last_signal = "Aguardar"
+
+                # Grupo 2: Pipeline Feedback/Aprendizado (a cada 10 ciclos)
+                if ciclo % 10 == 0:
+                    try:
+                        _executar_pipeline_feedback_rl(trades_fechados_rl)
+                    except Exception as e:
+                        logger.warning(f'[PIPELINE-FEEDBACK] Erro: {e}')
 
                 # Default: aguardar
                 logger.debug(f'[CICLO {ciclo}] Aguardando...')
