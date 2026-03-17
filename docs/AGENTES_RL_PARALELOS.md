@@ -134,7 +134,7 @@ Função:
 | **Filtro pos.** | `monitorar_pos` | `verif_posicao_mt5` | `hedge_orphans` |
 | **Isolamento** | `MotorDecisao` | `MotorDecisao`+`PosIsolada` | N/A |
 | **AC5.8** | ✅ | ✅ | ✅ |
-| **AC5.9/AC6** | ❌ | ✅ | ✅ |
+| **AC5.9/AC6** | ✅ | ✅ | ✅ |
 | **SL/TP** | Dinâmicos | Dinâmicos | ATR calibrado |
 | **Heartbeat** | ✅ (thread) | ❌ | ❌ |
 | **Recuperação** | Automática | Manual | Manual |
@@ -252,21 +252,25 @@ score e recomendações.
 - Micro Tendência: a cada 10 ciclos
 - Diários: no `run_rl_performance_diary()`
 - RL Direto: a cada 10 ciclos
+- RL 5000: a cada 10 ciclos
 
 **`ac6_7_drift_detector.py`** — Detecta
 degradação de modelo via Z-score contra baseline.
 - Micro Tendência: a cada 10 ciclos
 - RL Direto: a cada 10 ciclos
+- RL 5000: a cada 10 ciclos
 
 **`ac6_8_online_learning.py`** — Treino
 incremental com rollback automático.
 - Micro Tendência: ativado quando drift detectado
 - RL Direto: ativado quando drift detectado
+- RL 5000: ativado quando drift detectado
 
 **`ac6_9_baseline_comparator.py`** — Compara
 métricas atuais vs baseline histórico.
 - Micro Tendência: a cada 10 ciclos
 - RL Direto: a cada 10 ciclos
+- RL 5000: a cada 10 ciclos
 
 Ref: ADR-015, P1 (BACKLOG), AC5.8-AC6.9.
 
