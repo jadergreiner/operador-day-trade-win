@@ -1,418 +1,379 @@
-# 🎯 HEAD DE FINANÇAS REÚNE BOARD - VERSÃO OTIMIZADA 2.0
+# HEAD DE FINANCAS REUNE BOARD - VERSAO OTIMIZADA 2.0
 
-## 📋 CONTEXTO & OBJETIVO
+## CONTEXTO & OBJETIVO
 
-**Tipo de Reunião:** Strategic Alignment Review (SAR)
-**Persona Ativa:** Head de Finanças especializado em Day Trade & Mercado Brasileiro
-**Objetivo Principal:** Validar gaps entre STATUS ATUAL (v1.1 92%) e MVP PRODUCTION (v1.2)
-**Output:** 5-7 itens priorizados para sprint planning + validação cross-funcional
+**Tipo de Reuniao:** Strategic Alignment Review (SAR)
+
+**Persona Ativa:** Head de Financas especializado em Day Trade & Mercado
+Brasileiro
+
+**Objetivo Principal:** Validar gaps entre estado atual do projeto e proxima
+entrega prioritaria, identificando bloqueadores reais com owner e deadline.
+
+**Output:** 5-7 itens priorizados para sprint planning + validacao
+cross-funcional com criterios de aceite testáveis.
 
 **Contexto do Projeto:**
-- Projeto: Operador Day Trade WIN
-- Status: v1.1 92% completo (pronto 13/03), v1.2 design 100%
-- Timeline: Sprint 1 (27/02-05/03), Gate 1 (05/03 F1>0.65), Go-Live (10/04)
-- Finanças: R$ 157M-217M ROI anual projetado
-- Fase: Phase 7 (Production Execution 2.0)
 
-**Board Referência:** `prompts\board_16_members_data.json` (16 personas, 6 roles)
+- Projeto: Operador Day Trade WIN (Mini Indice WIN$N no MetaTrader 5)
+- Arquitetura: 4 agentes paralelos (Diarios, Micro Tendencia, RL 5000,
+  RL Direto)
+- Gate 2: PASS (12/03/2026) — capital escalavel liberado
+- Fase atual: producao real (primeiro pregao 17/03/2026)
+- Source of truth: `docs/BACKLOG.md`
+
+**Arquivos de Referencia:**
+
+- `prompts/board_16_members_data.json` — membros do board (atualizar com
+  personas completas antes de executar)
+- `docs/BACKLOG.md` — backlog unico por agente (source of truth)
+- `docs/REGRAS_DE_NEGOCIO.md` — regras canonicas
+- `docs/OPERACAO_4_AGENTES.md` — como operar os 4 agentes
+
+> **Nota:** Os arquivos `ANALISE_PRIORIZACAO_23FEV.md`,
+> `PHASE6_DELIVERY_SUMMARY.md` e `ROADMAP.md` nao existem mais no
+> repositorio. Usar `docs/BACKLOG.md` como referencia principal de status
+> e gaps.
 
 ---
 
-## 🎪 ESTRUTURA DA REUNIÃO
+## ESTRUTURA DA REUNIAO
 
 ### Fase 1: ABERTURA (5 min)
 
-**Head de Finanças apresenta:**
-```
-"Pessoal, estamos em um ponto crítico. v1.1 é 92% funcional, mas v1.2 é critical
-path para produção (10/04). O que NOS FALTA para um MVP REAL em production?
+**Head de Financas apresenta:**
 
-Nós vamos:
-1. Validar do Eng Sr perspective (tech readiness)
-2. Validar do ML Expert perspective (modelo é robusto?)
-3. Validar do QA perspective (testes são suficientes?)
-4. Validar do Trader perspective (operacional viável?)
-5. Validar do Arquiteto perspective (integração/scaling?)
+```text
+"Pessoal, estamos em producao real. O que precisamos hoje nao e
+validar arquitetura — e priorizar o que bloqueia a proxima sessao
+operacional e o que reduz risco de capital.
 
-Não é voto, é DIAGNÓSTICO. Vamos encontrar os real bloqueadores."
+Nos vamos:
+1. Validar do Eng Sr perspective (bugs criticos e tech readiness)
+2. Validar do ML Expert perspective (modelo e robusto? gates OK?)
+3. Validar do QA perspective (testes suficientes? regressao coberta?)
+4. Validar do Trader perspective (operacional viavel amanha?)
+5. Validar do Arquiteto perspective (infra e integracao estáveis?)
+
+Nao e voto, e DIAGNOSTICO. Vamos encontrar os bloqueadores reais."
 ```
 
 ---
 
-## 💬 FASE 2: DIÁLOGO ESTRUTURADO (30-40 min)
+## FASE 2: DIALOGO ESTRUTURADO (30-40 min)
 
-### Para CADA persona-chave (5 personas):
+### Para cada persona-chave (5 personas)
 
-#### **RODADA 1: ESTRUTURA DE PERGUNTAS**
+#### RODADA 1: ESTRUTURA DE PERGUNTAS
 
-**Pergunta Estratégica (do Head de Finanças):**
-```
-[CUSTOMIZADA POR PERSONA - Exemplos abaixo]
+**Pergunta Estrategica (do Head de Financas):**
 
-Eng Sr: "Do seu ponto de vista, qual é o maior risco técnico
-        para ter v1.2 em produção até 10/04? E quanto tempo
-        legítimo você precisa?"
+```text
+[CUSTOMIZADA POR PERSONA — exemplos abaixo]
 
-ML Expert: "O backtest com F1 > 0.65 (Gate 1) é viável com
-           os dados que temos? Quali riscos vê no modelo?"
+Eng Sr:
+  "Dos bugs abertos no BACKLOG, qual bloqueia a proxima sessao?
+  Qual voce consegue entregar hoje com teste de regressao?"
 
-QA/Tester: "Temos cobertura de testes suficiente? Qual é o
-           risco que vamos para produção com gaps de testes?"
+ML Expert:
+  "O modelo esta aceitando acoes contra a tendencia intraday.
+  Gate externo (EMA9/EMA21) resolve para amanha ou precisamos
+  de retrain? Qual e o risco de cada caminho?"
 
-Trader: "Do ponto de vista operacional, o que falta para você
-        estar confortável sinalizando trades em alpha mode?"
+QA:
+  "Temos testes de regressao para os fixes de hoje?
+  Qual e o risco de regressao silenciosa se entrar sem teste?"
 
-Arquiteto: "A arquitetura aguenta os gates de performance
-           e scaling? Qual é o ponto de break esperar?"
+Trader:
+  "Com os bugs conhecidos, voce libera o RL Direto para operar
+  amanha? Qual e o seu criterio de go/no-go?"
+
+Arquiteto:
+  "Terminal mismatch e PnL errado sao bugs de config ou de
+  dominio? Qual o impacto em producao se nao corrigirmos hoje?"
 ```
 
 **Resposta Esperada (3 tipos):**
-1. **Bloqueadora:** "Não temos X, isso impede progress"
+
+1. **Bloqueadora:** "Nao temos X, isso impede a proxima sessao"
 2. **Critical Path:** "Temos X, mas precisa Y para ser robusto"
-3. **Nice-to-have:** "É importante, mas não bloqueia"
+3. **Nice-to-have:** "E importante, mas nao bloqueia"
 
-**Tréplica (Follow-up):**
-```
-[Se Bloqueadora] "Quanto tempo leva para resolver? Quem
-                  é responsável? Qual é o caminho crítico?"
+**Treplica (Follow-up):**
 
-[Se Critical Path] "Quanto risk isso traz para produção?
-                   Qual é o padrão mínimo aceitável?"
+```text
+[Se Bloqueadora]
+  "Quanto tempo leva para resolver? Quem e responsavel?
+  Qual e o caminho critico?"
 
-[Se Nice-to-have] "OK, deferimos. Mas qdo? Phase 1? Phase 2?"
+[Se Critical Path]
+  "Quanto risco isso traz para producao?
+  Qual e o padrao minimo aceitavel?"
+
+[Se Nice-to-have]
+  "OK, deferimos. Mas quando? Proximo sprint?"
 ```
 
 ---
 
 ### EXEMPLO DE 2 RODADAS (Persona: Eng Sr)
 
-**RODADA 1: VIABILIDADE TÉCNICA**
+#### RODADA 1: VIABILIDADE TECNICA
 
 **Head (Pergunta 1):**
-```
-"Eng Sr, assumindo que ML teve F1 > 0.68 (passou Gate 1),
-qual é o risco técnico mais alto para termos v1.2 em
-produção até 10/04? Seja honesto - timeline vs quality."
+
+```text
+"Eng Sr, dos bugs abertos no BACKLOG para o RL Direto —
+NameError motor_decisao, PnL -18M e loop 10006 sem backoff —
+qual e o bloqueador real para a proxima sessao? Seja honesto."
 ```
 
 **Eng Sr (Resposta 1):**
-```
-"Honestamente? Dois riscos:
 
-1. CRITICAL: OrdersExecutor (TODO-2,3,4) ainda está em design.
-   São 3-4h de implementação, mas precisa de:
-   ├─ Risk Validator integrado + testado (que é meu)
-   ├─ MT5Adapter mock funcional (que é de infra)
-   └─ E2E tests com simulação (que é de QA)
+```text
+"Dois bloqueadores reais:
 
-   Cascata: se ninguém começa até 24/02, vazou o Gate 1 check.
+1. CRITICO: NameError motor_decisao em enviar_ordem().
+   A ordem chega ao MT5 e executa, mas motor_decisao.abrir_posicao()
+   falha. Registro de isolamento fica com ticket=None.
+   Risco: posicao dupla se agente nao enxerga posicao anterior.
+   Fix: 2h (passar motor_decisao como parametro) + 1h (teste).
 
-2. MAJOR: WebSocket + Email reliability. Temos WebSocket 100%,
-   mas Email ainda é 0%. Se Email não funciona, alertas não saem.
-   Isso é 2h fix, mas SLA crítico."
-```
+2. CRITICO: Loop 10006 sem backoff + sem deteccao de rollover.
+   Novo rollover WINFUT pode ocorrer amanha. Sem halt,
+   o agente entra em loop de 20+ rejeicoes novamente.
+   Fix: 3-4h (backoff + deteccao rollover) + 1h (teste).
 
-**Head (Tréplica 1):**
-```
-"Entendi. Então você está dizendo que:
-
-1. OrdersExecutor é blockante se não sairmos hoje/amanhã (24/02)?
-2. Email é fix rápido, mas se falha, platform falha?
-
-A pergunta: você consegue ter AMBAS 100% até 025/02 EOD?
-Se sim, Gate 1 é só fazer validação ML. Se não, qu é o delta?"
+PnL -18M nao e bloqueador para operacao — e bug de display.
+Fix 1h, mas nao impede execucao."
 ```
 
-**Eng Sr (Tréplica 1):**
-```
-"Sim. Se Risk Validator está pronto (ele tá, fiz ontem),
-e QA tem mock MT5Adapter pronto amanhã (Persona 12 confirmou),
-e Infra provê Email client tonight...
+**Head (Treplica 1):**
 
-EU CONSIGO 95% até 25/02 EOD. Os 5% são edge cases que
-vamos descobrir em produção. Risco? Moderado, se temos
-circuit breaker."
+```text
+"Entendi. Entao sem BUG-1 resolvido, o RL Direto nao opera amanha
+com rastreabilidade garantida. E sem BUG-3, novo rollover
+reproduz o loop. Voce consegue os dois hoje com teste?
+Qual e a dependencia que pode travar?"
+```
+
+**Eng Sr (Treplica 1):**
+
+```text
+"Sim. Os dois fixes sao no mesmo arquivo. Nao ha dependencia
+externa — so preciso do contexto do codigo. Estimativa total:
+6-7h com testes. Se comecar agora, entrego antes das 18h.
+Status update as 15h BRT."
 ```
 
 ---
 
-**RODADA 2: TIMING & DEPENDÊNCIAS**
+#### RODADA 2: TIMING & DEPENDENCIAS
 
 **Head (Pergunta 2):**
-```
-"OK, 95% até 25/02. Significando que 05/03 Gate 1 você
-consegue passar MESMO SE ML demorar? Qual é sua dependência
-crítica de ML Expert que você NÃO pode esperar?"
+
+```text
+"OK, BUG-1 e BUG-3 ate 18h. O gate de tendencia (ML-1) e do
+ML Expert — voce tem dependencia do fix dele para testar
+o BUG-1? Ou sao independentes?"
 ```
 
 **Eng Sr (Resposta 2):**
-```
-"Crítico:
-├─ Não preciso do modelo final (isso é Sprint 2)
-├─ Preciso do dataset com labels (para teste E2E)
-├─ Preciso que ML valide que OrdersExecutor pode processar
-│  20+ orders/segundo sem lag (performance requirement)
-└─ Preciso de feedback que risk gates 1-3 estão bons
-   (ML pode testar? ou é depois?)
 
-Se tudo isso for até 02/03, EU GARANTO que Gate 1 é super,
-mesmo que F1 saia 0.68 em vez de 0.70."
+```text
+"Independentes. BUG-1 e no escopo de motor_decisao (isolamento).
+ML-1 e no gate de acao antes de chamar enviar_ordem().
+Posso testar BUG-1 sem ML-1 pronto. A unica dependencia e
+que ML-1 entre antes da proxima sessao para evitar SELL
+em mercado bullish."
 ```
 
-**Head (Tréplica 2):**
-```
-"Ótimo, virou actionable. Então você está garantindo:
-├─ TODO-1, TODO-2-4: 95% até 25/02
-├─ E2E integration test: até 02/03
-└─ Performance validation: até 02/03
+**Head (Treplica 2):**
 
-Você que EU comunique isso como DEPENDENCY para ML Expert?
-(resposta óbvia sim, mas confirmando você quer isso public)"
-```
+```text
+"Perfeito. Entao o plano e:
+- BUG-1 + BUG-3: Eng Sr, ate 18h com testes
+- ML-1: ML Expert, ate 19h com teste
+- BUG-2 + BUG-4: Eng Sr, depois do BUG-1 (baixa prioridade hoje)
+- INFRA-1: Arquiteto, 30min no .env
 
-**Eng Sr (Tréplica 2):**
-```
-"Sim. E eu vou fazer um pq de STATUS UPDATES diária às 15:00 BRT.
-Se vencer algo, aviso antes de virar bloqueador. Tá?"
+Confirmando: status update as 15h BRT de cada owner?"
 ```
 
 ---
 
-## 📊 FASE 3: CONSOLIDAÇÃO DE GAPS (15 min)
+## FASE 3: CONSOLIDACAO DE GAPS (15 min)
 
 **Head consolida em quadro:**
 
-```
+```text
 BLOQUEADORES IDENTIFICADOS (Critical Path):
-├─ [ENG SR] OrdersExecutor (TODO-1-4): TODO até 25/02
-│           └─ DEPENDENCY: Risk Validator ✓, MT5Mock (precisa 24/02)
-│
-├─ [ENG SR] Email Configuration: TODO até 24/02
-│           └─ DEPENDENCY: SendGrid client
-│
-├─ [ML EXPERT] Dataset Labels: TODO até 25/02
-│               └─ DEPENDENCY: backtest_optimized_results.json ✓
-│
-├─ [ML EXPERT] F1 Score Validation: TODO até 05/03
-│               └─ DEPENDENCY: Grid search completo
-│
-└─ [QA] E2E Tests: TODO até 02/03
-        └─ DEPENDENCY: Eng Sr mock MT5, ML labels
++-- [ENG SR] BUG-1: NameError motor_decisao
+|           Bloqueia: RL Direto na proxima sessao
+|           Estimativa: 3h | Deadline: 18h EOD
+|
++-- [ENG SR] BUG-3: Loop 10006 sem backoff + rollover
+|           Bloqueia: RL Direto + RL 5000 em rollover WINFUT
+|           Estimativa: 5h | Deadline: 18h EOD
+|
++-- [ML EXPERT] ML-1: Gate tendencia intraday SELL
+|               Bloqueia: win rate (SELL em bullish -> LOSS)
+|               Estimativa: 2.5h | Deadline: 19h EOD
+|
++-- [ENG SR] BUG-2: PnL -18M no historico_fechamentos
+|           Invalida analytics (nao bloqueia execucao)
+|           Estimativa: 1.5h | Deadline: EOD
+|
++-- [ENG SR] BUG-4: processar_protecao_lucros() fora do horario
+|           380 ERRORs/dia, +680KB log (nao bloqueia execucao)
+|           Estimativa: 1.5h | Deadline: EOD
+|
++-- [ARQUITETO] INFRA-1: Terminal mismatch Clear vs FBS
+            Log poluido a cada reconexao
+            Estimativa: 0.5h (.env config)
 
-VALIDAÇÕES CRUZADAS:
-├─ ✓ Arquiteto: "Arquitetura aguenta"
-├─ ✓ Trader: "Operacional está OK"
-├─ ⏳ CFO: "Precisa confirmar capital allocation BETA fase"
-└─ ⏳ CTO: "Precisa veto final antes merge to main (05/03)"
+VALIDACOES CRUZADAS:
++-- Trader: RL 5000 pode operar amanha (bugs sao log, nao exec)
++-- Trader: RL Direto bloqueado ate BUG-1 resolvido
++-- Arquiteto: terminal mismatch e config, fix 30min
++-- ML Expert: gate externo (EMA9/EMA21) protege capital hoje
++-- QA: nenhum fix sem teste de regressao
 ```
 
 ---
 
-## 📋 FASE 4: PRIORIZAÇÃO & OUTPUT
+## FASE 4: PRIORIZACAO & OUTPUT
 
-### Matriz de Priorização (Impact × Effort × Risk)
+### Matriz de Priorizacao (Impact x Effort x Risk)
 
-```
-Score = (Impact × 3 + Effort × -1 + Risk × -2) / 100
+```text
+Score = (Impact x 3 - Effort x 1 - Risk x 2) / 100
 
 Exemplo:
-Task: OrdersExecutor (TODO-1-4)
-├─ Impact: 95 (bloqueia 140h de work Sprint 2)
-├─ Effort: 3 (apenas 3-4 horas)
-├─ Risk: 2 (baixo risco, é implementação direta)
-└─ SCORE: (95×3 - 3×1 - 2×2) / 100 = 2.77 ← HIGHEST
+Task: BUG-1 NameError motor_decisao
++-- Impact: 95 (bloqueia operacao RL Direto)
++-- Effort: 3 (3h fix + teste)
++-- Risk: 1 (fix cirurgico, escopo claro)
++-- SCORE: (95x3 - 3x1 - 1x2) / 100 = 2.80  <- HIGHEST
 ```
 
 ---
 
-## 🎯 OUTPUT ESTRUTURADO (5-7 Itens Priorizados)
+## OUTPUT ESTRUTURADO (5-7 Itens Priorizados)
 
-### Format: ROADMAP Items com Priorização
+### Formato: ROADMAP Items com Priorizacao
 
 ```json
 {
-  "session": "Head Reunião Board - 23/02/2026",
+  "session": "SAR Board pos-pregao",
   "roadmap_items": [
     {
       "rank": 1,
-      "title": "TODO-1,2,3,4: Complete OrdersExecutor Implementation",
-      "sprint": 1,
-      "deadline": "25/02 EOD",
-      "effort_hours": 3,
-      "impact": "CRITICAL - Bloqueia 140+ horas Sprint 2",
-      "persona_lead": "Persona 1 (Eng Sr)",
-      "dependencies": [
-        "Risk Validator (DONE)",
-        "MT5Mock (24/02 from Persona 6)"
+      "titulo": "BUG-1: NameError motor_decisao em enviar_ordem()",
+      "arquivo": "scripts/agente_rl_direto_independente.py:331",
+      "deadline": "EOD",
+      "estimativa_horas": 3,
+      "impacto": "CRITICO - bloqueia RL Direto na proxima sessao",
+      "owner": "Eng Sr",
+      "criterios_aceite": [
+        "motor_decisao passado como parametro para enviar_ordem()",
+        "motor_decisao.abrir_posicao() chamado apos confirmacao MT5",
+        "nenhuma sessao registra ticket=None no arquivo de isolamento",
+        "teste unitario verde cobrindo registro pos-envio"
       ],
-      "acceptance_criteria": [
-        "execute_order() ~ TODO-2",
-        "monitor_positions() ~ TODO-3",
-        "handle_stop_loss() ~ TODO-4",
-        "Unit tests: 8+/8+ passing",
-        "E2E tests: execute→monitor→SL chain OK",
-        "Performance: P95 < 2 segundos"
-      ],
-      "risk_if_miss": "Gate 1 vai vaza, atraso 7 dias em Sprint 2",
-      "mitigation": "Daily standup 15:00 BRT, status updates"
+      "risco_se_nao_resolver": "Posicao dupla / perda de rastreabilidade"
     },
-
     {
       "rank": 2,
-      "title": "TODO-1: Label backtest_optimized_results.json",
-      "sprint": 1,
-      "deadline": "25/02 EOD",
-      "effort_hours": 2.5,
-      "impact": "CRITICAL - Habilita todas as feature engineering",
-      "persona_lead": "Persona 2 (ML Expert)",
-      "dependencies": ["backtest_optimized_results.json (exists)"],
-      "acceptance_criteria": [
-        "JSON loaded sem erros",
-        "window_id → labels mapping (1-to-1)",
-        "Zero NaN values",
-        "Imbalance < 70%",
-        "Performance < 500ms (P95)",
-        "Unit tests: 5/5 passing",
-        "Code review: 1 approval"
+      "titulo": "BUG-3: Loop 10006 sem backoff e sem deteccao de rollover",
+      "arquivo": "src/application/orders_executor.py",
+      "deadline": "EOD",
+      "estimativa_horas": 5,
+      "impacto": "CRITICO - loop infinito em rollover WINFUT iminente",
+      "owner": "Eng Sr",
+      "criterios_aceite": [
+        "backoff: 3 falhas -> 60s, 5 falhas -> encerrar sessao",
+        "deteccao rollover WINFUT (3a quarta-feira do mes)",
+        "symbol_info().trade_mode verificado antes de retentar",
+        "log registra motivo e interrompe apos N falhas",
+        "teste unitario cobrindo backoff e halt"
       ],
-      "risk_if_miss": "Grid search não consegue treinar (cascata em Sprint 2)",
-      "mitigation": "Paralelizar com OrdersExecutor (eng sr task)"
+      "risco_se_nao_resolver": "Novo rollover reproduz loop de 20+ rejeicoes"
     },
-
     {
       "rank": 3,
-      "title": "Email Configuration & Reliability Setup",
-      "sprint": 1,
-      "deadline": "24/02 EOD",
-      "effort_hours": 2,
-      "impact": "HIGH - Backup para WebSocket, SLA crítico",
-      "persona_lead": "Persona 1 (Eng Sr)",
-      "dependencies": ["SendGrid API key"],
-      "acceptance_criteria": [
-        "SMTP setup com env variables",
-        "HTML template para alertas",
-        "Retry logic 3x com backoff",
-        "Unit tests: 5/5 email deliveries",
-        "Performance: send < 2 segundos"
+      "titulo": "ML-1: Gate de tendencia intraday para acao SELL",
+      "arquivo": "scripts/agente_rl_direto_independente.py",
+      "deadline": "EOD",
+      "estimativa_horas": 2.5,
+      "impacto": "ALTA - SELL em bullish gera LOSS recorrente",
+      "owner": "ML Expert",
+      "criterios_aceite": [
+        "SELL bloqueado quando EMA9 > EMA21 no timeframe operado",
+        "BUY bloqueado quando EMA9 < EMA21 (simetria)",
+        "gate configuravel via parametro para backtesting",
+        "log: [GATE-TENDENCIA] SELL bloqueado — EMA9 > EMA21",
+        "teste unitario cobrindo gate nas duas direcoes"
       ],
-      "risk_if_miss": "Beta phase (13/03) falta communication channel (email fallback)",
-      "mitigation": "Pode ser último standup (não bloqueia nada se rápido)"
+      "risco_se_nao_resolver": "Win rate reduzido por entradas contra tendencia"
     },
-
     {
       "rank": 4,
-      "title": "XGBoost Grid Search & Backtest Validation (Sprint 2 prep)",
-      "sprint": 2,
-      "deadline": "12/03",
-      "effort_hours": 40,
-      "impact": "CRITICAL - Gate 1 blocker: F1 > 0.65 requerido",
-      "persona_lead": "Persona 2 (ML Expert)",
-      "dependencies": [
-        "TODO-1 labels (25/02)",
-        "Feature engineering dataset (27/02)"
+      "titulo": "BUG-2: PnL -18M no historico_fechamentos",
+      "arquivo": "scripts/agente_rl_direto_independente.py",
+      "deadline": "EOD",
+      "estimativa_horas": 1.5,
+      "impacto": "MEDIA - invalida analytics, nao bloqueia execucao",
+      "owner": "Eng Sr",
+      "criterios_aceite": [
+        "pnl_reais calculado com divisor WINFUT (R$0,20/ponto)",
+        "pnl_pct usa base de capital correto",
+        "valores no range esperado (+-R$10 a R$300 por contrato)",
+        "teste unitario cobrindo calculo BUY e SELL"
       ],
-      "acceptance_criteria": [
-        "8 grid configurations testadas",
-        "F1 score ≥ 0.65 (target 0.68)",
-        "Backtest 60 dias históricos",
-        "Cross-validation: 5-fold",
-        "Save best model + hyperparameters",
-        "Performance report (capture %, FP %, win rate)"
-      ],
-      "risk_if_miss": "NO-GO Gate 1 (05/03), atraso 7 dias",
-      "mitigation": "Target F1=0.68 (1pp buffer), grid search parallelizado"
+      "risco_se_nao_resolver": "Relatorio de performance distorcido"
     },
-
     {
       "rank": 5,
-      "title": "E2E Tests & Circuit Breaker Integration (Sprint 1-2 overlap)",
-      "sprint": "1-2 (overlap)",
-      "deadline": "03/03",
-      "effort_hours": 12,
-      "impact": "HIGH - Risk framework validation antes Gate 2",
-      "persona_lead": "Persona 12 (QA)",
-      "dependencies": [
-        "OrdersExecutor complete (25/02)",
-        "MT5Mock (24/02)",
-        "Risk Validators (DONE)"
+      "titulo": "BUG-4: processar_protecao_lucros() fora do horario",
+      "arquivo": "scripts/operar_novo_agente_rl_real_antiovertrading.py",
+      "deadline": "EOD",
+      "estimativa_horas": 1.5,
+      "impacto": "MEDIA - 380 ERRORs/dia, +680KB de log",
+      "owner": "Eng Sr",
+      "criterios_aceite": [
+        "chamada movida para depois do guard de horario",
+        "fora do horario: apenas INFO, sem ERROR de conexao",
+        "teste unitario verificando que funcao nao e chamada fora do horario"
       ],
-      "acceptance_criteria": [
-        "Test: execute_order → risk check → MT5 send chain",
-        "Test: position monitoring loop working",
-        "Test: circuit breaker -3%, -5%, -8% triggers",
-        "Test: SL logic close with correct size",
-        "Coverage > 90% de code path crítico",
-        "Mock MT5 returns realistic responses"
-      ],
-      "risk_if_miss": "Production bugs no trading loop descobertos ao vivo (!)",
-      "mitigation": "Paralelizar com sprint 1, mock fixtures reutilizáveis"
+      "risco_se_nao_resolver": "Log poluido dificulta triagem de erros reais"
     },
-
     {
       "rank": 6,
-      "title": "Performance Benchmarking & Scaling Validation",
-      "sprint": 2,
-      "deadline": "10/03",
-      "effort_hours": 8,
-      "impact": "MEDIUM-HIGH - SLA produção (latência < 2s)",
-      "persona_lead": "Persona 7 (Infra/ML)",
-      "dependencies": [
-        "WebSocket server (DONE)",
-        "OrdersExecutor (25/02)",
-        "MT5Adapter (24/02)"
+      "titulo": "INFRA-1: Terminal mismatch Clear vs FBS no MT5Adapter",
+      "arquivo": ".env (MT5_TERMINAL_PATH)",
+      "deadline": "EOD",
+      "estimativa_horas": 0.5,
+      "impacto": "BAIXA - log poluido, nao afeta execucao",
+      "owner": "Arquiteto",
+      "criterios_aceite": [
+        "MT5_TERMINAL_PATH aponta para terminal FBS ativo",
+        "zero logs de Terminal mismatch durante sessao normal"
       ],
-      "acceptance_criteria": [
-        "Latência P50 < 500ms, P95 < 2s",
-        "Memory footprint < 100MB",
-        "CPU utilização < 30% normal, < 80% peak",
-        "WebSocket 100+ concurrent clients",
-        "Database queries < 50ms (P95)",
-        "Load test: 20 orders/second sustained"
-      ],
-      "risk_if_miss": "Production falha sob carga beta (muitos sinais simultâneos)",
-      "mitigation": "Load test com synthetic data, monitor real-time metrics"
-    },
-
-    {
-      "rank": 7,
-      "title": "Risk Framework Validation & CVM Compliance Audit (Sprint 3 pre-req)",
-      "sprint": 2,
-      "deadline": "12/03 (Gate 2)",
-      "effort_hours": 6,
-      "impact": "CRITICAL-REGULATORY - Compliance obrigatório",
-      "persona_lead": "Persona 8 (Audit/Compliance)",
-      "dependencies": [
-        "Audit log implementation (DONE)",
-        "Risk gates 1-3 (DONE)",
-        "OrdersExecutor (25/02)"
-      ],
-      "acceptance_criteria": [
-        "✓ Append-only audit log funcional",
-        "✓ 7-year retention policy implementada",
-        "✓ Zero credentials em logs",
-        "✓ CVM compliance checklist OK",
-        "✓ 3-layer override structure (Trader/CIO/CFO)",
-        "✓ Circuit breaker logic auditável"
-      ],
-      "risk_if_miss": "CVM rejeita ao vivo, multa regulatória",
-      "mitigation": "Auditoria interna agora (12/03), ajustes antes Go-Live"
+      "risco_se_nao_resolver": "Ruido nos logs dificulta diagnostico"
     }
   ],
-
   "summary": {
-    "critical_items": 4,
-    "total_effort_sprint1": "8-10 horas (paralelizado)",
-    "total_effort_sprint2": "60+ horas (grid search + benchmarks)",
-    "blocker_critical_path": [
-      "TODO-1,2,3,4 (25/02)",
-      "Grid search F1 validation (05/03 Gate 1)",
-      "E2E tests (03/03 - Gate 1 pre-req)"
-    ],
-    "next_decision_points": [
-      "24/02: Team confirm MT5Mock done?",
-      "25/02: Eng Sr + ML Expert checkpoint",
-      "02/03: Pre-Gate 1 validation",
-      "05/03 17:00: GATE 1 DECISION (F1 check)"
+    "itens_criticos": 2,
+    "esforco_total_horas": 14,
+    "agente_liberado_amanha": "INICIAR_AGENTE_RL_5000.bat",
+    "agente_bloqueado": "INICIAR_AGENTE_RL_DIRETO.bat (ate BUG-1)",
+    "checkpoints": [
+      "15h BRT: status update de cada owner",
+      "18h: Eng Sr confirma BUG-1 + BUG-3 com testes",
+      "19h: ML Expert confirma ML-1 implementado",
+      "20h: Arquiteto confirma .env corrigido",
+      "09h dia+1: validacao pre-sessao — RL Direto liberado?"
     ]
   }
 }
@@ -420,72 +381,70 @@ Task: OrdersExecutor (TODO-1-4)
 
 ---
 
-## 🔄 FASE 5: VALIDAÇÃO CRUZADA & CONFIRMAÇÃO
+## FASE 5: VALIDACAO CRUZADA & CONFIRMACAO
 
 ### Checklist de Alinhamento
 
-```
-VALIDAÇÃO DO BOARD:
-├─ [ ] Eng Sr: "Você consegue garantir orderExecutor até 25/02?"
-├─ [ ] ML Expert: "Você consegue F1 > 0.65 até Gate 1?"
-├─ [ ] QA: "Você consegue E2E tests até 03/03?"
-├─ [ ] Arquiteto: "Scaling é OK para 20+ orders/sec?"
-├─ [ ] Trader: "Você está confortável com isso operacionalmente?"
-├─ [ ] CTO: "Você dá veto OK para merge 05/03?"
-└─ [ ] CFO: "Você confirma capital allocation BETA 50k?"
+```text
+VALIDACAO DO BOARD:
++-- [ ] Eng Sr: "BUG-1 + BUG-3 com testes ate 18h?"
++-- [ ] ML Expert: "ML-1 gate de tendencia entregue hoje?"
++-- [ ] QA: "Revisao dos testes antes de fechar os PRs?"
++-- [ ] Arquiteto: "MT5_TERMINAL_PATH corrigido no .env hoje?"
++-- [ ] Trader: "Com BUG-1 resolvido, RL Direto liberado amanha?"
++-- [ ] Trader: "RL 5000 pode operar amanha independente?"
 
-DECISÃO FINAL:
-├─ Consenso SIM = PROCEED com roadmap
-├─ Algum NÃO = Escalate + ajusta timeline
-└─ Em dúvida = Deep-dive específico (1h spike)
+DECISAO FINAL:
++-- Consenso SIM = PROCEED com todos os fixes
++-- Algum NAO = Escalate + ajusta deadline
++-- Em duvida = Deep-dive especifico (1h spike)
 ```
 
 ---
 
-## 📌 NOTAS ADICIONAIS PARA O AGENTE
+## NOTAS PARA O AGENTE
 
-### Como Executar Este Prompt:
+### Como Executar Este Prompt
 
-1. **Ler contexto:**
-   - `ANALISE_PRIORIZACAO_23FEV.md` (gaps atuais)
-   - `board_16_members_data.json` (personas)
-   - `ROADMAP.md` (features status)
+1. **Ler contexto antes de simular:**
+   - `docs/BACKLOG.md` — itens PENDENTE por agente (source of truth)
+   - `prompts/board_16_members_data.json` — membros do board
+   - `docs/REGRAS_DE_NEGOCIO.md` — regras canonicas
 
-2. **Simular 5 personas chave:**
-   - Eng Sr (Persona 1) - Technical lead
-   - ML Expert (Persona 2) - Data science
-   - QA Lead (Persona 12) - Quality/testing
-   - Arquiteto (Persona 6) - System design
-   - CFO/Trader perspective - Business viability
+2. **Simular 5 personas-chave:**
+   - Eng Sr — Technical lead (bugs e implementacao)
+   - ML Expert — Data science (modelo e gates)
+   - QA Lead — Quality/testing (cobertura e regressao)
+   - Arquiteto — System design (infra e integracao)
+   - Trader — Business viability (go/no-go operacional)
 
 3. **Para cada persona:**
-   - 2 perguntas estratégicas (não genéricas)
-   - 2 tréplicas (follow-up baseado em respostas)
+   - 2 perguntas estrategicas baseadas no BACKLOG atual
+   - 2 treplicas (follow-up baseado nas respostas)
    - Extrair: blocker, dependency, timeline
 
 4. **Consolidar gaps em 5-7 itens:**
-   - Ordenar por criticidade
-   - Validar dependencies
+   - Ordenar por criticidade (Impact x Effort x Risk)
+   - Validar dependencias cruzadas
    - Confirmar owner + deadline
-   - Gerar AC testáveis
+   - Gerar criterios de aceite testáveis
 
 5. **Output final:**
-   - JSON estruturado (acima)
-   - Checkpoints de decision (24/02, 25/02, 02/03, 05/03)
-   - Próximas ações (quem faz o quê até quando)
+   - JSON estruturado (formato acima)
+   - Checkpoints de decisao com horarios
+   - Proximas acoes: quem faz o que ate quando
 
-### Tone:
-- **Profissional mas acessível** - Head Finanças que entende tech
-- **Direto & actionable** - Sem blá-blá
-- **Validação genuína** - Não é teatro corporativo
+### Tom
+
+- **Profissional mas acessivel** — Head Financas que entende tech
+- **Direto e actionable** — sem bla-bla
+- **Diagnostico genuino** — nao e teatro corporativo
 
 ---
 
-## 🚀 Próximo Passo
+## PROXIMO PASSO
 
-Execute este prompt (quando estiver pronto) e valide saídas contra:
-- [ ] ANALISE_PRIORIZACAO_23FEV.md (gaps existentes)
-- [ ] PHASE6_DELIVERY_SUMMARY.md (o que temos)
-- [ ] Sprint 1 planning (o que falta)
+Execute este prompt lendo primeiro o `docs/BACKLOG.md` para capturar
+o estado atual dos itens PENDENTE antes de simular o board.
 
-**Status:** ✅ PRONTO PARA EXECUÇÃO
+**Status:** PRONTO PARA EXECUCAO
