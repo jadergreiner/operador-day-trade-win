@@ -63,7 +63,9 @@ Isolamento:
   - proteger_lucro_trade() filtra por magic
   - modificar_sl_ordem() usa MAGIC_NUMBER
   - fechar_parcial_posicao() usa MAGIC_NUMBER
-  - tickets_proprios: set[int] (backup local)
+  - MotorDecisaoIsolado: rastreia posicoes por agent_id
+    (substitui tickets_proprios: set[int] removido)
+  - Persistencia: outputs/posicoes_ativas_agente_*.json
 
 Logs:
   - outputs/agente_supervision.log
@@ -79,9 +81,11 @@ Símbolo: WIN$N
 
 Isolamento:
   - verificar_posicao_no_mt5() filtra por magic
-  - AgentePosicaoStatus armazena ticket/preco/direcao
-  - Verifica posição a cada 15s (não 60s cego)
-  - Detecta SL/TP hit via consulta MT5 por ticket
+  - PosicaoIsoladaManager: valida ownership por session_id
+  - MotorDecisaoIsolado: rastreia posicoes e P&L
+    (substitui AgentePosicaoStatus inline removido)
+  - Persistencia: outputs/posicoes_ativas_agente_direto_*.json
+  - Verifica posição a cada ciclo via MT5 por ticket
 
 Logs:
   - outputs/agente_direto_[TIMESTAMP].log
@@ -125,9 +129,10 @@ Função:
 | Aspecto | RL 5000 | RL Direto | Micro Tend. |
 |---------|---------|-----------|-------------|
 | **Magic** | 234500 | 234600 | 234700 |
-| **Script** | `operar_novo_agente_rl_*` | `agente_rl_direto_*` | `agente_micro_tend*` |
-| **Modelo** | Q-Learning (5000 ep.) | Q-Learning | LightGBM+MacroScore |
-| **Filtro posições** | `monitorar_posicoes` | `verificar_posicao_no_mt5` | `monitor_hedge_orphans` |
+| **Script** | `operar_novo_*` | `agente_rl_direto_*` | `agente_micro_tend*` |
+| **Modelo** | Q-Learning | Q-Learning | LightGBM+MacroScore |
+| **Filtro pos.** | `monitorar_pos` | `verif_posicao_mt5` | `hedge_orphans` |
+| **Isolamento** | `MotorDecisao` | `MotorDecisao`+`PosIsolada` | N/A |
 | **SL/TP** | Dinâmicos | Dinâmicos | ATR calibrado |
 | **Heartbeat** | ✅ (thread) | ❌ | ❌ |
 | **Recuperação** | Automática | Manual | Manual |

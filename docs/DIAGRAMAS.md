@@ -43,31 +43,37 @@ Referência: ADR-012 (`docs/ADRS.md`)
 | RL 5000  |       | RL Dir.  |       | Micro T. |
 | m=234500 |       | m=234600 |       | m=234700 |
 +----------+       +----------+       +----------+
-|tickets_  |       |Agente    |       |monitor_  |
-|proprios  |       |Posicao   |       |hedge_    |
-|set[int]  |       |Status    |       |orphans() |
+|Motor     |       |Motor     |       |monitor_  |
+|Decisao   |       |Decisao   |       |hedge_    |
+|Isolado   |       |Isolado + |       |orphans() |
+|          |       |Posicao   |       |          |
+|          |       |Isolada   |       |          |
 +----------+       +----------+       +----------+
      |                  |                  |
      v                  v                  v
 +----------+       +----------+       +----------+
-|posicao_  |       |posicao_  |       |Order(    |
-|agente_   |       |agente_   |       | magic=   |
-|5000.json |       |direto.   |       | 234700)  |
+|posicoes_ |       |posicoes_ |       |Order(    |
+|ativas_   |       |ativas_   |       | magic=   |
+|agente_   |       |agente_   |       | 234700)  |
+|5000.json |       |direto.   |       |          |
 |          |       |json      |       |          |
 +----------+       +----------+       +----------+
 ```
 
-**3 Níveis de Isolamento:**
+**3 Níveis de Isolamento (desde 17/03/2026):**
 
 1. **MT5 Magic Number** — `Order.magic_number` na entidade,
    `MT5Adapter.send_order()` usa `order.magic_number`,
    `positions_get()` filtra por magic
-2. **Session ID + JSON** — arquivo por agente
-   (`outputs/agente_posicao_{session_id}.json`),
-   `PosicaoIsoladaManager` valida ownership
-3. **Memória de processo** — `MotorDecisaoIsolado`
-   (RL 5000 + RL Direto), `PosicaoIsoladaManager`
-   (RL Direto). Desde 17/03 usa módulos formais.
+2. **Session ID + JSON** — `PosicaoIsoladaManager` grava arquivo
+   por agente (`outputs/agente_posicao_{session_id}.json`)
+   e valida ownership a cada leitura (RL Direto)
+3. **Modulos formais de aplicacao** — `MotorDecisaoIsolado`
+   (RL 5000 + RL Direto): persiste posicoes em
+   `outputs/posicoes_ativas_{agent_id}.json`,
+   isola decisoes e P&L por `agent_id`. Substitui
+   `tickets_proprios: set[int]` (RL 5000) e
+   `AgentePosicaoStatus` inline (RL Direto).
 
 ## Visao de Fluxo - Gate 2
 

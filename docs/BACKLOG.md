@@ -2079,6 +2079,57 @@ em horario off-peak para melhorar performance operacional.
 
 **Evidencia:** Ver item 7 do backlog INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat.
 
+## Integracao dos Modulos de Isolamento nos Agentes Operacionais
+
+### Modulo 3 — Grupo 1: Isolamento (motor_decisao_isolado + posicao_isolamento)
+
+**Status:** ✅ DONE (17/03/2026 — integracao confirmada nos 2 agentes RL)
+
+**Objetivo:** Conectar `MotorDecisaoIsolado` e `PosicaoIsoladaManager` nos
+scripts operacionais reais, substituindo logica inline de rastreamento de
+posicao.
+
+**Agentes impactados:**
+
+- `INICIAR_AGENTE_RL_5000.bat` ✅
+- `INICIAR_AGENTE_RL_DIRETO.bat` ✅
+
+**Evidencias:**
+
+- `scripts/operar_novo_agente_rl_real_antiovertrading.py`:
+  - Import formal: `from src.application.motor_decisao_isolado import
+    MotorDecisaoIsolado, TipoPosicao, MotivoFechamento` (linhas 37-41)
+  - Instancia global: `motor_isolado = MotorDecisaoIsolado(agent_id=AGENTE_ID,
+    data_dir=...)` (linha 114)
+  - Substitui `tickets_proprios: set[int]` (logica inline removida)
+  - Uso em `enviar_ordem_mt5adapter()`: `motor_isolado.abrir_posicao(...)`
+  - Uso em `monitorar_posicoes()`: sync MT5 <-> motor, atualiza P&L
+  - AC5.8 integrado: `MonitorPositionManager` com import graceful (try/except)
+
+- `scripts/agente_rl_direto_independente.py`:
+  - Imports formais no bloco try/except (linhas 112-117):
+    `MotorDecisaoIsolado`, `TipoPosicao`, `MotivoFechamento`,
+    `PosicaoIsoladaManager`
+  - Instancias em `main()`:
+    `posicao_tracker = PosicaoIsoladaManager(session_id=..., agent_version=
+    'rl_direto_v3.0', outputs_dir=...)` e
+    `motor_decisao = MotorDecisaoIsolado(agent_id=..., data_dir=...)`
+  - Substitui `AgentePosicaoStatus` (141 LOC inline removidos)
+  - Funcao `verificar_posicao_no_mt5()` usa ambos os modulos formais
+
+**Isolamento garantido apos integracao:**
+
+- RL 5000: posicoes em `outputs/posicoes_ativas_agente_MODO_TIMESTAMP.json`
+- RL Direto: posicoes em `outputs/posicoes_ativas_agente_direto_TIMESTAMP.json`
+- Sem variavel global compartilhada entre processos
+- Magic Number filtra posicoes no MT5 (Nivel 1)
+- `PosicaoIsoladaManager` valida ownership por `session_id` (Nivel 2)
+- `MotorDecisaoIsolado` isola estado em memoria e JSON (Nivel 3)
+
+**Commit:** feat: Integrar modulos isolamento Grupo 1 nos agentes RL operacionais
+
+---
+
 ## Fora do backlog ativo
 
 Itens historicos, checklists de ambiente, reunioes antigas, sprints fechadas e
@@ -2089,5 +2140,5 @@ entradas ja entregues nao devem voltar para este arquivo.
 - Gate 2: `PASS` (12/03/2026), capital escalavel.
 - Pipeline P0-2: concluido.
 - AC5.8: ✅ IMPLEMENTED (15/03/2026) - Monitoramento em tempo real
-- Proxima entrega recomendada: `AC6.7 a AC6.9 Evolucao do loop de
-  ML` (P1 - Entregas sequenciais)
+- Modulo 3 Grupo 1 (Isolamento): ✅ INTEGRADO (17/03/2026) nos 2 agentes RL
+- Proxima entrega recomendada: Integracao Grupo 2 (AC5.8-AC6.9) nos agentes
