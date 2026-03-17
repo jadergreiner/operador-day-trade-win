@@ -12,16 +12,25 @@
 - [Schema SQLite Operacional](#schema-sqlite-operacional)
 - [Database Configuration](#database-configuration)
 - [️ Schema DDL (Data Definition Language)](#-schema-ddl-data-definition-language)
-
+- [Isolamento por Magic Number (EA ID)](#isolamento-por-magic-number-ea-id)
 
 ## Escopo de Execucao (4 Agentes)
 
-A modelagem de dados canonica existe para evoluir estes executores:
+A modelagem de dados canonica existe para evoluir
+estes executores:
 
-- `INICIAR_DIARIOS.bat`
-- `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
-- `INICIAR_AGENTE_RL_5000.bat`
-- `INICIAR_AGENTE_RL_5000_FIXED.bat`
+| Agente | Launcher | Magic Number |
+|---|---|---|
+| Diarios | `INICIAR_DIARIOS.bat` | 234800 |
+| Micro Tendencia | `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | 234700 |
+| RL 5000 | `INICIAR_AGENTE_RL_5000.bat` | 234500 |
+| RL Direto | `INICIAR_AGENTE_RL_DIRETO.bat` | 234600 |
+
+O campo `magic_number` (EA ID do MetaTrader 5) e o
+mecanismo primario de isolamento entre agentes.
+Cada ordem enviada carrega o Magic Number do agente
+origem, garantindo filtragem e auditoria.
+Ver [ADR-012](ADRS.md) para decisao formal.
 
 ## Diarios e Treinamento de Modelos
 
@@ -316,6 +325,8 @@ CREATE TABLE trades (
     volume REAL NOT NULL,
     pnl REAL,
     pnl_percent REAL,
+    magic_number INTEGER NOT NULL DEFAULT 234000,
+    closure_reason TEXT,
     status TEXT NOT NULL DEFAULT 'OPEN',
     detector_spike REAL,
     ml_classifier_score REAL,
@@ -328,13 +339,18 @@ CREATE TABLE trades (
     CHECK(status IN ('OPEN', 'CLOSED', 'CANCELLED')),
     CHECK(quantity > 0),
     CHECK(entry_price > 0),
-    CHECK(pnl_percent >= -100 AND pnl_percent <= 10000)
+    CHECK(pnl_percent >= -100 AND pnl_percent <= 10000),
+    CHECK(closure_reason IN (
+        'TP_HIT', 'SL_HIT', 'MANUAL_CLOSE',
+        'TIMEOUT', 'CANCELLED'
+    ) OR closure_reason IS NULL)
 );
 
 CREATE INDEX idx_trades_symbol_timestamp ON trades(symbol, timestamp_entry);
 CREATE INDEX idx_trades_status ON trades(status);
 CREATE INDEX idx_trades_broker_id ON trades(broker_trade_id);
 CREATE INDEX idx_trades_decisions_id ON trades(decisions_id);
+CREATE INDEX idx_trades_magic_number ON trades(magic_number);
 ```
 
 **Campos**:
@@ -355,12 +371,21 @@ CREATE INDEX idx_trades_decisions_id ON trades(decisions_id);
 - `status`: OPEN, CLOSED, CANCELLED
 - `detector_spike`: Valor do detector (e.g., 2.5σ)
 - `ml_classifier_score`: Score do ML classifier
-- `notes`: Anotações (detector info, motivo rejeição, etc)
+- `magic_number`: EA ID do agente que originou o trade
+  (234500=RL 5000, 234600=RL Direto, 234700=Micro
+  Tendência, 234800=Diários)
+- `closure_reason`: Motivo de fechamento — enum
+  `TradeClosureReason` (TP_HIT, SL_HIT,
+  MANUAL_CLOSE, TIMEOUT, CANCELLED). NULL enquanto
+  aberto
+- `notes`: Anotações (detector info, motivo rejeição)
 
 **Constraints**:
 - UNIQUE broker_trade_id: Não há duplicatas MT5
 - FK decisions_id: Toda trade tem decisão
 - CHECK side, status, quantity, pnl_percent: Validações
+- CHECK closure_reason: Enum restrito ou NULL
+- INDEX magic_number: Filtragem por agente
 
 ---
 
@@ -374,6 +399,7 @@ CREATE TABLE order_queue (
     order_type TEXT NOT NULL,
     volume REAL NOT NULL,
     price REAL, sl REAL, tp REAL,
+    magic_number INTEGER NOT NULL DEFAULT 234000,
     comment TEXT,
     status TEXT NOT NULL DEFAULT 'PENDING',
     payload TEXT NOT NULL,
@@ -386,11 +412,15 @@ CREATE TABLE order_queue (
     executed_at TEXT
 );
 
+CREATE INDEX idx_order_queue_magic ON order_queue(magic_number);
+
 CREATE INDEX idx_status ON order_queue(status);
 ```
 
 **Campos**:
 - `order_id`: UUID da ordem (unique)
+- `magic_number`: EA ID do agente (234500, 234600,
+  234700, 234800). Ver tabela Escopo
 - `status`: PENDING/PROCESSING/EXECUTED/FAILED/CANCELLED
 - `payload`: JSON completo da ordem
 - `executed_at`: timestamp de execucao (quando aplicavel)
@@ -940,6 +970,7 @@ LIMIT 10;
 ---
 
 ### Tabela 13: INDICES PARA PERFORMANCE
+
 CREATE VIEW v_trades_with_decisions AS
 SELECT
     t.id,
@@ -1470,14 +1501,87 @@ CREATE INDEX idx_circuit_breaker_history_session ON circuit_breaker_history(time
 
 ---
 
-## Documentos Relacionados
+## Isolamento por Magic Number (EA ID)
 
-- [DIAGRAMAS.md](DIAGRAMAS.md) - ER diagram visual (updated with P50 + P0-3)
-- [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md) - Regras que governam os dados + Circuit Breaker rules
-- [ARQUITETURA_ALVO.md](ARQUITETURA_ALVO.md) - Arquitetura geral (seções 3 P50, 3.1 P0-3 Planejado)
-- [ADRS.md](ADRS.md) - ADR-011 (GATE 2 decision to prioritize risk management)
+Cada agente envia ordens com um `magic_number`
+unico no MetaTrader 5. Isso permite:
+
+1. **Filtragem** — o agente so monitora posicoes
+   cujo `magic` corresponde ao seu
+2. **Auditoria** — toda linha em TRADES e
+   ORDER_QUEUE identifica o agente origem
+3. **Protecao** — um agente nunca modifica SL/TP
+   de posicao alheia (retcode 10013 eliminado)
+
+### Mapa de Magic Numbers
+
+| Magic | Agente | Script |
+|---|---|---|
+| 234000 | Default (legado) | — |
+| 234500 | RL 5000 | `operar_novo_agente_rl_*` |
+| 234600 | RL Direto | `agente_rl_direto_*` |
+| 234700 | Micro Tendencia | `agente_micro_tendencia_*` |
+| 234800 | Diarios (reservado) | `start_journals_*` |
+
+### TradeClosureReason (Enum)
+
+O campo `closure_reason` em TRADES usa valores
+do enum `TradeClosureReason`
+(`src/domain/entities/trade.py`):
+
+| Valor | Significado |
+|---|---|
+| `TP_HIT` | Take Profit atingido |
+| `SL_HIT` | Stop Loss atingido |
+| `MANUAL_CLOSE` | Fechamento manual |
+| `TIMEOUT` | Expirado por tempo |
+| `CANCELLED` | Cancelado antes de executar |
+
+### AgentePosicaoStatus (JSON Runtime)
+
+Cada agente RL grava estado em arquivo JSON
+isolado (`outputs/agente_posicao_{session}.json`):
+
+```json
+{
+  "session_id": "20260316_100900",
+  "owner": "rl_direto",
+  "aberta": true,
+  "ticket": 12345678,
+  "preco_entrada": 131500.0,
+  "direcao": "BUY",
+  "magic_number": 234600,
+  "timestamp": "2026-03-16T10:09:00Z"
+}
+```
+
+Campos:
+
+- `session_id` (STRING): ID unico da sessao
+- `owner` (STRING): Nome do agente
+- `aberta` (BOOLEAN): Posicao esta aberta?
+- `ticket` (INTEGER): Ticket MT5 (nullable)
+- `preco_entrada` (REAL): Preco de entrada
+- `direcao` (ENUM): BUY | SELL
+- `magic_number` (INTEGER): EA ID do agente
+- `timestamp` (ISO8601): Ultima atualizacao
 
 ---
 
-**ÚLTIMA ATUALIZAÇÃO:** 05/03/2026 12:30 BRT | **STATUS**: ✅ COMPLETO (19 tabelas SQL + P50 JSON configs)
+## Documentos Relacionados
 
+- [DIAGRAMAS.md](DIAGRAMAS.md) — ER diagram visual
+- [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md) — Regras
+  que governam os dados + Circuit Breaker
+- [ARQUITETURA_ALVO.md](ARQUITETURA_ALVO.md) — Arquitetura
+  geral e isolamento por Magic Number
+- [ADRS.md](ADRS.md) — ADR-011 (GATE 2) + ADR-012
+  (Magic Number por agente)
+- [AGENTES_RL_PARALELOS.md](AGENTES_RL_PARALELOS.md) —
+  Isolamento entre agentes RL
+
+---
+
+**ULTIMA ATUALIZACAO:** 16/03/2026 BRT |
+**STATUS**: Completo (19 tabelas SQL + P50 JSON +
+Magic Number isolation)

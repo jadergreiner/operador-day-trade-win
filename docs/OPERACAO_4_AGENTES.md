@@ -1,6 +1,7 @@
 # 🤖 Operação dos 4 Agentes Executores
 
-**Versão:** 2.0 | **Data:** 16 de março de 2026 | **Status:** ✅ Production Ready
+**Versão:** 3.0 | **Data:** 17 de março de 2026 |
+**Status:** ✅ Production Ready
 
 ## Índice
 
@@ -10,6 +11,7 @@
 - [Agente 3: RL 5000](#agente-3-iniciar_agente_rl_5000bat)
 - [Agente 4: RL Direto](#agente-4-iniciar_agente_rl_diretobat)
 - [Fluxo de Operação](#fluxo-de-operação)
+- [Isolamento por Magic Number](#isolamento-por-magic-number)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -19,29 +21,35 @@
 O projeto operacionaliza **4 agentes paralelos** para trading de Mini Índice
 (WIN$N no MetaTrader 5):
 
-| **Agente** | **Função** | **Script** | **Modelo** | **Decisão** |
-|---|---|---|---|---|
-| **1. Diários** | Rastreamento + IA reflection | `start_journals_full_display.py` | Nenhum | Apenas logging |
-| **2. Micro Tendência** | Geração de sinais intraday | `agente_micro_tendencia_winfut.py` | LightGBM (ML) | Determinística + Score |
-| **3. RL 5000** | Execução automated trades | `operar_novo_agente_rl_real_antiovertrading.py` | Q-Learning (5000 eps) | Reinforcement Learning |
-| **4. RL Direto** | Execução paralela isolada | `agente_rl_direto_independente.py` | Q-Learning (5000 eps) | Reinforcement Learning |
+| **Agente** | **Função** | **Script** | **Magic** |
+|---|---|---|---|
+| Diários | Logging + IA | `start_journals_*.py` | 234800 |
+| Micro Tendência | Sinais ML | `agente_micro_*.py` | 234700 |
+| RL 5000 | Trades RL | `operar_*_rl_*.py` | 234500 |
+| RL Direto | Trades paralelo | `agente_rl_direto_*.py` | 234600 |
+
+Cada agente envia ordens com **Magic Number** (EA ID)
+único no MT5, garantindo isolamento total.
+Ver [ADR-012](ADRS.md) para a decisão formal.
 
 **Fluxo Lógico:**
 
 ```
 MT5 (Dados de Mercado)
     ↓
-[Micro Tendência] → Gera ~29 sinais/dia
-[Diários] → Registra tudo para auditoria + feedback RL
-[RL 5000] → Executa trades com proteção lucro (SL/TP dinâmicos)
-[RL Direto] → Alternativa ao RL 5000 (roda em paralelo)
+[Micro Tendência] → Gera ~29 sinais/dia (magic=234700)
+[Diários] → Registra tudo para auditoria (magic=234800)
+[RL 5000] → Trades com proteção lucro (magic=234500)
+[RL Direto] → Alternativa paralela (magic=234600)
     ↓
-SQLite (trading.db) → Armazena episódios, trades, sessões
+SQLite (trading.db) → trades.magic_number filtra por agente
 ```
 
 ---
 
 ## Agente 1: INICIAR_DIARIOS.bat
+
+**Magic Number:** 234800 (reservado — não envia ordens)
 
 ### 📋 Propósito
 
@@ -102,6 +110,8 @@ tail -50 data/diarios/consolidated_[DATA].json
 
 ## Agente 2: INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
 
+**Magic Number:** 234700
+
 ### 📋 Propósito
 
 **Gera sinais automáticos** de compra/venda baseado em:
@@ -112,6 +122,13 @@ tail -50 data/diarios/consolidated_[DATA].json
 - **Anti-repetição** (DEDUP) para evitar sinais falaciosos
 
 Frequência esperada: **~29 sinais/dia** (após filtros).
+
+> **Filtro por agente:** A contagem diária de trades
+> (`daily_trade_count`) e o P&L acumulado são
+> reidratados da tabela `trades` filtrando por
+> `magic_number = 234700`. Isso evita que trades de
+> outros agentes (RL 5000, RL Direto) inflem a
+> contagem e bloqueiem o limite diário.
 
 ### 🚀 Como Usar
 
@@ -183,14 +200,19 @@ logs/
 
 ## Agente 3: INICIAR_AGENTE_RL_5000.bat
 
+**Magic Number:** 234500
+
 ### 📋 Propósito
 
-**Executa trades automaticamente** usando modelo de aprendizado (RL):
+**Executa trades automaticamente** usando modelo RL:
 
 - Modelo Q-Learning treinado em **5000 episódios**
 - **Proteção de lucros** com SL/TP **dinâmicos**
 - **Anti-overtrading**: 7 filtros automáticos
 - **Win Rate esperado**: 65-68% (histórico)
+- **Isolamento**: filtra posições por `tickets_proprios`
+  e `magic_number` — nunca modifica SL/TP de outro
+  agente
 
 ### 🚀 Como Usar
 
@@ -293,13 +315,17 @@ sqlite3 data/db/trading.db "SELECT action, stop_loss, take_profit FROM rl_episod
 
 ## Agente 4: INICIAR_AGENTE_RL_DIRETO.bat
 
+**Magic Number:** 234600
+
 ### 📋 Propósito
 
 **Alternativa ao RL 5000** para operação paralela:
 
 - Mesmo modelo RL (compartilhado)
 - **Isolamento completo** de session ID
-- **Posições independentes** (pode rodar 2 agentes RL simultaneamente)
+- **Posições independentes** filtradas por magic
+- Verificação de posição por **ticket MT5** a cada
+  **15 segundos** (em vez de 60s blind wait)
 - Sem wrapper de supervisão (mais simples)
 
 ### 🚀 Como Usar
@@ -318,10 +344,14 @@ python scripts/agente_rl_direto_independente.py --mode fixo
 
 ### ⚙️ Componentes
 
-**Idênticos ao RL 5000**, mas com:**
+**Idênticos ao RL 5000**, mas com:
+
 - Session ID isolado (não compartilhado)
 - Logs separados por timestamp
-- Isolamento de banco de dados (por session)
+- Magic Number próprio (234600 vs 234500)
+- `AgentePosicaoStatus` com ticket/preço/direção
+- Verificação via `verificar_posicao_no_mt5()` a
+  cada 15s (detecta SL/TP hit em tempo real)
 
 ### 📊 Modo: Dinâmico vs Fixo
 
@@ -350,10 +380,12 @@ data/db/
 
 | **Aspecto** | **RL 5000** | **RL Direto** |
 |---|---|---|
-| **Wrapper** | Com supervisão (safe mode) | Sem wrapper (direto) |
-| **Session ID** | Via environment variable | Via geração autônoma |
-| **Paralelizável** | ✅ Sim (com cuidado) | ✅ Sim (sem conflitos) |
+| **Magic Number** | 234500 | 234600 |
+| **Wrapper** | Com supervisão | Sem wrapper |
+| **Session ID** | Via env variable | Geração autônoma |
+| **Paralelizável** | ✅ Sim | ✅ Sim |
 | **Heartbeat** | ✅ Sim | ❌ Não |
+| **Verif. posição** | Por tickets_proprios | Por ticket MT5 (15s) |
 | **Complexidade** | Média | Simples |
 
 ### ⚠️ Problemas Comuns
@@ -361,7 +393,6 @@ data/db/
 | **Problema** | **Causa** | **Solução** |
 |---|---|---|
 | "Erro de session isolada" | Conflito de database locks | Aguarde 5s entre inicializações |
-| Posições conflitantes no MT5 | Ambos abrem mesma ordem | Usar RL_5000 ou RL_DIRETO, não ambos |
 
 ---
 
@@ -418,18 +449,87 @@ MT5 (MarketData)
 │
 ├─ RL Agentes (5000 ou Direto)
 │   ├─ Lê estado (15 features)
-│   ├─ Q-Network → ação
-│   ├─ Executa trade (MT5)
-│   └─ Registra episódio (SQLite)
+│   ├─ Q-Network → ação (magic_number na ordem)
+│   ├─ Executa trade (MT5 com EA ID isolado)
+│   ├─ Registra episódio (SQLite)
+│   └─ Filtra posições por magic/ticket próprio
 │
 └─ SQLite (trading.db)
     ├─ Episodes (RL reward/action/state)
+    ├─ Trades (com magic_number por agente)
     ├─ Trading Sessions
     ├─ Positions
     └─ RL Correlation Scores
         ↓ (feedback para próximo dia)
     Diários (AI Reflection)
     └─ Evoluem modelos
+```
+
+---
+
+## Isolamento por Magic Number
+
+Cada agente usa um **Magic Number** (EA ID) único
+ao enviar ordens ao MT5. Isso garante:
+
+1. **Sem interferência** — um agente nunca modifica
+   SL/TP de posição alheia (erro MT5 10013
+   eliminado)
+2. **Contagem correta** — cada agente conta apenas
+   seus próprios trades para limites diários
+3. **Auditoria** — toda linha na tabela `trades`
+   identifica o agente de origem
+
+### Mapa de Magic Numbers
+
+| Magic | Agente | Uso |
+|---|---|---|
+| 234000 | Default (legado) | Trades anteriores à v3.0 |
+| 234500 | RL 5000 | Produção |
+| 234600 | RL Direto | Produção (paralelo) |
+| 234700 | Micro Tendência | Produção |
+| 234800 | Diários | Reservado (não opera) |
+
+### Sync de Magic Numbers
+
+O script `sync_mt5_trades_to_db.py` lê o campo
+`magic` de cada deal do MT5 e grava na coluna
+`trades.magic_number`:
+
+```bash
+# Re-sincronizar trades com magic correto:
+python scripts/sync_mt5_trades_to_db.py --days-back 3
+```
+
+### TradeClosureReason
+
+O campo `closure_reason` na tabela `trades` indica
+como a posição foi encerrada:
+
+| Valor | Significado |
+|---|---|
+| `TP_HIT` | Take Profit atingido |
+| `SL_HIT` | Stop Loss atingido |
+| `MANUAL_CLOSE` | Fechamento manual |
+| `TIMEOUT` | Expirado por tempo |
+| `CANCELLED` | Cancelado antes de executar |
+
+### Verificar trades por agente
+
+```bash
+# Distribuição de trades por Magic Number:
+python -c "
+import sqlite3
+conn = sqlite3.connect('data/db/trading.db')
+for r in conn.execute('''
+    SELECT magic_number, COUNT(*)
+    FROM trades
+    WHERE substr(entry_time,1,10) = date('now')
+    GROUP BY magic_number
+''').fetchall():
+    print(f'  magic={r[0]} trades={r[1]}')
+conn.close()
+"
 ```
 
 ---
@@ -441,7 +541,7 @@ MT5 (MarketData)
 | **Cenário** | **Agente** | **Por Quê** |
 |---|---|---|
 | ✅ Rodar tudo (dia normal) | Diários + Micro + RL_5000 | Máxima auditoria + proteção |
-| 🔄 Testar modelo novo | RL_DIRETO em paralelo | Isolamento seguro |
+| 🔄 Testar modelo novo | RL_DIRETO em paralelo | Isolamento por magic |
 | 📊 Apenas análise/feedback | DIARIOS | Sem trading |
 | 🧪 Teste de mercado | Micro Tendência | Geração de sinais, sem execução |
 
@@ -509,8 +609,13 @@ MIN_VOLATILIDADE = 0.05         # % mínima
 
 ## 📚 Referências Adicionais
 
-- [BACKLOG.md](BACKLOG.md) - Status de desenvolvimento
-- [ARQUITETURA_ALVO.md](ARQUITETURA_ALVO.md) - Contrato arquitetural
-- [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md) - Regras operacionais
-- [.github/copilot-instructions.md](../.github/copilot-instructions.md) - Padrões do projeto
-
+- [BACKLOG.md](BACKLOG.md) — Status de desenvolvimento
+- [ARQUITETURA_ALVO.md](ARQUITETURA_ALVO.md) — Contrato
+  arquitetural e isolamento por Magic Number
+- [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md) — Regras
+  operacionais e verificação por ticket
+- [AGENTES_RL_PARALELOS.md](AGENTES_RL_PARALELOS.md) —
+  Isolamento entre agentes RL (3 camadas)
+- [ADRS.md](ADRS.md) — ADR-012: Magic Number por agente
+- [MODELAGEM_DE_DADOS.md](MODELAGEM_DE_DADOS.md) —
+  Schema da tabela `trades` com `magic_number`

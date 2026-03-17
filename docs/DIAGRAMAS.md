@@ -3,21 +3,70 @@
 ## Indice
 
 - [Escopo de Execucao (4 Agentes)](#escopo-de-execucao-4-agentes)
+- [Isolamento por Magic Number
+  (EA ID)](#isolamento-por-magic-number-ea-id)
 - [Visao de Fluxo - Gate 2](#visao-de-fluxo-gate-2)
 - [Diagrama de Classes (Mermaid)](#diagrama-de-classes-mermaid)
 - [Diagrama de Dados (ER - Mermaid)](#diagrama-de-dados-er-mermaid)
 - [Visao de Dependencias](#visao-de-dependencias)
-- [Notas](#notas)
+- [Notas](#notas)\n\n## Escopo de Execucao (4 Agentes)
 
+Os diagramas canonicos servem exclusivamente para evoluir
+estes executores:
 
-## Escopo de Execucao (4 Agentes)
+| Agente | Launcher | Magic (EA ID) |
+|---|---|---|
+| Diários | `INICIAR_DIARIOS.bat` | 234800 (reservado) |
+| Micro Tendência | `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | 234700 |
+| RL 5000 | `INICIAR_AGENTE_RL_5000.bat` | 234500 |
+| RL Direto | `INICIAR_AGENTE_RL_DIRETO.bat` | 234600 |
 
-Os diagramas canonicos servem exclusivamente para evoluir estes executores:
+## Isolamento por Magic Number (EA ID)
 
-- `INICIAR_DIARIOS.bat`
-- `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
-- `INICIAR_AGENTE_RL_5000.bat`
-- `INICIAR_AGENTE_RL_5000_FIXED.bat`
+Cada agente possui um Magic Number fixo. Toda ordem enviada
+ao MT5 carrega o magic do emissor. Toda consulta de posições
+filtra pelo magic do agente corrente.
+
+Referência: ADR-012 (`docs/ADRS.md`)
+
+```text
++-----------------------------------------------------+
+|                   MT5 Terminal (WIN$N)               |
++-----------------------------------------------------+
+|  Posições: [magic=234500] [magic=234600] [magic=..] |
++-----+-------------------+-------------------+-------+
+      |                   |                   |
+      | positions_get     | positions_get     |
+      | (magic=234500)    | (magic=234600)    |
+      v                   v                   v
++----------+       +----------+       +----------+
+| RL 5000  |       | RL Dir.  |       | Micro T. |
+| m=234500 |       | m=234600 |       | m=234700 |
++----------+       +----------+       +----------+
+|tickets_  |       |Agente    |       |monitor_  |
+|proprios  |       |Posicao   |       |hedge_    |
+|set[int]  |       |Status    |       |orphans() |
++----------+       +----------+       +----------+
+     |                  |                  |
+     v                  v                  v
++----------+       +----------+       +----------+
+|posicao_  |       |posicao_  |       |Order(    |
+|agente_   |       |agente_   |       | magic=   |
+|5000.json |       |direto.   |       | 234700)  |
+|          |       |json      |       |          |
++----------+       +----------+       +----------+
+```
+
+**3 Níveis de Isolamento:**
+
+1. **MT5 Magic Number** — `Order.magic_number` na entidade,
+   `MT5Adapter.send_order()` usa `order.magic_number`,
+   `positions_get()` filtra por magic
+2. **Session ID + JSON** — arquivo por agente
+   (`outputs/agente_posicao_{session_id}.json`),
+   `PosicaoIsoladaManager` valida ownership
+3. **Memória de processo** — `tickets_proprios: set[int]`
+   (RL 5000), `AgentePosicaoStatus` (RL Direto)
 
 ## Visao de Fluxo - Gate 2
 
@@ -84,6 +133,7 @@ classDiagram
         +_ensure_connected_with_isolation() bool
         +send_order(order: Order) str
         +get_positions() List~Position~
+        +get_positions_by_magic(magic: int) List~Position~
         +close_position(symbol: str) bool
         +get_account_balance() float
     }
@@ -246,6 +296,7 @@ classDiagram
         -entry_price: float
         -stop_loss: float
         -take_profit: float
+        -magic_number: int
         +to_trade(ticket: str) Trade
         +add_audit(state: str, message: str) void
         +get_audit_trail() List~AuditEntry~
@@ -355,6 +406,35 @@ classDiagram
         +generate_summary() str
     }
 
+    %% Domain Entities (trade.py) - Sessao 16-17/03/2026
+    class Order {
+        -symbol: str
+        -side: str
+        -volume: float
+        -price: float
+        -stop_loss: float
+        -take_profit: float
+        -magic_number: int = 234000
+        -order_type: str
+    }
+
+    class TradeClosureReason {
+        <<enumeration>>
+        TP_HIT
+        SL_HIT
+        MANUAL_CLOSE
+        TIMEOUT
+        CANCELLED
+    }
+
+    %% Agent-Level Isolation (Sessao 16-17/03/2026)
+    class AgentePosicaoStatus {
+        -aberta: bool
+        -ticket: Optional~int~
+        -preco_entrada: Optional~float~
+        -direcao: Optional~str~
+    }
+
     %% Relationships
     SignalGenerator --|> SignalPersistence: "AC1→AC2: persist signals"    SignalPersistence --|> SignalTracker: "AC2->AC3: track lifecycle"    SignalPersistence --|> Repository: "usa SQLite"
     MT5Adapter --|> IntraDayLearner: "usa silent_register"
@@ -386,8 +466,13 @@ classDiagram
     ConfidenceRetrainer --|> MLModels: "calibra confiança"
     FeedbackLogger --|> OrderManager: "logga rejeições"
     FeedbackLogger --|> PositionMonitor: "registra outcomes"
-```
 
+    %% Magic Number Isolation (Sessao 16-17/03/2026)
+    Order --|> MT5Adapter: "send_order(magic)"
+    Order --|> ExecutionOrder: "base de envio"
+    AgentePosicaoStatus --|> MT5Adapter: "verificar_posicao_no_mt5()"
+    TradeClosureReason --|> PositionMonitor: "classifica saida"
+```
 
 ## Diagrama de Dados (ER - Mermaid)
 
@@ -495,6 +580,7 @@ erDiagram
         string status
         string detector_spike
         float ml_classifier_score
+        int magic_number
         int decisions_id FK
     }
 
@@ -588,24 +674,55 @@ erDiagram
     }
 ```
 
-
 ## Visao de Dependencias
 
 ```text
 ARQUITETURA_ALVO.md
   -> define contrato Gate 2
+  -> define isolamento Magic Number (EA ID)
 REGRAS_DE_NEGOCIO.md
   -> define fallback conservador
 MODELAGEM_DE_DADOS.md
   -> define schema dos artefatos JSON e SQLite
 ADRS.md
   -> registra decisoes e trade-offs
+  -> ADR-012: Magic Number por agente
+AGENTES_RL_PARALELOS.md
+  -> define isolamento entre agentes RL
 BACKLOG.md
   -> define entrega ativa e criterios
 ```
 
 ## Notas
 
-- Diagramas legados completos ficam em `docs/legacy/` (somente leitura).
-- Este documento e a visao canonica de alto nivel para P0-2 Gate 2.
+- Diagramas legados completos ficam em
+  `docs/legacy/` (somente leitura).
+- Este documento e a visao canonica de alto nivel
+  para P0-2 Gate 2.
+- Magic Numbers definidos em ADR-012 (`docs/ADRS.md`).
+  Faixa reservada: 234000-234999.
 
+### Decisoes Tecnicas da Sessao 16-17/03/2026
+
+1. **Magic Number (EA ID) por agente** — campo
+   `magic_number` adicionado a `Order` em `trade.py`.
+   `MT5Adapter.send_order()` usa `order.magic_number`
+   em vez de valor fixo. (ADR-012)
+2. **TradeClosureReason enum** — classifica motivo
+   de fechamento: TP\_HIT, SL\_HIT, MANUAL\_CLOSE,
+   TIMEOUT, CANCELLED.
+3. **AgentePosicaoStatus** — dataclass com ticket,
+   preco\_entrada e direcao. Permite ao RL Direto
+   verificar posicao diretamente no MT5 por ticket
+   (`verificar_posicao_no_mt5()`) a cada 15s.
+4. **tickets\_proprios set** — RL 5000 mantem
+   conjunto de tickets proprios em memoria para
+   filtrar `monitorar_posicoes()`,
+   `processar_protecao_lucros()` e
+   `proteger_lucro_trade()`.
+5. **monitor\_hedge\_orphans()** — Micro Tendencia
+   filtra posicoes orfas apenas pelo seu magic
+   (234700), ignorando posicoes de outros agentes.
+6. **Limitacao conhecida** — `close_position()` e
+   `close_position_by_ticket()` no MT5Adapter ainda
+   usam magic 234000 fixo. Correcao futura.

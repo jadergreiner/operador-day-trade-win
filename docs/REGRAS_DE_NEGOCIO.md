@@ -3,6 +3,7 @@
 ## Indice
 
 - [Escopo de Execucao (4 Agentes)](#escopo-de-execucao-4-agentes)
+- [Isolamento entre Agentes](#isolamento-entre-agentes)
 - [Diarios e Treinamento de Modelos](#diarios-e-treinamento-de-modelos)
 - [Regras Operacionais (Fluxo do Executor)](#regras-operacionais-fluxo-do-executor)
 - [Resumo](#resumo)
@@ -13,15 +14,86 @@
 - [Como a Sessao Comeca — O sistema tenta entrar no dia em estado saudavel](#o-sistema-tenta-entrar-no-dia-em-estado-saudavel)
 - [Quando o Sistema Pode Operar](#quando-o-sistema-pode-operar)
 
-
 ## Escopo de Execucao (4 Agentes)
 
-As regras de negocio devem sempre evoluir um destes quatro executores:
+As regras de negocio devem sempre evoluir um
+destes quatro executores:
 
-- `INICIAR_DIARIOS.bat`
-- `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
-- `INICIAR_AGENTE_RL_5000.bat`
-- `INICIAR_AGENTE_RL_5000_FIXED.bat`
+| Agente | Launcher | Magic |
+|---|---|---|
+| Diarios | `INICIAR_DIARIOS.bat` | 234800 |
+| Micro Tendencia | `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | 234700 |
+| RL 5000 | `INICIAR_AGENTE_RL_5000.bat` | 234500 |
+| RL Direto | `INICIAR_AGENTE_RL_DIRETO.bat` | 234600 |
+
+O campo Magic Number (EA ID) identifica o agente
+origem de cada ordem no MetaTrader 5. Ver
+[ADR-012](ADRS.md).
+
+## Isolamento entre Agentes
+
+### Cada agente opera apenas suas proprias posicoes
+
+Um agente so pode monitorar, modificar SL/TP ou
+fechar posicoes cujo Magic Number corresponda ao
+seu. Posicoes de outros agentes sao ignoradas.
+
+Essa regra elimina interferencia cruzada — por
+exemplo, o RL 5000 tentando ajustar SL de uma
+posicao aberta pelo Micro Tendencia (retcode
+10013 no MT5).
+
+### A filtragem e feita por Magic Number no MT5
+
+Ao consultar posicoes abertas no MT5, o agente
+filtra pelo campo `magic` da posicao. Somente
+posicoes com `magic == MAGIC_NUMBER` do agente
+sao consideradas.
+
+### Cada agente mantem registro proprio de tickets
+
+Os agentes RL mantém um conjunto local de tickets
+que eles mesmos abriram (`tickets_proprios`).
+Isso funciona como segunda camada de protecao:
+mesmo que uma posicao exista no MT5, ela so e
+gerenciada se o ticket estiver no conjunto local.
+
+### Ordens carregam o Magic Number do agente
+
+Toda ordem enviada ao MT5 inclui o Magic Number
+do agente no campo `magic` do request. Isso
+garante rastreabilidade desde a criacao.
+
+### Motivo de fechamento e registrado
+
+Quando uma posicao e fechada, o sistema registra
+o motivo via enum `TradeClosureReason`:
+
+- `TP_HIT` — Take Profit atingido
+- `SL_HIT` — Stop Loss atingido
+- `MANUAL_CLOSE` — Fechamento manual
+- `TIMEOUT` — Expirado por tempo
+- `CANCELLED` — Cancelado antes de executar
+
+Esse campo fica persistido na coluna
+`closure_reason` da tabela TRADES.
+
+### Verificacao de posicao por ticket no MT5
+
+Os agentes RL nao dependem de espera cega para
+detectar encerramento por SL/TP. O sistema
+consulta o MT5 a cada 15 segundos usando o ticket
+da posicao:
+
+1. Se a posicao ainda existe no MT5 com o ticket
+   esperado, o agente aguarda.
+2. Se a posicao desapareceu, o agente detecta
+   fechamento por SL/TP e registra a saida.
+3. Se o ticket nunca foi obtido (falha de envio),
+   o agente faz fallback para o ciclo padrao.
+
+Essa regra substitui o antigo timer de 60 segundos
+que causava deteccao tardia de SL/TP.
 
 ## Diarios e Treinamento de Modelos
 
@@ -402,17 +474,25 @@ Para leitura rapida de negocio, estas regras merecem destaque permanente:
 
 ## Relacao com a Arquitetura
 
-Este documento deve ser lido junto com `ARQUITETURA_ALVO.md`.
+Este documento deve ser lido junto com:
 
-Os dois documentos foram alinhados com a mesma premissa:
+- [ARQUITETURA_ALVO.md](ARQUITETURA_ALVO.md) — arquitetura
+  geral e isolamento por Magic Number
+- [AGENTES_RL_PARALELOS.md](AGENTES_RL_PARALELOS.md) —
+  isolamento entre agentes RL
+- [ADRS.md](ADRS.md) — ADR-012 (Magic Number por
+  agente)
+- [MODELAGEM_DE_DADOS.md](MODELAGEM_DE_DADOS.md) —
+  schema com `magic_number` e `closure_reason`
 
-- a fonte principal de verdade e o fluxo real disparado por
-  `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`;
-- componentes nao chamados por esse fluxo nao definem a regra principal de
-  operacao;
-- quando houver conflito com documentacao historica, vale o comportamento atual
-  observavel no executor.
+Os documentos foram alinhados com a mesma premissa:
 
+- a fonte principal de verdade e o fluxo real
+  disparado pelos 4 launchers;
+- componentes nao chamados por esses fluxos nao
+  definem a regra principal de operacao;
+- quando houver conflito com documentacao historica,
+  vale o comportamento atual observavel no executor.
 
 ---
 
@@ -442,8 +522,10 @@ Gate 2 e uma regra de **escala de capital**, nao de entrada de trade.
 
 ## Regra de PnL Realista
 
-- PnL e drawdown do Gate 2 devem ser calculados com trades reais (1-bar hold) e custos aplicados.
-- Custos incluem slippage e taxas por lado, conforme perfil de custo.
+- PnL e drawdown do Gate 2 devem ser calculados
+  com trades reais (1-bar hold) e custos aplicados.
+- Custos incluem slippage e taxas por lado,
+  conforme perfil de custo.
 
 ## Regra de Falha Segura
 
@@ -454,4 +536,3 @@ Qualquer falha de pipeline P0-2 deve resultar em postura conservadora
 
 - Inicio e fim da sessao devem manter sincronizacao com historico local.
 - Decisao Gate 2 deve ficar persistida em artefatos locais de `data/backtest`.
-

@@ -3,6 +3,8 @@
 ## Indice
 
 - [Escopo de Execucao (4 Agentes)](#escopo-de-execucao-4-agentes)
+- [Isolamento por Magic Number
+  (EA ID)](#isolamento-por-magic-number-ea-id)
 - [Arquitetura Alvo e Contrato](#arquitetura-alvo-e-contrato)
 - [Objetivo](#objetivo)
 - [Fluxo Macro](#fluxo-macro)
@@ -16,15 +18,88 @@
 - [Resumo](#resumo)
 - [Visao Executiva do Launcher](#visao-executiva-do-launcher)
 
-
 ## Escopo de Execucao (4 Agentes)
 
-Todas as decisoes arquiteturais e evolucoes devem ter como alvo um destes quatro executores:
+Todas as decisoes arquiteturais e evolucoes devem ter como
+alvo um destes quatro executores:
 
-- `INICIAR_DIARIOS.bat`
-- `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
-- `INICIAR_AGENTE_RL_5000.bat`
-- `INICIAR_AGENTE_RL_5000_FIXED.bat`
+| Agente | Launcher | Magic Number |
+|---|---|---|
+| Diários | `INICIAR_DIARIOS.bat` | 234800 (reservado) |
+| Micro Tendência | `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | 234700 |
+| RL 5000 | `INICIAR_AGENTE_RL_5000.bat` | 234500 |
+| RL Direto | `INICIAR_AGENTE_RL_DIRETO.bat` | 234600 |
+
+Cada agente possui um Magic Number (EA ID) exclusivo no MT5
+para isolamento total de ordens e posicoes. Detalhes na secao
+[Isolamento por Magic Number](#isolamento-por-magic-number-ea-id).
+
+## Isolamento por Magic Number (EA ID)
+
+**Status:** Implementado (16/03/2026)
+**Referência:** ADR-012 em `docs/ADRS.md`
+
+### Problema Resolvido
+
+Quando dois ou mais agentes RL operavam em paralelo no mesmo
+símbolo WIN$N, um agente detectava posições abertas pelo outro
+e tentava modificar SL/TP, resultando em erro MT5 retcode
+10013 (request rejected). Monitoramento de posições e proteção
+de lucros também conflitavam.
+
+### Decisão Arquitetural
+
+Atribuir um Magic Number (EA ID) único e fixo por agente.
+Toda ordem enviada ao MT5 carrega o magic do agente emissor.
+Toda consulta de posições filtra pelo magic do agente corrente.
+
+### Implementação — 3 Níveis de Isolamento
+
+**Nível 1 — MT5 Magic Number (EA ID):**
+
+- Campo `magic_number` na entidade `Order`
+  (`src/domain/entities/trade.py`)
+- `MT5Adapter.send_order()` usa `order.magic_number`
+- Cada script define constante `MAGIC_NUMBER`
+- Filtragem em `mt5.positions_get()` por magic
+
+**Nível 2 — Session ID + JSON isolado:**
+
+- Cada agente grava arquivo próprio:
+  `outputs/agente_posicao_{session_id}.json`
+- `PosicaoIsoladaManager` valida ownership
+  (`src/application/posicao_isolamento.py`)
+
+**Nível 3 — Memória e variáveis de processo:**
+
+- `tickets_proprios: set[int]` no RL 5000
+- `AgentePosicaoStatus` com ticket no RL Direto
+- Sem variável global compartilhada entre processos
+
+### Tabela de Magic Numbers
+
+| Faixa | Agente | Constante |
+|---|---|---|
+| 234000 | Default (entidade Order) | `Order.magic_number` |
+| 234500 | RL 5000 | `MAGIC_NUMBER` |
+| 234600 | RL Direto | `MAGIC_NUMBER` |
+| 234700 | Micro Tendência | `MAGIC_NUMBER` |
+| 234800 | Diários (reservado) | `MAGIC_NUMBER` |
+
+### Funções Protegidas por Magic
+
+- `monitorar_posicoes()` — filtra por magic (RL 5000)
+- `processar_protecao_lucros()` — filtra por magic
+- `proteger_lucro_trade()` — filtra por magic
+- `verificar_posicao_no_mt5()` — filtra por magic (Direto)
+- `monitor_hedge_orphans()` — filtra por magic (Micro)
+- `execute_entry()` — envia magic na Order (Micro)
+- `_close_position()` — envia magic na Order (Micro)
+
+### Invariante
+
+Nenhum agente pode operar sobre posições de outro agente.
+Ordens sem magic correto sao rejeitadas ou ignoradas.
 
 ## Arquitetura Alvo e Contrato
 
@@ -111,6 +186,7 @@ executadas e dados de aprendizado para ML/RL.
 **Testes:** 21 testes unitarios, 21/21 PASSING (100%)
 
 ---
+
 ### P2 - Trilha RL Operacional: Ambiente Gym de Trading
 
 **Status:** ✅ IMPLEMENTADO (16/03/2026)
@@ -215,6 +291,7 @@ print(relatorio)
 3. Dashboard de metricas em tempo real
 
 ---
+
 ### AC6.7 Detector de Drift de Modelo em Producao
 
 **Status:** ✅ IMPLEMENTADO (15/03/2026)
@@ -313,7 +390,7 @@ parametros durante operacao e rollback automatico por degradacao.
 
 **Fluxo Tipico:**
 
-```
+```text
 1. controller = OnlineLearningController(
      model_name="trader",
      baseline_metrics={"win_rate": 0.65}
@@ -396,6 +473,7 @@ causando conflitos e bloqueios de operacao. Necessário isolamento total.
    - Log de erro se tentativa de violacao detectada
 
 3. **Metadados Completos:**
+
    ```json
    {
      "session_id": "agente_direto_20260316_123354",
@@ -471,13 +549,19 @@ if manager.tem_posicao_aberta():
 manager.registrar_posicao_fechada()
 ```
 
-**Garantias de Isolamento:**
+**Garantias de Isolamento (3 Níveis):**
 
-1. ❌ RL Direto NAO consegue ler posicao do RL 5000
-2. ❌ RL 5000 NAO consegue sobrescrever arquivo do RL Direto
-3. ✅ Arquivo existe apenas para o agent que criou
-4. ✅ Validacao de ownership a cada leitura
-5. ✅ Log detalhado de violacoes (se tentadas)
+1. ✅ Magic Number (EA ID) único por agente no MT5
+2. ✅ Filtragem de `positions_get()` por magic
+3. ❌ RL Direto NAO consegue ler posicao do RL 5000
+4. ❌ RL 5000 NAO consegue sobrescrever arquivo do Direto
+5. ✅ Arquivo JSON existe apenas para o agente que criou
+6. ✅ Validacao de ownership a cada leitura
+7. ✅ `tickets_proprios` set em memória (RL 5000)
+8. ✅ Log detalhado de violacoes (se tentadas)
+
+Ver secao completa:
+[Isolamento por Magic Number](#isolamento-por-magic-number-ea-id)
 
 ---
 
@@ -631,7 +715,6 @@ contagem = scheduler.contar_jobs_por_status()
 
 ---
 
-
 ## Resumo
 
 Este documento descreve a arquitetura real executada pelo launcher
@@ -739,7 +822,9 @@ Responsabilidades:
 - persistir snapshots do ciclo;
 - decidir se entra, simula ou rejeita a oportunidade;
 - executar e acompanhar posicoes, quando permitido;
-- enviar ordens reais via `ProcessadorBDI.enviar_ordem()` (MT5AdapterProxy + fallback MT5);
+- enviar ordens reais via
+  `ProcessadorBDI.enviar_ordem()`
+  (MT5AdapterProxy + fallback MT5);
 - registrar feedback de aprendizado.
 
 ### 4. Servicos de Apoio e Protecao
@@ -1107,21 +1192,34 @@ Para entendimento da arquitetura, os contratos mais importantes sao:
 
 ## Pontos de Arquitetura e Limitacoes Atuais
 
-Algumas caracteristicas da arquitetura atual sao importantes para leitura
-correta do sistema:
+Algumas caracteristicas da arquitetura atual sao importantes
+para leitura correta do sistema:
 
-- o launcher concentra regras operacionais e mensagens de sessao no proprio BAT;
-- ha forte dependencia de scripts Python acionados por linha de comando;
-- o estado operacional depende de arquivos locais, SQLite, `.env` e do MT5 na
-  mesma maquina;
-- o bootstrap da API P0-1 local sobe um executor com mocks no startup, o que
-  indica uma camada de integracao util para acoplamento local, mas nao um
-  servico externo completo;
-- o agente principal concentra muita logica em um unico script, misturando
-  ciclo operacional, regras de decisao, exibicao e integracoes;
-- existem componentes historicos e experimentais no repositorio, mas eles nao
-  devem ser tratados como parte da arquitetura principal deste executor, a menos
-  que sejam chamados diretamente por esse fluxo.
+- o launcher concentra regras operacionais e mensagens de
+  sessao no proprio BAT;
+- ha forte dependencia de scripts Python acionados por linha
+  de comando;
+- o estado operacional depende de arquivos locais, SQLite,
+  `.env` e do MT5 na mesma maquina;
+- o bootstrap da API P0-1 local sobe um executor com mocks
+  no startup, o que indica uma camada de integracao util para
+  acoplamento local, mas nao um servico externo completo;
+- o agente principal concentra muita logica em um unico
+  script, misturando ciclo operacional, regras de decisao,
+  exibicao e integracoes;
+- existem componentes historicos e experimentais no
+  repositorio, mas eles nao devem ser tratados como parte da
+  arquitetura principal deste executor, a menos que sejam
+  chamados diretamente por esse fluxo.
+
+### Limitacoes Resolvidas (16/03/2026)
+
+- **Interferencia entre agentes RL:** Resolvida com Magic
+  Number (EA ID) por agente. Cada agente filtra posicoes
+  exclusivamente pelo seu magic. (ADR-012)
+- **Deteccao de SL/TP no Agente Direto:** Resolvida com
+  verificacao por ticket no MT5 a cada 15s em vez de espera
+  cega de 60s.
 
 ## Delimitacao deste Documento
 
@@ -1133,4 +1231,3 @@ Este documento assume como fonte principal de verdade:
 
 Por isso, a arquitetura aqui descrita representa a operacao local observavel do
 executor, mesmo quando isso diverge de backlog, roadmap ou documentacao antiga.
-

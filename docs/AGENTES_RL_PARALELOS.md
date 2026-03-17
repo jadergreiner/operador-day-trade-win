@@ -1,81 +1,137 @@
-# Agentes RL Paralelos - Arquitetura Independente
+# Agentes Paralelos - Arquitetura Independente
 
 ## Visão Geral
 
-O projeto suporta **dois agentes RL operando em paralelo com posições completamente independentes**:
+O projeto suporta **4 agentes operando em paralelo
+com posições completamente independentes**:
 
-1. **INICIAR_AGENTE_RL_5000.bat** - Agente Supervisionado (síncrono)
-2. **INICIAR_AGENTE_RL_DIRETO.bat** - Agente Direto (autônomo)
+| # | Agente | Launcher | Magic |
+|---|--------|----------|-------|
+| 1 | RL 5000 (Supervisionado) | `INICIAR_AGENTE_RL_5000.bat` | 234500 |
+| 2 | RL Direto (Autônomo) | `INICIAR_AGENTE_RL_DIRETO.bat` | 234600 |
+| 3 | Micro Tendência (ML) | `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | 234700 |
+| 4 | Diários (Auditoria) | `INICIAR_DIARIOS.bat` | 234800 |
 
 Cada agente:
-- ✅ Tem seu próprio **Session ID** único
-- ✅ Mantém **logs separados** em outputs/
-- ✅ Opera com **estado isolado** (nenhuma interferência entre eles)
+
+- ✅ Tem seu próprio **Magic Number (EA ID)** no MT5
+- ✅ Mantém **logs separados** em `outputs/`
+- ✅ Opera com **estado isolado** (zero interferência)
 - ✅ Pode rodar **em paralelo** (simultaneamente)
 - ✅ Gerencia suas próprias **posições e trades**
-- ✅ Usa a mesma **RL model** (q_network.pkl)
+- ✅ Filtra posições por `magic` (nativo MT5)
+
+---
+
+## Isolamento por Magic Number (EA ID) — ADR-012
+
+> **Decisão**: 17/03/2026 — Supercede isolamento
+> por Session ID (ADR-011). Ver `docs/ADRS.md`.
+
+O campo `magic` do MT5 é persistido pela corretora
+na posição. Sobrevive a restarts, desconexões e
+crash do agente. Cada agente envia ordens com magic
+exclusivo e filtra posições por esse valor.
+
+```text
+Ordem enviada → MT5 grava magic na posição
+Agente reinicia → consulta posições com pos.magic
+→ só vê as suas
+```
+
+### Pontos de implementação (por agente)
+
+1. **Constante global**: `MAGIC_NUMBER = 234XXX`
+2. **Order de entrada**: `Order(..., magic_number=MAGIC_NUMBER)`
+3. **Order de saída**: `Order(..., magic_number=MAGIC_NUMBER)`
+4. **Filtro de posições**: `if pos.magic != MAGIC_NUMBER: continue`
 
 ---
 
 ## Arquitetura de Isolamento
 
-### INICIAR_AGENTE_RL_5000.bat (Supervisionado)
+### RL 5000 (Supervisionado) — Magic 234500
 
-```
-Script Principal: scripts/operar_novo_agente_rl_real_antiovertrading.py
-Wrapper (Supervisão): scripts/agente_com_supervision.py
+```text
+Script: scripts/operar_novo_agente_rl_real_antiovertrading.py
+Magic Number: 234500
+Símbolo: WIN$N
 
-Session ID: agente_supervisionado_TIMESTAMP (via environment var)
+Isolamento:
+  - monitorar_posicoes() filtra por magic
+  - processar_protecao_lucros() filtra por magic
+  - proteger_lucro_trade() filtra por magic
+  - modificar_sl_ordem() usa MAGIC_NUMBER
+  - fechar_parcial_posicao() usa MAGIC_NUMBER
+  - tickets_proprios: set[int] (backup local)
+
 Logs:
   - outputs/agente_supervision.log
   - outputs/agente_debug.log
-
-Recursos:
-  - Monitoramento contínuo (heartbeat)
-  - Tratamento de exceções centralizado
-  - Logging unificado via supervisão
-  - Recuperação automática de falhas
-
-Modo: SL/TP DINAMICOS (opção --sl-tp-mode)
 ```
 
-### INICIAR_AGENTE_RL_DIRETO.bat (Direto/Autônomo)
+### RL Direto (Autônomo) — Magic 234600
 
-```
-Script Principal: scripts/agente_rl_direto_independente.py
+```text
+Script: scripts/agente_rl_direto_independente.py
+Magic Number: 234600
+Símbolo: WIN$N
 
-Session ID: agente_direto_TIMESTAMP (gerado no script)
+Isolamento:
+  - verificar_posicao_no_mt5() filtra por magic
+  - AgentePosicaoStatus armazena ticket/preco/direcao
+  - Verifica posição a cada 15s (não 60s cego)
+  - Detecta SL/TP hit via consulta MT5 por ticket
+
 Logs:
   - outputs/agente_direto_[TIMESTAMP].log
-  - outputs/agente_direto_debug_[TIMESTAMP].log
+```
 
-Recursos:
-  - Inicialização própria de componentes
-  - Estado isolado com session ID único
-  - Logging independente por instância
-  - Recuperação básica de erros
+### Micro Tendência (ML) — Magic 234700
 
-Modo: SL/TP DINAMICOS (opção --mode dinamico|fixo)
+```text
+Script: scripts/agente_micro_tendencia_winfut.py
+Launcher: scripts/launch_agent_with_ml_v1_2_3.py
+Magic Number: 234700
+Símbolo: WIN$N
+
+Isolamento:
+  - execute_entry() passa magic na Order
+  - _close_position() passa magic na Order
+  - monitor_hedge_orphans() filtra por magic
+  - manage_positions() usa self.open_trades (interno)
+
+Logs:
+  - Terminal interativo (dashboard)
+```
+
+### Diários (Auditoria) — Magic 234800 (reservado)
+
+```text
+Script: scripts/start_journals_full_display.py
+Magic Number: 234800 (reservado, não envia ordens)
+Símbolo: WIN$N (leitura)
+
+Função:
+  - Trading Journal (narrativa macro/micro, 5 min)
+  - AI Reflection (auto-avaliação, 10 min)
+  - RL Performance Diary (rewards, 15 min)
 ```
 
 ---
 
 ## Comparação Detalhada
 
-| Aspecto | AGENTE RL 5000 | AGENTE DIRETO |
-|---------|---|---|
-| **Script** | `operar_novo_agente_rl_real_antiovertrading.py` | `agente_rl_direto_independente.py` |
-| **Wrapper** | Com supervisão (`agente_com_supervision.py`) | Direto (sem wrapper) |
-| **Session ID** | `agente_supervisionado_TIMESTAMP` | `agente_direto_TIMESTAMP` |
-| **Log Principal** | `agente_supervision.log` | `agente_direto_[TIMESTAMP].log` |
-| **Log Debug** | `agente_debug.log` | `agente_direto_debug_[TIMESTAMP].log` |
-| **Heartbeat** | ✅ Sim (thread monitor) | ❌ Não (script direto) |
-| **Tratamento Exception** | Centralizado em wrapper | Em cada componente |
-| **Paralelo** | ✅ Pode rodar com direto | ✅ Pode rodar com 5000 |
-| **Isolamento Session** | Via environment variable | Via geração de ID no script |
-| **Recuperação Falha** | Automática (monitor thread) | Manual (user restart) |
-| **Complexidade** | Média (com supervisão) | Simples (direto) |
-| **Performance** | Igual (mesmo modelo RL) | Igual (mesmo modelo RL) |
+| Aspecto | RL 5000 | RL Direto | Micro Tend. |
+|---------|---------|-----------|-------------|
+| **Magic** | 234500 | 234600 | 234700 |
+| **Script** | `operar_novo_agente_rl_*` | `agente_rl_direto_*` | `agente_micro_tend*` |
+| **Modelo** | Q-Learning (5000 ep.) | Q-Learning | LightGBM+MacroScore |
+| **Filtro posições** | `monitorar_posicoes` | `verificar_posicao_no_mt5` | `monitor_hedge_orphans` |
+| **SL/TP** | Dinâmicos | Dinâmicos | ATR calibrado |
+| **Heartbeat** | ✅ (thread) | ❌ | ❌ |
+| **Recuperação** | Automática | Manual | Manual |
+| **Paralelo** | ✅ | ✅ | ✅ |
 
 ---
 
@@ -116,27 +172,36 @@ outputs/
 
 ## Isolamento de Estado
 
-### Base de Dados
+### Nível 1: MT5 (Magic Number)
 
-Ambos usam o mesmo SQLite (trading.db), mas isolamento via:
+Isolamento nativo do broker — campo `magic` na posição:
+
+```python
+# Ao enviar ordem
+order = Order(..., magic_number=MAGIC_NUMBER)
+
+# Ao consultar posições
+for pos in mt5.get_positions(symbol):
+    if pos.magic != MAGIC_NUMBER:
+        continue  # ignora posição de outro agente
+```
+
+### Nível 2: Base de Dados
+
+Todos usam o mesmo SQLite (`trading.db`),
+isolamento via:
+
 - **session_id** em queries
 - **Índices sobre session_id** para performance
 - **FK constraints** para integridade
 
-Tabelas relevantes:
-```sql
--- Trades isolados por session
-trades (session_id, ticket, symbol, direction, ...)
-positions (session_id, ticket, symbol, open_price, ...)
-execution_feedback (session_id, trade_id, outcome, ...)
-```
-
-### Memória
+### Nível 3: Memória
 
 - Cada agente tem sua própria instância de:
   - `AgenteQLearning` (modelo em memória)
   - `ProfitProtectionEngine` (estado de proteção)
   - `RLRepository` (conexão DB)
+  - `tickets_proprios: set[int]` (backup local)
 
 ---
 
@@ -157,16 +222,19 @@ Cada agente:
 ## Desenvolvimento: Próximas Melhorias
 
 ### Prioridade Alta
+
 - [ ] Sincronização de modelo entre agentes (se um muda, outro nota)
 - [ ] Dashboard unificado mostrando ambos os agentes
 - [ ] Alertas coordenados (se um perde, o outro reduz agressividade)
 
 ### Prioridade Média
+
 - [ ] Sharing de features (A aprende com trade de B)
 - [ ] Rebalanceamento dinâmico de capital entre agentes
 - [ ] Veto mútuo em certos cenários de risco
 
 ### Prioridade Baixa
+
 - [ ] Comunicação RPC entre agentes
 - [ ] Distributed training com dados de ambos
 - [ ] Consenso na tomada de decisão
@@ -176,6 +244,7 @@ Cada agente:
 ## Troubleshooting
 
 ### Ambos os agentes travados?
+
 ```bash
 # Verificar logs
 tail -f outputs/agente_supervision.log
@@ -186,6 +255,7 @@ grep ERROR outputs/agente*.log
 ```
 
 ### Agente direto não inicia?
+
 ```bash
 # Verificar se arquivo existe
 if exist scripts\agente_rl_direto_independente.py (echo OK) else (echo MISSING)
@@ -195,29 +265,55 @@ python -c "import sys; sys.path.insert(0, '.'); from scripts.agente_rl_direto_in
 ```
 
 ### Posições ficando misturadas?
+
 ```sql
 -- Verificar isolamento por session
-SELECT session_id, COUNT(*) as positions FROM trades GROUP BY session_id;
-
--- Esperado: 2+ sessions com dados independentes
+SELECT session_id, COUNT(*)
+FROM trades
+GROUP BY session_id;
 ```
+
+### Agente vê posição de outro agente?
+
+Verificar se magic number está correto:
+
+```python
+import MetaTrader5 as mt5
+mt5.initialize()
+for pos in mt5.positions_get(symbol="WIN$N"):
+    print(f"ticket={pos.ticket} magic={pos.magic}")
+# Esperado: cada agente com magic diferente
+# 234500=RL5000, 234600=Direto, 234700=MicroTend
+```
+
+### Agente tentou modificar SL de outro?
+
+Sintoma: `retcode=10013` no log. Causa: magic
+number não bate. Solução: garantir que todas as
+chamadas `mt5.order_send()` raw usam
+`MAGIC_NUMBER` do agente correto.
 
 ---
 
 ## Referência Rápida
 
-| Comando | Efeito |
-|---------|--------|
-| `INICIAR_AGENTE_RL_5000.bat` | Inicia agente supervisionado |
-| `INICIAR_AGENTE_RL_DIRETO.bat` | Inicia agente direto (novo terminal) |
-| Ctrl+C | Para o agente atual |
-| Abrir 2 terminais | Ambos rodam em paralelo |
+| Comando | Magic | Efeito |
+|---------|-------|--------|
+| `INICIAR_AGENTE_RL_5000.bat` | 234500 | RL supervisionado |
+| `INICIAR_AGENTE_RL_DIRETO.bat` | 234600 | RL autônomo |
+| `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | 234700 | ML sinais |
+| `INICIAR_DIARIOS.bat` | 234800 | Auditoria |
+| Ctrl+C | — | Para o agente atual |
 
 ---
 
-## Commit & Histórico
+## Histórico
 
-- **Data:** 16/03/2026
-- **Commit 1:** feat: Criar agente_rl_direto_independente.py com session isolada
-- **Commit 2:** docs: Agentes RL paralelos - arquitetura independente
-- **Status:** ✅ Pronto para uso paralelo
+| Data | Decisão |
+|------|--------|
+| 16/03 | Session ID + arquivo JSON isolado (ADR-011) |
+| 17/03 | Magic Number EA ID por agente (ADR-012) |
+| 17/03 | Detecção SL/TP por ticket no agente direto |
+| 17/03 | Filtro magic no monitor_hedge_orphans |
+
+**Status:** ✅ Produção — isolamento por Magic Number

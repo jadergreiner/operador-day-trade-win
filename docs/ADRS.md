@@ -11,7 +11,8 @@
 - [ADR-001: Por que SQLite vs PostgreSQL como BD Primário? — Próximas Ações](#prximas-aes)
 - [ADR-001: Por que SQLite vs PostgreSQL como BD Primário? — Referências](#referncias)
 - [ADR-002: Por que 3 Gates de Risco Sequenciais?](#adr-002-por-que-3-gates-de-risco-sequenciais)
-- [ADR-002: Por que 3 Gates de Risco Sequenciais? — Contexto](#contexto)
+- [ADR-011: Isolamento de Posicoes entre Agentes RL](#adr-011-isolamento-de-posicoes-entre-agentes-rl-rl-5000-vs-rl-direto)
+- [ADR-012: Magic Number (EA ID) por Agente](#adr-012-magic-number-ea-id-por-agente---isolamento-de-ordens-mt5)
 
 
 ## Canonical Docs Policy
@@ -658,6 +659,8 @@ API_TIMEOUT=30
 | **ADR-007** | Event-Driven | [ARQUITETURA_ALVO.md#princípios](ARQUITETURA_ALVO.md) |
 | **ADR-008** | Terminal Isolation 3-Layer | [ARQUITETURA_ALVO.md#45](ARQUITETURA_ALVO.md) |
 | **ADR-009** | REST API Gateway P0-1 | [ARQUITETURA_ALVO.md#46](ARQUITETURA_ALVO.md) |
+| **ADR-011** | Isolamento Posicoes (Session ID) | Superseded por ADR-012 |
+| **ADR-012** | Magic Number (EA ID) por Agente | [trade.py](../src/domain/entities/trade.py) |
 
 ---
 
@@ -1148,49 +1151,195 @@ Solução necessária: Detecção automática + Auto-recovery (sem intervenção
 
 ## ADR-011: Isolamento de Posicoes entre Agentes RL (RL 5000 vs RL Direto)
 
-**Status**: ✅ ACCEPTED
+**Status**: ✅ ACCEPTED → SUPERSEDED por ADR-012
 
-**Data**: 16/03/2026
+**Data**: 16/03/2026 | **Atualizado**: 17/03/2026
 
-**Refs**: [ARQUITETURA_ALVO.md § P0](ARQUITETURA_ALVO.md#p0-isolamento-de-posicoes-entre-agentes-rl) | [src/application/posicao_isolamento.py](../src/application/posicao_isolamento.py)
+**Refs**: [src/application/posicao_isolamento.py](../src/application/posicao_isolamento.py)
 
 ### Contexto
 
-Quando operando RL 5000 e RL Direto em paralelo, ambos compartilhavam
-o mesmo mecanismo de rastreamento de posicoes. Isto causava:
+Quando operando RL 5000 e RL Direto em paralelo, ambos
+compartilhavam o mesmo mecanismo de rastreamento de posicoes.
+Isto causava:
 
 - RL Direto detectar posicoes criadas pelo RL 5000
-- Bloqueio desnecessário de operacoes
+- Bloqueio desnecessario de operacoes
 - Impossibilidade de operacao paralela isolada
-- Conflitos de session ID
+- RL 5000 tentar modificar SL de posicao do Direto (retcode
+  10013)
 
 **Sintoma Observado (16/03/2026 14:38:08):**
 
-```
-[CICLO 127] Status posição recarregado: True
-[CICLO 127] ⏸️  Posição DESTE AGENTE em aberto.
+```text
+[CICLO 127] Status posicao recarregado: True
+[CICLO 127] Posicao DESTE AGENTE em aberto.
 ```
 
-(Posição foi criada pelo RL 5000, não pelo Direto → bloqueio incorreto)
+(Posicao foi criada pelo RL 5000, nao pelo Direto)
 
 ### Decisão
 
-**Implementar classe `PosicaoIsoladaManager` com isolamento total:**
+**Fase 1 — Isolamento por Session ID e arquivo JSON:**
 
 1. **Session ID por Agente:**
    - RL 5000: `agente_5000_{TIMESTAMP}_v1`
    - RL Direto: `agente_direto_{TIMESTAMP}_v2`
-
-2. **Arquivo Isolado:** `outputs/agente_posicao_{session_id}.json`
-
+2. **Arquivo Isolado:**
+   `outputs/agente_posicao_{session_id}.json`
 3. **Validacao de Ownership:**
    - Campo `owner` no JSON (agente_version)
    - Verificacao ao carregar arquivo
-   - Log de erro se violacao detectada
-
 4. **Metadados Completos:**
    - session_id, owner, open_time, close_time
    - ticket, lado, quantidade, preco_entrada
+
+**Fase 2 — Ticket-based filtering (17/03/2026):**
+
+- `tickets_proprios: set[int]` no RL 5000
+- `monitorar_posicoes()` filtra por tickets locais
+- `processar_protecao_lucros()` filtra por tickets
+- `proteger_lucro_trade()` filtra por tickets
+
+> **Nota:** Esta abordagem foi superseded por ADR-012
+> (Magic Number), que resolve o isolamento de forma
+> definitiva no nivel do MT5.
+
+### Consequencias
+
+✅ **Pros**:
+- Isolamento funcional entre agentes
+- Arquivo JSON separado por session
+
+❌ **Contras**:
+- Tickets sao volateis (perdem-se no restart)
+- Nao resolve o problema na raiz (MT5 nao sabe quem e
+  o dono da posicao)
+- Superseded por Magic Number (ADR-012)
+
+---
+
+## ADR-012: Magic Number (EA ID) por Agente - Isolamento de Ordens MT5
+
+**Status**: ✅ ACCEPTED
+
+**Data**: 17/03/2026
+
+**Supercedes**: ADR-011 (ticket-based isolation)
+
+### Contexto
+
+Mesmo com isolamento por Session ID e ticket-set
+(ADR-011), problemas persistiam:
+
+1. **Restart perde tickets**: Ao reiniciar o agente, o
+   set `tickets_proprios` e perdido. Posicoes abertas
+   no MT5 nao tem como ser atribuidas ao agente correto.
+2. **MT5 nao diferencia agentes**: Todas as ordens
+   tinham magic number `234000` (default). O broker ve
+   todas como vindas do mesmo EA.
+3. **Interferencia cruzada**: RL 5000 tentava modificar
+   SL de posicao do Agente Direto (retcode 10013).
+4. **Watchdog hedge**: `monitor_hedge_orphans()` no
+   Micro Tendencia detectava posicoes de outros agentes
+   como orfas.
+
+### Decisão
+
+**Atribuir Magic Number unico (EA ID) a cada agente.**
+
+O campo `magic` do MT5 e persistido pela corretora na
+posicao — sobrevive a restarts e permite filtrar
+posicoes por agente de forma nativa.
+
+**Mapa de Magic Numbers:**
+
+```text
+| Agente           | Magic  | Envia ordens? |
+|------------------|--------|---------------|
+| RL 5000          | 234500 | Sim           |
+| Agente Direto    | 234600 | Sim           |
+| Micro Tendencia  | 234700 | Sim           |
+| Diarios          | 234800 | Nao (reserv.) |
+```
+
+**Implementacao em 4 pontos por agente:**
+
+1. **Constante global**: `MAGIC_NUMBER = 234XXX`
+2. **Order de entrada**: `Order(..., magic_number=MAGIC_NUMBER)`
+3. **Order de saida**: `Order(..., magic_number=MAGIC_NUMBER)`
+4. **Filtro de posicoes**: `if pos.magic != MAGIC_NUMBER:
+   continue`
+
+**Arquivos modificados:**
+
+```text
+src/domain/entities/trade.py
+  → Order dataclass: campo magic_number: int = 234000
+
+src/infrastructure/adapters/mt5_adapter.py
+  → send_order(): usa order.magic_number (nao hardcoded)
+
+scripts/operar_novo_agente_rl_real_antiovertrading.py
+  → MAGIC_NUMBER = 234500
+  → monitorar_posicoes() filtra por magic
+  → processar_protecao_lucros() filtra por magic
+  → proteger_lucro_trade() filtra por magic
+  → modificar_sl_ordem() usa MAGIC_NUMBER
+  → fechar_parcial_posicao() usa MAGIC_NUMBER
+
+scripts/agente_rl_direto_independente.py
+  → MAGIC_NUMBER = 234600
+  → verificar_posicao_no_mt5() filtra por magic
+
+scripts/agente_micro_tendencia_winfut.py
+  → MAGIC_NUMBER = 234700
+  → monitor_hedge_orphans() filtra por magic
+
+scripts/start_journals_full_display.py
+  → MAGIC_NUMBER = 234800 (reservado)
+```
+
+### Consequencias
+
+✅ **Pros**:
+- **Isolamento nativo MT5**: O campo `magic` e
+  persistido pelo broker na posicao. Sobrevive a
+  restarts, desconexoes e crash do agente.
+- **Filtro deterministico**: `pos.magic == MAGIC_NUMBER`
+  garante que cada agente so ve suas posicoes.
+- **Auditoria**: Na corretora, ordens sao rastreadas
+  por EA ID. Facilita investigacao e compliance.
+- **Zero interferencia**: RL 5000 nunca mais tenta
+  modificar SL de posicao do Direto (magic diferente).
+- **Watchdog correto**: `monitor_hedge_orphans()` so
+  alerta sobre orfas do proprio agente.
+- **Escalavel**: Novos agentes recebem magic sequencial
+  (234900, 235000, ...).
+
+❌ **Contras**:
+- Cada agente deve lembrar de passar `magic_number` em
+  toda criacao de `Order()`. Esquecimento usa default
+  234000 (nao pertence a nenhum agente).
+- Chamadas raw ao MT5 (`mt5.order_send()`) devem usar
+  `MAGIC_NUMBER` manualmente — nao passa pelo adapter.
+
+### Validacao
+
+**Confirmado pelo operador (17/03/2026):**
+> "criou ordens com ID do EA distintas"
+
+**Testes de compilacao:**
+- ✅ `py_compile` em todos os 4 scripts modificados
+- ✅ `py_compile` em trade.py e mt5_adapter.py
+
+### Referências
+
+- [src/domain/entities/trade.py](../src/domain/entities/trade.py)
+  — Order dataclass com `magic_number`
+- [src/infrastructure/adapters/mt5_adapter.py](../src/infrastructure/adapters/mt5_adapter.py)
+  — `send_order()` usa `order.magic_number`
+- ADR-011 (superseded) — Isolamento por Session ID
 
 ### Justificativa
 
