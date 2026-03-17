@@ -2438,6 +2438,45 @@ com baixa taxa de sucesso.
 
 ---
 
+#### 2. Suprimir ERROR de protecao_lucros fora do horario operacional no RL 5000
+
+**Status:** PENDENTE
+
+**Origem:** Fechamento diario 17/03/2026 — log
+`operar_agente_rl_antiovertrading.log` registrou ~380 linhas ERROR
+`processar_protecao_lucros: Not connected to MT5` entre 18:48 e 19:07
+(ciclos 360-379+), fora do horario operacional 9h-16h.
+
+**Problema tecnico:** A funcao `processar_protecao_lucros()` e chamada
+**antes** do guard `[HORA] Fora do horario` no loop principal
+(`operar_novo_agente_rl_real_antiovertrading.py`, linha 1204). Como o MT5
+desconecta fora do pregao, cada ciclo gera um ERROR desnecessario que polui
+os logs, dificulta triagem de erros reais e aumenta o tamanho do arquivo de
+log em ~680 KB/dia.
+
+**Entregar:**
+
+- mover a chamada de `processar_protecao_lucros()` para depois do guard
+  de horario no loop principal, ou adicionar verificacao de conexao MT5
+  antes de chamar a funcao;
+- garantir que fora do horario operacional nenhum ERROR seja gerado
+  por desconexao esperada;
+- adicionar teste unitario verificando que a funcao nao e chamada fora
+  do horario operacional.
+
+**Arquivo afetado:**
+`scripts/operar_novo_agente_rl_real_antiovertrading.py`
+
+**Agente impactado:** `INICIAR_AGENTE_RL_5000.bat`
+
+**Pronto quando:**
+
+- log RL 5000 fora do horario nao registra ERROR de conexao MT5;
+- arquivo de log cresce apenas com INFO de espera (sem ERRORs);
+- teste unitario verde.
+
+---
+
 ## Fora do backlog ativo
 
 Itens historicos, checklists de ambiente, reunioes antigas, sprints fechadas e
@@ -2455,3 +2494,4 @@ entradas ja entregues nao devem voltar para este arquivo.
   - Diarios: AC5.9 (health check periodico)
   - RL 5000: AC5.8/AC5.9/AC6.7/AC6.8/AC6.9 (pipeline completo)
 - Todos os 4 agentes com pipeline Grupo 2 integrado (17/03/2026)
+- Fechamento 17/03/2026: 6 bugs/melhorias capturados no backlog (P1)
