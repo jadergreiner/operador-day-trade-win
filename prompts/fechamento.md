@@ -1,29 +1,61 @@
-# ROLE: Head of Trading & Senior Automation Engineer
-# CONTEXT: Post-Market Review of "INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat"
+# Revisao Pos-Pregao — 4 Agentes Operacionais
 
-Utilize os dados REAIS presentes nos arquivos do workspace para responder ao checklist de fechamento abaixo. Não simule dados; se uma informação não estiver disponível nos logs, reporte como "Dados não encontrados".
+**Papel:** Head of Trading e Senior Automation Engineer
 
-## INSTRUÇÕES DE EXECUÇÃO:
-1. Analise o arquivo `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` para entender a lógica de execução.
-2. Analise os arquivos de log recentes (ex: `logs/*.log` ou saídas de console salvas) e o arquivo `docs\BACKLOG_UNIFICADO.md`.
-3. Responda aos 10 pontos do "Checklist de Fechamento" com base estritamente nas evidências encontradas no código e logs.
+Utilize os dados REAIS presentes nos arquivos do workspace para responder
+ao checklist de fechamento abaixo. Nao simule dados; se uma informacao nao
+estiver disponivel nos logs, reporte como "Dados nao encontrados".
 
-## CHECKLIST DE FECHAMENTO:
-1. **Aderência ao Sinal:** Verifique nos logs se houve discrepância entre sinal disparado e ordem enviada.
-2. **Slippage e Latência:** Calcule a diferença entre o timestamp do sinal e a execução (se disponível).
-3. **Gestão de Drawdown:** Identifique o maior rebaixamento registrado no log do pregão de hoje.
-4. **Relação Win/Loss:** Extraia a taxa de acerto real das micro tendências.
-5. **Exposição no VWAP:** Analise como o script tratou ordens próximas à VWAP.
-6. **Custo Operacional:** Projete os custos com base no volume de contratos operados hoje.
-7. **Comportamento em Notícias:** Verifique se o script foi interrompido ou se houve picos de volatilidade não tratados.
-8. **Concentração de Volume:** Mapeie o horário das maiores execuções.
-9. **Análise de Logs:** Reporte erros de sintaxe ou timeouts de conexão encontrados.
-10. **Escalabilidade:** Avalie se o volume atual agride o book (análise de liquidez média do WIN).
+## INSTRUCOES DE EXECUCAO
 
-## OUTPUT ESPERADO:
-Após o checklist, sintetize **3 OPORTUNIDADES DE EVOLUÇÃO** técnicas para o script `.bat`.
-Formate a saída como um PR (Pull Request) de atualização para o arquivo `docs\BACKLOG_UNIFICADO.md`, seguindo o padrão:
-- **ID:** [Auto-gerado]
-- **Melhoria:** [Título]
-- **Justificativa Técnica:** [Baseado nos dados de hoje]
-- **Prioridade:** [Alta/Média/Baixa]
+1. Analise os 4 scripts de entrada dos agentes operacionais:
+   - `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
+   - `INICIAR_AGENTE_RL_DIRETO.bat`
+   - `INICIAR_AGENTE_RL_5000.bat`
+   - `INICIAR_DIARIOS.bat`
+2. Analise os arquivos de log recentes em `outputs/*.log` e os arquivos
+   de posicao em `outputs/agente_posicao_*.json`.
+3. Consulte `docs/BACKLOG.md` para contexto dos itens pendentes.
+4. Responda aos 10 pontos do "Checklist de Fechamento" com base
+   estritamente nas evidencias encontradas no codigo e nos logs.
+
+## CHECKLIST DE FECHAMENTO
+
+1. **Aderencia ao Sinal:** Verifique nos logs se houve discrepancia
+   entre sinal disparado e ordem enviada (por agente).
+2. **Slippage e Latencia:** Calcule a diferenca entre o timestamp do
+   sinal e a execucao da ordem (se disponivel).
+3. **Gestao de Drawdown:** Identifique o maior rebaixamento registrado
+   no log de cada agente no pregao de hoje.
+4. **Relacao Win/Loss:** Extraia a taxa de acerto real por agente
+   (`resultado=WIN` vs `resultado=LOSS` nos logs).
+5. **Exposicao no VWAP:** Analise se os scripts registram entradas
+   proximas a VWAP; reporte "Dados nao encontrados" se ausente.
+6. **Custo Operacional:** Estime os custos com base no volume de
+   contratos executados (emolumentos B3 WIN: ~R$1,00/contrato/lado).
+7. **Comportamento em Volatilidade:** Verifique se houve picos de
+   volatilidade nao tratados, rollover de contrato nao detectado ou
+   interrupcao inesperada de sessao.
+8. **Concentracao de Volume:** Mapeie o horario das maiores execucoes
+   por agente.
+9. **Analise de Logs:** Reporte erros criticos encontrados:
+   `NameError`, `OrderExecutionError`, `Terminal mismatch`,
+   timeouts de conexao, e qualquer `[ERROR]` recorrente.
+10. **Escalabilidade:** Avalie se o volume atual agride o book
+    (liquidez media do WIN$N: ~400k-600k contratos/dia).
+
+## OUTPUT ESPERADO
+
+Apos o checklist, identifique as **OPORTUNIDADES DE EVOLUCAO** tecnicas
+encontradas nos logs do dia que ainda nao estejam no `docs/BACKLOG.md`.
+
+Para cada oportunidade nova, adicione ao `docs/BACKLOG.md` seguindo
+o padrao de entrada existente no arquivo:
+
+- **Status:** PENDENTE
+- **Origem:** Fechamento diario DD/MM/AAAA — [descricao da evidencia]
+- **Problema tecnico:** [causa raiz identificada no log]
+- **Entregar:** [lista de acoes concretas]
+- **Arquivo afetado:** [caminho do arquivo]
+- **Agente impactado:** [nome do .bat]
+- **Pronto quando:** [criterio de aceite mensuravel]
