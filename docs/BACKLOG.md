@@ -9,6 +9,7 @@
 - [Backlog — INICIAR_DIARIOS.bat](#backlog--iniciar_diariosbat)
 - [Backlog — INICIAR_AGENTE_RL_5000.bat](#backlog--iniciar_agente_rl_5000bat)
 - [Backlog — INICIAR_AGENTE_RL_5000_FIXED.bat](#backlog--iniciar_agente_rl_5000_fixedbat)
+- [Backlog — INICIAR_AGENTE_RL_DIRETO.bat](#backlog--iniciar_agente_rl_diretobat)
 
 ## Escopo de Execucao (4 Agentes)
 
@@ -2136,6 +2137,304 @@ posicao.
 - `MotorDecisaoIsolado` isola estado em memoria e JSON (Nivel 3)
 
 **Commit:** feat: Integrar modulos isolamento Grupo 1 nos agentes RL operacionais
+
+---
+
+## Backlog — INICIAR_AGENTE_RL_DIRETO.bat
+
+### P1 - Fechamento diario individualizado por agente
+
+#### 1. Redesenhar fechamento_diario para avaliar cada agente individualmente
+
+**Status:** PENDENTE
+
+**Origem:** Decisao operacional 17/03/2026 — o fechamento diario atual
+agrega resultado de todos os agentes em uma unica metrica, ocultando
+agentes deficitarios atras de agentes lucrativos.
+
+**Regra de negocio:** Cada agente tem estrategia propria e deve ser
+lucrativo por conta propria. Um agente `DEFICITARIO` nao pode ser
+compensado pelo resultado dos demais. Agente deficitario por 3 pregoes
+consecutivos entra automaticamente em revisao de estrategia (novo item P1).
+
+**Problema atual:**
+
+- `AprendizadoOperacional` e uma unica instancia global, sem campo
+  `agente`;
+- `SinteseFechamento` agrega tudo em `captura`, `aprendizados` e
+  `melhorias` sem distinguir por agente;
+- `CapturaMelhoria` nao tem campo `agente_impactado`;
+- `_imprimir_rodape` exibe apenas totais consolidados;
+- `_atualizar_backlog` nao diferencia itens por agente;
+- As Secoes 2, 3 e 4 do `prompts/fechamento_diario.md` ja foram
+  atualizadas com a nova estrutura por agente — o script precisa
+  implementa-las.
+
+**Entregar:**
+
+1. Nova dataclass `ResultadoAgente` com os campos:
+   - `agente: str` — `MICRO_TENDENCIA | DIARIOS | RL_5000 | RL_DIRETO`
+   - `executor: str` — nome do `.bat`
+   - `resultado_reais: float`
+   - `trades_executados: int`
+   - `trades_encerrados: int`
+   - `wins: int`
+   - `losses: int`
+   - `win_rate_pct: float`
+   - `maior_ganho_reais: float`
+   - `maior_perda_reais: float`
+   - `veredicto: str` — `LUCRATIVO | NEUTRO | DEFICITARIO`
+
+2. Refatorar `AprendizadoOperacional` para receber `agente: str` e
+   produzir uma instancia por agente ativo no pregao.
+
+3. Adicionar campo `agente_impactado: str` em `CapturaMelhoria`
+   (aceita nome do agente ou `"TODOS"`).
+
+4. Refatorar `SinteseFechamento.para_dict()` para incluir:
+   - `resultado_por_agente: list[dict]` com o resultado de cada agente;
+   - `resultado_consolidado` com soma total, win_rate geral e
+     lista de agentes em alerta (`DEFICITARIO`);
+   - `melhorias_por_agente: dict[str, int]` na secao de resumo.
+
+5. Refatorar `_imprimir_rodape` para exibir tabela por agente:
+   resultado, trades, win_rate, veredicto — e destacar qualquer agente
+   `DEFICITARIO`.
+
+6. Refatorar `_atualizar_backlog` para incluir `agente_impactado` em
+   cada linha de item capturado.
+
+7. Atualizar `schema_fechamento_diario.json` para refletir os novos
+   campos obrigatorios.
+
+8. Adicionar coleta automatica dos JSONs de posicao em
+   `outputs/agente_posicao_*.json` para popular `ResultadoAgente`
+   sem entrada manual.
+
+**Arquivos afetados:**
+
+- `prompts/fechamento_diario.py` (refatoracao principal)
+- `prompts/schema_fechamento_diario.json` (novo schema)
+
+**Agentes impactados:** TODOS
+
+**Pronto quando:**
+
+- `python prompts/fechamento_diario.py --foco fechamento` gera saida
+  com `resultado_por_agente` listando todos os 4 agentes;
+- agente `DEFICITARIO` aparece em `agentes_em_alerta` no rodape;
+- nenhum campo `agente_impactado` fica vazio em `melhorias`;
+- testes unitarios cobrem `ResultadoAgente.veredicto` e
+  `SinteseFechamento.para_dict()` com multiplos agentes.
+
+---
+
+### P1 - Bugs operacionais identificados em 17/03/2026
+
+#### 1. Corrigir NameError motor_decisao em enviar_ordem
+
+**Status:** PENDENTE
+
+**Origem:** Fechamento diario 17/03/2026 — sessao agente_direto_151302
+registrou ordens enviadas ao MT5 (tickets 2276892732, 2276892735,
+2276892745) mas `motor_decisao.abrir_posicao()` falhou com
+`NameError: name 'motor_decisao' is not defined` em
+`scripts/agente_rl_direto_independente.py:331`.
+
+**Problema tecnico:** A variavel `motor_decisao` (instancia de
+`MotorDecisaoIsolado`) nao esta no escopo da funcao `enviar_ordem()`.
+A ordem chega ao MT5 e e executada, mas o registro no isolamento
+formal fica com `ticket=None` no arquivo de posicao isolada — quebra
+a rastreabilidade e impede o fechamento correto da posicao.
+
+**Setups que falharam (evidencia do fechamento 17/03/2026):**
+
+- Sessao 151302: ordens BUY enviadas com ticket MT5 valido, mas
+  `motor_decisao` nao registrado — posicao isolada com `ticket=None`.
+
+**Entregar:**
+
+- passar `motor_decisao` como parametro para `enviar_ordem()` ou
+  tornar a referencia acessivel no escopo correto;
+- garantir que `motor_decisao.abrir_posicao()` seja chamado apos
+  confirmacao de execucao pelo MT5;
+- teste unitario cobrindo o fluxo de registro pos-envio.
+
+**Arquivo afetado:** `scripts/agente_rl_direto_independente.py`
+
+**Agente impactado:** `INICIAR_AGENTE_RL_DIRETO.bat`
+
+**Pronto quando:**
+
+- nenhuma sessao registrar `ticket=None` em arquivo de posicao isolada;
+- `motor_decisao.abrir_posicao()` chamado com sucesso apos cada envio;
+- teste unitario verde cobrindo o registro pos-envio.
+
+---
+
+#### 2. Corrigir calculo de pnl_reais no historico_fechamentos
+
+**Status:** PENDENTE
+
+**Origem:** Fechamento diario 17/03/2026 — historico_fechamentos do agente
+dinamico registrou `pnl_reais: -18.449.000` para trade que deveria ser
+~R$-200 a R$-300.
+
+**Problema tecnico:** O calculo multiplica pontos por contratos sem aplicar o
+divisor correto de WINFUT (R$0,20/ponto). Resultado fica na escala de pontos
+brutos em vez de reais.
+
+**Entregar:**
+
+- corrigir formula de `pnl_reais` no registro de fechamento;
+- garantir que `pnl_pct` tambem use base correta;
+- adicionar teste unitario cobrindo o calculo para WINFUT.
+
+**Arquivo afetado:** `scripts/agente_rl_direto_independente.py`
+
+**Agente impactado:** `INICIAR_AGENTE_RL_DIRETO.bat`
+
+**Pronto quando:**
+
+- historico_fechamentos registrar valores em reais dentro do range esperado
+  (ex: +-R$10 a R$300 por trade de 1 contrato WIN);
+- teste unitario verde.
+
+---
+
+#### 3. Tratar erros code 10006 com backoff, verificacao de simbolo e deteccao de rollover
+
+**Status:** PENDENTE
+
+**Origem:** Fechamento diario 17/03/2026 — agente_direto_151302 entrou em loop
+de rejeicoes (20+ tentativas consecutivas) com `Order execution failed: code
+10006` no simbolo WINJ26 entre 15:13 e 15:18. Causa raiz: rollover de contrato
+WINFUT sem halt automatico.
+
+**Problema tecnico (duplo):**
+
+1. Quando o simbolo esta indisponivel ou fora de horario, o agente
+   continua tentando enviar a mesma ordem em loop sem verificar
+   disponibilidade do simbolo antes de retentar.
+2. Nao ha deteccao de vencimento de contrato (rollover WINFUT ocorre
+   tipicamente na terceira quarta-feira do mes). O agente nao sabe
+   que WINJ26 expirou e que deve operar o proximo vencimento.
+
+**Setups que falharam (evidencia do fechamento 17/03/2026):**
+
+- Sessao 151302: loop de 20+ rejeicoes code:10006 apos rollover
+  WINJ26 → proximo vencimento. Sem backoff, sem halt.
+
+**Sugestoes de ajuste (fechamento 17/03/2026):**
+
+- Implementar deteccao de rollover de contrato com halt automatico.
+- Adicionar backoff exponencial apos falhas code:10006 consecutivas
+  (5s → 10s → 30s → halt).
+- Adicionar variacao de confianca do RL baseada em contexto de mercado.
+
+**Entregar:**
+
+- detectar vencimento do contrato atual comparando data com calendario
+  de rollover WINFUT (terceira quarta-feira do mes);
+- ao detectar rollover, trocar simbolo automaticamente ou encerrar sessao
+  com mensagem clara;
+- verificar se simbolo esta ativo (`mt5.symbol_info().trade_mode`)
+  antes de retentar envio de ordem;
+- adicionar backoff exponencial apos rejeicoes consecutivas:
+  3 falhas → 60s de espera; 5 falhas → encerrar sessao;
+- logar motivo da rejeicao e interromper tentativas apos N falhas.
+
+**Arquivo afetado:** `src/application/orders_executor.py`
+
+**Agentes impactados:**
+
+- `INICIAR_AGENTE_RL_DIRETO.bat`
+- `INICIAR_AGENTE_RL_5000.bat`
+
+**Pronto quando:**
+
+- nenhuma sessao acumular mais de 3 tentativas consecutivas de ordem
+  com mesmo codigo de erro;
+- log registrar motivo e encerrar tentativas com mensagem clara;
+- rollover detectado e sessao encerrada graciosamente com log explicito.
+
+---
+
+#### 3. Resolver terminal mismatch Clear vs FBS no MT5Adapter
+
+**Status:** PENDENTE
+
+**Origem:** Fechamento diario 17/03/2026 — logs mostram `Terminal mismatch:
+expected C:\Program Files\Clear Investimentos MT5 Terminal\terminal64.exe,
+got C:\Program Files\FBS MetaTrader 5\terminal64.exe` a cada reconexao.
+
+**Problema tecnico:** `mt5_adapter.py` valida o caminho exato do terminal no
+fingerprint de sessao. Quando o terminal ativo e diferente do configurado em
+`MT5_TERMINAL_PATH`, todas as reconexoes geram log de mismatch e podem causar
+latencia extra ou comportamento imprevisivel.
+
+**Entregar:**
+
+- revisar logica de validacao do terminal no `mt5_adapter.py`:
+  aceitar qualquer terminal autenticado com o login correto, ou
+  parametrizar `MT5_TERMINAL_PATH` corretamente no `.env`;
+- eliminar reconexoes causadas por mismatch durante sessao operacional.
+
+**Arquivo afetado:** `src/infrastructure/adapters/mt5_adapter.py`
+
+**Agentes impactados:**
+
+- `INICIAR_AGENTE_RL_DIRETO.bat`
+- `INICIAR_AGENTE_RL_5000.bat`
+
+**Pronto quando:**
+
+- nenhum log de `Terminal mismatch` durante sessao operacional normal;
+- reconexao MT5 ocorre sem warning de mismatch.
+
+---
+
+### P1 - Melhorias de ML/RL identificadas em 17/03/2026
+
+#### 1. Filtro de tendencia intraday para acao SELL do RL
+
+**Status:** PENDENTE
+
+**Origem:** Fechamento diario 17/03/2026 — sessao 130100 abriu SELL @ 182590
+em mercado em recuperacao bullish; resultado LOSS -R$61. O modelo RL aceitou
+acao=2 (SELL) com confianca 70% sem verificar alinhamento com tendencia
+intraday.
+
+**Problema tecnico:** O agente Q-Learning decide pela acao com base no estado
+de 15 dimensoes, mas nao ha gate externo de tendencia que bloqueie SELL quando
+a tendencia intraday e de alta. Resultado: entradas vendidas em mercado bullish
+com baixa taxa de sucesso.
+
+**Licao do fechamento 17/03/2026:**
+
+- Acao=2 (SELL) com ATR alto em tendencia de alta intraday tem baixa
+  taxa de sucesso — viés vendedor do RL em mercado bullish gerou LOSS.
+
+**Entregar:**
+
+- adicionar gate de tendencia antes de aceitar acao=2 (SELL): so
+  executar SELL quando EMA9 < EMA21 no timeframe operado;
+- analogamente, bloquear acao=1 (BUY) quando EMA9 > EMA21 em tendencia
+  de baixa (simetria);
+- gate deve ser configuravel via parametro para facilitar backtesting;
+- adicionar teste unitario cobrindo o filtro nas duas direcoes.
+
+**Arquivo afetado:** `scripts/agente_rl_direto_independente.py`
+
+**Agente impactado:** `INICIAR_AGENTE_RL_DIRETO.bat`
+
+**Tipo de aprendizado:** reinforcement
+
+**Pronto quando:**
+
+- sessao com tendencia bullish rejeita automaticamente acao=2 (SELL);
+- log registra `[GATE-TENDENCIA] SELL bloqueado — EMA9 > EMA21`;
+- teste unitario verde para gate nas duas direcoes.
 
 ---
 
