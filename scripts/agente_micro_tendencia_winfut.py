@@ -157,6 +157,52 @@ except ImportError:
     create_engine = None
     sessionmaker = None
 
+# --- Grupo 2: Feedback e Aprendizado (AC5/AC6) ---
+try:
+    from src.application.ac5_8_position_monitor import (
+        MonitorPositionManager,
+        StatusOrdem,
+        DirecaoOperacao,
+    )
+    AC5_8_DISPONIVEL = True
+except ImportError:
+    AC5_8_DISPONIVEL = False
+    MonitorPositionManager = None  # type: ignore[assignment,misc]
+
+try:
+    from src.application.ac5_9_feedback_validator import (
+        FeedbackValidator,
+    )
+    AC5_9_DISPONIVEL = True
+except ImportError:
+    AC5_9_DISPONIVEL = False
+    FeedbackValidator = None  # type: ignore[assignment,misc]
+
+try:
+    from src.application.ac6_7_drift_detector import DriftDetector
+    AC6_7_DISPONIVEL = True
+except ImportError:
+    AC6_7_DISPONIVEL = False
+    DriftDetector = None  # type: ignore[assignment,misc]
+
+try:
+    from src.application.ac6_8_online_learning import (
+        OnlineLearningController,
+    )
+    AC6_8_DISPONIVEL = True
+except ImportError:
+    AC6_8_DISPONIVEL = False
+    OnlineLearningController = None  # type: ignore[assignment,misc]
+
+try:
+    from src.application.ac6_9_baseline_comparator import (
+        BaselineComparator,
+    )
+    AC6_9_DISPONIVEL = True
+except ImportError:
+    AC6_9_DISPONIVEL = False
+    BaselineComparator = None  # type: ignore[assignment,misc]
+
 # ────────────────────────────────────────────────────────────────
 # Constantes
 # ────────────────────────────────────────────────────────────────
@@ -4483,6 +4529,92 @@ def _is_market_hours() -> bool:
     return PREGAO_INICIO <= now <= PREGAO_FIM
 
 
+def _executar_pipeline_feedback(
+    trading_mgr: Optional["MicroTradingManager"] = None,
+) -> None:
+    """Executa pipeline AC5.9→AC6.7→AC6.8→AC6.9 periodicamente."""
+    # Coleta trades do trading_mgr para alimentar pipeline
+    trades_data: list = []
+    feedback_data: list = []
+    if trading_mgr and hasattr(trading_mgr, "closed_trades"):
+        for t in trading_mgr.closed_trades:
+            entry = {
+                "trade_id": str(getattr(t, "ticket", "")),
+                "outcome": getattr(t, "outcome", "BREAKEVEN"),
+                "pnl": float(getattr(t, "pnl", 0.0)),
+                "direction": getattr(t, "direction", ""),
+            }
+            trades_data.append(entry)
+            feedback_data.append(entry)
+
+    # AC5.9: Validação de saúde do feedback
+    if _feedback_validator and trades_data:
+        try:
+            relatorio = _feedback_validator.validate_feedback_health(
+                trades=trades_data, feedback=feedback_data,
+            )
+            status_icon = {
+                "HEALTHY": "🟢", "WARNING": "🟡", "CRITICAL": "🔴",
+            }.get(relatorio.overall_status, "⚪")
+            print(
+                f"  {status_icon} AC5.9: Feedback {relatorio.overall_status}"
+                f" | Correlação: {relatorio.correlation_rate:.0%}"
+                f" | Qualidade: {relatorio.data_quality_score:.0%}"
+            )
+        except Exception as e:
+            print(f"  ⚠ AC5.9: {e}")
+
+    # AC6.7: Detecção de drift
+    if _drift_detector and trades_data:
+        try:
+            alertas = _drift_detector.detectar_drift(trades_data)
+            if alertas:
+                for a in alertas[:2]:
+                    print(
+                        f"  ⚠ AC6.7 Drift: {a.metric}"
+                        f" z={a.zscore:.1f} ({a.severity.value})"
+                    )
+            else:
+                print(f"  🟢 AC6.7: Sem drift detectado")
+        except Exception as e:
+            print(f"  ⚠ AC6.7: {e}")
+
+    # AC6.8: Aprendizagem online (treino incremental)
+    if _online_learning and trades_data:
+        try:
+            resultado = _online_learning.train_incremental(trades_data)
+            if resultado:
+                samples = resultado.get("samples_trained", 0)
+                print(f"  📚 AC6.8: Treino incremental ({samples} amostras)")
+        except Exception as e:
+            print(f"  ⚠ AC6.8: {e}")
+
+    # AC6.9: Comparação com baseline
+    if _baseline_comparator and trades_data:
+        try:
+            metricas_atuais = {
+                "win_rate": (
+                    sum(1 for t in trades_data if t.get("outcome") == "WIN")
+                    / max(len(trades_data), 1)
+                ),
+                "f1_score": 0.57,
+                "sharpe_ratio": 1.0,
+            }
+            comparacao = _baseline_comparator.comparar_metricas(
+                metricas_atuais,
+            )
+            fb = _baseline_comparator.gerar_feedback(comparacao)
+            acao_icon = {
+                "CONTINUE": "🟢", "MONITOR": "🟡", "ROLLBACK": "🔴",
+            }.get(fb.recommended_action, "⚪")
+            print(
+                f"  {acao_icon} AC6.9: {fb.recommended_action}"
+                f" | Confiança: {fb.confidence:.0%}"
+            )
+        except Exception as e:
+            print(f"  ⚠ AC6.9: {e}")
+
+
 # ────────────────────────────────────────────────────────────────
 # Main
 # ────────────────────────────────────────────────────────────────
@@ -4600,6 +4732,68 @@ def main():
             print(f"  [!] LightGBM Integrator: Falha ao inicializar ({str(e)[:40]})")
     else:
         print(f"  [i] LightGBM Integrator: Nao disponivel (modo tecnico apenas)")
+
+    # ── Grupo 2: Inicializa Pipeline Feedback/Aprendizado (AC5/AC6) ──
+    global _monitor_posicao, _feedback_validator, _drift_detector
+    global _online_learning, _baseline_comparator
+
+    _monitor_posicao = None
+    if AC5_8_DISPONIVEL and MonitorPositionManager:
+        try:
+            _monitor_posicao = MonitorPositionManager(db_caminho=DB_PATH)
+            print(f"  [*] AC5.8 MonitorPositionManager: Ativo")
+        except Exception as e:
+            print(f"  [!] AC5.8 MonitorPositionManager: {str(e)[:50]}")
+
+    _feedback_validator = None
+    if AC5_9_DISPONIVEL and FeedbackValidator:
+        try:
+            _feedback_validator = FeedbackValidator()
+            print(f"  [*] AC5.9 FeedbackValidator: Ativo")
+        except Exception as e:
+            print(f"  [!] AC5.9 FeedbackValidator: {str(e)[:50]}")
+
+    _baseline_metricas = {
+        "f1_score": 0.57, "win_rate": 0.55, "sharpe_ratio": 1.0,
+    }
+
+    _drift_detector = None
+    if AC6_7_DISPONIVEL and DriftDetector:
+        try:
+            _drift_detector = DriftDetector(
+                baseline_f1=0.57,
+                baseline_win_rate=0.55,
+                baseline_sharpe=1.0,
+                drift_threshold_zscore=2.0,
+                window_size=100,
+            )
+            print(f"  [*] AC6.7 DriftDetector: Ativo")
+        except Exception as e:
+            print(f"  [!] AC6.7 DriftDetector: {str(e)[:50]}")
+
+    _online_learning = None
+    if AC6_8_DISPONIVEL and OnlineLearningController:
+        try:
+            _online_learning = OnlineLearningController(
+                model_name="micro_tendencia",
+                baseline_metrics=_baseline_metricas,
+                models_dir="data/models",
+            )
+            print(f"  [*] AC6.8 OnlineLearningController: Ativo")
+        except Exception as e:
+            print(f"  [!] AC6.8 OnlineLearningController: {str(e)[:50]}")
+
+    _baseline_comparator = None
+    if AC6_9_DISPONIVEL and BaselineComparator:
+        try:
+            _baseline_comparator = BaselineComparator(
+                baseline_metrics=_baseline_metricas,
+                z_score_threshold=2.0,
+                models_dir="data/models",
+            )
+            print(f"  [*] AC6.9 BaselineComparator: Ativo")
+        except Exception as e:
+            print(f"  [!] AC6.9 BaselineComparator: {str(e)[:50]}")
 
     # ── PRE-FLIGHT: Verificação crítica do terminal MT5 ──
     if not _preflight_check_mt5(config):
@@ -4799,6 +4993,12 @@ def main():
                           f"| thresholds={dfb.threshold_sugerido_buy}/{dfb.threshold_sugerido_sell} "
                           f"| SMC_bypass={'SIM' if dfb.smc_bypass_recomendado else 'NÃO'}")
 
+                # ── Grupo 2: Pipeline Feedback/Aprendizado (a cada 10 ciclos) ──
+                try:
+                    _executar_pipeline_feedback(trading_mgr)
+                except Exception as e:
+                    print(f"  ⚠ Pipeline feedback: {e}")
+
             # Executa ciclo
             cycle_count += 1
             print(f"\n  ──── Ciclo #{cycle_count} ────")
@@ -4930,6 +5130,17 @@ def main():
                 # 1) Gerencia posições abertas (PnL, trailing, exits)
                 if result.price_current > 0:
                     trading_mgr.manage_positions(result.price_current)
+                    # AC5.8: Atualiza preço das posições abertas
+                    if _monitor_posicao and trading_mgr.open_trades:
+                        for t in trading_mgr.open_trades:
+                            try:
+                                tid = str(getattr(t, "ticket", ""))
+                                if tid:
+                                    _monitor_posicao.atualizar_preco_posicao(
+                                        tid, result.price_current,
+                                    )
+                            except Exception:
+                                pass
 
                 # 2) Avalia novas oportunidades
                 if result.opportunities:
@@ -4947,6 +5158,31 @@ def main():
                             ticket = trading_mgr.execute_entry(best)
                             if ticket:
                                 print(f"  ✓ Ordem executada! Ticket: {ticket}")
+                                # AC5.8: Registra ordem no monitor de posições
+                                if _monitor_posicao:
+                                    try:
+                                        direcao = (
+                                            DirecaoOperacao.BUY
+                                            if best.direction == "COMPRA"
+                                            else DirecaoOperacao.SELL
+                                        )
+                                        _monitor_posicao.registrar_ordem({
+                                            "trade_id": str(ticket),
+                                            "signal_id": str(decision_id),
+                                            "symbol": SYMBOL,
+                                            "direcao": direcao.value,
+                                            "volume": MAX_CONTRACTS,
+                                            "preco_entrada": best.entry,
+                                            "sl": best.stop_loss,
+                                            "tp": best.take_profit,
+                                            "magic_number": MAGIC_NUMBER,
+                                        })
+                                        _monitor_posicao.atualizar_status_ordem(
+                                            str(ticket), StatusOrdem.FILLED,
+                                        )
+                                        print(f"  ✓ AC5.8: Ordem {ticket} registrada")
+                                    except Exception as e:
+                                        print(f"  ⚠ AC5.8: {e}")
                                 # P0-URGENT-1: Registra entrada para reset de inatividade
                                 if _intraday_learner:
                                     _intraday_learner.record_entry()

@@ -1155,7 +1155,8 @@ Solução necessária: Detecção automática + Auto-recovery (sem intervenção
 
 **Data**: 16/03/2026 | **Atualizado**: 17/03/2026
 
-**Refs**: [src/application/posicao_isolamento.py](../src/application/posicao_isolamento.py)
+**Refs**: [src/application/posicao_isolamento.py](../src/application/posicao_isolamento.py),
+[src/application/motor_decisao_isolado.py](../src/application/motor_decisao_isolado.py)
 
 ### Contexto
 
@@ -1196,14 +1197,25 @@ Isto causava:
 
 **Fase 2 — Ticket-based filtering (17/03/2026):**
 
-- `tickets_proprios: set[int]` no RL 5000
-- `monitorar_posicoes()` filtra por tickets locais
-- `processar_protecao_lucros()` filtra por tickets
-- `proteger_lucro_trade()` filtra por tickets
+- ~~`tickets_proprios: set[int]` no RL 5000~~
+  Substituido por `MotorDecisaoIsolado` (17/03)
+- `monitorar_posicoes()` filtra por magic + motor
+- `processar_protecao_lucros()` filtra por magic
+- `proteger_lucro_trade()` filtra por magic
 
-> **Nota:** Esta abordagem foi superseded por ADR-012
-> (Magic Number), que resolve o isolamento de forma
-> definitiva no nivel do MT5.
+**Fase 3 — Integracao modulos formais (17/03):**
+
+- RL 5000 importa `MotorDecisaoIsolado` de
+  `src/application/motor_decisao_isolado.py`
+- RL Direto importa `PosicaoIsoladaManager` +
+  `MotorDecisaoIsolado`; classe inline
+  `AgentePosicaoStatus` removida (141 LOC)
+- Codigo duplicado inline eliminado
+
+> **Nota:** Fase 1 (Session ID) permanece via
+> `PosicaoIsoladaManager`. Fase 2 (tickets_proprios)
+> substituida por `MotorDecisaoIsolado`. Ambas
+> complementam ADR-012 (Magic Number).
 
 ### Consequencias
 
@@ -1278,11 +1290,12 @@ src/domain/entities/trade.py
   → Order dataclass: campo magic_number: int = 234000
 
 src/infrastructure/adapters/mt5_adapter.py
-  → send_order(): usa order.magic_number (nao hardcoded)
+  → send_order(): usa order.magic_number
 
 scripts/operar_novo_agente_rl_real_antiovertrading.py
   → MAGIC_NUMBER = 234500
-  → monitorar_posicoes() filtra por magic
+  → importa MotorDecisaoIsolado (17/03)
+  → monitorar_posicoes() filtra por magic + motor
   → processar_protecao_lucros() filtra por magic
   → proteger_lucro_trade() filtra por magic
   → modificar_sl_ordem() usa MAGIC_NUMBER
@@ -1290,7 +1303,9 @@ scripts/operar_novo_agente_rl_real_antiovertrading.py
 
 scripts/agente_rl_direto_independente.py
   → MAGIC_NUMBER = 234600
-  → verificar_posicao_no_mt5() filtra por magic
+  → importa PosicaoIsoladaManager + Motor (17/03)
+  → AgentePosicaoStatus inline REMOVIDO
+  → verificar_posicao_no_mt5() via motor
 
 scripts/agente_micro_tendencia_winfut.py
   → MAGIC_NUMBER = 234700
@@ -1339,6 +1354,10 @@ scripts/start_journals_full_display.py
   — Order dataclass com `magic_number`
 - [src/infrastructure/adapters/mt5_adapter.py](../src/infrastructure/adapters/mt5_adapter.py)
   — `send_order()` usa `order.magic_number`
+- [src/application/motor_decisao_isolado.py](../src/application/motor_decisao_isolado.py)
+  — Motor de decisao isolado por agent_id (Nivel 2)
+- [src/application/posicao_isolamento.py](../src/application/posicao_isolamento.py)
+  — PosicaoIsoladaManager com ownership (Nivel 2)
 - ADR-011 (superseded) — Isolamento por Session ID
 
 ### Justificativa
@@ -1681,6 +1700,61 @@ O canal oficial de entrega e o WebSocket ATI-1, com endpoint interno
 
 ---
 
+## ADR-015: Pipeline Feedback/Aprendizado (Grupo 2) Integrado nos Agentes
+
+**Status**: ✅ ACCEPTED
+**Data**: 17/03/2026
+
+### Contexto
+
+Os 5 modulos de feedback e aprendizado (AC5.8, AC5.9,
+AC6.7, AC6.8, AC6.9) estavam implementados e testados
+(102 testes, 102/102 PASSING) mas operavam em open loop
+— nenhum agente os importava. Sem integracao, o sistema
+nao detecta drift, nao valida feedback e nao faz online
+learning.
+
+### Decisao
+
+Integrar os 5 modulos diretamente nos scripts dos agentes
+com inicializacao lazy e try/except para resiliencia:
+
+1. **Micro Tendencia** (todos os 5): Pipeline completo
+   AC5.8→AC5.9→AC6.7→AC6.8→AC6.9 com execucao
+   periodica a cada 10 ciclos.
+2. **RL 5000** (AC5.8 apenas): Monitoramento de posicoes
+   integrado ao fluxo de ordens existente.
+3. **Diarios** (AC5.9 apenas): Health check de feedback
+   no diary de performance RL.
+
+### Consequencias
+
+✅ **Beneficios**:
+
+- feedback loop fechado (trade→outcome→aprendizado);
+- drift detectado automaticamente (Z-score baseline);
+- online learning com rollback automatico;
+- auditoria completa de posicoes em SQLite.
+
+⚠️ **Trade-offs**:
+
+- overhead de ~50ms por ciclo no Micro Tendencia;
+- inicializacao dos modulos adiciona ~200ms ao startup;
+- dependencia de `trading.db` para AC5.8 (4 tabelas).
+
+### Referencias
+
+- `src/application/ac5_8_position_monitor.py`
+- `src/application/ac5_9_feedback_validator.py`
+- `src/application/ac6_7_drift_detector.py`
+- `src/application/ac6_8_online_learning.py`
+- `src/application/ac6_9_baseline_comparator.py`
+- `scripts/agente_micro_tendencia_winfut.py`
+- `scripts/operar_novo_agente_rl_real_antiovertrading.py`
+- `scripts/start_journals_full_display.py`
+
+---
+
 ## Status de ADRs
 
 | ADR | Status | Data | Próximo Review |
@@ -1699,8 +1773,9 @@ O canal oficial de entrega e o WebSocket ATI-1, com endpoint interno
 | ADR-012 | ✅ ACCEPTED | 07/03/2026 | 08/03/2026 - Etapa 4 load testing |
 | ADR-013 | ✅ ACCEPTED | 12/03/2026 | Go-live 10/04/2026 |
 | ADR-014 | ✅ ACCEPTED | 12/03/2026 | AC5.8 monitoramento em tempo real |
+| ADR-015 | ✅ ACCEPTED | 17/03/2026 | Grupo 2 feedback/aprendizado |
 
-**ÚLTIMA ATUALIZAÇÃO:** 12/03/2026 17:30 BRT | **STATUS**: ✅ P1-CORE INTEGRADO
+**ÚLTIMA ATUALIZAÇÃO:** 17/03/2026 BRT | **STATUS**: ✅ GRUPO 2 INTEGRADO
 
 ```
 

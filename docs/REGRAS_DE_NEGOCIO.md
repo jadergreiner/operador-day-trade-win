@@ -52,11 +52,58 @@ sao consideradas.
 
 ### Cada agente mantem registro proprio de tickets
 
-Os agentes RL mantém um conjunto local de tickets
-que eles mesmos abriram (`tickets_proprios`).
-Isso funciona como segunda camada de protecao:
-mesmo que uma posicao exista no MT5, ela so e
-gerenciada se o ticket estiver no conjunto local.
+Os agentes RL mantêm registro de tickets via
+`MotorDecisaoIsolado` (módulo formal importado
+desde 17/03/2026). O motor persiste posições em
+JSON por `agent_id`, recupera tickets após
+restart e rastreia P&L automaticamente.
+Isso funciona como segunda camada de proteção:
+mesmo que uma posição exista no MT5, ela só é
+gerenciada se o ticket estiver no motor local.
+
+### Decisoes e posicoes isoladas por modulo
+
+O Grupo 1 de isolamento usa dois módulos em
+`src/application/`:
+
+- `motor_decisao_isolado.py`: Motor de decisão
+  por `agent_id`. Grava arquivos JSON separados
+  por agente (posições, decisões, histórico).
+  Max 1 posição simultânea por agente.
+- `posicao_isolamento.py`: Gerenciador de posição
+  por `session_id` + `agent_version`. Valida
+  ownership a cada leitura. Tentativa de acesso
+  cruzado gera erro e log de violação.
+
+Refs: ADR-011 (Session ID), ADR-012 (Magic
+Number). Ver BACKLOG P0-NOVO.
+
+### Feedback e aprendizado integrados por modulo
+
+O Grupo 2 de feedback usa cinco módulos em
+`src/application/` (ADR-015):
+
+- `ac5_8_position_monitor.py`: Monitoramento
+  em tempo real de posições com SQLite. Registra
+  ordens, atualiza preços e P&L a cada ciclo.
+  Agentes: Micro Tendência + RL 5000.
+- `ac5_9_feedback_validator.py`: Valida saúde
+  do ciclo trade→feedback→ML. Health check
+  com score HEALTHY/WARNING/CRITICAL.
+  Agentes: Micro Tendência + Diários.
+- `ac6_7_drift_detector.py`: Detecta degradação
+  de modelo via Z-score contra baseline.
+  Threshold default: 2.0 (configurável).
+  Agente: Micro Tendência (a cada 10 ciclos).
+- `ac6_8_online_learning.py`: Treino incremental
+  com rollback automático se win rate cair
+  abaixo de 55%. Agente: Micro Tendência.
+- `ac6_9_baseline_comparator.py`: Compara
+  métricas atuais vs baseline histórico. Gera
+  recomendação CONTINUE/MONITOR/ROLLBACK.
+  Agente: Micro Tendência.
+
+Refs: ADR-015 (Pipeline Grupo 2), P1 (BACKLOG).
 
 ### Ordens carregam o Magic Number do agente
 

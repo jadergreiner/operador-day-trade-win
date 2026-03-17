@@ -65,8 +65,9 @@ Referência: ADR-012 (`docs/ADRS.md`)
 2. **Session ID + JSON** — arquivo por agente
    (`outputs/agente_posicao_{session_id}.json`),
    `PosicaoIsoladaManager` valida ownership
-3. **Memória de processo** — `tickets_proprios: set[int]`
-   (RL 5000), `AgentePosicaoStatus` (RL Direto)
+3. **Memória de processo** — `MotorDecisaoIsolado`
+   (RL 5000 + RL Direto), `PosicaoIsoladaManager`
+   (RL Direto). Desde 17/03 usa módulos formais.
 
 ## Visao de Fluxo - Gate 2
 
@@ -428,11 +429,33 @@ classDiagram
     }
 
     %% Agent-Level Isolation (Sessao 16-17/03/2026)
-    class AgentePosicaoStatus {
-        -aberta: bool
-        -ticket: Optional~int~
-        -preco_entrada: Optional~float~
-        -direcao: Optional~str~
+    %% AgentePosicaoStatus REMOVIDO (17/03) — substituido
+    %% por PosicaoIsoladaManager + MotorDecisaoIsolado
+
+    %% Grupo 1 - Isolamento entre Agentes (application layer)
+    class MotorDecisaoIsolado {
+        -agent_id: str
+        -diretorio_base: Path
+        +abrir_posicao(tipo: TipoPosicao, preco: float) PosicaoAberta
+        +fechar_posicao(preco_saida: float, motivo: MotivoFechamento) HistoricoFechamento
+        +atualizar_posicao(preco_atual: float) PosicaoAberta
+        +registrar_decisao(decisao: DecisaoOperacional) DecisaoRegistrada
+        +obter_posicoes_abertas() List~PosicaoAberta~
+        +obter_historico() List~HistoricoFechamento~
+        +obter_estatisticas() Dict
+    }
+
+    class PosicaoIsoladaManager {
+        -session_id: str
+        -agent_version: str
+        -outputs_dir: Path
+        +registrar_posicao_aberta(preco: float, ticket: int, lado: str, qtd: int) void
+        +registrar_posicao_fechada() void
+        +tem_posicao_aberta() bool
+        +eh_dono_posicao() bool
+        +obter_metadados_posicao() Dict
+        +obter_infos_resumidas() Dict
+        +validar_integridade() bool
     }
 
     %% Relationships
@@ -470,8 +493,62 @@ classDiagram
     %% Magic Number Isolation (Sessao 16-17/03/2026)
     Order --|> MT5Adapter: "send_order(magic)"
     Order --|> ExecutionOrder: "base de envio"
-    AgentePosicaoStatus --|> MT5Adapter: "verificar_posicao_no_mt5()"
+    MotorDecisaoIsolado --|> MT5Adapter: "verificar_posicao_no_mt5()"
     TradeClosureReason --|> PositionMonitor: "classifica saida"
+
+    %% Grupo 1 - Isolamento entre Agentes
+    MotorDecisaoIsolado --|> Repository: "persiste decisoes JSON"
+    PosicaoIsoladaManager --|> MT5Adapter: "valida ownership"
+    MotorDecisaoIsolado --|> PositionMonitor: "complementa monitor"
+    PosicaoIsoladaManager --|> MotorDecisaoIsolado: "Grupo 1 isolamento"
+
+    %% Grupo 2 - Feedback e Aprendizado (Sessao 17/03/2026)
+    class MonitorPositionManager {
+        -db_caminho: str
+        -db_conexao: Connection
+        +registrar_ordem(ordem_spec: Dict) str
+        +atualizar_status_ordem(trade_id: str, status: StatusOrdem) void
+        +atualizar_preco_posicao(trade_id: str, preco: float) void
+        +encerrar_posicao(trade_id: str, preco: float) void
+        +obter_posicoes_abertas() List~PosicaoAberta~
+    }
+
+    class FeedbackValidator {
+        +validate_correlation(trades: List, feedback: List) FeedbackValidationResult
+        +validate_outcome_types(feedback: List) FeedbackValidationResult
+        +validate_pnl_consistency(feedback: List) FeedbackValidationResult
+        +validate_feedback_health(trades: List, feedback: List) FeedbackHealthReport
+    }
+
+    class DriftDetector {
+        -baseline_f1: float
+        -baseline_win_rate: float
+        -drift_threshold_zscore: float
+        +detectar_drift(trades: List) List~DriftAlert~
+        +gerar_relatorio_markdown(trades: List) str
+    }
+
+    class OnlineLearningController {
+        -model_name: str
+        -baseline_metrics: Dict
+        +train_incremental(batch: List) TrainingResult
+        +validate_model(batch: List) ValidationResult
+        +rollback_on_degradation(batch: List, prev: str) RollbackResult
+    }
+
+    class BaselineComparator {
+        -baseline_metrics: Dict
+        -z_score_threshold: float
+        +comparar_metricas(current: Dict) ComparisonResult
+        +gerar_feedback(comparison: ComparisonResult) SystemFeedback
+    }
+
+    %% Grupo 2 - Relationships
+    MonitorPositionManager --|> Repository: "SQLite 4 tabelas"
+    FeedbackValidator --|> MonitorPositionManager: "valida outcomes"
+    DriftDetector --|> FeedbackValidator: "detecta degradacao"
+    OnlineLearningController --|> DriftDetector: "treina se drift"
+    BaselineComparator --|> OnlineLearningController: "compara baseline"
 ```
 
 ## Diagrama de Dados (ER - Mermaid)
@@ -711,15 +788,14 @@ BACKLOG.md
 2. **TradeClosureReason enum** — classifica motivo
    de fechamento: TP\_HIT, SL\_HIT, MANUAL\_CLOSE,
    TIMEOUT, CANCELLED.
-3. **AgentePosicaoStatus** — dataclass com ticket,
-   preco\_entrada e direcao. Permite ao RL Direto
-   verificar posicao diretamente no MT5 por ticket
-   (`verificar_posicao_no_mt5()`) a cada 15s.
-4. **tickets\_proprios set** — RL 5000 mantem
-   conjunto de tickets proprios em memoria para
-   filtrar `monitorar_posicoes()`,
-   `processar_protecao_lucros()` e
-   `proteger_lucro_trade()`.
+3. **MotorDecisaoIsolado** — substitui tanto
+   `AgentePosicaoStatus` (RL Direto) quanto
+   `tickets_proprios` (RL 5000) desde 17/03.
+   Persiste posicoes em JSON, rastreia P&L
+   e faz recovery automatico apos restart.
+4. **PosicaoIsoladaManager** — RL Direto usa
+   para validacao de ownership e registro de
+   posicao aberta/fechada com `session_id`.
 5. **monitor\_hedge\_orphans()** — Micro Tendencia
    filtra posicoes orfas apenas pelo seu magic
    (234700), ignorando posicoes de outros agentes.

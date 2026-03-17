@@ -62,56 +62,69 @@ retorno auditavel (Gate 2 PASS).
 
 #### 2. P0-NOVO Motor de Decisao Isolado por Agent ID
 
-**Status:** ✅ DONE (16/03/2026)
+**Status:** ✅ DONE (16/03/2026) | INTEGRADO (17/03/2026)
 
-**Objetivo:** Eliminar bloqueios falsos entre agentes RL paralelos causados
-por compartilhamento de estado de posicao. Implementar isolamento completo
-de decisoes e rastreamento de posicoes por agent_id.
+**Objetivo:** Eliminar bloqueios falsos entre agentes RL
+paralelos causados por compartilhamento de estado de
+posicao. Implementar isolamento completo de decisoes e
+rastreamento de posicoes por agent_id.
 
-**Motivo da prioridade:** Agentes RL_5000 e RL_DIRETO nao conseguem operar
-em paralelo - cada um bloqueia o outro quando um abre posicao, mesmo que
-pertenham a agentes diferentes.
+**Motivo da prioridade:** Agentes RL_5000 e RL_DIRETO
+nao conseguem operar em paralelo — cada um bloqueia o
+outro quando um abre posicao, mesmo que pertencam a
+agentes diferentes.
 
-**Problema tecnico:** Arquivo `agente_posicao_status.json` compartilhado
-causava bloqueio falso de 60s no segundo agente. Cada agente precisa seu
-proprio executor ISOLADO.
+**Problema tecnico:** Arquivo
+`agente_posicao_status.json` compartilhado causava
+bloqueio falso de 60s no segundo agente. Cada agente
+precisa seu proprio executor ISOLADO.
 
 **Entregar:**
 
-- Motor de decisao isolado por agent_id (100% isolamento); ✅
-- 4 dataclasses para dominio (PosicaoAberta, DecisaoRegistrada, HistoricoFechamento); ✅
-- MotorDecisaoIsolado com 10+ metodos (abrir, atualizar, fechar, estatisticas); ✅
-- Persistencia file-based por agent (posicoes_ativas_{agent_id}.json); ✅
-- Suite com 24 testes (24/24 PASSING); ✅
-- Validacao mypy --strict (100% type compliant); ✅
-- Documentacao 100% Portugues, docstrings completos. ✅
+- Motor de decisao isolado por agent_id; ✅
+- 4 dataclasses para dominio; ✅
+- MotorDecisaoIsolado com 10+ metodos; ✅
+- Persistencia file-based por agent; ✅
+- Suite com 24+7 testes (31/31 PASSING); ✅
+- Validacao mypy --strict; ✅
+- Documentacao 100% Portugues; ✅
+- **Integracao nos agentes (17/03/2026):** ✅
+  - RL 5000: `motor_isolado` substitui
+    `tickets_proprios` (set inline)
+  - RL Direto: `PosicaoIsoladaManager` +
+    `MotorDecisaoIsolado` substituem classe
+    inline `AgentePosicaoStatus` (141 LOC)
 
 **Pronto quando:**
 
-- Motor funciona com 0 interferencia entre agentes paralelos;
-- 24 testes PASSING (unit + integration);
-- mypy --strict OK sem erros;
-- Posicoes abertas por agente_5000 NAO bloqueiam agente_direto;
-- P&L calculado corretamente (pontos_por_contrato=100 para WINFUT).
+- Motor funciona com 0 interferencia; ✅
+- 31 testes PASSING (unit + integration); ✅
+- mypy --strict OK; ✅
+- Agentes importam modulos formais; ✅
+- Codigo inline duplicado removido. ✅
 
 **Evidencias:**
 
-- `src/application/motor_decisao_isolado.py`: Modulo completo (750+ LOC)
-  - 4 dataclasses: PosicaoAberta, DecisaoRegistrada, HistoricoFechamento, (Enums)
-  - 3 Enums: DecisaoOperacional (6), TipoPosicao (2), MotivoFechamento (6)
-  - MotorDecisaoIsolado: 10+ metodos, arquivo-based persistence
-- `tests/unit/test_motor_decisao_isolado.py`: Suite (500+ LOC, 24 testes)
-  - TestDataClasses (4): dataclass creation/serialization
-  - TestMotorIsolamento (3): agent isolation verification
-  - TestAbrirPosicao (4): position opening
-  - TestAtualizarPosicao (2): P&L updates
-  - TestFecharPosicao (3): position closure
-  - TestEstatisticas (3): performance metrics
-  - TestPersistencia (3): JSON load/save
-  - TestIntegracaoCompleta (2): full workflows
-- Codigo: 100% type hints, 100% Portugues, docstrings
-- Validacao: pytest 24/24 PASSING, mypy --strict OK
-- Commit: feat: Implementar P0-NOVO Motor de Decisao Isolado com testes 24/24
+- `src/application/motor_decisao_isolado.py`:
+  Modulo completo (750+ LOC)
+- `src/application/posicao_isolamento.py`:
+  Modulo complementar (387 LOC)
+- `tests/unit/test_motor_decisao_isolado.py`:
+  24 testes
+- `tests/test_posicao_isolamento.py`: 7 testes
+- Scripts integrados (17/03/2026):
+  - `scripts/operar_novo_agente_rl_*`: importa
+    `MotorDecisaoIsolado`, `TipoPosicao`,
+    `MotivoFechamento`
+  - `scripts/agente_rl_direto_*`: importa
+    `PosicaoIsoladaManager`,
+    `MotorDecisaoIsolado`; classe inline
+    `AgentePosicaoStatus` removida
+  - Arquivo isolado: `outputs/agente_posicao_{session_id}.json`
+- `tests/test_posicao_isolamento.py`: Suite (7 testes, 7/7 PASSING)
+  - Fixtures: agente_5000, agente_direto
+  - Cobertura: ownership, isolamento, integridade
+- Refs: ADR-011 (Session ID) + ADR-012 (Magic Number)
 
 #### 3. AC5.7 Integracao real de envio de ordens MT5
 
@@ -164,7 +177,7 @@ fim a fim.
 
 #### 4. AC5.8 Monitoramento em tempo real de execucao
 
-**Status:** ✅ DONE (15/03/2026)
+**Status:** ✅ DONE (15/03/2026) | INTEGRADO (17/03/2026)
 
 **Objetivo:** acompanhar ordens abertas, transicoes e risco em runtime.
 
@@ -182,12 +195,21 @@ fim a fim.
 - Arquitetura: 4 tabelas SQLite com persistencia, auditoria, P&L calculo
 - Validacao: mypy --strict OK, pytest 19/19, cobertura >=84%
 - Commit: feat: Implementar AC5.8 Monitoramento tempo real com testes 19/19
+- **Integracao nos agentes (17/03/2026):** ✅
+  - Micro Tendencia: `MonitorPositionManager` inicializado
+    em `main()`, `registrar_ordem()` no envio,
+    `atualizar_preco_posicao()` a cada ciclo
+  - RL 5000: `MonitorPositionManager` inicializado em
+    `__main__`, `registrar_ordem()` em
+    `enviar_ordem_mt5adapter()`,
+    `atualizar_preco_posicao()` em
+    `monitorar_posicoes()`
 
 #### 5. AC5.9 Feedback de execucao para ML
 
 **Objetivo:** fechar o ciclo entre ordem executada e dado de aprendizado.
 
-**Status:** ✅ DONE (15/03/2026 - Validador de Feedback implementado)
+**Status:** ✅ DONE (15/03/2026 - Validador de Feedback implementado) | INTEGRADO (17/03/2026)
 
 **Entregar:**
 
@@ -229,10 +251,16 @@ fim a fim.
 - Agentes impactados: INICIAR_DIARIOS.bat +
   INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
 - Commit: feat: Implementar AC5.9 Validador Feedback com testes 21/21
+- **Integracao nos agentes (17/03/2026):** ✅
+  - Micro Tendencia: `FeedbackValidator` chamado a cada
+    10 ciclos com `validate_feedback_health()`
+  - Diarios: `FeedbackValidator` integrado ao
+    `run_rl_performance_diary()` para health check
+    periodico do ciclo de feedback
 
 #### 6. AC6.7 a AC6.9 Evolucao do loop de ML
 
-**Status:** INICIADO - AC6.7 Drift Detection implementado (15/03/2026)
+**Status:** ✅ DONE (16/03/2026) | INTEGRADO (17/03/2026)
 
 **AC6.7 - Drift Detector:** ✅ DONE (15/03/2026)
 
@@ -267,6 +295,26 @@ fim a fim.
   - ✅ Type hints: 100% conforme mypy --strict
   - ✅ Documentação: Relatórios JSON + Markdown
   - Commit: feat: Implementar AC6.9 Comparacao Baseline com testes 20/20
+
+**Integracao nos agentes (17/03/2026):** ✅
+
+- Micro Tendencia (todos os 5 modulos):
+  - AC5.8: `MonitorPositionManager` — registra e
+    monitora posicoes em tempo real
+  - AC5.9: `FeedbackValidator` — valida saude do
+    ciclo de feedback a cada 10 ciclos
+  - AC6.7: `DriftDetector` — detecta degradacao do
+    modelo a cada 10 ciclos
+  - AC6.8: `OnlineLearningController` — treino
+    incremental ativado se drift detectado
+  - AC6.9: `BaselineComparator` — compara metricas
+    vs baseline e gera recomendacoes
+- RL 5000 (AC5.8 apenas):
+  - `MonitorPositionManager` — registra ordens e
+    atualiza precos em `monitorar_posicoes()`
+- Diarios (AC5.9 apenas):
+  - `FeedbackValidator` — health check periodico
+    no `run_rl_performance_diary()`
 
 #### 7. P1-LEARNING Etapas 1-2 (Signal Detection + Decision Recording)
 

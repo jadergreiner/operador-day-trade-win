@@ -56,6 +56,16 @@ try:
 except ImportError:
     HAS_MACRO_PROVIDER = False
 
+# --- Grupo 2: Feedback Validator (AC5.9) ---
+try:
+    from src.application.ac5_9_feedback_validator import (
+        FeedbackValidator,
+    )
+    AC5_9_DISPONIVEL = True
+except ImportError:
+    AC5_9_DISPONIVEL = False
+    FeedbackValidator = None  # type: ignore[assignment,misc]
+
 
 def _fetch_live_macro() -> dict:
     """Busca dados macro ao vivo via APIs gratuitas."""
@@ -2658,6 +2668,42 @@ def run_rl_performance_diary():
                     print("  ⚠ Falha ao salvar feedback no SQLite")
             except Exception as fb_err:
                 print(f"  ⚠ Erro ao persistir feedback: {fb_err}")
+
+            # AC5.9: Validação de saúde do feedback (Grupo 2)
+            if AC5_9_DISPONIVEL and FeedbackValidator:
+                try:
+                    _fv = FeedbackValidator()
+                    # Converte dados RL em formato de trades/feedback
+                    _trades = [
+                        {
+                            "trade_id": str(i),
+                            "outcome": (
+                                "WIN" if h.get("correct") else "LOSS"
+                            ),
+                            "pnl": float(h.get("pts", 0)),
+                        }
+                        for i, h in enumerate(
+                            perf.get("rewards_by_horizon", {})
+                            .get(5, {}).get("entries", [])
+                        )
+                    ] if perf.get("rewards_by_horizon") else []
+                    if _trades:
+                        _report = _fv.validate_feedback_health(
+                            trades=_trades, feedback=_trades,
+                        )
+                        _icon = {
+                            "HEALTHY": "🟢",
+                            "WARNING": "🟡",
+                            "CRITICAL": "🔴",
+                        }.get(_report.overall_status, "⚪")
+                        print(
+                            f"  {_icon} AC5.9 Feedback:"
+                            f" {_report.overall_status}"
+                            f" | Qualidade:"
+                            f" {_report.data_quality_score:.0%}"
+                        )
+                except Exception as e:
+                    print(f"  ⚠ AC5.9: {e}")
 
             print()
             print("  " + "─" * 60)

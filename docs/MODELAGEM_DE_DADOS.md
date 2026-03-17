@@ -1537,7 +1537,13 @@ do enum `TradeClosureReason`
 | `TIMEOUT` | Expirado por tempo |
 | `CANCELLED` | Cancelado antes de executar |
 
-### AgentePosicaoStatus (JSON Runtime)
+### PosicaoIsoladaManager (JSON Runtime)
+
+> **Nota (17/03/2026):** A classe inline
+> `AgentePosicaoStatus` foi removida do RL Direto.
+> Agora o `PosicaoIsoladaManager`
+> (`src/application/posicao_isolamento.py`) gerencia
+> este JSON com validação de ownership.
 
 Cada agente RL grava estado em arquivo JSON
 isolado (`outputs/agente_posicao_{session}.json`):
@@ -1566,6 +1572,182 @@ Campos:
 - `magic_number` (INTEGER): EA ID do agente
 - `timestamp` (ISO8601): Ultima atualizacao
 
+### MotorDecisaoIsolado (JSON por agent_id)
+
+Módulo `src/application/motor_decisao_isolado.py`
+persiste 3 arquivos JSON por agente:
+
+**posicoes_ativas_{agent_id}.json:**
+
+```json
+{
+  "agent_id": "agente_5000",
+  "tipo": "COMPRA",
+  "preco_entrada": 131500.0,
+  "preco_atual": 131600.0,
+  "pnl_pontos": 100.0,
+  "pnl_financeiro": 10000.0,
+  "timestamp_abertura": "2026-03-16T10:09:00"
+}
+```
+
+**decisoes_{agent_id}.json:**
+
+```json
+{
+  "agent_id": "agente_5000",
+  "decisao": "ABRIR_COMPRA",
+  "timestamp": "2026-03-16T10:09:00",
+  "contexto": {}
+}
+```
+
+**historico_fechamentos_{agent_id}.json:**
+
+```json
+{
+  "agent_id": "agente_5000",
+  "tipo": "COMPRA",
+  "preco_entrada": 131500.0,
+  "preco_saida": 131700.0,
+  "motivo": "TAKE_PROFIT",
+  "pnl_pontos": 200.0,
+  "pnl_financeiro": 20000.0
+}
+```
+
+### PosicaoIsoladaManager (JSON por session)
+
+Módulo `src/application/posicao_isolamento.py`
+persiste arquivo por sessão de agente:
+
+**agente_posicao_{session_id}.json:**
+
+```json
+{
+  "session_id": "agente_direto_20260316_123354",
+  "owner": "DIRETO_v2",
+  "owner_version": "DIRETO_v2",
+  "aberta": true,
+  "preco_entrada": 182000.0,
+  "open_time": "2026-03-16T12:34:02",
+  "ticket": 123456789,
+  "lado": "BUY",
+  "quantidade": 1,
+  "timestamp": "2026-03-16T12:34:02"
+}
+```
+
+Campo `owner_version` é validado a cada leitura.
+Tentativa de acesso por agente diferente gera
+`ValueError` e log de violação.
+
+---
+
+## Tabelas AC5.8 — Monitoramento de Posicoes
+
+Criadas por `MonitorPositionManager` em
+`src/application/ac5_8_position_monitor.py`.
+Gerenciadas automaticamente (CREATE IF NOT EXISTS)
+na inicializacao do monitor. DB: `trading.db`.
+
+### Tabela 20: ORDENS (AC5.8)
+
+```sql
+CREATE TABLE IF NOT EXISTS ordens (
+    trade_id TEXT PRIMARY KEY,
+    signal_id TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    direcao TEXT NOT NULL,
+    volume INTEGER NOT NULL,
+    preco_entrada REAL NOT NULL,
+    sl REAL NOT NULL,
+    tp REAL NOT NULL,
+    status TEXT NOT NULL DEFAULT 'PENDING',
+    criado_em TEXT NOT NULL,
+    atualizado_em TEXT NOT NULL
+);
+```
+
+**Campos:**
+
+- `trade_id`: UUID da ordem (PK)
+- `signal_id`: Referencia ao sinal que gerou
+- `direcao`: BUY ou SELL
+- `status`: PENDING/SENT/FILLED/PARTIAL/CANCELLED/REJECTED
+- `sl`/`tp`: Stop Loss e Take Profit
+
+### Tabela 21: POSICOES_ABERTAS (AC5.8)
+
+```sql
+CREATE TABLE IF NOT EXISTS posicoes_abertas (
+    posicao_id TEXT PRIMARY KEY,
+    trade_id TEXT NOT NULL UNIQUE,
+    signal_id TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    direcao TEXT NOT NULL,
+    volume INTEGER NOT NULL,
+    preco_entrada REAL NOT NULL,
+    sl REAL NOT NULL,
+    tp REAL NOT NULL,
+    preco_atual REAL NOT NULL DEFAULT 0.0,
+    pl REAL NOT NULL DEFAULT 0.0,
+    status TEXT NOT NULL DEFAULT 'ABERTA',
+    criado_em TEXT NOT NULL,
+    atualizado_em TEXT NOT NULL,
+    FOREIGN KEY(trade_id) REFERENCES ordens(trade_id)
+);
+```
+
+**Campos:**
+
+- `posicao_id`: UUID da posicao (PK)
+- `preco_atual`: Atualizado por ciclo de monitor
+- `pl`: Profit/Loss calculado em tempo real
+- `status`: ABERTA/ENCERRADA/CANCELADA
+
+### Tabela 22: POSICOES_ENCERRADAS (AC5.8)
+
+```sql
+CREATE TABLE IF NOT EXISTS posicoes_encerradas (
+    posicao_id TEXT PRIMARY KEY,
+    trade_id TEXT NOT NULL UNIQUE,
+    signal_id TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    direcao TEXT NOT NULL,
+    volume INTEGER NOT NULL,
+    preco_entrada REAL NOT NULL,
+    preco_encerramento REAL NOT NULL,
+    pl_final REAL NOT NULL,
+    criado_em TEXT NOT NULL,
+    encerrado_em TEXT NOT NULL,
+    FOREIGN KEY(trade_id) REFERENCES ordens(trade_id)
+);
+```
+
+**Campos:**
+
+- `preco_encerramento`: Preco de saida
+- `pl_final`: PnL definitivo da posicao
+
+### Tabela 23: EVENTOS_MONITORAMENTO (AC5.8)
+
+```sql
+CREATE TABLE IF NOT EXISTS eventos_monitoramento (
+    evento_id TEXT PRIMARY KEY,
+    trade_id TEXT NOT NULL,
+    tipo_evento TEXT NOT NULL,
+    descricao TEXT,
+    timestamp TEXT NOT NULL,
+    FOREIGN KEY(trade_id) REFERENCES ordens(trade_id)
+);
+```
+
+**Campos:**
+
+- `tipo_evento`: Tipo do evento monitorado
+- `descricao`: Descricao textual do evento
+
 ---
 
 ## Documentos Relacionados
@@ -1582,6 +1764,6 @@ Campos:
 
 ---
 
-**ULTIMA ATUALIZACAO:** 16/03/2026 BRT |
-**STATUS**: Completo (19 tabelas SQL + P50 JSON +
-Magic Number isolation)
+**ULTIMA ATUALIZACAO:** 17/03/2026 BRT |
+**STATUS**: Completo (23 tabelas SQL + P50 JSON +
+Magic Number isolation + AC5.8 monitor)

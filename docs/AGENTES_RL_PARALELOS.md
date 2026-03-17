@@ -195,13 +195,74 @@ isolamento via:
 - **Índices sobre session_id** para performance
 - **FK constraints** para integridade
 
+### Nível 2b: Camada de Aplicação (Grupo 1)
+
+Dois módulos em `src/application/` garantem
+isolamento de decisões e posições entre agentes.
+Desde 17/03/2026, ambos são **importados
+diretamente** pelos scripts dos agentes (não
+mais código inline duplicado).
+
+**`motor_decisao_isolado.py`** — Motor de decisão
+por `agent_id`. Cada agente grava decisões e
+posições em arquivos JSON próprios
+(`posicoes_ativas_{agent_id}.json`). Classe
+`MotorDecisaoIsolado` com 10+ métodos.
+- RL 5000: `motor_isolado` (substitui
+  `tickets_proprios` set)
+- RL Direto: `motor_decisao` (substitui lógica
+  inline de `AgentePosicaoStatus`)
+
+**`posicao_isolamento.py`** — Gerenciador de
+posição isolada por `session_id` +
+`agent_version`. Classe `PosicaoIsoladaManager`
+valida ownership a cada leitura e impede acesso
+cruzado entre agentes.
+- RL Direto: `posicao_tracker` — substitui
+  `AgentePosicaoStatus` (141 LOC removidos)
+
+Ref: ADR-011/012, P0-NOVO (BACKLOG).
+
+### Nível 2c: Feedback e Aprendizado (Grupo 2)
+
+Cinco módulos em `src/application/` fecham o loop
+de feedback entre execução e aprendizado.
+Desde 17/03/2026, são **importados diretamente**
+pelos scripts dos agentes (ADR-015).
+
+**`ac5_8_position_monitor.py`** — Monitoramento
+em tempo real de posições com SQLite (4 tabelas).
+- Micro Tendência: registra/atualiza posições
+- RL 5000: registra/atualiza posições
+
+**`ac5_9_feedback_validator.py`** — Valida saúde
+do ciclo trade→feedback→ML. Health check com
+score e recomendações.
+- Micro Tendência: a cada 10 ciclos
+- Diários: no `run_rl_performance_diary()`
+
+**`ac6_7_drift_detector.py`** — Detecta
+degradação de modelo via Z-score contra baseline.
+- Micro Tendência: a cada 10 ciclos
+
+**`ac6_8_online_learning.py`** — Treino
+incremental com rollback automático.
+- Micro Tendência: ativado quando drift detectado
+
+**`ac6_9_baseline_comparator.py`** — Compara
+métricas atuais vs baseline histórico.
+- Micro Tendência: a cada 10 ciclos
+
+Ref: ADR-015, P1 (BACKLOG), AC5.8-AC6.9.
+
 ### Nível 3: Memória
 
 - Cada agente tem sua própria instância de:
   - `AgenteQLearning` (modelo em memória)
   - `ProfitProtectionEngine` (estado de proteção)
   - `RLRepository` (conexão DB)
-  - `tickets_proprios: set[int]` (backup local)
+  - `MotorDecisaoIsolado` (decisões + posições)
+  - `PosicaoIsoladaManager` (ownership JSON)
 
 ---
 

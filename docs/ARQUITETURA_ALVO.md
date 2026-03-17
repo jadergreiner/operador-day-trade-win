@@ -448,6 +448,53 @@ Modelos salvos em `models/vX.Y.Z.json` com estrutura:
 
 ---
 
+### AC6.9 Comparacao Baseline e Feedback ao Sistema
+
+**Status:** ✅ IMPLEMENTADO (16/03/2026)
+
+**Localizacao:** `src/application/ac6_9_baseline_comparator.py`
+
+**Propósito:** Comparar metricas atuais do modelo contra
+baseline historico e gerar feedback estruturado com
+recomendacoes (CONTINUE/MONITOR/ROLLBACK).
+
+**Classes:**
+- `BaselineComparator`: Classe principal
+- `BaselineRecord`: Registro de baseline historico
+- `ComparisonResult`: Resultado da comparacao
+- `SystemFeedback`: Feedback com recomendacao
+
+**Testes:** 20 testes unitarios, 20/20 PASSING (100%)
+
+---
+
+### Grupo 2: Pipeline Feedback/Aprendizado nos Agentes
+
+**Status:** ✅ INTEGRADO (17/03/2026) — ADR-015
+
+**Pipeline:** AC5.8 → AC5.9 → AC6.7 → AC6.8 → AC6.9
+
+```text
+Ordem executada
+  → AC5.8: registra posicao + monitora preco
+  → AC5.9: valida feedback trade↔ML
+  → AC6.7: detecta drift contra baseline
+  → AC6.8: treino incremental (se drift)
+  → AC6.9: compara vs baseline + recomendacao
+```
+
+**Integracao por agente:**
+
+| Modulo | Micro Tend. | RL 5000 | Diarios |
+|--------|-------------|---------|---------|
+| AC5.8  | ✅          | ✅      | —       |
+| AC5.9  | ✅          | —       | ✅      |
+| AC6.7  | ✅          | —       | —       |
+| AC6.8  | ✅          | —       | —       |
+| AC6.9  | ✅          | —       | —       |
+
+---
+
 ### P0: Isolamento de Posicoes entre Agentes RL
 
 **Status:** ✅ IMPLEMENTADO (16/03/2026)
@@ -553,15 +600,69 @@ manager.registrar_posicao_fechada()
 
 1. ✅ Magic Number (EA ID) único por agente no MT5
 2. ✅ Filtragem de `positions_get()` por magic
-3. ❌ RL Direto NAO consegue ler posicao do RL 5000
-4. ❌ RL 5000 NAO consegue sobrescrever arquivo do Direto
-5. ✅ Arquivo JSON existe apenas para o agente que criou
+3. ✅ RL Direto NAO consegue ler posicao do RL 5000
+4. ✅ RL 5000 NAO consegue sobrescrever arquivo Direto
+5. ✅ Arquivo JSON existe apenas para o agente criador
 6. ✅ Validacao de ownership a cada leitura
-7. ✅ `tickets_proprios` set em memória (RL 5000)
+7. ✅ `MotorDecisaoIsolado` por agent_id (17/03)
 8. ✅ Log detalhado de violacoes (se tentadas)
+
+> **Nota (17/03/2026):** O set inline
+> `tickets_proprios` foi substituido por
+> `MotorDecisaoIsolado` no RL 5000. A classe inline
+> `AgentePosicaoStatus` foi removida do RL Direto e
+> substituida por `PosicaoIsoladaManager` +
+> `MotorDecisaoIsolado`. Codigo duplicado eliminado.
 
 Ver secao completa:
 [Isolamento por Magic Number](#isolamento-por-magic-number-ea-id)
+
+---
+
+### P0-NOVO: Motor de Decisao Isolado por Agent ID
+
+**Status:** ✅ IMPLEMENTADO (16/03) | INTEGRADO (17/03)
+
+**Localizacao:** `src/application/motor_decisao_isolado.py`
+
+**Problema Resolvido:** Agentes paralelos compartilhavam
+estado de decisao e posicao, causando bloqueios falsos
+de 60s. Cada agente precisa motor proprio.
+
+**Classes Principais:**
+
+- `MotorDecisaoIsolado`: Motor completo por agent_id
+- `PosicaoAberta`: Dataclass de posicao ativa
+- `DecisaoRegistrada`: Dataclass de decisao tomada
+- `HistoricoFechamento`: Dataclass de fechamento
+- `DecisaoOperacional` (Enum, 6 valores)
+- `TipoPosicao` (Enum, 2 valores)
+- `MotivoFechamento` (Enum, 6 valores)
+
+**Funcionalidades:**
+
+1. **Persistencia por agent_id:**
+   - `posicoes_ativas_{agent_id}.json`
+   - `decisoes_{agent_id}.json`
+   - `historico_fechamentos_{agent_id}.json`
+2. **Max 1 posicao simultanea por agente**
+3. **P&L com pontos_por_contrato=100 (WINFUT)**
+4. **10+ metodos:** abrir, atualizar, fechar,
+   registrar_decisao, obter_estatisticas
+
+**Testes:** 24/24 + 7/7 = 31 PASSING
+
+**Complemento:** Trabalha junto com
+`posicao_isolamento.py` para fornecer
+Grupo 1 — Isolamento entre Agentes.
+
+**Integracao (17/03/2026):**
+
+- RL 5000: `motor_isolado` substitui
+  `tickets_proprios` (set inline volátil)
+- RL Direto: `PosicaoIsoladaManager` +
+  `MotorDecisaoIsolado` substituem classe
+  inline `AgentePosicaoStatus` (removida)
 
 ---
 

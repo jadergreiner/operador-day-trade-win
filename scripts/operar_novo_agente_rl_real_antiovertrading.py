@@ -34,6 +34,21 @@ from src.application.profit_protection_engine import (
     ProfitProtectionEngine,
     ProfitProtectionResult,
 )
+from src.application.motor_decisao_isolado import (
+    MotorDecisaoIsolado,
+    TipoPosicao,
+    MotivoFechamento,
+)
+try:
+    from src.application.ac5_8_position_monitor import (
+        MonitorPositionManager,
+        StatusOrdem,
+        DirecaoOperacao,
+    )
+    AC5_8_DISPONIVEL = True
+except ImportError:
+    AC5_8_DISPONIVEL = False
+    MonitorPositionManager = None  # type: ignore[assignment,misc]
 from config.settings import TradingConfig
 import uuid
 
@@ -94,11 +109,16 @@ if SL_TP_MODE not in ['dinamico', 'fixo']:
 # ID unico para este agente (para controlar posicoes em paralelo)
 AGENTE_ID = f"agente_{SL_TP_MODE}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
-# Tickets abertos POR ESTE agente (isolamento entre agentes paralelos)
-tickets_proprios: set[int] = set()
+# Motor de decisao isolado — substitui tickets_proprios (set) inline
+# Persistencia file-based: posicoes_ativas_{AGENTE_ID}.json
+motor_isolado = MotorDecisaoIsolado(
+    agent_id=AGENTE_ID,
+    data_dir=Path(__file__).parent.parent / 'outputs',
+)
 
 logger.info(f"Modo SL/TP: {SL_TP_MODE.upper()}")
 logger.info(f"ID do Agente: {AGENTE_ID}")
+logger.info(f"Motor Isolado: MotorDecisaoIsolado({AGENTE_ID})")
 
 config = TradingConfig()
 mt5_adapter: Optional[MT5Adapter] = None
@@ -470,11 +490,45 @@ def enviar_ordem_mt5adapter(acao: str, preco_atual: float, vol: float, dados: Op
         ticket = mt5_adapter.send_order(order)
         logger.info(f"[OK] Ordem enviada! Ticket: {ticket}")
 
-        # Rastrear ticket como pertencente a ESTE agente
+        # Rastrear ticket via MotorDecisaoIsolado (persistido em JSON)
         if ticket:
-            tickets_proprios.add(int(ticket))
-            logger.info(f"[ISOLAMENTO] Ticket {ticket} registrado para {AGENTE_ID} "
-                       f"(total próprios: {len(tickets_proprios)})")
+            tipo = TipoPosicao.COMPRADA if acao == "Comprar" else TipoPosicao.VENDIDA
+            motor_isolado.abrir_posicao(
+                ticket=int(ticket),
+                tipo=tipo,
+                preco_entrada=preco_atual,
+                volume=1.0,
+                stop_loss=sl,
+                take_profit=tp,
+            )
+            logger.info(f"[ISOLAMENTO] Ticket {ticket} registrado via "
+                       f"MotorDecisaoIsolado({AGENTE_ID})")
+
+            # AC5.8: Registra ordem no monitor de posições
+            if _monitor_posicao_rl:
+                try:
+                    direcao_ac = (
+                        DirecaoOperacao.BUY
+                        if acao == "Comprar"
+                        else DirecaoOperacao.SELL
+                    )
+                    _monitor_posicao_rl.registrar_ordem({
+                        "trade_id": str(ticket),
+                        "signal_id": AGENTE_ID,
+                        "symbol": SIMBOLO,
+                        "direcao": direcao_ac.value,
+                        "volume": 1,
+                        "preco_entrada": preco_atual,
+                        "sl": sl,
+                        "tp": tp,
+                        "magic_number": MAGIC_NUMBER,
+                    })
+                    _monitor_posicao_rl.atualizar_status_ordem(
+                        str(ticket), StatusOrdem.FILLED,
+                    )
+                    logger.info(f"[AC5.8] Ordem {ticket} registrada")
+                except Exception as e:
+                    logger.warning(f"[AC5.8] {e}")
 
         # Atualizar apenas o cooldown (sem limitar trades/dia)
         last_trade_time = datetime.now()
@@ -568,15 +622,26 @@ def processar_protecao_lucros() -> None:
 
 
 def monitorar_posicoes() -> bool:
-    """Verifica se há posições abertas DESTE agente (por magic number + ticket)."""
+    """Verifica se há posições abertas DESTE agente (por magic number).
+
+    Sincroniza MotorDecisaoIsolado com estado real do MT5:
+    - Recupera tickets após restart (magic filter)
+    - Remove tickets fechados (SL/TP/manual)
+    - Atualiza P&L em tempo real
+    """
     try:
         positions = mt5_adapter.get_positions(Symbol(SIMBOLO))
         if not positions:
-            # Nenhuma posição no símbolo → limpar tickets próprios fechados
-            if tickets_proprios:
-                logger.info(f"[ISOLAMENTO] Nenhuma posição aberta no {SIMBOLO}. "
-                           f"Limpando {len(tickets_proprios)} tickets próprios.")
-                tickets_proprios.clear()
+            # Nenhuma posição no símbolo → fechar posições órfãs no motor
+            for pos in motor_isolado.obter_posicoes_abertas():
+                logger.info(f"[ISOLAMENTO] Ticket #{pos.ticket} não existe mais "
+                           f"no MT5. Fechando no motor.")
+                tick = mt5_adapter._mt5.symbol_info_tick(SIMBOLO)
+                preco_fechamento = tick.bid if tick else pos.preco_entrada
+                motor_isolado.fechar_posicao(
+                    pos.ticket, preco_fechamento,
+                    MotivoFechamento.SL_ATINGIDO,
+                )
             return False
 
         # Filtrar apenas posições com NOSSO magic number
@@ -584,26 +649,45 @@ def monitorar_posicoes() -> bool:
             p for p in positions
             if int(getattr(p, 'magic', 0) or 0) == MAGIC_NUMBER
         ]
-
-        # Atualizar set de tickets próprios com base no MT5
         tickets_mt5_meus = {int(getattr(p, 'ticket', 0)) for p in minhas_posicoes}
+        tickets_motor = {p.ticket for p in motor_isolado.obter_posicoes_abertas()}
 
-        # Recuperar tickets que são nossos (magic) mas não estavam no set
-        # (recuperação após restart do agente)
-        novos = tickets_mt5_meus - tickets_proprios
-        if novos:
-            for t in novos:
-                logger.info(f"[ISOLAMENTO] Ticket #{t} (magic={MAGIC_NUMBER}) "
-                           f"recuperado do MT5 após restart.")
-                tickets_proprios.add(t)
+        # Recuperar tickets do MT5 que não estão no motor (restart)
+        novos = tickets_mt5_meus - tickets_motor
+        for t in novos:
+            pos_mt5 = next(p for p in minhas_posicoes if int(getattr(p, 'ticket', 0)) == t)
+            tipo = TipoPosicao.COMPRADA if getattr(pos_mt5, 'type', 0) == 0 else TipoPosicao.VENDIDA
+            motor_isolado.abrir_posicao(
+                ticket=t, tipo=tipo,
+                preco_entrada=float(getattr(pos_mt5, 'price_open', 0)),
+                volume=float(getattr(pos_mt5, 'volume', 1)),
+                stop_loss=float(getattr(pos_mt5, 'sl', 0)),
+                take_profit=float(getattr(pos_mt5, 'tp', 0)),
+            )
+            logger.info(f"[ISOLAMENTO] Ticket #{t} (magic={MAGIC_NUMBER}) "
+                       f"recuperado do MT5 via MotorDecisaoIsolado.")
 
-        # Remover tickets que já foram fechados
-        tickets_fechados = tickets_proprios - tickets_mt5_meus
-        if tickets_fechados:
-            for t in tickets_fechados:
-                logger.info(f"[ISOLAMENTO] Ticket #{t} foi fechado (SL/TP/manual). "
-                           f"Removendo do rastreamento.")
-                tickets_proprios.discard(t)
+        # Remover tickets fechados no MT5
+        fechados = tickets_motor - tickets_mt5_meus
+        for t in fechados:
+            tick = mt5_adapter._mt5.symbol_info_tick(SIMBOLO)
+            preco = tick.bid if tick else 0.0
+            motor_isolado.fechar_posicao(t, preco, MotivoFechamento.SL_ATINGIDO)
+            logger.info(f"[ISOLAMENTO] Ticket #{t} fechado (SL/TP/manual).")
+
+        # Atualizar P&L de posições ativas
+        for pos_mt5 in minhas_posicoes:
+            t = int(getattr(pos_mt5, 'ticket', 0))
+            preco_atual = float(getattr(pos_mt5, 'price_current', 0))
+            motor_isolado.atualizar_posicao(t, preco_atual)
+            # AC5.8: Atualiza preço no monitor de posições
+            if _monitor_posicao_rl:
+                try:
+                    _monitor_posicao_rl.atualizar_preco_posicao(
+                        str(t), preco_atual,
+                    )
+                except Exception:
+                    pass
 
         return len(minhas_posicoes) > 0
     except Exception:
@@ -1096,6 +1180,18 @@ def loop_operacao():
 
 
 if __name__ == "__main__":
+    # AC5.8: Monitor de posições (Grupo 2)
+    _monitor_posicao_rl = None
+    if AC5_8_DISPONIVEL and MonitorPositionManager:
+        try:
+            _db_path = str(ROOT_DIR / "data" / "db" / "trading.db")
+            _monitor_posicao_rl = MonitorPositionManager(
+                db_caminho=_db_path,
+            )
+            logger.info("[OK] AC5.8 MonitorPositionManager: Ativo")
+        except Exception as e:
+            logger.warning(f"[!] AC5.8: {e}")
+
     try:
         logger.info("Inicializando...")
         inicializar_adaptador_mt5()
@@ -1112,6 +1208,8 @@ if __name__ == "__main__":
         import traceback
         logger.error(traceback.format_exc())
     finally:
+        if _monitor_posicao_rl:
+            _monitor_posicao_rl.fechar_conexao()
         if mt5_adapter:
             mt5_adapter.disconnect()
             logger.info("[OK] MT5 desconectado.")
