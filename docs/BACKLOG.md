@@ -2477,6 +2477,160 @@ log em ~680 KB/dia.
 
 ---
 
+## SAR Board — Consolidacao de Gaps (17/03/2026)
+
+Resultado da reuniao estrategica pos-primeiro-pregao real. Prioridades
+validadas pelo board (Eng Sr, ML Expert, QA, Arquiteto, Trader).
+
+### Bloqueadores Identificados
+
+#### BUG-1 / CRITICO — NameError motor_decisao em enviar_ordem()
+
+**Status:** PENDENTE
+
+**Arquivo:** `scripts/agente_rl_direto_independente.py:331`
+
+**Impacto:** posicao abre sem registro formal (`ticket=None`)
+
+**Risco:** posicao dupla / perda de rastreabilidade
+
+**Owner:** Eng Sr | **Deadline:** 17/03/2026 EOD | **Estimativa:** 3h
+
+**Bloqueia:** `INICIAR_AGENTE_RL_DIRETO.bat` na proxima sessao
+
+**Criterios de aceite:**
+
+- `motor_decisao` passado como parametro para `enviar_ordem()`;
+- `motor_decisao.abrir_posicao()` chamado apos confirmacao MT5;
+- nenhuma sessao registra `ticket=None` em arquivo de isolamento;
+- teste unitario verde cobrindo registro pos-envio.
+
+#### BUG-3 / CRITICO — Loop 10006 sem backoff e sem deteccao de rollover
+
+**Status:** PENDENTE
+
+**Arquivo:** `src/application/orders_executor.py`
+
+**Impacto:** 20+ rejeicoes consecutivas sem halt em rollover WINFUT
+
+**Risco:** loop infinito + novo rollover iminente
+
+**Owner:** Eng Sr | **Deadline:** 17/03/2026 EOD | **Estimativa:** 5h
+
+**Bloqueia:** `INICIAR_AGENTE_RL_DIRETO.bat` + `INICIAR_AGENTE_RL_5000.bat`
+
+**Criterios de aceite:**
+
+- backoff exponencial: 3 falhas -> 60s, 5 falhas -> encerrar sessao;
+- deteccao de rollover WINFUT (terceira quarta-feira do mes);
+- `symbol_info().trade_mode` verificado antes de retentar;
+- log registra motivo e interrompe apos N falhas;
+- teste unitario cobrindo backoff e halt.
+
+#### ML-1 / ALTA — Filtro de tendencia intraday para acao SELL
+
+**Status:** PENDENTE
+
+**Arquivo:** `scripts/agente_rl_direto_independente.py`
+
+**Impacto:** SELL em mercado bullish gera LOSS recorrente
+
+**Risco:** vies vendedor nao filtrado reduz win rate
+
+**Owner:** ML Expert | **Deadline:** 17/03/2026 EOD | **Estimativa:** 2.5h
+
+**Criterios de aceite:**
+
+- SELL bloqueado quando `EMA9 > EMA21` no timeframe operado;
+- BUY bloqueado quando `EMA9 < EMA21` (simetria);
+- gate configuravel via parametro para backtesting;
+- log: `[GATE-TENDENCIA] SELL bloqueado — EMA9 > EMA21`;
+- teste unitario cobrindo gate nas duas direcoes.
+
+#### BUG-2 / MEDIA — PnL -18M no historico_fechamentos
+
+**Status:** PENDENTE
+
+**Arquivo:** `scripts/agente_rl_direto_independente.py`
+
+**Impacto:** relatorio de performance distorcido (escala de pontos vs reais)
+
+**Risco:** nao bloqueia execucao, mas invalida analytics
+
+**Owner:** Eng Sr | **Deadline:** 17/03/2026 EOD | **Estimativa:** 1.5h
+
+**Criterios de aceite:**
+
+- `pnl_reais` calculado com divisor WINFUT (R$0,20/ponto);
+- `pnl_pct` usa base de capital correto;
+- valores dentro do range esperado (+-R$10 a R$300 por contrato);
+- teste unitario cobrindo calculo para WINFUT BUY e SELL.
+
+#### BUG-4 / MEDIA — processar_protecao_lucros() gerando ERRORs fora do horario
+
+**Status:** PENDENTE
+
+**Arquivo:** `scripts/operar_novo_agente_rl_real_antiovertrading.py:1204`
+
+**Impacto:** ~380 ERRORs/dia por desconexao MT5 esperada (+680 KB/dia de log)
+
+**Risco:** dificulta triagem de erros reais
+
+**Owner:** Eng Sr | **Deadline:** 17/03/2026 EOD | **Estimativa:** 1.5h
+
+**Criterios de aceite:**
+
+- chamada de `processar_protecao_lucros()` movida para depois do guard
+  de horario, ou verificacao de conexao MT5 antes de chamar a funcao;
+- fora do horario: apenas INFO de espera, sem ERROR de conexao;
+- teste unitario verificando que funcao nao e chamada fora do horario.
+
+#### INFRA-1 / MEDIA — Terminal mismatch Clear vs FBS no MT5Adapter
+
+**Status:** PENDENTE
+
+**Arquivo:** `.env` (`MT5_TERMINAL_PATH`)
+
+**Impacto:** log poluido a cada reconexao
+
+**Risco:** dificulta triagem de erros reais
+
+**Owner:** Arquiteto | **Deadline:** 17/03/2026 EOD | **Estimativa:** 0.5h
+
+**Criterios de aceite:**
+
+- `MT5_TERMINAL_PATH` no `.env` aponta para terminal FBS ativo;
+- zero logs de `Terminal mismatch` durante sessao normal.
+
+### Backlog Medio Prazo (nao bloqueia proxima sessao)
+
+#### P1 — Redesenhar fechamento_diario por agente individual
+
+**Status:** PENDENTE (ver secao `INICIAR_AGENTE_RL_DIRETO.bat > P1` para
+detalhes completos)
+
+**Impacto:** fecha a lacuna onde agente deficitario se oculta atras de
+lucrativo
+
+**Owner:** Eng Sr + ML Expert | **Deadline:** proximo sprint | **Estimativa:** 6-8h
+
+### Validacoes Cruzadas do Board
+
+- Trader: RL 5000 pode operar na proxima sessao (bugs sao log, nao execucao)
+- Trader: RL Direto bloqueado ate BUG-1 resolvido (risco de posicao dupla)
+- Arquiteto: terminal mismatch e config, fix 30min sem mudanca de codigo
+- ML Expert: gate de tendencia (opção A) protege capital sem retrain
+- QA: nenhum fix sem teste de regressao — criterio obrigatorio
+
+### Checkpoints
+
+- 17/03 18h: Eng Sr confirma BUG-1 + BUG-3 resolvidos com testes
+- 17/03 19h: ML Expert confirma gate tendencia implementado
+- 17/03 20h: Arquiteto confirma `.env` corrigido
+- 18/03 09h: validacao pre-sessao — RL Direto liberado para operar?
+
+---
+
 ## Fora do backlog ativo
 
 Itens historicos, checklists de ambiente, reunioes antigas, sprints fechadas e
@@ -2495,3 +2649,4 @@ entradas ja entregues nao devem voltar para este arquivo.
   - RL 5000: AC5.8/AC5.9/AC6.7/AC6.8/AC6.9 (pipeline completo)
 - Todos os 4 agentes com pipeline Grupo 2 integrado (17/03/2026)
 - Fechamento 17/03/2026: 6 bugs/melhorias capturados no backlog (P1)
+- SAR Board 17/03/2026: consolidacao de gaps pos-primeiro-pregao real
