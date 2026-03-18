@@ -3359,31 +3359,45 @@ a rastreabilidade e impede o fechamento correto da posicao.
 
 #### 2. Corrigir calculo de pnl_reais no historico_fechamentos
 
-**Status:** PENDENTE
+**Status:** DONE (18/03/2026)
+
+**Executor Impactado:** INICIAR_AGENTE_RL_DIRETO.bat + INICIAR_AGENTE_RL_5000.bat
 
 **Origem:** Fechamento diario 17/03/2026 — historico_fechamentos do agente
 dinamico registrou `pnl_reais: -18.449.000` para trade que deveria ser
 ~R$-200 a R$-300.
 
-**Problema tecnico:** O calculo multiplica pontos por contratos sem aplicar o
-divisor correto de WINFUT (R$0,20/ponto). Resultado fica na escala de pontos
-brutos em vez de reais.
+**Problema tecnico:** O calculo multiplicava pontos por contratos usando
+`pontos_por_contrato = 100.0` em vez do valor real do mini-indice WINFUT
+(R$0,20/ponto). Resultado ficava 500x maior que o real.
 
-**Entregar:**
+**Solucao implementada:**
 
-- corrigir formula de `pnl_reais` no registro de fechamento;
-- garantir que `pnl_pct` tambem use base correta;
-- adicionar teste unitario cobrindo o calculo para WINFUT.
+- `valor_ponto_winfut = 0.20` substituiu `pontos_por_contrato = 100.0` em
+  dois metodos de `src/application/motor_decisao_isolado.py`:
+  - `atualizar_posicao()`: P&L de posicao aberta
+  - `fechar_posicao()`: P&L final no historico
 
-**Arquivo afetado:** `scripts/agente_rl_direto_independente.py`
+**Evidencias:**
 
-**Agente impactado:** `INICIAR_AGENTE_RL_DIRETO.bat`
+- Codigo: `src/application/motor_decisao_isolado.py`
+  - `atualizar_posicao()`: `valor_ponto_winfut = 0.20` (era 100.0)
+  - `fechar_posicao()`: `valor_ponto_winfut = 0.20` (era 100.0)
+- Testes: `tests/unit/test_bug2_pnl_reais_winfut.py`
+  - 9 testes, 9/9 PASSING (100%)
+  - Cobertura: BUY/SELL ganho/perda, 2 contratos, range real WINFUT,
+    cenario real reproduzindo -18.449.000, atualizar_posicao
+- Testes existentes: `tests/unit/test_motor_decisao_isolado.py`
+  - 24/24 PASSING — valores esperados corrigidos para R$0,20/ponto
+- Type hints: 100% (mypy sem erros no modulo)
+- Portugues: 100%
 
 **Pronto quando:**
 
 - historico_fechamentos registrar valores em reais dentro do range esperado
-  (ex: +-R$10 a R$300 por trade de 1 contrato WIN);
-- teste unitario verde.
+  (ex: +-R$10 a R$300 por trade de 1 contrato WIN); ✅
+- teste unitario verde; ✅
+- pnl_pct permanece correto (percentual puro, independente do valor_ponto). ✅
 
 ---
 
@@ -3655,9 +3669,9 @@ File "scripts/agente_rl_direto_independente.py", line 331, in enviar_ordem
 
 #### BUG-2 / MEDIA — PnL -18M no historico_fechamentos
 
-**Status:** DONE (18/03/2026 - commit a ser feito)
+**Status:** ✅ DONE (18/03/2026)
 
-**Arquivo:** `scripts/agente_rl_direto_independente.py`
+**Arquivo:** `src/application/motor_decisao_isolado.py`
 
 **Impacto:** relatorio de performance distorcido (escala de pontos vs reais)
 
@@ -3667,10 +3681,11 @@ File "scripts/agente_rl_direto_independente.py", line 331, in enviar_ordem
 
 **Criterios de aceite:**
 
-- `pnl_reais` calculado com divisor WINFUT (R$0,20/ponto);
-- `pnl_pct` usa base de capital correto;
-- valores dentro do range esperado (+-R$10 a R$300 por contrato);
-- teste unitario cobrindo calculo para WINFUT BUY e SELL.
+- `pnl_reais` calculado com divisor WINFUT (R$0,20/ponto); ✅
+- `pnl_pct` usa base de capital correto (percentual puro); ✅
+- valores dentro do range esperado (+-R$10 a R$300 por contrato); ✅
+- teste unitario cobrindo calculo para WINFUT BUY e SELL. ✅
+  (9 testes, 9/9 PASSING em `test_bug2_pnl_reais_winfut.py`)
 
 #### BUG-4 / MEDIA — processar_protecao_lucros() gerando ERRORs fora do horario
 

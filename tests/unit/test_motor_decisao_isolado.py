@@ -254,7 +254,7 @@ class TestAtualizarPosicao:
 
         posicao = motor_agente_5000.obter_posicao(123456)
         assert posicao.preco_atual == 102.0
-        assert posicao.pnl_reais == 200.0  # (102.0 - 100.0) * 1.0
+        assert posicao.pnl_reais == pytest.approx(0.40)  # (102.0 - 100.0) * 1.0 * R$0.20/pt
         assert posicao.pnl_pct == 2.0  # 2%
 
     def test_atualizar_pnl_posicao_vendida_com_ganho(self, motor_agente_5000):
@@ -273,7 +273,7 @@ class TestAtualizarPosicao:
         assert sucesso == True
 
         posicao = motor_agente_5000.obter_posicao(654321)
-        assert posicao.pnl_reais == 200.0  # (100.0 - 98.0) * 1.0
+        assert posicao.pnl_reais == pytest.approx(0.40)  # (100.0 - 98.0) * 1.0 * R$0.20/pt
         assert posicao.pnl_pct == 2.0
 
 
@@ -298,7 +298,7 @@ class TestFecharPosicao:
         )
 
         assert historico is not None
-        assert historico.pnl_reais == 200.0
+        assert historico.pnl_reais == pytest.approx(0.40)  # (102.0 - 100.0) * 1.0 * R$0.20/pt
         assert historico.motivo == MotivoFechamento.TP_ATINGIDO
         assert motor_agente_5000.tem_posicao_aberta() == False
 
@@ -319,7 +319,7 @@ class TestFecharPosicao:
             motivo=MotivoFechamento.SL_ATINGIDO,
         )
 
-        assert historico.pnl_reais == -100.0  # (99.0 - 100.0) * 1.0
+        assert historico.pnl_reais == pytest.approx(-0.20)  # (99.0 - 100.0) * 1.0 * R$0.20/pt
         assert historico.motivo == MotivoFechamento.SL_ATINGIDO
 
     def test_nao_fechar_posicao_inexistente(self, motor_agente_5000):
@@ -343,12 +343,12 @@ class TestEstatisticas:
         assert stats['total_pnl'] == 0.0
 
     def test_estatisticas_com_ganhos(self, motor_agente_5000):
-        """Testa cálculo de estatísticas com operações lucrativas."""
-        # Trade 1: Ganho de 200.0
+        """Testa calculo de estatisticas com operacoes lucrativas."""
+        # Trade 1: +2 pontos * 1 contrato * R$0,20 = R$0,40
         motor_agente_5000.abrir_posicao(111, TipoPosicao.COMPRADA, 100.0, 1.0, 99.0, 102.0)
         motor_agente_5000.fechar_posicao(111, 102.0, MotivoFechamento.TP_ATINGIDO)
 
-        # Trade 2: Ganho de 300.0
+        # Trade 2: +3 pontos * 1 contrato * R$0,20 = R$0,60
         motor_agente_5000.abrir_posicao(222, TipoPosicao.COMPRADA, 100.0, 1.0, 99.0, 103.0)
         motor_agente_5000.fechar_posicao(222, 103.0, MotivoFechamento.TP_ATINGIDO)
 
@@ -356,15 +356,15 @@ class TestEstatisticas:
         assert stats['total_trades'] == 2
         assert stats['wins'] == 2
         assert stats['win_rate'] == 100.0
-        assert stats['total_pnl'] == 500.0
+        assert stats['total_pnl'] == pytest.approx(1.00)  # R$0,40 + R$0,60
 
     def test_estatisticas_com_perdas(self, motor_agente_5000):
-        """Testa cálculo de estatísticas com operações com perda."""
-        # Trade 1: Perda de 100.0
+        """Testa calculo de estatisticas com operacoes com perda."""
+        # Trade 1: -1 ponto * 1 contrato * R$0,20 = R$-0,20
         motor_agente_5000.abrir_posicao(111, TipoPosicao.COMPRADA, 100.0, 1.0, 99.0, 102.0)
         motor_agente_5000.fechar_posicao(111, 99.0, MotivoFechamento.SL_ATINGIDO)
 
-        # Trade 2: Ganho de 200.0
+        # Trade 2: +2 pontos * 1 contrato * R$0,20 = R$0,40
         motor_agente_5000.abrir_posicao(222, TipoPosicao.COMPRADA, 100.0, 1.0, 99.0, 102.0)
         motor_agente_5000.fechar_posicao(222, 102.0, MotivoFechamento.TP_ATINGIDO)
 
@@ -373,7 +373,7 @@ class TestEstatisticas:
         assert stats['wins'] == 1
         assert stats['losses'] == 1
         assert stats['win_rate'] == 50.0
-        assert stats['total_pnl'] == 100.0
+        assert stats['total_pnl'] == pytest.approx(0.20)  # R$-0,20 + R$0,40
 
 
 class TestPersistencia:
@@ -412,7 +412,7 @@ class TestPersistencia:
 
         motor2 = MotorDecisaoIsolado('agente_teste', temp_data_dir)
         assert len(motor2.historico) == 1
-        assert motor2.historico[0].pnl_reais == 200.0
+        assert motor2.historico[0].pnl_reais == pytest.approx(0.40)  # (102.0-100.0)*1.0*R$0.20/pt
 
 
 class TestIntegracaoCompleta:
@@ -434,12 +434,12 @@ class TestIntegracaoCompleta:
         # Etapa 2: Atualizar P&L conforme preço sobe
         motor_agente_5000.atualizar_posicao(123456, 101.0)
         posicao = motor_agente_5000.obter_posicao(123456)
-        assert posicao.pnl_reais == 100.0
+        assert posicao.pnl_reais == pytest.approx(0.20)  # (101.0-100.0)*1.0*R$0.20/pt
 
         # Etapa 3: Fechar na meta
         historico = motor_agente_5000.fechar_posicao(123456, 102.0, MotivoFechamento.TP_ATINGIDO)
         assert motor_agente_5000.tem_posicao_aberta() == False
-        assert historico.pnl_reais == 200.0
+        assert historico.pnl_reais == pytest.approx(0.40)  # (102.0-100.0)*1.0*R$0.20/pt
 
     def test_multiplos_agentes_nao_interferem(self, motor_agente_5000, motor_agente_direto):
         """Testa múltiplos agentes operando simultaneamente."""

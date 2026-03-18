@@ -345,15 +345,15 @@ class MotorDecisaoIsolado:
         posicao = self.posicoes_ativas[ticket]
         posicao.preco_atual = preco_atual
 
-        # Calcular P&L (volume em contratos, 1 contrato = 100 pontos de valor)
-        pontos_por_contrato = 100.0  # Padrão para contratos de índice
+        # Calcular P&L — WINFUT: R$ 0,20 por ponto por contrato (BUG-2 fix)
+        valor_ponto_winfut = 0.20  # R$ por ponto do mini-indice
         if posicao.tipo == TipoPosicao.COMPRADA:
             pontos_ganhos = preco_atual - posicao.preco_entrada
-            posicao.pnl_reais = pontos_ganhos * posicao.volume * pontos_por_contrato
+            posicao.pnl_reais = pontos_ganhos * posicao.volume * valor_ponto_winfut
             posicao.pnl_pct = ((preco_atual - posicao.preco_entrada) / posicao.preco_entrada) * 100
         else:  # VENDIDA
             pontos_ganhos = posicao.preco_entrada - preco_atual
-            posicao.pnl_reais = pontos_ganhos * posicao.volume * pontos_por_contrato
+            posicao.pnl_reais = pontos_ganhos * posicao.volume * valor_ponto_winfut
             posicao.pnl_pct = ((posicao.preco_entrada - preco_atual) / posicao.preco_entrada) * 100
 
         self._salvar_estado()
@@ -378,15 +378,15 @@ class MotorDecisaoIsolado:
 
         posicao = self.posicoes_ativas.pop(ticket)
 
-        # Calcular P&L final (volume em contratos, 1 contrato = 100 pontos de valor)
-        pontos_por_contrato = 100.0  # Padrão para contratos de índice
+        # Calcular P&L final — WINFUT: R$ 0,20 por ponto por contrato (BUG-2 fix)
+        valor_ponto_winfut = 0.20  # R$ por ponto do mini-indice
         if posicao.tipo == TipoPosicao.COMPRADA:
             pontos_ganhos = preco_saida - posicao.preco_entrada
-            pnl_reais = pontos_ganhos * posicao.volume * pontos_por_contrato
+            pnl_reais = pontos_ganhos * posicao.volume * valor_ponto_winfut
             pnl_pct = ((preco_saida - posicao.preco_entrada) / posicao.preco_entrada) * 100
         else:  # VENDIDA
             pontos_ganhos = posicao.preco_entrada - preco_saida
-            pnl_reais = pontos_ganhos * posicao.volume * pontos_por_contrato
+            pnl_reais = pontos_ganhos * posicao.volume * valor_ponto_winfut
             pnl_pct = ((posicao.preco_entrada - preco_saida) / posicao.preco_entrada) * 100
 
         # Calcular duração
