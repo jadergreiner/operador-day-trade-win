@@ -1,24 +1,28 @@
-# 🎯 MULTI AGENTES — Resumo Executivo
+# 🎯 MULTI AGENTES — Resumo Executivo (7 Agentes + Tech Lead)
 
-**Documento Principal:** [docs/PLANO_MULTI_AGENTES.md](docs/PLANO_MULTI_AGENTES.md)
-
----
-
-## 📋 Tarefas Pendentes (7 Total)
-
-| # | Tarefa | Status | Prioridade | Lead |
-|---|--------|--------|------------|------|
-| 1 | ROADMAP-MICRO-03 | PENDENTE | 🔴 CRÍTICA | Clean Arch |
-| 2 | ROADMAP-DIARIOS-01 | PENDENTE | 🟡 ALTA | Signals |
-| 3 | ROADMAP-DIARIOS-02 | PENDENTE | 🟡 ALTA | Storytelling |
-| 4 | ROADMAP-DIARIOS-03 | PENDENTE | 🟡 MÉDIA | Storytelling |
-| 5 | ROADMAP-DIARIOS-04 | PENDENTE | 🟡 MÉDIA | ML Ops |
-| 6 | ROADMAP-DIARIOS-05 | PENDENTE | 🟢 BAIXA | ML Ops |
-| 7 | ROADMAP-DIARIOS-06 | PENDENTE | 🟢 BAIXA | ML Ops |
+**Documento Principal:** [docs/PLANO_MULTI_AGENTES.md](docs/PLANO_MULTI_AGENTES.md)  
+**Coordenação Diária:** [MULTI_AGENTES_COORDENACAO_DIARIA.md](MULTI_AGENTES_COORDENACAO_DIARIA.md)
 
 ---
 
-## 🤖 4 Agentes Especializados
+## 📋 Visão Geral: Entregas + Governança
+
+| Categoria | Componente | Lead | Horas | Status |
+|-----------|-----------|------|-------|--------|
+| **ENTREGAS** | ROADMAP-MICRO-03 | Clean Arch | 20-25h | PENDENTE |
+| **ENTREGAS** | ROADMAP-DIARIOS-01 | Signals | 18-22h | PENDENTE |
+| **ENTREGAS** | ROADMAP-DIARIOS-02/03 | Storytelling | 22-28h | PENDENTE |
+| **ENTREGAS** | ROADMAP-DIARIOS-04/05/06 | ML Ops | 20-25h | PENDENTE |
+| **GOVERNANÇA** | Sincronização Docs-Code | **Tech Lead** | **15-20h** | ATIVO |
+| **GOVERNANÇA** | Modelagem de Dados | **DBA** | **10-15h** | ATIVO |
+| **GOVERNANÇA** | ADRs + Arquitetura | **Arquiteto** | **8-12h** | ATIVO |
+| **GOVERNANÇA** | Diagramas + Requisitos | **Product Mgmt** | **8-10h** | ATIVO |
+
+**Total:** 85-100h entregas + 41-57h governança = **126-157 horas total**
+
+---
+
+## 🤖 4 Agentes Especializados (Entregas)
 
 ### 1️⃣ Clean Architecture
 **Especialidade:** Refatoração, Type Hints, Design Patterns
@@ -36,7 +40,7 @@
 - mt5_sync_validator.py
 - 3 test files com cobertura ≥85%
 
-**Horas:** 20-25h | **Commits:** 3
+**Horas:** 20-25h | **Commits:** 3 | **Paralelo com:** Signals, Storytelling, ML Ops
 
 ---
 
@@ -56,7 +60,7 @@
 - logging_recovery_handler.py
 - Relatórios JSON + Markdown
 
-**Horas:** 18-22h | **Commits:** 3
+**Horas:** 18-22h | **Commits:** 3 | **Paralelo com:** Clean Arch, Storytelling, ML Ops
 
 ---
 
@@ -79,7 +83,8 @@
 - reflection_action_channel.py
 - Datasets estruturados exportados
 
-**Horas:** 22-28h | **Commits:** 5
+**Horas:** 22-28h | **Commits:** 5 | **Paralelo com:** Clean Arch, Signals  
+**Depende de:** Clean Arch ✓ (para DIARIOS-03)
 
 ---
 
@@ -104,7 +109,90 @@
 - order_manager_learner.py
 - Modelos versionados + relatórios
 
-**Horas:** 20-25h | **Commits:** 6
+**Horas:** 20-25h | **Commits:** 6 | **Depende de:** Storytelling ✓ (para DIARIOS-04+)
+
+---
+
+## 🏗️ 4 Agentes de Governança (Orquestração + Qualidade)
+
+### 5️⃣ TECH LEAD (Orquestrador)
+**Especialidade:** Sincronização Docs-Code, Orquestração
+**Carga Horária:** 15-20h (paralelo contínuo)
+
+**Responsabilidades:**
+- ✓ Orquestrar todos 7 agentes
+- ✓ Espelhar cada entrega na documentação
+- ✓ Validar sincronização 100%
+- ✓ Escalar bloqueadores
+- ✓ Facilitar daily checkpoints
+
+**Entrega Principal:**
+- BACKLOG_UNIFICADO atualizado em tempo real
+- Daily sync agenda + status
+- Docs vs Code delta analysis
+- Weekly stakeholder summary
+
+**Status:** 🎯 ATIVO (orquestração em tempo real)
+
+---
+
+### 6️⃣ DBA (Database Administrator)
+**Especialidade:** Modelagem, Schema, Integridade
+**Carga Horária:** 10-15h (paralelo contínuo)
+
+**Responsabilidades:**
+- ✓ Modelagem de dados 100% atualizada
+- ✓ Schema versioning + migrations
+- ✓ Performance auditoria
+- ✓ Data audit + ERD
+
+**Entrega Principal:**
+- MODELAGEM_DE_DADOS_ATUALIZADO.md
+- Migration scripts (.sql)
+- erd_atualizado.png
+- Data audit reports
+
+**Status:** 🎯 ATIVO (validação contínua)
+
+---
+
+### 7️⃣ ARQUITETO DE SOFTWARE
+**Especialidade:** ADRs, Design Decisions, Clean Arch
+**Carga Horária:** 8-12h (paralelo contínuo)
+
+**Responsabilidades:**
+- ✓ Guardiã das ADRs
+- ✓ Validação ARQUITETURA_ALVO
+- ✓ Revisão de mudanças arquiteturais
+- ✓ Ensinar Clean Arch
+
+**Entrega Principal:**
+- ADR-017/018/019 (novas decisões)
+- ARQUITETURA_ALVO v1.3 REVIEWED
+- Architecture review sessions
+- Layer compliance report
+
+**Status:** 🎯 ATIVO (design review)
+
+---
+
+### 8️⃣ PRODUCT MANAGEMENT
+**Especialidade:** Diagramas, Regras, Requisitos
+**Carga Horária:** 8-10h (paralelo contínuo)
+
+**Responsabilidades:**
+- ✓ Diagramas 100% atualizado
+- ✓ Regras de Negócio 100% atualizado
+- ✓ User stories → rastreamento
+- ✓ Stakeholder communication
+
+**Entrega Principal:**
+- REGRAS_DE_NEGOCIO_v1.3 ATUALIZADO
+- workflow_diagrams/ (6+ diagramas)
+- Requirements traceability matrix
+- Feature release notes v1.3
+
+**Status:** 🎯 ATIVO (requisitos sincronizada)
 
 ---
 
@@ -122,19 +210,17 @@
 
 ---
 
-## ⏱️ Cronograma Recomendado (5-6 Dias)
+## 📊 Sequência de Execução
 
-**DIA 1:** Kickoff + Design (todos agentes)
+**Fase 1 - Paralela (Sem dependências):**
+Clean Arch | Signals | Storytelling | ML Ops (simultâneo)
 
-**DIA 2:** Implementação + Testes Unitários (paralelo)
+**Fase 2 - Sequencial com Paralelo:**
+- Storytelling Part 2 (depende de Clean Arch ✓)
+- ML Ops Part 1-2 (paralelo após Storytelling ✓)
 
-**DIA 3:** Code Review + Integrações (cruzado)
-
-**DIA 4:** Testes de Integração (E2E)
-
-**DIA 5:** Finalização + Commits (paralelo)
-
-**DIA 6:** Gate 2 Preparation + Retrospective
+**Fase 3 - Finalização:**
+Todos agentes (testes + commits + merge)
 
 ---
 
@@ -174,12 +260,15 @@
 
 ## 📞 Contato & Escalação
 
-| Papel | Contato | Escalação |
-|-------|---------|-----------|
-| Arquitetura | Clean Arch Lead | <30min MT5 issues |
-| Observabilidade | Signals Lead | <1h database issues |
-| ML Performance | ML Ops Lead | <2h inference issues |
-| Bloqueadores | Scrum Master | Daily @15:00 BRT |
+| Papel | Contato | SLA |
+|-------|---------|-----|
+| Arquitetura (Entregas) | Clean Arch Lead | <30min para MT5 issues |
+| Observabilidade | Signals Lead | <1h para database issues |
+| ML Performance | ML Ops Lead | <2h para inference issues |
+| Orquestração | Tech Lead | <15min para bloqueadores |
+| Modelagem | DBA | <1h para schema issues |
+| Design Decisions | Arquiteto | <2h para ADR approval |
+| Requisitos | Product Mgmt | <1h para requirement validation |
 
 ---
 
@@ -193,4 +282,4 @@
 
 ---
 
-**Atualizado:** 18/03/2026 | **Próxima Review:** 25/03/2026
+**Status:** Em planejamento | **Execução:** Paralela por especialidade

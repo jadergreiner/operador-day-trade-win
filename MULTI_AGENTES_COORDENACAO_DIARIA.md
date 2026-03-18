@@ -1,6 +1,7 @@
-# 📋 Multi Agentes — Matriz de Coordenação & Daily Checkpoints
+# 📋 Multi Agentes — Matriz de Coordenação & Checkpoints
 
-**Objetivo:** Facilitar sincronização paralela evitando bloqueadores.
+**Objetivo:** Facilitar execução paralela com validação de dependências e
+evitar bloqueadores entre agentes.
 
 ---
 
@@ -46,11 +47,11 @@
 
 ---
 
-## 📅 Daily Checkpoint Framework
+## ✅ Checkpoint Framework
 
-### Daily Sync @15:00 BRT (30 minutos)
+### Sync de Status (Periódico)
 
-#### Rodada 1: Status Reports (5 min)
+#### Rodada 1: Status Reports
 
 **Clean Arch Lead:**
 - [ ] 250/250 LOC reconciler completado?
@@ -72,14 +73,14 @@
 - [ ] 108 testes passando?
 - [ ] Modelos versionados?
 
-#### Rodada 2: Bloqueadores (10 min)
+#### Rodada 2: Bloqueadores
 
 **Todos:**
 - Tem BUG que bloqueia integração?
 - Precisa de código de outro agente?
 - Está travado em mypy ou pytest?
 
-#### Rodada 3: Cross-Review (10 min)
+#### Rodada 3: Cross-Review
 
 **Clean Arch → Signals:**
 - Reconciler afeta threads?
@@ -93,20 +94,20 @@
 **ML Ops → Clean Arch:**
 - Modelos afetam reconciliação?
 
-#### Rodada 4: Plan Ahead (5 min)
+#### Rodada 4: Próximos Passos
 
-- Próximos 4 horas: O que fazer?
-- Merge candidates para fim do dia?
+- Próxima tarefa: O que fazer?
+- Merge candidates preparadas?
 - PRs prontas para review?
 
 ---
 
-## ✅ Daily Checkpoint Checklist
+## 📊 Checkpoint Checklist
 
-### By Agent (copy & paste daily)
+### Por Agente (usar a cada checkpoint)
 
 ```
-## Clean Arch — DIA N
+## Clean Arch — Checkpoint N
 
 ### Status
 - [ ] reconciliador: N/250 LOC
@@ -118,7 +119,7 @@
 ### Bloqueadores
 - Nenhum / [ ] Listar
 
-### Próximas 4h
+### Próximo Mileston
 - [ ] Task principal
 
 ### PRs Abertas
@@ -129,7 +130,7 @@
 
 ## 🔄 Integração Sequencial
 
-### Fase 1: Código Independente (DIA 1-2)
+### Fase 1: Desenvolvimento Independente
 
 Todos agentes desenvolvem em paralelo sem dependências.
 
@@ -155,9 +156,9 @@ ML Ops:
   - regime_adapter.py (400 LOC)
 ```
 
-### Fase 2: Testes Unitários (DIA 2-3)
+### Fase 2: Testes Unitários
 
-Todos agentes adicionam testes em paralelo.
+Todos agentes concluem testes em paralelo.
 
 ```yaml
 Total: 274 testes = 37 + 49 + 80 + 108
@@ -165,32 +166,25 @@ Total: 274 testes = 37 + 49 + 80 + 108
 Target: 100% PASSING por DIA 3 noon
 ```
 
-### Fase 3: Integrações Cruzadas (DIA 3-4)
+### Fase 3: Integrações Cruzadas
 
-Agentes conectam código em sequência.
+Agentes conectam código respeitando dependências.
 
 ```
-DIA 3 afternoon:
-  ├─ Clean Arch finaliza
-  │  └─ Outputs: 3 modules + 37 tests
-  │
-  ├─ Signals integra no diary manager
-  │  └─ Inputs: watchdog + recovery + health
-  │
-  └─ Storytelling integra no narrative loop
-     └─ Outputs: datasets pronto para DIA 4
+Milestone 1 (Clean Arch finaliza):
+  ├─ Outputs: 3 modules + 37 tests
+  ├─ Signals integra no diary manager (paralelo)
+  └─ Storytelling aguarda para Part 2
 
-DIA 4:
+Milestone 2 (Storytelling pronto):
+  ├─ Inputs: datasets de Storytelling
   ├─ ML Ops integra retreinamento
-  │  └─ Inputs: datasets de Storytelling
-  │
-  └─ Final integration tests
-     └─ E2E: agentes conversando
+  └─ Final integration tests (E2E)
 ```
 
-### Fase 4: Finalização (DIA 5-6)
+### Fase 4: Finalização
 
-Commits, polishing, retrospective.
+Commits estruturados, polish da documentação, validação final.
 
 ---
 
@@ -269,26 +263,26 @@ Brief description
 | DB corruption | Rollback + fix schema | ML Ops |
 | MT5 failed | Skip MT5 tests locally | Agente |
 
-### 15-Minute Response SLA
+### SLA de Resposta
 
 Se código bloqueador é encontrado:
 
-1. **Agente reporta** em daily sync
-2. **Lead responde** em <15 min com sugestão
-3. **Cross-review** em <30 min
+1. **Agente reporta** em checkpoint
+2. **Lead responde** rapidamente com sugestão
+3. **Cross-review** implementado
 4. **Merge blocker** resolvido ou escalado
 
 ---
 
 ## 📞 Communication Channels
 
-### Instantaneous (Use for blockers)
-- Slack #multi-agentes-realtime
+### Instantaneous (para bloqueadores)
+- Comunicação direta com lead
 
-### Scheduled (Use for updates)
-- Daily 15:00 BRT sync call
+### Checkpoint (para updates)
+- Validação periódica de status
 
-### Async (Use for feedback)
+### Async (para feedback)
 - PR comments
 - GitHub discussions
 
@@ -298,12 +292,12 @@ Se código bloqueador é encontrado:
 
 ---
 
-## ✨ Daily Standup Template
+## ✨ Status Update Template
 
-**Use this in daily sync call (copy & paste):**
+**Use neste checkpoint (copiar & colar):**
 
 ```
-## [Agent Name] Update - DIA N
+## [Agent Name] Update - Checkpoint N
 
 ### ✅ Completed Since Last Sync
 - Feature X: Y LOC
@@ -318,12 +312,12 @@ Se código bloqueador é encontrado:
 - [ ] NONE
 - [ ] Issue 1: [Description + ETA to resolve]
 
-### ❓ Questions for Others
+### ❓ Dependencies / Questions
 - Does Signals need narrative data?
 - Can ML Ops start without reconciler?
 - ...
 
-### 🎯 Next 4 Hours
+### 🎯 Próximas Tasks
 1. Feature implementation
 2. Unit tests
 3. Code review
@@ -336,8 +330,8 @@ Se código bloqueador é encontrado:
 
 ---
 
-**Template Version:** 1.0 | **Last Update:** 18/03/2026
+**Template Version:** 1.0 | **Status:** Ativo
 
-**Coordinator:** Multi-Agent Scrum Master
+**Coordinator:** Multi-Agent Lead
 
-**Next Review:** Daily @15:00 BRT
+**Checkpoint:** Periódico conforme progresso

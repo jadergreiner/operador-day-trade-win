@@ -5,24 +5,30 @@
 
 ---
 
-## 📊 Visão Geral de Tarefas Pendentes
+## 📊 Visão Geral de Tarefas Pendentes + Governança
 
-| # | Tarefa | Agente | Estado | Prioridade |
-|---|--------|--------|--------|------------|
+| # | Componente | Agente | Estado | Prioridade |
+|---|---|---|---|---|
+| **ENTREGAS CRÍTICAS** | | | | |
 | 1 | ROADMAP-MICRO-03 | Clean Arch | ❌ PENDENTE | 🔴 CRÍTICA |
 | 2 | ROADMAP-DIARIOS-01 | Signals | ❌ PENDENTE | 🟡 ALTA |
 | 3 | ROADMAP-DIARIOS-02 | Storytelling | ❌ PENDENTE | 🟡 ALTA |
-| 4 | ROADMAP-DIARIOS-03 | Learning | ❌ PENDENTE | 🟡 MÉDIA |
+| 4 | ROADMAP-DIARIOS-03 | Storytelling | ❌ PENDENTE | 🟡 MÉDIA |
 | 5 | ROADMAP-DIARIOS-04 | ML Ops | ❌ PENDENTE | 🟡 MÉDIA |
-| 6 | ROADMAP-DIARIOS-05 | Guardian | ❌ PENDENTE | 🟢 BAIXA |
-| 7 | ROADMAP-DIARIOS-06 | Adapty | ❌ PENDENTE | 🟢 BAIXA |
+| 6 | ROADMAP-DIARIOS-05 | ML Ops | ❌ PENDENTE | 🟢 BAIXA |
+| 7 | ROADMAP-DIARIOS-06 | ML Ops | ❌ PENDENTE | 🟢 BAIXA |
+| **GOVERNANÇA** | | | | |
+| G1 | Sincronização Docs-Code | Tech Lead | 🔄 CONTÍNUA | 🔴 CRÍTICA |
+| G2 | Modelagem de Dados | DBA | 🔄 CONTÍNUA | 🔴 CRÍTICA |
+| G3 | ADRs + Arquitetura | Arquiteto | 🔄 CONTÍNUA | 🔴 CRÍTICA |
+| G4 | Diagramas + Requisitos | Product Mgmt | 🔄 CONTÍNUA | 🟡 ALTA |
 
-**Total Esforço:** 85-100 horas (7 tarefas × ~12-14h cada)
-**Timeline:** 5-6 dias (ciclo 2 semanas recomendado)
-
+**Total Esforço:** 85-100 horas (7 tarefas × ~12-14h cada) + Governança (15-20h)
+**Execução:** Paralela por especialidade, sequencial por dependência
+**Orquestração:** Tech Lead coordena todos agentes + governança
 ---
 
-## 🎯 4 Agentes Especializados
+## 🎯 7 Agentes Especializados + Governança
 
 ### 1️⃣ AGENTE CLEAN ARCHITECTURE
 **Especialidade:** Refatoração, Type Hints, Design Patterns
@@ -212,58 +218,332 @@ feat: Implementar Order Manager Learner com testes 18/18
 
 ---
 
+## 🏗️ 3 Agentes de Governança
+
+### 5️⃣ DBA (Database Administrator)
+**Especialidade:** Modelagem de Dados, Schema Versioning, Integridade
+**Carga Horária:** 10-15h (paralelo com todos)
+**Responsabilidades:**
+- ✓ Manter modelagem de dados 100% atualizada
+- ✓ Revisar schemas em cada entrega
+- ✓ Validar foreign keys e constraints
+- ✓ Auditar performance de queries
+- ✓ Versionar mudanças de schema
+- ✓ Documentar fluxo de dados (ERD)
+
+**Deliverables:**
+
+```
+docs/
+├── MODELAGEM_DE_DADOS_ATUALIZADO.md (versão pós-entregas)
+├── SCHEMA_CHANGELOG_v1.3.md
+├── migration_scripts/
+│   ├── 001_add_reconciliation_tables.sql
+│   ├── 002_add_narrative_schema.sql
+│   └── 003_add_ml_metrics_tables.sql
+data/db/
+├── trading_v1.3.db (nova versão)
+└── migrations/
+    └── version.json (rastreamento)
+outputs/
+├── erd_atualizado_YYYYMMDD.png
+└── data_audit_report_YYYYMMDD.md
+```
+
+**Sync Points:**
+- Validar cada entrega (Clean Arch → schema novo)
+- Revisar antes de commits (Signals → queries)
+- Aprovar PRs com mudanças de DB (Storytelling → persistência)
+- Otimizar antes de merge (ML Ops → retrainamento)
+
+---
+
+### 6️⃣ ARQUITETO DE SOFTWARE
+**Especialidade:** ADRs, Design Decisions, Arquitetura Alvo
+**Carga Horária:** 8-12h (paralelo com todos)
+**Responsabilidades:**
+- ✓ Guardiã das ADRs (Architecture Decision Records)
+- ✓ Validar que entregas respeitam ARQUITETURA_ALVO
+- ✓ Revisar propostas de mudanças arquiteturais
+- ✓ Ensinar Clean Arch para agentes
+- ✓ Resolver conflitos de design
+- ✓ Manter compatibilidade com layers
+
+**Deliverables:**
+
+```
+docs/
+├── ADR/
+│   ├── ADR-017_Reconciliation_Strategy.md (NOVO)
+│   ├── ADR-018_Narrative_Persistence_Layer.md (NOVO)
+│   ├── ADR-019_ML_Ops_Integration.md (NOVO)
+│   └── DECISIONS_LOG_v1.3.md (atualizado)
+├── ARQUITETURA_ALVO_v1.3_REVIEWED.md
+└── clean_architecture_guidelines.md (melhorado)
+outputs/
+├── architecture_review_sessions.md
+├── design_patterns_catalog_v1.3.md
+└── layer_compliance_report_YYYYMMDD.md
+```
+
+**Sync Points:**
+- Design review para cada agente (antes de implementação)
+- ADR approval antes de merges arquiteturais
+- Training sessions com Clean Arch agent
+- Validação final de compliance
+
+**Regra de Decisão:**
+- Entregas devem responder: "Como isso se encaixa na arquitetura?"
+- Se não se encaixa → propor ADR ou mudança
+- ADR aprovada → agente implementa
+- ADR rejeitada → redesenhar ou escalar
+
+---
+
+### 7️⃣ PRODUCT MANAGEMENT
+**Especialidade:** Diagramas, Regras de Negócio, Requisitos
+**Carga Horária:** 8-10h (paralelo com todos)
+**Responsabilidades:**
+- ✓ Manter 100% atualizado Diagramas (fluxos, sequências, estados)
+- ✓ Manter 100% atualizado Regras de Negócio
+- ✓ Validar que entregas atualizam documentação
+- ✓ User story → implementação rastreamento
+- ✓ Comunicar mudanças aos stakeholders
+- ✓ Gerenciar versões de features
+
+**Deliverables:**
+
+```
+docs/
+├── REGRAS_DE_NEGOCIO_v1.3_ATUALIZADO.md
+├── user_stories_roadmap_v1.3.md
+├── diagramas/
+│   ├── reconciliation_flow_v1.3.png (NOVO)
+│   ├── narrative_persistence_flow_v1.3.png (NOVO)
+│   ├── ml_ops_pipeline_v1.3.png (NOVO)
+│   ├── state_machine_trading_v1.3.png (ATUALIZADO)
+│   └── sequence_diagrams/ (6 diagramas)
+└── feature_release_notes_v1.3.md
+outputs/
+├── stakeholder_communications_v1.3.md
+├── feature_coverage_matrix_YYYYMMDD.json
+└── requirements_traceability_YYYYMMDD.md
+```
+
+**Sync Points:**
+- Entrega de código → gerar diagrama correspondente
+- Nova regra de negócio → atualizar REGRAS_DE_NEGOCIO
+- User story completa → checar compliance
+- Stakeholder review semanal
+
+**Rastreamento:**
+- Cada entrega valida: "Qual requisito satisfaz?"
+- Cada diagrama: "Qual código implementa?"
+- 1:1 mapping entregas ↔ user stories
+
+---
+
+## 🎯 AGENTE TECH LEAD (Orquestrador)
+**Especialidade:** Orquestração, Sincronização, Documentação Viva
+**Carga Horária:** 15-20h (paralelo + coordenação)
+**Responsabilidades Críticas:**
+- ✓ **Orquestrar** todos 7 agentes (garantir sincronização)
+- ✓ **Espelhar** cada entrega na documentação do projeto
+- ✓ **Validar** que código e docs estão sempre sincronizados
+- ✓ **Escalar** bloqueadores e conflitos
+- ✓ **Manter** BACKLOG_UNIFICADO atualizado
+- ✓ **Facilitar** daily standups (checkpoint ponto)
+
+**Responsabilidades Operacionais:**
+1. **Sincronização de Entregas → Documentação**
+   - Quando Clean Arch entrega reconciliador → atualizar ARQUITETURA
+   - Quando Signals entrega watchdog → atualizar OPERACAO_4_AGENTES
+   - Quando Storytelling entrega narrativa → atualizar REGRAS_DE_NEGOCIO
+   - Quando ML Ops entrega pipeline → atualizar MODELAGEM_DE_DADOS
+
+2. **Validação de Documentação Viva**
+   - PRs não são aceitas sem docs atualizadas
+   - Docs refletem 100% o código entregue
+   - Exemplos funcionam (code samples testáveis)
+   - Diagramas correspondem à implementação
+
+3. **Rastreamento Multi-Agente**
+   - Overview de progresso consolidado
+   - Dependências tabuladas
+   - Bloqueadores identificados
+   - Integrações sincronizadas
+
+4. **Facilitação de Sincronismo**
+   - **Daily Checkpoint (30m)**
+     - Status: cada agente 1 min
+     - Bloqueadores: 10 min group
+     - Docs sync: 5 min update
+     - Next steps: 5 min planning
+   - **Weekly Review (1h)**
+     - Docs vs. Code: delta analysis
+     - Cross-review agendado
+     - Stakeholder communication
+     - Planning semana seguinte
+
+**Deliverables (Documentação Viva):**
+
+```
+docs/
+├── BACKLOG_UNIFICADO_v1.3_LIVE.md (atualizado em tempo real)
+├── MULTI_AGENTES_STATUS_DAILY.md (atualizado cada checkpoint)
+├── SYNC_MANIFEST_v1.3.json (checksums de todos agentes)
+├── ENTREGAS_REFLETIDAS_v1.3.md (index de mudanças)
+├── ARQUITETURA_ALVO_VALIDATED.md (versão aprovada)
+├── OPERACAO_4_AGENTES_UPDATED.md (versão com novas features)
+├── REGRAS_DE_NEGOCIO_CURRENT.md (versão com novos fluxos)
+└── MODELAGEM_DE_DADOS_CURRENT.md (versão com novos schemas)
+outputs/
+├── daily_sync_agenda_CHECKPOINT_N.md
+├── weekly_summary_WEEK_N.md
+├── docs_vs_code_delta_YYYYMMDD.json
+├── agentes_progress_matrix_YYYYMMDD.md
+└── stakeholder_update_YYYYMMDD.md
+```
+
+**Matriz de Responsabilidades (Tech Lead):**
+
+| Entrega | Tech Lead Sync | Trigger |
+|---------|---|---|
+| Clean Arch PR (reconciliador) | Atualizar ARQUITETURA_ALVO + ERD | Antes de merge |
+| Signals PR (watchdog) | Atualizar OPERACAO_4_AGENTES + fluxo | Antes de merge |
+| Storytelling PR (narrativa) | Atualizar REGRAS_DE_NEGOCIO + diagrama | Antes de merge |
+| ML Ops PR (pipeline) | Atualizar MODELAGEM_DE_DADOS + sequence | Antes de merge |
+| Any code update | Validar docstring português 100% | Checksum |
+| Any type hints | Executar mypy --strict | Automated check |
+| Any tests | Atualizar coverage badge | Automated check |
+| Any schema | Revisar com DBA + gerar migration | Antes de merge |
+| Any design decision | Revisar com Arquiteto + gerar ADR | Antes de merge |
+| Any rule change | Revisar com PM + atualizar diagrama | Antes de merge |
+
+**Processo de Sincronização (Tech Lead):**
+
+```
+DIA 1: Agentes começam
+  ↓
+Tech Lead: Verifica planejamento doc
+  ↓
+Clean Arch: Entrega Part 1
+  ↓
+Tech Lead: Atualiza ARQUITETURA + BACKLOG
+  ↓
+Signals: Entrega Part 1
+  ↓
+Tech Lead: Atualiza OPERACAO + diagramas
+  ↓
+[LOOP até DIA 5]
+  ↓
+DIA 5: Finalizacao
+  ↓
+Tech Lead: Consolida todas mudanças
+Tech Lead: Valida 100% sincronizacao
+Tech Lead: Gera stakeholder summary
+Tech Lead: Aprova merge final
+```
+
+**SLA de Tech Lead:**
+
+| Trigger | Response | Check |
+|---------|----------|-------|
+| PR aberta | Review dentro <30min | Docs updated? |
+| Bloqueador reportado | Escalação <15min | Resolvido em <1h |
+| Checkpoint preparado | Agenda confirmada | Todos presentes |
+| Docs desincronizadas | Fix + commit <2h | Checksum valid |
+
+---
+
+## 🔄 Fluxo de Orquestração (Tech Lead + 7 Agentes)
+
+```
+INICÍO (Kickoff)
+  ├─ Tech Lead: Valida planejamento doc
+  ├─ Tech Lead: Confirma agentes prontos
+  └─ Tech Lead: Inicia relógio
+
+PARALELO (Todos agentes)
+  ├── 1️⃣ Clean Arch: code + tests
+  ├── 2️⃣ Signals: code + tests
+  ├── 3️⃣ Storytelling: code + tests
+  ├── 4️⃣ ML Ops: code + tests
+  │
+  ├─ 5️⃣ DBA: Valida schemas (continuous)
+  ├─ 6️⃣ Arquiteto: Valida patterns (continuous)
+  ├─ 7️⃣ PM: Valida requisitos (continuous)
+  │
+  └─ 🎯 Tech Lead: Orquestra sincronização (hourly)
+       ├─ Qualquer entrega? → Atualizar docs
+       ├─ Docs desincronizadas? → Alert
+       ├─ Bloqueadores? → Escalar
+       └─ Próximo milestone? → Comunicar
+
+INTEGRAÇÃO (Final)
+  ├─ Tech Lead: Consolida todas mudanças
+  ├─ DBA: Aprova schema final
+  ├─ Arquiteto: Aprova design final
+  ├─ PM: Aprova requisitos finais
+  └─ Tech Lead: Aprova merge + comunicado aos stakeholders
+
+FECHAMENTO
+  ├─ Tech Lead: Gera summary semanal
+  ├─ Tech Lead: Atualiza BACKLOG_UNIFICADO
+  └─ Tech Lead: Agenda review para próxima semana
+```
+
+---
+
+## 📊 Métricas de Orquestração (Tech Lead)
+
+| Métrica | Alvo | Check |
+|---------|------|-------|
+| Docs-Code Sync | 100% | Delta analysis daily |
+| Type Hints (%) | 100 | `mypy --strict` |
+| Tests PASSING | 274+ | `pytest -q` final |
+| Cobertura (%) | 85+ | Coverage report |
+| Commits estruturados | 17+ | `git log --oneline` |
+| Documentação viva (%) | 100 | Manual check |
+| Sem acentos em msgs | 100% | Git message audit |
+| Lint markdown (chars) | 80 max | `pymarkdown scan` |
+| DBA approval | 100% | Schema checksum |
+| Arquiteto approval | 100% | ADR checksum |
+| PM approval | 100% | Rastreabilidade 1:1 |
+
+---
+
 ## 📋 Cronograma Paralelo (5-6 dias)
 
 ```
 DIA 1 (Segundo-feira)
-├─ 09:00-10:30: Kickoff + Planning (todos agentes)
+├─ 09:00-10:30: Kickoff + Planning (todos 7 agentes + Tech Lead)
+├─ 10:00: Tech Lead valida docs + agentes prontos
 ├─ 10:30-17:30:
-│  ├─ Clean Arch: ROADMAP-MICRO-03 Part 1 (Análise + Design)
-│  ├─ Signals: ROADMAP-DIARIOS-01 Part 1 (Watchdog Design)
-│  ├─ Storytelling: ROADMAP-DIARIOS-02 Part 1 (Schema + Persistence)
-│  └─ ML Ops: ROADMAP-DIARIOS-04 Part 1 (Pipeline Design)
-└─ 17:30-18:00: Daily Sync
+│  ├─ Clean Arch: ROADMAP-MICRO-03 Part 1
+│  ├─ Signals: ROADMAP-DIARIOS-01 Part 1
+│  ├─ Storytelling: ROADMAP-DIARIOS-02 Part 1
+│  ├─ ML Ops: ROADMAP-DIARIOS-04 Part 1
+│  │
+│  └─ 🎯 Tech Lead (paralelo):
+│     ├─ Valida planejamento doc
+│     ├─ Monitora progresso
+│     └─ Antecipa bloqueadores
+│
+├─ 11:00-12:00: Checkpoint 1 (Tech Lead + DBA + Arquiteto + PM)
+│  └─ Design reviews
+│
+├─ 14:00-15:00: Checkpoint 2
+│  └─ Schema/Architecture/PM approvals
+│
+└─ 17:30-18:00: Daily Sync + Tech Lead status
 
-DIA 2 (Terça-feira)
-├─ 09:00-10:00: Sync de Bloqueadores
-├─ 10:00-17:30:
-│  ├─ Clean Arch: ROADMAP-MICRO-03 Part 2 (Implementação + Testes)
-│  ├─ Signals: ROADMAP-DIARIOS-01 Part 2 (Implementação + Testes 22/22)
-│  ├─ Storytelling: ROADMAP-DIARIOS-02 Part 2 (Correlação + Tests 20/20)
-│  └─ ML Ops: ROADMAP-DIARIOS-04 Part 2 (Regime Adapter + Tests 18/18)
-├─ 17:30-18:00: Code Review Paralelo
-└─ 18:00-18:30: Integration Planning
-
-DIA 3 (Quarta-feira)
-├─ 09:00-10:00: Code Review Results
-├─ 10:00-17:30:
-│  ├─ Clean Arch: ROADMAP-MICRO-03 Finalização + Commits
-│  ├─ Signals: Integração nos Diários
-│  ├─ Storytelling: ROADMAP-DIARIOS-03 (Reflection Evolution + 16 testes)
-│  └─ ML Ops: ROADMAP-DIARIOS-05 (Guardian Universal + 20 testes)
-├─ 17:30-18:00: Integration Testing
-└─ 18:00-18:30: Documentation Sync
-
-DIA 4 (Quinta-feira)
-├─ 09:00-10:00: Integration Issues Resolution
-├─ 10:00-17:30:
-│  ├─ Clean Arch: Code Review + Quality Gates
-│  ├─ Signals: Finalização + Documentação
-│  ├─ Storytelling: Exportador de Dataset (14 testes) + Action Channel (12 testes)
-│  └─ ML Ops: Order Manager Learner (18 testes) + Finalização
-├─ 17:30-18:00: Final Testing
-└─ 18:00-18:30: Merge Planning
-
-DIA 5 (Sexta-feira)
-├─ 09:00-10:00: Pre-merge Review
-├─ 10:00-15:00:
-│  ├─ Todos: Final Commits + Squash
-│  ├─ Todos: Documentation Polish
-│  ├─ Todos: Type Hints Validation (mypy --strict)
-│  └─ Todos: README + CHANGELOG Update
-├─ 15:00-16:30: Integration Testing Completo
-├─ 16:30-17:00: Gate 2 Preparation
-└─ 17:00-18:00: Sprint Retrospective
+DIA 2-5: LOOP - Sempre com Tech Lead orquestrando
+  ├─ Agentes entregam
+  ├─ Tech Lead sincroniza docs
+  ├─ Governança valida (DBA/Arquiteto/PM)
+  ├─ Checkpoint consolida
+  └─ Próxima entrega
 ```
 
 ---
