@@ -1650,9 +1650,380 @@ docs: Backlog - Agente RL Direto melhorias opcionais P1
   feat: Implementar P1-INIT Validador Integridade com testes 11/11
   ```
 
+### P1-CALIBRACAO - Desbloqueio operacional (identificado em 17/03/2026)
+
+#### 12. CALIBRACAO-MICRO-01 Reduzir threshold de confianca minima para liberar trades
+
+**Status:** PENDENTE
+
+**Origem:** Reuniao Product Board 17/03/2026 — analise do banco SQLite.
+
+**Problema diagnosticado:**
+O agente gerou 141 oportunidades hoje com confianca maxima de 42,4%.
+O threshold minimo para executar e 45%. Gap de 2,6 pontos percentuais
+impediu 0 trades no dia inteiro — com macro score medio de +29,5,
+ADX forte (>=40) em 54% dos ciclos e range de 2.795 pts disponivel.
+
+**Causa raiz:** combinacao de tres flags ativos simultaneamente reduz
+a confianca calculada abaixo do piso antes da decisao de execucao:
+
+- `[EXP_REDUZIDA]` — penaliza confianca e eleva threshold para 55%/R/R 1.8
+- `[DIR_FRACO]` — exige confluencia de direcao quase perfeita
+- `[TRAP_PROX]` — penalidade por armadilha estrutural proxima
+
+**Parametros atuais (agente_micro_tendencia_winfut.py):**
+
+```python
+MIN_CONFIDENCE_TRADE = 45       # threshold global
+# com EXP_REDUZIDA ativo: exige >= 55% E R/R >= 1.8
+```
+
+**Entregar:**
+
+- Reduzir `MIN_CONFIDENCE_TRADE` de 45% para **40%**;
+- Reduzir threshold `EXP_REDUZIDA` de 55% para **48%**;
+- Reduzir R/R minimo em modo `EXP_REDUZIDA` de 1.8 para **1.6**;
+- Revisar penalidade do flag `DIR_FRACO`: atualmente bloqueia com
+  2+ contrarios; ajustar para bloquear apenas com 3+ contrarios
+  (tolerancia maior para divergencia parcial entre timeframes);
+- Revisar penalidade do flag `TRAP_PROX`: manter o alerta mas remover
+  o impacto direto na confianca calculada — armadilha proxima deve ser
+  informacao, nao veto;
+- Manter intactos: limite de 3 trades/dia, max loss 500 pts,
+  cooling-off pos-SL, kill switch do Guardian;
+- Testes: executar backtest de 5 pregoes recentes com os novos valores
+  e comparar numero de trades gerados vs trades anteriores;
+- Evidencia minima: ao menos 1 trade executado no primeiro pregao
+  apos o ajuste.
+
+**Pronto quando:**
+
+- Agente executa ao menos 1 trade em dia com macro score > 20
+  e ADX >= 30;
+- Confianca maxima das oportunidades diarias supera o threshold;
+- Sem aumento de drawdown diario vs baseline dos ultimos 10 pregoes.
+
+---
+
+#### 13. CALIBRACAO-MICRO-02 Substituir modo EXP_REDUZIDA permanente por condicao dinamica
+
+**Status:** PENDENTE
+
+**Origem:** Reuniao Product Board 17/03/2026.
+
+**Problema diagnosticado:**
+O flag `[EXP_REDUZIDA]` aparece em quase todas as 141 oportunidades
+de hoje. O modo e ativado quando `macro_score >= 20 OR <= -20` sem
+confirmacao SMC multi-TF. Como o macro score ficou entre +14 e +62
+o dia inteiro, o modo `EXP_REDUZIDA` esteve ativo de forma
+praticamente permanente — tornando-se o estado padrao, nao a excecao.
+
+**Entregar:**
+
+- Reformular a condicao de ativacao do `EXP_REDUZIDA`: ativar apenas
+  quando `macro_score >= 40 AND smc_direction == NEUTRO` (mercado forte
+  E sem direcao SMC confirmada — situacao genuinamente ambigua);
+- Adicionar condicao de desativacao explicita: se `adx >= 35 AND
+  smc_direction != NEUTRO`, desativar `EXP_REDUZIDA` mesmo com
+  macro_score alto;
+- Adicionar campo `exp_reduzida_ativo` (bool) na tabela
+  `micro_trend_decisions` para rastreabilidade;
+- Relatorio diario mostrando: percentual de ciclos com
+  `EXP_REDUZIDA` ativo e quantos trades foram bloqueados por ele;
+- Testes cobrindo: ativacao, desativacao, rastreabilidade no banco.
+
+**Pronto quando:**
+
+- `EXP_REDUZIDA` ativo em menos de 30% dos ciclos em dia de
+  tendencia clara (macro > 20, ADX > 35);
+- Campo `exp_reduzida_ativo` persistido e consultavel.
+
+---
+
+#### 14. CALIBRACAO-MICRO-03 Pipeline de aprendizado com episodios reais
+
+**Status:** PENDENTE — depende de CALIBRACAO-MICRO-01 (trades precisam existir)
+
+**Origem:** Reuniao Product Board 17/03/2026 — diretriz do Head de Financas.
+
+**Problema diagnosticado:**
+O magic number 234700 (Micro Tendencia) tem **0 trades em toda a
+historia do banco**. Os modulos AC5.8, AC5.9, AC6.7, AC6.8 e AC6.9
+foram integrados ao agente em 17/03/2026, mas nao tem dados reais
+para processar — o agente nunca operou. O LightGBM foi treinado com
+dados de backtest de fevereiro. O IntraDayLearner ajusta confiancas
+sem ter episodios proprios para aprender. O loop de aprendizado existe
+mas esta em vacuo.
+
+**Objetivo:** Uma vez que CALIBRACAO-MICRO-01 libere os primeiros
+trades, fechar o ciclo completo: **trade executado → outcome registrado
+→ episodio persistido → retreinamento incremental → modelo mais
+calibrado para o regime atual**.
+
+**Entregar:**
+
+- Verificar e corrigir o pipeline de persistencia de episodios do
+  Micro Tendencia: garantir que cada trade executado pelo agente
+  (magic 234700) gere entrada em:
+  - `rl_episodes` com todos os campos de contexto do momento da
+    entrada (macro_score, micro_trend, adx, rsi, smc_direction,
+    confianca, reason, preco, sl, tp);
+  - `diario_episodios` com resultado final (WIN/LOSS/BREAKEVEN,
+    resultado_pts, motivo_saida);
+  - `execution_feedback` via AC5.9 para fechar o ciclo de feedback;
+- Acionar AC6.7 (DriftDetector) a partir de 10 episodios acumulados;
+- Acionar AC6.8 (OnlineLearningController) a partir de 20 episodios:
+  retreinar LightGBM com janela deslizante dos ultimos 30 pregoes;
+- Acionar AC6.9 (BaselineComparator) semanalmente: comparar
+  win_rate do modelo atual vs baseline de fevereiro;
+- Script de auditoria `scripts/auditoria_micro_episodios.py`:
+  - Quantos episodios acumulados com outcome conhecido?
+  - Win rate real do Micro Tendencia (nao do backtest)?
+  - Ultima vez que AC6.8 retreinou o modelo?
+  - Versao atual do LightGBM em producao?
+- Testes de integracao: trade simulado → episodio persistido →
+  feedback gerado → retreinamento acionado quando threshold atingido.
+
+**Pronto quando:**
+
+- Cada trade do Micro Tendencia gera episodio completo nos tres destinos;
+- Apos 20 episodios, AC6.8 aciona retreinamento automaticamente;
+- Win rate real do modelo (pos-calibracao) disponivel em relatorio;
+- Modelo LightGBM em producao tem data de treino de marco ou posterior.
+
+---
+
+#### 15. CALIBRACAO-MICRO-04 Relatorio diario de bloqueios por categoria
+
+**Status:** PENDENTE
+
+**Origem:** Reuniao Product Board 17/03/2026.
+
+**Objetivo:** Tornar visiveis os motivos de nao-operacao. Hoje o agente
+para tudo silenciosamente — o operador so percebe a ausencia de trades,
+nao o motivo. Um relatorio estruturado de bloqueios permite identificar
+rapidamente qual filtro esta causando paralisia em cada pregao.
+
+**Entregar:**
+
+- Ao encerramento de cada ciclo (2 min), registrar em tabela
+  `micro_trend_bloqueios` (SQLite): timestamp, opportunity_id,
+  flag_bloqueador (EXP_REDUZIDA/DIR_FRACO/TRAP_PROX/CONFIANCA/RR/etc),
+  confianca_calculada, confianca_necessaria, delta (gap);
+- Relatorio de encerramento do pregao `outputs/micro_bloqueios_YYYYMMDD.md`:
+  - Top 5 flags que mais bloquearam trades hoje;
+  - Confianca media vs threshold em cada bloqueio;
+  - Horarios com maior concentracao de bloqueios;
+  - Quantos trades teriam ocorrido sem cada flag especifico;
+- Testes cobrindo persistencia e geracao do relatorio.
+
+**Pronto quando:**
+
+- Relatorio gerado ao encerramento do pregao;
+- Cada oportunidade rejeitada tem motivo registrado no banco;
+- Possivel simular "e se threshold fosse X?" com os dados coletados.
+
+---
+
+#### 16. CALIBRACAO-MICRO-05 Retreino efetivo com episodios acumulados
+
+**Status:** PENDENTE
+
+**Origem:** Reuniao Product Board 17/03/2026 — analise do banco SQLite.
+
+**Problema diagnosticado:**
+O agente acumula 2.760 episodios e 13.388 rewards avaliados desde
+fevereiro. O modelo LightGBM foi treinado **uma unica vez em 23/02/2026**
+e nunca atualizado. A tabela `rl_training_metrics` tem 1 registro.
+A tabela `model_metadata` esta vazia — nenhuma versao de modelo foi
+registrada formalmente. O modulo AC6.8 (`OnlineLearningController`) foi
+integrado em 17/03 mas nunca disparou: sem trades reais executados,
+o trigger de retreinamento nao teve dados de outcome para acionar.
+
+**Impacto:** O modelo decide em marco com calibracao de fevereiro.
+Os 286.936 correlation scores acumulados no banco nao influenciam
+nenhuma decisao. O avg_pts dos rewards no historico e **-4.203 pontos**
+— o modelo esta sistematicamente errado e nao sabe.
+
+**Entregar:**
+
+- Trigger de retreinamento **independente de trades executados**:
+  acionar AC6.8 quando `rl_rewards` acumular >= 200 novos rewards
+  avaliados desde o ultimo treino (hoje ja tem 13.388 — retreino
+  imediato justificado);
+- Retreinar LightGBM com janela deslizante dos ultimos 500 episodios
+  avaliados, priorizando os mais recentes (peso decrescente);
+- Registrar cada retreinamento em `rl_training_metrics` e
+  `model_metadata` com: versao, data, n_episodios_usados,
+  win_rate_treino, win_rate_validacao, delta vs versao anterior;
+- Versionamento semantico do modelo:
+  `data/models/micro_tendencia/v{MAJOR}.{MINOR}.{PATCH}_YYYYMMDD`;
+- Rollback automatico se win_rate_validacao cair mais de 5pp vs
+  versao anterior (via AC6.8 existente);
+- Script de auditoria `scripts/auditoria_modelo_micro.py`:
+  - Versao atual em producao e data de treino;
+  - Win rate real dos rewards acumulados;
+  - Quantos episodios desde o ultimo treino;
+  - Recomendacao: retreinar agora? sim/nao com justificativa;
+- Testes cobrindo: trigger por volume de rewards, versionamento,
+  rollback automatico.
+
+**Pronto quando:**
+
+- `model_metadata` tem ao menos 1 registro de modelo treinado
+  com dados de marco/2026;
+- `rl_training_metrics` atualizado a cada retreinamento;
+- Retreinamento automatico ocorre ao atingir threshold de rewards;
+- Auditoria executavel em < 5 segundos com resultado legivel.
+
+---
+
+#### 17. CALIBRACAO-MICRO-06 Autoavaliacao de inatividade em mercado direcional
+
+**Status:** PENDENTE
+
+**Origem:** Reuniao Product Board 17/03/2026 — diretriz do Head de Financas.
+
+**Problema diagnosticado:**
+O agente nao tem nenhum mecanismo para reconhecer que ficar fora
+do mercado foi uma decisao errada. Hoje: 250 ciclos sem trade,
+macro score medio +29,5, ADX forte (>=40) em 54% dos ciclos,
+range de 2.795 pts disponivel. Simulacao mostrou que 2 trades
+teriam sido abertos com calibracao ajustada — 1 WIN (+555 pts)
+e 1 LOSS (-280 pts) = +275 pts liquidos. O agente nao sabe
+que perdeu essa oportunidade. Nao ha episodio de HOLD registrado
+com penalidade. O sistema e cego para omissao.
+
+**Objetivo:** Ao final de cada pregao sem trade (ou com numero
+de trades abaixo de threshold), o agente deve gerar **episodios
+de autoavaliacao** que sirvam de sinal de retreinamento negativo
+— ensinando que paralisia em mercado favoravel e um erro tao
+penalizavel quanto um trade perdedor.
+
+**Entregar:**
+
+- **Detector de inatividade injusta:** ao encerramento do pregao
+  (ou a cada 3 horas sem trade), verificar condicao:
+  - `n_trades_executados == 0`
+  - `macro_score_medio_dia >= 15`
+  - `adx_medio_dia >= 30`
+  - `market_range_pts >= 500`
+  Se todas as condicoes verdadeiras: acionar geracao de episodios
+  de penalidade;
+
+- **Episodios de HOLD penalizado:** para cada oportunidade
+  detectada mas nao executada no dia (tabela
+  `micro_trend_opportunities`), gerar entrada em `rl_rewards` com:
+  - `action_at_decision = 'HOLD_FORCADO'`
+  - `price_change_points` = movimento real que ocorreu apos o
+    timestamp da oportunidade (consultado via `micro_trend_decisions`)
+  - `was_correct = 0` (ficou fora foi incorreto)
+  - `reward_normalized` = penalidade proporcional ao movimento
+    perdido (ex: -0.5 para cada 100 pts de movimento nao capturado)
+  - `is_evaluated = 1`
+
+- **Relatorio de autoavaliacao diaria**
+  `outputs/micro_autoavaliacao_YYYYMMDD.md`:
+  - Condicao do mercado no dia (macro score, ADX, range);
+  - Numero de oportunidades detectadas vs executadas;
+  - Movimento nao capturado estimado (pts);
+  - Penalidade total gerada nos episodios;
+  - Recomendacao: "calibracao necessaria — agente excessivamente
+    conservador";
+
+- Integrar penalidades no proximo ciclo de retreinamento
+  (CALIBRACAO-MICRO-05): o modelo aprende que HOLD em mercado
+  direcional tem custo real;
+
+- Testes cobrindo: deteccao de inatividade injusta, geracao de
+  episodios penalizados, calculo de movimento perdido,
+  geracao do relatorio.
+
+**Pronto quando:**
+
+- Dia sem trade em mercado com ADX >= 30 e macro >= 15 gera
+  episodios de penalidade automaticamente;
+- Relatorio de autoavaliacao gerado ao encerramento do pregao;
+- Penalidades incluidas no proximo retreinamento do LightGBM;
+- Depois de 5 pregoes com penalidades, win rate do modelo
+  melhora (threshold: variacao positiva detectavel).
+
+---
+
+### P2 - Oportunidades de evolucao — INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
+
+#### 7. ROADMAP-MICRO-01 Garantir persistencia auditavel de logs narrativos por pregao
+
+**Status:** PENDENTE
+
+**Origem:** Reuniao Product Board 17/03/2026.
+
+**Objetivo:** O `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` acumula dados
+quantitativos ricos (win_rate, drift, feedback AC5.9) mas nao gera
+arquivos de log narrativos por data de pregao que possam ser consultados
+posteriormente. Evoluir para que cada sessao produza um artefato auditavel
+em `outputs/` com narrativa do dia.
+
+**Entregar:**
+
+- Log de sessao diario em `outputs/micro_tendencia_YYYYMMDD.log` com:
+  - Sumario de sinais gerados (quantos BUY/SELL/HOLD);
+  - Resultado de cada ciclo de feedback (AC5.9 health);
+  - Alertas de drift detectados (AC6.7);
+  - Se online learning foi acionado (AC6.8);
+  - Comparacao vs baseline no fechamento (AC6.9);
+- Log nao deve crescer indefinidamente: rotacao diaria.
+
+---
+
+#### 8. ROADMAP-MICRO-02 Terminal mismatch MT5 — documentar e validar formalmente
+
+**Status:** PENDENTE
+
+**Origem:** Reuniao Product Board 17/03/2026.
+
+**Objetivo:** O `mt5_adapter` registra `Terminal mismatch: expected Clear
+Investimentos MT5, got FBS MetaTrader 5` mas aceita a conexao como
+fallback. Esse comportamento nao esta documentado como decisao tecnica
+explicita e pode causar confusao operacional.
+
+**Entregar:**
+
+- ADR (Architecture Decision Record) documentando o comportamento de
+  fallback de terminal;
+- Configuracao explicita em `.env` ou `config.py` para listar terminais
+  aceitos como fallback;
+- Warning operacional no log quando fallback e acionado (nivel WARNING,
+  nao apenas DEBUG);
+- Teste cobrindo comportamento com terminal diferente do esperado.
+
+---
+
+#### 9. ROADMAP-MICRO-03 Resultado DESCONHECIDO — eliminar do vocabulario operacional
+
+**Status:** PENDENTE — depende do BUG-DIARIOS-04
+
+**Origem:** Reuniao Product Board 17/03/2026.
+
+**Objetivo:** O campo `resultado` registra `DESCONHECIDO` quando o
+`MotorDecisaoIsolado` nao consegue rastrear o fechamento. Alem de corrigir
+o bug tecnico, evoluir o sistema para que resultado nunca seja
+`DESCONHECIDO` em operacao real — sempre WIN, LOSS ou BREAKEVEN.
+
+**Entregar:**
+
+- Mecanismo de reconciliacao: se `resultado == DESCONHECIDO` no fechamento,
+  consultar o MT5 diretamente para determinar PnL real;
+- Alerta ao operador quando reconciliacao for necessaria;
+- Metrica de monitoramento: percentual de trades com resultado
+  `DESCONHECIDO` por sessao (alvo: 0%);
+- Relatorio de reconciliacao persistido em `outputs/`.
+
+---
+
 ### P2 - Capacidade futura
 
-#### 7. Observabilidade e governanca tecnica
+#### 10. Observabilidade e governanca tecnica
 
 **Status:** ✅ DONE (16/03/2026 - SYNC_MANIFEST.json criado + testes 20/20)
 
@@ -1763,9 +2134,452 @@ retorno auditavel (Gate 2 PASS).
 - Commit: feat: Implementar AC5.9 Feedback Execucao
   QueueProcessor com testes 10/10
 
+### P1-BUG - Bugs identificados em operacao (17/03/2026)
+
+#### 3. BUG-DIARIOS-01 Trading Journal e AI Reflection nao persistem dados
+
+**Status:** ABERTO (identificado em 17/03/2026)
+
+**Origem:** Reuniao Product Board 17/03/2026 — analise de logs e banco SQLite.
+
+**Problema:** O `INICIAR_DIARIOS.bat` inicia 3 threads de diarios. Dois deles
+nao gravaram nenhum registro hoje:
+
+- `trading_journal_logs`: 1 unico registro no banco, datado de 26/02/2026
+  (19 dias sem gravar).
+- `ai_reflection_logs`: 0 registros em toda a historia do sistema.
+
+O `diary_rl_performance` (38 registros hoje) e o unico diario funcional.
+
+**Causa provavel:** Threads morrem silenciosamente por excecao nao tratada.
+O processo principal continua rodando sem perceber que os diarios 2 e 3
+estao mortos. Nao ha watchdog monitorando se as threads estao vivas.
+
+**Impacto:** Loop de retroalimentacao qualitativo quebrado. O sistema aprende
+apenas metricas numericas (win_rate, range, nota). Contexto narrativo do
+mercado — que o Trading Journal deveria capturar — esta ausente ha 19 dias.
+
+**Entregar:**
+
+- Diagnosticar excecao exata que mata as threads (adicionar try/except
+  com logging de stack trace);
+- Implementar watchdog que monitora se cada thread de diario esta viva
+  e reinicia automaticamente se morta;
+- Garantir que `trading_journal_logs` e `ai_reflection_logs` gravem ao
+  menos 1 registro por ciclo quando o agente esta rodando;
+- Testes de resiliencia de thread (simulando falha e verificando restart);
+- Evidencia: banco com registros das 3 fontes no mesmo dia de execucao.
+
+**Pronto quando:**
+
+- `trading_journal_logs`, `ai_reflection_logs` e `diary_rl_performance`
+  tiverem registros no mesmo pregao;
+- Falha em uma thread nao matar as demais;
+- Stack trace de falha gravado em log auditavel.
+
+---
+
+#### 4. BUG-DIARIOS-02 Campo eficiencia_pct sempre zero no RL Performance Diary
+
+**Status:** ABERTO (identificado em 17/03/2026)
+
+**Origem:** Reuniao Product Board 17/03/2026 — analise de 38 registros
+`diary_feedback` de hoje.
+
+**Problema:** O campo `eficiencia_pct` esta zerado em todos os 38 registros
+de hoje na tabela `diary_feedback`. A metrica existe no schema mas nunca
+e calculada. Eficiencia mede o quanto o agente capturou do range disponivel
+do mercado — informacao critica para avaliar qualidade de execucao vs
+oportunidade real.
+
+**Impacto:** O loop de aprendizado nao recebe feedback sobre eficiencia de
+captura. O sistema nao consegue distinguir "mercado andou pouco" de "mercado
+andou muito e o agente capturou pouco".
+
+**Entregar:**
+
+- Identificar onde `eficiencia_pct` deveria ser calculado no codigo do
+  `diary_rl_performance`;
+- Implementar calculo: `eficiencia_pct = resultado_pts_capturado /
+  market_range_pts * 100` (para trades executados);
+- Validar que campo e gravado corretamente no proximo ciclo de 15 min;
+- Teste unitario cobrindo calculo de eficiencia com e sem trades do dia.
+
+**Pronto quando:**
+
+- `eficiencia_pct` != 0 em dias com trades executados;
+- Campo calculado e persistido corretamente no SQLite;
+- Teste cobrindo casos: sem trades, com trades win, com trades loss.
+
+---
+
+#### 5. BUG-DIARIOS-03 Encoding corrompido nos primeiros feedbacks do dia
+
+**Status:** ABERTO (identificado em 17/03/2026)
+
+**Origem:** Reuniao Product Board 17/03/2026 — leitura direta da tabela
+`diary_feedback` no SQLite.
+
+**Problema:** Os primeiros registros do dia em `diary_feedback` (IDs
+iniciais) apresentam texto corrompido nos campos de alertas e incoerencias.
+Exemplo observado: `"N\xef\xbf\xbd\xef\xbf\xbd o e poss\xef\xbf\xbdvel"`
+ao inves de `"Nao e possivel"`. O padrao de substituicao (`\xef\xbf\xbd` =
+U+FFFD) indica conversao incorreta de cp1252 para UTF-8 no momento da
+gravacao.
+
+**Impacto:** Alertas criticos do inicio do pregao ficam ilegíveis. O agente
+que le `diary_feedback` para tomar decisoes pode receber alertas corrompidos
+ou vazio, prejudicando a retroalimentacao logo na abertura do mercado.
+
+**Entregar:**
+
+- Identificar o ponto de geracao dos textos com encoding incorreto (provavel:
+  fonte de dados externa retorna cp1252 e e gravada sem decode correto);
+- Corrigir encode/decode na camada de persistencia de `diary_feedback`;
+- Adicionar validacao de encoding antes de gravar no SQLite;
+- Verificar se registros antigos corrompidos impactam leituras atuais
+  (considerar script de correcao de dados historicos);
+- Teste cobrindo gravacao com caracteres acentuados e especiais.
+
+**Pronto quando:**
+
+- Novos registros gravados sem caracteres U+FFFD;
+- Alertas do inicio do pregao legiveis no banco;
+- Teste de encoding passando com textos em portugues.
+
+---
+
+#### 6. BUG-DIARIOS-04 NameError motor_decisao no Agente RL Direto pos-integracao
+
+**Status:** ABERTO (identificado em 17/03/2026)
+
+**Origem:** Reuniao Product Board 17/03/2026 — log
+`agente_direto_20260317_151302.log`, linha 87.
+
+**Problema:** Apos a integracao do `MotorDecisaoIsolado` em 17/03/2026, a
+variavel `motor_decisao` foi referenciada na funcao `enviar_ordem()` do
+script `agente_rl_direto_independente.py` (linha 331) mas nao foi inicializada
+no escopo correto. O erro e:
+
+```
+NameError: name 'motor_decisao' is not defined
+File "scripts/agente_rl_direto_independente.py", line 331, in enviar_ordem
+    motor_decisao.abrir_posicao(
+```
+
+**Consequencia operacional observada:** A ordem e enviada ao MT5 com sucesso
+(ticket gerado), mas o registro no `MotorDecisaoIsolado` falha. O isolamento
+de posicao (`PosicaoIsoladaManager`) registra a abertura, porem o motor
+formal nao. O fechamento e registrado como resultado `DESCONHECIDO` com
+`PnL=R$0.00`. O loop de feedback (AC5.9, AC6.7-AC6.9) nao recebe outcome
+real do trade.
+
+**Entregar:**
+
+- Corrigir escopo de inicializacao de `motor_decisao` em
+  `agente_rl_direto_independente.py` (instanciar no `__main__` ou passar
+  como parametro para `enviar_ordem()`);
+- Verificar se o mesmo problema existe em
+  `operar_novo_agente_rl_real_antiovertrading.py` (RL 5000);
+- Garantir que `motor_decisao.abrir_posicao()` e `motor_decisao.fechar_posicao()`
+  sejam chamados corretamente apos cada operacao;
+- Teste de integracao cobrindo fluxo completo: abertura → registro no motor
+  → fechamento → outcome conhecido;
+- Resultado `DESCONHECIDO` nao deve aparecer apos o fix.
+
+**Pronto quando:**
+
+- Zero ocorrencias de `NameError: motor_decisao` nos logs;
+- `resultado` nunca e `DESCONHECIDO` apos trades reais fechados;
+- `PnL estimado` reflete valor real da operacao;
+- Testes de integracao passando com motor isolado inicializado.
+
+---
+
+### P2 - Oportunidades de evolucao — INICIAR_DIARIOS.bat
+
+#### 7. ROADMAP-DIARIOS-01 Watchdog de threads e observabilidade dos diarios
+
+**Status:** PENDENTE — aguarda resolucao do BUG-DIARIOS-01
+
+**Origem:** Reuniao Product Board 17/03/2026.
+
+**Objetivo:** Alem de corrigir o bug de thread morta, evoluir a arquitetura
+dos diarios para que o operador tenha visibilidade em tempo real do estado
+de cada diario (rodando, pausado, com erro).
+
+**Entregar:**
+
+- Painel de status dos 4 diarios no terminal (alive/dead/restarting);
+- Contador de registros gravados por diario na sessao atual;
+- Alerta ao operador (log WARNING) quando um diario ficar > 20 min
+  sem gravar;
+- Historico de restarts por diario no dia.
+
+---
+
+#### 8. ROADMAP-DIARIOS-02 Diario 1 — Trading Storytelling como insumo de inteligencia
+
+**Status:** PENDENTE — depende de BUG-DIARIOS-01 (thread morta)
+
+**Origem:** Reuniao Product Board 17/03/2026 — diretriz do Head de Financas.
+
+**Objetivo:** Transformar o Trading Storytelling de um diario de exibicao em
+terminal para um **insumo estruturado de inteligencia e treinamento**. Cada
+narrativa gerada deve ser correlacionada com o resultado real da operacao
+(se houve trade naquele ciclo: atingiu TP, tomou SL, ou ficou fora). Com
+isso, o diario se torna um dataset de contexto qualitativo que alimenta o
+treinamento dos demais agentes (ML, RL, Guardian).
+
+**Problema atual:**
+
+- Narrativas sao exibidas no terminal mas nao persistidas de forma
+  correlacionada com outcomes de trades;
+- `trading_journal_logs` tem apenas 1 registro historico (26/02/2026);
+- Nao ha ligacao entre o contexto narrativo (manchete, sentimento, macro)
+  e o que aconteceu com os trades abertos naquele intervalo de 5 minutos.
+
+**Entregar:**
+
+- Persistencia confiavel de cada entrada narrativa em `trading_journal_logs`
+  com todos os campos: manchete, sentimento, macro_bias, technical_bias,
+  decisao sugerida, confianca, alignment_score, timestamp;
+- Correlacionador post-hoc: ao final de cada ciclo de 5 min, verificar se
+  havia trade aberto no Diario Order Manager (Diario 5) e registrar o
+  outcome (WIN/LOSS/BREAKEVEN/SEM_TRADE) como campo adicional na entrada;
+- Tabela de correlacao `journal_trade_correlation` (SQLite):
+  `journal_entry_id`, `trade_ticket`, `outcome`, `pnl_reais`,
+  `narrativa_estava_alinhada` (bool: decisao sugerida == direcao do trade);
+- Script de analise `scripts/analisar_journal_correlacoes.py`:
+  - Quais sentimentos de mercado precederam trades vencedores?
+  - Quais biases macro estavam presentes antes de stops?
+  - Qual alinhamento medio das narrativas nos trades executados?
+- Exportacao dos dados correlacionados como dataset de treinamento
+  (`data/training/journal_features_YYYYMMDD.json`) para reuso por
+  agentes ML/RL;
+- Testes cobrindo: persistencia, correlacao, exportacao de dataset.
+
+**Pronto quando:**
+
+- `trading_journal_logs` tem registros a cada 5 min durante o pregao;
+- Toda entrada possui campo `outcome_trade` preenchido ao final do ciclo;
+- Dataset de treinamento gerado ao encerramento do pregao;
+- Agentes ML/RL capazes de ler e usar o dataset exportado.
+
+---
+
+#### 9. ROADMAP-DIARIOS-03 Diario 2 — AI Reflection com autoavaliacao evolutiva
+
+**Status:** PENDENTE — depende de BUG-DIARIOS-01 (thread morta)
+
+**Origem:** Reuniao Product Board 17/03/2026 — diretriz do Head de Financas.
+
+**Objetivo:** Tornar o AI Reflection um mecanismo de **auto-reconhecimento e
+evolucao continua do sistema**. Nao basta refletir — o diario precisa
+identificar se suas proprias perguntas e respostas estao envelhecendo e
+propor substituicoes. O insight do dia deve influenciar o comportamento dos
+agentes operacionais.
+
+**Problema atual:**
+
+- `ai_reflection_logs` nunca persistiu (0 registros);
+- As perguntas de reflexao sao estaticas no codigo — nao evoluem com o
+  tempo nem com o contexto do mercado;
+- Nao ha mecanismo para que uma conclusao da reflexao gere acao concreta
+  sobre um agente operacional.
+
+**Entregar:**
+
+- Persistencia confiavel de cada reflexao em `ai_reflection_logs`
+  com todos os campos: humor, frase do ciclo, avaliacao honesta,
+  relevancia dos dados, correlacao, analise cruzada vs agente;
+- **Motor de evolucao de perguntas:** tabela `reflection_questions`
+  (SQLite) com perguntas ativas, data de criacao, score de relevancia
+  acumulado e flag `obsoleta`. A cada 30 dias (ou quando score cai abaixo
+  de threshold), a pergunta e marcada como obsoleta e uma nova e sugerida;
+- Criterio de relevancia: uma pergunta e relevante se suas respostas
+  correlacionam com outcomes de trades (WIN/LOSS) — medido semanalmente;
+- **Canal de acao:** ao identificar padrao recorrente (ex: "agente ignora
+  sinal macro ha 5 dias consecutivos"), gerar entrada em `diary_feedback`
+  com `source='ai_reflection'` e campo `acao_sugerida` para que os agentes
+  leiam e ajustem comportamento;
+- Relatorio semanal automatico `outputs/ai_reflection_semana_NN.md`:
+  - Perguntas mais e menos relevantes da semana;
+  - Padroes detectados nas respostas;
+  - Acoes sugeridas e se foram adotadas;
+- Testes cobrindo: persistencia, evolucao de perguntas, canal de acao.
+
+**Pronto quando:**
+
+- `ai_reflection_logs` persiste a cada 10 min durante o pregao;
+- Perguntas sao avaliadas semanalmente quanto a relevancia;
+- Pelo menos 1 acao concreta gerada por semana e legivel pelos agentes
+  via `diary_feedback`;
+- Relatorio semanal gerado automaticamente.
+
+---
+
+#### 10. ROADMAP-DIARIOS-04 Diario 3 — RL Performance Diary como motor de aprendizado
+
+**Status:** PENDENTE — depende de BUG-DIARIOS-02 (eficiencia_pct zerado)
+
+**Origem:** Reuniao Product Board 17/03/2026 — diretriz do Head de Financas.
+
+**Objetivo:** Evoluir o RL Performance Diary de um diario de medicao para
+um **motor de aprendizado ativo**. Cada ciclo de 15 min deve nao apenas
+registrar performance mas acionar decisoes de retreinamento quando o agente
+degrada, e exportar episodios enriquecidos para o pipeline ML/RL.
+
+**Problema atual:**
+
+- `eficiencia_pct` sempre zero (BUG-DIARIOS-02);
+- Diario mede mas nao aciona retreinamento automatico;
+- Episodios do `diario_episodios` nao sao exportados como dataset
+  estruturado para retreinamento dos agentes operacionais;
+- Nota do agente (0-10) e calculada mas nao gera nenhuma acao quando
+  cai abaixo de threshold.
+
+**Entregar:**
+
+- Correcao do `eficiencia_pct` (via BUG-DIARIOS-02);
+- **Gatilho de retreinamento:** se nota_agente < 6 por 3 ciclos
+  consecutivos, acionar flag `retreinamento_necessario=True` em
+  `diary_feedback` para que o pipeline AC6.8 (OnlineLearningController)
+  leia e inicie treino incremental;
+- **Exportador de episodios enriquecidos:** ao encerramento do pregao,
+  exportar `diario_episodios` do dia como dataset:
+  `data/training/diario_episodios_YYYYMMDD.json` com campos completos
+  incluindo contexto de mercado no momento da entrada;
+- **Janela de aprendizado adaptativa:** o calculo de win_rate no diario
+  deve ponderar mais os episodios recentes (peso decrescente para os
+  mais antigos), refletindo mudanca de regime de mercado;
+- Relatorio de encerramento do pregao `outputs/rl_diary_fechamento_YYYYMMDD.md`
+  com resumo do dia: range capturado, eficiencia real, episodios,
+  retreinamentos acionados;
+- Testes cobrindo: gatilho de retreinamento, exportacao, janela adaptativa.
+
+**Pronto quando:**
+
+- `eficiencia_pct` calculado e nao-zero em dias com trades;
+- Retreinamento acionado automaticamente quando nota < 6 por 3 ciclos;
+- Dataset de episodios exportado ao encerramento do pregao;
+- Relatorio de fechamento gerado diariamente.
+
+---
+
+#### 11. ROADMAP-DIARIOS-05 Diario 4 — Macro Guardian expandido a todos os agentes
+
+**Status:** PENDENTE
+
+**Origem:** Reuniao Product Board 17/03/2026 — diretriz do Head de Financas.
+
+**Objetivo:** O Macro Guardian hoje persiste alertas apenas quando CRITICAL
+e apenas o Diario Order Manager os le. Expandir para que **todos os 4
+agentes operacionais** (Micro Tendencia, RL 5000, RL Direto, Diarios)
+consumam os alertas do Guardian em tempo real e **aprendam com os eventos
+macro** — nao apenas reajam a eles, mas internalizem o contexto macro como
+variavel de treinamento.
+
+**Problema atual:**
+
+- Alertas Guardian so sao persistidos em eventos CRITICAL;
+- Agentes RL 5000 e RL Direto nao leem `diary_feedback` do Guardian;
+- Eventos macro nao sao usados como features de treinamento nos modelos
+  ML/RL;
+- Nao ha historico de "qual cenario macro estava presente quando o agente
+  acertou/errou" — impedindo que o modelo aprenda com o contexto macro.
+
+**Entregar:**
+
+- **Persistencia ampliada:** Guardian persiste todos os niveis (INFO,
+  WARNING, CRITICAL) em tabela dedicada `macro_guardian_log` (SQLite):
+  timestamp, severity, tipo_evento, descricao, valor_atual, valor_anterior,
+  score_impacto (0-100);
+- **Canal de leitura universal:** todos os 4 agentes operacionais passam
+  a ler `macro_guardian_log` a cada ciclo e recebem o score de impacto
+  macro como feature adicional de entrada no modelo;
+- **Feature macro para treinamento:** ao gerar dataset de episodios,
+  enrichecer cada episodio com o snapshot macro do momento (score_guardian,
+  alertas_ativos, regime_macro) como colunas adicionais — formando um
+  dataset multimodal (tecnico + macro);
+- **Kill switch universal:** quando Guardian aciona kill_switch, todos
+  os agentes recebem o sinal via `macro_guardian_log` e pausam novas
+  entradas automaticamente (hoje apenas Diario Order Manager respeita);
+- Relatorio semanal `outputs/guardian_semana_NN.md`:
+  - Distribuicao de alertas por tipo e severidade;
+  - Correlacao: alertas Guardian x outcomes dos trades;
+  - Cenarios macro que mais precederam trades perdedores;
+- Testes cobrindo: persistencia multi-nivel, leitura pelos 4 agentes,
+  kill switch universal, enriquecimento de dataset.
+
+**Pronto quando:**
+
+- Todos os agentes leem Guardian a cada ciclo;
+- Dataset de treinamento inclui features macro;
+- Kill switch pausa todos os agentes simultaneamente;
+- Relatorio semanal de correlacao macro x trades gerado.
+
+---
+
+#### 12. ROADMAP-DIARIOS-06 Diario 5 — Order Manager com retreinamento e antienviesamento
+
+**Status:** PENDENTE — depende de BUG-DIARIOS-04 (NameError motor_decisao)
+
+**Origem:** Reuniao Product Board 17/03/2026 — diretriz do Head de Financas.
+
+**Objetivo:** Evoluir o Diario Order Manager de um executor de ordens para
+um **agente adaptativo sem vies**. O operador nao pode ter vies fixo de
+direcao — ele deve aprender o pulsar do mercado, antecipar movimentos,
+rejeitar armadilhas e rentabilizar o capital. Para isso, o ciclo completo
+de episodio → resultado → retreinamento deve ser fechado e automatizado.
+
+**Problema atual:**
+
+- Resultado dos trades registrado como `DESCONHECIDO` (BUG-DIARIOS-04);
+- Episodios gerados mas nao usados para retreinamento do modelo;
+- Sem mecanismo de deteccao e correcao de vies direcional (ex: agente
+  entra so em BUY por varios dias consecutivos);
+- Sem adaptacao automatica a mudancas de regime de mercado
+  (tendencia → lateral → reversao).
+
+**Entregar:**
+
+- Correcao do bug `motor_decisao` (via BUG-DIARIOS-04);
+- **Pipeline de retreinamento automatico:** ao encerramento do pregao,
+  se o dia gerou >= 10 episodios com outcome conhecido, executar treino
+  incremental do modelo do Diario Order Manager com os novos episodios;
+  salvar modelo versionado em `data/models/diario_order_manager/`;
+- **Detector de vies direcional:** calcular, a cada 20 episodios, o
+  ratio BUY/SELL. Se ratio > 0.75 (mais de 75% em uma direcao) por 2
+  pregoes consecutivos, gerar alerta em `diary_feedback` com
+  `source='vies_detector'` e ajustar automaticamente o threshold de
+  confianca minima para a direcao dominante (+10 pontos percentuais);
+- **Adaptacao de regime:** identificar regime do dia (TENDENCIA_ALTA,
+  TENDENCIA_BAIXA, LATERAL, VOLATIL) com base no range e ADX, e ajustar
+  os parametros de SL/TP (ATR multiplier) conforme o regime — agente
+  lateral usa SL/TP mais estreitos, agente em tendencia usa mais largos;
+- Historico de modelos versionados com metrica de performance por versao:
+  `data/models/diario_order_manager/historico_versoes.json`;
+- Relatorio diario `outputs/order_manager_relatorio_YYYYMMDD.md`:
+  - Episodios do dia, win rate, eficiencia de captura;
+  - Vies detectado (se houver);
+  - Regime identificado e parametros usados;
+  - Se retreinamento foi acionado;
+- Testes cobrindo: pipeline retreinamento, detector vies, adaptacao regime.
+
+**Pronto quando:**
+
+- Resultado nunca e `DESCONHECIDO` pos-fix;
+- Retreinamento automatico ocorre quando >= 10 episodios com outcome;
+- Vies direcional detectado e corrigido automaticamente;
+- Regime identificado e parametros adaptativos aplicados;
+- Relatorio diario gerado ao encerramento do pregao.
+
+---
+
 ### P2 - Capacidade futura
 
-#### 3. Observabilidade e governanca tecnica
+#### 13. Observabilidade e governanca tecnica
 
 **Status:** ✅ DONE (16/03/2026 - Compartilhado com MICRO_TENDENCIA)
 
