@@ -11,7 +11,7 @@ Categorias de bloqueio:
 - HOURLY_LIMIT_EXCEEDED: 3+ trades na última hora
 - COOLDOWN_ACTIVE: 5 min entre trades não atendido
 - LOSS_STREAK_COOLDOWN: 2+ perdas consecutivas (30 min wait)
-- OUTSIDE_TRADING_HOURS: Fora do horário 9h-16h BRT
+- OUTSIDE_TRADING_HOURS: Fora do horário 09:00-17:30 BRT
 """
 
 import csv

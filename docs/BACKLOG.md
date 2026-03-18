@@ -957,7 +957,7 @@ stats = tracker.obter_estatisticas()
       - HOURLY_LIMIT_EXCEEDED: 3+ trades na ultima hora
       - COOLDOWN_ACTIVE: 5min entre trades nao atendido
       - LOSS_STREAK_COOLDOWN: 2+ perdas consecutivas (30min wait)
-      - OUTSIDE_TRADING_HOURS: Fora do horario 9h-16h BRT
+      - OUTSIDE_TRADING_HOURS: Fora do horario 09:00-17:30 BRT
     - BlockageLog dataclass com timestamp, motivo, detalhes, agent_id ✅
     - BlockageLogger classe com 5 metodos principais ✅
       - registrar_bloqueio(): Registra bloqueio com detalhes
@@ -3433,7 +3433,7 @@ com baixa taxa de sucesso.
 **Origem:** Fechamento diario 17/03/2026 — log
 `operar_agente_rl_antiovertrading.log` registrou ~380 linhas ERROR
 `processar_protecao_lucros: Not connected to MT5` entre 18:48 e 19:07
-(ciclos 360-379+), fora do horario operacional 9h-16h.
+(ciclos 360-379+), fora do horario operacional 09:00-17:30 BRT.
 
 **Problema tecnico:** A funcao `processar_protecao_lucros()` e chamada
 **antes** do guard `[HORA] Fora do horario` no loop principal
@@ -3478,7 +3478,7 @@ validadas pelo board (Eng Sr, ML Expert, QA, Arquiteto, Trader).
 
 **Arquivo:** `scripts/agente_rl_direto_independente.py`
 
-**Problema Diagnosticado:** 
+**Problema Diagnosticado:**
 A variável `motor_decisao` era referenciada na função `enviar_ordem()` mas
 não estava inicializada no escopo correto da função. Isso causava:
 ```

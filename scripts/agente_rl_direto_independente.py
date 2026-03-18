@@ -650,8 +650,8 @@ def inicializar_componentes():
             max_trades_per_hour=3,           # Máximo 3 trades por hora
             min_cooldown_seconds=300,        # Mínimo 5 min entre trades
             max_consecutive_losses=2,        # 2 perdas seguidas = pausa
-            trading_hours_start=9,           # Operação: 9h-16h
-            trading_hours_end=16,
+            trading_hours_start=9,           # Operação: 09:00-17:30 BRT
+            trading_hours_end=18,
         )
         logger.info('[OK] Anti-Overtrading ativado')
 
@@ -689,7 +689,7 @@ class AntiOvertradingProtection:
 
     def __init__(self, max_trades_per_hour: int = 3, min_cooldown_seconds: int = 300,
                  max_consecutive_losses: int = 2, trading_hours_start: int = 9,
-                 trading_hours_end: int = 16):
+                 trading_hours_end: int = 18):
         self.max_trades_per_hour = max_trades_per_hour
         self.min_cooldown_seconds = min_cooldown_seconds
         self.max_consecutive_losses = max_consecutive_losses
