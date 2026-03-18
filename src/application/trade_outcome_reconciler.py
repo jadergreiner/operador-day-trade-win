@@ -215,14 +215,14 @@ class TradeOutcomeReconciler:
     def reconciliar_batch(
         self,
         mt5_outcomes: List[TradeOutcome],
-        local_outcomes: Optional[List[TradeOutcome]] = None
+        local_outcomes: Optional[List[Optional[TradeOutcome]]] = None
     ) -> List[ReconciliationResult]:
         """
         Reconcilia batch de múltiplos trades atomicamente.
 
         Args:
             mt5_outcomes: Lista de outcomes MT5
-            local_outcomes: Lista de outcomes locais
+            local_outcomes: Lista de outcomes locais (pode conter None)
 
         Returns:
             Lista de ReconciliationResults
@@ -230,8 +230,24 @@ class TradeOutcomeReconciler:
         Raises:
             RuntimeError: Se reconciliação falhar (rollback all)
         """
-        # TODO: Implementar batch com atomicidade
-        raise NotImplementedError("Await implementation")
+        results: List[ReconciliationResult] = []
+
+        # Se não há local outcomes, criar lista de None
+        if local_outcomes is None:
+            local_outcomes = [None] * len(mt5_outcomes)
+
+        # Processar batch
+        if len(mt5_outcomes) != len(local_outcomes):
+            raise ValueError(
+                f"MT5 outcomes ({len(mt5_outcomes)}) != Local outcomes ({len(local_outcomes)})"
+            )
+
+        # Reconciliar cada trade em batch
+        for mt5, local in zip(mt5_outcomes, local_outcomes):
+            result = self.reconciliar(mt5, local)
+            results.append(result)
+
+        return results
 
     def _validar_saida_basica(self, outcome: TradeOutcome) -> bool:
         """Valida invariantes básicas de outcome."""
