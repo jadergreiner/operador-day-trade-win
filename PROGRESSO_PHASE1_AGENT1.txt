@@ -75,10 +75,10 @@ $ git commit -m "feat: Implementar AC5.8.1 - Reconciliacao trade basico com 1 te
        # ARRANGE
        reconciliador = TradeOutcomeReconciler()
        mt5_outcome, local_outcome = divergent_outcomes
-       
+
        # ACT
        result = reconciliador.reconciliar(mt5_outcome, local_outcome)
-       
+
        # ASSERT
        assert not result.is_synced()  # ← Divergente!
        assert result.reconciliation_status == ReconciliationStatus.DIVERGENT
@@ -174,7 +174,7 @@ Amanhã (19/03):
 Comando:
 $ cd c:/repo/operador-day-trade-win
 $ # Edite tests/test_trade_outcome_reconciler.py
-$ # Remova pytest.skip do test_detecta_divergencia_volume  
+$ # Remova pytest.skip do test_detecta_divergencia_volume
 $ pytest tests/test_trade_outcome_reconciler.py::TestTradeOutcomeReconciler::test_detecta_divergencia_volume -v
 
 Você consegue! 💪 Está no caminho certo! ✅

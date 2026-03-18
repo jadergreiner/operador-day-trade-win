@@ -236,7 +236,7 @@ class TestTradeOutcomeReconciler:
         """
         # ARRANGE
         reconciliador = TradeOutcomeReconciler()
-        
+
         # Criar outcome com status UNKNOWN
         unknown_outcome = TradeOutcome(
             trade_id=sample_unknown_outcome.get("trade_id", "unknown_1"),
@@ -353,7 +353,7 @@ class TestTradeOutcomeReconciler:
         # ARRANGE
         import time
         reconciliador = TradeOutcomeReconciler()
-        
+
         # Converter dicts para TradeOutcome objects
         outcomes_obj = []
         for outcome_dict in sample_multiple_outcomes:
@@ -370,7 +370,7 @@ class TestTradeOutcomeReconciler:
                 pnl=outcome_dict.get("pnl", 100.00)
             )
             outcomes_obj.append(outcome_obj)
-        
+
         # Replicate to ~1000 trades (sample_multiple_outcomes já tem 2-3)
         outcomes_full = outcomes_obj * 500
 
