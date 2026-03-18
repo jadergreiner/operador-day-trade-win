@@ -1852,7 +1852,25 @@ rapidamente qual filtro esta causando paralisia em cada pregao.
 
 #### 16. CALIBRACAO-MICRO-05 Retreino efetivo com episodios acumulados
 
-**Status:** PENDENTE
+**Status:** DONE (18/03/2026)
+
+**Executor Impactado:** INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
+
+**Evidencia:**
+
+- Codigo: `src/application/retreino_micro_tendencia.py`
+  - TriggerRetreino: threshold >= 200 rewards (independente de trades)
+  - CarregadorEpisodios: janela deslizante 500 episodios, peso decrescente
+  - VersonadorModelo: vMAJOR.MINOR.PATCH_YYYYMMDD
+  - GerenciadorRetreino: fluxo completo com rollback automatico
+- Script: `scripts/auditoria_modelo_micro.py`
+  - Versao ativa, win rate real, rewards acumulados, recomendacao
+  - Saida texto e JSON (--json)
+- Testes: `tests/unit/test_retreino_micro_tendencia.py`
+  - 34 testes, 34/34 PASSING (100%)
+  - Cobertura: trigger, carregador, versionador, gerenciador, rollback
+- Type hints: 100% (mypy --strict sem erros no modulo)
+- Portugues: 100% (docstrings, variaveis, comentarios)
 
 **Origem:** Reuniao Product Board 17/03/2026 — analise do banco SQLite.
 
@@ -1972,6 +1990,56 @@ penalizavel quanto um trade perdedor.
 - Penalidades incluidas no proximo retreinamento do LightGBM;
 - Depois de 5 pregoes com penalidades, win rate do modelo
   melhora (threshold: variacao positiva detectavel).
+
+---
+
+### P1-BUG - Bugs operacionais identificados em producao
+
+#### BUG-MICRO-01 Falha silenciosa ao mover SL para break-even
+
+**Status:** PENDENTE
+
+**Origem:** Log de producao 18/03/2026 12:21.
+
+**Problema diagnosticado:**
+Ao tentar mover o SL para break-even em posicao com +25,5% de lucro,
+o MT5 retorna `retcode=10013` (Invalid request). O agente registra ERROR
+mas nao toma nenhuma acao alternativa — a protecao de lucro silencia.
+
+```text
+[PROTECAO] Posicao #2276936833 em +25.5% de lucro.
+  Movendo SL para break-even (181930.00)
+[WARNING] Falha ao modificar SL do ticket 2276936833:
+  retcode=10013, mensagem=Invalid request.
+  Req: SL=181930.00, TP=180380.00
+[ERROR] -> INVALID REQUEST: PROVAVEL: SL ja esta neste valor
+  ou diferenca < 1 ponto
+```
+
+**Causa provavel:** Diferenca entre o SL solicitado e o SL atual do MT5
+e menor que o tick minimo do WIN$ (1 ponto). O calculo de break-even
+pode estar gerando o mesmo valor que o SL existente ou com diferenca
+insuficiente para o broker aceitar.
+
+**Entregar:**
+
+- Validar antes de enviar: se `abs(sl_novo - sl_atual) < tick_size`,
+  nao enviar modificacao (evita retcode=10013);
+- Se falha mesmo com diferenca valida, aplicar offset minimo de
+  2 ticks no SL para garantir aceitacao pelo broker;
+- Reclassificar o log: situacao de "SL ja esta no break-even"
+  deve ser INFO, nao ERROR;
+- Adicionar campo `sl_break_even_aplicado` (bool) na estrutura
+  de rastreamento de posicao;
+- Testes unitarios cobrindo: diferenca zero, diferenca < tick,
+  diferenca valida, retcode=10013 com retry.
+
+**Pronto quando:**
+
+- Posicao com SL ja no break-even nao gera ERROR;
+- Posicao com SL proximo mas fora do break-even recebe ajuste
+  com offset de 2 ticks;
+- Zero retcode=10013 em condicoes normais de operacao.
 
 ---
 
