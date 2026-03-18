@@ -34,6 +34,10 @@ from src.application.profit_protection_engine import (
     ProfitProtectionEngine,
     ProfitProtectionResult,
 )
+from src.application.sl_breakeven_validator import (
+    ValidadorSLBreakEven,
+    StatusValidacaoSL,
+)
 from src.application.motor_decisao_isolado import (
     MotorDecisaoIsolado,
     TipoPosicao,
@@ -824,22 +828,33 @@ def monitorar_posicoes() -> bool:
         return False
 
 
+_validador_sl = ValidadorSLBreakEven(tick_size=5.0)
+
+
 def modificar_sl_ordem(ticket: int, novo_sl: float) -> bool:
-    """Modifica o Stop Loss de uma posição aberta.
+    """Modifica o Stop Loss de uma posicao aberta.
+
+    Usa ValidadorSLBreakEven (BUG-MICRO-01) para:
+    - Evitar retcode=10013 quando diferenca < tick_size do WIN$ (5 pts)
+    - Reclassificar "SL ja no break-even" como INFO (nao ERROR)
+    - Alinhar SL ao multiplo do tick antes de enviar
+    - Retry com offset de 2 ticks se retcode=10013
 
     Args:
-        ticket: ID do ticket da posição
+        ticket: ID do ticket da posicao
         novo_sl: Novo valor de SL
 
     Returns:
-        True se sucesso, False caso contrário
+        True se sucesso ou SL ja aplicado, False caso contrario
     """
     try:
         if not hasattr(mt5_adapter, '_mt5') or mt5_adapter._mt5 is None:
-            logger.warning(f"[PROTEÇÃO] MT5 não disponível. Não foi possível modificar SL do ticket {ticket}")
+            logger.warning(
+                f"[PROTECAO] MT5 nao disponivel. Nao foi possivel modificar SL do ticket {ticket}"
+            )
             return False
 
-        # Busca a posição
+        # Busca a posicao
         positions = mt5_adapter._mt5.positions_get()
         if not positions:
             return False
@@ -851,62 +866,115 @@ def modificar_sl_ordem(ticket: int, novo_sl: float) -> bool:
                 break
 
         if position is None:
-            logger.warning(f"[PROTEÇÃO] Posição #{ticket} não encontrada")
+            logger.warning(f"[PROTECAO] Posicao #{ticket} nao encontrada")
             return False
 
-        # Verificação: evitar modificar se o SL já está no valor desejado (tolerância 1.0 ponto)
         current_sl = float(position.sl) if position.sl else 0.0
-        if abs(float(novo_sl) - current_sl) < 1.0:
-            logger.debug(f"[PROTEÇÃO] SL do ticket {ticket} já está próximo a {current_sl:.2f}. "
-                        f"Novo valor {novo_sl:.2f} - diferença < 1.0pt. Ignorando modif.")
-            return True
+        direcao = "BUY" if int(getattr(position, 'type', 0)) == 0 else "SELL"
 
-        # Prepa requisicao para modificação
+        # BUG-MICRO-01: Validar diferenca vs tick_size antes de enviar
+        validacao = _validador_sl.validar(
+            sl_novo=float(novo_sl),
+            sl_atual_mt5=current_sl,
+            direcao=direcao,
+        )
+
+        if not validacao.permitido:
+            # Nivel de log adequado: INFO para "ja aplicado", DEBUG para diferenca insuficiente
+            nivel = validacao.nivel_log
+            msg = (
+                f"[PROTECAO] Ticket {ticket}: {validacao.motivo} "
+                f"(sl_break_even_aplicado={validacao.sl_break_even_aplicado})"
+            )
+            if nivel == "INFO":
+                logger.info(msg)
+            else:
+                logger.debug(msg)
+            # Retorna True quando SL ja esta aplicado (situacao normal, nao falha)
+            return validacao.sl_break_even_aplicado
+
+        sl_para_enviar = validacao.sl_ajustado
+
+        # Prepara requisicao para modificacao com SL alinhado ao tick
         request = {
             'action': mt5_adapter._mt5.TRADE_ACTION_MODIFY,
             'position': int(position.ticket),
-            'sl': float(novo_sl),
+            'sl': sl_para_enviar,
             'tp': float(position.tp) if position.tp else 0,
             'magic': MAGIC_NUMBER,
             'comment': 'Profit Protection SL Update'
         }
 
-        logger.debug(f"[PROTEÇÃO] Enviando requisição modify para ticket {ticket}: "
-                    f"SL={float(novo_sl):.2f}, TP={float(position.tp) if position.tp else 0:.2f}, "
-                    f"Atual: SL={current_sl:.2f}", extra={'action': 'MODIFY_SL'})
+        logger.debug(
+            f"[PROTECAO] Enviando modify para ticket {ticket}: "
+            f"SL={sl_para_enviar:.2f} (original={novo_sl:.2f}), "
+            f"TP={float(position.tp) if position.tp else 0:.2f}, "
+            f"SL atual={current_sl:.2f}"
+        )
 
         result = mt5_adapter._mt5.order_send(request)
 
         if result is None:
-            logger.error(f"[PROTEÇÃO] order_send retornou None para ticket {ticket}. "
-                        f"Verificar conexão MT5 ou conta bloqueada.")
+            logger.error(
+                f"[PROTECAO] order_send retornou None para ticket {ticket}. "
+                f"Verificar conexao MT5 ou conta bloqueada."
+            )
             return False
 
         retcode = getattr(result, 'retcode', -1)
         comment = getattr(result, 'comment', 'Sem detalhes')
 
         if retcode != mt5_adapter._mt5.TRADE_RETCODE_DONE:
-            logger.warning(f"[PROTEÇÃO] Falha ao modificar SL do ticket {ticket}: "
-                          f"retcode={retcode}, mensagem={comment}. "
-                          f"Req: SL={float(novo_sl):.2f}, TP={float(position.tp) if position.tp else 0:.2f}")
+            logger.warning(
+                f"[PROTECAO] Falha ao modificar SL do ticket {ticket}: "
+                f"retcode={retcode}, mensagem={comment}. "
+                f"Req: SL={sl_para_enviar:.2f}, TP={float(position.tp) if position.tp else 0:.2f}"
+            )
 
-            # Diagnostico detalhado
-            if retcode == 10009:  # TRADE_RETCODE_INVALID_PRICE
-                logger.error(f"  -> INVALID PRICE: novo SL {novo_sl:.2f} pode estar fora do spread")
-            elif retcode == 10010:  # TRADE_RETCODE_INVALID_STOPS
-                logger.error(f"  -> INVALID STOPS: SL ou TP invalido. SL={novo_sl:.2f}, TP={float(position.tp):.2f}")
-            elif retcode == 10014:  # TRADE_RETCODE_INVALID_VOLUME
-                logger.error(f"  -> INVALID VOLUME: verificar volume=1")
-            elif comment == "Invalid request":
-                logger.error(f"  -> INVALID REQUEST: PROVAVEL: SL ja esta neste valor ou diferenca < 1 ponto")
+            # BUG-MICRO-01: Retry com offset de 2 ticks se retcode=10013
+            if retcode == 10013:
+                validacao_retry = _validador_sl.validar_retry_apos_falha(
+                    sl_original=sl_para_enviar,
+                    sl_atual_mt5=current_sl,
+                    direcao=direcao,
+                    retcode=retcode,
+                )
+                if validacao_retry.permitido:
+                    logger.info(
+                        f"[PROTECAO] Retry com offset 2 ticks: "
+                        f"SL={validacao_retry.sl_ajustado:.2f} (era {sl_para_enviar:.2f})"
+                    )
+                    request['sl'] = validacao_retry.sl_ajustado
+                    result_retry = mt5_adapter._mt5.order_send(request)
+                    retcode_retry = getattr(result_retry, 'retcode', -1) if result_retry else -1
+                    if result_retry and retcode_retry == mt5_adapter._mt5.TRADE_RETCODE_DONE:
+                        logger.info(
+                            f"[PROTECAO] SL modificado (retry) para ticket {ticket}: "
+                            f"{validacao_retry.sl_ajustado:.2f}"
+                        )
+                        return True
+                    logger.warning(
+                        f"[PROTECAO] Retry falhou. retcode={retcode_retry}"
+                    )
+            elif retcode == 10009:
+                logger.error(
+                    f"  -> INVALID PRICE: SL {sl_para_enviar:.2f} fora do spread"
+                )
+            elif retcode == 10010:
+                logger.error(
+                    f"  -> INVALID STOPS: SL={sl_para_enviar:.2f}, "
+                    f"TP={float(position.tp):.2f}"
+                )
+            elif retcode == 10014:
+                logger.error("  -> INVALID VOLUME: verificar volume=1")
 
             return False
 
-        logger.info(f"[PROTEÇÃO] SL modificado com sucesso para ticket {ticket}: {novo_sl:.2f}")
+        logger.info(f"[PROTECAO] SL modificado com sucesso para ticket {ticket}: {sl_para_enviar:.2f}")
         return True
 
     except Exception as e:
-        logger.error(f"[PROTEÇÃO] Erro ao modificar SL: {e}")
+        logger.error(f"[PROTECAO] Erro ao modificar SL: {e}")
         return False
 
 

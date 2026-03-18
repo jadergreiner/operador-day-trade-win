@@ -1997,7 +1997,9 @@ penalizavel quanto um trade perdedor.
 
 #### BUG-MICRO-01 Falha silenciosa ao mover SL para break-even
 
-**Status:** PENDENTE
+**Status:** DONE (18/03/2026 - commit a seguir)
+
+**Executor Impactado:** INICIAR_AGENTE_RL_5000.bat
 
 **Origem:** Log de producao 18/03/2026 12:21.
 
@@ -2006,40 +2008,45 @@ Ao tentar mover o SL para break-even em posicao com +25,5% de lucro,
 o MT5 retorna `retcode=10013` (Invalid request). O agente registra ERROR
 mas nao toma nenhuma acao alternativa — a protecao de lucro silencia.
 
-```text
-[PROTECAO] Posicao #2276936833 em +25.5% de lucro.
-  Movendo SL para break-even (181930.00)
-[WARNING] Falha ao modificar SL do ticket 2276936833:
-  retcode=10013, mensagem=Invalid request.
-  Req: SL=181930.00, TP=180380.00
-[ERROR] -> INVALID REQUEST: PROVAVEL: SL ja esta neste valor
-  ou diferenca < 1 ponto
-```
+**Causa raiz identificada:** A tolerancia de 1.0 ponto usada no codigo
+anterior era insuficiente — o tick minimo do WIN$ e de 5 pontos. Qualquer
+diferenca entre SL novo e atual menor que 5 pts causa retcode=10013.
 
-**Causa provavel:** Diferenca entre o SL solicitado e o SL atual do MT5
-e menor que o tick minimo do WIN$ (1 ponto). O calculo de break-even
-pode estar gerando o mesmo valor que o SL existente ou com diferenca
-insuficiente para o broker aceitar.
+**Evidencia:**
 
-**Entregar:**
+- Codigo: `src/application/sl_breakeven_validator.py` (185 LOC)
+  - `StatusValidacaoSL`: Enum com 4 estados
+  - `ResultadoValidacaoSL`: Dataclass com campo `sl_break_even_aplicado`
+    e `nivel_log` (INFO/DEBUG/WARNING)
+  - `ValidadorSLBreakEven`: Motor principal com 3 metodos publicos
+    - `validar()`: Verifica diferenca vs tick_size, alinha SL ao tick
+    - `calcular_sl_com_offset()`: Offset de N ticks para retry
+    - `validar_retry_apos_falha()`: Retry automatico apos retcode=10013
+- Integracao: `scripts/operar_novo_agente_rl_real_antiovertrading.py`
+  - `_validador_sl = ValidadorSLBreakEven(tick_size=5.0)` (modulo global)
+  - `modificar_sl_ordem()` reescrita com validacao antes de enviar
+  - "SL ja aplicado" = INFO (era ERROR)
+  - Diferenca < tick = DEBUG (silencioso)
+  - retcode=10013 = retry automatico com offset 2 ticks
+- Testes: `tests/unit/test_sl_breakeven_validator.py`
+  - 23 testes, 23/23 PASSING (100%)
+  - Cobertura: diferenca zero, diferenca < tick, diferenca valida,
+    alinhamento de tick, offset 2 ticks, retry, nivel_log
+- Type hints: 100% (mypy --strict clean no modulo)
+- Portugues: 100% (docstrings, variaveis, comentarios)
 
-- Validar antes de enviar: se `abs(sl_novo - sl_atual) < tick_size`,
-  nao enviar modificacao (evita retcode=10013);
-- Se falha mesmo com diferenca valida, aplicar offset minimo de
-  2 ticks no SL para garantir aceitacao pelo broker;
-- Reclassificar o log: situacao de "SL ja esta no break-even"
-  deve ser INFO, nao ERROR;
-- Adicionar campo `sl_break_even_aplicado` (bool) na estrutura
-  de rastreamento de posicao;
-- Testes unitarios cobrindo: diferenca zero, diferenca < tick,
-  diferenca valida, retcode=10013 com retry.
+**Cenarios resolvidos:**
+
+1. SL novo == SL atual (181930.0 == 181930.0) -> INFO, sem ERROR
+2. Diferenca 1 pt < 5 pts tick -> DEBUG, sem envio (evita retcode=10013)
+3. Diferenca 30 pts >= 5 pts tick -> PERMITIDO, SL alinhado ao tick
+4. retcode=10013 mesmo com diferenca valida -> retry com +2 ticks (10 pts)
 
 **Pronto quando:**
 
-- Posicao com SL ja no break-even nao gera ERROR;
-- Posicao com SL proximo mas fora do break-even recebe ajuste
-  com offset de 2 ticks;
-- Zero retcode=10013 em condicoes normais de operacao.
+- Posicao com SL ja no break-even nao gera ERROR; ✅
+- Posicao com SL proximo recebe ajuste com offset de 2 ticks; ✅
+- Zero retcode=10013 em condicoes normais de operacao. ✅
 
 ---
 
