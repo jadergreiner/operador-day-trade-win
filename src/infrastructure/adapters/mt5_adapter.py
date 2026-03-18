@@ -711,20 +711,60 @@ class MT5Adapter(IBrokerAdapter):
         if order.take_profit:
             request["tp"] = self._round_to_tick(float(order.take_profit.value), tick_size)
 
+        # Coleta info do simbolo para diagnostico
+        symbol_info = self._mt5.symbol_info(tradable_symbol)
+        symbol_diag = {}
+        if symbol_info is not None:
+            symbol_diag = {
+                "trade_mode": getattr(symbol_info, "trade_mode", "?"),
+                "session_open": getattr(symbol_info, "session_open", "?"),
+                "session_close": getattr(symbol_info, "session_close", "?"),
+                "volume_min": getattr(symbol_info, "volume_min", "?"),
+                "volume_max": getattr(symbol_info, "volume_max", "?"),
+                "bid": getattr(symbol_info, "bid", "?"),
+                "ask": getattr(symbol_info, "ask", "?"),
+                "spread": getattr(symbol_info, "spread", "?"),
+            }
+
         # Envia ordem
+        logger.debug(
+            "[send_order] Enviando request ao MT5 | simbolo=%s | request=%s | symbol_diag=%s",
+            tradable_symbol,
+            request,
+            symbol_diag,
+        )
         result = self._mt5.order_send(request)
 
         if result is None:
             last_err = self._mt5.last_error()
+            logger.error(
+                "[send_order] order_send retornou None | simbolo=%s | last_error=%s"
+                " | request=%s | symbol_diag=%s",
+                tradable_symbol,
+                last_err,
+                request,
+                symbol_diag,
+            )
             raise OrderExecutionError(
                 f"order_send retornou None. Símbolo: {tradable_symbol} | "
                 f"Last error: {last_err} | Request: {request}"
             )
 
         if result.retcode != self._mt5.TRADE_RETCODE_DONE:
+            logger.error(
+                "[send_order] Ordem rejeitada | retcode=%s | comment=%s"
+                " | simbolo=%s | request=%s | symbol_diag=%s | result=%s",
+                result.retcode,
+                result.comment,
+                tradable_symbol,
+                request,
+                symbol_diag,
+                result,
+            )
             raise OrderExecutionError(
                 f"Order execution failed: {result.comment} (code: {result.retcode}) | "
-                f"Símbolo: {tradable_symbol}"
+                f"Símbolo: {tradable_symbol} | Request: {request} | "
+                f"Symbol diag: {symbol_diag}"
             )
 
         return str(result.order)

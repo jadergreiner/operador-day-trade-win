@@ -203,6 +203,13 @@ except ImportError:
     AC6_9_DISPONIVEL = False
     BaselineComparator = None  # type: ignore[assignment,misc]
 
+try:
+    from src.application.pipeline_episodios_micro import PipelineEpisodiosMicro
+    PIPELINE_EPISODIOS_DISPONIVEL = True
+except ImportError:
+    PIPELINE_EPISODIOS_DISPONIVEL = False
+    PipelineEpisodiosMicro = None  # type: ignore[assignment,misc]
+
 # ────────────────────────────────────────────────────────────────
 # Constantes
 # ────────────────────────────────────────────────────────────────
@@ -247,6 +254,10 @@ _inactivity_penalty_manager: "InactivityPenaltyManager | None" = None
 # P0-URGENT-2: ForcedActivationManager modular (06/03/2026)
 # Força ativação quando confiança colapsa ou custo operacional ultrapassa limiar
 _forced_activation_manager: "ForcedActivationManager | None" = None
+
+# CALIBRACAO-MICRO-03: Pipeline de episodios reais (18/03/2026)
+# Persiste cada trade nos destinos rl_episodes, diario_episodios, execution_feedback
+_pipeline_episodios: "PipelineEpisodiosMicro | None" = None
 
 # ── Auditoria de Sessão ──
 _session_id: int | None = None
@@ -2617,6 +2628,8 @@ class OpenTrade:
     trailing_stop: Decimal = Decimal("0")
     unrealized_pnl: Decimal = Decimal("0")
     reason: str = ""
+    # Contexto rico do momento da entrada (CALIBRACAO-MICRO-03)
+    context_entrada: "dict | None" = None
 
 
 class IntraDayLearner:
@@ -3100,7 +3113,11 @@ class MicroTradingManager:
         approval_msg = f"Oportunidade aprovada (técnico={opp.confidence:.0f}%, ML={lgbm_score:.1%})" if lgbm_reasoning else "Oportunidade aprovada"
         return True, approval_msg
 
-    def execute_entry(self, opp: Opportunity) -> Optional[str]:
+    def execute_entry(
+        self,
+        opp: "Opportunity",
+        cycle_result: "CycleResult | None" = None,
+    ) -> Optional[str]:
         """Executa entrada no MT5. Retorna ticket ou None."""
         # ⚡ TERMINAL ISOLATION: Valida HARD STOP antes de qualquer operação
         try:
@@ -3141,6 +3158,26 @@ class MicroTradingManager:
             ticket = self.mt5.send_order(order)
             if ticket:
                 position_ticket = self.mt5.resolve_open_position_ticket(self.symbol, side)
+                # Captura contexto rico para pipeline de episodios (CALIBRACAO-MICRO-03)
+                ctx: "dict | None" = None
+                if cycle_result is not None:
+                    ctx = {
+                        "macro_score": cycle_result.macro_score,
+                        "macro_signal": cycle_result.macro_signal,
+                        "macro_confidence": float(cycle_result.macro_confidence),
+                        "micro_score": cycle_result.micro_score,
+                        "micro_trend": cycle_result.micro_trend,
+                        "adx": float(cycle_result.momentum.adx),
+                        "rsi": float(cycle_result.momentum.rsi),
+                        "smc_direction": cycle_result.smc_multi_tf.alignment,
+                        "confianca": float(opp.confidence),
+                        "reason": opp.reason,
+                        "preco": float(opp.entry),
+                        "sl": float(opp.stop_loss),
+                        "tp": float(opp.take_profit),
+                        "risk_reward": float(opp.risk_reward),
+                        "timestamp_entrada": datetime.now().isoformat(),
+                    }
                 trade = OpenTrade(
                     ticket=ticket,
                     position_ticket=position_ticket,
@@ -3152,6 +3189,7 @@ class MicroTradingManager:
                     opened_at=datetime.now(),
                     trailing_stop=opp.stop_loss,
                     reason=opp.reason,
+                    context_entrada=ctx,
                 )
                 self.open_trades.append(trade)
                 self.daily_trade_count += 1
@@ -3375,6 +3413,27 @@ class MicroTradingManager:
                 if reason == "STOP_LOSS":
                     self._last_stop_loss_time = datetime.now()
                     self._last_stop_loss_direction = trade.direction
+
+                # CALIBRACAO-MICRO-03: Persiste episodio completo no pipeline
+                if _pipeline_episodios:
+                    try:
+                        _pipeline_episodios.registrar_fechamento(
+                            ticket=str(trade.ticket),
+                            direction=trade.direction,
+                            entry_price=float(trade.entry_price),
+                            exit_price=float(exit_price),
+                            stop_loss=float(trade.stop_loss),
+                            take_profit=float(trade.take_profit),
+                            pnl=float(pnl),
+                            motivo_saida=reason,
+                            duracao_s=duration,
+                            context_entrada=trade.context_entrada,
+                        )
+                    except Exception as _ep_err:
+                        import logging as _log
+                        _log.getLogger("pipeline_episodios_micro").warning(
+                            "Falha ao registrar episodio: %s", _ep_err
+                        )
 
                 print(f"  {'✓' if pnl >= 0 else '✗'} Trade fechado: {reason} │ "
                       f"PnL: {pnl:+.0f} pts │ Duração: {duration}s")
@@ -4849,6 +4908,21 @@ def main():
         except Exception as e:
             print(f"  [!] AC6.9 BaselineComparator: {str(e)[:50]}")
 
+    # CALIBRACAO-MICRO-03: Pipeline de episodios reais
+    global _pipeline_episodios
+    _pipeline_episodios = None
+    if PIPELINE_EPISODIOS_DISPONIVEL and PipelineEpisodiosMicro and DB_PATH:
+        try:
+            _pipeline_episodios = PipelineEpisodiosMicro(
+                db_path=DB_PATH,
+                drift_detector=_drift_detector,
+                online_learning=_online_learning,
+                baseline_comparator=_baseline_comparator,
+            )
+            print(f"  [*] CALIBRACAO-MICRO-03 PipelineEpisodiosMicro: Ativo")
+        except Exception as e:
+            print(f"  [!] PipelineEpisodiosMicro: {str(e)[:50]}")
+
     # ── PRE-FLIGHT: Verificação crítica do terminal MT5 ──
     if not _preflight_check_mt5(config):
         print(f"\n  ❌ PRE-FLIGHT CHECK FALHOU!")
@@ -5053,6 +5127,14 @@ def main():
                 except Exception as e:
                     print(f"  ⚠ Pipeline feedback: {e}")
 
+            # CALIBRACAO-MICRO-03: AC6.9 semanal (~1200 ciclos de 120s = 1 semana)
+            # Ciclo 0 nao conta; primeiro acionamento apos ~1200 ciclos ou multiplos
+            if _pipeline_episodios and cycle_count > 0 and cycle_count % 1200 == 0:
+                try:
+                    _pipeline_episodios.acionar_baseline_comparator()
+                except Exception as e:
+                    print(f"  ⚠ AC6.9 semanal: {e}")
+
             # Executa ciclo
             cycle_count += 1
             print(f"\n  ──── Ciclo #{cycle_count} ────")
@@ -5209,7 +5291,7 @@ def main():
                             print(f"\n  ⚡ EXECUTANDO {direction_icon} {best.direction}")
                             print(f"     Entrada: {best.entry} │ SL: {best.stop_loss} │ "
                                   f"TP: {best.take_profit} │ R/R: {best.risk_reward}:1")
-                            ticket = trading_mgr.execute_entry(best)
+                            ticket = trading_mgr.execute_entry(best, result)
                             if ticket:
                                 print(f"  ✓ Ordem executada! Ticket: {ticket}")
                                 # AC5.8: Registra ordem no monitor de posições
