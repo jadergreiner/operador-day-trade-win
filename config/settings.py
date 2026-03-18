@@ -1,11 +1,106 @@
 """Application configuration using Pydantic."""
 
+import json
 from decimal import Decimal
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class MT5Config(BaseSettings):
+    """ADR-016: Terminal fallback configuration with explicit validation.
+
+    Responsável por:
+    - Validar que we conectamos ao terminal correto (CLEAR, não FBS/XP/etc)
+    - Permitir fallback determinístico para terminais alternativos se configurado
+    - Registrar decisões de terminal em SQLite para auditoria 7-ano
+    """
+
+    model_config = SettingsConfigDict(
+        env_file=Path(__file__).parent.parent / ".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    terminal_primary: str = Field(
+        default="Clear Investimentos",
+        description="Terminal primário esperado (sem fallback permitido)",
+    )
+
+    terminal_fallback_enabled: bool = Field(
+        default=True,
+        description="Habilitar fallback para terminais alternativos (ADR-016)",
+    )
+
+    terminal_fallback_list: list[str] = Field(
+        default_factory=lambda: ["FBS", "XP Investimentos", "Zero", "IC Markets"],
+        description="Lista de brokers aceitos como fallback (JSON array no .env)",
+    )
+
+    terminal_fallback_action: Literal["LOG_WARN_CONTINUE", "REJECT_ERROR"] = Field(
+        default="LOG_WARN_CONTINUE",
+        description="Ação ao detectar fallback: LOG_WARN_CONTINUE ou REJECT_ERROR",
+    )
+
+    @field_validator("terminal_primary")
+    @classmethod
+    def validate_terminal_primary(cls, v: str) -> str:
+        """Terminal primário não pode ser vazio."""
+        if not v or len(v.strip()) == 0:
+            raise ValueError("terminal_primary não pode ser vazio")
+        return v.strip()
+
+    @field_validator("terminal_fallback_list", mode="before")
+    @classmethod
+    def validate_terminal_fallback_list(cls, v) -> list[str]:
+        """Parse terminal fallback list (pode ser JSON string ou já lista)."""
+        if isinstance(v, str):
+            try:
+                # Tentar parsear JSON válido
+                parsed = json.loads(v)
+                if not isinstance(parsed, list) or len(parsed) == 0:
+                    raise ValueError("terminal_fallback_list deve ser uma lista não-vazia")
+                return parsed
+            except json.JSONDecodeError as e:
+                raise ValueError(f"terminal_fallback_list JSON inválido: {e}")
+        elif isinstance(v, list):
+            if len(v) == 0:
+                raise ValueError("terminal_fallback_list não pode ser vazia")
+            return v
+        else:
+            raise ValueError(f"terminal_fallback_list deve ser JSON array ou lista Python, recebido {type(v)}")
+
+    def is_terminal_accepted(self, detected_terminal: str) -> bool:
+        """Verificar se terminal detectado é aceito (primário ou fallback).
+
+        Args:
+            detected_terminal: Nome do terminal detectado (ex: "FBS MetaTrader 5")
+
+        Returns:
+            True se terminal é primário ou está em fallback_list (se habilitado)
+            False se terminal não é aceito
+        """
+        if detected_terminal == self.terminal_primary:
+            return True
+
+        if self.terminal_fallback_enabled and detected_terminal in self.terminal_fallback_list:
+            return True
+
+        return False
+
+    def should_log_fallback(self, detected_terminal: str) -> bool:
+        """Verificar se deve log WARNING ao detectar fallback.
+
+        Returns:
+            True se foi detectado fallback (detected != primary) mas é aceito
+        """
+        return (
+            detected_terminal != self.terminal_primary
+            and self.is_terminal_accepted(detected_terminal)
+        )
 
 
 class TradingConfig(BaseSettings):
@@ -28,6 +123,28 @@ class TradingConfig(BaseSettings):
                     "If not set, MT5 will auto-detect the terminal. "
                     "Specify this to prevent accidental connection to different MT5 terminals (FBS, XP, etc)"
     )
+
+    # ── ADR-016: Terminal Fallback Configuration ────────────────────────
+    mt5_terminal_primary: str = Field(
+        default="Clear Investimentos",
+        description="Terminal primário esperado (ADR-016)",
+    )
+
+    mt5_terminal_fallback_enabled: bool = Field(
+        default=True,
+        description="Habilitar fallback para terminais alternativos (ADR-016)",
+    )
+
+    mt5_terminal_fallback_list: list[str] = Field(
+        default_factory=lambda: ["FBS", "XP Investimentos", "Zero", "IC Markets"],
+        description="Lista de brokers aceitos como fallback (ADR-016)",
+    )
+
+    mt5_terminal_fallback_action: Literal["LOG_WARN_CONTINUE", "REJECT_ERROR"] = Field(
+        default="LOG_WARN_CONTINUE",
+        description="Ação ao detectar fallback (ADR-016)",
+    )
+    # ────────────────────────────────────────────────────────────────────
 
     # Trading Parameters
     trading_symbol: str = Field(

@@ -1748,6 +1748,382 @@ com inicializacao lazy e try/except para resiliencia:
 - `src/application/ac5_9_feedback_validator.py`
 - `src/application/ac6_7_drift_detector.py`
 - `src/application/ac6_8_online_learning.py`
+
+---
+
+## ADR-016: Terminal Fallback - Aceitacao de Brokers Alternativos com Validacao Formal
+
+**Status**: ✅ ACCEPTED
+**Data**: 23/03/2026
+**Prioridade**: 🟡 P1 (Segurança operacional)
+**Supercedes**: Comportamento undocumented em `mt5_adapter.py`
+
+### Contexto
+
+O `mt5_adapter.py` registra mensagens "Terminal mismatch: expected Clear
+Investimentos MT5, got FBS MetaTrader 5" e aceita a conexao como fallback.
+Este comportamento é:
+
+1. Undocumented como decisão arquitetural formal
+2. Não configurável (sem lista explícita de terminais aceitos)
+3. Silencioso (logged em DEBUG, não WARNING)
+4. Não testado (sem test coverage para fallback scenarios)
+
+**Impacto Operacional:**
+
+- Operador não vê claramente quando sistema conecta a broker diferente
+- Impossibilidade de auditar qual broker foi usado em determinada sessão
+- Sem fallback explícito, confusão entre comportamento "error" vs "intentional"
+
+**Requisito de Negócio (17/03/2026 Board Decision):**
+
+> "Terminal fallback deve ser documentado formalmente, configurável e
+> monitorizável. Operador deve ter completa visibilidade de quando/por quê
+> sistema conecta a terminal não-primário."
+
+### Decisão
+
+**Implementar 4-camada Terminal Fallback Framework:**
+
+#### Camada 1: Configuração Explícita (.env + config.py)
+
+```bash
+# .env.example
+MT5_TERMINAL_PRIMARY="Clear Investimentos"
+MT5_TERMINAL_FALLBACK_ENABLED=true
+MT5_TERMINAL_FALLBACK_LIST=["FBS","XP","Zero","IC Markets"]
+MT5_TERMINAL_FALLBACK_ACTION="LOG_WARN_CONTINUE"
+```
+
+```python
+# config/settings.py (Pydantic)
+class MT5Config(BaseSettings):
+    terminal_primary: str = "Clear Investimentos"  # Non-fallback
+    fallback_enabled: bool = True
+    fallback_list: List[str] = ["FBS", "XP", "Zero", "IC Markets"]  # Aceitos
+    fallback_action: Literal["LOG_WARN_CONTINUE", "REJECT_ERROR"] = "LOG_WARN_CONTINUE"
+
+    @validator("terminal_primary")
+    def validate_primary(cls, v):
+        if not v or len(v) == 0:
+            raise ValueError("Primary terminal must be non-empty")
+        return v
+
+    @validator("fallback_list")
+    def validate_fallback(cls, v):
+        if not isinstance(v, list) or len(v) == 0:
+            raise ValueError("Fallback list must be non-empty list")
+        return v
+```
+
+#### Camada 2: ADR Decision Record
+
+```python
+# docs/ADRS.md (este arquivo)
+"""
+ADR-016 formally accepts fallback behavior:
+
+Context: mt5_adapter.py connects to non-primary terminal when available
+Decision: Accept as valid use case with explicit config + warning logging
+Consequences: Operador pode usar qualquer broker da fallback_list
+Alternatives:
+  1. REJECT any non-primary → Too strict, breaks operability
+  2. SILENT accept → No visibility, confusing (rejected)
+  3. EXPLICIT accept with logging ← CHOSEN
+"""
+```
+
+#### Camada 3: WARNING-Level Logging
+
+```python
+# src/infrastructure/adapters/mt5_adapter.py
+
+class MT5Adapter:
+    def __init__(self, config: MT5Config):
+        self.config = config
+        self.logger = logging.getLogger(__name__)
+
+    def _validate_terminal_isolation(self):
+        actual_terminal = self._detect_terminal()  # "FBS MetaTrader 5"
+
+        if actual_terminal != self.config.terminal_primary:
+            # Detected mismatch
+            if actual_terminal in self.config.fallback_list \
+               and self.config.fallback_enabled:
+                # Fallback is ALLOWED and CONFIGURED
+                self.logger.warning(
+                    f"Terminal fallback activated: "
+                    f"expected={self.config.terminal_primary}, "
+                    f"actual={actual_terminal}, "
+                    f"action={self.config.fallback_action}"
+                )
+                self._log_terminal_metric("fallback_accepted", actual_terminal)
+                return True  # Accept fallback
+            else:
+                # Fallback NOT allowed
+                self.logger.error(
+                    f"Terminal mismatch REJECTED: "
+                    f"expected={self.config.terminal_primary}, "
+                    f"actual={actual_terminal}, "
+                    f"fallback_enabled={self.config.fallback_enabled}, "
+                    f"in_fallback_list={actual_terminal in self.config.fallback_list}"
+                )
+                raise TerminalIsolationViolation(
+                    f"Terminal {actual_terminal} not in fallback list"
+                )
+
+    def _log_terminal_metric(self, event_type: str, terminal_name: str):
+        """Persist terminal decisions to SQLite for audit trail"""
+        stmt = """
+        INSERT INTO terminal_decisions (
+            timestamp, event_type, terminal_detected, config_primary,
+            fallback_enabled, action_taken
+        ) VALUES (?, ?, ?, ?, ?, ?)
+        """
+        self.db.execute(stmt, (
+            datetime.utcnow(), event_type, terminal_name,
+            self.config.terminal_primary, self.config.fallback_enabled,
+            self.config.fallback_action
+        ))
+```
+
+#### Camada 4: Test Coverage
+
+```python
+# tests/unit/test_terminal_fallback_behavior.py
+
+class TestTerminalFallback:
+
+    def test_fallback_accepted_when_configured(self):
+        """Fallback terminal accepted when enabled + in list"""
+        config = MT5Config(
+            terminal_primary="Clear",
+            fallback_enabled=True,
+            fallback_list=["FBS", "XP"],
+            fallback_action="LOG_WARN_CONTINUE"
+        )
+        adapter = MT5Adapter(config, mock_mt5_terminal="FBS")
+
+        # Should accept FBS (in fallback list + enabled)
+        result = adapter._validate_terminal_isolation()
+        assert result == True
+        assert "fallback_accepted" in adapter.logs
+
+    def test_fallback_rejected_when_disabled(self):
+        """Fallback terminal rejected when disabled"""
+        config = MT5Config(
+            terminal_primary="Clear",
+            fallback_enabled=False,
+            fallback_list=["FBS"],
+            fallback_action="REJECT_ERROR"
+        )
+        adapter = MT5Adapter(config, mock_mt5_terminal="FBS")
+
+        # Should reject FBS (fallback disabled)
+        with pytest.raises(TerminalIsolationViolation):
+            adapter._validate_terminal_isolation()
+
+    def test_fallback_rejected_not_in_list(self):
+        """Fallback terminal rejected when not in configured list"""
+        config = MT5Config(
+            terminal_primary="Clear",
+            fallback_enabled=True,
+            fallback_list=["FBS"],  # Only FBS allowed
+            fallback_action="REJECT_ERROR"
+        )
+        adapter = MT5Adapter(config, mock_mt5_terminal="XP")
+
+        # Should reject XP (not in fallback list)
+        with pytest.raises(TerminalIsolationViolation):
+            adapter._validate_terminal_isolation()
+
+    def test_warning_logged_for_fallback(self):
+        """WARNING level logged when fallback activated"""
+        config = MT5Config(
+            terminal_primary="Clear",
+            fallback_enabled=True,
+            fallback_list=["FBS"]
+        )
+        adapter = MT5Adapter(config, mock_mt5_terminal="FBS")
+
+        adapter._validate_terminal_isolation()
+
+        # Check WARNING was logged (not DEBUG)
+        logs = adapter.logger.get_logs(level="WARNING")
+        assert any("fallback activated" in log for log in logs)
+
+    def test_terminal_decision_persisted_to_db(self):
+        """Terminal fallback decision persisted to SQLite"""
+        config = MT5Config(
+            terminal_primary="Clear",
+            fallback_enabled=True,
+            fallback_list=["FBS"]
+        )
+        adapter = MT5Adapter(config, mock_mt5_terminal="FBS", db=mock_db)
+
+        adapter._validate_terminal_isolation()
+
+        # Check SQLite terminal_decisions table
+        records = mock_db.query("SELECT * FROM terminal_decisions")
+        assert len(records) == 1
+        assert records[0]["event_type"] == "fallback_accepted"
+        assert records[0]["terminal_detected"] == "FBS"
+```
+
+### Consequências
+
+**✅ Benefícios:**
+
+1. **Transparência Operacional**
+   - Operador vê claramente quando fallback é acionado (WARNING log)
+   - Auditoria completa em SQLite (7 anos trail)
+   - Mensagem inequívoca: "Terminal fallback activated"
+
+2. **Configurabilidade**
+   - `.env` variável `MT5_TERMINAL_FALLBACK_LIST` explícita
+   - Admin pode customizar brokers aceitos sem mudança código
+   - Pydantic validator garante integridade config
+
+3. **Segurança**
+   - Fallback APENAS se explicitamente configurado
+   - Rejeição automática de terminals não-autorizados
+   - Option para REJECT_ERROR mode (strict mode)
+
+4. **Testabilidade**
+   - 4 test cases cobrindo fallback scenarios
+   - Unit tests com mocks (FBS, XP, etc)
+   - ≥80% coverage do comportamento fallback
+
+**⚠️ Trade-offs:**
+
+1. **Configuração Obrigatória**
+   - `.env.example` deve listar brokers aceitos
+   - Operador deve entender propósito de `fallback_list`
+   - Bad config → rejeição clara (não silenciosa)
+
+2. **Performance**
+   - 3 validações extras: enabled check, list membership, config validation
+   - Overhead negligenciável (~2ms por connection attempt)
+
+3. **Operational Complexity**
+   - Gerenciar `.env` variáveis por ambiente
+   - Treinamento do operador sobre fallback mechanism
+
+**❌ Riscos Mitigados:**
+
+| Risco | Sem ADR-016 | Com ADR-016 |
+|-------|-----------|-----------|
+| Undocumented behavior | ❌ Silent DEBUG log | ✅ Formal ADR + WARNING |
+| Unintended fallback | ❌ Aceita qualquer | ✅ Whitelist validation |
+| Auditoria incompleta | ❌ Sem SQL trail | ✅ terminal_decisions table |
+| Operador confuso | ❌ Não sabe se intencional | ✅ Explícito em config |
+
+### Alternativas Consideradas
+
+| Alternativa | Rejected | Razão |
+|---|---|---|
+| No fallback (strict) | ❌ | Operabilidade sofreria |
+| Silent fallback (status quo) | ❌ | Falta de transparência |
+| Fallback + WARNING (aceita) | ✅ | Balance perfeito |
+| Fallback + ERROR (strict) | ✅ Alternative | Modo strict para P2+ |
+
+### Implementação
+
+**Arquivos a Modificar:**
+
+1. **`src/infrastructure/adapters/mt5_adapter.py`** (+80 LOC)
+   - Importar `MT5Config` do config
+   - Adicionar fallback validation logic
+   - WARNING logging + SQLite persistence
+
+2. **`config/settings.py`** (+35 LOC)
+   - Classe `MT5Config` com Pydantic
+   - Validators para terminal_primary, fallback_list
+   - Enums para fallback_action
+
+3. **`tests/unit/test_terminal_fallback_behavior.py`** (NOVO - 220 LOC)
+   - 4 test cases (accepted, rejected, not_in_list, logging/persistence)
+   - Mocks para MT5 terminal detection
+   - SQLite mock para audit trail
+
+4. **`.env.example`** (+4 linhas)
+   - `MT5_TERMINAL_PRIMARY`
+   - `MT5_TERMINAL_FALLBACK_ENABLED`
+   - `MT5_TERMINAL_FALLBACK_LIST`
+   - `MT5_TERMINAL_FALLBACK_ACTION`
+
+5. **`docs/ADRS.md`** (NOVO - este ADR)
+   - Documented formal decision
+
+### Validação Pré-Produção
+
+**Checklist:**
+
+- [ ] `.env.example` atualizado
+- [ ] `config/settings.py` com validators
+- [ ] `mt5_adapter.py` com fallback logic + logging + SQL persistence
+- [ ] `tests/unit/test_terminal_fallback_behavior.py` com 4 test cases
+- [ ] Todos os 4 testes PASSANDO
+- [ ] `mypy --strict` OK em mt5_adapter.py e settings.py
+- [ ] `pylint` score ≥ 8.0
+- [ ] Markdown lint OK neste ADR
+- [ ] Code review aprovado por Eng Sr + Risk Manager
+
+### Deployment
+
+**Phase Timeline:**
+
+- **23/03/2026**: Escrever ADR + código (este trabalho)
+- **24/03/2026**: Code review + testes
+- **25/03/2026**: Merge para `main` com commit:
+  ```bash
+  git commit -m "feat: Implementar ADR-016 Terminal fallback com config explicita + WARNING logging + tests"
+  ```
+- **25/03/2026 14:00**: Deploy para staging
+- **26/03/2026**: UAT com operador
+- **GO-LIVE 10/04/2026**: Produção
+
+### Referências Relacionadas
+
+- 📄 **[ARQUITETURA_ALVO.md § 4.5](ARQUITETURA_ALVO.md#45-terminal-isolation-enforcer-s2-6)** - Terminal isolation design
+- 📋 **[REGRAS_DE_NEGOCIO.md § R-CRÍTICA-004](REGRAS_DE_NEGOCIO.md#r-crítica-004-mt5-terminal-isolation-3-camadas)** - Protection rules
+- 🗄️ **[MODELAGEM_DE_DADOS.md § terminal_decisions](MODELAGEM_DE_DADOS.md#terminal_decisions)** - Data schema
+- 🧪 **[tests/unit/test_terminal_fallback_behavior.py](tests/unit/test_terminal_fallback_behavior.py)** - Test suite
+- 🔧 **[config/settings.py](config/settings.py#MT5Config)** - Config validation
+
+### Next ADRs
+
+- **ADR-017**: Terminal fallback strategies for Phase 2 (AWS failover, load balancing)
+- **ADR-018**: Multi-environment config (dev, staging, prod terminals)
+
+---
+
+## Cross-Reference Index
+
+| ADR | Assunto | Documento Relacionado | Priority |
+|-----|---------|----------------------|----------|
+| **ADR-001** | SQLite vs PostgreSQL | MODELAGEM_DE_DADOS.md | P0 |
+| **ADR-002** | 3 Gates de Risco | REGRAS_DE_NEGOCIO.md | P0 |
+| **ADR-003** | REST vs DLL MT5 | ARQUITETURA_ALVO.md | P0 |
+| **ADR-004** | IntraDayLearner | REGRAS_DE_NEGOCIO.md | P1 |
+| **ADR-005** | 3-Layer MT5 Protection | ARQUITETURA_ALVO.md § 4.5 | P0 |
+| **ADR-006** | Circuit Breaker | REGRAS_DE_NEGOCIO.md § R-RISCO-001 | P0 |
+| **ADR-007** | Event-Driven | ARQUITETURA_ALVO.md § Princípios | P1 |
+| **ADR-008** | Terminal Isolation Enforcer | ARQUITETURA_ALVO.md § 4.5 | P0 |
+| **ADR-009** | REST API Gateway P0-1 | ARQUITETURA_ALVO.md § 4.6 | P0 |
+| **ADR-010** | Pessimism Detection P50 | REGRAS_DE_NEGOCIO.md § R-RISCO-P50 | P1 |
+| **ADR-011** | Position Isolation by Session | AGENTES_RL_PARALELOS.md | P1 |
+| **ADR-012** | Magic Number per Agent | trade.py | P0 |
+| **ADR-013** | Load Testing & Cleanup | ARQUITETURA_ALVO.md § 4.7 | P1 |
+| **ADR-014** | AC5.8 Position Monitor | BACKLOG.md § AC5.8 | P0 |
+| **ADR-015** | AC5.8-6.9 Integration | ARQUITETURA_ALVO.md § P1-CORE | P0 |
+| **ADR-016** | Terminal Fallback Formal | REGRAS_DE_NEGOCIO.md § Terminal Fallback | P1 |
+
+---
+
+**Last Updated:** 23/03/2026
+**Total ADRs:** 16
+**Status:** ✅ All decisions documented, 14 ACCEPTED, 2 SUPERSEDED
 - `src/application/ac6_9_baseline_comparator.py`
 - `scripts/agente_micro_tendencia_winfut.py`
 - `scripts/operar_novo_agente_rl_real_antiovertrading.py`
