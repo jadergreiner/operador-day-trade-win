@@ -199,7 +199,7 @@ class TransactionLogService:
             ))
 
             conn.commit()
-            logger.info(f"📝 TX logged {entry.tx_id}: {entry.tx_type.value} → {entity_id}")
+            logger.info(f"TX logged {entry.tx_id}: {entry.tx_type.value} -> {entity_id}")
             return entry
 
         except Exception as e:
@@ -274,7 +274,7 @@ class TransactionLogService:
                 """, (tx_id, "Falha em persistência", _calculate_next_retry(), error))
 
             conn.commit()
-            logger.warning(f"⚠️ TX failed: {tx_id} → {new_status.value} (retry={retry})")
+            logger.warning(f"TX failed: {tx_id} -> {new_status.value} (retry={retry})")
 
         except Exception as e:
             logger.error(f"❌ Falha ao registrar erro {tx_id}: {e}")

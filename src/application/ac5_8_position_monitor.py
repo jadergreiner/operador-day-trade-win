@@ -370,7 +370,7 @@ class MonitorPositionManager:
             )
 
             self.bd_conexao.commit()
-            logger.info(f"Status atualizado: {trade_id} → {novo_status.value}")
+            logger.info(f"Status atualizado: {trade_id} -> {novo_status.value}")
             return True
 
         except Exception as e:
@@ -431,7 +431,7 @@ class MonitorPositionManager:
             )
 
             self.bd_conexao.commit()
-            logger.debug(f"Preco atualizado: {trade_id} → {preco_atual} | P&L: {pl:.2f}")
+            logger.debug(f"Preco atualizado: {trade_id} -> {preco_atual} | P&L: {pl:.2f}")
             return True
 
         except Exception as e:
