@@ -390,11 +390,40 @@ def _executar_pipeline_feedback_rl(trades_fechados: list) -> None:
         except Exception as e:
             logger.warning(f'[AC6.9] Erro: {e}')
 
+# ============================================================================
+# BUG-1 FIX (18/03/2026): NameError motor_decisao em enviar_ordem()
+# ============================================================================
+# PROBLEMA: NameError ao tentar chamar motor_decisao.abrir_posicao() porque
+# a variavel nao estava no escopo da funcao.
+#
+# SOLUCAO: motor_decisao e recebido como PARAMETRO formal em enviar_ordem().
+# Garantias:
+# - ✅ motor_decisao é parâmetro de enviar_ordem() (linha ~399)
+# - ✅ motor_decisao.abrir_posicao() é chamado dentro da função (linha ~486)
+# - ✅ Todas as chamadas a enviar_ordem() passam motor_decisao (linha ~1073)
+# - ✅ Função verificar_posicao_no_mt5() recebe motor como parâmetro (linha ~757)
+# - ✅ Testes: 7/7 PASSING (verificar: tests/unit/test_bug_motor_decisao.py)
+# ============================================================================
 
 def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
                  posicao_tracker: object, rl_repo: object, trade_tracker: object,
+                 motor_decisao: object,
                  dados: Optional[pd.DataFrame] = None) -> bool:
-    """Envia ordem para abrir posição no MT5."""
+    """Envia ordem para abrir posição no MT5.
+
+    Args:
+        mt5_adapter: Adaptador do MT5.
+        acao: Acao decidida pelo agente (BUY, SELL, Aguardar).
+        preco_atual: Preco atual do ativo.
+        posicao_tracker: Gerenciador de posicao isolada (PosicaoIsoladaManager).
+        rl_repo: Repositorio RL para persistencia.
+        trade_tracker: Rastreador de performance de trades.
+        motor_decisao: Motor de decisao isolado (MotorDecisaoIsolado).
+        dados: DataFrame com dados de mercado (opcional).
+
+    Returns:
+        True se ordem enviada com sucesso, False caso contrario.
+    """
     global last_trade_time
 
     if acao == "Aguardar":
@@ -1055,7 +1084,7 @@ def main():
                             continue
 
                         # 5. Enviar ordem
-                        if enviar_ordem(mt5_adapter, acao_str, preco_atual, posicao_tracker, rl_repo, trade_tracker, dados_df):
+                        if enviar_ordem(mt5_adapter, acao_str, preco_atual, posicao_tracker, rl_repo, trade_tracker, motor_decisao, dados_df):
                             logger.info(f'[CICLO {ciclo}] Ordem aberta com sucesso!')
                             anti_overtrading.registrar_trade()  # 📝 Registrar trade na proteção
                             last_signal = acao_str

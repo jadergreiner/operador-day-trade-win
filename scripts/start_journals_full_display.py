@@ -847,6 +847,7 @@ class RLPerformanceReader:
         episodes = self.get_today_episodes()
         decisions = self.get_today_micro_decisions()
         opportunities = self.get_today_opportunities()
+        rewards = self.get_today_rewards()
 
         result = {
             "alertas_criticos": [],
@@ -857,6 +858,15 @@ class RLPerformanceReader:
             "sugestoes": [],
             "nota_agente": 10,  # Começa com 10, desconta por problema
         }
+
+        # BUG-DIARIOS-02: Calcular pts_capturados via rewards avaliados (BUY/SELL corretos)
+        _pts_capturados = 0.0
+        for r in rewards:
+            acao = r.get("action_at_decision", "")
+            if acao in ("BUY", "SELL") and r.get("is_evaluated") == 1 and r.get("was_correct") == 1:
+                pts = float(r.get("price_change_points") or 0)
+                if pts > 0:
+                    _pts_capturados += pts
 
         if not episodes and not decisions:
             result["alertas_criticos"].append(
@@ -1049,22 +1059,33 @@ class RLPerformanceReader:
                 if abs(price_direction) > price_range * 0.5:  # Tendência unidirecional
                     capturable = abs(price_direction) * 0.4
                     n_ops = len(opportunities)
+                    # BUG-DIARIOS-02: eficiencia_pct calculada sempre (nao apenas n_ops==0)
+                    eficiencia = (
+                        min(_pts_capturados / capturable * 100, 100.0)
+                        if capturable > 0 else 0.0
+                    )
+                    result["custo_oportunidade"] = {
+                        "range_total": price_range,
+                        "direcao_pts": price_direction,
+                        "capturable_estimado": capturable,
+                        "oportunidades_detectadas": n_ops,
+                        "pts_capturados": _pts_capturados,
+                        "eficiencia_pct": eficiencia,
+                    }
                     if n_ops == 0:
-                        result["custo_oportunidade"] = {
-                            "range_total": price_range,
-                            "direcao_pts": price_direction,
-                            "capturable_estimado": capturable,
-                            "oportunidades_detectadas": 0,
-                            "pts_capturados": 0,
-                            "eficiencia_pct": 0,
-                        }
                         result["alertas_criticos"].append(
                             f"💰 CUSTO DE OPORTUNIDADE: Mercado moveu {price_direction:+.0f} pts "
                             f"(range {price_range:.0f} pts). Estimativa conservadora de captura: "
-                            f"{capturable:.0f} pts. O agente capturou: 0 pts. "
-                            f"EFICIÊNCIA: 0%."
+                            f"{capturable:.0f} pts. O agente capturou: {_pts_capturados:.0f} pts. "
+                            f"EFICIÊNCIA: {eficiencia:.0f}%."
                         )
                         result["nota_agente"] -= 2
+                    elif eficiencia < 30 and n_ops > 0:
+                        result["alertas_criticos"].append(
+                            f"📉 BAIXA EFICIENCIA: Agente capturou {_pts_capturados:.0f} pts "
+                            f"de {capturable:.0f} pts capturaveis ({eficiencia:.0f}%). "
+                            f"{n_ops} oportunidades detectadas mas aproveitamento baixo."
+                        )
 
         # ── 7. MACRO SCORE ABSOLUTO vs AÇÃO ──
         macro_scores = []

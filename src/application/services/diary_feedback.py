@@ -34,6 +34,25 @@ from datetime import datetime, date
 from typing import Optional
 
 
+def _sanitizar_encoding(texto: str) -> str:
+    """Sanitiza string removendo caracteres corrompidos de encoding.
+
+    Converte bytes cp1252 interpretados incorretamente como UTF-8 para
+    UTF-8 limpo, eliminando o caractere de substituicao U+FFFD (\xef\xbf\xbd).
+
+    Args:
+        texto: String potencialmente com caracteres corrompidos.
+
+    Returns:
+        String UTF-8 limpa, sem caracteres U+FFFD.
+    """
+    if not isinstance(texto, str):
+        return texto
+    # Remover caracter de substituicao Unicode (U+FFFD) gerado por
+    # conversao incorreta cp1252 -> UTF-8
+    return texto.replace("\ufffd", "?")
+
+
 @dataclass
 class DiaryFeedback:
     """Feedback do diário para o agente RL."""
@@ -261,6 +280,23 @@ def save_diary_feedback(db_path: str, feedback: DiaryFeedback) -> int:
     create_diary_feedback_table(db_path)
 
     d = feedback.to_dict()
+
+    # BUG-DIARIOS-03: Sanitizar encoding antes de persistir no SQLite.
+    # Textos gerados pelo terminal Windows (cp1252) podem chegar com
+    # caracter U+FFFD ao serem misturados com strings UTF-8.
+    _campos_texto = (
+        "alertas_criticos", "incoerencias", "filtros_bloqueantes",
+        "parametros_questionados", "sugestoes",
+        "regioes_fortes", "regioes_armadilhas", "veredicto_regioes",
+        "direcional_vieses", "direcional_contradicoes",
+        "direcional_questionamentos", "veredicto_direcional",
+        "guardian_kill_reason", "guardian_bias_override",
+        "guardian_alertas",
+        "macro_signal_dominante", "smc_equilibrium_dominante",
+    )
+    for campo in _campos_texto:
+        if campo in d and isinstance(d[campo], str):
+            d[campo] = _sanitizar_encoding(d[campo])
 
     try:
         conn = sqlite3.connect(db_path)

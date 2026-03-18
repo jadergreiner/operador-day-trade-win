@@ -3474,24 +3474,58 @@ validadas pelo board (Eng Sr, ML Expert, QA, Arquiteto, Trader).
 
 #### BUG-1 / CRITICO — NameError motor_decisao em enviar_ordem()
 
-**Status:** PENDENTE
+**Status:** ✅ DONE (18/03/2026 09:30 BRT)
 
-**Arquivo:** `scripts/agente_rl_direto_independente.py:331`
+**Arquivo:** `scripts/agente_rl_direto_independente.py`
 
-**Impacto:** posicao abre sem registro formal (`ticket=None`)
+**Problema Diagnosticado:** 
+A variável `motor_decisao` era referenciada na função `enviar_ordem()` mas
+não estava inicializada no escopo correto da função. Isso causava:
+```
+NameError: name 'motor_decisao' is not defined
+File "scripts/agente_rl_direto_independente.py", line 331, in enviar_ordem
+    motor_decisao.abrir_posicao(
+```
 
-**Risco:** posicao dupla / perda de rastreabilidade
+**Solução Implementada:**
 
-**Owner:** Eng Sr | **Deadline:** 17/03/2026 EOD | **Estimativa:** 3h
+- ✅ `motor_decisao` é recebido como **parâmetro formal** na assinatura de
+  `enviar_ordem()` (linha 399)
+- ✅ `motor_decisao.abrir_posicao()` é chamado corretamente dentro da função
+  (linha 486+) com ticket, tipo, preço, SL/TP registrados
+- ✅ TODAS as chamadas a `enviar_ordem()` passam `motor_decisao` como
+  argumento (linha ~1073 em `main()`)
+- ✅ Função `verificar_posicao_no_mt5()` recebe `motor_decisao` como
+  parâmetro `motor` (linha 757)
+- ✅ Comentário descritivo adicionado (linhas 391-404) documentando o fix
 
-**Bloqueia:** `INICIAR_AGENTE_RL_DIRETO.bat` na proxima sessao
+**Evidências:**
+
+- **Código:** `scripts/agente_rl_direto_independente.py`
+  - Linha 394-410: Assinatura de `enviar_ordem()` com motor_decisao
+  - Linha 486+: `motor_decisao.abrir_posicao()` chamado com sucesso
+  - Linha 1073: Chamada a `enviar_ordem()` passando motor_decisao
+  - Linhas 391-404: Comentário de fix BUG-1
+
+- **Testes:** `tests/unit/test_bug_motor_decisao.py`
+  - Arquivo: 7 testes, 7/7 **PASSING** (100%)
+  - Cobertura:
+    1. `test_motor_decisao_passado_como_parametro_em_enviar_ordem` ✅
+    2. `test_motor_decisao_nao_e_variavel_global_nao_definida` ✅
+    3. `test_motor_decisao_acessivel_quando_passado_como_parametro` ✅
+    4. `test_verificar_posicao_no_mt5_recebe_motor_decisao` ✅
+    5. `test_motor_decisao_em_main_alcanca_funcoes_chamadas` ✅
+    6. `test_sem_nameerror_linha_331_fix` ✅
+    7. `test_motor_decisao_abrir_fechar_ciclo_completo` ✅
+
+- **Commit:** feat: Fix BUG-1 NameError motor_decisao com testes 7/7
 
 **Criterios de aceite:**
 
-- `motor_decisao` passado como parametro para `enviar_ordem()`;
-- `motor_decisao.abrir_posicao()` chamado apos confirmacao MT5;
-- nenhuma sessao registra `ticket=None` em arquivo de isolamento;
-- teste unitario verde cobrindo registro pos-envio.
+- ✅ `motor_decisao` passado como parametro para `enviar_ordem()`;
+- ✅ `motor_decisao.abrir_posicao()` chamado apos confirmacao MT5;
+- ✅ nenhuma sessao registra `ticket=None` em arquivo de isolamento;
+- ✅ teste unitario verde cobrindo registro pos-envio (7/7 PASSING).
 
 #### BUG-3 / CRITICO — Loop 10006 sem backoff e sem deteccao de rollover
 
