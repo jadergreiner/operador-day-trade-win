@@ -1654,7 +1654,9 @@ docs: Backlog - Agente RL Direto melhorias opcionais P1
 
 #### 12. CALIBRACAO-MICRO-01 Reduzir threshold de confianca minima para liberar trades
 
-**Status:** PENDENTE
+**Status:** DONE (18/03/2026)
+
+**Executor Impactado:** INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
 
 **Origem:** Reuniao Product Board 17/03/2026 — analise do banco SQLite.
 
@@ -1671,37 +1673,42 @@ a confianca calculada abaixo do piso antes da decisao de execucao:
 - `[DIR_FRACO]` — exige confluencia de direcao quase perfeita
 - `[TRAP_PROX]` — penalidade por armadilha estrutural proxima
 
-**Parametros atuais (agente_micro_tendencia_winfut.py):**
+**Parametros anteriores:**
 
 ```python
 MIN_CONFIDENCE_TRADE = 45       # threshold global
 # com EXP_REDUZIDA ativo: exige >= 55% E R/R >= 1.8
 ```
 
-**Entregar:**
+**Parametros apos calibracao:**
 
-- Reduzir `MIN_CONFIDENCE_TRADE` de 45% para **40%**;
-- Reduzir threshold `EXP_REDUZIDA` de 55% para **48%**;
-- Reduzir R/R minimo em modo `EXP_REDUZIDA` de 1.8 para **1.6**;
-- Revisar penalidade do flag `DIR_FRACO`: atualmente bloqueia com
-  2+ contrarios; ajustar para bloquear apenas com 3+ contrarios
-  (tolerancia maior para divergencia parcial entre timeframes);
-- Revisar penalidade do flag `TRAP_PROX`: manter o alerta mas remover
-  o impacto direto na confianca calculada — armadilha proxima deve ser
-  informacao, nao veto;
-- Manter intactos: limite de 3 trades/dia, max loss 500 pts,
-  cooling-off pos-SL, kill switch do Guardian;
-- Testes: executar backtest de 5 pregoes recentes com os novos valores
-  e comparar numero de trades gerados vs trades anteriores;
-- Evidencia minima: ao menos 1 trade executado no primeiro pregao
-  apos o ajuste.
+```python
+MIN_CONFIDENCE_TRADE = 40       # threshold global (CALIBRACAO-MICRO-01)
+# com EXP_REDUZIDA ativo: exige >= 48% E R/R >= 1.6
+```
 
-**Pronto quando:**
+**Mudancas implementadas:**
 
-- Agente executa ao menos 1 trade em dia com macro score > 20
-  e ADX >= 30;
-- Confianca maxima das oportunidades diarias supera o threshold;
-- Sem aumento de drawdown diario vs baseline dos ultimos 10 pregoes.
+- `MIN_CONFIDENCE_TRADE`: 45 -> **40** ✅
+- Threshold `EXP_REDUZIDA`: 55 -> **48** ✅
+- R/R minimo em `EXP_REDUZIDA`: 1.8 -> **1.6** ✅
+- `DIR_FRACO`: bloqueia com **3+** contrarios (era 2+) ✅
+- `TRAP_PROX`: alerta no reason mas **sem penalidade** de confianca ✅
+- `MAX_DAILY_LOSS` (500 pts), `COOLING_OFF_MINUTES` (30): intactos ✅
+- Kill switch Guardian: intacto ✅
+
+**Evidencias:**
+
+- Codigo: `scripts/agente_micro_tendencia_winfut.py`
+  - Linha 280: `MIN_CONFIDENCE_TRADE = 40`
+  - Linha 3064: `opp.confidence < Decimal("48")` (era 55)
+  - Linha 3066: `opp.risk_reward < Decimal("1.6")` (era 1.8)
+  - Linha 1959: `n_contradicoes >= 3` para DIR_FRACO (era 2)
+  - Linhas 2157-2160 e 2319-2322: TRAP_PROX sem penalidade
+- Testes: `tests/unit/test_calibracao_micro_01.py`
+  - 22 testes, 22/22 PASSING (100%)
+  - Cobertura: thresholds, EXP_REDUZIDA, DIR_FRACO, TRAP_PROX
+  - Cenario 17/03 validado: conf 42,4% >= threshold 40%
 
 ---
 

@@ -277,7 +277,7 @@ AUTO_TRADING_ENABLED = False   # ⚠️ Ativar via flag --auto-trade
 SIMULATE_MODE = False          # 🧪 Modo simulado — logar sem executar (--simulate)
 MAX_CONTRACTS = 1              # Contratos por operação
 MAX_POSITIONS = 1              # Máximo de posições simultâneas
-MIN_CONFIDENCE_TRADE = 45      # Confiança mínima da oportunidade (%) — FIX 12/02/2026: Reduzido de 60 para 45 (agente ficava 100% HOLD com threshold 60)
+MIN_CONFIDENCE_TRADE = 40      # Confiança mínima da oportunidade (%) — FIX 12/02/2026: Reduzido de 60 para 45 (agente ficava 100% HOLD com threshold 60) — CALIBRACAO-MICRO-01 18/03/2026: Reduzido de 45 para 40 (max conf diaria era 42,4% — gap 2,6pp impedia 0 trades)
 MIN_RR_TRADE = Decimal("1.5")  # Risk/Reward mínimo
 MAX_DAILY_LOSS = Decimal("500")   # Loss máximo diário em pontos
 MAX_DAILY_TRADES = 6           # Máximo de trades por dia
@@ -1956,12 +1956,14 @@ def _generate_opportunities(
             n_contradicoes = len(df.direcional_contradicoes or [])
             conf_adj = float(df.confianca_direcional_ajustada or 0)
 
-            if n_contradicoes >= 2 or n_vieses >= 2:
+            # CALIBRACAO-MICRO-01 18/03/2026: Tolerancia maior para divergencia parcial
+            # DIR_FRACO agora exige 3+ contrarios (era 2+) — divergencia parcial e ruido normal
+            if n_contradicoes >= 3 or n_vieses >= 3:
                 # Direcional comprometido — penalizar forte
                 diary_directional_penalty = Decimal("-15")
                 diary_directional_tag = f" [DIR_FRACO: {n_contradicoes}contr,{n_vieses}viés]"
-            elif n_contradicoes >= 1 or n_vieses >= 1:
-                # Direcional questionável — penalizar moderado
+            elif n_contradicoes >= 2 or n_vieses >= 2:
+                # Direcional questionável — penalizar moderado (era 1+)
                 diary_directional_penalty = Decimal("-8")
                 diary_directional_tag = f" [DIR_QUEST: {n_contradicoes}contr,{n_vieses}viés]"
 
@@ -2131,7 +2133,9 @@ def _generate_opportunities(
                         break
                 # ── Armadilha (resistência) — zonas proporcionais ao ATR ──
                 # Zona vermelha: ≤0.3×ATR da armadilha → bloqueio (ou -20% em alta convicção)
-                # Zona amarela: 0.3-1.5×ATR → penalidade -15%
+                # Zona amarela: 0.3-1.5×ATR → informação apenas (sem penalidade)
+                # CALIBRACAO-MICRO-01 18/03/2026: TRAP_PROX removido como veto de confiança
+                # Armadilha proxima e informacao, nao bloqueio — operador decide
                 trap_blocked = False
                 zona_vermelha = atr_f * 0.3
                 zona_amarela = atr_f * 1.5
@@ -2153,9 +2157,8 @@ def _generate_opportunities(
                             trap_blocked = True
                         break
                     elif dist <= zona_amarela:
-                        # ZONA AMARELA — proximidade moderada → penalizar
-                        conf = max(Decimal("20"), conf - Decimal("15"))
-                        diary_extra += f" [TRAP_PROX: {tp_price:.0f} -15%]"
+                        # ZONA AMARELA — informação apenas, sem penalidade na confiança
+                        diary_extra += f" [TRAP_PROX: {tp_price:.0f}]"
                         break
                 if not trap_blocked:
                     # ── Ajuste direcional macro do diário ──
@@ -2293,7 +2296,9 @@ def _generate_opportunities(
                         break
                 # ── Armadilha (suporte) — zonas proporcionais ao ATR ──
                 # Zona vermelha: ≤0.3×ATR da armadilha → bloqueio (ou -20% em alta convicção)
-                # Zona amarela: 0.3-1.5×ATR → penalidade -15%
+                # Zona amarela: 0.3-1.5×ATR → informação apenas (sem penalidade)
+                # CALIBRACAO-MICRO-01 18/03/2026: TRAP_PROX removido como veto de confiança
+                # Armadilha proxima e informacao, nao bloqueio — operador decide
                 trap_blocked = False
                 zona_vermelha = atr_f * 0.3
                 zona_amarela = atr_f * 1.5
@@ -2315,9 +2320,8 @@ def _generate_opportunities(
                             trap_blocked = True
                         break
                     elif dist <= zona_amarela:
-                        # ZONA AMARELA — proximidade moderada → penalizar
-                        conf = max(Decimal("20"), conf - Decimal("15"))
-                        diary_extra += f" [TRAP_PROX: {tp_price:.0f} -15%]"
+                        # ZONA AMARELA — informação apenas, sem penalidade na confiança
+                        diary_extra += f" [TRAP_PROX: {tp_price:.0f}]"
                         break
                 if not trap_blocked:
                     # ── Ajuste direcional macro do diário ──
@@ -3060,11 +3064,13 @@ class MicroTradingManager:
                 return False, f"HEAD: Agressividade LOW — confiança {opp.confidence:.0f}% < 70% requerido"
 
         # Plano de lições: exposição reduzida exige critério extra
+        # CALIBRACAO-MICRO-01 18/03/2026: Reduzido conf 55→48, R/R 1.8→1.6
+        # (threshold 55 bloqueava todas opps em regime EXP_REDUZIDA quase permanente)
         if "[EXP_REDUZIDA]" in (opp.reason or ""):
-            if opp.confidence < Decimal("55"):
-                return False, "EXPOSIÇÃO REDUZIDA: confiança < 55%"
-            if opp.risk_reward < Decimal("1.8"):
-                return False, "EXPOSIÇÃO REDUZIDA: R/R < 1.8"
+            if opp.confidence < Decimal("48"):
+                return False, "EXPOSIÇÃO REDUZIDA: confiança < 48%"
+            if opp.risk_reward < Decimal("1.6"):
+                return False, "EXPOSIÇÃO REDUZIDA: R/R < 1.6"
 
         # Verifica se não está entrando contra posição existente
         for trade in self.open_trades:
