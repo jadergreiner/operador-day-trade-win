@@ -1,0 +1,98 @@
+═══════════════════════════════════════════════════════════════════════════════
+SIGNALS & OBSERVABILITY AGENT - ROADMAP-DIARIOS-01
+═══════════════════════════════════════════════════════════════════════════════
+
+📋 ENTREGÁVEIS FASE 1
+═══════════════════════════════════════════════════════════════════════════════
+
+MÓDULO 1: Thread Watchdog Advanced ✓ PRONTO
+├─ Arquivo: src/infrastructure/thread_watchdog_advanced.py
+├─ LOC: 450
+├─ Testes: 22 (test_thread_watchdog_advanced.py)
+├─ AC:
+│  1. Monitora threads de operação em tempo real
+│  2. Detecta deadlock/stall em threads
+│  3. Force cleanup de threads fantasma
+│  4. Escalona para humano com contexto
+│  5. Registra em audit trail
+├─ Type Hints: 100%
+├─ Docstrings: 100% português
+├─ Coverage: ≥85%
+└─ Commit: "feat: Implementar Thread Watchdog Advanced com 22 testes"
+
+MÓDULO 2: Diários Health Monitor ✓ PRONTO
+├─ Arquivo: src/application/diarios_health_monitor.py
+├─ LOC: 320
+├─ Testes: 15 (test_diarios_health_monitor.py)
+├─ AC:
+│  1. Monitora saúde dos 3 streams (Trading Journal, AI Reflection, RL Perf)
+│  2. Detecta gaps nas métricas
+│  3. Valida frequência de updates
+│  4. Alerta quando métricas anomalias
+│  5. Recupera automaticamente pequenas falhas
+├─ Type Hints: 100%
+├─ Docstrings: 100% português
+├─ Coverage: ≥85%
+└─ Commit: "feat: Implementar Diarios Health Monitor com 15 testes"
+
+MÓDULO 3: Logging Recovery Handler ✓ PRONTO
+├─ Arquivo: src/infrastructure/logging_recovery_handler.py
+├─ LOC: 280
+├─ Testes: 12 (test_logging_recovery_handler.py)
+├─ AC:
+│  1. Recupera logs corrompidos ou parciais
+│  2. Resgata dados de temp files
+│  3. Sincroniza com SQLite primary
+│  4. Valida integridade antes de merge
+│  5. Registra evento de recuperação
+├─ Type Hints: 100%
+├─ Docstrings: 100% português
+├─ Coverage: ≥85%
+└─ Commit: "feat: Implementar Logging Recovery Handler com 12 testes"
+
+═══════════════════════════════════════════════════════════════════════════════
+📊 MÉTRICAS FASE 1 - SIGNALS AGENT
+═══════════════════════════════════════════════════════════════════════════════
+
+Total LOC:    1.050
+Total Testes: 49
+Type Hints:   100% obrigatório
+Coverage:     ≥85% por módulo
+Docstrings:   100% português
+
+═══════════════════════════════════════════════════════════════════════════════
+✅ PREFLIGHT CHECKLIST
+═══════════════════════════════════════════════════════════════════════════════
+
+✓ Branch local: git checkout feature/roadmap-diarios-01-watchdog
+✓ Ambiente: Python 3.11+ + threading disponível
+✓ Estrutura: src/infrastructure/, tests/ prontos
+✓ Referências: BACKLOG.md (ROADMAP-DIARIOS-01), docs/OPERACAO_4_AGENTES.md
+✓ Design: Observer pattern + async recovery
+✓ Testing: pytest markers (@mark.integration, @mark.critical)
+
+═══════════════════════════════════════════════════════════════════════════════
+🔧 PROCESSO IMPLEMENTAÇÃO
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Escrever conftest.py com fixtures para thread mocks
+2. Escrever test_*.py com testes que FALHAM (TDD)
+3. Implementar módulo com 100% type hints
+4. Rodar: pytest tests/ -m integration -v (todos testes PASSAR)
+5. Rodar: mypy src/infrastructure/ --strict (zero errors)
+6. Rodar: pytest --cov=src/infrastructure --cov-report=term-missing
+7. Verificar: Cobertura ≥85%
+8. Commit: git commit -m "feat: Implementar [NomeModulo] com N testes"
+
+═══════════════════════════════════════════════════════════════════════════════
+📚 REFERÊNCIAS ESSENCIAIS
+═══════════════════════════════════════════════════════════════════════════════
+
+- BACKLOG.md (ROADMAP-DIARIOS-01) → Especificação completa
+- CLAUDE.md → Padrões threading + type hints
+- docs/OPERACAO_4_AGENTES.md → Contexto operacional
+- KICKOFF_DESENVOLVIMENTO.md → Contexto geral
+
+═══════════════════════════════════════════════════════════════════════════════
+🚀 STATUS ATUAL: PRONTO PARA INICIAR
+═══════════════════════════════════════════════════════════════════════════════

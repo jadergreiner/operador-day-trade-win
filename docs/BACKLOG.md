@@ -3493,6 +3493,139 @@ latencia extra ou comportamento imprevisivel.
 
 ---
 
+### P1 - Bugs operacionais identificados em 18/03/2026
+
+#### 1. TECH-001 — Bug preco_saida=0.0 no historico_fechamentos agente dinamico
+
+**Status:** PENDENTE
+
+**Origem:** Fechamento diario 18/03/2026 — todos os fechamentos do
+agente_dinamico (sessoes 124946 e 162018) gravaram `preco_saida=0.0`
+e `pnl_reais` absurdo (~R$18M positivo ou negativo). Impossivel auditar
+resultado real do agente dinamico em qualquer pregao onde esse bug ocorrer.
+
+**Evidencia:**
+
+```json
+{
+  "ticket": 2276957694,
+  "tipo": "SELL",
+  "preco_entrada": 181880.0,
+  "preco_saida": 0.0,
+  "pnl_reais": 18188000.0,
+  "motivo": "SL_ATINGIDO"
+}
+```
+
+**Problema tecnico:** A rotina de fechamento do agente dinamico nao esta
+capturando o preco de saida da resposta do MT5. O campo `preco_saida`
+permanece com valor default `0.0` em vez do preco real executado.
+
+**Entregar:**
+
+- identificar onde `preco_saida` e preenchido no agente dinamico e corrigir
+  para ler `result.price` ou `deal.price` da resposta MT5;
+- garantir que `pnl_reais` usa `valor_ponto_winfut = 0.20` (ja corrigido
+  no motor_decisao_isolado.py — verificar se agente dinamico usa o mesmo);
+- adicionar teste unitario cobrindo fechamento com `preco_saida` real.
+
+**Arquivo afetado:** `scripts/agente_rl_direto_independente.py` (rotina
+de fechamento do agente dinamico)
+
+**Agente impactado:** `INICIAR_AGENTE_RL_DIRETO.bat`
+
+**Pronto quando:**
+
+- `historico_fechamentos` de qualquer sessao registra `preco_saida` != 0.0;
+- `pnl_reais` dentro do range real WINFUT (+-R$10 a R$300 por contrato);
+- teste unitario verde.
+
+---
+
+#### 2. TECH-002 — Sessao matinal com resultado DESCONHECIDO em todos os trades
+
+**Status:** PENDENTE
+
+**Origem:** Fechamento diario 18/03/2026 — sessao agente_direto_090357
+executou multiplas ordens mas todos os resultados retornaram `DESCONHECIDO`
+com `PnL estimado: R$0.00`. O agente registrou ciclos SINAL CONFIRMADO mas
+nao conseguiu confirmar nenhum resultado.
+
+**Evidencia:**
+
+```
+[CICLO 4] Resultado: DESCONHECIDO | PnL estimado: R$0.00
+[CICLO 8] Resultado: DESCONHECIDO | PnL estimado: R$0.00
+[CICLO 13] Resultado: DESCONHECIDO | PnL estimado: R$0.00
+```
+
+**Hipotese:** magic number 234600 ja estava ocupado por posicao de sessao
+anterior (ticket 2276905188 visivel no log da sessao 090357). A rotina de
+rastreamento nao diferencia tickets de sessoes distintas.
+
+**Entregar:**
+
+- verificar se `rastreador_performance` consulta MT5 pelo ticket especifico
+  da sessao atual ou pelo magic generico;
+- garantir que resultado de fechamento de ticket de outra sessao nao seja
+  creditado/debitado na sessao atual;
+- adicionar log explicito quando resultado e `DESCONHECIDO` por mais de
+  2 ciclos consecutivos (alerta de rastreamento perdido).
+
+**Arquivo afetado:** `scripts/agente_rl_direto_independente.py`
+
+**Agente impactado:** `INICIAR_AGENTE_RL_DIRETO.bat`
+
+**Pronto quando:**
+
+- sessoes paralelas com mesmo magic nao interferem no rastreamento de
+  resultado uma da outra;
+- resultado `DESCONHECIDO` persistente gera alerta no log.
+
+---
+
+#### 3. TECH-003 — Retcode 10006 em loop sem sucesso na sessao 120332
+
+**Status:** PENDENTE
+
+**Origem:** Fechamento diario 18/03/2026 — sessao agente_direto_120332
+(agente dinamico) falhou repetidamente com retcode 10006 entre 12:03 e
+12:04 sem conseguir executar nenhuma ordem, mesmo com backoff ja
+implementado no BUG-3 para o agente RL Direto padrao.
+
+**Evidencia:**
+
+```
+12:03:39 [ERRO] Order execution failed: MA1202ed77 (code: 10006)
+12:03:44 [ERRO] Order execution failed: MAd3a8435e (code: 10006)
+12:03:50 [ERRO] Order execution failed: MAbb4b48b3 (code: 10006)
+12:04:05 [ERRO] Order execution failed: MAa2a186f9 (code: 10006)
+```
+
+**Problema tecnico:** O backoff exponencial implementado no BUG-3 (via
+`orders_executor.py`) nao esta sendo usado pelo agente dinamico — esse
+agente usa rotina propria de envio de ordem sem o modulo de backoff.
+
+**Entregar:**
+
+- verificar se o agente dinamico usa `orders_executor.py` ou rotina inline;
+- aplicar o mesmo backoff exponencial do BUG-3 na rotina de envio do agente
+  dinamico: 3 falhas -> 60s espera; 5 falhas -> encerrar sessao;
+- logar motivo da falha e interromper tentativas apos N falhas consecutivas.
+
+**Arquivo afetado:** `scripts/agente_rl_direto_independente.py` (rotina
+de envio do agente dinamico)
+
+**Agente impactado:** `INICIAR_AGENTE_RL_DIRETO.bat`
+
+**Pronto quando:**
+
+- sessao nao acumula mais de 3 tentativas com mesmo retcode sem pausa;
+- backoff de 60s aplicado apos 3 falhas;
+- sessao encerra graciosamente apos 5 falhas com log explicito.
+
+---
+
 ### P1 - Melhorias de ML/RL identificadas em 17/03/2026
 
 #### 1. Filtro de tendencia intraday para acao SELL do RL
@@ -3687,6 +3820,40 @@ File "scripts/agente_rl_direto_independente.py", line 331, in enviar_ordem
 - teste unitario cobrindo calculo para WINFUT BUY e SELL. ✅
   (9 testes, 9/9 PASSING em `test_bug2_pnl_reais_winfut.py`)
 
+#### ML-2 / BAIXA — Gate de pausa pos-sequencia de TPs consecutivos
+
+**Status:** PENDENTE
+
+**Arquivo:** `scripts/agente_rl_direto_independente.py`
+
+**Executor Impactado:** INICIAR_AGENTE_RL_DIRETO.bat
+
+**Origem:** Fechamento diario 18/03/2026 — sessao 172907 sofreu SL logo
+apos sequencia de 3 TPs consecutivos (16:33-17:07). Hipotese: mercado
+em reversao apos movimento direcional forte.
+
+**Problema identificado:** Apos 3 ou mais TPs consecutivos em curto
+intervalo (<45min), o preco pode estar em reversao. O agente re-entra
+imediatamente sem avaliar exaustao do movimento.
+
+**Sugestao de implementacao:**
+
+- contador de TPs consecutivos por sessao;
+- apos 3 TPs em <45min: pausa de 10-15min antes de nova entrada;
+- ou: elevar confianca minima para 80% (de 70%) apos sequencia de TPs;
+- log: `[GATE-PAUSA] 3 TPs consecutivos — aguardando N minutos`.
+
+**Agente impactado:** `INICIAR_AGENTE_RL_DIRETO.bat`
+
+**Tipo de aprendizado:** reinforcement
+
+**Pronto quando:**
+
+- agente registra log de pausa apos sequencia de 3 TPs;
+- teste unitario cobre contagem de TPs e ativacao do gate.
+
+---
+
 #### BUG-4 / MEDIA — processar_protecao_lucros() gerando ERRORs fora do horario
 
 **Status:** DONE (18/03/2026)
@@ -3777,4 +3944,6 @@ entradas ja entregues nao devem voltar para este arquivo.
   - RL 5000: AC5.8/AC5.9/AC6.7/AC6.8/AC6.9 (pipeline completo)
 - Todos os 4 agentes com pipeline Grupo 2 integrado (17/03/2026)
 - Fechamento 17/03/2026: 6 bugs/melhorias capturados no backlog (P1)
+- Fechamento 18/03/2026: 4 itens capturados (TECH-001, TECH-002, TECH-003,
+  ML-2) — RL_DIRETO LUCRATIVO +R$64.000 (4W/1L, 80% win rate)
 - SAR Board 17/03/2026: consolidacao de gaps pos-primeiro-pregao real

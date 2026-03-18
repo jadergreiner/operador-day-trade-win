@@ -41,6 +41,7 @@ from src.application.services.macro_scenario_guardian import (
 )
 from src.application.diario_order_manager import DiarioOrderManager
 from src.application.diarios_watchdog import ThreadWatchdog, ConfiguracaoThread
+from src.application.diario_observability_panel import ObservabilidadeDiarios
 
 # ────────────────────────────────────────────────────────────────
 # Macro Data Provider (REC2/REC6: dados ao vivo, não hardcoded)
@@ -1710,6 +1711,16 @@ class PriceTracker:
 
 
 # ────────────────────────────────────────────────────────────────
+# Painel de observabilidade global (ROADMAP-DIARIOS-01)
+# Instancia global para ser usada pelas threads de diarios.
+# Reinicializada em main() com limite configuravel.
+# ────────────────────────────────────────────────────────────────
+_painel_obs: ObservabilidadeDiarios = ObservabilidadeDiarios(
+    limite_inatividade_min=20
+)
+
+
+# ────────────────────────────────────────────────────────────────
 # Thread 1: Trading Journal (narrativa macro)
 # ────────────────────────────────────────────────────────────────
 
@@ -2686,6 +2697,7 @@ def run_rl_performance_diary():
                     print(f"     → Agente pode ler: threshold={suggested_buy}/{suggested_sell}, "
                           f"SMC_bypass={'SIM' if smc_bypass else 'NÃO'}, "
                           f"trend_follow={'SIM' if trend_follow else 'NÃO'}")
+                    _painel_obs.registrar_gravacao("DIARIOS")
                 else:
                     print("  ⚠ Falha ao salvar feedback no SQLite")
             except Exception as fb_err:
@@ -2825,6 +2837,7 @@ def run_macro_guardian():
                             print(f"  🛡️ Guardian: feedback URGENTE salvo (ID={fb_id})")
                             if _guardian_state.active_kill_switch:
                                 print(f"  🚨 KILL SWITCH ATIVO — agente deve pausar!")
+                            _painel_obs.registrar_gravacao("DIARIOS")
                     except Exception as fb_err:
                         print(f"  ⚠ Guardian: erro ao salvar feedback: {fb_err}")
 
@@ -3004,6 +3017,11 @@ def main():
     print("Pressione Ctrl+C para parar")
     print()
 
+    # Painel de observabilidade dos diarios (ROADMAP-DIARIOS-01)
+    # Reinicializa instancia global para uso pelas threads
+    global _painel_obs
+    _painel_obs = ObservabilidadeDiarios(limite_inatividade_min=20)
+
     # Watchdog monitora e reinicia threads mortas automaticamente
     watchdog = ThreadWatchdog(intervalo_verificacao_seg=30.0)
 
@@ -3054,6 +3072,8 @@ def main():
                     f"[WATCHDOG] Status: {relatorio['total_rodando']} rodando, "
                     f"{mortas} mortas, {paradas} paradas permanentes."
                 )
+            # Exibe painel de observabilidade (ROADMAP-DIARIOS-01)
+            print(_painel_obs.exibir_painel_terminal())
     except KeyboardInterrupt:
         print("\n\nDiários interrompidos pelo usuário.")
         watchdog.parar()

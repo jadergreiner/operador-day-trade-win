@@ -1,8 +1,8 @@
 # 🚀 KICKOFF DESENVOLVIMENTO — Multi Agentes
 
-**Status:** ✅ AUTORIZADO PARA INÍCIO  
-**Data de Execução:** 18/03/2026 (confirmado)  
-**Orquestrador:** Tech Lead  
+**Status:** ✅ AUTORIZADO PARA INÍCIO
+**Data de Execução:** 18/03/2026 (confirmado)
+**Orquestrador:** Tech Lead
 
 ---
 
@@ -301,6 +301,6 @@ src/application/
 
 **Status Final:** 🟢 **TUDO PRONTO — INICIANDO DESENVOLVIMENTO**
 
-Commit de Kickoff: 91b9845  
+Commit de Kickoff: 91b9845
 Plano documentado e validado ✅
 

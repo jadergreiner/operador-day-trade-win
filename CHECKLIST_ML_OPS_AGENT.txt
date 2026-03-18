@@ -1,0 +1,150 @@
+═══════════════════════════════════════════════════════════════════════════════
+ML OPS & GUARDIAN AGENT - ROADMAP-DIARIOS-04
+═══════════════════════════════════════════════════════════════════════════════
+
+📋 ENTREGÁVEIS FASE 1 - PARTE 1 (INDEPENDENTE)
+═══════════════════════════════════════════════════════════════════════════════
+
+PARTE 1 - Sem dependências (Inicie AGORA)
+
+MÓDULO 1: Adaptive Retraining Engine ✓ PRONTO
+├─ Arquivo: src/application/adaptive_retraining_engine.py
+├─ LOC: 480
+├─ Testes: 22 (test_adaptive_retraining_engine.py)
+├─ AC:
+│  1. Programa treino automático baseado em performance
+│  2. Detecta degradação (drift) de modelo
+│  3. Inicia retrain com dataset agregado
+│  4. Valida novo modelo antes de deployment
+│  5. Mantém histórico de versões
+├─ Type Hints: 100%
+├─ Docstrings: 100% português
+├─ Coverage: ≥85%
+└─ Commit: "feat: Implementar Adaptive Retraining Engine com 22 testes"
+
+MÓDULO 2: Bias Detection System ✓ PRONTO
+├─ Arquivo: src/application/bias_detection_system.py
+├─ LOC: 340
+├─ Testes: 16 (test_bias_detection_system.py)
+├─ AC:
+│  1. Detecta bias no modelo (long/short skew)
+│  2. Escalona quando bias > threshold
+│  3. Propõe rebalance de dataset
+│  4. Valida fairness após correção
+│  5. Log para auditoria
+├─ Type Hints: 100%
+├─ Docstrings: 100% português
+├─ Coverage: ≥85%
+└─ Commit: "feat: Implementar Bias Detection System com 16 testes"
+
+MÓDULO 3: Regime Adapter ✓ PRONTO
+├─ Arquivo: src/application/regime_adapter.py
+├─ LOC: 400
+├─ Testes: 18 (test_regime_adapter.py)
+├─ AC:
+│  1. Detecta mudança de regime de mercado
+│  2. Adapta hiperparâmetros do modelo
+│  3. Seleciona feature subset optimal
+│  4. Valida performance adaptação
+│  5. Mantém feature importance
+├─ Type Hints: 100%
+├─ Docstrings: 100% português
+├─ Coverage: ≥85%
+└─ Commit: "feat: Implementar Regime Adapter com 18 testes"
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 PARTE 2 - DEPEndência: Aguarde Clean Architecture Agent
+═══════════════════════════════════════════════════════════════════════════════
+
+MÓDULO 4: Performance Regression Detector ⏳ BLOQUEADO
+├─ Arquivo: src/application/performance_regression_detector.py
+├─ LOC: 420
+├─ Testes: 19 (test_performance_regression_detector.py)
+├─ Status: Aguardando trade_outcome_reconciler.py (Clean Arch)
+├─ AC:
+│  1. Integra reconciliation outcomes em métricas
+│  2. Detecta regressão contra baseline
+│  3. Calcula statistical significance
+│  4. Escalona para blocked state se regressão
+│  5. Propõe rollback automático
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 PARTE 3 - DEPEndência: Aguarde Storytelling Agent
+═══════════════════════════════════════════════════════════════════════════════
+
+MÓDULO 5: Rollback Automation ⏳ BLOQUEADO
+├─ Arquivo: src/application/rollback_automation.py
+├─ LOC: 380
+├─ Testes: 17 (test_rollback_automation.py)
+├─ Status: Aguardando narrative_reflection_evolution.py (Storytelling)
+├─ AC:
+│  1. Coordena rollback de modelo com narrativa
+│  2. Valida narrativa historical antes de rollback
+│  3. Executa rollback atômico
+│  4. Registra razão + impacto
+│  5. Notifica time automaticamente
+
+═══════════════════════════════════════════════════════════════════════════════
+📊 MÉTRICAS FASE 1 - ML OPS AGENT
+═══════════════════════════════════════════════════════════════════════════════
+
+Parte 1 (Imediato):
+├─ LOC:       1.220 (delivery rápida)
+├─ Testes:    56 (22+16+18)
+└─ Status:    [🟢] PRONTO INICIAR AGORA
+
+Parte 2 (Bloqueado por Clean Arch):
+├─ LOC:       420
+├─ Testes:    19
+└─ Status:    [🔴] AGUARDANDO trade_outcome_reconciler.py
+
+Parte 3 (Bloqueado por Storytelling):
+├─ LOC:       380
+├─ Testes:    17
+└─ Status:    [🔴] AGUARDANDO narrative_reflection_evolution.py
+
+Total Fase 1: 2.020 LOC, 92 testes
+
+═══════════════════════════════════════════════════════════════════════════════
+✅ PREFLIGHT CHECKLIST
+═══════════════════════════════════════════════════════════════════════════════
+
+✓ Branch local: git checkout feature/roadmap-diarios-04-ml-ops
+✓ Ambiente: Python 3.11+ + LightGBM disponível
+✓ Estrutura: src/application/, tests/ prontos
+✓ Referências: BACKLOG.md (ROADMAP-DIARIOS-04), docs/ARQUITETURA_ALVO.md
+✓ Design: Strategy pattern + adapter pattern
+✓ Testing: pytest markers (@mark.ml, @mark.critical)
+
+═══════════════════════════════════════════════════════════════════════════════
+🔧 PROCESSO IMPLEMENTAÇÃO PARTE 1
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Escrever conftest.py com fixtures para modelos ML
+2. Escrever test_*.py com testes que FALHAM (TDD)
+3. Implementar 3 módulos com 100% type hints
+4. Rodar: pytest tests/ -m ml -v (todos testes PASSAR)
+5. Rodar: mypy src/application/ --strict (zero errors)
+6. Rodar: pytest --cov --cov-report=term-missing
+7. Verificar: Cobertura ≥85%
+8. Commit: 3 commits (um por módulo)
+
+═══════════════════════════════════════════════════════════════════════════════
+🚀 CRONOGRAMA
+═══════════════════════════════════════════════════════════════════════════════
+
+[🟢 AGORA]  Parte 1: Adaptive Retraining + Bias Detection + Regime Adapter
+            ├─ 1.220 LOC, 56 testes
+            └─ Estimado: ~10-12 horas qualidade-first
+            
+[⏳ DEPOIS] Parte 2: Performance Regression Detector (420 LOC, 19 testes)
+            └─ Bloqueado até: Clean Arch Agent finalizar
+            └─ Estimado: ~4 horas após dependency
+            
+[⏳ DEPOIS] Parte 3: Rollback Automation (380 LOC, 17 testes)
+            └─ Bloqueado até: Storytelling Agent finalizar
+            └─ Estimado: ~4 horas após dependency
+
+═══════════════════════════════════════════════════════════════════════════════
+🚀 STATUS ATUAL PARTE 1: PRONTO PARA INICIAR AGORA
+═══════════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,113 @@
+═══════════════════════════════════════════════════════════════════════════════
+STORYTELLING AGENT - ROADMAP-DIARIOS-02
+═══════════════════════════════════════════════════════════════════════════════
+
+📋 ENTREGÁVEIS FASE 1 - PARTE 1 (INDEPENDENTE)
+═══════════════════════════════════════════════════════════════════════════════
+
+PARTE 1 - Sem dependências (Inicie AGORA)
+
+MÓDULO 1: Narrative Persistence ✓ PRONTO
+├─ Arquivo: src/infrastructure/narrative_persistence.py
+├─ LOC: 380
+├─ Testes: 18 (test_narrative_persistence.py)
+├─ AC:
+│  1. Persiste narrativas de trade em SQLite
+│  2. Organiza por data + trade_id
+│  3. Valida schema antes de insert
+│  4. Implementa versionamento (v1, v2, etc)
+│  5. Fornece query eficiente por período
+├─ Type Hints: 100%
+├─ Docstrings: 100% português
+├─ Coverage: ≥85%
+└─ Commit: "feat: Implementar Narrative Persistence com 18 testes"
+
+MÓDULO 2: Trade Narrative Correlator ✓ PRONTO
+├─ Arquivo: src/application/trade_narrative_correlator.py
+├─ LOC: 420
+├─ Testes: 20 (test_trade_narrative_correlator.py)
+├─ AC:
+│  1. Correlaciona narrativa com trade outcome
+│  2. Extrai causal chain (causa → efeito)
+│  3. Classifica erro como: timing/signal/execution/external
+│  4. Monta contexto estruturado
+│  5. Armazena para ML reflection posterior
+├─ Type Hints: 100%
+├─ Docstrings: 100% português
+├─ Coverage: ≥85%
+└─ Commit: "feat: Implementar Trade Narrative Correlator com 20 testes"
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 PARTE 2 - DEPEndência: Aguarde Clean Architecture Agent
+═══════════════════════════════════════════════════════════════════════════════
+
+MÓDULO 3: Narrative Reflection Evolution ⏳ BLOQUEADO
+├─ Arquivo: src/application/narrative_reflection_evolution.py
+├─ LOC: 350
+├─ Testes: 22 (test_narrative_reflection_evolution.py)
+├─ Status: Aguardando trade_outcome_reconciler.py (Clean Arch)
+├─ AC:
+│  1. Evolui narrativa conforme reconciliação
+│  2. Integra reconciliation outcome na narrativa
+│  3. Monta reflexão iterativa (v1 → v2 → final)
+│  4. Treina modelo de reflexão IA
+│  5. Valida coerência narrativa vs trade real
+├─ Type Hints: 100%
+├─ Docstrings: 100% português
+├─ Coverage: ≥85%
+└─ Commit: "feat: Implementar Narrative Reflection Evolution com 22 testes"
+
+═══════════════════════════════════════════════════════════════════════════════
+📊 MÉTRICAS FASE 1 - STORYTELLING AGENT
+═══════════════════════════════════════════════════════════════════════════════
+
+Parte 1 (Imediato):
+├─ LOC:       800 (delivery rápida)
+├─ Testes:    38 (18+20)
+└─ Status:    [🟢] PRONTO INICIAR AGORA
+
+Parte 2 (Bloqueado por Clean Arch):
+├─ LOC:       350
+├─ Testes:    22
+└─ Status:    [🔴] AGUARDANDO trade_outcome_reconciler.py
+
+Total Fase 1: 1.150 LOC, 60 testes
+
+═══════════════════════════════════════════════════════════════════════════════
+✅ PREFLIGHT CHECKLIST
+═══════════════════════════════════════════════════════════════════════════════
+
+✓ Branch local: git checkout feature/roadmap-diarios-02-storytelling
+✓ Ambiente: Python 3.11+ + SQL disponível
+✓ Estrutura: src/infrastructure/, src/application/, tests/ prontos
+✓ Referências: BACKLOG.md (ROADMAP-DIARIOS-02), docs/REGRAS_DE_NEGOCIO.md
+✓ Design: Repository pattern + value objects para narrativa
+✓ Testing: pytest markers (@mark.unit, @mark.integration)
+
+═══════════════════════════════════════════════════════════════════════════════
+🔧 PROCESSO IMPLEMENTAÇÃO PARTE 1
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Escrever conftest.py com fixtures para trade narratives
+2. Escrever test_*.py com testes que FALHAM (TDD)
+3. Implementar módulos com 100% type hints
+4. Rodar: pytest tests/ -m "unit or integration" -v
+5. Rodar: mypy src/ --strict (zero errors)
+6. Rodar: pytest --cov --cov-report=term-missing
+7. Verificar: Cobertura ≥85%
+8. Commit: 2 commits (um por módulo)
+
+═══════════════════════════════════════════════════════════════════════════════
+🚀 CRONOGRAMA
+═══════════════════════════════════════════════════════════════════════════════
+
+[🟢 AGORA]  Parte 1: Narrative Persistence + Correlator (800 LOC, 38 testes)
+            └─ Estimado: ~6-8 horas qualidade-first
+            
+[⏳ DEPOIS] Parte 2: Narrative Reflection Evolution (350 LOC, 22 testes)
+            └─ Bloqueado até: Clean Arch Agent finalizar
+            └─ Estimado: ~4 horas após dependency
+
+════════════════════════════════════════════════════════════════════════════════
+🚀 STATUS ATUAL PARTE 1: PRONTO PARA INICIAR AGORA
+════════════════════════════════════════════════════════════════════════════════

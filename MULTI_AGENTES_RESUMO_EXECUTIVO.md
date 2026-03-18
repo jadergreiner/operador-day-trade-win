@@ -1,7 +1,7 @@
 # 🎯 MULTI AGENTES — Resumo Executivo (7 Agentes + Tech Lead)
 
-**Documento Principal:** [docs/PLANO_MULTI_AGENTES.md](docs/PLANO_MULTI_AGENTES.md)  
-**Orquestração:** Tech Lead (sincronização contínua)  
+**Documento Principal:** [docs/PLANO_MULTI_AGENTES.md](docs/PLANO_MULTI_AGENTES.md)
+**Orquestração:** Tech Lead (sincronização contínua)
 **Coordenação:** [MULTI_AGENTES_COORDENACAO_DIARIA.md](MULTI_AGENTES_COORDENACAO_DIARIA.md)
 
 ---
@@ -84,7 +84,7 @@
 - reflection_action_channel.py
 - Datasets estruturados exportados
 
-**Horas:** 22-28h | **Commits:** 5 | **Paralelo com:** Clean Arch, Signals  
+**Horas:** 22-28h | **Commits:** 5 | **Paralelo com:** Clean Arch, Signals
 **Depende de:** Clean Arch ✓ (para DIARIOS-03)
 
 ---
