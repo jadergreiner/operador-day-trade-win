@@ -4767,7 +4767,17 @@ def main():
 
     # Checa flag --simulate (shadow mode — prioridade sobre --auto-trade)
     mode_str = "ANALYSIS"
-    if "--simulate" in sys.argv:
+    if "--monitor-only" in sys.argv:
+        SIMULATE_MODE = False
+        AUTO_TRADING_ENABLED = False  # Desativa operações completamente
+        mode_str = "MONITOR_ONLY"
+        print("\n  👁  MODO MONITORAMENTO (PREGÃO SEM OPERAÇÕES) ATIVADO")
+        print("  👁  Análise completa: SIM")
+        print("  👁  Execução de ordens: NÃO")
+        print("  👁  Sinais: Apenas LOG para análise posterior")
+        print("  👁  Pressione Ctrl+C para encerrar com segurança\n")
+    # Checa flag --simulate (shadow mode — prioridade sobre --auto-trade)
+    elif "--simulate" in sys.argv:
         SIMULATE_MODE = True
         AUTO_TRADING_ENABLED = True  # Ativa avaliação de oportunidades
         mode_str = "SIMULATED"
@@ -5051,6 +5061,9 @@ def main():
     elif AUTO_TRADING_ENABLED:
         print(f"  🤖 Auto-Trade: ATIVO │ Contratos: {MAX_CONTRACTS} │ "
               f"Max pos: {MAX_POSITIONS} │ Max loss: {MAX_DAILY_LOSS} pts")
+    elif "--monitor-only" in sys.argv:
+        print(f"  👁  Modo: PREGÃO 0 OPERAÇÕES │ Análise: ATIVA │ "
+              f"Ordens: SEM EXECUÇÃO │ Logs: ANÁLISE APENAS")
     else:
         print(f"  📊 Modo: ANÁLISE APENAS (sem execução de ordens)")
     print()

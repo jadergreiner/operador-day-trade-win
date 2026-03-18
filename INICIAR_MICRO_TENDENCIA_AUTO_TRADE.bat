@@ -292,12 +292,17 @@ echo         - EXECUTA ORDENS REAIS no MetaTrader 5
 echo         - Com validacao ML v1.2.3 + Risk framework
 echo         - Voce pode GANHAR ou PERDER dinheiro
 echo.
-echo     [3] Cancelar
+echo     [3] MONITOR-ONLY (Pregao 0 Operacoes)
+echo         - Analisa mercado completamente (ML + macro + BDI)
+echo         - SEM execucao de ordens
+echo         - Uso: estudar mercado sem risco
+echo.
+echo     [4] Cancelar
 echo.
 
 setlocal
 :choice_loop
-set /p CHOICE="Escolha [1/2/3]: "
+set /p CHOICE="Escolha [1/2/3/4]: "
 if "!CHOICE!"=="1" (
     set "MODE=--simulate"
     endlocal & set "MODE=--simulate"
@@ -307,6 +312,10 @@ if "!CHOICE!"=="1" (
     endlocal & set "MODE=--auto-trade"
     exit /b 0
 ) else if "!CHOICE!"=="3" (
+    set "MODE=--monitor-only"
+    endlocal & set "MODE=--monitor-only"
+    exit /b 0
+) else if "!CHOICE!"=="4" (
     endlocal
     exit /b 1
 ) else (
