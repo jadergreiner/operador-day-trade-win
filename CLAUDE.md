@@ -93,6 +93,22 @@ outputs/                  → Arquivos gerados em runtime (logs, JSON posição)
 | `profit_protection_engine.py` | Proteção de lucros (trailing) | ✅ |
 | `dashboard_stats_server.py` | FastAPI: endpoints de estatísticas RT | ✅ |
 
+### Infraestrutura e Interfaces
+
+`src/infrastructure/` contém padrões além dos adaptadores básicos:
+
+- `mt5_adapter_proxy.py` — Proxy com cache/retry para o MT5Adapter
+- `terminal_isolation_enforcer.py` — Garante que agentes não compartilhem
+  terminal MT5
+- `persistence/` — Persistência resiliente com transaction log e sincronização
+- `providers/` — Provedores de fila de alertas, forex API, MT5
+- `backtests/` — Engine de backtest com auditoria e visualização
+
+`src/interfaces/` expõe dois servidores concorrentes:
+
+- `api/fastapi_server.py` — REST API com OAuth/JWT (porta configurável)
+- `websocket_server.py` — WebSocket para streaming de posições em tempo real
+
 ### Isolamento entre Agentes RL
 
 Cada agente possui Session ID único (timestamp). Posições e logs ficam em
@@ -110,6 +126,42 @@ Artefatos obrigatórios em `data/backtest/`: `dataset_audit.json`,
 `backtest_results.json`, `gate2_decision.json`, `p0_2_status.json`.
 Falhas de pipeline nunca liberam capital ampliado.
 
+## Workflow de Desenvolvimento
+
+### Git
+
+Ao commitar, use `/commit` (skill disponivel) ou siga estas regras:
+
+- `git add -A` — incluir TODOS os arquivos alterados, incluindo deletados,
+  **sem pedir confirmacao**
+- Mensagem em Portugues, **sem acentos** (ex: `feat: Adicionar monitor`)
+- Nunca usar `--no-verify`
+
+### Antes de editar codigo
+
+Antes de modificar qualquer arquivo `.py`, leia o arquivo completo para
+evitar duplicacao de blocos. Apos cada edicao de codigo, execute os testes
+relevantes imediatamente para verificar que nao houve regressao.
+
+### Backlog (TDD)
+
+Ao implementar um item do backlog:
+
+1. Escrever testes que falham primeiro
+2. Implementar o codigo para os testes passarem
+3. Executar `mypy src/ --strict` e corrigir todos os erros
+4. Executar `pytest tests/ -q` e garantir que tudo passa
+5. Commitar apenas quando tudo estiver verde
+
+Ao **adicionar** itens ao backlog: escrever imediatamente, sem ler outros
+arquivos primeiro.
+
+### Hook pre-commit (automatico)
+
+O projeto tem um hook configurado em `.claude/settings.json` que executa
+`mypy --strict` + `pytest` automaticamente antes de qualquer `git commit`.
+Se falhar, o commit e bloqueado.
+
 ## Padrões de Código
 
 - **Python 3.11+**
@@ -123,7 +175,9 @@ Falhas de pipeline nunca liberam capital ampliado.
 - Scripts `.bat` usam MAIÚSCULAS: `INICIAR_*.bat`, `SETUP_*.bat`,
   `DIAGNOSTICO_*.bat`
 - Scripts Python em `scripts/` seguem snake_case; prefixos convencionados:
-  `check_`, `debug_`, `diagnostico_`, `util_`
+  `spec_`, `run_`, `launch_`, `check_`, `cleanup_`, `verify_`, `analyze_`,
+  `debug_`, `export_`, `import_`, `utility_`
+- Scripts Python **nunca** ficam na raiz — apenas em `scripts/` ou `src/`
 
 ### Padrão de Docstring (obrigatório)
 
@@ -188,7 +242,11 @@ Copie `.env.example` para `.env` e preencha:
 - `MT5_LOGIN`, `MT5_PASSWORD`, `MT5_SERVER`, `MT5_TERMINAL_PATH`
 - `DB_PATH=data/db/trading.db`
 - `MODEL_PATH=data/models/`
-- APIs externas: `FRED_API_KEY`, `TWELVEDATA_API_KEY`, etc.
+- APIs externas: `FRED_API_KEY`, `TWELVEDATA_API_KEY`, `ALPHAVANTAGE_API_KEY`,
+  `FINNHUB_API_KEY`, `TELEGRAM_BOT_TOKEN`
+
+Variantes de ambiente disponíveis: `config/.env.test` e
+`config/.env.staging`.
 
 ## Documentação
 
@@ -201,4 +259,7 @@ Copie `.env.example` para `.env` e preencha:
 - [docs/MODELAGEM_DE_DADOS.md](docs/MODELAGEM_DE_DADOS.md) — Schema SQLite
 - [docs/AGENTES_RL_PARALELOS.md](docs/AGENTES_RL_PARALELOS.md) — Isolamento
   entre agentes RL
+- [docs/ADRS.md](docs/ADRS.md) — Architecture Decision Records
+- [docs/STATUS_ENTREGAS.md](docs/STATUS_ENTREGAS.md) — Status das entregas
+- [scripts/README.md](scripts/README.md) — Guia de padrões de scripts
 - [START_HERE.md](START_HERE.md) — Quick start em 5 minutos
