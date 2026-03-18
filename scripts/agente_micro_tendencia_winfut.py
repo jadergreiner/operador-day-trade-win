@@ -210,6 +210,13 @@ except ImportError:
     PIPELINE_EPISODIOS_DISPONIVEL = False
     PipelineEpisodiosMicro = None  # type: ignore[assignment,misc]
 
+try:
+    from src.application.autoavaliacao_inatividade import AutoavaliacaoInatividade
+    AUTOAVALIACAO_DISPONIVEL = True
+except ImportError:
+    AUTOAVALIACAO_DISPONIVEL = False
+    AutoavaliacaoInatividade = None  # type: ignore[assignment,misc]
+
 # ────────────────────────────────────────────────────────────────
 # Constantes
 # ────────────────────────────────────────────────────────────────
@@ -258,6 +265,16 @@ _forced_activation_manager: "ForcedActivationManager | None" = None
 # CALIBRACAO-MICRO-03: Pipeline de episodios reais (18/03/2026)
 # Persiste cada trade nos destinos rl_episodes, diario_episodios, execution_feedback
 _pipeline_episodios: "PipelineEpisodiosMicro | None" = None
+
+# CALIBRACAO-MICRO-06: Autoavaliacao de inatividade em mercado direcional
+# Detecta dias sem trade em mercado favoravel e gera penalidades HOLD_FORCADO
+_autoavaliacao_inatividade: "AutoavaliacaoInatividade | None" = None
+
+# Contador de trades executados no pregao (para autoavaliacao)
+_trades_dia: int = 0
+
+# Data do ultimo pregao avaliado (evita executar autoavaliacao multiplas vezes)
+_ultimo_pregao_avaliado: str | None = None
 
 # ── Auditoria de Sessão ──
 _session_id: int | None = None
@@ -4923,6 +4940,16 @@ def main():
         except Exception as e:
             print(f"  [!] PipelineEpisodiosMicro: {str(e)[:50]}")
 
+    # CALIBRACAO-MICRO-06: Autoavaliacao de inatividade
+    global _autoavaliacao_inatividade
+    _autoavaliacao_inatividade = None
+    if AUTOAVALIACAO_DISPONIVEL and AutoavaliacaoInatividade and DB_PATH:
+        try:
+            _autoavaliacao_inatividade = AutoavaliacaoInatividade(db_path=DB_PATH)
+            print(f"  [*] CALIBRACAO-MICRO-06 AutoavaliacaoInatividade: Ativo")
+        except Exception as e:
+            print(f"  [!] AutoavaliacaoInatividade: {str(e)[:50]}")
+
     # ── PRE-FLIGHT: Verificação crítica do terminal MT5 ──
     if not _preflight_check_mt5(config):
         print(f"\n  ❌ PRE-FLIGHT CHECK FALHOU!")
@@ -5031,6 +5058,11 @@ def main():
     cycle_count = 0
     trading_mgr: Optional[MicroTradingManager] = None
 
+    # CALIBRACAO-MICRO-06: Contadores do pregao
+    global _trades_dia, _ultimo_pregao_avaliado
+    _trades_dia = 0
+    _ultimo_pregao_avaliado = None
+
     # Inicializa engine global de RL para evitar overhead
     rl_engine = None
     if all([create_engine, sessionmaker, SqliteRLRepository, RLPersistenceService]):
@@ -5076,6 +5108,29 @@ def main():
                         mt5.disconnect()
                     except Exception as e:
                         print(f"  ✗ Erro ao fechar posições: {e}")
+
+                # CALIBRACAO-MICRO-06: Autoavaliacao de inatividade (uma vez por pregao)
+                data_hoje = datetime.now().date().isoformat()
+                if (
+                    _autoavaliacao_inatividade is not None
+                    and _ultimo_pregao_avaliado != data_hoje
+                    and cycle_count > 0  # Garante que o pregao de fato ocorreu
+                ):
+                    try:
+                        resultado_av = _autoavaliacao_inatividade.avaliar_dia(
+                            n_trades_executados=_trades_dia,
+                        )
+                        _ultimo_pregao_avaliado = data_hoje
+                        print(
+                            f"\n  [CALIBRACAO-MICRO-06] Autoavaliacao: "
+                            f"{resultado_av.status.value} | "
+                            f"Trades: {_trades_dia} | "
+                            f"Episodios HOLD: {len(resultado_av.episodios_penalizados)}"
+                        )
+                        if resultado_av.arquivo_relatorio:
+                            print(f"  Relatorio: {resultado_av.arquivo_relatorio}")
+                    except Exception as e_av:
+                        print(f"  ⚠ CALIBRACAO-MICRO-06: {e_av}")
 
                 now = datetime.now().strftime("%H:%M:%S")
                 print(f"\r  ⏸ Fora do horário de pregão ({now}). Aguardando... ", end="", flush=True)
@@ -5332,6 +5387,8 @@ def main():
                                 # P0-URGENT-2: Registra entrada no ForcedActivationManager modular
                                 if _forced_activation_manager:
                                     _forced_activation_manager.record_activation_entry(is_forced=False)
+                                # CALIBRACAO-MICRO-06: Incrementa contador de trades do dia
+                                _trades_dia += 1
                             else:
                                 print(f"  ✗ Falha na execução da ordem")
                         else:

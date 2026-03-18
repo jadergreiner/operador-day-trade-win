@@ -1,4 +1,5 @@
 @echo off
+title MICRO TENDENCIA - OPERADOR QUANTICO v1.2.5 - EA ID: 234700
 setlocal enabledelayedexpansion
 REM ============================================================
 REM  OPERADOR MICRO TENDENCIA - v1.2.5 (06/03/2026)

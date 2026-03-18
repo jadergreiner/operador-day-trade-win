@@ -1,4 +1,5 @@
 @echo off
+title RL 5000 - OPERADOR RL v5000 [SL/TP DINAMICOS] - EA ID: 234500
 setlocal enabledelayedexpansion
 
 REM ============================================================

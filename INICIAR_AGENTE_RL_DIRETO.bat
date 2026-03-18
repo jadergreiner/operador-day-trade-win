@@ -24,7 +24,7 @@ REM Define titulo com timestamp para diferenciar das outras instancias
 for /f "tokens=2-4 delims=/ " %%a in ('date /t') do (set mydate=%%c%%a%%b)
 for /f "tokens=1-2 delims=/:" %%a in ('time /t') do (set mytime=%%a%%b)
 
-title OPERADOR RL DIRETO - POSICAO INDEPENDENTE [%mydate%_%mytime%]
+title RL DIRETO - POSICAO INDEPENDENTE - EA ID: 234600 [%mydate%_%mytime%]
 
 echo.
 echo   ============================================================================

@@ -1,4 +1,5 @@
 @echo off
+title DIARIOS - OPERADOR QUANTICO [DIARIOS AUTOMATICOS] - EA ID: 234800
 REM Inicia os Diarios Automaticos do Operador Quantico
 REM Duplo clique neste arquivo para iniciar
 
