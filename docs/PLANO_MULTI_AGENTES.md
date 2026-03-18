@@ -1,7 +1,6 @@
 # 🤖 Plano de Multi Agentes — Entregas Backlog (Clean Code)
 
-**Data:** 18/03/2026 | **Status:** Planejamento Executivo
-
+**Status:** Planejamento Executivo
 
 ---
 
@@ -423,26 +422,22 @@ outputs/
 **Processo de Sincronização (Tech Lead):**
 
 ```
-DIA 1: Agentes começam
+FASE 1: Agentes começam (PARALELO)
+  ├─ Tech Lead: Verifica planejamento doc
+  ├─ Clean Arch: Entrega Principal
+  ├─ Signals: Entrega Principal
+  ├─ Storytelling: Entrega Principal
+  └─ ML Ops: Entrega Principal
   ↓
-Tech Lead: Verifica planejamento doc
+[LOOP CONTÍNUO - Tech Lead orquestra sidncronização]
   ↓
-Clean Arch: Entrega Part 1
+FASE 2: Integrações Cruzadas (conforme depend.)
+  ├─ Storytelling: Aguarda Clean Arch
+  └─ ML Ops: Aguarda Storytelling
   ↓
-Tech Lead: Atualiza ARQUITETURA + BACKLOG
-  ↓
-Signals: Entrega Part 1
-  ↓
-Tech Lead: Atualiza OPERACAO + diagramas
-  ↓
-[LOOP até DIA 5]
-  ↓
-DIA 5: Finalizacao
-  ↓
-Tech Lead: Consolida todas mudanças
-Tech Lead: Valida 100% sincronizacao
-Tech Lead: Gera stakeholder summary
-Tech Lead: Aprova merge final
+FASE 3: Finalização
+  ├─ Todos: Final commits + merge
+  └─ Tech Lead: Aprova entrega final
 ```
 
 **SLA de Tech Lead:**
@@ -513,37 +508,51 @@ FECHAMENTO
 
 ---
 
-## 📋 Cronograma Paralelo (5-6 dias)
+## 📋 Sequência Paralela de Execução
 
-```
-DIA 1 (Segundo-feira)
-├─ 09:00-10:30: Kickoff + Planning (todos 7 agentes + Tech Lead)
-├─ 10:00: Tech Lead valida docs + agentes prontos
-├─ 10:30-17:30:
-│  ├─ Clean Arch: ROADMAP-MICRO-03 Part 1
-│  ├─ Signals: ROADMAP-DIARIOS-01 Part 1
-│  ├─ Storytelling: ROADMAP-DIARIOS-02 Part 1
-│  ├─ ML Ops: ROADMAP-DIARIOS-04 Part 1
-│  │
-│  └─ 🎯 Tech Lead (paralelo):
-│     ├─ Valida planejamento doc
-│     ├─ Monitora progresso
-│     └─ Antecipa bloqueadores
-│
-├─ 11:00-12:00: Checkpoint 1 (Tech Lead + DBA + Arquiteto + PM)
-│  └─ Design reviews
-│
-├─ 14:00-15:00: Checkpoint 2
-│  └─ Schema/Architecture/PM approvals
-│
-└─ 17:30-18:00: Daily Sync + Tech Lead status
+### Fase 1: Desenvolvimento Independente
 
-DIA 2-5: LOOP - Sempre com Tech Lead orquestrando
-  ├─ Agentes entregam
-  ├─ Tech Lead sincroniza docs
-  ├─ Governança valida (DBA/Arquiteto/PM)
-  ├─ Checkpoint consolida
-  └─ Próxima entrega
+**Todos agentes em paralelo (sem dependências):**
+- ✓ Clean Arch: ROADMAP-MICRO-03 (Design + Implementação + Testes)
+- ✓ Signals: ROADMAP-DIARIOS-01 (Watchdog + Implementação + Testes)
+- ✓ Storytelling: ROADMAP-DIARIOS-02 (Narrativa + Implementação + Testes)
+- ✓ ML Ops: ROADMAP-DIARIOS-04 (Retrain + Implementação + Testes)
+
+**Tech Lead (paralelo durante toda fase):**
+- Valida planejamento + agentes prontos
+- Monitora progresso contínuo
+- Antecipa e escalona bloqueadores
+- Sincroniza docs com entregas
+
+**Checkpoints Periódicos:**
+- Checkpoint 1: Design reviews (Tech Lead + DBA + Arquiteto + PM)
+- Checkpoint 2: Schema/Architecture/PM approvals
+- Checkpoint 3: Daily sync + Tech Lead status consolidado
+
+### Fase 2: Integrações Cruzadas
+
+**Conforme dependências liberadas:**
+- Storytelling Part 2: ROADMAP-DIARIOS-03 (depende de Clean Arch ✓)
+- ML Ops Part 2-3: ROADMAP-DIARIOS-05/06 (paralelo após Storytelling ✓)
+
+**Tech Lead:**
+- Valida integrações
+- Atualiza status consolidado
+- Gerencia crossover de agentes
+
+### Fase 3: Finalização
+
+**Todos agentes:**
+- Final commits estruturados
+- Type hints validation (mypy --strict)
+- Cobertura ≥85% por módulo
+- Documentação atualizada
+
+**Tech Lead:**
+- Consolida todas mudanças
+- Valida 100% sincronização
+- Gera stakeholder summary
+- Aprova merge final
 ```
 
 ---
@@ -749,13 +758,12 @@ PRs: 1-2 features por PR
 5. **Revisão Cruzada:** Agentes revisam código uns dos outros
 
 ### Risco Mitigation
-- **Blockers:** Daily-standup @15:00 BRT para desbloquear
+- **Blockers:** Daily standup para desbloquear comunicação entre agentes
 - **Integration:** Merge requests ao fim de cada dia
 - **Quality:** Type hints enforçados por pre-commit hook
 - **Knowledge:** Wikis / exemplos compartilhados em #shared-docs
 
 ---
 
-**Documento Mantido por:** Equipe Multi-Agentes
-**Última Atualização:** 18/03/2026
-**Próxima Review:** 25/03/2026 (Kickoff Sprint 2)
+**Documento Mantido por:** Equipe Multi-Agentes + Tech Lead
+**Status:** Planejamento iterativo (sem data fixa)

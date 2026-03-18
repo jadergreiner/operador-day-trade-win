@@ -1,7 +1,8 @@
 # 🎯 MULTI AGENTES — Resumo Executivo (7 Agentes + Tech Lead)
 
 **Documento Principal:** [docs/PLANO_MULTI_AGENTES.md](docs/PLANO_MULTI_AGENTES.md)  
-**Coordenação Diária:** [MULTI_AGENTES_COORDENACAO_DIARIA.md](MULTI_AGENTES_COORDENACAO_DIARIA.md)
+**Orquestração:** Tech Lead (sincronização contínua)  
+**Coordenação:** [MULTI_AGENTES_COORDENACAO_DIARIA.md](MULTI_AGENTES_COORDENACAO_DIARIA.md)
 
 ---
 
@@ -282,4 +283,4 @@ Todos agentes (testes + commits + merge)
 
 ---
 
-**Status:** Em planejamento | **Execução:** Paralela por especialidade
+**Status:** Pronto para Kickoff | **Execução:** Paralela por especialidade + sequencial por dependência
