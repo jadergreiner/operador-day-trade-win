@@ -120,7 +120,9 @@ class TestTradePerformanceTracker:
     def test_registrar_trade_simples(
         self, tracker: TradePerformanceTracker
     ) -> None:
-        """Registrar um trade simples com TP hit."""
+        """Registrar um trade simples com TP hit (precos WINFUT em pontos)."""
+        # WINFUT tipico: precos na faixa de 100000+ pontos
+        # Ganho de 500 pontos * R$0,20 = R$100,00
         entrada = datetime(2026, 3, 16, 10, 30, 45)
         saida = datetime(2026, 3, 16, 10, 35, 20)
 
@@ -128,16 +130,17 @@ class TestTradePerformanceTracker:
             ticket=123456,
             simbolo="WINFUT",
             direcao="BUY",
-            preco_entrada=100.50,
+            preco_entrada=100000.0,
             horario_entrada=entrada,
-            preco_saida=102.00,
+            preco_saida=100500.0,
             horario_saida=saida,
             motivo_fechamento=TradeClosureReason.TP_HIT,
         )
 
         assert resultado.ticket == 123456
-        assert resultado.pnl_reais == pytest.approx(75.00, abs=0.1)
-        assert resultado.percentual_pnl == pytest.approx(1.49, abs=0.01)
+        # 500 pts * R$0,20/ponto = R$100,00
+        assert resultado.pnl_reais == pytest.approx(100.00, abs=0.01)
+        assert resultado.percentual_pnl == pytest.approx(0.5, abs=0.01)
         assert resultado.duracao_minutos == 4
         assert len(tracker.trades) == 1
 
@@ -145,6 +148,7 @@ class TestTradePerformanceTracker:
         self, tracker: TradePerformanceTracker
     ) -> None:
         """Registrar trade que resulta em perda (SL hit)."""
+        # Perda de 300 pontos * R$0,20 = -R$60,00
         entrada = datetime(2026, 3, 16, 11, 0, 0)
         saida = datetime(2026, 3, 16, 11, 5, 0)
 
@@ -152,15 +156,16 @@ class TestTradePerformanceTracker:
             ticket=789012,
             simbolo="WINFUT",
             direcao="BUY",
-            preco_entrada=100.00,
+            preco_entrada=100000.0,
             horario_entrada=entrada,
-            preco_saida=99.00,
+            preco_saida=99700.0,
             horario_saida=saida,
             motivo_fechamento=TradeClosureReason.SL_HIT,
         )
 
-        assert resultado.pnl_reais == pytest.approx(-50.00, abs=0.1)
-        assert resultado.percentual_pnl == pytest.approx(-1.0, abs=0.01)
+        # -300 pts * R$0,20/ponto = -R$60,00
+        assert resultado.pnl_reais == pytest.approx(-60.00, abs=0.01)
+        assert resultado.percentual_pnl == pytest.approx(-0.3, abs=0.01)
         assert resultado.motivo_fechamento == TradeClosureReason.SL_HIT
 
     def test_registrar_multiplos_trades(
@@ -311,40 +316,105 @@ class TestTradePerformanceTracker:
     def test_validar_pnl_percentual_buy(
         self, tracker: TradePerformanceTracker
     ) -> None:
-        """Validar calculo de percentual P&L para ordem BUY."""
+        """Validar calculo de percentual P&L para ordem BUY com WINFUT."""
+        # 1000 pontos de ganho = R$0,20 * 1000 = R$200
         resultado: TradePerformanceResult = tracker.registrar_trade(
             ticket=100,
             simbolo="WINFUT",
             direcao="BUY",
-            preco_entrada=100.00,
+            preco_entrada=100000.0,
             horario_entrada=datetime(2026, 3, 16, 10, 0, 0),
-            preco_saida=102.00,
+            preco_saida=101000.0,
             horario_saida=datetime(2026, 3, 16, 10, 5, 0),
             motivo_fechamento=TradeClosureReason.TP_HIT,
         )
 
-        # Ganho: (102 - 100) / 100 * 100 = 2%
-        assert resultado.percentual_pnl == pytest.approx(2.0, abs=0.01)
-        # PnL: (102 - 100) * 50 contratos = 100 reais (assumindo tamanho padrao)
-        assert resultado.pnl_reais > 0.0
+        # Ganho: (101000 - 100000) / 100000 * 100 = 1.0%
+        assert resultado.percentual_pnl == pytest.approx(1.0, abs=0.01)
+        # PnL WINFUT: 1000 pts * R$0,20/ponto = R$200,00
+        assert resultado.pnl_reais == pytest.approx(200.0, abs=0.01)
 
     def test_validar_pnl_percentual_sell(
         self, tracker: TradePerformanceTracker
     ) -> None:
-        """Validar calculo de percentual P&L para ordem SELL."""
+        """Validar calculo de percentual P&L para ordem SELL com WINFUT."""
+        # 500 pontos de ganho SELL = R$0,20 * 500 = R$100
         resultado: TradePerformanceResult = tracker.registrar_trade(
             ticket=101,
             simbolo="WINFUT",
             direcao="SELL",
-            preco_entrada=100.00,
+            preco_entrada=100000.0,
             horario_entrada=datetime(2026, 3, 16, 10, 0, 0),
-            preco_saida=98.00,
+            preco_saida=99500.0,
             horario_saida=datetime(2026, 3, 16, 10, 5, 0),
             motivo_fechamento=TradeClosureReason.TP_HIT,
         )
 
-        # Ganho SELL: (100 - 98) / 100 * 100 = 2%
-        assert resultado.percentual_pnl == pytest.approx(2.0, abs=0.01)
+        # Ganho SELL: (100000 - 99500) / 100000 * 100 = 0.5%
+        assert resultado.percentual_pnl == pytest.approx(0.5, abs=0.01)
+        # PnL WINFUT: 500 pts * R$0,20/ponto = R$100,00
+        assert resultado.pnl_reais == pytest.approx(100.0, abs=0.01)
+
+
+class TestBug2PnlWinfut:
+    """BUG-2: Verificar que pnl_reais usa R$0,20/ponto (nao tamanho_contrato=50)."""
+
+    def test_pnl_buy_winfut_multiplier(self, tmp_path: Path) -> None:
+        """BUY: 500 pts ganho deve gerar R$100, nao R$25000."""
+        tracker: TradePerformanceTracker = TradePerformanceTracker(
+            session_id="bug2_buy", output_dir=tmp_path
+        )
+        resultado: TradePerformanceResult = tracker.registrar_trade(
+            ticket=1,
+            simbolo="WINFUT",
+            direcao="BUY",
+            preco_entrada=100000.0,
+            horario_entrada=datetime(2026, 3, 16, 10, 0, 0),
+            preco_saida=100500.0,
+            horario_saida=datetime(2026, 3, 16, 10, 5, 0),
+            motivo_fechamento=TradeClosureReason.TP_HIT,
+        )
+        # 500 pts * R$0,20/ponto = R$100,00 (range valido: R$10 a R$300)
+        assert resultado.pnl_reais == pytest.approx(100.0, abs=0.01)
+        assert 10.0 <= resultado.pnl_reais <= 300.0
+
+    def test_pnl_sell_winfut_multiplier(self, tmp_path: Path) -> None:
+        """SELL: 300 pts ganho deve gerar R$60, nao R$15000."""
+        tracker: TradePerformanceTracker = TradePerformanceTracker(
+            session_id="bug2_sell", output_dir=tmp_path
+        )
+        resultado: TradePerformanceResult = tracker.registrar_trade(
+            ticket=2,
+            simbolo="WINFUT",
+            direcao="SELL",
+            preco_entrada=100000.0,
+            horario_entrada=datetime(2026, 3, 16, 10, 0, 0),
+            preco_saida=99700.0,
+            horario_saida=datetime(2026, 3, 16, 10, 5, 0),
+            motivo_fechamento=TradeClosureReason.TP_HIT,
+        )
+        # 300 pts * R$0,20/ponto = R$60,00 (range valido: R$10 a R$300)
+        assert resultado.pnl_reais == pytest.approx(60.0, abs=0.01)
+        assert 10.0 <= resultado.pnl_reais <= 300.0
+
+    def test_pnl_nao_usa_tamanho_50(self, tmp_path: Path) -> None:
+        """Garantir que multiplicador errado (50) nao esta em uso."""
+        tracker: TradePerformanceTracker = TradePerformanceTracker(
+            session_id="bug2_check", output_dir=tmp_path
+        )
+        resultado: TradePerformanceResult = tracker.registrar_trade(
+            ticket=3,
+            simbolo="WINFUT",
+            direcao="BUY",
+            preco_entrada=100000.0,
+            horario_entrada=datetime(2026, 3, 16, 10, 0, 0),
+            preco_saida=100100.0,
+            horario_saida=datetime(2026, 3, 16, 10, 5, 0),
+            motivo_fechamento=TradeClosureReason.TP_HIT,
+        )
+        # 100 pts: correto = R$20; errado seria R$5000 (100 * 50)
+        assert resultado.pnl_reais == pytest.approx(20.0, abs=0.01)
+        assert resultado.pnl_reais < 100.0  # nunca deve ser 5000
 
 
 class TestTradePerformanceTrackerIntegration:

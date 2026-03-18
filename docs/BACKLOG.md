@@ -2452,7 +2452,7 @@ estavam mortos. Nao havia watchdog monitorando se as threads estavam vivas.
 
 #### 4. BUG-DIARIOS-02 Campo eficiencia_pct sempre zero no RL Performance Diary
 
-**Status:** ABERTO (identificado em 17/03/2026)
+**Status:** DONE (18/03/2026 - commit 3974b2c)
 
 **Origem:** Reuniao Product Board 17/03/2026 — analise de 38 registros
 `diary_feedback` de hoje.
@@ -2486,7 +2486,7 @@ andou muito e o agente capturou pouco".
 
 #### 5. BUG-DIARIOS-03 Encoding corrompido nos primeiros feedbacks do dia
 
-**Status:** ABERTO (identificado em 17/03/2026)
+**Status:** DONE (18/03/2026 - commit 3974b2c)
 
 **Origem:** Reuniao Product Board 17/03/2026 — leitura direta da tabela
 `diary_feedback` no SQLite.
@@ -2522,7 +2522,7 @@ ou vazio, prejudicando a retroalimentacao logo na abertura do mercado.
 
 #### 6. BUG-DIARIOS-04 NameError motor_decisao no Agente RL Direto pos-integracao
 
-**Status:** ABERTO (identificado em 17/03/2026)
+**Status:** DONE (18/03/2026 - commit 9bced79)
 
 **Origem:** Reuniao Product Board 17/03/2026 — log
 `agente_direto_20260317_151302.log`, linha 87.
@@ -3318,7 +3318,7 @@ consecutivos entra automaticamente em revisao de estrategia (novo item P1).
 
 #### 1. Corrigir NameError motor_decisao em enviar_ordem
 
-**Status:** PENDENTE
+**Status:** DONE (18/03/2026 - commit 9bced79)
 
 **Origem:** Fechamento diario 17/03/2026 — sessao agente_direto_151302
 registrou ordens enviadas ao MT5 (tickets 2276892732, 2276892735,
@@ -3626,7 +3626,7 @@ File "scripts/agente_rl_direto_independente.py", line 331, in enviar_ordem
 
 #### BUG-3 / CRITICO — Loop 10006 sem backoff e sem deteccao de rollover
 
-**Status:** PENDENTE
+**Status:** DONE (18/03/2026 - commit a ser feito)
 
 **Arquivo:** `src/application/orders_executor.py`
 
@@ -3668,7 +3668,7 @@ File "scripts/agente_rl_direto_independente.py", line 331, in enviar_ordem
 
 #### BUG-2 / MEDIA — PnL -18M no historico_fechamentos
 
-**Status:** PENDENTE
+**Status:** DONE (18/03/2026 - commit a ser feito)
 
 **Arquivo:** `scripts/agente_rl_direto_independente.py`
 

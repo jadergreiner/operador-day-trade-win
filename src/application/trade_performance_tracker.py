@@ -175,10 +175,10 @@ class TradePerformanceTracker:
             diferenca_preco = preco_entrada - preco_saida
             percentual = (diferenca_preco / preco_entrada) * 100.0
 
-        # Calcular PnL em reais (assumindo tamanho padrao de contrato)
-        # Tamanho padrao: 50 contratos (tipico para WINFUT)
-        tamanho_contrato: int = 50
-        pnl_total: float = diferenca_preco * tamanho_contrato
+        # Calcular PnL em reais usando multiplicador WINFUT
+        # Mini Indice WINFUT: cada ponto vale R$0,20 por contrato
+        VALOR_PONTO_WINFUT: float = 0.20
+        pnl_total: float = diferenca_preco * VALOR_PONTO_WINFUT
 
         # Calcular duracao em minutos
         duracao: timedelta = horario_saida - horario_entrada
