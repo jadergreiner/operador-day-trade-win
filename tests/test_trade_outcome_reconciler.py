@@ -9,12 +9,18 @@ Referência: docs/BACKLOG.md (ROADMAP-MICRO-03)
 import pytest
 from typing import Dict
 from datetime import datetime
+from src.application.trade_outcome_reconciler import (
+    TradeOutcomeReconciler,
+    ReconciliationStatus,
+    TradeOutcome,
+    OutcomeType,
+)
 
 
 class TestTradeOutcomeReconciler:
     """
     Testes para validação de reconciliação de trade outcomes.
-    
+
     O reconciliador valida que trades executados no MT5 foram
     registrados corretamente no banco local com mesmos valores
     e timestamps consistentes.
@@ -23,42 +29,56 @@ class TestTradeOutcomeReconciler:
     def test_reconcilia_trade_basico(self, sample_trade_outcome: Dict) -> None:
         """
         AC 5.8.1: Reconcilia trade executado simples.
-        
+
         Dado: Trade com entry e exit completo
         Quando: Reconciliar contra MT5
         Então: Status SYNCED e valores coincidem
         """
         # ARRANGE
-        expected_pnl = 225.00
-        
+        reconciliador = TradeOutcomeReconciler()
+
+        # Converter dict para TradeOutcome
+        mt5_outcome = TradeOutcome(
+            trade_id=sample_trade_outcome["trade_id"],
+            symbol=sample_trade_outcome["symbol"],
+            side=sample_trade_outcome["side"],
+            quantity=sample_trade_outcome["quantity"],
+            entry_price=sample_trade_outcome["entry_price"],
+            exit_price=sample_trade_outcome["exit_price"],
+            timestamp_entry=datetime.fromisoformat(sample_trade_outcome["timestamp_entry"]),
+            timestamp_exit=datetime.fromisoformat(sample_trade_outcome["timestamp_exit"]),
+            status=OutcomeType.CLOSED,
+            pnl=sample_trade_outcome.get("pnl", 225.00)
+        )
+        local_outcome = mt5_outcome
+
         # ACT
-        # TODO: Chamar reconciliador quando implementado
-        # result = reconciliador.reconciliar(sample_trade_outcome)
-        
+        result = reconciliador.reconciliar(mt5_outcome, local_outcome)
+
         # ASSERT
-        # assert result.status == "SYNCED"
-        # assert result.pnl == expected_pnl
-        # assert result.volume == 1
-        
-        pytest.skip("Awaiting implementation")
+        assert result.is_synced()
+        assert result.reconciliation_status == ReconciliationStatus.SYNCED
+        assert result.mt5_outcome is not None
+        assert result.local_outcome is not None
+        assert result.timestamp is not None
 
     def test_detecta_divergencia_volume(self, divergent_outcomes: tuple) -> None:
         """
         AC 5.8.2: Detecta discrepância de volume.
-        
+
         Dado: MT5 volume=1, Local volume=2
         Quando: Reconciliar
         Então: Divergência detectada, error log gerado
         """
         mt5_outcome, local_outcome = divergent_outcomes
-        
+
         # TODO: Implementar
         pytest.skip("Awaiting implementation")
 
     def test_valida_timestamp_consistencia(self, timestamp_misalign: Dict) -> None:
         """
         AC 5.8.3: Valida consistência de timestamps com tolerância.
-        
+
         Dado: Timestamps com diferença <2s
         Quando: Validar
         Então: Dentro tolerância, sincronização OK
@@ -69,7 +89,7 @@ class TestTradeOutcomeReconciler:
     def test_log_auditoria_criado(self, sample_trade_outcome: Dict, audit_entry: Dict) -> None:
         """
         AC 5.8.4: Loga divergências para auditoria.
-        
+
         Dado: Trade reconciliado
         Quando: Houve discrepância
         Então: Audit trail criado com detalhes
@@ -80,7 +100,7 @@ class TestTradeOutcomeReconciler:
     def test_retorna_outcome_estruturado(self, sample_trade_outcome: Dict) -> None:
         """
         AC 5.8.5: Retorna outcome record estruturado.
-        
+
         Dado: Trade reconciliado
         Quando: Reconciliação sucesso
         Então: ReconciliationOutcome com todos campos populados
@@ -91,7 +111,7 @@ class TestTradeOutcomeReconciler:
     def test_reconcilia_batch_multiplos_trades(self, sample_multiple_outcomes: list) -> None:
         """
         AC 5.8.6: Reconcilia batch de múltiplos trades.
-        
+
         Dado: 5 trades diferentes
         Quando: Reconciliar em batch
         Então: Todos processados, status correto por trade
@@ -102,7 +122,7 @@ class TestTradeOutcomeReconciler:
     def test_trata_outcome_desconhecido(self, sample_unknown_outcome: Dict) -> None:
         """
         AC 5.8.7: Trata outcome com status UNKNOWN.
-        
+
         Dado: Trade com status UNKNOWN (MT5 desconectou)
         Quando: Reconciliar
         Então: Escalaciona para humano, registra evento
@@ -113,7 +133,7 @@ class TestTradeOutcomeReconciler:
     def test_valida_sync_mt5_local(self, mt5_position_state: Dict, local_position_state: Dict) -> None:
         """
         AC 5.8.8: Valida sincronização MT5 vs Local.
-        
+
         Dado: Posição aberta no MT5 e Local
         Quando: Sincronizar states
         Então: Valores coincidem, synced=True
@@ -124,7 +144,7 @@ class TestTradeOutcomeReconciler:
     def test_detecta_ordem_duplicada(self, sample_trade_outcome: Dict) -> None:
         """
         AC 5.8.9: Detecta tentativa de reconciliar ordem duplicada.
-        
+
         Dado: Trade já reconciliado anteriormente
         Quando: Tentar reconciliar novamente
         Então: status=DUPLICATE, error log, não reprocessa
@@ -135,7 +155,7 @@ class TestTradeOutcomeReconciler:
     def test_reconciliacao_atomica(self, sample_multiple_outcomes: list) -> None:
         """
         AC 5.8.10: Reconciliação é atômica (all-or-nothing).
-        
+
         Dado: Batch de trades, um falha no meio
         Quando: Reconciliar batch
         Então: Rollback completo, nenhum trade atualizado
@@ -146,7 +166,7 @@ class TestTradeOutcomeReconciler:
     def test_performance_reconcilia_1000_trades(self, sample_multiple_outcomes: list) -> None:
         """
         AC 5.8.11: Performance: reconcilia 1.000 trades em <5s.
-        
+
         Dado: Batch de 1.000 trades
         Quando: Reconciliar
         Então: Concluído em <5s, nenhum timeout
@@ -157,7 +177,7 @@ class TestTradeOutcomeReconciler:
     def test_logging_verbose_debug(self, sample_trade_outcome: Dict, caplog) -> None:
         """
         AC 5.8.12: Logging verbose para debug.
-        
+
         Dado: Trade com debug logging ativado
         Quando: Reconciliar
         Então: Logs detalhados para cada step
@@ -168,7 +188,7 @@ class TestTradeOutcomeReconciler:
     def test_serializa_outcome_json(self, sample_trade_outcome: Dict) -> None:
         """
         AC 5.8.13: Serializa outcome para JSON.
-        
+
         Dado: Trade outcome reconciliado
         Quando: to_json()
         Então: JSON válido, sem None values
@@ -179,7 +199,7 @@ class TestTradeOutcomeReconciler:
     def test_trata_exception_mt5_desconectado(self) -> None:
         """
         AC 5.8.14: Trata exception quando MT5 desconectado.
-        
+
         Dado: MT5 offline
         Quando: Tentar reconciliar
         Então: Exception capturada, mensagem clara, retry possível
@@ -190,7 +210,7 @@ class TestTradeOutcomeReconciler:
     def test_idempotencia_reconciliacao(self, sample_trade_outcome: Dict) -> None:
         """
         AC 5.8.15: Reconciliação é idempotente.
-        
+
         Dado: Trade já reconciliado
         Quando: Reconciliar 2x
         Então: Mesmo resultado, sem side effects

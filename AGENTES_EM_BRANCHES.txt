@@ -125,7 +125,7 @@ $ git checkout feature/roadmap-diarios-04-ml-ops
   ├─ Agent 2: Signals & Observability (1.050 LOC, 49 testes - parte 1)
   └─ Agent 3: Storytelling PARTE 1 (800 LOC, 38 testes)
      Agent 4: ML Ops PARTE 1 (1.220 LOC, 56 testes)
-     
+
      TOTAL PARALELO: 3.700 LOC, 180 testes
 
 🟠 SERÁ DESBLOQUEADO (Depende de acima):

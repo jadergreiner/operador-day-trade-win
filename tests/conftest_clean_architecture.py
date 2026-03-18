@@ -26,7 +26,7 @@ def trade_id() -> str:
 def sample_trade_outcome() -> Dict:
     """
     Sample trade outcome para validação de reconciliação.
-    
+
     Representa um trade executado com sucesso que precisa ser reconciliado.
     """
     return {
@@ -48,7 +48,7 @@ def sample_trade_outcome() -> Dict:
 def sample_unknown_outcome() -> Dict:
     """
     Sample unknown outcome (resultado indeterminado).
-    
+
     Representa trade com status desconhecido (network error, timeout, etc).
     """
     return {
@@ -104,7 +104,7 @@ def sample_multiple_outcomes() -> List[Dict]:
 def mt5_position_state() -> Dict:
     """
     Estado de posição no MT5 (simulado).
-    
+
     Usado para validar sincronização contra banco local.
     """
     return {
@@ -172,7 +172,7 @@ def audit_entry() -> Dict:
 def divergent_outcomes() -> tuple[Dict, Dict]:
     """
     Par de outcomes divergentes (MT5 vs Local diferente).
-    
+
     Para teste de detecção de discrepâncias.
     """
     base_mt5 = {
@@ -183,12 +183,12 @@ def divergent_outcomes() -> tuple[Dict, Dict]:
         "exit_price": 102.75,
         "profit": 225.00,
     }
-    
+
     # Local tem volume diferente (error)
     base_local = base_mt5.copy()
     base_local["volume"] = 2  # DIVERGÊNCIA!
     base_local["profit"] = 450.00
-    
+
     return base_mt5, base_local
 
 
@@ -196,7 +196,7 @@ def divergent_outcomes() -> tuple[Dict, Dict]:
 def timestamp_misalign() -> Dict:
     """
     Trade com timestamp ligeiramente desalinhado.
-    
+
     Valida tolerância de sincronização.
     """
     from datetime import timedelta

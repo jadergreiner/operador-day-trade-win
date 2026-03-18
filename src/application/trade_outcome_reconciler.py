@@ -30,7 +30,7 @@ import logging
 
 class ReconciliationStatus(Enum):
     """Status de reconciliação de trade outcome."""
-    
+
     SYNCED = "SYNCED"              # Sincronizado com sucesso
     DIVERGENT = "DIVERGENT"        # Validades divergem
     UNKNOWN = "UNKNOWN"            # Status desconhecido/indeterminado
@@ -40,7 +40,7 @@ class ReconciliationStatus(Enum):
 
 class OutcomeType(Enum):
     """Tipo de outcome de trade."""
-    
+
     CLOSED = "CLOSED"              # Trade fechado com sucesso
     PARTIAL = "PARTIAL"            # Fechamento parcial
     REJECTED = "REJECTED"          # Rejeitado pela broker
@@ -51,10 +51,10 @@ class OutcomeType(Enum):
 class TradeOutcome:
     """
     Value Object: Resultado de um trade após execução.
-    
+
     Imutável, garantia de integridade de dados.
     """
-    
+
     trade_id: str
     symbol: str
     side: str  # BUY ou SELL
@@ -67,7 +67,7 @@ class TradeOutcome:
     pnl: Optional[float] = None
     commission: float = 0.0
     metadata: Dict[str, Any] = field(default_factory=dict)
-    
+
     def __post_init__(self) -> None:
         """Validação de invariates."""
         if self.quantity <= 0:
@@ -82,10 +82,10 @@ class TradeOutcome:
 class ReconciliationResult:
     """
     Resultado da reconciliação entre MT5 e local database.
-    
+
     Contém status, divergências encontradas e audit trail.
     """
-    
+
     trade_id: str
     reconciliation_status: ReconciliationStatus
     timestamp: datetime
@@ -93,11 +93,11 @@ class ReconciliationResult:
     local_outcome: Optional[TradeOutcome]
     divergences: List[str] = field(default_factory=list)
     audit_log: Dict[str, Any] = field(default_factory=dict)
-    
+
     def is_synced(self) -> bool:
         """Verifica se reconciliação foi sucesso."""
         return self.reconciliation_status == ReconciliationStatus.SYNCED
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Serializa para dicionário."""
         return {
@@ -116,18 +116,18 @@ class ReconciliationResult:
 class TradeOutcomeReconciler:
     """
     Reconcilia trades executados entre MT5 e base de dados local.
-    
+
     Responsabilidades:
     - Validar valores (volume, price, pnl)
     - Validar timestamps (consistência, tolerância)
     - Detectar divergências (price, volume, status)
     - Gerar audit trail
     - Persistir reconciliação
-    
+
     AC Coverage:
     - AC5.8.1 a AC5.8.15 (ver conftest.py)
     """
-    
+
     def __init__(
         self,
         timestamp_tolerance_ms: int = 2000,
@@ -135,7 +135,7 @@ class TradeOutcomeReconciler:
     ) -> None:
         """
         Inicializa reconciliador.
-        
+
         Args:
             timestamp_tolerance_ms: Tolerância de timestamp em ms (default 2s)
             logger: Logger customizado (default cria novo)
@@ -143,7 +143,7 @@ class TradeOutcomeReconciler:
         self.timestamp_tolerance_ms = timestamp_tolerance_ms
         self.logger = logger or logging.getLogger(__name__)
         self._reconciled_trades: Dict[str, ReconciliationResult] = {}
-    
+
     def reconciliar(
         self,
         mt5_outcome: TradeOutcome,
@@ -151,27 +151,67 @@ class TradeOutcomeReconciler:
     ) -> ReconciliationResult:
         """
         Reconcilia outcome MT5 contra local database.
-        
+
         Args:
             mt5_outcome: Outcome do MT5
             local_outcome: Outcome local (None se não encontrado)
-        
+
         Returns:
             ReconciliationResult com status e divergências
-        
+
         Raises:
             ValueError: Se outcomes inválidos
         """
-        # TODO: Implementar lógica de reconciliação
-        
-        # 1. Validar inputs
-        # 2. Detectar divergências
-        # 3. Gerar audit trail
-        # 4. Persistir resultado
-        # 5. Retornar ReconciliationResult
-        
-        raise NotImplementedError("Await implementation by Clean Architecture Agent")
-    
+        # VALIDAR INPUTS
+        if mt5_outcome is None:
+            raise ValueError("MT5 outcome nao pode ser None")
+
+        # Se não há local outcome, significa trade ainda não foi registrado localmente
+        if local_outcome is None:
+            result = ReconciliationResult(
+                trade_id=mt5_outcome.trade_id,
+                reconciliation_status=ReconciliationStatus.UNKNOWN,
+                timestamp=datetime.now(),
+                mt5_outcome=mt5_outcome,
+                local_outcome=None,
+                divergences=["Trade nao encontrado no banco local"],
+                audit_log=self._gerar_audit_trail(
+                    mt5_outcome.trade_id,
+                    ReconciliationStatus.UNKNOWN,
+                    ["Trade nao encontrado no banco local"]
+                )
+            )
+            self._reconciled_trades[mt5_outcome.trade_id] = result
+            return result
+
+        # DETECTAR DIVERGÊNCIAS
+        divergences = self._detectar_divergencias(mt5_outcome, local_outcome)
+
+        # DETERMINAR STATUS
+        if not divergences:
+            status = ReconciliationStatus.SYNCED
+        else:
+            status = ReconciliationStatus.DIVERGENT
+
+        # GERAR AUDIT TRAIL
+        audit = self._gerar_audit_trail(mt5_outcome.trade_id, status, divergences)
+
+        # CRIAR RESULTADO
+        result = ReconciliationResult(
+            trade_id=mt5_outcome.trade_id,
+            reconciliation_status=status,
+            timestamp=datetime.now(),
+            mt5_outcome=mt5_outcome,
+            local_outcome=local_outcome,
+            divergences=divergences,
+            audit_log=audit
+        )
+
+        # PERSISTIR
+        self._persistir_resultado(result)
+
+        return result
+
     def reconciliar_batch(
         self,
         mt5_outcomes: List[TradeOutcome],
@@ -179,43 +219,81 @@ class TradeOutcomeReconciler:
     ) -> List[ReconciliationResult]:
         """
         Reconcilia batch de múltiplos trades atomicamente.
-        
+
         Args:
             mt5_outcomes: Lista de outcomes MT5
             local_outcomes: Lista de outcomes locais
-        
+
         Returns:
             Lista de ReconciliationResults
-        
+
         Raises:
             RuntimeError: Se reconciliação falhar (rollback all)
         """
         # TODO: Implementar batch com atomicidade
         raise NotImplementedError("Await implementation")
-    
+
     def _validar_saida_basica(self, outcome: TradeOutcome) -> bool:
         """Valida invariantes básicas de outcome."""
-        # TODO: Implementar validação
-        raise NotImplementedError()
-    
+        if outcome is None:
+            return False
+        if outcome.quantity <= 0:
+            return False
+        if outcome.entry_price <= 0:
+            return False
+        # Exit price pode ser None (trade ainda aberto)
+        if outcome.exit_price is not None and outcome.exit_price <= 0:
+            return False
+        return True
+
     def _detectar_divergencias(
         self,
         mt5: TradeOutcome,
         local: TradeOutcome
     ) -> List[str]:
         """Compara e retorna lista de divergências encontradas."""
-        # TODO: Implementar detecção
-        raise NotImplementedError()
-    
+        divergences: List[str] = []
+
+        # Comparar volume
+        if mt5.quantity != local.quantity:
+            divergences.append(
+                f"Volume diverge: MT5={mt5.quantity} vs Local={local.quantity}"
+            )
+
+        # Comparar preços
+        if abs(mt5.entry_price - local.entry_price) > 0.01:
+            divergences.append(
+                f"Entry price diverge: MT5={mt5.entry_price} vs Local={local.entry_price}"
+            )
+
+        if mt5.exit_price and local.exit_price:
+            if abs(mt5.exit_price - local.exit_price) > 0.01:
+                divergences.append(
+                    f"Exit price diverge: MT5={mt5.exit_price} vs Local={local.exit_price}"
+                )
+
+        # Comparar timestamps
+        if not self._validar_timestamps(mt5.timestamp_entry, local.timestamp_entry):
+            divergences.append("Entry timestamps não estão dentro da tolerância")
+
+        if mt5.timestamp_exit and local.timestamp_exit:
+            if not self._validar_timestamps(mt5.timestamp_exit, local.timestamp_exit):
+                divergences.append("Exit timestamps não estão dentro da tolerância")
+
+        return divergences
+
     def _validar_timestamps(
         self,
         mt5_ts: datetime,
         local_ts: datetime
     ) -> bool:
         """Valida se timestamps estão dentro tolerância."""
-        # TODO: Implementar validação
-        raise NotImplementedError()
-    
+        if mt5_ts is None or local_ts is None:
+            return False
+
+        diff_ms = abs((mt5_ts - local_ts).total_seconds() * 1000)
+        return diff_ms <= self.timestamp_tolerance_ms
+
     def _gerar_audit_trail(
         self,
         trade_id: str,
@@ -223,13 +301,20 @@ class TradeOutcomeReconciler:
         divergences: List[str]
     ) -> Dict[str, Any]:
         """Gera log de auditoria estruturado."""
-        # TODO: Implementar auditoria
-        raise NotImplementedError()
-    
+        return {
+            "trade_id": trade_id,
+            "reconciliation_status": status.value,
+            "timestamp": datetime.now().isoformat(),
+            "divergences": divergences,
+            "divergence_count": len(divergences),
+        }
+
     def _persistir_resultado(self, result: ReconciliationResult) -> None:
         """Persiste resultado em SQLite."""
-        # TODO: Implementar persistência
-        raise NotImplementedError()
+        # Por enquanto, apenas armazena em memória (dict)
+        # Em produção, isso persistiria em SQLite
+        self._reconciled_trades[result.trade_id] = result
+        self.logger.debug(f"Reconciliacao persistida: {result.trade_id}")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -245,14 +330,14 @@ def calcular_pnl(
 ) -> float:
     """
     Calcula P&L de trade.
-    
+
     Args:
         side: "BUY" ou "SELL"
         entry: Preço de entrada
         exit: Preço de saída
         quantity: Quantidade de contratos
         multiplier: Multiplicador (default 100 para WIN$N)
-    
+
     Returns:
         float: P&L em R$
     """
