@@ -1714,7 +1714,7 @@ MIN_CONFIDENCE_TRADE = 40       # threshold global (CALIBRACAO-MICRO-01)
 
 #### 13. CALIBRACAO-MICRO-02 Substituir modo EXP_REDUZIDA permanente por condicao dinamica
 
-**Status:** PENDENTE
+**Status:** CONCLUIDO (18/03/2026)
 
 **Origem:** Reuniao Product Board 17/03/2026.
 

@@ -507,6 +507,8 @@ class CycleResult:
     # S2-3: Convicção Máxima (ATR Map + SMC Confluence)
     smc_conviction_score: int = 0  # [0-10]
     atr_map: dict[str, Decimal] = field(default_factory=dict)  # Teia de Volatilidade
+    # CALIBRACAO-MICRO-02: rastreabilidade do modo EXP_REDUZIDA
+    exp_reduzida_ativo: bool = False
 
 
 # ────────────────────────────────────────────────────────────────
@@ -1878,7 +1880,25 @@ def _generate_opportunities(
         structure_confirmed_bull or structure_confirmed_bear
         or partial_bull or partial_bear
     )
-    reduced_exposure_mode = macro_directional_strong and not structure_confirmed
+
+    # CALIBRACAO-MICRO-02 (18/03/2026): Nova condicao dinamica para EXP_REDUZIDA.
+    # Problema anterior: threshold de |macro| >= 7 ativava EXP_REDUZIDA em quase
+    # 100% dos ciclos (141/141 oportunidades em 17/03/2026 com macro entre +14 e +62).
+    # Nova logica: ativar apenas quando mercado GENUINAMENTE ambiguo:
+    #   - macro forte (>=40) E smc sem direcao confirmada (NEUTRO)
+    # Desativar explicitamente quando tendencia clara:
+    #   - adx >= 35 E smc com direcao confirmada (nao NEUTRO)
+    smc_dir = (result.smc.direction or "NEUTRO").upper()
+    exp_reduzida_ativacao = (
+        abs(result.macro_score) >= 40
+        and smc_dir == "NEUTRO"
+    )
+    exp_reduzida_desativacao = (
+        adx_val >= 35
+        and smc_dir != "NEUTRO"
+    )
+    reduced_exposure_mode = exp_reduzida_ativacao and not exp_reduzida_desativacao
+    result.exp_reduzida_ativo = reduced_exposure_mode
 
     # Alerta de repique de distribuição (sobe contra macro de baixa forte)
     distribution_rally_alert = (
@@ -3787,6 +3807,7 @@ def _create_micro_trend_tables(db_path: str) -> None:
             adx REAL,
             rsi REAL,
             num_opportunities INTEGER DEFAULT 0,
+            exp_reduzida_ativo INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -3951,10 +3972,11 @@ def _persist_cycle(db_path: str, result: CycleResult) -> int:
         (timestamp, macro_score, macro_signal, macro_confidence, micro_score,
          micro_trend, price_current, price_open, vwap, pivot_pp,
          smc_direction, smc_equilibrium, adx, rsi, num_opportunities,
+         exp_reduzida_ativo,
          macro_score_raw, directive_suspended,
          mima_8, mima_17, mima_34, mima_72, mima_144, mima_305, mima_610,
          mima_alignment, mima_fan_score, divergence_notes, aggression_ratio)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         result.timestamp.isoformat(),
         result.macro_score, result.macro_signal, float(result.macro_confidence),
@@ -3964,6 +3986,7 @@ def _persist_cycle(db_path: str, result: CycleResult) -> int:
         result.smc.direction, result.smc.equilibrium,
         float(result.momentum.adx), float(result.momentum.rsi),
         len(result.opportunities),
+        1 if result.exp_reduzida_ativo else 0,
         raw_score, directive_suspended,
         float(result.mima.m8.value), float(result.mima.m17.value), float(result.mima.m34.value),
         float(result.mima.m72.value), float(result.mima.m144.value), float(result.mima.m305.value),
