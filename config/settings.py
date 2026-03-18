@@ -55,7 +55,7 @@ class MT5Config(BaseSettings):
 
     @field_validator("terminal_fallback_list", mode="before")
     @classmethod
-    def validate_terminal_fallback_list(cls, v) -> list[str]:
+    def validate_terminal_fallback_list(cls, v: str | list[str]) -> list[str]:
         """Parse terminal fallback list (pode ser JSON string ou já lista)."""
         if isinstance(v, str):
             try:
