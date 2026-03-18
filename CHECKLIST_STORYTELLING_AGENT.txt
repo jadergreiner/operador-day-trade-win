@@ -103,7 +103,7 @@ Total Fase 1: 1.150 LOC, 60 testes
 
 [🟢 AGORA]  Parte 1: Narrative Persistence + Correlator (800 LOC, 38 testes)
             └─ Estimado: ~6-8 horas qualidade-first
-            
+
 [⏳ DEPOIS] Parte 2: Narrative Reflection Evolution (350 LOC, 22 testes)
             └─ Bloqueado até: Clean Arch Agent finalizar
             └─ Estimado: ~4 horas após dependency
