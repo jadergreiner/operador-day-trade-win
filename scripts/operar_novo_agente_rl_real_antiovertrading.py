@@ -1262,7 +1262,25 @@ def loop_operacao():
         ciclo += 1
         logger.info(f"\n[CICLO {ciclo}] Iniciando iteração do loop...")
 
+        # Grupo 2: Pipeline Feedback/Aprendizado (a cada 10 ciclos)
+        if ciclo % 10 == 0:
+            try:
+                _executar_pipeline_feedback_rl()
+            except Exception as _e:
+                logger.warning(f'[PIPELINE-FEEDBACK] Erro: {_e}')
+
+        # BUG-4 (18/03/2026): guard de horario ANTES das protecoes de lucro
+        # para evitar ~380 ERRORs/dia por desconexao MT5 esperada fora do pregao.
+        logger.debug(f"[CICLO {ciclo}] Verificando horário de trading...")
+        if not verificar_horario_trading():
+            logger.info("[HORA] Fora do horario. Aguardando...")
+            logger.debug(f"[CICLO {ciclo}] Dormindo 60s (fora do horário)...")
+            time.sleep(60)
+            logger.debug(f"[CICLO {ciclo}] Retornando ao início do loop após sleep.")
+            continue
+
         # ✅ PROTEÇÃO DE LUCRO: Monitora trades abertos continuamente (sistema existente)
+        # Executado DENTRO do horario operacional para evitar erros de conexao MT5
         logger.debug(f"[CICLO {ciclo}] Executando proteger_lucro_trade()...")
         proteger_lucro_trade()
         logger.debug(f"[CICLO {ciclo}] proteger_lucro_trade() concluído.")
@@ -1271,21 +1289,6 @@ def loop_operacao():
         logger.debug(f"[CICLO {ciclo}] Executando processar_protecao_lucros()...")
         processar_protecao_lucros()
         logger.debug(f"[CICLO {ciclo}] processar_protecao_lucros() concluído.")
-
-        # Grupo 2: Pipeline Feedback/Aprendizado (a cada 10 ciclos)
-        if ciclo % 10 == 0:
-            try:
-                _executar_pipeline_feedback_rl()
-            except Exception as _e:
-                logger.warning(f'[PIPELINE-FEEDBACK] Erro: {_e}')
-
-        logger.debug(f"[CICLO {ciclo}] Verificando horário de trading...")
-        if not verificar_horario_trading():
-            logger.info("[HORA] Fora do horario. Aguardando...")
-            logger.debug(f"[CICLO {ciclo}] Dormindo 60s (fora do horário)...")
-            time.sleep(60)
-            logger.debug(f"[CICLO {ciclo}] Retornando ao início do loop após sleep.")
-            continue
 
         logger.debug(f"[CICLO {ciclo}] Verificando lucro vs TARGET...")
         if lucro_sessao >= TARGET_LUCRO_DIARIO:

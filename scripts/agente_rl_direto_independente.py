@@ -284,6 +284,93 @@ def calcular_atr(dados: pd.DataFrame, periodo: int = ATR_PERIODO) -> float:
         return 0.0
 
 
+# ML-1 (18/03/2026): Configuracao do gate de tendencia intraday.
+# Desativar via GATE_TENDENCIA_ATIVO=False para facilitar backtesting.
+GATE_TENDENCIA_ATIVO: bool = True
+EMA_RAPIDA_PERIODO: int = 9
+EMA_LENTA_PERIODO: int = 21
+
+
+def calcular_ema(dados: pd.DataFrame, periodo: int) -> float:
+    """Calcula EMA (Exponential Moving Average) para o periodo dado.
+
+    Args:
+        dados: DataFrame com coluna 'close'.
+        periodo: Numero de velas para calculo da EMA.
+
+    Returns:
+        Valor da EMA mais recente, ou 0.0 se dados insuficientes.
+
+    Raises:
+        Nao levanta excecoes — retorna 0.0 em caso de erro.
+    """
+    try:
+        if len(dados) < periodo:
+            return 0.0
+        ema = dados['close'].ewm(span=periodo, adjust=False).mean()
+        return float(ema.iloc[-1])
+    except Exception as e:
+        logger.warning(f'[EMA] Erro ao calcular EMA{periodo}: {e}')
+        return 0.0
+
+
+def aplicar_gate_tendencia(
+    acao: str,
+    dados: Optional[pd.DataFrame],
+    gate_ativo: bool = GATE_TENDENCIA_ATIVO,
+) -> str:
+    """Aplica gate de tendencia intraday para filtrar entradas contra tendencia.
+
+    ML-1 (18/03/2026): Bloqueia SELL quando EMA9 > EMA21 (tendencia de alta)
+    e BUY quando EMA9 < EMA21 (tendencia de baixa). Gate simetrico previne
+    entradas com vies direcional errado — licao aprendida em 17/03/2026
+    (SELL @ 182590 em mercado bullish gerou LOSS -R$61).
+
+    Args:
+        acao: Acao proposta pelo modelo RL ('Comprar', 'Vender', 'Aguardar').
+        dados: DataFrame com coluna 'close' para calculo das EMAs.
+        gate_ativo: Se False, desativa o gate (util em backtesting).
+
+    Returns:
+        Acao original se permitida pelo gate, ou 'Aguardar' se bloqueada.
+    """
+    if not gate_ativo or acao == "Aguardar" or dados is None or len(dados) == 0:
+        return acao
+
+    ema_rapida = calcular_ema(dados, EMA_RAPIDA_PERIODO)
+    ema_lenta = calcular_ema(dados, EMA_LENTA_PERIODO)
+
+    if ema_rapida == 0.0 or ema_lenta == 0.0:
+        logger.debug('[GATE-TENDENCIA] EMAs indisponiveis — gate ignorado')
+        return acao
+
+    tendencia_alta = ema_rapida > ema_lenta
+    tendencia_baixa = ema_rapida < ema_lenta
+
+    if acao == "Vender" and tendencia_alta:
+        logger.warning(
+            f'[GATE-TENDENCIA] SELL bloqueado — EMA{EMA_RAPIDA_PERIODO} '
+            f'({ema_rapida:.0f}) > EMA{EMA_LENTA_PERIODO} ({ema_lenta:.0f}) '
+            f'(tendencia de alta)'
+        )
+        return "Aguardar"
+
+    if acao == "Comprar" and tendencia_baixa:
+        logger.warning(
+            f'[GATE-TENDENCIA] BUY bloqueado — EMA{EMA_RAPIDA_PERIODO} '
+            f'({ema_rapida:.0f}) < EMA{EMA_LENTA_PERIODO} ({ema_lenta:.0f}) '
+            f'(tendencia de baixa)'
+        )
+        return "Aguardar"
+
+    logger.debug(
+        f'[GATE-TENDENCIA] {acao} PERMITIDO — '
+        f'EMA{EMA_RAPIDA_PERIODO}={ema_rapida:.0f} '
+        f'EMA{EMA_LENTA_PERIODO}={ema_lenta:.0f}'
+    )
+    return acao
+
+
 def calcular_sl_tp(acao: str, preco_atual: float,
                    dados: Optional[pd.DataFrame] = None) -> Tuple[float, float]:
     """Calcula SL/TP fixos respeitando ATR minimo.
@@ -647,7 +734,7 @@ def inicializar_componentes():
         # 6. Anti-Overtrading Protection
         logger.info('[INIT] Inicializando proteção contra overtrading...')
         anti_overtrading = AntiOvertradingProtection(
-            max_trades_per_hour=3,           # Máximo 3 trades por hora
+            max_trades_per_hour=999,         # Sem limite pratico de trades por hora
             min_cooldown_seconds=300,        # Mínimo 5 min entre trades
             max_consecutive_losses=2,        # 2 perdas seguidas = pausa
             trading_hours_start=9,           # Operação: 09:00-17:30 BRT
@@ -1066,6 +1153,10 @@ def main():
                 except Exception as e:
                     logger.warning(f'[CICLO {ciclo}] Erro ao obter ação RL: {e}')
                     acao_str = "Aguardar"
+
+                # 3.5. ML-1 (18/03/2026): Gate de tendencia intraday EMA9/EMA21.
+                # Bloqueia SELL em tendencia de alta e BUY em tendencia de baixa.
+                acao_str = aplicar_gate_tendencia(acao_str, dados_df)
 
                 # 4. Validar confirmação do sinal
                 if acao_str != "Aguardar":

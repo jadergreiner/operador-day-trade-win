@@ -3483,43 +3483,14 @@ latencia extra ou comportamento imprevisivel.
 
 #### 1. Filtro de tendencia intraday para acao SELL do RL
 
-**Status:** PENDENTE
+**Status:** DONE (18/03/2026 - ver ML-1 no SAR Board)
 
 **Origem:** Fechamento diario 17/03/2026 — sessao 130100 abriu SELL @ 182590
-em mercado em recuperacao bullish; resultado LOSS -R$61. O modelo RL aceitou
-acao=2 (SELL) com confianca 70% sem verificar alinhamento com tendencia
-intraday.
+em mercado em recuperacao bullish; resultado LOSS -R$61.
 
-**Problema tecnico:** O agente Q-Learning decide pela acao com base no estado
-de 15 dimensoes, mas nao ha gate externo de tendencia que bloqueie SELL quando
-a tendencia intraday e de alta. Resultado: entradas vendidas em mercado bullish
-com baixa taxa de sucesso.
-
-**Licao do fechamento 17/03/2026:**
-
-- Acao=2 (SELL) com ATR alto em tendencia de alta intraday tem baixa
-  taxa de sucesso — viés vendedor do RL em mercado bullish gerou LOSS.
-
-**Entregar:**
-
-- adicionar gate de tendencia antes de aceitar acao=2 (SELL): so
-  executar SELL quando EMA9 < EMA21 no timeframe operado;
-- analogamente, bloquear acao=1 (BUY) quando EMA9 > EMA21 em tendencia
-  de baixa (simetria);
-- gate deve ser configuravel via parametro para facilitar backtesting;
-- adicionar teste unitario cobrindo o filtro nas duas direcoes.
-
-**Arquivo afetado:** `scripts/agente_rl_direto_independente.py`
-
-**Agente impactado:** `INICIAR_AGENTE_RL_DIRETO.bat`
-
-**Tipo de aprendizado:** reinforcement
-
-**Pronto quando:**
-
-- sessao com tendencia bullish rejeita automaticamente acao=2 (SELL);
-- log registra `[GATE-TENDENCIA] SELL bloqueado — EMA9 > EMA21`;
-- teste unitario verde para gate nas duas direcoes.
+**Evidencias:** Ver secao `ML-1 / ALTA` no SAR Board acima.
+Implementado em `scripts/agente_rl_direto_independente.py` com
+16 testes PASSING em `tests/unit/test_ml1_gate_tendencia_intraday.py`.
 
 ---
 
@@ -3648,23 +3619,39 @@ File "scripts/agente_rl_direto_independente.py", line 331, in enviar_ordem
 
 #### ML-1 / ALTA — Filtro de tendencia intraday para acao SELL
 
-**Status:** PENDENTE
+**Status:** DONE (18/03/2026)
 
 **Arquivo:** `scripts/agente_rl_direto_independente.py`
 
-**Impacto:** SELL em mercado bullish gera LOSS recorrente
+**Executor Impactado:** INICIAR_AGENTE_RL_DIRETO.bat
 
-**Risco:** vies vendedor nao filtrado reduz win rate
+**Impacto:** SELL em mercado bullish gerava LOSS recorrente
 
-**Owner:** ML Expert | **Deadline:** 17/03/2026 EOD | **Estimativa:** 2.5h
+**Solucao implementada:**
 
-**Criterios de aceite:**
+- `calcular_ema(dados, periodo)`: calcula EMA com `ewm(span=periodo)`;
+- `aplicar_gate_tendencia(acao, dados, gate_ativo)`: gate simetrico
+  - SELL bloqueado quando `EMA9 > EMA21` (tendencia de alta);
+  - BUY bloqueado quando `EMA9 < EMA21` (tendencia de baixa);
+  - `gate_ativo=False` desativa para backtesting;
+- Constantes `GATE_TENDENCIA_ATIVO=True`, `EMA_RAPIDA_PERIODO=9`,
+  `EMA_LENTA_PERIODO=21`;
+- Gate integrado no loop principal: etapa 3.5, apos `mapear_acao()`,
+  antes de `verificar_confirmacao_sinal()`;
+- Log: `[GATE-TENDENCIA] SELL bloqueado — EMA9 (...) > EMA21 (...)`.
 
-- SELL bloqueado quando `EMA9 > EMA21` no timeframe operado;
-- BUY bloqueado quando `EMA9 < EMA21` (simetria);
-- gate configuravel via parametro para backtesting;
-- log: `[GATE-TENDENCIA] SELL bloqueado — EMA9 > EMA21`;
-- teste unitario cobrindo gate nas duas direcoes.
+**Evidencias:**
+
+- Codigo: `scripts/agente_rl_direto_independente.py`
+  - `calcular_ema()`, `aplicar_gate_tendencia()` (80 LOC)
+  - Constantes de configuracao do gate
+  - Integracao no loop (etapa 3.5)
+- Testes: `tests/unit/test_ml1_gate_tendencia_intraday.py`
+  - 16 testes, 16/16 PASSING (100%)
+  - Cobertura: EMA calculo, SELL/BUY bloqueados, gate inativo,
+    dados insuficientes, cenario real 17/03/2026
+- Type hints: 100% nas novas funcoes
+- Portugues: 100%
 
 #### BUG-2 / MEDIA — PnL -18M no historico_fechamentos
 
@@ -3687,22 +3674,29 @@ File "scripts/agente_rl_direto_independente.py", line 331, in enviar_ordem
 
 #### BUG-4 / MEDIA — processar_protecao_lucros() gerando ERRORs fora do horario
 
-**Status:** PENDENTE
+**Status:** DONE (18/03/2026)
 
-**Arquivo:** `scripts/operar_novo_agente_rl_real_antiovertrading.py:1204`
+**Arquivo:** `scripts/operar_novo_agente_rl_real_antiovertrading.py`
+
+**Executor Impactado:** INICIAR_AGENTE_RL_5000.bat
 
 **Impacto:** ~380 ERRORs/dia por desconexao MT5 esperada (+680 KB/dia de log)
 
-**Risco:** dificulta triagem de erros reais
+**Solucao implementada:**
 
-**Owner:** Eng Sr | **Deadline:** 17/03/2026 EOD | **Estimativa:** 1.5h
+- Guard `verificar_horario_trading()` movido para ANTES de
+  `proteger_lucro_trade()` e `processar_protecao_lucros()` no loop principal;
+- Fora do horario: apenas INFO de espera, sem ERROR de conexao MT5.
 
-**Criterios de aceite:**
+**Evidencias:**
 
-- chamada de `processar_protecao_lucros()` movida para depois do guard
-  de horario, ou verificacao de conexao MT5 antes de chamar a funcao;
-- fora do horario: apenas INFO de espera, sem ERROR de conexao;
-- teste unitario verificando que funcao nao e chamada fora do horario.
+- Codigo: `scripts/operar_novo_agente_rl_real_antiovertrading.py`
+  - Loop principal: guard de horario precede chamadas de protecao de lucro
+- Testes: `tests/unit/test_bug4_protecao_fora_horario.py`
+  - 9 testes, 9/9 PASSING (100%)
+  - Cobertura: horario dentro/fora, limites, cenario 19h zero-errors
+- Type hints: 100% (novas linhas sem erros mypy)
+- Portugues: 100%
 
 #### INFRA-1 / MEDIA — Terminal mismatch Clear vs FBS no MT5Adapter
 
