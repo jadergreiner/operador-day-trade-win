@@ -16,6 +16,11 @@ from .conftest_clean_architecture import (
     audit_entry,
     divergent_outcomes,
     timestamp_misalign,
+    # AC5.9 - Feedback Validator fixtures
+    sample_trade_feedback_pair,
+    invalid_feedback_types,
+    missing_feedback_outcomes,
+    pnl_mismatch_feedbacks,
 )
 
 __all__ = [
@@ -28,4 +33,9 @@ __all__ = [
     "audit_entry",
     "divergent_outcomes",
     "timestamp_misalign",
+    # AC5.9
+    "sample_trade_feedback_pair",
+    "invalid_feedback_types",
+    "missing_feedback_outcomes",
+    "pnl_mismatch_feedbacks",
 ]

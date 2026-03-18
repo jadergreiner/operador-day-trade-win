@@ -210,6 +210,131 @@ def timestamp_misalign() -> Dict:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# FIXTURES AC5.9 - FEEDBACK VALIDATOR
+# ═══════════════════════════════════════════════════════════════════════════
+
+@pytest.fixture
+def sample_trade_feedback_pair() -> tuple[Dict, Dict]:
+    """
+    Par válido de (trade, feedback) para AC5.9.
+
+    Trade e feedback com correlação perfeita.
+    """
+    from datetime import timedelta
+    
+    trade_id = str(uuid4())
+    now = datetime.now()
+    exit_time = now + timedelta(minutes=1)
+    
+    trade = {
+        "trade_id": trade_id,
+        "symbol": "WIN$N",
+        "side": "BUY",
+        "quantity": 1,
+        "entry_price": 100.50,
+        "exit_price": 102.75,
+        "timestamp_entry": now.isoformat(),
+        "timestamp_exit": exit_time.isoformat(),
+        "pnl": 225.00,
+        "status": "CLOSED"
+    }
+    
+    feedback = {
+        "trade_id": trade_id,
+        "outcome_type": "CLOSED",
+        "pnl_actual": 225.00,
+        "pnl_expected": 225.00,
+        "correlation_score": 1.0,
+        "timestamp": now.isoformat()
+    }
+    
+    return trade, feedback
+
+
+@pytest.fixture
+def invalid_feedback_types() -> list[Dict]:
+    """
+    Feedbacks com tipos de outcome inválidos.
+
+    Para teste de validação AC5.9.2.
+    """
+    return [
+        {
+            "trade_id": str(uuid4()),
+            "outcome_type": "INVALID_TYPE",  # ❌ Inválido
+            "pnl_actual": 100.0,
+            "pnl_expected": 100.0,
+            "timestamp": datetime.now().isoformat()
+        },
+        {
+            "trade_id": str(uuid4()),
+            "outcome_type": None,  # ❌ None
+            "pnl_actual": 50.0,
+            "pnl_expected": 50.0,
+            "timestamp": datetime.now().isoformat()
+        },
+        {
+            "trade_id": str(uuid4()),
+            "outcome_type": "",  # ❌ Empty string
+            "pnl_actual": -10.0,
+            "pnl_expected": -10.0,
+            "timestamp": datetime.now().isoformat()
+        }
+    ]
+
+
+@pytest.fixture
+def missing_feedback_outcomes() -> tuple[list[Dict], list[Dict]]:
+    """
+    Trades sem feedback correspondente.
+
+    Para teste de correlação AC5.9.1.
+    """
+    trades = [
+        {
+            "trade_id": str(uuid4()),
+            "symbol": "WIN$N",
+            "side": "BUY",
+            "quantity": 1,
+            "entry_price": 100.0,
+            "exit_price": 101.0,
+            "pnl": 100.0,
+            "status": "CLOSED"
+        }
+        for _ in range(3)
+    ]
+    
+    # Apenas feedback para 1 dos 3 trades
+    feedbacks = [
+        {
+            "trade_id": trades[0]["trade_id"],
+            "outcome_type": "CLOSED",
+            "pnl_actual": 100.0,
+            "pnl_expected": 100.0,
+            "timestamp": datetime.now().isoformat()
+        }
+    ]
+    
+    return trades, feedbacks
+
+
+@pytest.fixture
+def pnl_mismatch_feedbacks() -> list[tuple[float, float]]:
+    """
+    Pares de (pnl_actual, pnl_expected) com divergências.
+
+    Para teste AC5.9.3 (validação consistência PnL).
+    """
+    return [
+        (100.0, 100.0),   # ✓ Matched
+        (100.0, 110.0),   # ✗ Diverge 10
+        (50.0, 50.0),     # ✓ Matched
+        (200.0, 190.0),   # ✗ Diverge 10
+        (-50.0, -50.0),   # ✓ Matched
+    ]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # FIXTURES MARKERS
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -226,4 +351,8 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers",
         "audit: marca testes de auditoria"
+    )
+    config.addinivalue_line(
+        "markers",
+        "feedback: marca testes de validação de feedback"
     )
