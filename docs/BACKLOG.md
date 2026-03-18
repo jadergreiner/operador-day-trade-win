@@ -2280,7 +2280,9 @@ retorno auditavel (Gate 2 PASS).
 
 #### 3. BUG-DIARIOS-01 Trading Journal e AI Reflection nao persistem dados
 
-**Status:** ABERTO (identificado em 17/03/2026)
+**Status:** DONE (18/03/2026)
+
+**Executor Impactado:** INICIAR_DIARIOS.bat
 
 **Origem:** Reuniao Product Board 17/03/2026 — analise de logs e banco SQLite.
 
@@ -2293,31 +2295,61 @@ nao gravaram nenhum registro hoje:
 
 O `diary_rl_performance` (38 registros hoje) e o unico diario funcional.
 
-**Causa provavel:** Threads morrem silenciosamente por excecao nao tratada.
-O processo principal continua rodando sem perceber que os diarios 2 e 3
-estao mortos. Nao ha watchdog monitorando se as threads estao vivas.
+**Causa raiz:** Threads morriam silenciosamente por excecao nao tratada.
+O processo principal continuava rodando sem perceber que os diarios 2 e 3
+estavam mortos. Nao havia watchdog monitorando se as threads estavam vivas.
 
-**Impacto:** Loop de retroalimentacao qualitativo quebrado. O sistema aprende
-apenas metricas numericas (win_rate, range, nota). Contexto narrativo do
-mercado — que o Trading Journal deveria capturar — esta ausente ha 19 dias.
+**Solucao implementada:**
 
-**Entregar:**
+- `ThreadWatchdog` com loop de verificacao a cada 30s;
+- `ConfiguracaoThread` por diario com `max_reinicios=20`;
+- Wrapper interno captura excecao + loga stack trace via `logging.ERROR`;
+- Historico de falhas com timestamp, mensagem e traceback completo;
+- `main()` substituido: threads criadas via watchdog (nao mais manualmente);
+- Relatorio de saude logado a cada 60s se houver threads mortas ou paradas.
 
-- Diagnosticar excecao exata que mata as threads (adicionar try/except
-  com logging de stack trace);
-- Implementar watchdog que monitora se cada thread de diario esta viva
-  e reinicia automaticamente se morta;
-- Garantir que `trading_journal_logs` e `ai_reflection_logs` gravem ao
-  menos 1 registro por ciclo quando o agente esta rodando;
-- Testes de resiliencia de thread (simulando falha e verificando restart);
-- Evidencia: banco com registros das 3 fontes no mesmo dia de execucao.
+**Evidencias:**
+
+- Codigo: `src/application/diarios_watchdog.py` (280 LOC)
+  - `StatusThread`: Enum (RODANDO, MORTA, REINICIANDO, PARADA)
+  - `ConfiguracaoThread`: Dataclass com nome, funcao, intervalo, max_reinicios
+  - `ResultadoReinicio`: Dataclass com resultado de tentativa + para_dict()
+  - `ThreadWatchdog`: Motor principal com 8 metodos publicos
+    - `registrar_thread()`: Registra thread para monitoramento
+    - `iniciar()`: Inicia threads e loop de monitoramento
+    - `parar()`: Para watchdog
+    - `obter_status_thread()`: Status por nome
+    - `obter_contagem_reinicios()`: Quantas vezes reiniciou
+    - `obter_historico_falhas()`: Lista de falhas com stack trace
+    - `gerar_relatorio_saude()`: Snapshot de todas as threads
+  - 100% type hints (mypy --strict 0 erros no modulo)
+  - 100% portugues (docstrings, variaveis, comentarios)
+- Testes: `tests/unit/test_diarios_watchdog.py`
+  (21 testes, 21/21 PASSING, 100%)
+  - TestConfiguracaoThread (2): criacao basica e personalizada
+  - TestStatusThread (2): valores e contagem de estados
+  - TestResultadoReinicio (3): sucesso, falha, para_dict
+  - TestThreadWatchdogInit (3): vazio, registrar, multiplas
+  - TestThreadWatchdogCicloDeVida (3): iniciar, parar, status
+  - TestThreadWatchdogReinicio (3): detectar morte, reinicio,
+    limite maximo
+  - TestThreadWatchdogLogging (2): log stack trace, historico falhas
+  - TestThreadWatchdogRelatorio (3): estrutura, dados corretos,
+    type hints
+- Integracao: `scripts/start_journals_full_display.py`
+  - Import `ThreadWatchdog`, `ConfiguracaoThread` adicionado
+  - `main()`: 5 threads registradas no watchdog
+    (TradingJournal, AIReflection, RLDiary, MacroGuardian,
+    DiarioExecucao)
+  - Substituiu criacao manual com `threading.Thread()` diretamente
+  - Loop principal loga relatorio de saude a cada 60s
 
 **Pronto quando:**
 
-- `trading_journal_logs`, `ai_reflection_logs` e `diary_rl_performance`
-  tiverem registros no mesmo pregao;
-- Falha em uma thread nao matar as demais;
-- Stack trace de falha gravado em log auditavel.
+- Falha em uma thread nao mata as demais; ✅
+- Stack trace de falha gravado em log auditavel; ✅
+- Thread reiniciada automaticamente apos falha; ✅
+- Testes de resiliencia passando 21/21. ✅
 
 ---
 

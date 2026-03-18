@@ -40,6 +40,7 @@ from src.application.services.macro_scenario_guardian import (
     GUARDIAN_INTERVAL_SEC,
 )
 from src.application.diario_order_manager import DiarioOrderManager
+from src.application.diarios_watchdog import ThreadWatchdog, ConfiguracaoThread
 
 # ────────────────────────────────────────────────────────────────
 # Macro Data Provider (REC2/REC6: dados ao vivo, não hardcoded)
@@ -2982,31 +2983,59 @@ def main():
     print("Pressione Ctrl+C para parar")
     print()
 
-    # Start all journals in separate threads
-    trading_thread = threading.Thread(target=run_trading_journal, daemon=True, name="TradingJournal")
-    ai_thread = threading.Thread(target=run_ai_reflection, daemon=True, name="AIReflection")
-    rl_thread = threading.Thread(target=run_rl_performance_diary, daemon=True, name="RLDiary")
-    guardian_thread = threading.Thread(target=run_macro_guardian, daemon=True, name="MacroGuardian")
-    execucao_thread = threading.Thread(target=run_diario_order_manager, daemon=True, name="DiarioExecucao")
+    # Watchdog monitora e reinicia threads mortas automaticamente
+    watchdog = ThreadWatchdog(intervalo_verificacao_seg=30.0)
 
-    trading_thread.start()
-    time.sleep(2)
-    ai_thread.start()
-    time.sleep(2)
-    rl_thread.start()
-    time.sleep(2)
-    guardian_thread.start()
-    time.sleep(2)
-    execucao_thread.start()
+    watchdog.registrar_thread(ConfiguracaoThread(
+        nome="TradingJournal",
+        funcao_alvo=run_trading_journal,
+        intervalo_reinicio_seg=10,
+        max_reinicios=20,
+    ))
+    watchdog.registrar_thread(ConfiguracaoThread(
+        nome="AIReflection",
+        funcao_alvo=run_ai_reflection,
+        intervalo_reinicio_seg=10,
+        max_reinicios=20,
+    ))
+    watchdog.registrar_thread(ConfiguracaoThread(
+        nome="RLDiary",
+        funcao_alvo=run_rl_performance_diary,
+        intervalo_reinicio_seg=10,
+        max_reinicios=20,
+    ))
+    watchdog.registrar_thread(ConfiguracaoThread(
+        nome="MacroGuardian",
+        funcao_alvo=run_macro_guardian,
+        intervalo_reinicio_seg=10,
+        max_reinicios=20,
+    ))
+    watchdog.registrar_thread(ConfiguracaoThread(
+        nome="DiarioExecucao",
+        funcao_alvo=run_diario_order_manager,
+        intervalo_reinicio_seg=10,
+        max_reinicios=20,
+    ))
 
-    print("[OK] 5 diários rodando!")
+    watchdog.iniciar()
+
+    print("[OK] 5 diários rodando com watchdog ativo!")
     print()
 
     try:
         while True:
-            time.sleep(1)
+            time.sleep(60)
+            relatorio = watchdog.gerar_relatorio_saude()
+            mortas = relatorio["total_mortas"]
+            paradas = relatorio["total_paradas"]
+            if mortas > 0 or paradas > 0:
+                print(
+                    f"[WATCHDOG] Status: {relatorio['total_rodando']} rodando, "
+                    f"{mortas} mortas, {paradas} paradas permanentes."
+                )
     except KeyboardInterrupt:
         print("\n\nDiários interrompidos pelo usuário.")
+        watchdog.parar()
 
 
 if __name__ == "__main__":
