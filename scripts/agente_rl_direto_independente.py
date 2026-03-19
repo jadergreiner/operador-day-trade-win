@@ -669,7 +669,48 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
     """
     global last_trade_time
 
+    def _persist_hold_episode(motivo: str, fatores: list[str], contexto: dict[str, object]) -> None:
+        """Persiste HOLD neutro para aprendizagem quando o agente fica de fora."""
+        if motor_decisao:
+            try:
+                motor_decisao.registrar_decisao(
+                    DecisaoOperacional.HOLD,
+                    reasoning=motivo,
+                    confianca=confidence,
+                    fatores=fatores,
+                    contexto_operacional=contexto,
+                )
+            except Exception as e:
+                logger.warning(f"[WARN] Erro ao registrar HOLD no motor isolado: {e}")
+
+        if rl_repo:
+            try:
+                episode_id = str(uuid.uuid4())
+                episode = {
+                    "episode_id": episode_id,
+                    "timestamp": datetime.now(),
+                    "source": "AGENTE_DIRETO",
+                    "win_price": preco_atual,
+                    "action": "HOLD",
+                    "symbol": SIMBOLO,
+                    "reasoning": motivo,
+                    "overall_confidence": confidence,
+                    "alignment_score": None,
+                    "market_regime": getattr(opening_context, "regime_macro", None) if opening_context else None,
+                    "macro_bias": "NEUTRAL",
+                    "sentiment_bias": "NEUTRAL",
+                    "technical_bias": "NEUTRAL",
+                }
+                rl_repo.save_episode(episode)
+            except Exception as e:
+                logger.warning(f"[WARN] Erro ao persistir episódio HOLD: {e}")
+
     if acao == "Aguardar":
+        _persist_hold_episode(
+            "Agente permaneceu fora do mercado por decisão operacional.",
+            ["acao_agora=Aguardar"],
+            {},
+        )
         return False
 
     try:
@@ -690,12 +731,10 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
                 acao,
                 gate.summary,
             )
-            motor_decisao.registrar_decisao(
-                DecisaoOperacional.CANCELAR,
-                reasoning=f"Bloqueada por contexto de abertura: {gate.summary}",
-                confianca=confidence,
-                fatores=gate.reasons,
-                contexto_operacional=contexto_operacional,
+            _persist_hold_episode(
+                f"Bloqueada por contexto de abertura: {gate.summary}",
+                gate.reasons,
+                contexto_operacional,
             )
             return False
 
@@ -1136,7 +1175,7 @@ def main():
     if _AC5_8_DISPONIVEL and MonitorPositionManager:
         try:
             _monitor_posicao_rl = MonitorPositionManager(
-                db_path=str(ROOT_DIR / 'data' / 'db' / 'trading.db'),
+                db_caminho=str(ROOT_DIR / 'data' / 'db' / 'trading.db'),
             )
             logger.info('[OK] AC5.8 MonitorPositionManager: Ativo')
         except Exception as e:
