@@ -1,0 +1,244 @@
+═══════════════════════════════════════════════════════════════════════════════
+🚀 FASE 1 - AGENTES EM SUAS BRANCHES DE DESENVOLVIMENTO
+═══════════════════════════════════════════════════════════════════════════════
+
+Data: 18/03/2026
+Status: ✅ TODOS OS AGENTES PRONTOS EM SUAS BRANCHES
+
+═══════════════════════════════════════════════════════════════════════════════
+1️⃣  CLEAN ARCHITECTURE AGENT
+═══════════════════════════════════════════════════════════════════════════════
+
+Branch: feature/roadmap-micro-03-reconciliation
+Status: ✅ ATIVO (git checkout concluído)
+
+📋 Seu trabalho:
+├─ Module 1: trade_outcome_reconciler.py (250 LOC, 15 testes)
+├─ Module 2: unknown_result_detector.py (200 LOC, 12 testes)
+├─ Module 3: mt5_sync_validator.py (180 LOC, 10 testes)
+└─ Total: 630 LOC, 37 testes
+
+🎯 Próximo passo:
+1. Leia: CHECKLIST_CLEAN_ARCHITECTURE_AGENT.txt
+2. Comece conftest.py com fixtures
+3. Escreva tests_trade_outcome_reconciler.py (FAILING)
+4. Implemente trade_outcome_reconciler.py (100% type hints)
+5. pytest + mypy --strict ✓
+6. Commit: "feat: Implementar Trade Outcome Reconciler com 15 testes"
+
+═══════════════════════════════════════════════════════════════════════════════
+2️⃣  SIGNALS & OBSERVABILITY AGENT
+═══════════════════════════════════════════════════════════════════════════════
+
+Branch: feature/roadmap-diarios-01-watchdog
+Status: ✅ PRONTO PARA CHECKOUT
+
+Comando:
+$ git checkout feature/roadmap-diarios-01-watchdog
+
+📋 Seu trabalho:
+├─ Module 1: thread_watchdog_advanced.py (450 LOC, 22 testes)
+├─ Module 2: diarios_health_monitor.py (320 LOC, 15 testes)
+├─ Module 3: logging_recovery_handler.py (280 LOC, 12 testes)
+└─ Total: 1.050 LOC, 49 testes
+
+🎯 Próximo passo:
+1. Leia: CHECKLIST_SIGNALS_AGENT.txt
+2. Comece conftest.py com fixtures para threads
+3. Escreva tests_thread_watchdog_advanced.py (FAILING)
+4. Implemente thread_watchdog_advanced.py (100% type hints)
+5. pytest + mypy --strict ✓
+6. Commit: "feat: Implementar Thread Watchdog Advanced com 22 testes"
+
+═══════════════════════════════════════════════════════════════════════════════
+3️⃣  STORYTELLING AGENT
+═══════════════════════════════════════════════════════════════════════════════
+
+Branch: feature/roadmap-diarios-02-storytelling
+Status: ✅ PRONTO PARA CHECKOUT
+
+Comando:
+$ git checkout feature/roadmap-diarios-02-storytelling
+
+📋 Seu trabalho PARTE 1 (Sem dependências - FAÇA AGORA):
+├─ Module 1: narrative_persistence.py (380 LOC, 18 testes)
+├─ Module 2: trade_narrative_correlator.py (420 LOC, 20 testes)
+└─ Subtotal: 800 LOC, 38 testes ✅ INICIE!
+
+⏳ Sua Parte 2 (Bloqueada - Aguarde Clean Arch):
+├─ Module 3: narrative_reflection_evolution.py (350 LOC, 22 testes)
+└─ Depende: trade_outcome_reconciler.py estar completo
+
+🎯 Próximo passo (PARTE 1):
+1. Leia: CHECKLIST_STORYTELLING_AGENT.txt
+2. Comece conftest.py com fixtures para narrativas
+3. Escreva tests_narrative_persistence.py (FAILING)
+4. Implemente narrative_persistence.py (100% type hints)
+5. pytest + mypy --strict ✓
+6. Commit: "feat: Implementar Narrative Persistence com 18 testes"
+
+💡 PARTE 2 (Será desbloqueada quando Clean Arch terminar):
+   - Você receberá notificação quando trade_outcome_reconciler.py estiver pronto
+   - Então comece narrative_reflection_evolution.py
+
+═══════════════════════════════════════════════════════════════════════════════
+4️⃣  ML OPS & GUARDIAN AGENT
+═══════════════════════════════════════════════════════════════════════════════
+
+Branch: feature/roadmap-diarios-04-ml-ops
+Status: ✅ PRONTO PARA CHECKOUT
+
+Comando:
+$ git checkout feature/roadmap-diarios-04-ml-ops
+
+📋 Seu trabalho PARTE 1 (Sem dependências - FAÇA AGORA):
+├─ Module 1: adaptive_retraining_engine.py (480 LOC, 22 testes)
+├─ Module 2: bias_detection_system.py (340 LOC, 16 testes)
+├─ Module 3: regime_adapter.py (400 LOC, 18 testes)
+└─ Subtotal: 1.220 LOC, 56 testes ✅ INICIE!
+
+⏳ Suas Partes 2-3 (Bloqueadas - Aguarde dependências):
+├─ Part 2: performance_regression_detector.py (420 LOC, 19 testes)
+│  └─ Depende: trade_outcome_reconciler.py (Clean Arch)
+├─ Part 3: rollback_automation.py (380 LOC, 17 testes)
+│  └─ Depende: narrative_reflection_evolution.py (Storytelling)
+└─ Subtotal Parts 2-3: 800 LOC, 36 testes (futuros)
+
+🎯 Próximo passo (PARTE 1):
+1. Leia: CHECKLIST_ML_OPS_AGENT.txt
+2. Comece conftest.py com fixtures para modelos ML
+3. Escreva tests_adaptive_retraining_engine.py (FAILING)
+4. Implemente adaptive_retraining_engine.py (100% type hints)
+5. pytest + mypy --strict ✓
+6. Commit: "feat: Implementar Adaptive Retraining Engine com 22 testes"
+
+💡 PARTES 2-3 (Serão desbloqueadas quando dependências terminarem):
+   - Part 2 desbloqueada quando Clean Arch finalizar
+   - Part 3 desbloqueada quando Storytelling finalizar
+
+═══════════════════════════════════════════════════════════════════════════════
+📊 RESUMO - QUEM COMEÇA QUANDO
+═══════════════════════════════════════════════════════════════════════════════
+
+🟢 PODE COMEÇAR AGORA (3 Agentes):
+  ├─ Agent 1: Clean Architecture (630 LOC, 37 testes)
+  ├─ Agent 2: Signals & Observability (1.050 LOC, 49 testes - parte 1)
+  └─ Agent 3: Storytelling PARTE 1 (800 LOC, 38 testes)
+     Agent 4: ML Ops PARTE 1 (1.220 LOC, 56 testes)
+
+     TOTAL PARALELO: 3.700 LOC, 180 testes
+
+🟠 SERÁ DESBLOQUEADO (Depende de acima):
+  ├─ Agent 3: Storytelling PARTE 2 (350 LOC, 22 testes)
+  │  └─ Aguarda: Clean Architecture terminar
+  ├─ Agent 4: ML Ops PARTE 2 (420 LOC, 19 testes)
+  │  └─ Aguarda: Clean Architecture terminar
+  └─ Agent 4: ML Ops PARTE 3 (380 LOC, 17 testes)
+     └─ Aguarda: Storytelling Parte 2 terminar
+
+═══════════════════════════════════════════════════════════════════════════════
+🎯 COMMITS ESPERADOS - TRACKING
+═══════════════════════════════════════════════════════════════════════════════
+
+Clean Architecture Agent (3 commits esperados):
+├─ [ ] feat: Implementar Trade Outcome Reconciler com 15 testes
+├─ [ ] feat: Implementar Unknown Result Detector com 12 testes
+└─ [ ] feat: Implementar MT5 Sync Validator com 10 testes
+
+Signals & Observability Agent (3 commits esperados):
+├─ [ ] feat: Implementar Thread Watchdog Advanced com 22 testes
+├─ [ ] feat: Implementar Diarios Health Monitor com 15 testes
+└─ [ ] feat: Implementar Logging Recovery Handler com 12 testes
+
+Storytelling Agent (3 commits esperados):
+├─ [ ] feat: Implementar Narrative Persistence com 18 testes
+├─ [ ] feat: Implementar Trade Narrative Correlator com 20 testes
+└─ [ ] feat: Implementar Narrative Reflection Evolution com 22 testes (futuro)
+
+ML Ops Agent (5 commits esperados):
+├─ [ ] feat: Implementar Adaptive Retraining Engine com 22 testes
+├─ [ ] feat: Implementar Bias Detection System com 16 testes
+├─ [ ] feat: Implementar Regime Adapter com 18 testes
+├─ [ ] feat: Implementar Performance Regression Detector com 19 testes (futuro)
+└─ [ ] feat: Implementar Rollback Automation com 17 testes (futuro)
+
+TOTAL: 14 commits esperados (12 imediatos + 2 futuros)
+
+═══════════════════════════════════════════════════════════════════════════════
+⏰ CHECKPOINT 1: Esperado para 20/03 (em 2 dias)
+═══════════════════════════════════════════════════════════════════════════════
+
+Alvo Checkpoint 1:
+├─ 50% dos testes PASSING (~90 de 180)
+├─ ~1.850 LOC implementado (50% do volume)
+├─ 100% type hints em código novo
+├─ 0 erros mypy --strict
+└─ 6 commits de progresso
+
+Se atingir:
+├─ Continue para próximos módulos
+├─ Desbloqueie dependências conforme termina
+└─ Próximo checkpoint: 22/03
+
+═══════════════════════════════════════════════════════════════════════════════
+🔄 COMUNICAÇÃO ENTRE AGENTES
+═══════════════════════════════════════════════════════════════════════════════
+
+Quando você TERMINA um módulo:
+1. Commit com mensagem clara
+2. Push para sua branch (git push origin [branch-name])
+3. Notifique via Tech Lead se desbloqueia dependência para outro agente
+
+Dependências a acompanhar:
+├─ Clean Arch → Signals (nenhuma)
+├─ Clean Arch → Storytelling P2 (trade_outcome_reconciler.py)
+├─ Clean Arch → ML Ops P2 (trade_outcome_reconciler.py)
+└─ Storytelling P2 → ML Ops P3 (narrative_reflection_evolution.py)
+
+═══════════════════════════════════════════════════════════════════════════════
+💡 DICAS IMPORTANTES
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ DO's:
+  ├─ Use TDD (testes FALHAM primeiro)
+  ├─ 100% type hints (mypy --strict zero errors)
+  ├─ 100% Portuguese docstrings com exemplos
+  ├─ ≥85% coverage por módulo
+  ├─ Commits descritivos sem acentos
+  └─ Comunique bloqueadores <15min para Tech Lead
+
+❌ DON'Ts:
+  ├─ NÃO implemente sem testes primeiro
+  ├─ NÃO missange type hints
+  ├─ NÃO ignore mypy warnings
+  ├─ NÃO commite sem ≥85% coverage
+  ├─ NÃO force push sem razão
+  └─ NÃO toque em partes bloqueadas
+
+═══════════════════════════════════════════════════════════════════════════════
+📞 SUPORTE RÁPIDO
+═══════════════════════════════════════════════════════════════════════════════
+
+Problema               Contato              SLA
+─────────────────      ─────────────────    ─────
+Bloqueador técnico     Tech Lead            <15min
+Design question        Arquiteto            <30min
+Schema validation      DBA                  <30min
+AC clarification       Product Manager      <30min
+Escalação crítica      Tech Lead            Imediato
+
+═══════════════════════════════════════════════════════════════════════════════
+🚀 PRONTO? COMECE AGORA!
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Abra CHECKLIST_*_AGENT.txt para seu agente
+2. Comece conftest.py
+3. Escreva tests (FAILING primeiro)
+4. Implemente com TDD
+5. Commit e notifique Tech Lead
+
+✅ Primeira entrega esperada: 2 dias
+✅ Todos agentes em paralelo
+✅ Comunicação clara de dependências
+
+Let's go! 🚀

@@ -5,6 +5,115 @@ evitar bloqueadores entre agentes.
 
 ---
 
+## 🟢 Checkpoint Real — 2026-03-18
+
+### Execucao Paralela Concluida (Signals / ROADMAP-DIARIOS-01)
+
+**Status geral:** Em progresso com base funcional entregue
+
+**Entregas implementadas:**
+- `src/application/thread_watchdog_advanced.py`
+- `src/application/diarios_health_monitor.py`
+- `src/application/logging_recovery_handler.py`
+- `tests/unit/test_thread_watchdog_advanced.py`
+- `tests/unit/test_diarios_health_monitor.py`
+- `tests/unit/test_logging_recovery_handler.py`
+
+**Validacao executada:**
+- `pytest -q tests/unit/test_thread_watchdog_advanced.py tests/unit/test_diarios_health_monitor.py tests/unit/test_logging_recovery_handler.py`
+- Resultado: `27 passed`
+
+**Resumo de cobertura funcional desta rodada:**
+- Watchdog avancado com reinicio automatico, heartbeat e health report
+- Monitor de saude com severidade por thread e export markdown
+- Handler de logging/recuperacao com relatorio JSON/markdown e status por componente
+
+**Bloqueadores desta rodada:**
+- Nenhum bloqueador funcional para seguir com Signals
+
+---
+
+## 🟢 Checkpoint Real — 2026-03-18 (Rodada 2)
+
+### Execucao Paralela Concluida (Clean Arch + Storytelling + ML Ops)
+
+**Status geral:** Rodada concluida com integracao validada
+
+**Entregas por trilha:**
+- Clean Arch (hardening reconciliadores)
+  - `src/application/reconciliadores/trade_outcome_reconciler.py`
+  - `src/application/reconciliadores/unknown_result_detector.py`
+  - `src/application/reconciliadores/mt5_sync_validator.py`
+  - `tests/unit/reconciliadores/*`
+- Storytelling (bootstrap ROADMAP-DIARIOS-02)
+  - `src/application/narrative_persistence.py`
+  - `tests/unit/test_narrative_persistence.py`
+- ML Ops (bootstrap ROADMAP-DIARIOS-04)
+  - `src/application/directional_bias_detector.py`
+  - `tests/unit/test_directional_bias_detector.py`
+
+**Validacao integrada executada:**
+- `pytest -q tests/unit/reconciliadores tests/unit/test_thread_watchdog_advanced.py tests/unit/test_diarios_health_monitor.py tests/unit/test_logging_recovery_handler.py tests/unit/test_narrative_persistence.py tests/unit/test_directional_bias_detector.py`
+- Resultado: `80 passed`
+
+**Resumo operacional desta rodada:**
+- Reconciliacao endurecida para edge cases sem quebra de API
+- Persistencia narrativa inicial pronta para integracoes seguintes
+- Detector de vies direcional pronto para acoplamento em pipeline de ML
+
+**Bloqueadores desta rodada:**
+- Nenhum bloqueador tecnico para avancar para correlator e pipeline adaptativo
+
+---
+
+## 🟢 Checkpoint Real — 2026-03-18 (Rodada 3)
+
+### Execucao Paralela Concluida (ML Ops / ROADMAP-DIARIOS-04)
+
+**Status geral:** Pipeline adaptativo inicial entregue e validado
+
+**Entregas implementadas:**
+- `src/application/adaptive_retraining_pipeline.py`
+- `tests/unit/test_adaptive_retraining_pipeline.py`
+
+**Validacao executada:**
+- `pytest -q tests/unit/test_adaptive_retraining_pipeline.py`
+- Resultado: `14 passed`
+
+**Resumo operacional desta rodada:**
+- Avaliacao de gatilho por performance, drift e vies
+- Planejamento de retreino com prioridade e janela off-peak
+- Suporte a metricas planas e aninhadas para encaixe com outros modulos
+
+**Bloqueadores desta rodada:**
+- Nenhum bloqueador tecnico para seguir para o restante do roadmap ML Ops
+
+---
+
+## 🟢 Checkpoint Real — 2026-03-18 (Storytelling A)
+
+### Execucao Paralela Concluida (Trade Narrative Correlator)
+
+**Status geral:** Entrega concluida e validada
+
+**Entregas implementadas:**
+- `src/application/trade_narrative_correlator.py`
+- `tests/unit/test_trade_narrative_correlator.py`
+
+**Validacao executada:**
+- `pytest -q tests/unit/test_narrative_persistence.py tests/unit/test_trade_narrative_correlator.py`
+- Resultado: `24 passed`
+
+**Resumo funcional desta rodada:**
+- Match prioritario por `trade_id`
+- Fallback temporal simples com janela configuravel
+- Saida serializavel para correlacao e features
+
+**Bloqueadores desta rodada:**
+- Nenhum bloqueador para seguir com Storytelling B
+
+---
+
 ## 🔗 Matriz de Dependências
 
 ```
