@@ -401,6 +401,292 @@ class FeatureEngineer:
             'is_market_open', 'is_lunch_time'
         ]
 
+    # ==================== TODO-5: DETECT_PATTERNS START (GitHub Issue #8) ====================
+    def detect_patterns(self, X: np.ndarray, y: np.ndarray) -> Dict:
+        """
+        Analisa distribuição de labels e detecta padrões nas features.
+
+        Acceptance Criteria (Issue #8 - ML-102):
+        ☐ AC-1: Analyze label distribution (captured vs uncaptured)
+        ☐ AC-2: Detect patterns correlated with features
+        ☐ AC-3: Generate markdown insights report
+        ☐ AC-4: Plot histogram of label distribution
+        ☐ AC-5: Identify top 10 most relevant features
+        ☐ AC-6: Unit tests with fixtures from TODO-1
+
+        Args:
+            X (np.ndarray): Features array (17280, N_features)
+            y (np.ndarray): Labels array (17280,)
+
+        Returns:
+            Dict: {
+                'label_distribution': {
+                    'positive': int,
+                    'negative': int,
+                    'ratio': float
+                },
+                'feature_importance': List[Tuple],
+                'top_features': List[str],
+                'insights': List[str],
+                'plot_path': str,
+                'execution_time': float
+            }
+
+        Related:
+            - GitHub Issue #8: ML-102
+            - Depends on: Issue #6 (TODO-1)
+            - Tests: tests/unit/test_pattern_detection.py
+        """
+        import time
+
+        start_time = time.perf_counter()
+
+        try:
+            X_arr = np.asarray(X, dtype=float)
+            y_arr = np.asarray(y).reshape(-1)
+
+            if X_arr.ndim != 2:
+                raise ValueError("X deve ser uma matriz 2D.")
+            if y_arr.ndim != 1:
+                raise ValueError("y deve ser um vetor 1D.")
+            if X_arr.shape[0] != y_arr.shape[0]:
+                raise ValueError(
+                    f"Shape mismatch: X={X_arr.shape[0]} vs y={y_arr.shape[0]}"
+                )
+            if X_arr.shape[0] == 0:
+                raise ValueError("detect_patterns() requer pelo menos um registro.")
+
+            positive_count = int(np.sum(y_arr == 1))
+            negative_count = int(np.sum(y_arr == 0))
+            total_count = int(y_arr.shape[0])
+            ratio = positive_count / total_count if total_count else 0.0
+
+            feature_names = self._resolve_feature_names(X_arr.shape[1])
+            feature_importance = self._calculate_feature_importance(
+                X_arr,
+                y_arr,
+                feature_names,
+            )
+            top_features = [name for name, _ in feature_importance[:10]]
+            high_corr_pairs = self._find_high_correlation_pairs(
+                X_arr,
+                feature_names,
+            )
+
+            insights = [
+                (
+                    "Distribuicao de labels: "
+                    f"{positive_count} positivos, {negative_count} negativos "
+                    f"({ratio:.2%} positivos)."
+                ),
+            ]
+
+            if feature_importance:
+                best_name, best_corr = feature_importance[0]
+                insights.append(
+                    "Feature mais correlacionada: "
+                    f"{best_name} (corr={best_corr:+.4f})."
+                )
+
+                strong_features = [
+                    name for name, corr in feature_importance if abs(corr) >= 0.30
+                ]
+                insights.append(
+                    f"{len(strong_features)} features com |corr| >= 0.30."
+                )
+
+            if high_corr_pairs:
+                insights.append(
+                    "Multicolinearidade alta detectada: "
+                    + "; ".join(high_corr_pairs[:3])
+                )
+            else:
+                insights.append(
+                    "Multicolinearidade alta nao detectada nas features principais."
+                )
+
+            output_dir = Path("outputs")
+            output_dir.mkdir(parents=True, exist_ok=True)
+            plot_path = output_dir / "label_distribution_histogram.png"
+            report_path = output_dir / "pattern_detection_report.md"
+
+            self._save_label_distribution_plot(
+                plot_path,
+                positive_count=positive_count,
+                negative_count=negative_count,
+            )
+            self._save_pattern_report(
+                report_path,
+                positive_count=positive_count,
+                negative_count=negative_count,
+                ratio=ratio,
+                feature_importance=feature_importance,
+                insights=insights,
+            )
+
+            execution_time = time.perf_counter() - start_time
+            logger.info(
+                "detect_patterns() concluido: %s positivos, %s negativos, %.2fs",
+                positive_count,
+                negative_count,
+                execution_time,
+            )
+
+            return {
+                "label_distribution": {
+                    "positive": positive_count,
+                    "negative": negative_count,
+                    "ratio": ratio,
+                },
+                "feature_importance": feature_importance,
+                "top_features": top_features,
+                "insights": insights,
+                "plot_path": str(plot_path.resolve()),
+                "execution_time": execution_time,
+            }
+
+        except Exception as exc:
+            logger.error("Erro em detect_patterns(): %s", exc)
+            raise
+
+    def _resolve_feature_names(self, n_features: int) -> List[str]:
+        """Resolve nomes de features para a analise de padrões."""
+        if n_features == len(self.feature_columns):
+            return list(self.feature_columns)
+
+        width = max(2, len(str(max(n_features - 1, 0))))
+        return [f"feature_{index:0{width}d}" for index in range(n_features)]
+
+    @staticmethod
+    def _safe_correlation(feature: np.ndarray, target: np.ndarray) -> float:
+        """Calcula correlação de forma segura, ignorando casos degenerados."""
+        feature_arr = np.asarray(feature, dtype=float)
+        target_arr = np.asarray(target, dtype=float)
+
+        if feature_arr.size == 0 or target_arr.size == 0:
+            return 0.0
+        if np.nanstd(feature_arr) == 0 or np.nanstd(target_arr) == 0:
+            return 0.0
+
+        with np.errstate(all="ignore"):
+            corr_matrix = np.corrcoef(feature_arr, target_arr)
+
+        corr = float(corr_matrix[0, 1])
+        if np.isnan(corr) or np.isinf(corr):
+            return 0.0
+        return corr
+
+    def _calculate_feature_importance(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        feature_names: List[str],
+    ) -> List[Tuple[str, float]]:
+        """Calcula e ordena a importância por correlação absoluta."""
+        feature_importance: List[Tuple[str, float]] = []
+
+        for index, feature_name in enumerate(feature_names):
+            corr = self._safe_correlation(X[:, index], y)
+            feature_importance.append((feature_name, round(corr, 6)))
+
+        feature_importance.sort(key=lambda item: abs(item[1]), reverse=True)
+        return feature_importance
+
+    @staticmethod
+    def _find_high_correlation_pairs(
+        X: np.ndarray,
+        feature_names: List[str],
+        threshold: float = 0.85,
+    ) -> List[str]:
+        """Lista pares de features com correlação alta entre si."""
+        if X.shape[1] < 2:
+            return []
+
+        with np.errstate(all="ignore"):
+            corr_matrix = np.corrcoef(X, rowvar=False)
+
+        high_pairs: List[str] = []
+        for i in range(X.shape[1]):
+            for j in range(i + 1, X.shape[1]):
+                corr = float(corr_matrix[i, j])
+                if np.isnan(corr) or np.isinf(corr):
+                    continue
+                if abs(corr) >= threshold:
+                    high_pairs.append(
+                        f"{feature_names[i]} <-> {feature_names[j]} ({corr:+.2f})"
+                    )
+
+        return high_pairs
+
+    @staticmethod
+    def _save_label_distribution_plot(
+        plot_path: Path,
+        *,
+        positive_count: int,
+        negative_count: int,
+    ) -> None:
+        """Salva o histograma de distribuicao de labels em PNG."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        labels = ["Negativos", "Positivos"]
+        counts = [negative_count, positive_count]
+        colors = ["#d95f5f", "#2ca02c"]
+
+        plt.figure(figsize=(8, 5))
+        bars = plt.bar(labels, counts, color=colors, width=0.6)
+        plt.title("Distribuicao de Labels")
+        plt.ylabel("Quantidade")
+        plt.grid(axis="y", alpha=0.2)
+        plt.ylim(0, max(counts) * 1.15 if counts else 1)
+
+        for bar, count in zip(bars, counts):
+            plt.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height(),
+                str(count),
+                ha="center",
+                va="bottom",
+                fontsize=10,
+            )
+
+        plt.tight_layout()
+        plt.savefig(plot_path, dpi=150)
+        plt.close()
+
+    @staticmethod
+    def _save_pattern_report(
+        report_path: Path,
+        *,
+        positive_count: int,
+        negative_count: int,
+        ratio: float,
+        feature_importance: List[Tuple[str, float]],
+        insights: List[str],
+    ) -> None:
+        """Gera um relatório markdown curto com as descobertas."""
+        lines = [
+            "# Relatorio de Pattern Detection",
+            "",
+            "## Distribuicao de Labels",
+            f"- Positivos: {positive_count}",
+            f"- Negativos: {negative_count}",
+            f"- Ratio positivo: {ratio:.2%}",
+            "",
+            "## Top Features",
+        ]
+
+        for feature_name, corr in feature_importance[:10]:
+            lines.append(f"- {feature_name}: {corr:+.6f}")
+
+        lines.extend(["", "## Insights"])
+        lines.extend(f"- {insight}" for insight in insights)
+
+        report_path.write_text("\n".join(lines), encoding="utf-8")
+    # ==================== TODO-5: DETECT_PATTERNS END (GitHub Issue #8) ====================
+
 
 # ============================================================================
 # DATASET LOADER (para backtest com labels)
@@ -561,76 +847,6 @@ class DatasetLoader:
             raise
 
     # ==================== TODO-1: LOAD_AND_LABEL END (GitHub Issue #6) ====================
-
-    # ==================== TODO-5: DETECT_PATTERNS START (GitHub Issue #8) ====================
-    def detect_patterns(self, X: np.ndarray, y: np.ndarray) -> Dict:
-        """
-        Analisa distribuição de labels e detecta padrões nas features.
-
-        Acceptance Criteria (Issue #8 - ML-102):
-        ☐ AC-1: Analyze label distribution (captured vs uncaptured)
-        ☐ AC-2: Detect patterns correlated with features
-        ☐ AC-3: Generate markdown insights report
-        ☐ AC-4: Plot histogram of label distribution
-        ☐ AC-5: Identify top 10 most relevant features
-        ☐ AC-6: Unit tests with fixtures from TODO-1
-
-        Args:
-            X (np.ndarray): Features array (17280, N_features)
-            y (np.ndarray): Labels array (17280,)
-
-        Returns:
-            Dict: {
-                'label_distribution': {
-                    'positive': int,
-                    'negative': int,
-                    'ratio': float
-                },
-                'feature_importance': List[Tuple],
-                'top_features': List[str],
-                'insights': List[str],
-                'plot_path': str,
-                'execution_time': float
-            }
-
-        Related:
-            - GitHub Issue #8: ML-102
-            - Depends on: Issue #6 (TODO-1)
-            - Tests: tests/unit/test_pattern_detection.py
-        """
-        # TODO-5 IMPLEMENTATION
-        # AC-1: Analyze label distribution
-        # TODO: Count positive samples (y == 1)
-        # TODO: Count negative samples (y == 0)
-        # TODO: Calculate ratio = positive / total
-        # TODO: Log distribution
-
-        # AC-2: Detect feature patterns
-        # TODO: Calculate feature importance (correlation with y)
-        # TODO: For each feature: corr = np.corrcoef(X[:, i], y)[0, 1]
-        # TODO: Rank features by absolute correlation
-
-        # AC-3: Generate insights report
-        # TODO: Create text insights based on feature importance
-        # TODO: Identify top predictive features
-        # TODO: Identify multicollinearity issues
-
-        # AC-4: Plot histogram
-        # TODO: Use matplotlib to plot label distribution
-        # TODO: Save to outputs/label_distribution_histogram.png
-
-        # AC-5: Top 10 features
-        # TODO: Sort features by importance
-        # TODO: Extract top 10 feature names
-
-        # AC-6: Unit tests
-        # TODO: Create tests/unit/test_pattern_detection.py
-        # TODO: Use fixtures from test_load_and_label.py
-
-        logger.info("TODO-5: Implement detect_patterns() - See AC-1 through AC-6 above")
-        raise NotImplementedError("TODO-5: detect_patterns() not implemented yet")
-    # ==================== TODO-5: DETECT_PATTERNS END (GitHub Issue #8) ====================
-
 
 if __name__ == "__main__":
     print("FeatureEngineer module loaded")

@@ -179,7 +179,7 @@
       "mensal": "Auditoria de consistencia entre todos os docs"
     }
   },
-  "last_update": "2026-03-19T03:57:52Z",
-  "last_health_check": "2026-03-19T03:57:52Z",
-  "status": "synchronized_operational_validation_pending"
+  "last_update": "2026-03-19T11:27:55Z",
+  "last_health_check": "2026-03-19T11:27:55Z",
+  "status": "synchronized"
 }

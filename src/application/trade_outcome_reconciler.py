@@ -357,8 +357,24 @@ def calcular_pnl(
     Returns:
         float: P&L em R$
     """
-    # TODO: Implementar lógica PnL com type hints
-    raise NotImplementedError()
+    if quantity <= 0:
+        raise ValueError("quantity deve ser positivo")
+    if entry <= 0:
+        raise ValueError("entry deve ser positivo")
+    if exit <= 0:
+        raise ValueError("exit deve ser positivo")
+    if multiplier <= 0:
+        raise ValueError("multiplier deve ser positivo")
+
+    side_normalized = side.strip().upper()
+    if side_normalized == "BUY":
+        movement = exit - entry
+    elif side_normalized == "SELL":
+        movement = entry - exit
+    else:
+        raise ValueError("side deve ser BUY ou SELL")
+
+    return float(movement * quantity * multiplier)
 
 
 if __name__ == "__main__":

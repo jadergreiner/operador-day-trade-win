@@ -2,8 +2,8 @@
   "components": {
     "Fechamento_Diario": {
       "version": "1.0.0",
-      "status": "PRODUCTION_WITH_OPERATIONAL_VALIDATION_PENDING",
-      "last_change": "2026-03-19T03:57:52Z",
+      "status": "PRODUCTION",
+      "last_change": "2026-03-19T11:27:55Z",
       "changelog": [
         {
           "version": "1.0.0",
