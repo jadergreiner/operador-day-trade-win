@@ -154,6 +154,65 @@ evitar bloqueadores entre agentes.
 
 ---
 
+## 🟢 Checkpoint Real — 2026-03-19 (Rodada 5)
+
+### Execucao Paralela Concluida (Guardian Universal Log / DIARIOS-05 bootstrap)
+
+**Status geral:** Canal universal do Guardian iniciado com persistencia multi-nivel
+
+**Entregas implementadas:**
+- Guardian Universal Log
+  - `src/application/macro_guardian_universal_log.py`
+  - `tests/unit/test_macro_guardian_universal_log.py`
+- Integracao Macro Scenario Guardian
+  - `src/application/services/macro_scenario_guardian.py`
+  - `tests/unit/test_macro_scenario_guardian_persistence.py`
+
+**Validacao integrada executada:**
+- `python -m pytest -q tests/unit/test_macro_guardian_universal_log.py tests/unit/test_macro_scenario_guardian_persistence.py tests/unit/test_diario_order_manager.py`
+- Resultado: `50 passed`
+
+**Resumo funcional desta rodada:**
+- Tabela `macro_guardian_log` criada com schema para INFO/WARNING/CRITICAL
+- Persistencia universal de eventos macro com payload estruturado e `kill_switch_ativo`
+- Consulta de eventos recentes por severidade para consumo cross-agent
+- Snapshot heuristico para leitura operacional (`kill_switch_ativo`, `score_impacto_medio`, `alertas_ativos`, `regime_macro`)
+- `run_guardian_check` com persistencia opcional por ciclo no canal universal
+
+**Bloqueadores desta rodada:**
+- Nenhum bloqueador tecnico para ampliar consumo do Guardian nos demais agentes
+
+---
+
+## 🟢 Checkpoint Real — 2026-03-19 (Rodada 6)
+
+### Execucao Paralela Concluida (ML Ops / DIARIOS-05-06 complementar)
+
+**Status geral:** Rodada concluida com novos modulos de adaptacao de regime e kill switch universal
+
+**Entregas implementadas:**
+- Adaptacao de regime de mercado
+  - `src/application/market_regime_adapter.py`
+  - `tests/unit/test_market_regime_adapter.py`
+- Kill switch universal
+  - `src/application/universal_kill_switch.py`
+  - `tests/unit/test_universal_kill_switch.py`
+
+**Validacao integrada executada:**
+- `python -m pytest -q tests/unit/test_market_regime_adapter.py tests/unit/test_universal_kill_switch.py tests/unit/test_guardian_agent_coordinator.py tests/unit/test_macro_guardian_universal_log.py tests/unit/test_macro_scenario_guardian_persistence.py tests/unit/test_diario_order_manager.py`
+- Resultado: `71 passed`
+
+**Resumo funcional desta rodada:**
+- Classificacao de regime com 4 estados operacionais (`TRENDING_UP`, `TRENDING_DOWN`, `RANGING`, `HIGH_VOLATILITY`)
+- Recomendacao serializavel de risco e tamanho de posicao por regime
+- Consolidacao universal de gatilhos de risco por `kill_switch_ativo`, severidade `CRITICAL` e media de `score_impacto`
+- Saida auditavel para consumo por coordenadores Guardian e pipelines de decisao
+
+**Bloqueadores desta rodada:**
+- Nenhum bloqueador tecnico para seguir para acoplamento runtime no fluxo de diarios
+
+---
+
 ## 🔗 Matriz de Dependências
 
 ```

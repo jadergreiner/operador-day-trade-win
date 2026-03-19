@@ -94,3 +94,83 @@ def test_kill_switch_global_blocks_and_records_audit() -> None:
     assert payload["summary"]["kill_switch_active"] is True
     assert payload["resolution"]["strategy"] == "KILL_SWITCH"
     assert json.dumps(payload, ensure_ascii=False)
+
+
+def test_macro_context_com_kill_switch_bloqueia_fluxo() -> None:
+    coordinator = GuardianAgentCoordinator()
+    proposals = [
+        AgentOrderProposal(
+            agent_id="alpha",
+            symbol="WIN",
+            side=OrderSide.BUY,
+            confidence=0.81,
+            weight=1.0,
+            quantity=1,
+        ),
+        AgentOrderProposal(
+            agent_id="beta",
+            symbol="WIN",
+            side=OrderSide.BUY,
+            confidence=0.79,
+            weight=1.0,
+            quantity=1,
+        ),
+    ]
+
+    result = coordinator.coordinate_with_macro_context(
+        proposals,
+        macro_context={
+            "kill_switch_ativo": True,
+            "regime_macro": "CRITICO",
+            "score_guardian": -8.5,
+            "alertas_ativos": 4,
+        },
+    )
+
+    assert result.decision == ResolutionAction.BLOCK
+    assert result.kill_switch_active is True
+    assert result.kill_switch_reason.startswith("macro_context kill switch ativo")
+    assert "regime=CRITICO" in result.kill_switch_reason
+    assert result.summary is not None
+    assert result.summary.strategy == ResolutionStrategy.KILL_SWITCH
+    assert result.summary.kill_switch_active is True
+    assert result.audit_trail[-1].event == "kill_switch"
+
+
+def test_macro_context_sem_kill_switch_mantem_fluxo_normal() -> None:
+    coordinator = GuardianAgentCoordinator()
+    proposals = [
+        AgentOrderProposal(
+            agent_id="alpha",
+            symbol="WIN",
+            side=OrderSide.BUY,
+            confidence=0.82,
+            weight=1.0,
+            quantity=2,
+        ),
+        AgentOrderProposal(
+            agent_id="beta",
+            symbol="WIN",
+            side=OrderSide.BUY,
+            confidence=0.76,
+            weight=1.2,
+            quantity=2,
+        ),
+    ]
+
+    result = coordinator.coordinate_with_macro_context(
+        proposals,
+        macro_context={
+            "kill_switch_ativo": False,
+            "regime_macro": "ESTAVEL",
+            "score_guardian": 2.0,
+            "alertas_ativos": 0,
+        },
+    )
+
+    assert result.decision == ResolutionAction.EXECUTE
+    assert result.kill_switch_active is False
+    assert result.kill_switch_reason == ""
+    assert result.summary is not None
+    assert result.summary.strategy == ResolutionStrategy.CONSENSUS
+    assert result.summary.kill_switch_active is False

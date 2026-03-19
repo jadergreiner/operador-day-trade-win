@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, fields, is_dataclass
 from datetime import datetime
 from enum import Enum
+from collections.abc import Mapping
 from typing import Any, Sequence
 
 from src.application.multi_agent_conflict_resolver import (
@@ -205,6 +206,56 @@ class GuardianAgentCoordinator:
             resolution=resolution,
             audit_trail=audit,
         )
+
+    def coordinate_with_macro_context(
+        self,
+        proposals: Sequence[AgentOrderProposal],
+        *,
+        macro_context: Mapping[str, Any] | Any,
+    ) -> GuardianCoordinationResult:
+        """Coordinate proposals using a macro snapshot or macro context mapping."""
+
+        kill_switch_active, kill_switch_reason = self._macro_context_to_kill_switch(
+            macro_context
+        )
+        return self.coordinate(
+            proposals,
+            kill_switch_active=kill_switch_active,
+            kill_switch_reason=kill_switch_reason,
+        )
+
+    @staticmethod
+    def _macro_context_to_kill_switch(
+        macro_context: Mapping[str, Any] | Any,
+    ) -> tuple[bool, str]:
+        """Extract the global kill-switch state from a macro context."""
+
+        def _read(field_name: str, default: Any = None) -> Any:
+            if isinstance(macro_context, Mapping):
+                return macro_context.get(field_name, default)
+            return getattr(macro_context, field_name, default)
+
+        kill_switch_active = bool(
+            _read("kill_switch_ativo", _read("active_kill_switch", False))
+        )
+
+        reason = _read("kill_switch_reason", "")
+        if not reason:
+            reason = _read("reason", "")
+        if not reason and kill_switch_active:
+            regime_macro = _read("regime_macro", "")
+            score_guardian = _read("score_guardian", None)
+            alertas_ativos = _read("alertas_ativos", None)
+            parts: list[str] = ["macro_context kill switch ativo"]
+            if regime_macro:
+                parts.append(f"regime={regime_macro}")
+            if score_guardian is not None:
+                parts.append(f"score_guardian={score_guardian}")
+            if alertas_ativos is not None:
+                parts.append(f"alertas_ativos={alertas_ativos}")
+            reason = "; ".join(parts)
+
+        return kill_switch_active, str(reason).strip()
 
 
 __all__ = [

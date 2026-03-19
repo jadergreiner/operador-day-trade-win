@@ -16,12 +16,14 @@ Data: 11/02/2026
 
 from __future__ import annotations
 
+import importlib
+import inspect
 import logging
 import sqlite3
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, date, timedelta
-from typing import Optional
+from typing import Any, Optional
 
 logger = logging.getLogger("macro_guardian")
 
@@ -298,6 +300,164 @@ def fetch_fear_greed() -> Optional[dict]:
         return fear_greed_index()
     except Exception:
         return None
+
+
+def _get_macro_guardian_universal_log_module() -> Any | None:
+    """Importa o módulo de log universal de forma opcional."""
+    try:
+        return importlib.import_module("src.application.macro_guardian_universal_log")
+    except Exception:
+        return None
+
+
+def macro_alert_to_universal_log_event(alert: MacroAlert) -> dict:
+    """Converte `MacroAlert` em payload canônico para o log universal."""
+    data = dict(alert.data or {})
+
+    valor_atual = (
+        data.get("valor_atual")
+        if data.get("valor_atual") is not None
+        else data.get("current_value")
+    )
+    if valor_atual is None:
+        for key in ("usdbrl", "sp500", "win", "price", "score", "value"):
+            if data.get(key) is not None:
+                valor_atual = data.get(key)
+                break
+
+    valor_anterior = (
+        data.get("valor_anterior")
+        if data.get("valor_anterior") is not None
+        else data.get("previous_value")
+    )
+    if valor_anterior is None:
+        for key in ("old_score", "previous", "prior_value", "open_price"):
+            if data.get(key) is not None:
+                valor_anterior = data.get(key)
+                break
+
+    score_impacto = data.get("score_impacto")
+    if score_impacto is None:
+        score_impacto = {
+            "CRITICAL": 100,
+            "WARNING": 65,
+            "INFO": 30,
+        }.get(alert.severity.upper(), 0)
+
+    return {
+        "timestamp": alert.timestamp,
+        "severity": alert.severity,
+        "tipo_evento": alert.category,
+        "descricao": alert.message,
+        "valor_atual": valor_atual,
+        "valor_anterior": valor_anterior,
+        "score_impacto": score_impacto,
+        "action": alert.action,
+        "data": data,
+    }
+
+
+def _invoke_macro_guardian_log_writer(writer: Any, events: list[dict], db_path: str) -> Any:
+    """Executa um writer/função do log universal tentando assinaturas comuns."""
+    attempts = [
+        ((events,), {"db_path": db_path}),
+        ((), {"events": events, "db_path": db_path}),
+        ((), {"db_path": db_path, "events": events}),
+        ((events, db_path), {}),
+        ((db_path, events), {}),
+        ((events,), {}),
+        ((db_path,), {}),
+        ((), {}),
+    ]
+
+    signature = inspect.signature(writer)
+    for args, kwargs in attempts:
+        try:
+            signature.bind(*args, **kwargs)
+        except TypeError:
+            continue
+        return writer(*args, **kwargs)
+
+    raise TypeError("Não foi possível chamar o writer do macro_guardian_log")
+
+
+def _invoke_macro_guardian_log_ensure(ensure_fn: Any, db_path: str) -> Any:
+    """Executa a etapa de garantia do schema usando apenas `db_path`."""
+    attempts = [
+        ((), {"db_path": db_path}),
+        ((db_path,), {}),
+        ((), {}),
+    ]
+
+    signature = inspect.signature(ensure_fn)
+    for args, kwargs in attempts:
+        try:
+            signature.bind(*args, **kwargs)
+        except TypeError:
+            continue
+        return ensure_fn(*args, **kwargs)
+
+    raise TypeError("Não foi possível chamar o ensure do macro_guardian_log")
+
+
+def persist_macro_guardian_cycle(
+    new_alerts: list[MacroAlert],
+    db_path: str,
+) -> bool:
+    """Persiste os alertas novos do ciclo no `macro_guardian_log`.
+
+    Retorna `True` quando a persistência é tentada com sucesso.
+    """
+    if not new_alerts:
+        return False
+
+    module = _get_macro_guardian_universal_log_module()
+    if module is None:
+        return False
+
+    events = [macro_alert_to_universal_log_event(alert) for alert in new_alerts]
+
+    for ensure_name in (
+        "ensure_macro_guardian_log_table",
+        "ensure_macro_guardian_log_schema",
+        "init_macro_guardian_log",
+        "create_macro_guardian_log_table",
+    ):
+        ensure_fn = getattr(module, ensure_name, None)
+        if callable(ensure_fn):
+            try:
+                _invoke_macro_guardian_log_ensure(ensure_fn, db_path)
+            except TypeError:
+                pass
+            break
+
+    for writer_name in (
+        "persist_macro_guardian_cycle",
+        "append_macro_guardian_events",
+        "persist_macro_guardian_events",
+        "write_macro_guardian_events",
+        "log_macro_guardian_events",
+        "save_macro_guardian_events",
+    ):
+        writer_fn = getattr(module, writer_name, None)
+        if callable(writer_fn):
+            _invoke_macro_guardian_log_writer(writer_fn, events, db_path)
+            return True
+
+    sink_factory = getattr(module, "get_macro_guardian_log_writer", None)
+    if callable(sink_factory):
+        try:
+            sink = _invoke_macro_guardian_log_writer(sink_factory, [], db_path)
+        except TypeError:
+            sink = None
+        if sink is not None:
+            for method_name in ("append_events", "write_events", "log_events", "persist_events"):
+                method = getattr(sink, method_name, None)
+                if callable(method):
+                    _invoke_macro_guardian_log_writer(method, events, db_path)
+                    return True
+
+    return False
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -820,7 +980,11 @@ def determine_guardian_actions(state: GuardianState) -> None:
         state.bias_override = ""
 
 
-def run_guardian_check(state: GuardianState, db_path: str) -> list[MacroAlert]:
+def run_guardian_check(
+    state: GuardianState,
+    db_path: str,
+    persist_to_universal_log: bool = False,
+) -> list[MacroAlert]:
     """Executa um ciclo completo do Guardian.
 
     Retorna lista de NOVOS alertas gerados neste ciclo.
@@ -861,6 +1025,9 @@ def run_guardian_check(state: GuardianState, db_path: str) -> list[MacroAlert]:
 
     # Determinar ações consolidadas
     determine_guardian_actions(state)
+
+    if persist_to_universal_log:
+        persist_macro_guardian_cycle(new_alerts, db_path)
 
     return new_alerts
 

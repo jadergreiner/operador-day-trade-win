@@ -1,0 +1,776 @@
+# PRD - Documento de Requisitos do Produto
+
+**Produto:** Operador Day Trade WIN
+**Versao:** 1.0
+**Data:** 18/03/2026
+**Status:** Em desenvolvimento (GO LIVE: 10/04/2026)
+
+---
+
+## 1. Visao Geral do Produto
+
+### 1.1 Descricao
+
+Sistema de trading automatico para Mini Indice Futuro
+(WIN$N) na B3, operando via MetaTrader 5. Composto por
+4 agentes paralelos independentes que combinam Machine
+Learning (LightGBM/XGBoost), Reinforcement Learning
+(Q-Learning) e analise macro para gerar sinais, executar
+ordens e gerenciar risco em tempo real.
+
+### 1.2 Problema
+
+Operacoes manuais de day trade sofrem de:
+
+- Vieses emocionais (medo, ganancia, revenge trading)
+- Inconsistencia na execucao de regras
+- Incapacidade de processar multiplas fontes de dados
+  simultaneamente
+- Fadiga e limitacao de atencao humana no intraday
+
+### 1.3 Solucao
+
+Automacao completa do ciclo de trading:
+
+1. **Captura** - Ticks RT do MT5 + dados macro
+2. **Analise** - ML classifica, RL aprende politicas
+3. **Decisao** - Motor isolado com 3 gates de risco
+4. **Execucao** - Ordens automaticas com SL/TP dinamicos
+5. **Feedback** - Aprendizado causal P1 + deteccao drift
+6. **Reflexao** - Diarios IA com narrativa
+
+### 1.4 Proposta de Valor
+
+| Aspecto | Manual | Automatizado |
+|---------|--------|--------------|
+| Decisao | Segundos | Milissegundos |
+| Consistencia | Variavel | 100% regras |
+| Dados | 3-5 indicadores | 85 itens macro |
+| Operacao | 1 ativo | 4 agentes |
+| Aprendizado | Subjetivo | Causal + RL |
+
+---
+
+## 2. Objetivos e Metricas de Sucesso
+
+### 2.1 Objetivos de Negocio
+
+| ID | Objetivo | Meta |
+|----|----------|------|
+| ON-1 | Operar WIN$N producao | GO LIVE 10/04 |
+| ON-2 | Rentabilidade consistente | Win rate >55% |
+| ON-3 | Controle de risco | Drawdown <500pts |
+| ON-4 | Escalar capital | Gate2 → R$100k |
+
+### 2.2 Metricas Tecnicas
+
+| Metrica | Alvo | Critico |
+|---------|------|---------|
+| Latencia decisao | <10ms | <50ms |
+| Cobertura testes | 85% | 80% min |
+| Type hints mypy | 100% | 100% |
+| Disponibilidade MT5 | 99.5% | 95% |
+| Retrain RL | <5min | <15min |
+| Drift detection | Z-score | Continuo |
+
+### 2.3 Metricas Operacionais
+
+| Metrica | Alvo |
+|---------|------|
+| Trades/dia (por agente) | Max 6 |
+| Posicoes simultaneas | Max 1 |
+| Horario operacao | 09:00-17:25 BRT |
+| Cooling apos SL | 30 minutos |
+| Confianca minima | 45% |
+| Risk/Reward minimo | 1.5:1 |
+
+---
+
+## 3. Personas e Usuarios
+
+### 3.1 Operador Principal
+
+- **Perfil:** Trader individual com conhecimento tecnico
+- **Responsabilidades:**
+  - Iniciar/parar agentes via BAT
+  - Monitorar dashboards e diarios
+  - Decidir modo (simulado/auto-trade)
+  - Avaliar reflexoes IA e ajustar parametros
+  - Definir diretivas do Head Financeiro
+
+### 3.2 Sistema Autonomo (Agentes)
+
+- **Perfil:** 4 agentes Python em paralelo
+- **Responsabilidades:**
+  - Gerar sinais e executar ordens
+  - Gerenciar risco automaticamente
+  - Aprender com resultados (feedback loop)
+  - Reportar status via logs e WebSocket
+
+---
+
+## 4. Requisitos Funcionais
+
+### 4.1 Pipeline de Sinais (AC1-AC4)
+
+| RF | Descricao | Status |
+|----|-----------|--------|
+| RF-01 | Sinais via analise tecnica | Impl. |
+| RF-02 | Classificar com LightGBM (F1>0.65) | Impl. |
+| RF-03 | Persistir sinais SQLite | Impl. |
+| RF-04 | Deduplicacao de sinais (80%) | Impl. |
+| RF-05 | Filtro BDI (calendario economico) | Impl. |
+| RF-06 | Score macro (85 itens, 15+ cat.) | Impl. |
+
+### 4.2 Execucao de Ordens (AC5)
+
+| RF | Descricao | Status |
+|----|-----------|--------|
+| RF-07 | Command Pattern ciclo de ordem | Impl. |
+| RF-08 | Estados: ENQUEUED→CLOSED | Impl. |
+| RF-09 | Monitor RT posicoes (15s) | Impl. |
+| RF-10 | Fechamento por ticket | Impl. |
+| RF-11 | Auditoria SQLite | Impl. |
+| RF-12 | Trailing stop (ProfitProtection) | Impl. |
+| RF-13 | SL/TP dinamico por ATR | Impl. |
+
+### 4.3 Feedback e Aprendizado (AC6)
+
+| RF | Descricao | Status |
+|----|-----------|--------|
+| RF-14 | Saude feedback ML/RL | Impl. |
+| RF-15 | Drift Z-score (100 trades) | Impl. |
+| RF-16 | Online learning + rollback | Impl. |
+| RF-17 | Baseline vs atual | Impl. |
+| RF-18 | Versionamento semantico | Impl. |
+
+### 4.4 Reinforcement Learning
+
+| RF | Descricao | Status |
+|----|-----------|--------|
+| RF-19 | Ambiente Gym-compativel | Impl. |
+| RF-20 | Retrain off-peak | Impl. |
+| RF-21 | Rollback modelo RL | Impl. |
+| RF-22 | Episode quality scoring | Impl. |
+| RF-23 | 7 filtros anti-overtrading | Impl. |
+
+### 4.5 Aprendizado Causal P1 (7 etapas)
+
+| RF | Descricao | Status |
+|----|-----------|--------|
+| RF-24 | Etapa 1: Deteccao de sinal | Impl. |
+| RF-25 | Etapa 2: Registro de decisao | Impl. |
+| RF-26 | Etapa 3: Monitoramento | Impl. |
+| RF-27 | Etapa 4: Fechamento c/ motivo | Impl. |
+| RF-28 | Ligacao causal via episode_id | Impl. |
+
+### 4.6 Gestao de Risco
+
+| RF | Descricao | Status |
+|----|-----------|--------|
+| RF-29 | Gate 1: Capital (>=1.5x ticket) | Impl. |
+| RF-30 | Gate 2: Correlacao (<=70%) | Impl. |
+| RF-31 | Gate 3: Volatilidade (ATR) | Impl. |
+| RF-32 | Chain of Responsibility | Impl. |
+| RF-33 | P0-2 capital scaling | Impl. |
+
+### 4.7 Multi-Agente e Isolamento
+
+| RF | Descricao | Status |
+|----|-----------|--------|
+| RF-34 | Magic Number MT5 | Impl. |
+| RF-35 | Motor decisao por agent_id | Impl. |
+| RF-36 | Posicoes separadas/agente | Impl. |
+| RF-37 | Session ID unico | Impl. |
+| RF-38 | Terminal isolation enforcer | Impl. |
+| RF-39 | Resolucao de conflitos | Impl. |
+
+### 4.8 Guardian e Monitoramento Macro
+
+| RF | Descricao | Status |
+|----|-----------|--------|
+| RF-40 | Monitor USD/BRL (0.50%) | Impl. |
+| RF-41 | Monitor S&P500 (0.80%) | Impl. |
+| RF-42 | Eventos COPOM/FOMC/NFP/CPI | Impl. |
+| RF-43 | Deteccao de divergencias | Impl. |
+| RF-44 | Kill switch emergencias | Impl. |
+| RF-45 | Log universal Guardian | Impl. |
+
+### 4.9 Observabilidade e Diarios
+
+| RF | Descricao | Status |
+|----|-----------|--------|
+| RF-46 | Diarios automaticos Markdown | Impl. |
+| RF-47 | Reflexao IA sobre operacoes | Impl. |
+| RF-48 | Narrativa de sessao | Impl. |
+| RF-49 | Thread watchdog + health | Impl. |
+| RF-50 | Detector de vies direcional | Impl. |
+| RF-51 | Retreino adaptativo | Impl. |
+
+### 4.10 Interfaces e APIs
+
+| RF | Descricao | Status |
+|----|-----------|--------|
+| RF-52 | REST API FastAPI | Impl. |
+| RF-53 | WebSocket streaming RT | Impl. |
+| RF-54 | OAuth/JWT (ATI-2) | Impl. |
+| RF-55 | CLI operador quantum | Impl. |
+
+---
+
+## 5. Requisitos Nao-Funcionais
+
+### 5.1 Performance
+
+| RNF | Descricao | Meta |
+|-----|-----------|------|
+| RNF-01 | Latencia decisao trading | <10ms |
+| RNF-02 | Resposta API REST | <100ms |
+| RNF-03 | Atualizacao WebSocket | <500ms |
+| RNF-04 | Ciclo monitor posicao | 15s |
+| RNF-05 | Intervalo Guardian macro | 120s |
+
+### 5.2 Confiabilidade
+
+| RNF | Descricao | Meta |
+|-----|-----------|------|
+| RNF-06 | Disponibilidade mercado | 99.5% |
+| RNF-07 | Recuperacao falha MT5 | Auto retry |
+| RNF-08 | Persistencia transacional | Obrigatorio |
+| RNF-09 | Backup diario automatico | data/backups/ |
+| RNF-10 | Rollback modelo degradado | Automatico |
+
+### 5.3 Qualidade de Codigo
+
+| RNF | Descricao | Meta |
+|-----|-----------|------|
+| RNF-11 | Type hints src/ | 100% mypy |
+| RNF-12 | Cobertura por modulo | >=85% |
+| RNF-13 | Cobertura minima merge | 80% |
+| RNF-14 | Cobertura criticos | 100% |
+| RNF-15 | Formatacao Black (88) | Obrigatorio |
+| RNF-16 | Imports isort | Obrigatorio |
+| RNF-17 | Markdown max 80 chars | Obrigatorio |
+
+### 5.4 Seguranca
+
+| RNF | Descricao | Meta |
+|-----|-----------|------|
+| RNF-18 | Credenciais em .env | Obrigatorio |
+| RNF-19 | OAuth/JWT para API | Implementado |
+| RNF-20 | Isolamento 3 niveis | Obrigatorio |
+| RNF-21 | Confirmacao auto-trade | Obrigatorio |
+| RNF-22 | Kill switch emergencia | Implementado |
+
+### 5.5 Manutenibilidade
+
+| RNF | Descricao | Meta |
+|-----|-----------|------|
+| RNF-23 | Arquitetura DDD | Implementado |
+| RNF-24 | Interfaces ABC | Obrigatorio |
+| RNF-25 | Docstrings padrao | Obrigatorio |
+| RNF-26 | ADRs formais | 12+ |
+| RNF-27 | 100% Portugues BR | Obrigatorio |
+
+---
+
+## 6. Arquitetura de Alto Nivel
+
+### 6.1 Camadas
+
+```text
+[Orquestracao]   BAT → 4 agentes paralelos
+       |
+[Scripts]        scripts/*.py → entrypoints
+       |
+[Interfaces]     FastAPI REST + WebSocket RT
+       |
+[Application]    Use cases, ML, RL, Risk
+       |
+[Domain]         Entities, VOs, Enums, ABC
+       |
+[Infrastructure] MT5, SQLite, Providers
+       |
+[Dados]          SQLite + JSON + JSONL + MD
+```
+
+### 6.2 Fluxo de Dados Principal
+
+```text
+MT5 (ticks RT)
+  → MT5Adapter (TickData/Candle)
+  → FeatureEngineering (24+ features)
+  → MLClassifier (LightGBM/XGBoost)
+  → MacroScoreEngine (85 itens)
+  → RiskValidator (3 Gates)
+  → OrdersExecutor (maquina estados)
+  → PositionMonitor (15s por ticket)
+  → ProfitProtection (trailing stop)
+  → FeedbackLoop (drift + learning)
+  → P1Learning (causal 7 etapas)
+  → DiarioReflexao (narrativa IA)
+```
+
+### 6.3 Decisoes Arquiteturais (ADRs)
+
+| ADR | Decisao | Razao |
+|-----|---------|-------|
+| 001 | SQLite primario | <10ms latencia |
+| 002 | 3 Gates risco | Rejeicao rapida |
+| 011 | Session ID | Substituido 012 |
+| 012 | Magic Number | 3 niveis isol. |
+
+---
+
+## 7. Componentes do Sistema
+
+### 7.1 Os 4 Agentes Operacionais
+
+| Agente | Magic | Funcao |
+|--------|-------|--------|
+| Diarios | 234800 | Logging, reflexao IA |
+| Micro Tend. | 234700 | Sinais ML LightGBM |
+| RL 5000 | 234500 | RL supervisionado |
+| RL Direto | 234600 | RL autonomo |
+
+Scripts de lancamento:
+
+- **Diarios:** `start_journals_full_display.py`
+- **Micro Tendencia:** `agente_micro_tendencia_winfut.py`
+- **RL 5000:** `operar_novo_agente_rl_real_antiovertrading.py`
+- **RL Direto:** `agente_rl_direto_independente.py`
+
+### 7.2 Modulos Criticos (src/application/)
+
+| Modulo | Arquivo | Testes |
+|--------|---------|--------|
+| Monitor Posicoes | ac5_8_position_monitor | 21/21 |
+| Feedback Valid. | ac5_9_feedback_validator | 21/21 |
+| Drift Detector | ac6_7_drift_detector | 24/24 |
+| Online Learning | ac6_8_online_learning | 18/18 |
+| Baseline Comp. | ac6_9_baseline_comparator | 20/20 |
+| Ambiente RL | rl_trading_environment | 21/21 |
+| Retrain Sched. | rl_retrain_scheduler | 24/24 |
+| Rollback RL | rl_model_rollback_manager | 17/17 |
+| Motor Decisao | motor_decisao_isolado | 24/24 |
+| Isolamento Pos. | posicao_isolamento | 7/7 |
+| P1 Closure | p1_learning_closure | 27/27 |
+| Classificador | ml_classifier | Sim |
+| Executor Ordens | orders_executor | Sim |
+| Validador Risco | risk_validator | Sim |
+| Profit Protect. | profit_protection_engine | Sim |
+| Conflitos | multi_agent_conflict_resolver | Sim |
+| Guardian Coord. | guardian_agent_coordinator | Sim |
+| Guardian Log | macro_guardian_universal_log | Sim |
+
+### 7.3 Infraestrutura
+
+| Componente | Arquivo |
+|------------|---------|
+| MT5 Adapter | mt5_adapter.py |
+| MT5 Proxy | mt5_adapter_proxy.py |
+| Trade Repo | trade_repository.py |
+| Forex Provider | forex_api_provider.py |
+| Terminal Enforcer | terminal_isolation_enforcer.py |
+| Schema ORM | schema.py (SQLAlchemy 2.x) |
+
+### 7.4 Persistencia de Dados
+
+| Armazenamento | Tipo | Conteudo |
+|---------------|------|----------|
+| data/db/trading.db | SQLite | Trades, posicoes |
+| outputs/*.json | JSON | Posicoes ativas |
+| outputs/*.log | Log | Logs por agente |
+| outputs/diario_*.md | Markdown | Diarios |
+| data/backtest/*.json | JSON | Artefatos Gate 2 |
+| data/models/ | Pickle | Modelos ML/RL |
+| data/BDI/ | CSV | Calendario econ. |
+
+---
+
+## 8. Regras de Negocio
+
+### 8.1 Regras de Entrada
+
+| ID | Regra | Valor |
+|----|-------|-------|
+| RN-01 | Confianca minima | 45% |
+| RN-02 | Risk/Reward minimo | 1.5:1 |
+| RN-03 | Max posicoes/agente | 1 |
+| RN-04 | Max trades/dia/agente | 6 |
+| RN-05 | Horario limite entradas | 17:25 BRT |
+| RN-06 | Inicio operacoes | 09:00 BRT |
+
+### 8.2 Regras de Saida
+
+| ID | Regra | Valor |
+|----|-------|-------|
+| RN-07 | Loss maximo diario | 500 pontos |
+| RN-08 | Cooling apos SL | 30 minutos |
+| RN-09 | Motivos fechamento | TP/SL/MANUAL/TIMEOUT |
+| RN-10 | Trailing stop | Dinamico por ATR |
+
+### 8.3 Regras de Capital (Gate 2)
+
+| Condicao | Capital | Exit Code |
+|----------|---------|-----------|
+| P0-2 PASS | R$100k (ampliado) | 0 |
+| P0-2 FAIL | R$50k (conservador) | 1 |
+| P0-2 executando | R$50k (conservador) | 2 |
+| P0-2 erro | R$50k (conservador) | 3 |
+
+Artefatos obrigatorios em `data/backtest/`:
+
+- `dataset_audit.json`
+- `backtest_results.json`
+- `gate2_decision.json`
+- `p0_2_status.json`
+
+**Falha NUNCA libera capital ampliado.**
+
+### 8.4 Regras de Isolamento
+
+| Nivel | Mecanismo | Garantia |
+|-------|-----------|----------|
+| 1 | Magic Number MT5 | Broker persiste |
+| 2 | Session ID + JSON | Arquivo/agente |
+| 3 | MotorDecisaoIsolado | Modulo Python |
+
+### 8.5 Regras de Startup
+
+1. Validar ambiente (Python, MT5, SQLite)
+2. Operador escolhe: `--simulate` ou `--auto-trade`
+3. Trading real: confirmacao humana explicita
+4. Pre-flight: confianca, heartbeat, latencia
+5. Sincronizar trades MT5 → SQLite
+6. Aplicar licoes BDI
+7. Carregar dataset ML
+8. Iniciar diarios de observabilidade
+
+### 8.6 Regras do Guardian
+
+| Indicador | Threshold | Acao |
+|-----------|-----------|------|
+| USD/BRL | 0.50% | Penalidade confianca |
+| S&P500 | 0.80% | Possivel kill switch |
+| WIN | 500 pontos | Alerta critico |
+| Macro score | +/-15 | Reavaliacao cenario |
+
+---
+
+## 9. Integracoes e Dependencias
+
+### 9.1 Dependencias Externas
+
+| Sistema | Uso | Critico |
+|---------|-----|---------|
+| MetaTrader 5 | Broker gateway | Sim |
+| SQLite | Banco principal | Sim |
+| AwesomeAPI | Forex (12+ pares) | Nao |
+| FRED API | Dados econ. EUA | Nao |
+| TwelveData | Dados mercado | Nao |
+| AlphaVantage | Dados alternativos | Nao |
+| Finnhub | Dados globais | Nao |
+| Telegram Bot | Notificacoes | Nao |
+
+### 9.2 Stack Tecnologico
+
+| Camada | Tecnologia |
+|--------|------------|
+| Linguagem | Python 3.11+ |
+| Broker API | MetaTrader5 (lib) |
+| Indicadores | TA-Lib |
+| ML | scikit-learn, LightGBM, XGBoost |
+| RL | gymnasium (OpenAI Gym) |
+| API REST | FastAPI |
+| Streaming | WebSocket (nativo) |
+| Banco | SQLite3 + SQLAlchemy 2.x |
+| Testes | pytest |
+| Tipos | mypy (strict) |
+| Formatacao | Black (88) + isort |
+| SO | Windows 11 (obrigatorio MT5) |
+
+### 9.3 Variaveis de Ambiente
+
+| Variavel | Descricao | Obrig. |
+|----------|-----------|--------|
+| MT5_LOGIN | Login broker | Sim |
+| MT5_PASSWORD | Senha broker | Sim |
+| MT5_SERVER | Servidor MT5 | Sim |
+| MT5_TERMINAL_PATH | Caminho terminal | Sim |
+| DB_PATH | Caminho SQLite | Sim |
+| MODEL_PATH | Dir. modelos | Sim |
+| FRED_API_KEY | API FRED | Nao |
+| TWELVEDATA_API_KEY | API TwelveData | Nao |
+| ALPHAVANTAGE_API_KEY | API AlphaVantage | Nao |
+| FINNHUB_API_KEY | API Finnhub | Nao |
+| TELEGRAM_BOT_TOKEN | Bot Telegram | Nao |
+
+---
+
+## 10. Restricoes e Premissas
+
+### 10.1 Restricoes
+
+| ID | Restricao |
+|----|-----------|
+| C-01 | Windows obrigatorio (MT5) |
+| C-02 | SQLite ate 04/2026 |
+| C-03 | Single connection SQLite |
+| C-04 | B3: 09:00-17:55 BRT |
+| C-05 | Apenas WIN$N |
+| C-06 | Capital conservador default |
+
+### 10.2 Premissas
+
+| ID | Premissa |
+|----|----------|
+| P-01 | MT5 instalado e configurado |
+| P-02 | Internet estavel no mercado |
+| P-03 | Python 3.11+ c/ dependencias |
+| P-04 | Operador confirma auto-trade |
+| P-05 | Dados historicos (min 30 dias) |
+| P-06 | APIs externas com chaves |
+
+---
+
+## 11. Roadmap e Fases
+
+### 11.1 Fase 1 - Fundacao (Concluida)
+
+- Arquitetura DDD com camadas
+- Entities, Value Objects, Enums, Exceptions
+- MT5 Adapter com proxy (cache/retry)
+- SQLite schema com SQLAlchemy 2.x
+- Pipeline AC1-AC4
+
+### 11.2 Fase 2 - Execucao e Risco (Concluida)
+
+- AC5: Command Pattern para ordens
+- AC5.8: Monitoramento RT posicoes
+- AC5.9: Validacao de feedback
+- Risk Validator (3 Gates)
+- Profit Protection Engine
+- ATR Calibrator
+
+### 11.3 Fase 3 - Aprendizado e RL (Concluida)
+
+- AC6.7: Deteccao de drift
+- AC6.8: Online learning controlado
+- AC6.9: Comparador baseline
+- RL Trading Environment (Gym)
+- RL Retrain Scheduler
+- RL Model Rollback Manager
+- P1 Learning Engine (causal 7 etapas)
+
+### 11.4 Fase 4 - Multi-Agente e Guardian (Atual)
+
+- Isolamento Magic Number (ADR-012)
+- Motor de Decisao Isolado
+- Resolucao de conflitos entre agentes
+- Guardian Agent Coordinator
+- Macro Guardian Universal Log
+- Storytelling (Reflection Action Channel)
+
+### 11.5 Fase 5 - GO LIVE (10/04/2026)
+
+- Validacao final de producao
+- Operacao com Gate 2 (capital scaling)
+- Monitoramento diario + diarios IA
+- Emergency rollback procedures
+- Metricas de sucesso em producao
+
+### 11.6 Fase 6 - Evolucao (Pos-GO LIVE)
+
+- Migracao SQLite → PostgreSQL
+- Suporte multi-terminal MT5
+- Modelos ML avancados
+- Expansao para outros mercados
+
+### 11.7 Status de Entregas (18/03/2026)
+
+| Componente | Status | Testes |
+|------------|--------|--------|
+| AC5.8 Position Monitor | Impl. | 21/21 |
+| AC5.9 Feedback Valid. | Impl. | 21/21 |
+| AC6.7 Drift Detector | Impl. | 24/24 |
+| AC6.8 Online Learning | Impl. | 18/18 |
+| AC6.9 Baseline Comp. | Impl. | 20/20 |
+| RL Trading Env. | Impl. | 21/21 |
+| RL Retrain Scheduler | Impl. | 24/24 |
+| RL Model Rollback | Impl. | 17/17 |
+| Motor Decisao Isolado | Impl. | 24/24 |
+| Posicao Isolamento | Impl. | 7/7 |
+| P1 Learning Closure | Impl. | 27/27 |
+| Multi-Agent Conflict | Impl. | Sim |
+| Guardian Universal | Impl. | Sim |
+| Storytelling B | Impl. | Sim |
+| Order Manager Learner | Impl. | Sim |
+| **Total testes** | **2.237** | **350+** |
+
+---
+
+## 12. Criterios de Aceitacao
+
+### 12.1 Criterios por Modulo
+
+| Modulo | Criterio |
+|--------|----------|
+| Pipeline ML | F1 >0.65 classificador |
+| Risk Gates | 3 gates sem bypass |
+| Isolamento | Zero interferencia 4 agentes |
+| Posicoes | Check ticket cada 15s |
+| Drift | Alerta Z-score threshold |
+| Online Learning | Rollback se degrada |
+| Guardian | Kill switch funcional |
+| Gate 2 | FAIL nunca libera ampliado |
+
+### 12.2 Criterios Globais para GO LIVE
+
+| ID | Descricao |
+|----|-----------|
+| CA-01 | Testes unitarios passando |
+| CA-02 | mypy --strict sem erros |
+| CA-03 | Cobertura >=80% modulos |
+| CA-04 | 5 dias simulado sem bugs |
+| CA-05 | Gate 2 P0-2 com dados reais |
+| CA-06 | Diarios IA coerentes |
+| CA-07 | 4 agentes paralelos OK |
+| CA-08 | Kill switch testado |
+| CA-09 | Backup/restore validado |
+| CA-10 | Documentacao atualizada |
+
+---
+
+## 13. Riscos e Mitigacoes
+
+### R-01: Desconexao MT5
+
+- **Impacto:** Alto | **Prob.:** Media
+- **Mitigacao:** MT5 Proxy com retry + heartbeat
+
+### R-02: Degradacao modelo ML
+
+- **Impacto:** Alto | **Prob.:** Media
+- **Mitigacao:** Drift AC6.7 + rollback automatico
+
+### R-03: Conflito entre agentes
+
+- **Impacto:** Alto | **Prob.:** Baixa
+- **Mitigacao:** 3 niveis isolamento (ADR-012)
+
+### R-04: Loss acima do limite
+
+- **Impacto:** Alto | **Prob.:** Baixa
+- **Mitigacao:** Gate risco + kill switch Guardian
+
+### R-05: Dados macro indisponiveis
+
+- **Impacto:** Medio | **Prob.:** Media
+- **Mitigacao:** Fallback score neutro + cache TTL
+
+### R-06: SQLite concorrencia
+
+- **Impacto:** Medio | **Prob.:** Media
+- **Mitigacao:** Transaction log + PostgreSQL (Fase 6)
+
+### R-07: Latencia rede broker
+
+- **Impacto:** Medio | **Prob.:** Baixa
+- **Mitigacao:** SQLite local + proxy cache
+
+### R-08: Evento macro nao mapeado
+
+- **Impacto:** Medio | **Prob.:** Media
+- **Mitigacao:** Guardian + BDI calendario
+
+### R-09: Overtrading
+
+- **Impacto:** Medio | **Prob.:** Baixa
+- **Mitigacao:** 7 filtros + max 6 trades/dia
+
+### R-10: Perda de dados
+
+- **Impacto:** Alto | **Prob.:** Baixa
+- **Mitigacao:** Backup diario + transaction log
+
+### R-11: Revenge trading
+
+- **Impacto:** Medio | **Prob.:** Media
+- **Mitigacao:** Cooling 30min mesma direcao
+
+### R-12: Capital ampliado sem validacao
+
+- **Impacto:** Alto | **Prob.:** Baixa
+- **Mitigacao:** Gate 2: falha NUNCA libera
+
+---
+
+## Apendice A - Glossario
+
+| Termo | Definicao |
+|-------|-----------|
+| WIN$N | Mini Indice Futuro B3 |
+| MT5 | MetaTrader 5 |
+| Magic Number | ID unico de EA no MT5 |
+| SL | Stop Loss |
+| TP | Take Profit |
+| ATR | Average True Range |
+| BDI | Calendario economico |
+| Gate 2 | Backtest → capital scaling |
+| Drift | Degradacao modelo ML |
+| P1 Learning | Causal 7 etapas |
+| Guardian | Monitor macro emergencias |
+
+## Apendice B - Estrutura de Arquivos
+
+```text
+operador-day-trade-win/
+├── BAT/              # Orquestracao Windows
+├── scripts/          # 309 scripts Python
+├── src/
+│   ├── domain/       # Entities, VOs, Enums
+│   ├── application/  # 75+ use cases
+│   │   ├── services/ # 27+ servicos
+│   │   │   ├── macro_score/
+│   │   │   ├── ml/
+│   │   │   └── backtest/
+│   │   └── reconciliadores/
+│   ├── infrastructure/ # 40+ adaptadores
+│   │   ├── adapters/
+│   │   ├── providers/
+│   │   ├── repositories/
+│   │   ├── database/
+│   │   └── persistence/
+│   ├── interfaces/   # FastAPI + WebSocket
+│   ├── ml/           # ML standalone
+│   └── adapters/     # Alto nivel
+├── tests/            # 154 arq., 2.237 testes
+│   ├── unit/         # 98 arquivos
+│   ├── integration/  # 11 arquivos
+│   ├── performance/
+│   └── uat/
+├── data/
+│   ├── db/trading.db
+│   ├── models/
+│   ├── backtest/
+│   └── BDI/
+├── outputs/          # Runtime
+├── docs/             # Documentacao
+└── config/           # Ambiente
+```
+
+## Apendice C - Metricas de Qualidade
+
+| Metrica | Valor |
+|---------|-------|
+| Arquivos Python src/ | 206 |
+| Scripts operacionais | 309 |
+| Arquivos de teste | 154 |
+| Testes coletados | 2.237 |
+| Testes passando | 350+ |
+| Type hints mypy | 100% |
+| Pre-commit hook | mypy + pytest |
+| Pytest markers | 12 |
+| ADRs registrados | 12+ |
+| Documentos canonicos | 9 |
