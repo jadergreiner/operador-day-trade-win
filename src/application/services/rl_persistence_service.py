@@ -198,6 +198,7 @@ class RLPersistenceService:
 
             # Determinar ação baseado no macro_signal + micro_score
             action = self._derive_action_from_micro(cycle_result)
+            rejection_reasons = getattr(cycle_result, "_rejection_reasons", []) or []
 
             episode = {
                 "episode_id": episode_id,
@@ -248,6 +249,31 @@ class RLPersistenceService:
                 # Reasoning com contexto do diary feedback
                 "reasoning": self._build_micro_reasoning(cycle_result, action),
             }
+
+            if action == "HOLD" and rejection_reasons:
+                selective_reasons = [
+                    reason for reason in rejection_reasons
+                    if any(
+                        keyword in reason.upper()
+                        for keyword in (
+                            "GUARDIAN",
+                            "CONFIAN",
+                            "SMC",
+                            "TREND",
+                            "EXP_REDUZIDA",
+                            "DIARY",
+                            "VOLAT",
+                            "FILTRO",
+                        )
+                    )
+                ]
+                if selective_reasons:
+                    hold_reasoning = "HOLD | " + " | ".join(selective_reasons[:4])
+                    episode["reasoning"] = (
+                        f"{episode['reasoning']} | {hold_reasoning}"
+                        if episode.get("reasoning")
+                        else hold_reasoning
+                    )
 
             self.repo.save_episode(episode)
 
