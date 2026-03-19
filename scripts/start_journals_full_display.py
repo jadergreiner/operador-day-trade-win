@@ -99,6 +99,13 @@ except ImportError:
     build_dataset = None  # type: ignore[assignment,misc]
     to_json_payload = None  # type: ignore[assignment,misc]
 
+try:
+    from src.application.diarios_runtime_mlops_bridge import DiarioRuntimeMlOpsBridge
+    HAS_MLOPS_RUNTIME_BRIDGE = True
+except ImportError:
+    HAS_MLOPS_RUNTIME_BRIDGE = False
+    DiarioRuntimeMlOpsBridge = None  # type: ignore[assignment,misc]
+
 
 NARRATIVE_EXPORT_DIR = Path("outputs")
 NARRATIVE_EXPORT_EVERY_N_CYCLES = 3
@@ -168,6 +175,54 @@ def _safe_float(value: Any, fallback: float = 0.0) -> float:
         return float(value)
     except Exception:
         return fallback
+
+
+def _build_runtime_order_history(perf: dict[str, Any]) -> list[dict[str, Any]]:
+    """Extrai historico simplificado para o learner de execucao."""
+    history: list[dict[str, Any]] = []
+    rewards_by_horizon = perf.get("rewards_by_horizon", {})
+    if not isinstance(rewards_by_horizon, dict):
+        return history
+
+    for horizon_data in rewards_by_horizon.values():
+        if not isinstance(horizon_data, dict):
+            continue
+        entries = horizon_data.get("entries", [])
+        if not isinstance(entries, list):
+            continue
+        for entry in entries[-20:]:
+            if not isinstance(entry, dict):
+                continue
+            pts = _safe_float(entry.get("pts", 0.0), 0.0)
+            history.append(
+                {
+                    "quality_score": 100.0 if _safe_float(entry.get("correct", 0), 0.0) == 1.0 else 40.0,
+                    "fill_rate": 1.0,
+                    "latency_ms": 120.0,
+                    "slippage_points": abs(pts) * 0.02,
+                    "status": "FILLED",
+                    "outcome": "WIN" if _safe_float(entry.get("correct", 0), 0.0) == 1.0 else "LOSS",
+                }
+            )
+    return history
+
+
+def _build_runtime_execution_patterns(perf: dict[str, Any]) -> dict[str, Any]:
+    """Cria resumo de padroes para o learner de execucao."""
+    evaluated = max(1, int(perf.get("n_rewards_evaluated", 0) or 0))
+    correct = int(perf.get("correct_count", 0) or 0)
+    fill_rate = correct / evaluated
+    rejection_rate = 1.0 - fill_rate
+    return {
+        "summary": {
+            "event_count": int(perf.get("n_episodes", 0) or 0),
+            "fill_rate": max(0.0, min(1.0, fill_rate)),
+            "avg_slippage_points": 0.8,
+            "avg_latency_ms": 120.0,
+            "rejection_rate": max(0.0, min(1.0, rejection_rate)),
+            "failure_reasons": {},
+        }
+    }
 
 
 def _build_reflection_question_context(
@@ -2446,6 +2501,7 @@ def run_rl_performance_diary():
 
     db_path = _get_db_path()
     reader = RLPerformanceReader(db_path)
+    mlops_runtime_bridge = DiarioRuntimeMlOpsBridge() if HAS_MLOPS_RUNTIME_BRIDGE else None
     count = 0
 
     try:
@@ -2988,6 +3044,45 @@ def run_rl_performance_diary():
                 except Exception as evo_err:
                     print(f"  ⚠ Erro na evolução acumulativa: {evo_err}")
 
+                # ── Acoplamento runtime Storytelling + ML Ops ──
+                mlops_payload: dict[str, Any] | None = None
+                try:
+                    if mlops_runtime_bridge is not None:
+                        guardian_snapshot = get_guardian_state()
+                        mlops_payload = mlops_runtime_bridge.process_cycle(
+                            {
+                                "perf": perf,
+                                "coherence": coherence,
+                                "dir_analysis": dir_analysis or {},
+                                "guardian_state": guardian_snapshot,
+                                "order_history": _build_runtime_order_history(perf),
+                                "execution_patterns": _build_runtime_execution_patterns(perf),
+                            }
+                        )
+                        summary = mlops_payload.get("summary", {})
+                        regime = summary.get("regime", "RANGING")
+                        kill_status = "ATIVO" if summary.get("kill_switch_active") else "OFF"
+                        exec_mode = summary.get("execution_mode", "BALANCED")
+                        retrain = "SIM" if summary.get("retraining_triggered") else "NAO"
+                        print(
+                            "  🤖 MLOps runtime: "
+                            f"regime={regime} | kill_switch={kill_status} | "
+                            f"exec_mode={exec_mode} | retrain={retrain}"
+                        )
+
+                        exec_rec = mlops_payload.get("execution_recommendation", {})
+                        mode = str(exec_rec.get("mode", "BALANCED")).upper()
+                        if mode == "CONSERVATIVE":
+                            suggested_buy = max(suggested_buy, 6)
+                            suggested_sell = min(suggested_sell, -6)
+                            trend_follow = False
+                        elif mode == "AGGRESSIVE":
+                            suggested_buy = max(2, suggested_buy - 1)
+                            suggested_sell = min(-2, suggested_sell + 1)
+                            trend_follow = True
+                except Exception as mlops_err:
+                    print(f"  ⚠ Erro no acoplamento runtime MLOps: {mlops_err}")
+
                 # Custo de oportunidade
                 co = coherence.get("custo_oportunidade", {})
 
@@ -3019,6 +3114,20 @@ def run_rl_performance_diary():
                 except Exception:
                     pass
 
+                sugestoes_feedback = list(coherence.get("sugestoes", []))
+                confianca_minima_sugerida = 60.0
+                if mlops_payload is not None:
+                    summary = mlops_payload.get("summary", {})
+                    if summary.get("kill_switch_active"):
+                        confianca_minima_sugerida = 75.0
+                    elif summary.get("regime") == "HIGH_VOLATILITY":
+                        confianca_minima_sugerida = 65.0
+                    elif summary.get("regime") in {"TRENDING_UP", "TRENDING_DOWN"}:
+                        confianca_minima_sugerida = 55.0
+                    mensagem = summary.get("message")
+                    if mensagem:
+                        sugestoes_feedback.append(f"MLOps runtime: {mensagem}")
+
                 feedback = DiaryFeedback(
                     date=date.today().isoformat(),
                     timestamp=now.isoformat(),
@@ -3028,7 +3137,7 @@ def run_rl_performance_diary():
                     incoerencias=coherence["incoerencias"],
                     filtros_bloqueantes=coherence["filtros_bloqueantes"],
                     parametros_questionados=coherence["parametros_questionados"],
-                    sugestoes=coherence["sugestoes"],
+                    sugestoes=sugestoes_feedback,
                     custo_oportunidade_pts=co.get("capturable_estimado", 0),
                     eficiencia_pct=co.get("eficiencia_pct", 0),
                     hold_pct=perf["actions_distribution"].get("HOLD", 0) / max(perf["n_episodes"], 1) * 100,
@@ -3041,7 +3150,7 @@ def run_rl_performance_diary():
                     smc_bypass_recomendado=smc_bypass,
                     trend_following_recomendado=trend_follow,
                     max_adx_para_trend=25.0,
-                    confianca_minima_sugerida=60.0,
+                    confianca_minima_sugerida=confianca_minima_sugerida,
                     regioes_fortes=reg_fortes_list,
                     regioes_armadilhas=reg_armadilhas_list,
                     veredicto_regioes=veredicto_reg,

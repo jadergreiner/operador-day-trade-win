@@ -229,6 +229,33 @@ evitar bloqueadores entre agentes.
 
 ---
 
+## 🟢 Checkpoint Real — 2026-03-19 (Rodada 8)
+
+### Acoplamento Runtime Final (Storytelling + ML Ops)
+
+**Status geral:** Acoplamento runtime concluido e validado com testes unitarios
+
+**Entregas implementadas:**
+- Bridge de acoplamento runtime
+  - `src/application/diarios_runtime_mlops_bridge.py`
+  - `tests/unit/test_diarios_runtime_mlops_bridge.py`
+- Integracao no fluxo principal de diarios
+  - `scripts/start_journals_full_display.py`
+
+**Validacao executada:**
+- `python -m pytest -q tests/unit/test_diarios_runtime_mlops_bridge.py tests/unit/test_bug_diarios_02_03_04.py tests/unit/test_order_manager_learner.py tests/unit/test_adaptive_retraining_pipeline.py tests/unit/test_market_regime_adapter.py tests/unit/test_universal_kill_switch.py`
+- Resultado: `61 passed`
+
+**Resumo funcional desta rodada:**
+- Runtime passou a consolidar regime, trigger/plano de retrain e kill switch universal
+- Diario RL passou a consumir recomendacao de execucao (conservative/aggressive) em tempo real
+- Sinal de acoplamento MLOps foi incorporado ao feedback persistido no SQLite
+
+**Bloqueadores desta rodada:**
+- Nenhum bloqueador tecnico identificado
+
+---
+
 ## 🔗 Matriz de Dependências
 
 ```

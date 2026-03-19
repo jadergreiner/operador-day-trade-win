@@ -241,14 +241,14 @@ Todos agentes (testes + commits + merge)
 ## 🚀 Próximos Passos
 
 ### Imediato (Kickoff)
-1. Fechar acoplamento runtime Storytelling + ML Ops no fluxo diario
+1. [x] Fechar acoplamento runtime Storytelling + ML Ops no fluxo diario
 2. Ler `docs/PLANO_MULTI_AGENTES.md` completo
 3. Assinar tarefas por especialista
 4. Setup de branches feature/
 
 ### Bloqueadores Críticos
-- [ ] Resolver BUG-DIARIOS-04 antes integração
-- [ ] Resolver BUG-DIARIOS-02 antes ML Ops
+- [x] Resolver BUG-DIARIOS-04 antes integração
+- [x] Resolver BUG-DIARIOS-02 antes ML Ops
 - [ ] Validar MT5 connection antes Clean Arch
 
 ### Pós-Entregas (Fase 2)
@@ -283,4 +283,4 @@ Todos agentes (testes + commits + merge)
 
 ---
 
-**Status:** Execucao em fase de integracao final | **Execução:** Paralela por especialidade + sequencial por dependência
+**Status:** Acoplamento runtime concluido e validado em testes | **Execução:** Paralela por especialidade + sequencial por dependência
