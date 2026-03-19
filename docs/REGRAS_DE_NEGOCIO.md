@@ -30,6 +30,12 @@ O campo Magic Number (EA ID) identifica o agente
 origem de cada ordem no MetaTrader 5. Ver
 [ADR-012](ADRS.md).
 
+As ordens enviadas ao MT5 usam comentario padronizado:
+
+- `agente|EA<magic>|MA<order_prefix>`
+
+Isso facilita auditoria humana e reconciliacao por ticket.
+
 Estado atual: as regras abaixo ja sao consumidas pelo runtime;
 o que segue pendente e a validacao operacional em staging/UAT/Gate 2.
 
@@ -105,6 +111,14 @@ O Grupo 2 de feedback usa cinco módulos em
   métricas atuais vs baseline histórico. Gera
   recomendação CONTINUE/MONITOR/ROLLBACK.
   Agente: Micro Tendência.
+
+### Governança de aprendizado do Micro Tendência
+
+- Threshold de retreino: 500 rewards novos.
+- Cooldown mínimo entre retreinos: 180 minutos.
+- O LGBM do micro recarrega automaticamente após retreino bem-sucedido.
+- O histórico de versões e aprendizado é mantido em `data/models/micro_tendencia/CHANGELOG.md`.
+- O micro usa `rl_episodes` com `source = 'MICRO_AGENT'` como fonte principal de episódios.
 
 Refs: ADR-015 (Pipeline Grupo 2), P1 (BACKLOG).
 

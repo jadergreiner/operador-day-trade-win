@@ -53,6 +53,7 @@ Automacao completa do ciclo de trading:
 
 - Verdade operacional de pendências e fechamento: `docs/BACKLOG.md`, `docs/STATUS_ENTREGAS.md` e `docs/PLANO_MULTI_AGENTES.md`.
 - O PRD espelha esses documentos para rastreabilidade de release, não para substituir o status operacional deles.
+- Governança do micro tendência: `docs/MICRO_TENDENCIA_CHANGELOG_GOVERNANCA.md` e `docs/MICRO_TENDENCIA_CHANGELOG_TEMPLATE.md`.
 - O contrato imediato do fechamento diário é `prompts/fechamento_diario.md`, com `ResultadoAgente`, `agente_impactado`, `resultado_por_agente`, `resultado_consolidado` e `melhorias_por_agente`.
 - `Gate 2` neste documento significa apenas escala de capital; o gate final operacional é separado e depende de staging/UAT e evidência diária por agente.
 
@@ -347,6 +348,21 @@ Scripts de lancamento:
 - **RL 5000:** `operar_novo_agente_rl_real_antiovertrading.py`
 - **RL Direto:** `agente_rl_direto_independente.py`
 
+#### 7.1.1 Governanca operacional do Micro Tendencia
+
+- O micro tendencia registra o aprendizado em `data/models/micro_tendencia/CHANGELOG.md`.
+- O changelog de cada versao descreve:
+  - episodios usados
+  - win rate de treino e validacao
+  - delta vs versao anterior
+  - rollback quando aplicavel
+  - observacoes de aprendizado e mudancas de comportamento
+- O retreino automatizado do micro usa governanca atual de:
+  - `500` rewards novos como threshold
+  - `180` minutos de cooldown minimo entre retreinos
+- O modelo LightGBM recarrega automaticamente apos retreino bem-sucedido, sem exigir restart do `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`.
+- O painel e o terminal exibem o aprendizado corrente, o ultimo treino persistido e o cooldown restante.
+
 ### 7.2 Modulos Criticos (src/application/)
 
 | Modulo | Arquivo | Testes |
@@ -393,6 +409,13 @@ Scripts de lancamento:
 | data/models/ | Pickle | Modelos ML/RL |
 | data/BDI/ | CSV | Calendario econ. |
 
+### 7.5 Convencao de Identificacao no MT5
+
+- O campo `magic` segue o Magic Number do agente.
+- O comentario das ordens usa o padrao:
+  - `agente|EA<magic>|MA<order_prefix>`
+- Isso facilita auditoria de ordens no MT5 e triagem de tickets por agente.
+
 ---
 
 ## 8. Regras de Negocio
@@ -407,6 +430,15 @@ Scripts de lancamento:
 | RN-04 | Max trades/dia/agente | 6 |
 | RN-05 | Horario limite entradas | 17:25 BRT |
 | RN-06 | Inicio operacoes | 09:00 BRT |
+
+### 8.2 Regras de Aprendizado do Micro Tendencia
+
+| ID | Regra | Valor |
+|----|-------|-------|
+| RL-01 | Threshold de retreino | 500 rewards novos |
+| RL-02 | Cooldown minimo entre retreinos | 180 minutos |
+| RL-03 | Recarregamento do LGBM | Automatico apos retreino bem-sucedido |
+| RL-04 | Fonte de episodios do micro | `rl_episodes` com `source = 'MICRO_AGENT'` |
 
 ### 8.2 Regras de Saida
 

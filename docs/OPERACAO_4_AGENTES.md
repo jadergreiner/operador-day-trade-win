@@ -21,6 +21,21 @@
 O projeto operacionaliza **4 agentes paralelos** para trading de Mini Índice
 (WIN$N no MetaTrader 5):
 
+### Governança de versão do Micro Tendência
+
+O histórico de evolução do micro é documentado em:
+
+- [docs/MICRO_TENDENCIA_CHANGELOG_GOVERNANCA.md](MICRO_TENDENCIA_CHANGELOG_GOVERNANCA.md)
+- [docs/MICRO_TENDENCIA_CHANGELOG_TEMPLATE.md](MICRO_TENDENCIA_CHANGELOG_TEMPLATE.md)
+- `data/models/micro_tendencia/CHANGELOG.md` no runtime
+
+### Governança de aprendizado do Micro Tendência
+
+- Threshold de retreino: `500` rewards novos
+- Cooldown mínimo entre retreinos: `180` minutos
+- O LGBM do micro recarrega automaticamente após retreino bem-sucedido
+- O terminal mostra episódios acumulados, rewards acumuladas, rewards desde o último treino, cooldown restante e a última versão/data persistida
+
 | **Agente** | **Função** | **Script** | **Magic** |
 |---|---|---|---|
 | Diários | Logging + IA | `start_journals_*.py` | 234800 |
@@ -31,6 +46,12 @@ O projeto operacionaliza **4 agentes paralelos** para trading de Mini Índice
 Cada agente envia ordens com **Magic Number** (EA ID)
 único no MT5, garantindo isolamento total.
 Ver [ADR-012](ADRS.md) para a decisão formal.
+
+As ordens também carregam comentário padronizado no MT5:
+
+- `agente|EA<magic>|MA<order_prefix>`
+
+Isso facilita auditoria e triagem visual por agente.
 
 **Fluxo Lógico:**
 

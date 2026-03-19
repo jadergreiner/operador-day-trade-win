@@ -19,6 +19,7 @@ Status: ✅ PRODUÇÃO (26/02/2026)
 """
 
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Tuple
 import numpy as np
@@ -63,6 +64,8 @@ class LGBMAgentIntegrator:
         self.model_path = Path(model_path)
         self.model = None
         self.model_loaded = False
+        self.loaded_model_version = "N/A"
+        self.loaded_model_timestamp = "N/A"
 
         # Tenta carregar modelo
         self._load_model()
@@ -71,20 +74,39 @@ class LGBMAgentIntegrator:
         """Carrega modelo LightGBM do disco usando joblib."""
         if not self.model_path.exists():
             print(f"  ⚠️  LGBM: Modelo não encontrado: {self.model_path}")
+            self.model = None
+            self.model_loaded = False
             return False
 
         if not JOBLIB_AVAILABLE:
             print(f"  ⚠️  LGBM: joblib não disponível")
+            self.model = None
+            self.model_loaded = False
             return False
 
         try:
             self.model = joblib.load(self.model_path)
             self.model_loaded = True
+            self.loaded_model_version = self.model_path.stem
+            try:
+                self.loaded_model_timestamp = datetime.fromtimestamp(
+                    self.model_path.stat().st_mtime
+                ).isoformat()
+            except Exception:
+                self.loaded_model_timestamp = "N/A"
             print(f"  ✅ LGBM: Modelo carregado [{self.model_path.name}]")
             return True
         except Exception as e:
             print(f"  ❌ LGBM: Erro ao carregar modelo: {e}")
+            self.model = None
+            self.model_loaded = False
             return False
+
+    def reload_model(self) -> bool:
+        """Recarrega o modelo do disco após retreino."""
+        self.model = None
+        self.model_loaded = False
+        return self._load_model()
 
     def score_opportunity(
         self,

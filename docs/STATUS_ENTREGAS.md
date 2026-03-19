@@ -4,6 +4,7 @@
 ## Snapshot Atual
 
 - Verdade operacional canônica: [docs/BACKLOG.md](BACKLOG.md), [docs/STATUS_ENTREGAS.md](STATUS_ENTREGAS.md) e [docs/PLANO_MULTI_AGENTES.md](PLANO_MULTI_AGENTES.md). O PRD espelha esses documentos.
+- Governança do micro tendência: [docs/MICRO_TENDENCIA_CHANGELOG_GOVERNANCA.md](MICRO_TENDENCIA_CHANGELOG_GOVERNANCA.md) e [docs/MICRO_TENDENCIA_CHANGELOG_TEMPLATE.md](MICRO_TENDENCIA_CHANGELOG_TEMPLATE.md).
 - O Gate 2 de escala de capital permanece válido a partir do PASS de 12/03/2026; ele não substitui o gate final operacional.
 - Bloqueadores reais desta rodada: `TECH-001`, `TECH-002`, `TECH-003`, `INFRA-1`, `BL-07` canônico, `BL-08` UAT operacional e fechamento diário por agente.
 - Evidência confirmada: `BL-01` estrutural verde; testes de `guardian/release_gates/documentation` verdes; a coleta completa do `pytest tests` ainda não está verde por ATI-5 (`shap/numba` x `NumPy 2.4`).

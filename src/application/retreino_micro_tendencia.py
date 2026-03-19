@@ -32,16 +32,18 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
+from uuid import uuid4
 
 logger = logging.getLogger("retreino_micro_tendencia")
 
 # ─────────────────────────────────────────────
 # Constantes de threshold
 # ─────────────────────────────────────────────
-THRESHOLD_REWARDS_NOVO_TREINO: int = 200
+THRESHOLD_REWARDS_NOVO_TREINO: int = 500
 JANELA_EPISODIOS: int = 500
 ROLLBACK_DELTA_MAX_PP: float = 5.0  # porcentagem
 WIN_RATE_MINIMO_VALIDACAO: float = 0.40
+COOLDOWN_TREINO_MINUTOS: int = 180
 
 
 # ─────────────────────────────────────────────
@@ -201,6 +203,18 @@ class TriggerRetreino:
         except Exception as exc:
             logger.warning("Falha ao garantir tabelas de retreino: %s", exc)
 
+    def _tem_coluna(self, tabela: str, coluna: str) -> bool:
+        """Verifica se uma coluna existe em uma tabela SQLite."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cur = conn.cursor()
+            cur.execute(f"PRAGMA table_info({tabela})")
+            colunas = {str(row[1]) for row in cur.fetchall()}
+            conn.close()
+            return coluna in colunas
+        except Exception:
+            return False
+
     def contar_rewards_total(self) -> int:
         """Retorna total de rewards avaliados em rl_rewards.
 
@@ -221,21 +235,84 @@ class TriggerRetreino:
             return 0
 
     def contar_rewards_ultimo_treino(self) -> int:
-        """Retorna n_rewards_no_treino do ultimo registro em rl_training_metrics.
+        """Retorna a quantidade de rewards avaliados ate o ultimo treino."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cur = conn.cursor()
+            treino_ts: Optional[str] = None
+            if self._tem_coluna("rl_training_metrics", "timestamp"):
+                cur.execute(
+                    "SELECT timestamp FROM rl_training_metrics "
+                    "ORDER BY id DESC LIMIT 1"
+                )
+                row = cur.fetchone()
+                treino_ts = str(row[0]) if row and row[0] else None
+            elif self._tem_coluna("model_metadata", "trained_at"):
+                cur.execute(
+                    "SELECT trained_at FROM model_metadata "
+                    "WHERE is_active = 1 ORDER BY id DESC LIMIT 1"
+                )
+                row = cur.fetchone()
+                treino_ts = str(row[0]) if row and row[0] else None
 
-        Returns:
-            n_rewards do ultimo treino, ou 0 se nunca treinou.
-        """
+            if not treino_ts:
+                conn.close()
+                return 0
+
+            cur.execute(
+                """
+                SELECT COUNT(*)
+                FROM rl_rewards
+                WHERE is_evaluated = 1
+                  AND datetime(COALESCE(evaluated_at, created_at)) <= datetime(?)
+                """,
+                (treino_ts,),
+            )
+            row = cur.fetchone()
+
+            conn.close()
+            return int(row[0]) if row else 0
+        except Exception:
+            return 0
+
+    def _obter_timestamp_ultimo_treino(self) -> Optional[str]:
+        """Retorna o timestamp do ultimo treino persistido."""
         try:
             conn = sqlite3.connect(self.db_path)
             cur = conn.cursor()
             cur.execute(
-                "SELECT n_rewards_no_treino FROM rl_training_metrics "
+                "SELECT timestamp FROM rl_training_metrics "
                 "ORDER BY id DESC LIMIT 1"
             )
             row = cur.fetchone()
             conn.close()
-            return int(row[0]) if row else 0
+            if row and row[0]:
+                return str(row[0])
+            if self._tem_coluna("model_metadata", "trained_at"):
+                conn = sqlite3.connect(self.db_path)
+                cur = conn.cursor()
+                cur.execute(
+                    "SELECT trained_at FROM model_metadata "
+                    "WHERE is_active = 1 ORDER BY id DESC LIMIT 1"
+                )
+                row = cur.fetchone()
+                conn.close()
+                if row and row[0]:
+                    return str(row[0])
+        except Exception:
+            return None
+        return None
+
+    def _cooldown_restante_minutos(self) -> int:
+        """Retorna quantos minutos faltam para o cooldown liberar novo treino."""
+        ultimo_ts = self._obter_timestamp_ultimo_treino()
+        if not ultimo_ts:
+            return 0
+        try:
+            ultimo = datetime.fromisoformat(str(ultimo_ts).replace("Z", "+00:00"))
+            delta = datetime.now() - ultimo.replace(tzinfo=None) if ultimo.tzinfo else datetime.now() - ultimo
+            decorrido = delta.total_seconds() / 60.0
+            return max(0, int(round(COOLDOWN_TREINO_MINUTOS - decorrido)))
         except Exception:
             return 0
 
@@ -255,12 +332,127 @@ class TriggerRetreino:
         ultimo = self.contar_rewards_ultimo_treino()
         desde_ultimo = max(0, total - ultimo)
         falta_para_proximo = max(0, self.threshold - desde_ultimo)
+        cooldown_restante = self._cooldown_restante_minutos()
         return {
             "rewards_acumuladas": total,
             "rewards_desde_ultimo_treino": desde_ultimo,
             "rewards_ate_proximo_treino": falta_para_proximo,
             "threshold_rewards": self.threshold,
+            "cooldown_treino_minutos": COOLDOWN_TREINO_MINUTOS,
+            "cooldown_restante_minutos": cooldown_restante,
         }
+
+    def bootstrap_modelo_atual(self, modelo_path: str, rewards_total: int, n_episodios: int) -> Optional[str]:
+        """Cria um baseline auditável quando não existe histórico formal."""
+        try:
+            if self.contar_rewards_ultimo_treino() > 0:
+                return None
+
+            path = Path(modelo_path)
+            data_treino = datetime.fromtimestamp(path.stat().st_mtime).isoformat() if path.exists() else datetime.now().isoformat()
+            versao = f"bootstrap_{path.stem}_{datetime.now().strftime('%Y%m%d')}"
+            metrics = {
+                "rewards_total": rewards_total,
+                "n_episodios": n_episodios,
+                "bootstrap": True,
+                "fonte": str(path),
+            }
+
+            conn = sqlite3.connect(self.db_path)
+            cur = conn.cursor()
+            if self._tem_coluna("model_metadata", "version"):
+                cur.execute(
+                    "UPDATE model_metadata SET is_active = 0 WHERE model_name = ?",
+                    ("micro_tendencia",),
+                )
+                cur.execute(
+                    """
+                    INSERT INTO model_metadata (
+                        model_name, model_type, version, trained_at,
+                        training_metrics, hyperparameters, file_path,
+                        is_active, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+                    """,
+                    (
+                        "micro_tendencia",
+                        "LightGBM_micro_tendencia",
+                        versao,
+                        data_treino,
+                        json.dumps(metrics, ensure_ascii=False),
+                        json.dumps({}, ensure_ascii=False),
+                        modelo_path,
+                        datetime.now().isoformat(),
+                        datetime.now().isoformat(),
+                    ),
+                )
+            elif self._tem_coluna("rl_training_metrics", "model_version"):
+                cur.execute(
+                    """
+                    INSERT INTO rl_training_metrics (
+                        training_id, timestamp, model_name, model_version,
+                        algorithm, episodes_total, episodes_train,
+                        episodes_validation, avg_reward, cumulative_reward,
+                        win_rate, profit_factor, sharpe_ratio, max_drawdown,
+                        buy_accuracy, sell_accuracy, hold_accuracy,
+                        hyperparameters, feature_importance, validation_reward,
+                        overfitting_ratio, notes, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        str(uuid4()),
+                        data_treino,
+                        "micro_tendencia",
+                        versao,
+                        "LightGBM_micro_tendencia",
+                        n_episodios,
+                        n_episodios,
+                        0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        json.dumps({}, ensure_ascii=False),
+                        json.dumps({}, ensure_ascii=False),
+                        0.0,
+                        0.0,
+                        f"Bootstrap inicial | rewards_total={rewards_total} | modelo={modelo_path}",
+                        datetime.now().isoformat(),
+                    ),
+                )
+            else:
+                cur.execute(
+                    """
+                    INSERT INTO rl_training_metrics (
+                        versao, data_treino, n_episodios_usados,
+                        n_rewards_no_treino, win_rate_treino,
+                        win_rate_validacao, delta_vs_anterior,
+                        rollback_realizado, modelo_path, notas
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        versao,
+                        data_treino,
+                        n_episodios,
+                        rewards_total,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0,
+                        modelo_path,
+                        notas,
+                    ),
+                )
+            conn.commit()
+            conn.close()
+            return versao
+        except Exception as exc:
+            logger.warning("Falha ao registrar bootstrap do modelo atual: %s", exc)
+            return None
 
     def deve_retreinar(self) -> bool:
         """Verifica se threshold foi atingido para disparar retreino.
@@ -268,7 +460,10 @@ class TriggerRetreino:
         Returns:
             True se novos_rewards >= threshold.
         """
-        return self.novos_rewards_desde_ultimo_treino() >= self.threshold
+        return (
+            self.novos_rewards_desde_ultimo_treino() >= self.threshold
+            and self._cooldown_restante_minutos() <= 0
+        )
 
 
 # ─────────────────────────────────────────────
@@ -277,7 +472,7 @@ class TriggerRetreino:
 
 
 class CarregadorEpisodios:
-    """Carrega episodios de micro_episodios com janela deslizante.
+    """Carrega episodios do micro a partir de rl_episodes com janela deslizante.
 
     Prioriza os mais recentes com peso decrescente para simular
     relevancia temporal no retreino.
@@ -292,7 +487,7 @@ class CarregadorEpisodios:
         self.janela = janela
 
     def carregar_episodios(self) -> list[dict[str, Any]]:
-        """Carrega os ultimos N episodios de micro_episodios.
+        """Carrega os ultimos N episodios do micro.
 
         Returns:
             Lista de dicts com outcome, pnl, timestamp, confianca,
@@ -303,11 +498,11 @@ class CarregadorEpisodios:
             cur = conn.cursor()
             cur.execute(
                 """
-                SELECT outcome, resultado_pts, timestamp_saida,
-                       confianca, macro_score, direcao
-                FROM micro_episodios
-                WHERE outcome IS NOT NULL
-                ORDER BY timestamp_entrada DESC
+                SELECT episode_id, timestamp, action, micro_trend,
+                       overall_confidence, macro_score_final
+                FROM rl_episodes
+                WHERE source = 'MICRO_AGENT'
+                ORDER BY timestamp DESC
                 LIMIT ?
                 """,
                 (self.janela,),
@@ -324,14 +519,15 @@ class CarregadorEpisodios:
             # Peso decrescente: episodio mais recente tem peso 1.0,
             # o mais antigo tem peso ~0.1
             peso = 1.0 - 0.9 * (i / max(total - 1, 1))
+            outcome, pnl = self._derivar_outcome_e_pnl(row[0])
             episodios.append(
                 {
-                    "outcome": row[0] or "BREAKEVEN",
-                    "pnl": float(row[1] or 0.0),
-                    "timestamp": row[2] or "",
-                    "confianca": float(row[3] or 0.0),
-                    "macro_score": int(row[4] or 0),
-                    "direction": row[5] or "",
+                    "outcome": outcome,
+                    "pnl": pnl,
+                    "timestamp": row[1] or "",
+                    "confianca": float(row[4] or 0.0),
+                    "macro_score": int(float(row[5] or 0.0)),
+                    "direction": row[3] or row[2] or "",
                     "peso": round(peso, 4),
                 }
             )
@@ -342,12 +538,51 @@ class CarregadorEpisodios:
         try:
             conn = sqlite3.connect(self.db_path)
             cur = conn.cursor()
-            cur.execute("SELECT COUNT(*) FROM micro_episodios")
+            cur.execute(
+                "SELECT COUNT(*) FROM rl_episodes WHERE source = 'MICRO_AGENT'"
+            )
             row = cur.fetchone()
             conn.close()
             return int(row[0]) if row else 0
         except Exception:
             return 0
+
+    def _derivar_outcome_e_pnl(self, episode_id: str) -> tuple[str, float]:
+        """Deriva o outcome a partir da recompensa mais recente do episodio."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT reward_direction, was_correct, reward_continuous,
+                       reward_normalized, price_change_points, decision_verdict
+                FROM rl_rewards
+                WHERE episode_id = ?
+                ORDER BY COALESCE(evaluated_at, created_at) DESC, id DESC
+                LIMIT 1
+                """,
+                (episode_id,),
+            )
+            row = cur.fetchone()
+            conn.close()
+            if not row:
+                return "BREAKEVEN", 0.0
+
+            verdict = str(row[5] or "").upper()
+            pnl = float(row[2] or row[4] or row[3] or 0.0)
+            if verdict in {"WIN", "LOSS", "BREAKEVEN"}:
+                return verdict, pnl
+
+            was_correct = row[1]
+            if was_correct is not None:
+                return ("WIN", pnl) if int(was_correct) == 1 else ("LOSS", pnl)
+            if pnl > 0:
+                return "WIN", pnl
+            if pnl < 0:
+                return "LOSS", pnl
+            return "BREAKEVEN", pnl
+        except Exception:
+            return "BREAKEVEN", 0.0
 
     def calcular_win_rate(self, episodios: list[dict[str, Any]]) -> float:
         """Calcula win rate ponderado por peso.
@@ -492,6 +727,10 @@ class GerenciadorRetreino:
         self.trigger = TriggerRetreino(db_path)
         self.carregador = CarregadorEpisodios(db_path)
         self.versionador = VersonadorModelo(db_path, modelos_dir)
+
+    def _tem_coluna(self, tabela: str, coluna: str) -> bool:
+        """Atalho para consultar colunas usando a mesma conexao do trigger."""
+        return self.trigger._tem_coluna(tabela, coluna)
 
     def obter_estado_aprendizado(self) -> EstadoRetreino:
         """Retorna o estado atual de aprendizado e proximidade do proximo treino."""
@@ -652,10 +891,128 @@ class GerenciadorRetreino:
         except Exception:
             return []
 
+    def registrar_bootstrap_inicial(
+        self,
+        modelo_path: str,
+        notas: str = "Bootstrap inicial do modelo carregado pelo micro",
+    ) -> Optional[str]:
+        """Registra um baseline auditável quando ainda não existe treino persistido.
+
+        Retorna a versão criada, ou None se já houver histórico.
+        """
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) FROM rl_training_metrics")
+            total = int(cur.fetchone()[0] or 0)
+            if total > 0:
+                conn.close()
+                return None
+
+            cur.execute("SELECT COUNT(*) FROM model_metadata")
+            meta_total = int(cur.fetchone()[0] or 0)
+            if meta_total > 0:
+                conn.close()
+                return None
+            conn.close()
+        except Exception:
+            return None
+
+        path = Path(modelo_path)
+        data_treino = datetime.fromtimestamp(path.stat().st_mtime).isoformat() if path.exists() else datetime.now().isoformat()
+        versao = f"bootstrap_{path.stem}_{datetime.now().strftime('%Y%m%d')}"
+        win_rate_treino = 0.0
+        win_rate_validacao = 0.0
+        n_episodios = self.carregador.contar_episodios()
+        n_rewards = self.trigger.contar_rewards_total()
+        delta = 0.0
+        rollback = False
+
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cur = conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO rl_training_metrics (
+                    versao, data_treino, n_episodios_usados,
+                    n_rewards_no_treino, win_rate_treino,
+                    win_rate_validacao, delta_vs_anterior,
+                    rollback_realizado, modelo_path, notas
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    versao,
+                    data_treino,
+                    n_episodios,
+                    n_rewards,
+                    win_rate_treino,
+                    win_rate_validacao,
+                    delta,
+                    0,
+                    modelo_path,
+                    notas,
+                ),
+            )
+            cur.execute(
+                """
+                INSERT INTO model_metadata (
+                    versao, data_treino, modelo_path,
+                    win_rate_validacao, n_episodios, ativo, notas
+                ) VALUES (?, ?, ?, ?, ?, 1, ?)
+                """,
+                (
+                    versao,
+                    data_treino,
+                    modelo_path,
+                    win_rate_validacao,
+                    n_episodios,
+                    notas,
+                ),
+            )
+            conn.commit()
+            conn.close()
+            self._registrar_changelog(
+                versao=versao,
+                data_treino=data_treino,
+                n_episodios=n_episodios,
+                win_rate_treino=win_rate_treino,
+                win_rate_validacao=win_rate_validacao,
+                delta=delta,
+                rollback=rollback,
+                notas=notas,
+            )
+            return versao
+        except Exception as exc:
+            logger.warning("Falha ao registrar bootstrap inicial: %s", exc)
+            return None
+
     def obter_ultima_versao_treino(self) -> str:
         """Retorna a ultima versao ativa persistida."""
-        versao = self.versionador.obter_versao_atual()
-        return versao or "N/A"
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT model_version FROM rl_training_metrics "
+                "ORDER BY id DESC LIMIT 1"
+            )
+            row = cur.fetchone()
+            if row and row[0]:
+                conn.close()
+                return str(row[0])
+            if self._tem_coluna("model_metadata", "version"):
+                cur.execute(
+                    "SELECT version FROM model_metadata WHERE is_active = 1 "
+                    "ORDER BY id DESC LIMIT 1"
+                )
+            else:
+                cur.execute(
+                    "SELECT versao FROM rl_training_metrics ORDER BY id DESC LIMIT 1"
+                )
+            row = cur.fetchone()
+            conn.close()
+            return str(row[0]) if row else "N/A"
+        except Exception:
+            return "N/A"
 
     def obter_ultima_data_treino(self) -> str:
         """Retorna a data do ultimo treino persistido."""
@@ -663,12 +1020,26 @@ class GerenciadorRetreino:
             conn = sqlite3.connect(self.db_path)
             cur = conn.cursor()
             cur.execute(
-                "SELECT data_treino FROM model_metadata "
-                "WHERE ativo = 1 ORDER BY id DESC LIMIT 1"
+                "SELECT timestamp FROM rl_training_metrics ORDER BY id DESC LIMIT 1"
             )
             row = cur.fetchone()
+            if row and row[0]:
+                conn.close()
+                return str(row[0])
+            if self._tem_coluna("model_metadata", "trained_at"):
+                cur.execute(
+                    "SELECT trained_at FROM model_metadata "
+                    "WHERE is_active = 1 ORDER BY id DESC LIMIT 1"
+                )
+            else:
+                cur.execute(
+                    "SELECT data_treino FROM rl_training_metrics ORDER BY id DESC LIMIT 1"
+                )
+            row = cur.fetchone()
             conn.close()
-            return str(row[0]) if row else "N/A"
+            if row:
+                return str(row[0])
+            return "N/A"
         except Exception:
             return "N/A"
 
@@ -685,10 +1056,16 @@ class GerenciadorRetreino:
         try:
             conn = sqlite3.connect(self.db_path)
             cur = conn.cursor()
-            cur.execute(
-                "SELECT win_rate_validacao FROM model_metadata "
-                "WHERE ativo = 1 ORDER BY id DESC LIMIT 1"
-            )
+            if self._tem_coluna("rl_training_metrics", "win_rate"):
+                cur.execute(
+                    "SELECT win_rate FROM rl_training_metrics "
+                    "ORDER BY id DESC LIMIT 1"
+                )
+            else:
+                cur.execute(
+                    "SELECT win_rate_validacao FROM model_metadata "
+                    "WHERE is_active = 1 ORDER BY id DESC LIMIT 1"
+                )
             row = cur.fetchone()
             conn.close()
             return float(row[0]) if row else 0.0
@@ -763,53 +1140,102 @@ class GerenciadorRetreino:
         try:
             conn = sqlite3.connect(self.db_path)
             cur = conn.cursor()
+            if self._tem_coluna("rl_training_metrics", "model_version"):
+                cur.execute(
+                    """
+                    INSERT INTO rl_training_metrics (
+                        training_id, timestamp, model_name, model_version,
+                        algorithm, episodes_total, episodes_train,
+                        episodes_validation, date_range_start, date_range_end,
+                        avg_reward, cumulative_reward, win_rate, profit_factor,
+                        sharpe_ratio, max_drawdown, buy_accuracy, sell_accuracy,
+                        hold_accuracy, hyperparameters, feature_importance,
+                        validation_reward, overfitting_ratio, notes, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        str(uuid4()),
+                        data_treino,
+                        "micro_tendencia",
+                        versao,
+                        "LightGBM_micro_tendencia",
+                        n_episodios,
+                        max(1, int(n_episodios * 0.8)),
+                        max(0, int(n_episodios * 0.2)),
+                        data_treino,
+                        data_treino,
+                        win_rate_treino,
+                        win_rate_treino * n_episodios,
+                        win_rate_validacao,
+                        1.0,
+                        0.0,
+                        0.0,
+                        win_rate_treino,
+                        win_rate_treino,
+                        1.0 if n_episodios else 0.0,
+                        json.dumps({}, ensure_ascii=False),
+                        json.dumps({}, ensure_ascii=False),
+                        win_rate_validacao,
+                        max(0.0, 1.0 - win_rate_validacao),
+                        notas,
+                        data_treino,
+                    ),
+                )
+            else:
+                cur.execute(
+                    """
+                    INSERT INTO rl_training_metrics (
+                        versao, data_treino, n_episodios_usados,
+                        n_rewards_no_treino, win_rate_treino,
+                        win_rate_validacao, delta_vs_anterior,
+                        rollback_realizado, modelo_path, notas
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        versao,
+                        data_treino,
+                        n_episodios,
+                        n_rewards,
+                        win_rate_treino,
+                        win_rate_validacao,
+                        delta,
+                        1 if rollback else 0,
+                        modelo_path,
+                        notas,
+                    ),
+                )
 
-            # Inserir em rl_training_metrics
-            cur.execute(
-                """
-                INSERT INTO rl_training_metrics (
-                    versao, data_treino, n_episodios_usados,
-                    n_rewards_no_treino, win_rate_treino,
-                    win_rate_validacao, delta_vs_anterior,
-                    rollback_realizado, modelo_path, notas
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    versao,
-                    data_treino,
-                    n_episodios,
-                    n_rewards,
-                    win_rate_treino,
-                    win_rate_validacao,
-                    delta,
-                    1 if rollback else 0,
-                    modelo_path,
-                    notas,
-                ),
-            )
-
-            # Desativar versoes anteriores
-            cur.execute(
-                "UPDATE model_metadata SET ativo = 0"
-            )
-
-            # Inserir nova versao em model_metadata
-            cur.execute(
-                """
-                INSERT INTO model_metadata (
-                    versao, data_treino, modelo_path,
-                    win_rate_validacao, n_episodios, ativo, notas
-                ) VALUES (?, ?, ?, ?, ?, 1, ?)
-                """,
-                (
-                    versao,
-                    data_treino,
-                    modelo_path,
-                    win_rate_validacao,
-                    n_episodios,
-                    notas,
-                ),
-            )
+            if self._tem_coluna("model_metadata", "version"):
+                cur.execute("UPDATE model_metadata SET is_active = 0")
+                cur.execute(
+                    """
+                    INSERT INTO model_metadata (
+                        model_name, model_type, version, trained_at,
+                        training_metrics, hyperparameters, file_path,
+                        is_active, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+                    """,
+                    (
+                        "micro_tendencia",
+                        "LightGBM_micro_tendencia",
+                        versao,
+                        data_treino,
+                        json.dumps(
+                            {
+                                "win_rate_treino": win_rate_treino,
+                                "win_rate_validacao": win_rate_validacao,
+                                "n_episodios": n_episodios,
+                                "delta_vs_anterior": delta,
+                                "rollback": rollback,
+                            },
+                            ensure_ascii=False,
+                        ),
+                        json.dumps({}, ensure_ascii=False),
+                        modelo_path,
+                        data_treino,
+                        data_treino,
+                    ),
+                )
 
             self._registrar_changelog(
                 versao=versao,

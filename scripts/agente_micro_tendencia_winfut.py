@@ -93,7 +93,13 @@ def _format_learning_block(retreino_mgr: Optional["GerenciadorRetreino"]) -> str
         db_path = retreino_mgr.db_path if retreino_mgr else _get_config().db_path
         conn = sqlite3.connect(db_path)
         cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM micro_episodios")
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM rl_episodes
+            WHERE source = 'MICRO_AGENT'
+            """
+        )
         episodios = int(cur.fetchone()[0] or 0)
         cur.execute(
             """
@@ -112,17 +118,22 @@ def _format_learning_block(retreino_mgr: Optional["GerenciadorRetreino"]) -> str
             ultima_data = estado.ultima_data_treino or "N/A"
             faltam = estado.rewards_ate_proximo_treino
             threshold = estado.threshold_rewards
+            cooldown_restante = getattr(estado, "cooldown_restante_minutos", 0)
+            cooldown_total = getattr(estado, "cooldown_treino_minutos", 180)
         else:
             ultima_versao = "N/A"
             ultima_data = "N/A"
-            faltam = "N/A"
-            threshold = "N/A"
+            faltam = 0
+            threshold = 500
+            cooldown_restante = 0
+            cooldown_total = 180
 
         return (
             "  📚 Aprendizado: "
             f"episodios={episodios} | "
             f"recompensas={recompensas} | "
-            f"faltam_para_treino={faltam}/{threshold}"
+            f"acumulados_desde_ultimo_treino={threshold - faltam}/{threshold}"
+            f" | cooldown={cooldown_restante}/{cooldown_total}min"
             f" | ultimo_treino={ultima_versao} @ {ultima_data}"
         )
     except Exception as exc:
@@ -3139,6 +3150,17 @@ class MicroTradingManager:
             print(f"  [AVISO] Falha ao reidratar posicoes abertas: {exc}")
             return
 
+        try:
+            broker_positions = self.mt5.get_positions(self.symbol) or []
+        except Exception:
+            broker_positions = []
+        broker_by_ticket: dict[int, Any] = {}
+        for pos in broker_positions:
+            try:
+                broker_by_ticket[int(getattr(pos, "ticket", 0) or 0)] = pos
+            except Exception:
+                continue
+
         symbol_text = str(self.symbol)
         current_symbol = symbol_text.replace("$N", "")
         rehydrated: list[OpenTrade] = []
@@ -3156,6 +3178,11 @@ class MicroTradingManager:
                 ticket_value = int(trade_id)
             except Exception:
                 ticket_value = None
+
+            broker_pos = broker_by_ticket.get(ticket_value or -1)
+            pos_magic = int(getattr(broker_pos, "magic", 0) or 0) if broker_pos else 0
+            if broker_pos is None or pos_magic != MAGIC_NUMBER:
+                continue
 
             entry_price = Decimal(str(row.get("preco_entrada", 0) or 0))
             sl = Decimal(str(row.get("sl", 0) or 0))
@@ -3200,7 +3227,8 @@ class MicroTradingManager:
         broker_tickets: set[int] = set()
         for pos in broker_positions or []:
             try:
-                broker_tickets.add(int(getattr(pos, "ticket", 0) or 0))
+                if int(getattr(pos, "magic", 0) or 0) == MAGIC_NUMBER:
+                    broker_tickets.add(int(getattr(pos, "ticket", 0) or 0))
             except Exception:
                 continue
 
@@ -5165,6 +5193,19 @@ def main():
             _lgbm_integrator = get_lgbm_integrator()
             if _lgbm_integrator and _lgbm_integrator.model_loaded:
                 print(f"  [*] LightGBM Integrator: Ativo (F1: 0.5664, Acc: 59.55%)")
+                if DB_PATH:
+                    bootstrap_mgr = GerenciadorRetreino(
+                        db_path=DB_PATH,
+                        modelos_dir=str(_Path("data/models/micro_tendencia")),
+                    )
+                    bootstrap_version = bootstrap_mgr.bootstrap_modelo_atual(
+                        modelo_path=str(_lgbm_integrator.model_path),
+                        rewards_total=bootstrap_mgr.trigger.contar_rewards_total(),
+                        n_episodios=bootstrap_mgr.carregador.contar_episodios(),
+                        notas="Bootstrap inicial do LGBM carregado pelo micro tendência",
+                    )
+                    if bootstrap_version:
+                        print(f"  [*] Bootstrap treino registrado: {bootstrap_version}")
             else:
                 print(f"  [!] LightGBM Integrator: Modelo nao carregado")
         except Exception as e:
@@ -5760,6 +5801,37 @@ def main():
             if retreino_mgr:
                 try:
                     estado = retreino_mgr.obter_estado_aprendizado()
+                    if estado.rewards_ate_proximo_treino <= 0:
+                        print("  🚀 GATILHO RETREINO: rewards suficientes — iniciando calibração...")
+                        resultado_retreino = retreino_mgr.executar_retreino()
+                        if resultado_retreino.executado:
+                            print(
+                                "  ✅ RETREINO CONCLUÍDO: "
+                                f"versao={resultado_retreino.versao} | "
+                                f"n_episodios={resultado_retreino.n_episodios} | "
+                                f"wr_val={resultado_retreino.win_rate_validacao:.3f} | "
+                                f"delta={resultado_retreino.delta_win_rate:.1f}pp | "
+                                f"rollback={'SIM' if resultado_retreino.rollback_realizado else 'NAO'}"
+                            )
+                            if _lgbm_integrator is not None and hasattr(_lgbm_integrator, "reload_model"):
+                                try:
+                                    if _lgbm_integrator.reload_model():
+                                        versao_lgbm = getattr(_lgbm_integrator, "loaded_model_version", "N/A")
+                                        data_lgbm = getattr(_lgbm_integrator, "loaded_model_timestamp", "N/A")
+                                        print(
+                                            "  🔁 LGBM recarregado automaticamente após retreino "
+                                            f"(versao={versao_lgbm} | data={data_lgbm})"
+                                        )
+                                    else:
+                                        print("  ⚠ LGBM não foi recarregado após retreino")
+                                except Exception as reload_exc:
+                                    print(f"  ⚠ Falha ao recarregar LGBM: {reload_exc}")
+                        else:
+                            print(
+                                "  ⚠ RETREINO NÃO EXECUTADO: "
+                                f"{resultado_retreino.motivo_nao_execucao or 'motivo indisponivel'}"
+                            )
+                        estado = retreino_mgr.obter_estado_aprendizado()
                     ultima_versao = estado.ultima_versao_treino or "N/A"
                     ultima_data = estado.ultima_data_treino or "N/A"
                     print(_format_learning_block(retreino_mgr))
@@ -5769,7 +5841,7 @@ def main():
                     )
                     print(
                         "  🎯 Proximo treino/calibracao: "
-                        f"faltam {estado.rewards_ate_proximo_treino} rewards"
+                        f"faltam {estado.rewards_ate_proximo_treino} rewards para fechar {estado.threshold_rewards}"
                     )
                 except Exception as e:
                     print(f"  ⚠ Status retreino indisponivel: {e}")

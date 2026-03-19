@@ -758,7 +758,7 @@ class MT5Adapter(IBrokerAdapter):
             "price": self._round_to_tick(float(price.value), tick_size),
             "deviation": 10,
             "magic": order.magic_number,
-            "comment": f"MA{str(order.order_id)[:8]}",
+            "comment": f"agente|EA{order.magic_number}|MA{str(order.order_id)[:8]}",
             "type_time": self._mt5.ORDER_TIME_GTC,
             "type_filling": self._mt5.ORDER_FILLING_RETURN,
         }
