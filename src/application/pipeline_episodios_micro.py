@@ -118,6 +118,8 @@ class PipelineEpisodiosMicro:
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+            # Migra bancos legados antes de criar indices que dependem de colunas novas.
+            self._migrar_tabelas_legado(cur)
             cur.execute("""
                 CREATE INDEX IF NOT EXISTS idx_mep_ts
                     ON micro_episodios(timestamp_entrada)
@@ -150,6 +152,80 @@ class PipelineEpisodiosMicro:
             conn.close()
         except Exception as e:
             logger.warning("Falha ao garantir tabelas do pipeline: %s", e)
+
+    def _migrar_tabelas_legado(self, cur: sqlite3.Cursor) -> None:
+        """Garante colunas esperadas em bancos legados."""
+        tabelas = {
+            "micro_trend_decisions": [
+                ("exp_reduzida_ativo", "INTEGER DEFAULT 0"),
+                ("macro_score_raw", "INTEGER"),
+                ("directive_suspended", "INTEGER DEFAULT 0"),
+                ("mima_8", "REAL"),
+                ("mima_17", "REAL"),
+                ("mima_34", "REAL"),
+                ("mima_72", "REAL"),
+                ("mima_144", "REAL"),
+                ("mima_305", "REAL"),
+                ("mima_610", "REAL"),
+                ("mima_alignment", "TEXT"),
+                ("mima_fan_score", "INTEGER"),
+                ("divergence_notes", "TEXT"),
+                ("aggression_ratio", "REAL"),
+            ],
+            "micro_episodios": [
+                ("episode_id", "TEXT"),
+                ("timestamp_entrada", "TEXT"),
+                ("timestamp_saida", "TEXT"),
+                ("direcao", "TEXT"),
+                ("preco_entrada", "REAL"),
+                ("preco_saida", "REAL"),
+                ("sl", "REAL"),
+                ("tp", "REAL"),
+                ("macro_score", "INTEGER"),
+                ("macro_signal", "TEXT"),
+                ("macro_confidence", "REAL"),
+                ("micro_score", "INTEGER"),
+                ("micro_trend", "TEXT"),
+                ("adx", "REAL"),
+                ("rsi", "REAL"),
+                ("smc_direction", "TEXT"),
+                ("confianca", "REAL"),
+                ("reason", "TEXT"),
+                ("risk_reward", "REAL"),
+                ("resultado_pts", "REAL"),
+                ("motivo_saida", "TEXT"),
+                ("outcome", "TEXT"),
+                ("duracao_s", "INTEGER"),
+                ("magic_number", "INTEGER DEFAULT 234700"),
+            ],
+            "execution_feedback": [
+                ("episode_id", "TEXT"),
+                ("trade_id", "TEXT"),
+                ("timestamp", "TEXT"),
+                ("outcome_type", "TEXT"),
+                ("pnl", "REAL"),
+                ("confianca_entrada", "REAL"),
+                ("macro_score", "INTEGER"),
+                ("motivo_saida", "TEXT"),
+                ("magic_number", "INTEGER DEFAULT 234700"),
+            ],
+        }
+
+        for table_name, columns in tabelas.items():
+            try:
+                cur.execute(f"PRAGMA table_info({table_name})")
+                existing = {row[1] for row in cur.fetchall()}
+            except Exception:
+                continue
+            for column_name, column_def in columns:
+                if column_name in existing:
+                    continue
+                try:
+                    cur.execute(
+                        f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_def}"
+                    )
+                except Exception:
+                    pass
 
     # ──────────────────────────────────────────────────────────
     # Persistencia principal

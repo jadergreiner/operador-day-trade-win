@@ -93,6 +93,57 @@ class TestPipelineEpisodiosMicro:
         assert "micro_episodios" in tabelas
         assert "execution_feedback" in tabelas
 
+    def test_inicializacao_migra_banco_legado_sem_episode_id(self, tmp_path):
+        """Banco legado sem episode_id/exp_reduzida_ativo deve ser migrado."""
+        db_path = str(tmp_path / "legacy.db")
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+        cur.execute(
+            """
+            CREATE TABLE micro_trend_decisions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp DATETIME NOT NULL,
+                macro_score INTEGER NOT NULL
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE micro_episodios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp_entrada TEXT NOT NULL
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE execution_feedback (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL
+            )
+            """
+        )
+        conn.commit()
+        conn.close()
+
+        from src.application.pipeline_episodios_micro import PipelineEpisodiosMicro
+
+        PipelineEpisodiosMicro(db_path=db_path)
+
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+        cur.execute("PRAGMA table_info(micro_trend_decisions)")
+        mtd_cols = {row[1] for row in cur.fetchall()}
+        cur.execute("PRAGMA table_info(micro_episodios)")
+        mep_cols = {row[1] for row in cur.fetchall()}
+        cur.execute("PRAGMA table_info(execution_feedback)")
+        efb_cols = {row[1] for row in cur.fetchall()}
+        conn.close()
+
+        assert "exp_reduzida_ativo" in mtd_cols
+        assert "episode_id" in mep_cols
+        assert "episode_id" in efb_cols
+
     def test_registrar_fechamento_win_persiste_episodio(
         self, pipeline, db_temp, contexto_entrada_basico
     ):
