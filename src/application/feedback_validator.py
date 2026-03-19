@@ -1,7 +1,7 @@
 """
 AC5.9: Feedback Validator
 
-Módulo para validação de feedback entre trades executados e dados de 
+Módulo para validação de feedback entre trades executados e dados de
 aprendizado para ML/RL.
 
 O validador garante que:

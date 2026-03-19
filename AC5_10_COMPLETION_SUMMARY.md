@@ -81,7 +81,7 @@ $ mypy src/application/ml_rl_feedback_integration.py --strict
 
 **Modules:**
 - `RoutingDecision` (Enum) - 4 LOC
-- `PipelineRoutingDecision` (@dataclass) - 8 LOC  
+- `PipelineRoutingDecision` (@dataclass) - 8 LOC
 - `IntegrationMetrics` (@dataclass) - 10 LOC
 - `FeedbackIntegrationService` class - 200+ LOC
 - `create_feedback_integration_service()` factory - 15 LOC
@@ -133,7 +133,7 @@ def sample_feedback_service():
         FeedbackIntegrationService,
     )
     from unittest.mock import Mock
-    
+
     return FeedbackIntegrationService(
         ml_pipeline=Mock(),
         rl_trainer=Mock(),
@@ -227,7 +227,7 @@ AC5.9 FeedbackValidationResult
 
 **Next:** Create 250+ test stubs for Phase 2 (3 agentes parallel)
 - Phase 2A: 37 tests (ACX.X series)
-- Phase 2B: 80 tests (ACY.Y series)  
+- Phase 2B: 80 tests (ACY.Y series)
 - Phase 2C: 114 tests (ACZ.Z series)
 
 ## 📎 References

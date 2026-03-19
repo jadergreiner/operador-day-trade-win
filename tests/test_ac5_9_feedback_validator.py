@@ -35,10 +35,10 @@ class TestFeedbackValidator:
         # ARRANGE
         validator = FeedbackValidator()
         trade, feedback = sample_trade_feedback_pair
-        
+
         # ACT
         result = validator.validar_correlacao([trade], [feedback])
-        
+
         # ASSERT
         assert result is not None
         assert result.correlation_rate == 1.0
@@ -55,10 +55,10 @@ class TestFeedbackValidator:
         # ARRANGE
         validator = FeedbackValidator()
         trades, feedbacks = missing_feedback_outcomes
-        
+
         # ACT
         result = validator.validar_correlacao(trades, feedbacks)
-        
+
         # ASSERT
         assert result is not None
         assert result.correlation_rate < 1.0
@@ -74,10 +74,10 @@ class TestFeedbackValidator:
         """
         # ARRANGE
         validator = FeedbackValidator()
-        
+
         # ACT
         results = [validator.validar_tipos_outcome(fb) for fb in invalid_feedback_types]
-        
+
         # ASSERT
         assert len(results) == 3
         assert all(not r.is_valid for r in results)
@@ -94,10 +94,10 @@ class TestFeedbackValidator:
         # ARRANGE
         validator = FeedbackValidator()
         _, feedback = sample_trade_feedback_pair
-        
+
         # ACT
         result = validator.validar_tipos_outcome(feedback)
-        
+
         # ASSERT
         assert result is not None
         assert result.is_valid
@@ -121,10 +121,10 @@ class TestFeedbackValidator:
             "pnl_expected": pnl_expected,
             "timestamp": datetime.now().isoformat()
         }
-        
+
         # ACT
         result = validator.validar_consistencia_pnl(feedback)
-        
+
         # ASSERT
         assert result is not None
         assert result.is_valid
@@ -148,10 +148,10 @@ class TestFeedbackValidator:
             "pnl_expected": pnl_expected,
             "timestamp": datetime.now().isoformat()
         }
-        
+
         # ACT
         result = validator.validar_consistencia_pnl(feedback)
-        
+
         # ASSERT
         assert result is not None
         assert len(result.warnings) > 0 or len(result.errors) > 0
@@ -168,10 +168,10 @@ class TestFeedbackValidator:
         # ARRANGE
         validator = FeedbackValidator()
         trade, feedback = sample_trade_feedback_pair
-        
+
         # ACT
         report = validator.gerar_healthcheck([trade], [feedback])
-        
+
         # ASSERT
         assert report is not None
         assert report.overall_status in ["HEALTHY", "WARNING", "CRITICAL"]
@@ -189,10 +189,10 @@ class TestFeedbackValidator:
         # ARRANGE
         validator = FeedbackValidator()
         trades, feedbacks = missing_feedback_outcomes  # 1/3 feedback
-        
+
         # ACT
         report = validator.gerar_healthcheck(trades, feedbacks)
-        
+
         # ASSERT
         assert report is not None
         assert report.overall_status != "HEALTHY"
@@ -210,10 +210,10 @@ class TestFeedbackValidator:
         validator = FeedbackValidator()
         trade, feedback = sample_trade_feedback_pair
         result = validator.validar_correlacao([trade], [feedback])
-        
+
         # ACT
         json_str = result.to_json()
-        
+
         # ASSERT
         assert isinstance(json_str, str)
         assert "correlation_rate" in json_str
@@ -231,10 +231,10 @@ class TestFeedbackValidator:
         validator = FeedbackValidator()
         trade, feedback = sample_trade_feedback_pair
         report = validator.gerar_healthcheck([trade], [feedback])
-        
+
         # ACT
         markdown_str = report.to_markdown()
-        
+
         # ASSERT
         assert isinstance(markdown_str, str)
         assert len(markdown_str) > 0
@@ -251,10 +251,10 @@ class TestFeedbackValidator:
         # ARRANGE
         validator = FeedbackValidator()
         trades, feedbacks = missing_feedback_outcomes  # 3 trades, 1 feedback
-        
+
         # ACT
         result = validator.validar_correlacao(trades, feedbacks)
-        
+
         # ASSERT
         assert result is not None
         assert result.total_trades == len(trades)
@@ -273,10 +273,10 @@ class TestFeedbackValidator:
         validator = FeedbackValidator()
         trade, feedback = sample_trade_feedback_pair
         duplicate_feedback = feedback.copy()  # Mesmo trade_id
-        
+
         # ACT
         result = validator.validar_correlacao([trade], [feedback, duplicate_feedback])
-        
+
         # ASSERT
         assert result is not None
         assert len(result.warnings) > 0 or len(result.errors) > 0
@@ -293,11 +293,11 @@ class TestFeedbackValidator:
         import logging
         validator = FeedbackValidator(logger=logging.getLogger(__name__))
         trade, feedback = sample_trade_feedback_pair
-        
+
         # ACT
         with caplog.at_level(logging.DEBUG):
             result = validator.validar_correlacao([trade], [feedback])
-        
+
         # ASSERT
         assert result is not None
 
@@ -312,11 +312,11 @@ class TestFeedbackValidator:
         # ARRANGE
         validator = FeedbackValidator()
         trade, feedback = sample_trade_feedback_pair
-        
+
         # ACT
         result1 = validator.validar_correlacao([trade], [feedback])
         result2 = validator.validar_correlacao([trade], [feedback])
-        
+
         # ASSERT
         assert result1.correlation_rate == result2.correlation_rate
         assert result1.is_valid == result2.is_valid
@@ -334,16 +334,16 @@ class TestFeedbackValidator:
         import time
         validator = FeedbackValidator()
         trade, feedback = sample_trade_feedback_pair
-        
+
         # Replicar para ~1000
         trades = [trade.copy() for _ in range(1000)]
         feedbacks = [feedback.copy() for _ in range(1000)]
-        
+
         # ACT
         start = time.time()
         result = validator.validar_correlacao(trades, feedbacks)
         elapsed = time.time() - start
-        
+
         # ASSERT
         assert elapsed < 2.0, f"Levou {elapsed}s, limite é 2s"
         assert result is not None
