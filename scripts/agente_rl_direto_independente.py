@@ -110,10 +110,22 @@ try:
         GerenciadorRetryOrdem,
         RETCODE_ORDER_FAILED,
     )
+    from src.application.opening_context_policy import (
+        evaluate_opening_context_gate,
+        normalize_opening_context,
+    )
+    from src.application.opening_market_confirmation import (
+        build_live_market_confirmation,
+    )
+    from src.application.opening_context_report import (
+        generate_opening_context_vs_result_report,
+    )
+    from src.application.opening_context_runtime import initialize_opening_context_runtime
     from src.application.trade_tracker_integration import TradeTrackerIntegration
     from src.application.trade_performance_tracker import TradeClosureReason
     from src.domain.enums.trading_enums import TimeFrame
     from src.application.motor_decisao_isolado import (
+        DecisaoOperacional,
         MotorDecisaoIsolado,
         TipoPosicao,
         MotivoFechamento,
@@ -636,7 +648,9 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
                  posicao_tracker: object, rl_repo: object, trade_tracker: object,
                  motor_decisao: object,
                  dados: Optional[pd.DataFrame] = None,
-                 retry_mgr: Optional[GerenciadorRetryOrdem] = None) -> bool:
+                 retry_mgr: Optional[GerenciadorRetryOrdem] = None,
+                 opening_context: object = None,
+                 confidence: float = 0.0) -> bool:
     """Envia ordem para abrir posição no MT5.
 
     Args:
@@ -658,6 +672,32 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
         return False
 
     try:
+        live_confirmation = build_live_market_confirmation(
+            mt5_adapter,
+            opening_context,
+        )
+        gate = evaluate_opening_context_gate(
+            acao,
+            opening_context,
+            confidence=confidence,
+            market_confirmation=live_confirmation.to_dict(),
+        )
+        contexto_operacional = gate.to_context_payload()
+        if not gate.allow_entry:
+            logger.warning(
+                "[PRE-ABERTURA] Ordem %s bloqueada pelo contexto estrutural: %s",
+                acao,
+                gate.summary,
+            )
+            motor_decisao.registrar_decisao(
+                DecisaoOperacional.CANCELAR,
+                reasoning=f"Bloqueada por contexto de abertura: {gate.summary}",
+                confianca=confidence,
+                fatores=gate.reasons,
+                contexto_operacional=contexto_operacional,
+            )
+            return False
+
         # ══════════════════════════════════════════════════════════════
         # GUARDA CRÍTICA: Verificar no MT5 se já existe posição aberta
         # deste agente (por magic number). Evita ordens duplicadas
@@ -732,6 +772,7 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
                 volume=1.0,
                 stop_loss=sl,
                 take_profit=tp,
+                contexto_operacional=contexto_operacional,
             )
             logger.info(
                 f'[ISOLAMENTO] Ticket {ticket} registrado via '
@@ -1145,6 +1186,21 @@ def main():
     logger.info('=' * 80)
     logger.info('')
 
+    opening_runtime = initialize_opening_context_runtime(
+        db_path=str(ROOT_DIR / "data" / "db" / "trading.db"),
+        agent_name="rl_direto",
+        source="agente_rl_direto_independente",
+        session_id=AGENT_SESSION_ID,
+        mode=AGENT_MODE.upper(),
+        logger=logger,
+        operational_context_dir=os.getenv("OPENING_CONTEXT_DIR") or None,
+    )
+    if opening_runtime.prompt_abertura_agentes:
+        logger.info(
+            "[PRE-ABERTURA] Prompt operacional lido pelo agente: %s",
+            opening_runtime.prompt_abertura_agentes,
+        )
+
     ciclo = 0
     start_time = time.time()
     trades_fechados_rl: list = []  # Acumulador para pipeline AC5.9/AC6
@@ -1243,6 +1299,9 @@ def main():
                                         ticket_motor,
                                         preco_atual,
                                         MotivoFechamento.CANCELADA,
+                                        contexto_operacional=normalize_opening_context(
+                                            opening_runtime
+                                        ).to_dict(),
                                     )
                                     logger.warning(
                                         f'[CICLO {ciclo}] Limpeza local do motor para ticket '
@@ -1337,7 +1396,12 @@ def main():
                                 else MotivoFechamento.MANUAL
                             )
                             motor_decisao.fechar_posicao(
-                                ticket_aberto, preco_saida_real, motivo_motor,
+                                ticket_aberto,
+                                preco_saida_real,
+                                motivo_motor,
+                                contexto_operacional=normalize_opening_context(
+                                    opening_runtime
+                                ).to_dict(),
                             )
                         posicao_tracker.registrar_posicao_fechada()
 
@@ -1403,6 +1467,8 @@ def main():
                             motor_decisao,
                             dados_df,
                             retry_mgr=retry_mgr,
+                            opening_context=opening_runtime.policy,
+                            confidence=confidence,
                         ):
                             logger.info(f'[CICLO {ciclo}] Ordem aberta com sucesso!')
                             anti_overtrading.registrar_trade()  # 📝 Registrar trade na proteção
@@ -1466,6 +1532,19 @@ def main():
                            f'PnL total: R$ {stats.get("pnl_total_reais", 0):.2f}')
         except Exception as e:
             logger.warning(f'[WARN] Erro ao gravar relatório: {e}')
+
+        try:
+            relatorio_contexto = generate_opening_context_vs_result_report(
+                db_path=str(ROOT_DIR / 'data' / 'db' / 'trading.db'),
+                output_dir=ROOT_DIR / 'outputs' / 'analysis',
+                outputs_root=OUTPUTS_DIR,
+            )
+            logger.info(
+                '[PRE-ABERTURA] Relatório contexto x resultado gerado: %s',
+                relatorio_contexto.markdown_path,
+            )
+        except Exception as e:
+            logger.warning(f'[PRE-ABERTURA] Falha ao gerar relatório final: {e}')
 
         try:
             mt5_adapter.desconectar()

@@ -8,6 +8,7 @@ consumo por modelos ou camadas de decisao.
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
@@ -23,8 +24,17 @@ from src.application.universal_kill_switch import UniversalKillSwitch
 DEFAULT_TABLE_LOOKBACK_MINUTES = 30
 DEFAULT_EVENT_LIMIT = 100
 DEFAULT_REGIME = "ESTAVEL"
+DEFAULT_OPERATIONAL_CONTEXT_GLOB = "BDI_CONTEXTO_AGENTES_*.json"
+DEFAULT_HEAVYWEIGHTS = ("PETR4", "VALE3")
 
 ALLOWED_SEVERITIES = ("INFO", "WARNING", "CRITICAL")
+REGIME_PRIORITY = {
+    "FAVORAVEL": 0,
+    "ESTAVEL": 1,
+    "CAUTELOSO": 2,
+    "ALERTA": 3,
+    "CRITICO": 4,
+}
 
 
 def _now_utc() -> datetime:
@@ -108,6 +118,38 @@ def _serialize_value(value: Any) -> Any:
     return value
 
 
+def _safe_list(value: Any) -> list[Any]:
+    """Normaliza listas para um formato previsivel."""
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return list(value)
+    if isinstance(value, tuple):
+        return list(value)
+    if isinstance(value, set):
+        return sorted(value, key=str)
+    return [value]
+
+
+def _safe_mapping(value: Any) -> dict[str, Any]:
+    """Converte mappings em dicionarios simples."""
+    if isinstance(value, Mapping):
+        return {str(key): item for key, item in value.items()}
+    return {}
+
+
+def _nested_get(payload: Mapping[str, Any] | None, *path: str, default: Any = None) -> Any:
+    """Le um valor aninhado sem propagar erros."""
+    current: Any = payload
+    for key in path:
+        if not isinstance(current, Mapping):
+            return default
+        current = current.get(key)
+        if current is None:
+            return default
+    return current
+
+
 def _normalize_severity(value: Any) -> str:
     """Normaliza severidade para os valores canônicos."""
     severity = _safe_text(value, "INFO").upper()
@@ -144,6 +186,10 @@ class MacroGuardianSnapshot:
     severities: dict[str, int] = field(default_factory=dict)
     eventos_recentes: list[dict[str, Any]] = field(default_factory=list)
     kill_switch_actions: list[str] = field(default_factory=list)
+    vies_intraday: str = ""
+    watchlist: list[str] = field(default_factory=list)
+    prompt_abertura_agentes: str = ""
+    contexto_operacional: dict[str, Any] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -170,6 +216,11 @@ class MacroGuardianSnapshot:
             "severity_warning": self.severities.get("WARNING", 0),
             "severity_critical": self.severities.get("CRITICAL", 0),
             "kill_switch_actions": list(self.kill_switch_actions),
+            "vies_intraday": self.vies_intraday,
+            "watchlist": list(self.watchlist),
+            "prompt_abertura_agentes": self.prompt_abertura_agentes,
+            "opening_prompt": self.prompt_abertura_agentes,
+            "contexto_operacional": _serialize_value(self.contexto_operacional),
             "timestamp": self.timestamp.isoformat(timespec="seconds"),
         }
 
@@ -184,11 +235,21 @@ class MacroGuardianUniversal:
         kill_switch: UniversalKillSwitch | None = None,
         lookback_minutes: int = DEFAULT_TABLE_LOOKBACK_MINUTES,
         event_limit: int = DEFAULT_EVENT_LIMIT,
+        operational_context_dir: str | Path | None = None,
+        operational_context_file: str | Path | None = None,
     ) -> None:
         self.db_path = Path(db_path)
         self.lookback_minutes = max(0, int(lookback_minutes))
         self.event_limit = max(1, int(event_limit))
         self.kill_switch = kill_switch or UniversalKillSwitch()
+        self.operational_context_dir = (
+            Path(operational_context_dir)
+            if operational_context_dir is not None
+            else Path(__file__).resolve().parents[2] / "outputs" / "analysis"
+        )
+        self.operational_context_file = (
+            Path(operational_context_file) if operational_context_file is not None else None
+        )
 
     def get_recent_events(
         self,
@@ -227,6 +288,158 @@ class MacroGuardianUniversal:
             )
         return {"events": payloads}
 
+    def _resolve_operational_context_path(
+        self,
+        *,
+        reference_date: datetime | str | None = None,
+    ) -> Path | None:
+        """Resolve o arquivo JSON mais adequado de contexto operacional."""
+        if self.operational_context_file is not None:
+            return self.operational_context_file if self.operational_context_file.exists() else None
+
+        if not self.operational_context_dir.exists():
+            return None
+
+        target_date = None
+        if isinstance(reference_date, datetime):
+            target_date = reference_date.strftime("%Y%m%d")
+        else:
+            target_date = _safe_text(reference_date)
+            if target_date and "-" in target_date:
+                target_date = target_date.replace("-", "")
+
+        dated_candidates: list[tuple[str, Path]] = []
+        pattern = re.compile(r"(\d{8})$")
+        for candidate in self.operational_context_dir.glob(DEFAULT_OPERATIONAL_CONTEXT_GLOB):
+            match = pattern.search(candidate.stem)
+            if not match:
+                continue
+            dated_candidates.append((match.group(1), candidate))
+
+        if not dated_candidates:
+            return None
+
+        dated_candidates.sort(key=lambda item: item[0])
+        if target_date:
+            exact = [path for date_key, path in dated_candidates if date_key == target_date]
+            if exact:
+                return exact[-1]
+            eligible = [path for date_key, path in dated_candidates if date_key <= target_date]
+            if eligible:
+                return eligible[-1]
+        return dated_candidates[-1][1]
+
+    def load_operational_context(
+        self,
+        *,
+        reference_date: datetime | str | None = None,
+    ) -> dict[str, Any]:
+        """Carrega o contexto operacional BDI usado na abertura do pregao."""
+        context_path = self._resolve_operational_context_path(reference_date=reference_date)
+        if context_path is None:
+            return {}
+
+        try:
+            payload = json.loads(context_path.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+        if not isinstance(payload, Mapping):
+            return {}
+
+        context = _safe_mapping(payload)
+        context["_source_path"] = str(context_path)
+        return context
+
+    @staticmethod
+    def _merge_regime_macro(base_regime: str, context_regime: str) -> str:
+        """Escolhe o regime mais restritivo entre live macro e contexto diario."""
+        base = _safe_text(base_regime, DEFAULT_REGIME).upper()
+        context = _safe_text(context_regime).upper()
+        if not context:
+            return base
+        base_priority = REGIME_PRIORITY.get(base, REGIME_PRIORITY[DEFAULT_REGIME])
+        context_priority = REGIME_PRIORITY.get(context, base_priority)
+        return context if context_priority > base_priority else base
+
+    @staticmethod
+    def _extract_heavyweights(context: Mapping[str, Any]) -> list[str]:
+        """Extrai os pesos pesados a monitorar na abertura."""
+        watchlist = [str(item).upper() for item in _safe_list(context.get("watchlist")) if _safe_text(item)]
+        heavyweights = [ticker for ticker in DEFAULT_HEAVYWEIGHTS if ticker in watchlist]
+        return heavyweights or list(DEFAULT_HEAVYWEIGHTS)
+
+    def build_agent_opening_prompt(
+        self,
+        *,
+        snapshot: MacroGuardianSnapshot | None = None,
+        operational_context: Mapping[str, Any] | None = None,
+    ) -> str:
+        """Gera um prompt ultra-curto pronto para os agentes na abertura."""
+        context = _safe_mapping(operational_context) if operational_context is not None else self.load_operational_context()
+        if snapshot is None:
+            snapshot = self.build_snapshot()
+
+        heavyweights = self._extract_heavyweights(context)
+        regime_macro = _safe_text(snapshot.regime_macro, DEFAULT_REGIME)
+        vies_intraday = _safe_text(
+            _nested_get(context, "market_state", "intraday_bias", default=snapshot.vies_intraday),
+            snapshot.vies_intraday,
+        )
+        watchlist = [str(item) for item in _safe_list(context.get("watchlist")) if _safe_text(item)]
+        reference_band = _safe_list(_nested_get(context, "rates_fx", "fx_reference_band", default=[]))
+        dol_hint = ""
+        if len(reference_band) >= 2:
+            dol_hint = f" Faixa DOL ref: {reference_band[0]}-{reference_band[1]}."
+
+        prompt_parts = [
+            f"Abertura | Regime {regime_macro}",
+            f"Bias {vies_intraday or 'NEUTRO'}",
+            f"Comprar so com confirmacao de {' + '.join(heavyweights)} + DOL comportado.",
+            "Venda ganha qualidade com DOL forte + perda de minima + breadth ruim.",
+            "Evitar breakout de compra sem participacao dos pesos pesados.",
+            "Monitorar EWZ e IBOV como termometros de confirmacao.",
+        ]
+        prompt = " | ".join(prompt_parts) + "."
+        if watchlist:
+            prompt += f" Watchlist: {', '.join(watchlist)}."
+        if dol_hint:
+            prompt += dol_hint
+        return prompt
+
+    def _apply_operational_context(
+        self,
+        snapshot: MacroGuardianSnapshot,
+        *,
+        reference_date: datetime | str | None = None,
+    ) -> MacroGuardianSnapshot:
+        """Enriquece o snapshot com o contexto operacional do pregao."""
+        context = self.load_operational_context(reference_date=reference_date)
+        if not context:
+            return snapshot
+
+        snapshot.regime_macro = self._merge_regime_macro(
+            snapshot.regime_macro,
+            _nested_get(context, "market_state", "regime_macro", default=""),
+        )
+        snapshot.vies_intraday = _safe_text(
+            _nested_get(context, "market_state", "intraday_bias", default=""),
+            snapshot.vies_intraday,
+        )
+        snapshot.watchlist = [str(item) for item in _safe_list(context.get("watchlist")) if _safe_text(item)]
+        snapshot.contexto_operacional = dict(context)
+        snapshot.prompt_abertura_agentes = self.build_agent_opening_prompt(
+            snapshot=snapshot,
+            operational_context=context,
+        )
+        snapshot.metadata.update(
+            {
+                "operational_context_loaded": True,
+                "operational_context_source": _safe_text(context.get("_source_path"), ""),
+                "operational_context_date": _safe_text(context.get("report_date"), ""),
+            }
+        )
+        return snapshot
+
     def build_snapshot(
         self,
         *,
@@ -243,7 +456,7 @@ class MacroGuardianUniversal:
                 fallback = fetch_latest_guardian_snapshot(self.db_path, lookback_minutes=lookback)
             except Exception:
                 fallback = {}
-            return MacroGuardianSnapshot(
+            snapshot = MacroGuardianSnapshot(
                 score_guardian=_safe_float(fallback.get("score_impacto_medio"), 0.0),
                 alertas_ativos=_safe_int(fallback.get("alertas_ativos"), 0),
                 regime_macro=_safe_text(fallback.get("regime_macro"), DEFAULT_REGIME),
@@ -258,6 +471,7 @@ class MacroGuardianUniversal:
                     "source": "fallback_snapshot",
                 },
             )
+            return self._apply_operational_context(snapshot)
 
         cutoff = _now_utc() - timedelta(minutes=lookback)
         recentes: list[dict[str, Any]] = []
@@ -309,7 +523,7 @@ class MacroGuardianUniversal:
         else:
             regime_macro = DEFAULT_REGIME
 
-        return MacroGuardianSnapshot(
+        snapshot = MacroGuardianSnapshot(
             score_guardian=score_guardian,
             alertas_ativos=alertas_ativos,
             regime_macro=regime_macro,
@@ -326,6 +540,7 @@ class MacroGuardianUniversal:
                 "events_total_loaded": len(events),
             },
         )
+        return self._apply_operational_context(snapshot)
 
     def export_features(
         self,

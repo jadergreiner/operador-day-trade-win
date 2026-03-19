@@ -78,11 +78,55 @@ def _fake_guardian(kill_switch: bool = False, bias_override: str = "",
     return g
 
 
+def _configure_live_market_data(
+    mt5: MagicMock,
+    *,
+    petr_open: float = 100.0,
+    petr_current: float = 100.2,
+    vale_open: float = 50.0,
+    vale_current: float = 50.1,
+    dol_open: float = 5.215,
+    dol_current: float = 5.215,
+    ewz_open: float = 30.0,
+    ewz_current: float = 30.05,
+    ibov_open: float = 100000.0,
+    ibov_current: float = 100150.0,
+) -> None:
+    symbol_data = {
+        "PETR4": {"open": petr_open, "current": petr_current},
+        "VALE3": {"open": vale_open, "current": vale_current},
+        "WDO$N": {"open": dol_open, "current": dol_current},
+        "EWZ": {"open": ewz_open, "current": ewz_current},
+        "IBOV": {"open": ibov_open, "current": ibov_current},
+    }
+
+    def _tick(symbol: str):
+        data = symbol_data.get(symbol)
+        if data is None:
+            return None
+        tick = MagicMock()
+        tick.last.value = data["current"]
+        return tick
+
+    def _daily(symbol: str):
+        data = symbol_data.get(symbol)
+        if data is None:
+            return None
+        candle = MagicMock()
+        candle.open.value = data["open"]
+        return candle
+
+    mt5.select_symbol.return_value = True
+    mt5.get_symbol_info_tick.side_effect = _tick
+    mt5.get_daily_candle.side_effect = _daily
+
+
 def _make_manager(tmp_path: Path, rewards: list = None) -> DiarioOrderManager:
     mt5 = MagicMock()
     mt5.get_positions.return_value = []
     mt5.send_order.return_value = "999001"
     mt5.close_position_by_ticket.return_value = True
+    _configure_live_market_data(mt5)
 
     db_path = str(tmp_path / "trading.db")
     session_id = "test_session_001"
@@ -489,6 +533,51 @@ class TestConsolidarSinal:
             sinal = mgr.consolidar_sinal(decisao, candles, guardian)
 
         assert sinal.direcao == "SELL"
+
+    def test_contexto_abertura_bloqueia_buy_contra_vies_baixista(self, tmp_path):
+        mgr = _make_manager(tmp_path)
+        mgr._opening_context = {
+            "vies_intraday": "NEUTRO_LEVEMENTE_BAIXISTA",
+            "watchlist": ["PETR4", "VALE3", "DOL"],
+        }
+        candles = _candles_simples()
+        decisao = _fake_decisao("BUY", confidence=0.68, alignment=0.62)
+        guardian = _fake_guardian()
+
+        with patch.object(mgr, "_no_pregao", return_value=True):
+            sinal = mgr.consolidar_sinal(decisao, candles, guardian)
+
+        assert sinal.pode_operar is False
+        assert "contexto_abertura" in sinal.motivo_bloqueio
+        assert "vies_intraday_baixista" in sinal.contexto_flags
+
+    def test_confirmacao_live_bloqueia_compra_sem_petr_vale_dol_ewz_ibov(self, tmp_path):
+        mgr = _make_manager(tmp_path)
+        _configure_live_market_data(
+            mgr._mt5,
+            petr_current=99.9,
+            vale_current=49.9,
+            dol_current=5.24,
+            ewz_current=29.90,
+            ibov_current=99850.0,
+        )
+        mgr._opening_context = {
+            "vies_intraday": "NEUTRO",
+            "watchlist": ["PETR4", "VALE3", "DOL", "EWZ", "IBOV"],
+            "contexto_operacional": {
+                "rates_fx": {"fx_reference_band": [5.21, 5.22]},
+            },
+        }
+        candles = _candles_simples()
+        decisao = _fake_decisao("BUY", confidence=0.85, alignment=0.80)
+        guardian = _fake_guardian()
+
+        with patch.object(mgr, "_no_pregao", return_value=True):
+            sinal = mgr.consolidar_sinal(decisao, candles, guardian)
+
+        assert sinal.pode_operar is False
+        assert "compra_sem_confirmacao_live" in sinal.contexto_flags
+        assert sinal.confirmacao_live["monitors_negative"] == ["EWZ", "IBOV"]
 
     def test_penalidade_guardian_reduz_confianca(self, tmp_path):
         mgr = _make_manager(tmp_path)

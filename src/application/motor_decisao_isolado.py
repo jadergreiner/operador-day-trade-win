@@ -89,6 +89,7 @@ class DecisaoRegistrada:
     reasoning: str = ""
     confianca: float = 0.0
     fatores: List[str] = field(default_factory=list)
+    contexto_operacional: Dict[str, Any] = field(default_factory=dict)
 
     def para_dict(self) -> Dict[str, Any]:
         """Converte para dicionário."""
@@ -201,6 +202,7 @@ class MotorDecisaoIsolado:
                             reasoning=d.get('reasoning', ''),
                             confianca=d.get('confianca', 0.0),
                             fatores=d.get('fatores', []),
+                            contexto_operacional=d.get('contexto_operacional', {}),
                         )
                         for d in dados_list
                     ]
@@ -259,7 +261,8 @@ class MotorDecisaoIsolado:
 
     def registrar_decisao(self, decisao: DecisaoOperacional, ticket: Optional[int] = None,
                          reasoning: str = "", confianca: float = 0.0,
-                         fatores: Optional[List[str]] = None) -> None:
+                         fatores: Optional[List[str]] = None,
+                         contexto_operacional: Optional[Dict[str, Any]] = None) -> None:
         """
         Registra uma decisão tomada pelo agente.
 
@@ -269,6 +272,7 @@ class MotorDecisaoIsolado:
             reasoning: Justificativa da decisão
             confianca: Nível de confiança (0.0-1.0)
             fatores: Lista de fatores que influenciaram a decisão
+            contexto_operacional: Snapshot estruturado do contexto da abertura
         """
         decisao_reg = DecisaoRegistrada(
             agent_id=self.agent_id,
@@ -278,13 +282,15 @@ class MotorDecisaoIsolado:
             reasoning=reasoning,
             confianca=confianca,
             fatores=fatores or [],
+            contexto_operacional=contexto_operacional or {},
         )
         self.decisoes.append(decisao_reg)
         self._salvar_estado()
         logger.debug(f'[DECISAO] {self.agent_id}: {decisao.value} (ticket: {ticket})')
 
     def abrir_posicao(self, ticket: int, tipo: TipoPosicao, preco_entrada: float,
-                     volume: float, stop_loss: float, take_profit: float) -> bool:
+                     volume: float, stop_loss: float, take_profit: float,
+                     contexto_operacional: Optional[Dict[str, Any]] = None) -> bool:
         """
         Registra abertura de nova posição DESTE agente.
 
@@ -321,7 +327,8 @@ class MotorDecisaoIsolado:
 
         self.posicoes_ativas[ticket] = posicao
         self.registrar_decisao(DecisaoOperacional.ABRIR, ticket=ticket,
-                             reasoning=f'Abertura de posição {tipo.value}')
+                             reasoning=f'Abertura de posição {tipo.value}',
+                             contexto_operacional=contexto_operacional)
         self._salvar_estado()
 
         logger.info(f'[POSICAO] {self.agent_id}: Posição aberta (ticket: {ticket}, {tipo.value})')
@@ -360,7 +367,8 @@ class MotorDecisaoIsolado:
         return True
 
     def fechar_posicao(self, ticket: int, preco_saida: float,
-                      motivo: MotivoFechamento) -> Optional[HistoricoFechamento]:
+                      motivo: MotivoFechamento,
+                      contexto_operacional: Optional[Dict[str, Any]] = None) -> Optional[HistoricoFechamento]:
         """
         Fecha posição aberta e a move para histórico.
 
@@ -411,7 +419,8 @@ class MotorDecisaoIsolado:
 
         self.historico.append(historico)
         self.registrar_decisao(DecisaoOperacional.FECHAR, ticket=ticket,
-                             reasoning=f'Fechamento por {motivo.value}')
+                             reasoning=f'Fechamento por {motivo.value}',
+                             contexto_operacional=contexto_operacional)
         self._salvar_estado()
 
         resultado = "✅ GANHO" if pnl_reais > 0 else "❌ PERDA" if pnl_reais < 0 else "➖ BREAKEVEN"

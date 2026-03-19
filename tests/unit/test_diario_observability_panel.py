@@ -13,6 +13,7 @@ Referencia: docs/BACKLOG.md (ROADMAP-DIARIOS-01)
 """
 
 import datetime
+import json
 import pytest
 from src.application.diario_observability_panel import (
     ObservabilidadeDiarios,
@@ -184,3 +185,32 @@ def test_historico_restarts_retorna_dict(
         assert nome in historico
         assert isinstance(historico[nome], int)
         assert historico[nome] >= 0
+
+
+@pytest.mark.unit
+def test_painel_exibe_resumo_do_relatorio_latest(tmp_path) -> None:
+    analysis_dir = tmp_path / "analysis"
+    analysis_dir.mkdir(parents=True, exist_ok=True)
+    analysis_dir.joinpath("opening_context_vs_result_latest.json").write_text(
+        json.dumps(
+            {
+                "target_date": "2026-03-19",
+                "generated_at": "2026-03-19T18:05:00",
+                "total_agents": 4,
+                "total_trades_closed": 7,
+                "total_pnl": 123.45,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    painel = ObservabilidadeDiarios(
+        limite_inatividade_min=20,
+        report_dir=analysis_dir,
+    )
+
+    saida = painel.exibir_painel_terminal()
+
+    assert "Contexto x resultado latest" in saida
+    assert "2026-03-19" in saida
+    assert "123.45" in saida

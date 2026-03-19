@@ -403,6 +403,28 @@ class TestPersistencia:
         assert len(motor2.decisoes) == 1
         assert motor2.decisoes[0].decisao == DecisaoOperacional.ABRIR
 
+    def test_persistir_contexto_operacional_na_decisao(self, temp_data_dir):
+        """Decisões devem reter flags estruturadas do contexto de abertura."""
+        contexto = {
+            'regime_macro': 'CAUTELOSO',
+            'vies_intraday': 'NEUTRO_LEVEMENTE_BAIXISTA',
+            'watchlist': ['PETR4', 'VALE3', 'DOL'],
+            'acao_normalizada': 'BUY',
+        }
+        motor1 = MotorDecisaoIsolado('agente_teste', temp_data_dir)
+        motor1.registrar_decisao(
+            DecisaoOperacional.CANCELAR,
+            ticket=111,
+            reasoning='Bloqueada por contexto',
+            contexto_operacional=contexto,
+        )
+
+        motor2 = MotorDecisaoIsolado('agente_teste', temp_data_dir)
+        assert motor2.decisoes[0].contexto_operacional['vies_intraday'] == (
+            'NEUTRO_LEVEMENTE_BAIXISTA'
+        )
+        assert motor2.decisoes[0].contexto_operacional['acao_normalizada'] == 'BUY'
+
     def test_salvar_e_carregar_historico(self, temp_data_dir):
         """Testa salvar e recarregar histórico do arquivo."""
         motor1 = MotorDecisaoIsolado('agente_teste', temp_data_dir)

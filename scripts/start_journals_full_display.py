@@ -11,6 +11,7 @@ Inicia 3 diários em threads separadas:
 """
 
 import sys
+import os
 from pathlib import Path
 
 project_root = Path(__file__).parent.parent
@@ -43,6 +44,10 @@ from src.application.services.macro_scenario_guardian import (
 from src.application.diario_order_manager import DiarioOrderManager
 from src.application.diarios_watchdog import ThreadWatchdog, ConfiguracaoThread
 from src.application.diario_observability_panel import ObservabilidadeDiarios
+from src.application.opening_context_runtime import initialize_opening_context_runtime
+from src.application.opening_context_report import (
+    generate_opening_context_vs_result_report,
+)
 
 # ────────────────────────────────────────────────────────────────
 # Macro Data Provider (REC2/REC6: dados ao vivo, não hardcoded)
@@ -2140,7 +2145,8 @@ class PriceTracker:
 # Reinicializada em main() com limite configuravel.
 # ────────────────────────────────────────────────────────────────
 _painel_obs: ObservabilidadeDiarios = ObservabilidadeDiarios(
-    limite_inatividade_min=20
+    limite_inatividade_min=20,
+    report_dir=project_root / "outputs" / "analysis",
 )
 
 
@@ -3249,6 +3255,7 @@ def run_rl_performance_diary():
 # Estado compartilhado do guardian (acessível pelo Thread 3 para feedback)
 _guardian_state = GuardianState()
 _guardian_lock = threading.Lock()
+_opening_context_runtime = None
 
 
 def get_guardian_state() -> GuardianState:
@@ -3378,7 +3385,16 @@ def run_diario_order_manager():
 
     # Injetar rl_reader para evitar import circular (DiarioOrderManager
     # nao precisa reimportar o script que ja esta rodando)
-    manager = DiarioOrderManager(mt5, db_path, session_id, rl_reader=rl_reader)
+    opening_context = None
+    if _opening_context_runtime is not None:
+        opening_context = _opening_context_runtime.policy
+    manager = DiarioOrderManager(
+        mt5,
+        db_path,
+        session_id,
+        rl_reader=rl_reader,
+        opening_context=opening_context,
+    )
 
     print(f"\n[DIARIO EXECUCAO] Iniciado | session={session_id} | magic=234800")
     print(f"[DIARIO EXECUCAO] Ciclo: {EXECUCAO_INTERVAL_SEC}s | "
@@ -3486,6 +3502,7 @@ def run_diario_order_manager():
 
 def main():
     """Main entry point."""
+    global _opening_context_runtime
 
     print("=" * 80)
     print("DIÁRIOS AUTOMÁTICOS — COM ANÁLISE RL + GUARDIAN MACRO")
@@ -3503,13 +3520,29 @@ def main():
     print(f"  Macro Provider: {'LIVE' if HAS_MACRO_PROVIDER else 'FALLBACK (hardcoded)'}")
     print(f"  Magic Number (Diarios): 234800")
     print()
+    _opening_context_runtime = initialize_opening_context_runtime(
+        db_path=_get_db_path(),
+        agent_name="diarios",
+        source="start_journals_full_display",
+        session_id=f"diarios_{int(time.time())}",
+        mode="THREADS",
+        printer=print,
+        operational_context_dir=os.getenv("OPENING_CONTEXT_DIR") or None,
+    )
+    if _opening_context_runtime.prompt_abertura_agentes:
+        print("Prompt de abertura disponível para os diários:")
+        print(f"  {_opening_context_runtime.prompt_abertura_agentes}")
+        print()
     print("Pressione Ctrl+C para parar")
     print()
 
     # Painel de observabilidade dos diarios (ROADMAP-DIARIOS-01)
     # Reinicializa instancia global para uso pelas threads
     global _painel_obs
-    _painel_obs = ObservabilidadeDiarios(limite_inatividade_min=20)
+    _painel_obs = ObservabilidadeDiarios(
+        limite_inatividade_min=20,
+        report_dir=project_root / "outputs" / "analysis",
+    )
 
     # Watchdog monitora e reinicia threads mortas automaticamente
     watchdog = ThreadWatchdog(intervalo_verificacao_seg=30.0)
@@ -3565,7 +3598,20 @@ def main():
             print(_painel_obs.exibir_painel_terminal())
     except KeyboardInterrupt:
         print("\n\nDiários interrompidos pelo usuário.")
+    finally:
         watchdog.parar()
+        try:
+            relatorio = generate_opening_context_vs_result_report(
+                db_path=_get_db_path(),
+                output_dir=project_root / "outputs" / "analysis",
+                outputs_root=project_root / "outputs",
+            )
+            print(
+                "[PRE-ABERTURA] Relatorio contexto x resultado gerado: "
+                f"{relatorio.markdown_path}"
+            )
+        except Exception as exc:
+            print(f"[PRE-ABERTURA] Falha ao gerar relatorio final: {exc}")
 
 
 if __name__ == "__main__":

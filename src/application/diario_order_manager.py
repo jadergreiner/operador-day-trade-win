@@ -30,7 +30,7 @@ import threading
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from src.application.diario_leitura_operador import LeituraDeOperador, LeituraOperador
 from src.application.diario_episodio_operador import (
@@ -38,6 +38,13 @@ from src.application.diario_episodio_operador import (
     AprendizadoOperador,
     construir_episodio,
     construir_episodio_neutro,
+)
+from src.application.opening_market_confirmation import (
+    build_live_market_confirmation,
+)
+from src.application.opening_context_policy import (
+    evaluate_opening_context_gate,
+    normalize_opening_context,
 )
 
 logger = logging.getLogger("diario_order_manager")
@@ -131,6 +138,10 @@ class SinalDiario:
     win_rate_propria: float   # win rate dos episodios proprios do Diarios
     n_episodios_proprios: int
     leitura: Optional[LeituraOperador] = None  # percepcao contextual do operador
+    vies_intraday: str = ""
+    watchlist: list[str] = field(default_factory=list)
+    contexto_flags: list[str] = field(default_factory=list)
+    confirmacao_live: dict[str, Any] = field(default_factory=dict)
     pode_operar: bool = False
     motivo_bloqueio: str = ""
 
@@ -311,6 +322,7 @@ class DiarioOrderManager:
         session_id: str,
         outputs_dir: str = "outputs",
         rl_reader: Optional[object] = None,
+        opening_context: Optional[Any] = None,
     ):
         self._mt5 = mt5_adapter
         self._db_path = db_path
@@ -324,6 +336,7 @@ class DiarioOrderManager:
         self._ultimo_sinal: Optional[SinalDiario] = None
         self._ultimo_neutro_registrado: int = 0  # ciclo do ultimo episodio neutro
         self._candles_no_neutro: Optional[list] = None  # snapshot para avaliar decisao
+        self._opening_context = normalize_opening_context(opening_context)
 
         if rl_reader is not None:
             self._rl_reader = rl_reader
@@ -482,6 +495,18 @@ class DiarioOrderManager:
         # ── Confianca final (ajustada pelos proprios episodios) ──
         confianca_final = self._ajustar_confianca(confianca_base, guardian_penalty)
         wr, n_ep = self._win_rate_propria()
+        live_confirmation = build_live_market_confirmation(
+            self._mt5,
+            getattr(self, "_opening_context", None),
+        )
+        opening_context_gate = evaluate_opening_context_gate(
+            direcao,
+            getattr(self, "_opening_context", None),
+            confidence=confianca_final,
+            alignment=alinhamento,
+            market_confirmation=live_confirmation.to_dict(),
+        )
+        contexto_flags = list(opening_context_gate.reasons)
 
         # ── SL e TP por ATR ──
         if preco_atual > 0 and direcao in ("BUY", "SELL"):
@@ -527,6 +552,9 @@ class DiarioOrderManager:
         elif not leitura.momento_favoravel and leitura.risco_armadilha == "ALTA":
             pode_operar = False
             motivo_bloqueio = f"armadilha_alta:{leitura.armadilhas[0][:60] if leitura.armadilhas else ''}"
+        elif not opening_context_gate.allow_entry:
+            pode_operar = False
+            motivo_bloqueio = f"contexto_abertura:{opening_context_gate.summary}"
 
         return SinalDiario(
             timestamp=agora,
@@ -546,6 +574,10 @@ class DiarioOrderManager:
             win_rate_propria=wr,
             n_episodios_proprios=n_ep,
             leitura=leitura,
+            vies_intraday=opening_context_gate.policy.vies_intraday,
+            watchlist=list(opening_context_gate.policy.watchlist),
+            contexto_flags=contexto_flags,
+            confirmacao_live=live_confirmation.to_dict(),
             pode_operar=pode_operar,
             motivo_bloqueio=motivo_bloqueio,
         )
@@ -778,7 +810,10 @@ class DiarioOrderManager:
                 f"dir={sinal.direcao} preco={sinal.preco_atual:.0f} "
                 f"SL={sinal.sl:.0f} TP={sinal.tp:.0f} "
                 f"ATR={sinal.atr:.0f} conf={sinal.confianca:.0%} "
-                f"align={sinal.alinhamento:.0%}"
+                f"align={sinal.alinhamento:.0%} "
+                f"vies={sinal.vies_intraday or 'N/D'} "
+                f"buy_live={sinal.confirmacao_live.get('buy_confirmed')} "
+                f"sell_live={sinal.confirmacao_live.get('sell_quality_confirmed')}"
             )
             resultado["posicao_aberta"] = True
         else:

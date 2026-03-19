@@ -18,6 +18,12 @@ from datetime import datetime
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from src.application.opening_context_report import (
+    generate_opening_context_vs_result_report,
+)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -81,6 +87,17 @@ def main() -> int:
         )
 
         _append_reflection(args.base_date)
+
+        relatorio = generate_opening_context_vs_result_report(
+            db_path=ROOT_DIR / "data" / "db" / "trading.db",
+            output_dir=ROOT_DIR / "outputs" / "analysis",
+            outputs_root=ROOT_DIR / "outputs",
+            target_date=args.base_date,
+        )
+        print(
+            "[OK] Relatorio contexto x resultado atualizado: "
+            f"{relatorio.latest_markdown_path}"
+        )
 
         _run_step(
             [py, "scripts/ml/gerar_dataset_trade_supervisionado.py", "--date", args.base_date],

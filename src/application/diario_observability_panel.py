@@ -21,7 +21,10 @@ Referencia: docs/BACKLOG.md (ROADMAP-DIARIOS-01)
 
 import datetime
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
+
+from src.application.opening_context_report import load_latest_opening_context_report
 
 DIARIOS_MONITORADOS: list[str] = [
     "MICRO_TENDENCIA",
@@ -66,14 +69,20 @@ class ObservabilidadeDiarios:
 
     """
 
-    def __init__(self, limite_inatividade_min: int = 20) -> None:
+    def __init__(
+        self,
+        limite_inatividade_min: int = 20,
+        report_dir: str | Path = "outputs/analysis",
+    ) -> None:
         """Inicializa o painel com limite de inatividade configuravel.
 
         Args:
             limite_inatividade_min: Minutos sem gravacao para emitir alerta.
+            report_dir: Diretorio com o relatorio consolidado latest.
 
         """
         self._limite_min = limite_inatividade_min
+        self._report_dir = Path(report_dir)
         self._status: dict[str, StatusDiario] = {
             nome: StatusDiario(nome=nome) for nome in DIARIOS_MONITORADOS
         }
@@ -181,6 +190,24 @@ class ObservabilidadeDiarios:
             f"  Limite inatividade: {self._limite_min} min"
             f"  |  Diarios monitorados: {len(DIARIOS_MONITORADOS)}"
         )
+        report_payload = load_latest_opening_context_report(self._report_dir)
+        if report_payload:
+            generated_at = str(report_payload.get("generated_at", "") or "")
+            generated_suffix = generated_at[11:19] if len(generated_at) >= 19 else "N/D"
+            linhas.append(separador_fino)
+            linhas.append(
+                "  Contexto x resultado latest: "
+                f"{report_payload.get('target_date', 'N/D')}"
+            )
+            linhas.append(
+                "  Agentes: "
+                f"{report_payload.get('total_agents', 0)}"
+                " | Trades: "
+                f"{report_payload.get('total_trades_closed', 0)}"
+                " | PnL: "
+                f"R$ {float(report_payload.get('total_pnl', 0.0) or 0.0):.2f}"
+            )
+            linhas.append(f"  Gerado em: {generated_suffix}")
         linhas.append(separador)
 
         return "\n".join(linhas)

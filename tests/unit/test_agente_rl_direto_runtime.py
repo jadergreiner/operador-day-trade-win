@@ -14,12 +14,17 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.application.motor_decisao_isolado import MotorDecisaoIsolado, TipoPosicao
+from src.application.motor_decisao_isolado import (
+    DecisaoOperacional,
+    MotorDecisaoIsolado,
+    TipoPosicao,
+)
 from src.application.ordem_backoff_retry import GerenciadorRetryOrdem
 from src.application.posicao_isolamento import PosicaoIsoladaManager
 from scripts.agente_rl_direto_independente import (
     AGENT_SESSION_ID,
     classificar_fechamento_trade,
+    enviar_ordem,
     enviar_ordem_com_backoff,
     obter_contexto_fechamento_sessao_atual,
 )
@@ -141,3 +146,38 @@ class TestRuntimeIsolationExtras:
 
         contexto = obter_contexto_fechamento_sessao_atual(posicao_mgr, motor)
         assert contexto is None
+
+    def test_enviar_ordem_bloqueia_quando_contexto_abertura_contraria_compra(
+        self,
+        tmp_path,
+    ) -> None:
+        mt5_adapter = MagicMock()
+        mt5_adapter.get_positions.return_value = []
+        posicao_tracker = MagicMock()
+        motor = MotorDecisaoIsolado(
+            agent_id="sessao_b",
+            data_dir=tmp_path,
+        )
+
+        ok = enviar_ordem(
+            mt5_adapter=mt5_adapter,
+            acao="Comprar",
+            preco_atual=100000.0,
+            posicao_tracker=posicao_tracker,
+            rl_repo=None,
+            trade_tracker=None,
+            motor_decisao=motor,
+            opening_context={
+                "vies_intraday": "NEUTRO_LEVEMENTE_BAIXISTA",
+                "watchlist": ["PETR4", "VALE3", "DOL"],
+            },
+            confidence=0.68,
+        )
+
+        assert ok is False
+        assert motor.decisoes[-1].decisao == DecisaoOperacional.CANCELAR
+        assert (
+            motor.decisoes[-1].contexto_operacional["contexto_abertura_liberado"]
+            is False
+        )
+        assert "live_market_confirmation" in motor.decisoes[-1].contexto_operacional

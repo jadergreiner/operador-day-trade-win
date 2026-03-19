@@ -107,6 +107,7 @@ from src.application.services.diary_feedback import (
     create_diary_feedback_table,
     load_latest_feedback,
 )
+from src.application.opening_context_runtime import initialize_opening_context_runtime
 from src.domain.services.atr_calibrator import ATRCalibrator
 from src.fibonacci_calculator import FibonacciCalculator
 
@@ -253,6 +254,7 @@ _diary_feedback: DiaryFeedback | None = None
 # IntraDayLearner para aprendizado EM TEMPO REAL (latência ~10min)
 # Forward reference: classe definida depois (linha 2489+)
 _intraday_learner: "IntraDayLearner | None" = None
+_opening_context_runtime = None
 
 # P0-URGENT-1: InactivityPenaltyManager modular (06/03/2026)
 # Fornece métricas detalhadas de inatividade para auditoria e backtest
@@ -4754,6 +4756,7 @@ def main():
     config = _get_config()
     global DB_PATH, AUTO_TRADING_ENABLED, SIMULATE_MODE, _session_id
     global TRAILING_DISTANCE_PTS, MAX_CONTRACTS
+    global _opening_context_runtime
     DB_PATH = config.db_path
 
     # Checa flag --account <numero> para override de conta MT5
@@ -4802,6 +4805,16 @@ def main():
     # ── Auditoria de Sessão ──
     _session_id = _start_session(DB_PATH, mode_str, login_id)
     print(f"  [*] Sessao ID: {_session_id} iniciada")
+
+    # ── Pre-abertura: contexto operacional BDI/Guardian ──
+    _opening_context_runtime = initialize_opening_context_runtime(
+        db_path=DB_PATH,
+        agent_name="micro_tendencia",
+        source="agente_micro_tendencia_winfut",
+        session_id=str(_session_id),
+        mode=mode_str,
+        printer=print,
+    )
 
     # ── Carrega diretivas do Head Financeiro ──
     global _active_directive
@@ -5054,6 +5067,10 @@ def main():
         print(f"  └{'─' * 60}┘")
     else:
         print(f"\n  ℹ️  Sem feedback do diário disponível")
+
+    if _opening_context_runtime and _opening_context_runtime.prompt_abertura_agentes:
+        print(f"\n  🎯 Prompt de abertura carregado para o agente:")
+        print(f"     {_opening_context_runtime.prompt_abertura_agentes}")
 
     if SIMULATE_MODE:
         print(f"  🧪 Modo: SIMULADO (Shadow) │ Contratos: {MAX_CONTRACTS} │ "

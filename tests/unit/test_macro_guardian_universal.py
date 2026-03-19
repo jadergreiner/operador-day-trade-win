@@ -42,7 +42,10 @@ def _create_guardian(db_path: Path):
     """Importa o modulo alvo dentro do teste para manter o contrato explicito."""
     from src.application.macro_guardian_universal import MacroGuardianUniversal
 
-    return MacroGuardianUniversal(db_path=db_path)
+    return MacroGuardianUniversal(
+        db_path=db_path,
+        operational_context_dir=db_path.parent / "analysis_vazio",
+    )
 
 
 class TestMacroGuardianUniversal:
@@ -219,3 +222,46 @@ class TestMacroGuardianUniversal:
             assert json.loads(json.dumps(features, ensure_ascii=False))["score_guardian"] == pytest.approx(
                 snapshot.score_guardian
             )
+
+    def test_carrega_contexto_operacional_bdi_e_gera_prompt_curto(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "guardian.db"
+            context_dir = Path(tmpdir) / "analysis"
+            context_dir.mkdir(parents=True, exist_ok=True)
+            context_file = context_dir / "BDI_CONTEXTO_AGENTES_20260319.json"
+            context_file.write_text(
+                json.dumps(
+                    {
+                        "report_date": "2026-03-19",
+                        "market_state": {
+                            "regime_macro": "CAUTELOSO",
+                            "intraday_bias": "NEUTRO_LEVEMENTE_BAIXISTA",
+                        },
+                        "watchlist": ["PETR4", "VALE3", "DOL"],
+                        "rates_fx": {
+                            "fx_reference_band": [5.21, 5.22],
+                        },
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            from src.application.macro_guardian_universal import MacroGuardianUniversal
+
+            guardian = MacroGuardianUniversal(
+                db_path=db_path,
+                operational_context_dir=context_dir,
+            )
+
+            snapshot = guardian.build_snapshot()
+            features = guardian.export_features(snapshot)
+
+            assert snapshot.regime_macro == "CAUTELOSO"
+            assert snapshot.vies_intraday == "NEUTRO_LEVEMENTE_BAIXISTA"
+            assert snapshot.watchlist == ["PETR4", "VALE3", "DOL"]
+            assert "PETR4 + VALE3 + DOL comportado" in snapshot.prompt_abertura_agentes
+            assert "Monitorar EWZ e IBOV" in snapshot.prompt_abertura_agentes
+            assert features["prompt_abertura_agentes"] == snapshot.prompt_abertura_agentes
+            assert features["opening_prompt"] == snapshot.prompt_abertura_agentes
+            assert snapshot.metadata["operational_context_loaded"] is True

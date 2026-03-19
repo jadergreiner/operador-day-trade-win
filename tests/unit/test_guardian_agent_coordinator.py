@@ -174,3 +174,48 @@ def test_macro_context_sem_kill_switch_mantem_fluxo_normal() -> None:
     assert result.summary is not None
     assert result.summary.strategy == ResolutionStrategy.CONSENSUS
     assert result.summary.kill_switch_active is False
+
+
+def test_coordinate_consume_contexto_automaticamente_via_provider() -> None:
+    class _Provider:
+        def export_features(self) -> dict[str, object]:
+            return {
+                "kill_switch_ativo": False,
+                "regime_macro": "CAUTELOSO",
+                "vies_intraday": "NEUTRO_LEVEMENTE_BAIXISTA",
+                "prompt_abertura_agentes": (
+                    "Abertura | Regime CAUTELOSO | Comprar so com confirmacao de "
+                    "PETR4 + VALE3 + DOL comportado."
+                ),
+            }
+
+    coordinator = GuardianAgentCoordinator(macro_context_provider=_Provider())
+    proposals = [
+        AgentOrderProposal(
+            agent_id="alpha",
+            symbol="WIN",
+            side=OrderSide.BUY,
+            confidence=0.82,
+            weight=1.0,
+            quantity=2,
+        ),
+        AgentOrderProposal(
+            agent_id="beta",
+            symbol="WIN",
+            side=OrderSide.BUY,
+            confidence=0.76,
+            weight=1.2,
+            quantity=2,
+        ),
+    ]
+
+    result = coordinator.coordinate(proposals)
+
+    assert result.decision == ResolutionAction.EXECUTE
+    assert result.kill_switch_active is False
+    assert result.macro_regime == "CAUTELOSO"
+    assert result.vies_intraday == "NEUTRO_LEVEMENTE_BAIXISTA"
+    assert "PETR4 + VALE3 + DOL comportado" in result.prompt_abertura_agentes
+    assert result.summary is not None
+    assert result.summary.macro_regime == "CAUTELOSO"
+    assert "publish_opening_prompt" in result.summary.action_items

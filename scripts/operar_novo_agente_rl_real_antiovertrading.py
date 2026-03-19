@@ -39,10 +39,22 @@ from src.application.sl_breakeven_validator import (
     StatusValidacaoSL,
 )
 from src.application.motor_decisao_isolado import (
+    DecisaoOperacional,
     MotorDecisaoIsolado,
     TipoPosicao,
     MotivoFechamento,
 )
+from src.application.opening_context_policy import (
+    evaluate_opening_context_gate,
+    normalize_opening_context,
+)
+from src.application.opening_market_confirmation import (
+    build_live_market_confirmation,
+)
+from src.application.opening_context_report import (
+    generate_opening_context_vs_result_report,
+)
+from src.application.opening_context_runtime import initialize_opening_context_runtime
 try:
     from src.application.ac5_8_position_monitor import (
         MonitorPositionManager,
@@ -170,6 +182,7 @@ _drift_detector_rl: Optional[object] = None
 _online_learning_rl: Optional[object] = None
 _baseline_comparator_rl: Optional[object] = None
 _trades_fechados_rl: list = []  # Acumulador para pipeline AC5.9/AC6
+_opening_context_runtime = None
 
 
 def inicializar_adaptador_mt5() -> MT5Adapter:
@@ -473,12 +486,45 @@ def calcular_sl_tp_dinamico(dados: pd.DataFrame, acao: str, preco_atual: float,
             return preco_atual + STOP_LOSS_PONTOS, preco_atual - TAKE_PROFIT_PONTOS
 
 
-def enviar_ordem_mt5adapter(acao: str, preco_atual: float, vol: float, dados: Optional[pd.DataFrame] = None) -> bool:
+def enviar_ordem_mt5adapter(
+    acao: str,
+    preco_atual: float,
+    vol: float,
+    dados: Optional[pd.DataFrame] = None,
+    confidence: float = 0.0,
+    opening_context: object = None,
+) -> bool:
     """Envia ordem via MT5Adapter (com validações e SL/TP dinâmicos)."""
     global last_trade_time
 
     try:
         if acao == "Aguardar":
+            return False
+
+        live_confirmation = build_live_market_confirmation(
+            mt5_adapter,
+            opening_context,
+        )
+        gate = evaluate_opening_context_gate(
+            acao,
+            opening_context,
+            confidence=confidence,
+            market_confirmation=live_confirmation.to_dict(),
+        )
+        contexto_operacional = gate.to_context_payload()
+        if not gate.allow_entry:
+            logger.warning(
+                "[PRE-ABERTURA] Ordem %s bloqueada pelo contexto estrutural: %s",
+                acao,
+                gate.summary,
+            )
+            motor_isolado.registrar_decisao(
+                DecisaoOperacional.CANCELAR,
+                reasoning=f"Bloqueada por contexto de abertura: {gate.summary}",
+                confianca=confidence,
+                fatores=gate.reasons,
+                contexto_operacional=contexto_operacional,
+            )
             return False
 
         # ══════════════════════════════════════════════════════════════
@@ -550,6 +596,7 @@ def enviar_ordem_mt5adapter(acao: str, preco_atual: float, vol: float, dados: Op
                 volume=1.0,
                 stop_loss=sl,
                 take_profit=tp,
+                contexto_operacional=contexto_operacional,
             )
             logger.info(f"[ISOLAMENTO] Ticket {ticket} registrado via "
                        f"MotorDecisaoIsolado({AGENTE_ID})")
@@ -756,6 +803,9 @@ def monitorar_posicoes() -> bool:
                 motor_isolado.fechar_posicao(
                     pos.ticket, preco_fechamento,
                     MotivoFechamento.SL_ATINGIDO,
+                    contexto_operacional=normalize_opening_context(
+                        _opening_context_runtime
+                    ).to_dict(),
                 )
             return False
 
@@ -778,6 +828,9 @@ def monitorar_posicoes() -> bool:
                 volume=float(getattr(pos_mt5, 'volume', 1)),
                 stop_loss=float(getattr(pos_mt5, 'sl', 0)),
                 take_profit=float(getattr(pos_mt5, 'tp', 0)),
+                contexto_operacional=normalize_opening_context(
+                    _opening_context_runtime
+                ).to_dict(),
             )
             logger.info(f"[ISOLAMENTO] Ticket #{t} (magic={MAGIC_NUMBER}) "
                        f"recuperado do MT5 via MotorDecisaoIsolado.")
@@ -806,7 +859,14 @@ def monitorar_posicoes() -> bool:
                     'pnl': pnl_est,
                     'direction': direcao_str,
                 })
-            motor_isolado.fechar_posicao(t, preco, MotivoFechamento.SL_ATINGIDO)
+            motor_isolado.fechar_posicao(
+                t,
+                preco,
+                MotivoFechamento.SL_ATINGIDO,
+                contexto_operacional=normalize_opening_context(
+                    _opening_context_runtime
+                ).to_dict(),
+            )
             logger.info(f"[ISOLAMENTO] Ticket #{t} fechado (SL/TP/manual).")
 
         # Atualizar P&L de posições ativas
@@ -1363,7 +1423,14 @@ def loop_operacao():
                 # Passar dados para cálculo dinâmico de SL/TP
                 logger.info(f"[CICLO {ciclo}] Sinal CONFIRMADO! Enviando ordem...")
                 logger.debug(f"[CICLO {ciclo}] Chamando enviar_ordem_mt5adapter()...")
-                enviar_ordem_mt5adapter(acao_str, preco_atual, vol, dados=dados)
+                enviar_ordem_mt5adapter(
+                    acao_str,
+                    preco_atual,
+                    vol,
+                    dados=dados,
+                    confidence=confidence,
+                    opening_context=getattr(_opening_context_runtime, "policy", None),
+                )
                 logger.debug(f"[CICLO {ciclo}] Ordem enviada com sucesso.")
                 last_signal = acao_str
                 trades_executed_today += 1
@@ -1441,6 +1508,20 @@ if __name__ == "__main__":
         inicializar_adaptador_mt5()
         inicializar_agente_rl()
         inicializar_rl_repo()
+        _opening_context_runtime = initialize_opening_context_runtime(
+            db_path=str(ROOT_DIR / "data" / "db" / "trading.db"),
+            agent_name="rl_5000",
+            source="operar_novo_agente_rl_real_antiovertrading",
+            session_id=AGENTE_ID,
+            mode=SL_TP_MODE.upper(),
+            logger=logger,
+            operational_context_dir=os.getenv("OPENING_CONTEXT_DIR") or None,
+        )
+        if _opening_context_runtime.prompt_abertura_agentes:
+            logger.info(
+                "[PRE-ABERTURA] Prompt operacional lido pelo agente: %s",
+                _opening_context_runtime.prompt_abertura_agentes,
+            )
 
         loop_operacao()
 
@@ -1452,6 +1533,19 @@ if __name__ == "__main__":
         import traceback
         logger.error(traceback.format_exc())
     finally:
+        try:
+            relatorio_contexto = generate_opening_context_vs_result_report(
+                db_path=str(ROOT_DIR / "data" / "db" / "trading.db"),
+                output_dir=ROOT_DIR / "outputs" / "analysis",
+                outputs_root=ROOT_DIR / "outputs",
+            )
+            logger.info(
+                "[PRE-ABERTURA] Relatório contexto x resultado gerado: %s",
+                relatorio_contexto.markdown_path,
+            )
+        except Exception as e:
+            logger.warning(f"[PRE-ABERTURA] Falha ao gerar relatório final: {e}")
+
         if _monitor_posicao_rl:
             _monitor_posicao_rl.fechar_conexao()
         if mt5_adapter:

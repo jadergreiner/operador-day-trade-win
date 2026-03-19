@@ -55,6 +55,8 @@ except ImportError:
     AGENT_AVAILABLE = False
 
 import agente_micro_tendencia_s2_6_integrated as s2_6_module
+from src.application.opening_context_report import generate_opening_context_vs_result_report
+from src.application.opening_context_runtime import initialize_opening_context_runtime
 
 # ─ P0-1 API Integration ─
 try:
@@ -658,6 +660,21 @@ def main():
     print(f"  Terminal Isolation: HARD STOP Mode (v1.0)")
     print("  " + "=" * 60)
 
+    opening_runtime = initialize_opening_context_runtime(
+        db_path=str(root_dir / "data" / "db" / "trading.db"),
+        agent_name="micro_tendencia_launcher",
+        source="launch_agent_with_ml_v1_2_3",
+        mode=" ".join(sys.argv[1:]).strip(),
+        printer=print,
+        operational_context_dir=os.getenv("OPENING_CONTEXT_DIR") or None,
+    )
+    if AGENT_AVAILABLE:
+        setattr(agente_module, "MACRO_GUARDIAN_UNIVERSAL", opening_runtime.macro_guardian)
+        setattr(agente_module, "GUARDIAN_COORDINATOR", opening_runtime.coordinator)
+        setattr(agente_module, "OPENING_CONTEXT_FEATURES", opening_runtime.features)
+        setattr(agente_module, "OPENING_CONTEXT_POLICY", opening_runtime.policy)
+        setattr(agente_module, "PROMPT_ABERTURA_AGENTES", opening_runtime.prompt_abertura_agentes)
+
     # Inicia servidor API em background (automatic startup)
     print("\n  STARTUP AUTOMATICO")
     print("  " + "=" * 60)
@@ -685,6 +702,19 @@ def main():
         import traceback
         traceback.print_exc()
         sys.exit(1)
+    finally:
+        try:
+            relatorio = generate_opening_context_vs_result_report(
+                db_path=str(root_dir / "data" / "db" / "trading.db"),
+                output_dir=root_dir / "outputs" / "analysis",
+                outputs_root=root_dir / "outputs",
+            )
+            print(
+                "\n  [PRE-ABERTURA] Relatorio contexto x resultado gerado: "
+                f"{relatorio.markdown_path}"
+            )
+        except Exception as exc:
+            print(f"\n  [PRE-ABERTURA] Falha ao gerar relatorio final: {exc}")
 
 
 if __name__ == "__main__":
