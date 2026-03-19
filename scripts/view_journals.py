@@ -11,6 +11,7 @@ sys.path.insert(0, str(project_root))
 from datetime import datetime
 from src.application.services.trading_journal import TradingJournalService
 from src.application.services.ai_reflection_journal import AIReflectionJournalService
+from src.application.confidence_utils import normalize_confidence
 
 
 def display_trading_journal():
@@ -53,9 +54,9 @@ def display_trading_journal():
         print("CONTEXTO:")
         print(f"  Macro: {entry.macro_bias} | Fundamentos: {entry.fundamental_bias}")
         print(f"  Sentimento: {entry.sentiment_bias} | Tecnica: {entry.technical_bias}")
-        print(f"  Alinhamento: {entry.alignment_score:.0%}")
+        print(f"  Alinhamento: {normalize_confidence(entry.alignment_score):.0%}")
         print()
-        print(f"DECISAO: {entry.narrative.decision.value} ({entry.confidence:.0%} confianca)")
+        print(f"DECISAO: {entry.narrative.decision.value} ({normalize_confidence(entry.confidence):.0%} confianca)")
         print(f"Razao: {entry.reasoning}")
         print()
         print(f"Tags: {', '.join(entry.tags)}")

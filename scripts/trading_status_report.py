@@ -12,6 +12,7 @@ from decimal import Decimal
 from datetime import datetime
 from config import get_config
 from src.application.services.quantum_operator import QuantumOperatorEngine
+from src.application.confidence_utils import normalize_confidence
 from src.domain.value_objects import Symbol
 from src.infrastructure.adapters.mt5_adapter import MT5Adapter, TimeFrame
 
@@ -132,8 +133,8 @@ def main():
     print("ANALISE ATUAL")
     print("=" * 80)
     print(f"Sinal:         {decision.action.value}")
-    print(f"Confianca:     {decision.confidence:.0%}")
-    print(f"Alinhamento:   {decision.alignment_score:.0%}")
+    print(f"Confianca:     {normalize_confidence(decision.confidence):.0%}")
+    print(f"Alinhamento:   {normalize_confidence(decision.alignment_score):.0%}")
     print()
     print("Contexto Multidimensional:")
     print(f"  Macro:        {decision.macro_bias}")

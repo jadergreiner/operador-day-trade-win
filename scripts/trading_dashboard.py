@@ -12,6 +12,7 @@ from decimal import Decimal
 from datetime import datetime
 from config import get_config
 from src.application.services.quantum_operator import QuantumOperatorEngine
+from src.application.confidence_utils import normalize_confidence
 from src.domain.value_objects import Symbol
 from src.infrastructure.adapters.mt5_adapter import MT5Adapter, TimeFrame
 
@@ -88,8 +89,8 @@ def display_dashboard():
 
     print("ANALISE ATUAL:")
     print(f"  Sinal:       {decision.action.value}")
-    print(f"  Confianca:   {decision.confidence:.0%}")
-    print(f"  Alinhamento: {decision.alignment_score:.0%}")
+    print(f"  Confianca:   {normalize_confidence(decision.confidence):.0%}")
+    print(f"  Alinhamento: {normalize_confidence(decision.alignment_score):.0%}")
     print()
 
     print("CONTEXTO:")
@@ -117,10 +118,10 @@ def display_dashboard():
             print(f"  R/R:    {entry.risk_reward_ratio:.2f}")
     else:
         print(f"  [AGUARDANDO] Setup de qualidade")
-        if decision.confidence < Decimal("0.75"):
-            print(f"    - Confianca: {decision.confidence:.0%} < 75%")
-        if decision.alignment_score < Decimal("0.75"):
-            print(f"    - Alinhamento: {decision.alignment_score:.0%} < 75%")
+        if normalize_confidence(decision.confidence) < 0.75:
+            print(f"    - Confianca: {normalize_confidence(decision.confidence):.0%} < 75%")
+        if normalize_confidence(decision.alignment_score) < 0.75:
+            print(f"    - Alinhamento: {normalize_confidence(decision.alignment_score):.0%} < 75%")
 
     print()
     print(f"Razao: {decision.primary_reason}")

@@ -48,6 +48,7 @@ from src.application.opening_context_runtime import initialize_opening_context_r
 from src.application.opening_context_report import (
     generate_opening_context_vs_result_report,
 )
+from src.application.confidence_utils import normalize_confidence
 
 # ────────────────────────────────────────────────────────────────
 # Macro Data Provider (REC2/REC6: dados ao vivo, não hardcoded)
@@ -180,6 +181,16 @@ def _safe_float(value: Any, fallback: float = 0.0) -> float:
         return float(value)
     except Exception:
         return fallback
+
+
+def _normalize_confidence_percent(value: Any) -> float:
+    """Normaliza confidence para escala 0-1 antes de exibir como percentual."""
+    conf = _safe_float(value, 0.0)
+    if conf < 0:
+        return 0.0
+    if conf > 1.0:
+        return conf / 100.0
+    return conf
 
 
 def _build_runtime_order_history(perf: dict[str, Any]) -> list[dict[str, Any]]:
@@ -2253,9 +2264,9 @@ def run_trading_journal():
             print("CONTEXTO:")
             print(f"  Macro: {decision_data['macro_bias']} | Fundamentos: {decision_data['fundamental_bias']}")
             print(f"  Sentimento: {decision_data['sentiment_bias']} | Tecnica: {decision_data['technical_bias']}")
-            print(f"  Alinhamento: {entry.alignment_score:.0%}")
+            print(f"  Alinhamento: {normalize_confidence(entry.alignment_score):.0%}")
             print()
-            print(f"DECISAO: {narrative.decision.value} ({narrative.confidence:.0%})")
+            print(f"DECISAO: {narrative.decision.value} ({normalize_confidence(narrative.confidence):.0%})")
             print(f"Entry ID: {entry.entry_id}")
             print()
 
@@ -2410,7 +2421,7 @@ def run_ai_reflection():
                 hold_pct = total_holds / total_episodes * 100 if total_episodes else 0
 
                 print()
-                print(f"  IA diz: {ai_decision} (conf: {decision.confidence:.0%})")
+                print(f"  IA diz: {ai_decision} (conf: {normalize_confidence(decision.confidence):.0%})")
                 print(f"  Agente diz: {agent_action} (macro_score: {agent_macro_score}, SMC: {agent_smc})")
                 print(f"  Oportunidades hoje: {len(opportunities)}")
                 print(f"  Ações: HOLD {total_holds}/{total_episodes} ({hold_pct:.0f}%)")
@@ -2425,7 +2436,7 @@ def run_ai_reflection():
 
                 # 1. IA diz BUY/SELL mas agente fica HOLD
                 if ai_decision != "HOLD" and agent_action == "HOLD":
-                    print(f"  ❓ Eu (IA) estou vendo {ai_decision} com {decision.confidence:.0%} de confiança,")
+                    print(f"  ❓ Eu (IA) estou vendo {ai_decision} com {normalize_confidence(decision.confidence):.0%} de confiança,")
                     print(f"     mas o agente micro está em HOLD. POR QUÊ?")
                     if agent_smc == "PREMIUM" and ai_decision == "BUY":
                         print(f"     → CAUSA PROVÁVEL: Filtro SMC está em PREMIUM, vetando BUY.")
@@ -2964,7 +2975,7 @@ def run_rl_performance_diary():
                     sl = float(o.get("stop_loss") or 0)
                     tp = float(o.get("take_profit") or 0)
                     rr = float(o.get("risk_reward") or 0)
-                    conf = float(o.get("confidence") or 0)
+                    conf = _normalize_confidence_percent(o.get("confidence"))
                     reason = (o.get("reason") or "")[:40]
                     icon = "🟢" if direction == "BUY" else "🔴"
                     print(f"    {icon} {ts} | {direction:>4} @ {entry:.0f} "
@@ -3462,8 +3473,8 @@ def run_diario_order_manager():
                       f"{icone} {acao}")
 
                 if sinal:
-                    print(f"  dir={sinal.direcao} conf={sinal.confianca:.0%} "
-                          f"align={sinal.alinhamento:.0%} "
+                    print(f"  dir={sinal.direcao} conf={normalize_confidence(sinal.confianca):.0%} "
+                          f"align={normalize_confidence(sinal.alinhamento):.0%} "
                           f"ATR={sinal.atr:.0f} mom={sinal.momentum:+.0f} "
                           f"guardian={'OK' if sinal.guardian_ok else 'KILL'} "
                           f"wr_propria={sinal.win_rate_propria:.0f}% "
