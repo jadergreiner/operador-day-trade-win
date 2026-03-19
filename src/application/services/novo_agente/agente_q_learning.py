@@ -141,6 +141,34 @@ class AgenteQLearningMiniIndice:
         # Explotação: ação com maior Q-value
         return self._acao_gulosa(estado)
 
+    def obter_acao_e_confianca(
+        self,
+        estado: np.ndarray,
+        *,
+        modo_producao: bool = True,
+    ) -> tuple[int, float]:
+        """Retorna ação e confiança derivada dos Q-values.
+
+        Em produção, a ação é sempre gulosa para evitar exploração
+        aleatória com capital real. A confiança é calculada via
+        softmax estável sobre os Q-values previstos.
+        """
+        acao = self._acao_gulosa(estado) if modo_producao else self.selecionar_acao(estado)
+        q_valores = self._prever_q_values(estado)
+
+        if q_valores.size != self.n_acoes or not np.isfinite(q_valores).all():
+            return acao, 0.0
+
+        q_estavel = q_valores - np.max(q_valores)
+        exp_q = np.exp(q_estavel)
+        soma_exp = float(np.sum(exp_q))
+        if soma_exp <= 0 or not np.isfinite(soma_exp):
+            return acao, 0.0
+
+        probabilidades = exp_q / soma_exp
+        confianca = float(probabilidades[int(acao)])
+        return acao, max(0.0, min(1.0, confianca))
+
     def memorizar(
         self,
         estado: np.ndarray,

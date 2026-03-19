@@ -345,7 +345,7 @@ Scripts de lancamento:
 
 - **Diarios:** `start_journals_full_display.py`
 - **Micro Tendencia:** `agente_micro_tendencia_winfut.py`
-- **RL 5000:** `operar_novo_agente_rl_real_antiovertrading.py`
+- **RL 5000:** `INICIAR_AGENTE_RL_5000.bat` -> `scripts/agente_com_supervision.py` -> `operar_novo_agente_rl_real_antiovertrading.py`
 - **RL Direto:** `agente_rl_direto_independente.py`
 
 #### 7.1.1 Governanca operacional do Micro Tendencia
@@ -692,10 +692,10 @@ Artefatos obrigatorios em `data/backtest/`:
 | Criterio | Script/Teste | Evidencia | Owner |
 |---------|--------------|-----------|-------|
 | BL-01 | `scripts/validate_staging_readiness.py` | `outputs/release_gates/bl01_*.json` | Agente 2 |
-| BL-07 | `scripts/validate_go_live_gates.py` | `outputs/release_gates/bl07_*.json` | Agente 2 |
+| BL-07 | `scripts/validate_release_quality_gate.py` + `scripts/validate_go_live_gates.py` | `outputs/release_gates/bl07_*.json` | Agente 2 |
+| BL-08 | `tests/uat/uat_test_cases.py` + `scripts/validate_go_live_gates.py` | `outputs/release_gates/bl08_*.json` e `go_live_decision.json` | Agente 2 |
 | Runtime RL/MT5 sem `preco_saida=0.0` e sem `DESCONHECIDO` persistente | `tests/unit/test_agente_rl_direto_runtime.py` + `tests/unit/test_mt5_adapter_runtime.py` | `outputs/agente_posicao_*.json` e logs do `RL_DIRETO` | Agente 1 |
 | Fechamento diario por agente | `prompts/fechamento_diario.py` + `tests/unit/test_fechamento_diario.py` | `data/fechamento_diario/*` e `docs/agente_autonomo/AGENTE_AUTONOMO_BACKLOG.md` | Agente 3 |
-| Gate final operacional | `tests/uat/uat_test_cases.py` | `outputs/release_gates/bl08_*.json` e `go_live_decision.json` | Agente 2 |
 | Gate 2 de escala de capital | `data/backtest/gate2_decision.json` | `data/backtest/*.json` | Produto/Trading |
 
 ---

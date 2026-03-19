@@ -92,43 +92,35 @@ except ImportError as _e:
 from config.settings import TradingConfig
 import uuid
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[
-        logging.FileHandler(ROOT_DIR / 'outputs' / 'operar_agente_rl_antiovertrading.log'),
-        logging.StreamHandler(),
-    ]
-)
 logger = logging.getLogger(__name__)
+_LOGGING_CONFIGURED = False
 
 # ============================================================================
 # ANTI-OVERTRADING CONFIGURATION
 # ============================================================================
 
 class AntiOvertradingConfig:
-    """Configurações de proteção contra overtrading - BALANCED MODE.
+    """Configurações operacionais aderentes ao PRD."""
 
-    BALANCED Mode:
-    - Sem limite de trades/dia
-    - Aguarda fechamento de candle
-    - Volatilidade mínima antes de entrada
-    - Continua até atingir TARGET ou STOP LOSS
-    """
+    COOLDOWN_SECONDS = 300
+    STOP_LOSS_COOLDOWN_SECONDS = 1800
+    MAX_TRADES_PER_SESSION = 6
+    MIN_VOLATILITY_PERCENT = 0.05
+    CONFIRM_SIGNAL_BARS = 2
 
-    # [OK] ATIVO: Filtros BALANCED (sem limite diário)
-    COOLDOWN_SECONDS = 300              # 5 minutos entre trades (evita impulsos)
-    MIN_VOLATILITY_PERCENT = 0.05       # Mínimo 0.05% volatilidade para operar
-    CONFIRM_SIGNAL_BARS = 2             # Esperar 2 velas confirmando sinal
+    MIN_VOLUME = 1000
+    MIN_CONFIDENCE_SCORE = 0.45
+    MIN_RISK_REWARD = 1.5
+    SETUP_LOOKBACK_BARS = CONFIRM_SIGNAL_BARS
+    STOP_SETUP_BUFFER_PONTOS = 10.0
+    TARGET_BUFFER_PONTOS = 20.0
 
-    # [X] DESATIVADO: Limites diários e horários
-    # MAX_TRADES_PER_SESSION = Ilimitado (operadora até target/stop loss)
-    # MAX_TRADES_PER_HOUR = Ilimitado (apenas cooldown entre trades)
 
-    # Qualidade mínima
-    MIN_VOLUME = 1000                   # Volume mínimo
-    MIN_CONFIDENCE_SCORE = 0.65         # Confiança mínima do modelo
-    MIN_TICKET_PROFIT = 10.0            # Não faz trade se RR < 1:2
+MONITORAMENTO_INICIO = dtime(9, 0)
+NOVAS_ENTRADAS_FIM = dtime(17, 25)
+MONITORAMENTO_FIM = dtime(17, 55)
+VALOR_PONTO_BRL = 0.20
+CLOSURE_TOLERANCE_POINTS = 20.0
 
 # ============================================================================
 # GLOBAL STATE
@@ -141,29 +133,51 @@ STOP_LOSS_PONTOS = 150
 TAKE_PROFIT_PONTOS = 300
 MAGIC_NUMBER = 234500
 
-# Modo de calculo SL/TP (dinamico ou fixo)
-SL_TP_MODE = os.getenv('AGENTE_SL_TP_MODE', 'dinamico').lower()
-if SL_TP_MODE not in ['dinamico', 'fixo']:
-    SL_TP_MODE = 'dinamico'
+def resolver_sl_tp_mode(mode: Optional[str] = None) -> str:
+    """Normaliza o modo de cálculo de SL/TP."""
+    valor = (mode or os.getenv("AGENTE_SL_TP_MODE", "dinamico")).strip().lower()
+    if valor not in {"dinamico", "fixo"}:
+        return "dinamico"
+    return valor
 
-# ID unico para este agente (para controlar posicoes em paralelo)
-AGENTE_ID = f"agente_{SL_TP_MODE}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
-# Motor de decisao isolado — substitui tickets_proprios (set) inline
-# Persistencia file-based: posicoes_ativas_{AGENTE_ID}.json
-motor_isolado = MotorDecisaoIsolado(
-    agent_id=AGENTE_ID,
-    data_dir=Path(__file__).parent.parent / 'outputs',
-)
+def construir_agent_id(sl_tp_mode: Optional[str] = None) -> str:
+    """Gera um identificador único e estável para a sessão."""
+    modo = resolver_sl_tp_mode(sl_tp_mode)
+    return f"agente_{modo}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
-logger.info(f"Modo SL/TP: {SL_TP_MODE.upper()}")
-logger.info(f"ID do Agente: {AGENTE_ID}")
-logger.info(f"Motor Isolado: MotorDecisaoIsolado({AGENTE_ID})")
 
-config = TradingConfig()
+def configure_logging() -> None:
+    """Configura logging apenas no bootstrap real do runtime."""
+    global _LOGGING_CONFIGURED
+    if _LOGGING_CONFIGURED:
+        return
+
+    outputs_dir = ROOT_DIR / "outputs"
+    outputs_dir.mkdir(parents=True, exist_ok=True)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.FileHandler(
+                outputs_dir / "operar_agente_rl_antiovertrading.log",
+                encoding="utf-8",
+            ),
+            logging.StreamHandler(),
+        ],
+    )
+    _LOGGING_CONFIGURED = True
+
+
+SL_TP_MODE = resolver_sl_tp_mode()
+AGENTE_ID = construir_agent_id(SL_TP_MODE)
+
+config: Optional[TradingConfig] = None
 mt5_adapter: Optional[MT5Adapter] = None
 pipeline: Optional[PipelineTreinamentoRL] = None
 rl_repo: Optional[SqliteRLRepository] = None
+motor_isolado: Optional[MotorDecisaoIsolado] = None
+_monitor_posicao_rl = None
 
 # Profit Protection Engine (proteção dinâmica de lucros)
 profit_protection_engine = ProfitProtectionEngine(
@@ -174,11 +188,11 @@ profit_protection_engine = ProfitProtectionEngine(
     reversao_threshold_pct=0.75,
     cooldown_seconds=5,
 )
-logger.info("Motor de proteção de lucros ativado (P1-PROFIT_PROTECTION)")
 
 # Anti-overtrading state
 trades_executed_today = 0
 last_trade_time: Optional[datetime] = None
+last_stop_loss_time: Optional[datetime] = None
 trades_by_hour = {}  # {hour: count}
 last_signal: Optional[str] = None
 signal_confirmation_count = 0
@@ -193,21 +207,41 @@ _trades_fechados_rl: list = []  # Acumulador para pipeline AC5.9/AC6
 _opening_context_runtime = None
 
 
+def get_config() -> TradingConfig:
+    """Inicializa a configuração apenas quando o runtime realmente precisar."""
+    global config
+    if config is None:
+        config = TradingConfig()
+    return config
+
+
+def get_motor_isolado() -> MotorDecisaoIsolado:
+    """Cria o motor isolado de forma lazy para evitar I/O no import."""
+    global motor_isolado
+    if motor_isolado is None:
+        motor_isolado = MotorDecisaoIsolado(
+            agent_id=AGENTE_ID,
+            data_dir=ROOT_DIR / "outputs",
+        )
+    return motor_isolado
+
+
 def inicializar_adaptador_mt5() -> MT5Adapter:
     """Inicializa MT5Adapter."""
     global mt5_adapter
 
+    current_config = get_config()
     mt5_adapter = MT5Adapter(
-        login=config.mt5_login,
-        password=config.mt5_password,
-        server=config.mt5_server,
-        terminal_exe_path=config.mt5_terminal_path,
+        login=current_config.mt5_login,
+        password=current_config.mt5_password,
+        server=current_config.mt5_server,
+        terminal_exe_path=current_config.mt5_terminal_path,
     )
 
     if not mt5_adapter.connect():
         raise RuntimeError("Falha ao conectar no MT5")
 
-    logger.info(f"[OK] MT5 conectado: {config.mt5_server}")
+    logger.info(f"[OK] MT5 conectado: {current_config.mt5_server}")
     return mt5_adapter
 
 
@@ -261,17 +295,37 @@ def inicializar_rl_repo():
                 return None
 
 
-def verificar_horario_trading() -> bool:
-    """Horário de trading: 09:00-17:55 BRT."""
-    agora = datetime.now().time()
-    abertura = dtime(9, 0)
-    fechamento = dtime(17, 55)
-    return abertura <= agora <= fechamento
+def verificar_horario_trading(agora: Optional[dtime] = None) -> bool:
+    """Janela de monitoramento do pregão: 09:00-17:55 BRT."""
+    horario = agora or datetime.now().time()
+    return MONITORAMENTO_INICIO <= horario <= MONITORAMENTO_FIM
+
+
+def verificar_janela_novas_entradas(agora: Optional[dtime] = None) -> bool:
+    """Permite novas entradas somente até 17:25 BRT."""
+    horario = agora or datetime.now().time()
+    return MONITORAMENTO_INICIO <= horario <= NOVAS_ENTRADAS_FIM
+
+
+def obter_pl_sessao(saldo_inicial: float) -> float:
+    """Calcula o P&L da sessão com base no saldo da conta."""
+    if mt5_adapter is None:
+        return 0.0
+
+    try:
+        saldo_atual_decimal = mt5_adapter.get_account_balance()
+        saldo_atual = float(saldo_atual_decimal) if saldo_atual_decimal else saldo_inicial
+        return saldo_atual - saldo_inicial
+    except Exception as exc:
+        logger.debug(f"Erro ao calcular P&L da sessao: {exc}")
+        return 0.0
 
 
 def carregar_dados_mt5(simbolo: str, n_candles: int = 100) -> Optional[pd.DataFrame]:
     """Carrega candles via MT5Adapter."""
     try:
+        if mt5_adapter is None:
+            return None
         candles = mt5_adapter.get_candles(Symbol(simbolo), TimeFrame.M5, n_candles)
         if not candles or len(candles) < 20:
             return None
@@ -315,15 +369,19 @@ def obter_acao_do_modelo(dados: pd.DataFrame) -> tuple[int, float]:
     try:
         from src.application.services.novo_agente.ambiente_trading import AmbienteTradingMiniIndice
 
+        if pipeline is None or getattr(pipeline, "_agente", None) is None:
+            logger.error("Pipeline RL nao inicializado")
+            return 0, 0.0
+
         ambiente = AmbienteTradingMiniIndice(dados=dados)
         ambiente.reset()
         ambiente._indice = len(dados) - 1
 
         estado = ambiente._calcular_estado()
-        acao_id = pipeline._agente.selecionar_acao(estado)
-
-        # Simular confidence score (0-1) baseado no Q-value
-        confidence = 0.7  # TODO: extrair do Q-network
+        acao_id, confidence = pipeline._agente.obter_acao_e_confianca(
+            estado,
+            modo_producao=True,
+        )
 
         return acao_id, confidence
 
@@ -337,34 +395,47 @@ def verificar_cooldown() -> bool:
     Verifica se passou o cooldown mínimo entre trades.
     Retorna True se pode fazer trade.
     """
-    global last_trade_time
+    global last_trade_time, last_stop_loss_time
 
-    if last_trade_time is None:
+    agora = datetime.now()
+    restante_base = 0.0
+    restante_stop = 0.0
+
+    if last_trade_time is not None:
+        restante_base = AntiOvertradingConfig.COOLDOWN_SECONDS - (
+            agora - last_trade_time
+        ).total_seconds()
+
+    if last_stop_loss_time is not None:
+        restante_stop = AntiOvertradingConfig.STOP_LOSS_COOLDOWN_SECONDS - (
+            agora - last_stop_loss_time
+        ).total_seconds()
+
+    restante = max(restante_base, restante_stop)
+    if restante <= 0:
         return True
 
-    elapsed = (datetime.now() - last_trade_time).total_seconds()
-
-    if elapsed < AntiOvertradingConfig.COOLDOWN_SECONDS:
-        minutos = (AntiOvertradingConfig.COOLDOWN_SECONDS - elapsed) / 60
-        logger.warning(f"⏱️  Cooldown ativo. Aguarde {minutos:.1f} min...")
-        return False
-
-    return True
+    minutos = restante / 60
+    if restante_stop >= restante_base and restante_stop > 0:
+        logger.warning(
+            f"[COOLDOWN] Pos-SL ativo. Aguarde {minutos:.1f} min antes de nova entrada."
+        )
+    else:
+        logger.warning(
+            f"[COOLDOWN] Base ativo. Aguarde {minutos:.1f} min antes de nova entrada."
+        )
+    return False
 
 
 def verificar_limite_trades() -> bool:
-    """
-    MODO BALANCED: Sem limite de trades!
-    Apenas aguarda cooldown e volatilidade mínima.
-    Continua operando até atingir TARGET ou STOP LOSS.
-
-    Retorna sempre True (nenhum limite aplicado).
-    """
-    # [OK] BALANCED: Sem limites diários/horários
-    # Operará livremente enquanto:
-    # - Houver volatilidade mínima (0.05%)
-    # - Respeitar cooldown entre trades (300s)
-    # - Sinal estiver confirmado (2 velas)
+    """Aplica o limite operacional padrão do PRD: máximo de 6 trades/dia."""
+    if trades_executed_today >= AntiOvertradingConfig.MAX_TRADES_PER_SESSION:
+        logger.warning(
+            "[LIMITE] Maximo de %d trades na sessao atingido. "
+            "Sem novas entradas ate o encerramento do pregao.",
+            AntiOvertradingConfig.MAX_TRADES_PER_SESSION,
+        )
+        return False
     return True
 
 
@@ -401,6 +472,67 @@ def verificar_confirmacao_sinal(sinal_atual: str, sinal_anterior: str) -> bool:
         return False
 
 
+def calcular_risk_reward(acao: str, preco_atual: float, sl: float, tp: float) -> float:
+    """Calcula a relacao risco-retorno da oportunidade."""
+    if acao == "Comprar":
+        risk = preco_atual - sl
+        reward = tp - preco_atual
+    else:
+        risk = sl - preco_atual
+        reward = preco_atual - tp
+
+    if risk <= 0:
+        return 0.0
+    return abs(reward / risk)
+
+
+def inferir_motivo_fechamento(
+    posicao,
+    preco_saida: float,
+    *,
+    tolerancia_pontos: float = CLOSURE_TOLERANCE_POINTS,
+) -> MotivoFechamento:
+    """Classifica o fechamento como TP, SL ou manual."""
+    if posicao.tipo == TipoPosicao.COMPRADA:
+        if preco_saida >= posicao.take_profit - tolerancia_pontos:
+            return MotivoFechamento.TP_ATINGIDO
+        if preco_saida <= posicao.stop_loss + tolerancia_pontos:
+            return MotivoFechamento.SL_ATINGIDO
+    else:
+        if preco_saida <= posicao.take_profit + tolerancia_pontos:
+            return MotivoFechamento.TP_ATINGIDO
+        if preco_saida >= posicao.stop_loss - tolerancia_pontos:
+            return MotivoFechamento.SL_ATINGIDO
+    return MotivoFechamento.MANUAL
+
+
+def registrar_fechamento_operacional(posicao, preco_saida: float, motivo: MotivoFechamento) -> None:
+    """Atualiza métricas e cooldown a partir de um fechamento detectado."""
+    global last_stop_loss_time
+
+    diff = preco_saida - posicao.preco_entrada
+    if posicao.tipo == TipoPosicao.VENDIDA:
+        diff = -diff
+    pnl_est = diff * VALOR_PONTO_BRL * posicao.volume
+    direcao_str = "BUY" if posicao.tipo == TipoPosicao.COMPRADA else "SELL"
+    _trades_fechados_rl.append({
+        "trade_id": str(posicao.ticket),
+        "outcome": "WIN" if diff > 0 else "LOSS",
+        "pnl": pnl_est,
+        "direction": direcao_str,
+        "closure_reason": motivo.value,
+    })
+
+    if motivo == MotivoFechamento.SL_ATINGIDO:
+        last_stop_loss_time = datetime.now()
+        logger.warning(
+            "[COOLDOWN] Stop loss detectado no ticket %s. "
+            "Cooldown de %d min iniciado.",
+            posicao.ticket,
+            AntiOvertradingConfig.STOP_LOSS_COOLDOWN_SECONDS // 60,
+        )
+
+
 def calcular_sl_tp_dinamico(dados: pd.DataFrame, acao: str, preco_atual: float,
                            lookback_periods: int = 20) -> tuple[float, float]:
     """Calcula SL/TP baseado no modo configurado (dinamico ou fixo).
@@ -423,7 +555,7 @@ def calcular_sl_tp_dinamico(dados: pd.DataFrame, acao: str, preco_atual: float,
         else:
             return preco_atual + STOP_LOSS_PONTOS, preco_atual - TAKE_PROFIT_PONTOS
 
-    # MODO DINAMICO - Calcula baseado em topos/fundos
+    # MODO DINAMICO - TP segue janela maior; SL ancora no setup de entrada
     try:
         if len(dados) < lookback_periods:
             # Fallback para valores fixos se não houver dados suficientes
@@ -432,43 +564,36 @@ def calcular_sl_tp_dinamico(dados: pd.DataFrame, acao: str, preco_atual: float,
             else:
                 return preco_atual + STOP_LOSS_PONTOS, preco_atual - TAKE_PROFIT_PONTOS
 
-        # Analisar últimos N candles
         recent = dados.tail(lookback_periods)
-        ultimo_topo = float(recent['high'].max())  # Converter para float (pode ser Decimal)
-        ultimo_fundo = float(recent['low'].min())  # Converter para float (pode ser Decimal)
+        setup_barras = max(AntiOvertradingConfig.SETUP_LOOKBACK_BARS, 1)
+        setup_entrada = dados.tail(setup_barras)
 
-        # Margem de segurança (em pontos)
-        margem_seguranca = 20  # 20 pontos de buffer
+        alvo_topo = float(recent['high'].max())
+        alvo_fundo = float(recent['low'].min())
+        setup_maxima = float(setup_entrada['high'].max())
+        setup_minima = float(setup_entrada['low'].min())
+
+        margem_alvo = AntiOvertradingConfig.TARGET_BUFFER_PONTOS
+        margem_stop = AntiOvertradingConfig.STOP_SETUP_BUFFER_PONTOS
 
         if acao == "Comprar":
-            # Para COMPRA:
-            # TP = último topo (dar um pouco de espaço)
-            # SL = último fundo - margem (evitar ser parado por pico acidental)
-            tp = ultimo_topo + margem_seguranca  # Um pouco acima do topo
-            sl = ultimo_fundo - margem_seguranca  # Um pouco abaixo do fundo
+            tp = alvo_topo + margem_alvo
+            sl = setup_minima - margem_stop
 
-            # Validar relação risk/reward mínima (pelo menos 1:1.5)
             reward = tp - preco_atual
             risk = preco_atual - sl
-            if risk > 0 and reward / risk < 1.5:  # RR < 1.5
-                # Ajustar TP para manter RR = 1.5
-                tp = preco_atual + (risk * 1.5)
+            if risk > 0 and reward / risk < AntiOvertradingConfig.MIN_RISK_REWARD:
+                tp = preco_atual + (risk * AntiOvertradingConfig.MIN_RISK_REWARD)
 
         else:  # "Vender"
-            # Para VENDA:
-            # TP = último fundo (dar um pouco de espaço)
-            # SL = último topo + margem (evitar ser parado por pico acidental)
-            tp = ultimo_fundo - margem_seguranca  # Um pouco abaixo do fundo
-            sl = ultimo_topo + margem_seguranca  # Um pouco acima do topo
+            tp = alvo_fundo - margem_alvo
+            sl = setup_maxima + margem_stop
 
-            # Validar relação risk/reward mínima (pelo menos 1:1.5)
-            reward = preco_atual - tp  # Para venda, reward é negativo
-            risk = sl - preco_atual    # Para venda, risk é positivo
-            if risk > 0 and reward / risk < 1.5:  # RR < 1.5
-                # Ajustar TP para manter RR = 1.5
-                tp = preco_atual - (risk * 1.5)
+            reward = preco_atual - tp
+            risk = sl - preco_atual
+            if risk > 0 and reward / risk < AntiOvertradingConfig.MIN_RISK_REWARD:
+                tp = preco_atual - (risk * AntiOvertradingConfig.MIN_RISK_REWARD)
 
-        # Garantir que SL nunca está do mesmo lado que TP
         if acao == "Comprar":
             sl = min(sl, preco_atual - 10)  # SL sempre abaixo do preço
             tp = max(tp, preco_atual + 10)  # TP sempre acima do preço
@@ -476,12 +601,23 @@ def calcular_sl_tp_dinamico(dados: pd.DataFrame, acao: str, preco_atual: float,
             sl = max(sl, preco_atual + 10)  # SL sempre acima do preço
             tp = min(tp, preco_atual - 10)  # TP sempre abaixo do preço
 
-        logger.info(f"[DINAMICO] Topos/Fundos últimas {lookback_periods} velas: "
-                   f"Topo={ultimo_topo:.2f}, Fundo={ultimo_fundo:.2f}")
-        logger.info(f"[DINAMICO] SL/TP calculados: SL={sl:.2f}, TP={tp:.2f} "
-                   f"(Risk/Reward = {abs((tp - preco_atual) / (preco_atual - sl)):.2f}:1"
-                   if acao == "Comprar" else
-                   f"(Risk/Reward = {abs((preco_atual - tp) / (sl - preco_atual)):.2f}:1")
+        logger.info(
+            "[DINAMICO] Alvo nas ultimas %d velas: topo=%.2f, fundo=%.2f | "
+            "setup entrada (%d velas): maxima=%.2f, minima=%.2f",
+            lookback_periods,
+            alvo_topo,
+            alvo_fundo,
+            setup_barras,
+            setup_maxima,
+            setup_minima,
+        )
+        risk_reward = calcular_risk_reward(acao, preco_atual, sl, tp)
+        logger.info(
+            "[DINAMICO] SL/TP calculados: SL=%.2f, TP=%.2f (Risk/Reward = %.2f:1)",
+            sl,
+            tp,
+            risk_reward,
+        )
 
         return sl, tp
 
@@ -504,6 +640,11 @@ def enviar_ordem_mt5adapter(
 ) -> bool:
     """Envia ordem via MT5Adapter (com validações e SL/TP dinâmicos)."""
     global last_trade_time
+    if mt5_adapter is None:
+        logger.error("[ENVIO] MT5Adapter nao inicializado.")
+        return False
+
+    motor = get_motor_isolado()
     normalized_context = (
         normalize_opening_context(opening_context)
         if opening_context is not None
@@ -521,17 +662,16 @@ def enviar_ordem_mt5adapter(
         decisao_operacional: DecisaoOperacional = DecisaoOperacional.HOLD,
     ) -> None:
         """Persiste contexto neutro/cancelado para aprendizagem quando fica de fora."""
-        if motor_isolado:
-            try:
-                motor_isolado.registrar_decisao(
-                    decisao_operacional,
-                    reasoning=motivo,
-                    confianca=confidence,
-                    fatores=fatores,
-                    contexto_operacional=contexto,
-                )
-            except Exception as e:
-                logger.warning(f"[WARN] Erro ao registrar HOLD no motor isolado: {e}")
+        try:
+            motor.registrar_decisao(
+                decisao_operacional,
+                reasoning=motivo,
+                confianca=confidence,
+                fatores=fatores,
+                contexto_operacional=contexto,
+            )
+        except Exception as e:
+            logger.warning(f"[WARN] Erro ao registrar HOLD no motor isolado: {e}")
 
         if rl_repo:
             try:
@@ -571,6 +711,51 @@ def enviar_ordem_mt5adapter(
                 ["acao_agora=Aguardar"],
                 contexto_hold,
                 DecisaoOperacional.HOLD,
+            )
+            return False
+
+        if confidence <= 0.0:
+            contexto_hold = build_contexto_operacional_com_diario(
+                opening_context,
+                base_payload={},
+                diario_payload=diario_payload,
+                action=acao,
+                model_confidence=confidence,
+            )
+            _persist_hold_episode(
+                "Confiança indisponível para operação real.",
+                ["model_confidence=0.0"],
+                contexto_hold,
+                DecisaoOperacional.CANCELAR,
+            )
+            logger.warning(
+                "[PRE-ABERTURA] Ordem %s bloqueada: confiança do modelo indisponível.",
+                acao,
+            )
+            return False
+
+        if confidence < AntiOvertradingConfig.MIN_CONFIDENCE_SCORE:
+            contexto_hold = build_contexto_operacional_com_diario(
+                opening_context,
+                base_payload={},
+                diario_payload=diario_payload,
+                action=acao,
+                model_confidence=confidence,
+            )
+            _persist_hold_episode(
+                (
+                    "Confiança abaixo do mínimo operacional "
+                    f"({confidence:.2%} < {AntiOvertradingConfig.MIN_CONFIDENCE_SCORE:.0%})."
+                ),
+                [f"model_confidence={confidence:.4f}"],
+                contexto_hold,
+                DecisaoOperacional.CANCELAR,
+            )
+            logger.warning(
+                "[PRE-ABERTURA] Ordem %s bloqueada: confiança %.2f abaixo do mínimo %.2f.",
+                acao,
+                confidence,
+                AntiOvertradingConfig.MIN_CONFIDENCE_SCORE,
             )
             return False
 
@@ -666,7 +851,30 @@ def enviar_ordem_mt5adapter(
                 sl = preco_atual + STOP_LOSS_PONTOS
                 tp = preco_atual - TAKE_PROFIT_PONTOS
 
-        logger.info(f"[ENVIO] Enviando: {acao} @ {preco_atual} (SL: {sl}, TP: {tp}, Vol: {vol:.3f}%) [Agente: {AGENTE_ID}, Modo: {SL_TP_MODE.upper()}]")
+        risk_reward = calcular_risk_reward(acao, preco_atual, sl, tp)
+        if risk_reward < AntiOvertradingConfig.MIN_RISK_REWARD:
+            _persist_hold_episode(
+                (
+                    "Risk/Reward abaixo do mínimo operacional "
+                    f"({risk_reward:.2f}:1 < {AntiOvertradingConfig.MIN_RISK_REWARD:.2f}:1)."
+                ),
+                [f"risk_reward={risk_reward:.4f}"],
+                contexto_operacional,
+                DecisaoOperacional.CANCELAR,
+            )
+            logger.warning(
+                "[PRE-ABERTURA] Ordem %s bloqueada: risk/reward %.2f abaixo do mínimo %.2f.",
+                acao,
+                risk_reward,
+                AntiOvertradingConfig.MIN_RISK_REWARD,
+            )
+            return False
+
+        logger.info(
+            f"[ENVIO] Enviando: {acao} @ {preco_atual} "
+            f"(SL: {sl}, TP: {tp}, RR: {risk_reward:.2f}:1, Vol: {vol:.3f}%) "
+            f"[Agente: {AGENTE_ID}, Modo: {SL_TP_MODE.upper()}]"
+        )
 
         order = Order(
             symbol=Symbol(SIMBOLO),
@@ -683,48 +891,50 @@ def enviar_ordem_mt5adapter(
         ticket = mt5_adapter.send_order(order)
         logger.info(f"[OK] Ordem enviada! Ticket: {ticket}")
 
+        if not ticket:
+            logger.warning("[ENVIO] Ordem sem ticket valido. Operacao sera tratada como falha segura.")
+            return False
+
         # Rastrear ticket via MotorDecisaoIsolado (persistido em JSON)
-        if ticket:
-            tipo = TipoPosicao.COMPRADA if acao == "Comprar" else TipoPosicao.VENDIDA
-            motor_isolado.abrir_posicao(
-                ticket=int(ticket),
-                tipo=tipo,
-                preco_entrada=preco_atual,
-                volume=1.0,
-                stop_loss=sl,
-                take_profit=tp,
-                contexto_operacional=contexto_operacional,
-            )
-            logger.info(f"[ISOLAMENTO] Ticket {ticket} registrado via "
-                       f"MotorDecisaoIsolado({AGENTE_ID})")
+        tipo = TipoPosicao.COMPRADA if acao == "Comprar" else TipoPosicao.VENDIDA
+        motor.abrir_posicao(
+            ticket=int(ticket),
+            tipo=tipo,
+            preco_entrada=preco_atual,
+            volume=1.0,
+            stop_loss=sl,
+            take_profit=tp,
+            contexto_operacional=contexto_operacional,
+        )
+        logger.info(f"[ISOLAMENTO] Ticket {ticket} registrado via "
+                   f"MotorDecisaoIsolado({AGENTE_ID})")
 
-            # AC5.8: Registra ordem no monitor de posições
-            if _monitor_posicao_rl:
-                try:
-                    direcao_ac = (
-                        DirecaoOperacao.BUY
-                        if acao == "Comprar"
-                        else DirecaoOperacao.SELL
-                    )
-                    _monitor_posicao_rl.registrar_ordem({
-                        "trade_id": str(ticket),
-                        "signal_id": AGENTE_ID,
-                        "symbol": SIMBOLO,
-                        "direcao": direcao_ac.value,
-                        "volume": 1,
-                        "preco_entrada": preco_atual,
-                        "sl": sl,
-                        "tp": tp,
-                        "magic_number": MAGIC_NUMBER,
-                    })
-                    _monitor_posicao_rl.atualizar_status_ordem(
-                        str(ticket), StatusOrdem.FILLED,
-                    )
-                    logger.info(f"[AC5.8] Ordem {ticket} registrada")
-                except Exception as e:
-                    logger.warning(f"[AC5.8] {e}")
+        # AC5.8: Registra ordem no monitor de posições
+        if _monitor_posicao_rl:
+            try:
+                direcao_ac = (
+                    DirecaoOperacao.BUY
+                    if acao == "Comprar"
+                    else DirecaoOperacao.SELL
+                )
+                _monitor_posicao_rl.registrar_ordem({
+                    "trade_id": str(ticket),
+                    "signal_id": AGENTE_ID,
+                    "symbol": SIMBOLO,
+                    "direcao": direcao_ac.value,
+                    "volume": 1,
+                    "preco_entrada": preco_atual,
+                    "sl": sl,
+                    "tp": tp,
+                    "magic_number": MAGIC_NUMBER,
+                })
+                _monitor_posicao_rl.atualizar_status_ordem(
+                    str(ticket), StatusOrdem.FILLED,
+                )
+                logger.info(f"[AC5.8] Ordem {ticket} registrada")
+            except Exception as e:
+                logger.warning(f"[AC5.8] {e}")
 
-        # Atualizar apenas o cooldown (sem limitar trades/dia)
         last_trade_time = datetime.now()
 
         # Persistir episódio
@@ -739,6 +949,8 @@ def enviar_ordem_mt5adapter(
                     "action": acao.upper(),
                     "symbol": SIMBOLO,
                     "volatility": vol,
+                    "overall_confidence": confidence,
+                    "risk_reward": risk_reward,
                 }
                 rl_repo.save_episode(episode)
             except Exception as e:
@@ -761,6 +973,8 @@ def processar_protecao_lucros() -> None:
     - Sugere fechamento parcial para ganho protegido
     """
     try:
+        if mt5_adapter is None:
+            return
         positions = mt5_adapter.get_positions(Symbol(SIMBOLO))
         if not positions or len(positions) == 0:
             return
@@ -889,17 +1103,23 @@ def monitorar_posicoes() -> bool:
     - Atualiza P&L em tempo real
     """
     try:
+        if mt5_adapter is None:
+            return False
+
+        motor = get_motor_isolado()
         positions = mt5_adapter.get_positions(Symbol(SIMBOLO))
         if not positions:
             # Nenhuma posição no símbolo → fechar posições órfãs no motor
-            for pos in motor_isolado.obter_posicoes_abertas():
+            for pos in motor.obter_posicoes_abertas():
                 logger.info(f"[ISOLAMENTO] Ticket #{pos.ticket} não existe mais "
                            f"no MT5. Fechando no motor.")
                 tick = mt5_adapter._mt5.symbol_info_tick(SIMBOLO)
                 preco_fechamento = tick.bid if tick else pos.preco_entrada
-                motor_isolado.fechar_posicao(
+                motivo = inferir_motivo_fechamento(pos, preco_fechamento)
+                registrar_fechamento_operacional(pos, preco_fechamento, motivo)
+                motor.fechar_posicao(
                     pos.ticket, preco_fechamento,
-                    MotivoFechamento.SL_ATINGIDO,
+                    motivo,
                     contexto_operacional=build_contexto_operacional_com_diario(
                         getattr(_opening_context_runtime, "features", None),
                         db_path=TRADING_DB_PATH,
@@ -913,14 +1133,14 @@ def monitorar_posicoes() -> bool:
             if int(getattr(p, 'magic', 0) or 0) == MAGIC_NUMBER
         ]
         tickets_mt5_meus = {int(getattr(p, 'ticket', 0)) for p in minhas_posicoes}
-        tickets_motor = {p.ticket for p in motor_isolado.obter_posicoes_abertas()}
+        tickets_motor = {p.ticket for p in motor.obter_posicoes_abertas()}
 
         # Recuperar tickets do MT5 que não estão no motor (restart)
         novos = tickets_mt5_meus - tickets_motor
         for t in novos:
             pos_mt5 = next(p for p in minhas_posicoes if int(getattr(p, 'ticket', 0)) == t)
             tipo = TipoPosicao.COMPRADA if getattr(pos_mt5, 'type', 0) == 0 else TipoPosicao.VENDIDA
-            motor_isolado.abrir_posicao(
+            motor.abrir_posicao(
                 ticket=t, tipo=tipo,
                 preco_entrada=float(getattr(pos_mt5, 'price_open', 0)),
                 volume=float(getattr(pos_mt5, 'volume', 1)),
@@ -939,29 +1159,19 @@ def monitorar_posicoes() -> bool:
         for t in fechados:
             tick = mt5_adapter._mt5.symbol_info_tick(SIMBOLO)
             preco = tick.bid if tick else 0.0
-            # Calcular PnL estimado para pipeline AC5.9/AC6
             pos_motor = next(
-                (p for p in motor_isolado.obter_posicoes_abertas() if p.ticket == t),
+                (p for p in motor.obter_posicoes_abertas() if p.ticket == t),
                 None,
             )
             if pos_motor:
-                diff = preco - pos_motor.preco_entrada
-                if pos_motor.tipo == TipoPosicao.VENDIDA:
-                    diff = -diff
-                pnl_est = diff * 0.20
-                direcao_str = (
-                    'BUY' if pos_motor.tipo == TipoPosicao.COMPRADA else 'SELL'
-                )
-                _trades_fechados_rl.append({
-                    'trade_id': str(t),
-                    'outcome': 'WIN' if diff > 0 else 'LOSS',
-                    'pnl': pnl_est,
-                    'direction': direcao_str,
-                })
-            motor_isolado.fechar_posicao(
+                motivo = inferir_motivo_fechamento(pos_motor, preco)
+                registrar_fechamento_operacional(pos_motor, preco, motivo)
+            else:
+                motivo = MotivoFechamento.MANUAL
+            motor.fechar_posicao(
                 t,
                 preco,
-                MotivoFechamento.SL_ATINGIDO,
+                motivo,
                 contexto_operacional=build_contexto_operacional_com_diario(
                     getattr(_opening_context_runtime, "features", None),
                     db_path=TRADING_DB_PATH,
@@ -973,7 +1183,7 @@ def monitorar_posicoes() -> bool:
         for pos_mt5 in minhas_posicoes:
             t = int(getattr(pos_mt5, 'ticket', 0))
             preco_atual = float(getattr(pos_mt5, 'price_current', 0))
-            motor_isolado.atualizar_posicao(t, preco_atual)
+            motor.atualizar_posicao(t, preco_atual)
             # AC5.8: Atualiza preço no monitor de posições
             if _monitor_posicao_rl:
                 try:
@@ -1224,6 +1434,8 @@ def proteger_lucro_trade() -> None:
     - Se lucro > 75% do TP: Mantém trailing (deixa correr)
     """
     try:
+        if mt5_adapter is None:
+            return
         positions = mt5_adapter.get_positions(Symbol(SIMBOLO))
         if not positions or len(positions) == 0:
             return
@@ -1345,12 +1557,7 @@ def registrar_progresso_objetivos(saldo_inicial: float, forcar: bool = False) ->
             if (agora - ultimo_registro_progresso).total_seconds() < 300:  # 5 minutos
                 return
 
-        # Obter saldo atual
-        saldo_atual_decimal = mt5_adapter.get_account_balance()
-        saldo_atual = float(saldo_atual_decimal) if saldo_atual_decimal else saldo_inicial
-
-        # Calcular P&L
-        pl_atual = saldo_atual - saldo_inicial
+        pl_atual = obter_pl_sessao(saldo_inicial)
 
         # Calcular progresso
         progresso_target = (pl_atual / TARGET_LUCRO_DIARIO) * 100 if TARGET_LUCRO_DIARIO > 0 else 0
@@ -1381,16 +1588,22 @@ def registrar_progresso_objetivos(saldo_inicial: float, forcar: bool = False) ->
 
 
 def print_status():
-    """Exibe status de operação BALANCED MODE."""
+    """Exibe status operacional aderente ao PRD."""
     logger.info("\n" + "=" * 70)
-    logger.info("[STATUS] OPERACAO (BALANCED MODE)")
+    logger.info("[STATUS] OPERACAO RL 5000")
     logger.info("=" * 70)
     logger.info(f"Agente ID: {AGENTE_ID}")
     logger.info(f"Modo SL/TP: {SL_TP_MODE.upper()}")
-    logger.info(f"Modo: Operando livremente até TARGET ou STOP LOSS")
-    logger.info(f"Limite diário: DESATIVADO (ilimitado)")
+    logger.info("Janela de monitoramento: 09:00-17:55 BRT")
+    logger.info("Novas entradas permitidas até: 17:25 BRT")
+    logger.info(
+        f"Limite diário: {AntiOvertradingConfig.MAX_TRADES_PER_SESSION} trades"
+    )
     logger.info(f"Última operação: {last_trade_time.strftime('%H:%M:%S') if last_trade_time else 'Nenhuma'}")
-    logger.info(f"Cooldown: {AntiOvertradingConfig.COOLDOWN_SECONDS}s entre trades")
+    logger.info(
+        f"Cooldown base: {AntiOvertradingConfig.COOLDOWN_SECONDS}s | "
+        f"Pos-SL: {AntiOvertradingConfig.STOP_LOSS_COOLDOWN_SECONDS // 60} min"
+    )
     logger.info("=" * 70 + "\n")
 
 
@@ -1399,13 +1612,25 @@ def loop_operacao():
     global last_signal, trades_executed_today
 
     logger.info("\n" + "=" * 70)
-    logger.info("[START] INICIANDO OPERACAO RL v5000 (BALANCED MODE - SEM LIMITE DIARIO)")
+    logger.info("[START] INICIANDO OPERACAO RL v5000 (MODO PRODUCAO ESTRITO)")
     logger.info("=" * 70)
     logger.info(f"Alvo: R${TARGET_LUCRO_DIARIO} | Stop: R${STOP_PERDA_DIARIA}")
-    logger.info(f"Trades/dia: ILIMITADO (até target/stop loss)")
-    logger.info(f"Cooldown entre trades: {AntiOvertradingConfig.COOLDOWN_SECONDS}s")
+    logger.info(
+        f"Trades/dia: max {AntiOvertradingConfig.MAX_TRADES_PER_SESSION}"
+    )
+    logger.info(
+        "Janela operacional: monitora ate 17:55, novas entradas so ate 17:25"
+    )
+    logger.info(
+        f"Cooldown entre trades: {AntiOvertradingConfig.COOLDOWN_SECONDS}s "
+        f"| cooldown pos-SL: {AntiOvertradingConfig.STOP_LOSS_COOLDOWN_SECONDS // 60} min"
+    )
     logger.info(f"Min volatilidade: {AntiOvertradingConfig.MIN_VOLATILITY_PERCENT}%")
     logger.info(f"Confirmação sinal: {AntiOvertradingConfig.CONFIRM_SIGNAL_BARS} velas")
+    logger.info(
+        f"Confianca minima: {AntiOvertradingConfig.MIN_CONFIDENCE_SCORE:.0%} "
+        f"| Risk/Reward minimo: {AntiOvertradingConfig.MIN_RISK_REWARD:.1f}:1"
+    )
 
     # Capturar saldo inicial para rastreamento de P&L
     try:
@@ -1450,6 +1675,7 @@ def loop_operacao():
         processar_protecao_lucros()
         logger.debug(f"[CICLO {ciclo}] processar_protecao_lucros() concluído.")
 
+        lucro_sessao = obter_pl_sessao(saldo_inicial)
         logger.debug(f"[CICLO {ciclo}] Verificando lucro vs TARGET...")
         if lucro_sessao >= TARGET_LUCRO_DIARIO:
             logger.info(f"[TARGET] ATINGIDO: R${lucro_sessao:.2f}")
@@ -1466,6 +1692,18 @@ def loop_operacao():
             logger.debug(f"[CICLO {ciclo}] Dormindo 30s (posição aberta)...")
             time.sleep(30)
             logger.debug(f"[CICLO {ciclo}] Retornando ao início do loop após sleep.")
+            continue
+
+        if not verificar_janela_novas_entradas():
+            logger.info(
+                "[JANELA] Novas entradas bloqueadas a partir de 17:25. "
+                "Mantendo apenas monitoramento ate o fim do pregao."
+            )
+            time.sleep(60)
+            continue
+
+        if not verificar_limite_trades():
+            time.sleep(60)
             continue
 
         logger.info(f"\n[Ciclo {ciclo}] Consultando mercado...")
@@ -1523,7 +1761,7 @@ def loop_operacao():
                 # Passar dados para cálculo dinâmico de SL/TP
                 logger.info(f"[CICLO {ciclo}] Sinal CONFIRMADO! Enviando ordem...")
                 logger.debug(f"[CICLO {ciclo}] Chamando enviar_ordem_mt5adapter()...")
-                enviar_ordem_mt5adapter(
+                ordem_enviada = enviar_ordem_mt5adapter(
                     acao_str,
                     preco_atual,
                     vol,
@@ -1531,15 +1769,22 @@ def loop_operacao():
                     confidence=confidence,
                     opening_context=getattr(_opening_context_runtime, "features", None),
                 )
-                logger.debug(f"[CICLO {ciclo}] Ordem enviada com sucesso.")
                 last_signal = acao_str
-                trades_executed_today += 1
-                # Registrar progresso apos trade
-                registrar_progresso_objetivos(saldo_inicial, forcar=True)
-                print_status()
-                logger.debug(f"[CICLO {ciclo}] Cooldown por {AntiOvertradingConfig.COOLDOWN_SECONDS}s...")
-                time.sleep(AntiOvertradingConfig.COOLDOWN_SECONDS)
-                logger.debug(f"[CICLO {ciclo}] Cooldown finalizado.")
+                if ordem_enviada:
+                    logger.debug(f"[CICLO {ciclo}] Ordem enviada com sucesso.")
+                    trades_executed_today += 1
+                    registrar_progresso_objetivos(saldo_inicial, forcar=True)
+                    print_status()
+                    logger.debug(
+                        f"[CICLO {ciclo}] Cooldown por {AntiOvertradingConfig.COOLDOWN_SECONDS}s..."
+                    )
+                    time.sleep(AntiOvertradingConfig.COOLDOWN_SECONDS)
+                    logger.debug(f"[CICLO {ciclo}] Cooldown finalizado.")
+                else:
+                    logger.info(
+                        f"[CICLO {ciclo}] Ordem nao enviada apos validacoes. Retomando monitoramento."
+                    )
+                    time.sleep(30)
             else:
                 last_signal = acao_str
                 logger.info(f"[SINAL] Sinal: {acao_str} (confiança: {confidence:.2%}, vol: {vol:.3f}%)")
@@ -1554,20 +1799,25 @@ def loop_operacao():
             logger.debug(f"[CICLO {ciclo}] Retornando ao início do loop após erro.")
 
 
-if __name__ == "__main__":
-    # AC5.8: Monitor de posições (Grupo 2)
+def inicializar_componentes_auxiliares() -> None:
+    """Inicializa módulos auxiliares somente no bootstrap real."""
+    global _monitor_posicao_rl
+    global _feedback_validator_rl
+    global _drift_detector_rl
+    global _online_learning_rl
+    global _baseline_comparator_rl
+    global _opening_context_runtime
+
     _monitor_posicao_rl = None
     if AC5_8_DISPONIVEL and MonitorPositionManager:
         try:
-            _db_path = TRADING_DB_PATH
             _monitor_posicao_rl = MonitorPositionManager(
-                db_caminho=_db_path,
+                db_caminho=TRADING_DB_PATH,
             )
             logger.info("[OK] AC5.8 MonitorPositionManager: Ativo")
         except Exception as e:
             logger.warning(f"[!] AC5.8: {e}")
 
-    # AC5.9/AC6: Feedback e Aprendizado (Grupo 2)
     if _AC5_9_DISPONIVEL and FeedbackValidator:
         try:
             _feedback_validator_rl = FeedbackValidator()
@@ -1575,7 +1825,9 @@ if __name__ == "__main__":
         except Exception as e:
             logger.warning(f"[!] AC5.9: {e}")
 
-    if _AC6_DISPONIVEL and (DriftDetector or OnlineLearningController or BaselineComparator):
+    if _AC6_DISPONIVEL and (
+        DriftDetector or OnlineLearningController or BaselineComparator
+    ):
         try:
             ac6 = build_ac6_components(
                 drift_detector_cls=DriftDetector if _AC6_DISPONIVEL else None,
@@ -1596,35 +1848,50 @@ if __name__ == "__main__":
         except Exception as e:
             logger.warning(f"[!] AC6 bootstrap: {e}")
 
+    _opening_context_runtime = initialize_opening_context_runtime(
+        db_path=TRADING_DB_PATH,
+        agent_name="rl_5000",
+        source="operar_novo_agente_rl_real_antiovertrading",
+        session_id=AGENTE_ID,
+        mode=SL_TP_MODE.upper(),
+        logger=logger,
+        operational_context_dir=os.getenv("OPENING_CONTEXT_DIR") or None,
+    )
+    if _opening_context_runtime.prompt_abertura_agentes:
+        logger.info(
+            "[PRE-ABERTURA] Prompt operacional lido pelo agente: %s",
+            _opening_context_runtime.prompt_abertura_agentes,
+        )
+
+
+def main() -> int:
+    """Bootstrap explícito do runtime RL 5000."""
+    configure_logging()
+    logger.info(f"Modo SL/TP: {SL_TP_MODE.upper()}")
+    logger.info(f"ID do Agente: {AGENTE_ID}")
+    logger.info("Motor de proteção de lucros ativado (P1-PROFIT_PROTECTION)")
+    logger.info(f"Motor Isolado: MotorDecisaoIsolado({AGENTE_ID})")
+    get_motor_isolado()
+
     try:
         logger.info("Inicializando...")
+        get_config()
         inicializar_adaptador_mt5()
         inicializar_agente_rl()
         inicializar_rl_repo()
-        _opening_context_runtime = initialize_opening_context_runtime(
-            db_path=TRADING_DB_PATH,
-            agent_name="rl_5000",
-            source="operar_novo_agente_rl_real_antiovertrading",
-            session_id=AGENTE_ID,
-            mode=SL_TP_MODE.upper(),
-            logger=logger,
-            operational_context_dir=os.getenv("OPENING_CONTEXT_DIR") or None,
-        )
-        if _opening_context_runtime.prompt_abertura_agentes:
-            logger.info(
-                "[PRE-ABERTURA] Prompt operacional lido pelo agente: %s",
-                _opening_context_runtime.prompt_abertura_agentes,
-            )
-
+        inicializar_componentes_auxiliares()
         loop_operacao()
+        return 0
 
     except KeyboardInterrupt:
         logger.info("\n[STOP] Operacao interrompida pelo usuario.")
         print_status()
+        return 0
     except Exception as e:
         logger.error(f"[ERRO] Erro fatal: {e}")
         import traceback
         logger.error(traceback.format_exc())
+        return 1
     finally:
         try:
             relatorio_contexto = generate_opening_context_vs_result_report(
@@ -1644,3 +1911,7 @@ if __name__ == "__main__":
         if mt5_adapter:
             mt5_adapter.disconnect()
             logger.info("[OK] MT5 desconectado.")
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

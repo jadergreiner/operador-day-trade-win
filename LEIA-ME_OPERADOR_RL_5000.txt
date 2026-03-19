@@ -20,8 +20,8 @@ OPERADOR RL v5000 - GUIA RAPIDO DE INICIALIZACAO
   3. Clique 2x em: INICIAR_AGENTE_RL_5000.bat
   4. Escolha uma opcao:
      [1] AVALIAR MODELO (teste com dados historicos)
-     [2] OPERAR MERCADO REAL (execucao ao vivo)
-     [3] MODO ORIGINAL (sem protecoes)
+     [2] OPERAR MERCADO REAL (producao estrita)
+     [3] VALIDAR GO LIVE (BL-01 + BL-07 + BL-08)
      [4] Sair
 
 [⚙️ MELHORIAS RECENTES]
@@ -31,11 +31,14 @@ OPERADOR RL v5000 - GUIA RAPIDO DE INICIALIZACAO
   ✓ Modelo regenerado (sem corrupcao)
 
 [📋 PARAMETROS DO MODELO]
-  • Win Rate esperado: 65-68%
   • Stop Loss: -R$ 250.00
   • Target: +R$ 140.00
   • Anti-overtrading: 7 filtros
-  • Cooldown: 5 minutos entre trades
+  • Cooldown base: 5 minutos entre trades
+  • Cooldown pos-SL: 30 minutos
+  • Maximo: 6 trades por sessao
+  • Novas entradas: ate 17:25 BRT
+  • Execucao real: wrapper canonico com supervisao
   • SL/TP dinamicos: Analisa ultimos topos/fundos
 
 [❓ DUVIDAS]
@@ -45,5 +48,5 @@ OPERADOR RL v5000 - GUIA RAPIDO DE INICIALIZACAO
     3. Se necessario, envie relatorio para debug
 
 ═════════════════════════════════════════════════════════════════
-Data: 16/03/2026 | Status: PRONTO PARA OPERACAO
+Data: 19/03/2026 | Status: NO_GO ate BL-07 ficar verde
 ═════════════════════════════════════════════════════════════════

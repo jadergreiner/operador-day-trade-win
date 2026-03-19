@@ -240,10 +240,9 @@ logs/
 - Modelo Q-Learning treinado em **5000 episódios**
 - **Proteção de lucros** com SL/TP **dinâmicos**
 - **Anti-overtrading**: 7 filtros automáticos
-- **Win Rate esperado**: 65-68% (histórico)
-- **Isolamento**: filtra posições por `tickets_proprios`
-  e `magic_number` — nunca modifica SL/TP de outro
-  agente
+- **Produção estrita**: max 6 trades, max 1 posição e cooldown pós-SL
+- **Isolamento**: usa `MotorDecisaoIsolado` e `magic_number`
+  para nunca modificar SL/TP de outro agente
 
 ### 🚀 Como Usar
 
@@ -253,23 +252,24 @@ double-click INICIAR_AGENTE_RL_5000.bat
 
 # Selecione uma opção:
 # [1] AVALIAR MODELO (teste com histórico)
-# [2] OPERAR MERCADO REAL (execução ao vivo)
-# [3] MODO ORIGINAL (sem proteções extras)
+# [2] OPERAR MERCADO REAL (produção estrita)
+# [3] VALIDAR GO LIVE (BL-01 + BL-07 + BL-08)
 # [4] Sair
 
 # Ou via terminal:
 cd c:\repo\operador-day-trade-win
-python scripts/operar_novo_agente_rl_real_antiovertrading.py
+python scripts/agente_com_supervision.py --sl-tp-mode dinamico
 ```
 
 ### ⚙️ Componentes
 
+- **agente_com_supervision.py**: Wrapper canônico com heartbeat e logging
 - **MT5Adapter**: Conexão ao broker
 - **PipelineTrainingRL**: Carrega modelo e define ações
 - **AgenteQLearningMiniIndice**: Q-Network (15 features → 3 ações)
 - **SqliteRLRepository**: Persiste episódios para feedback
 - **ProfitProtectionEngine**: Calcula SL/TP dinâmicos
-- **AntiOvertrading Manager**: Evita trades repetitivos (cooldown 5 min)
+- **AntiOvertrading Manager**: Evita trades repetitivos e aplica cooldown pós-SL
 
 ### ⚙️ Modelo RL
 
@@ -294,7 +294,10 @@ python scripts/operar_novo_agente_rl_real_antiovertrading.py
 |---|---|---|
 | **Alvo de Lucro** | R$ 140.00 | Por sinal |
 | **Stop Loss** | -R$ 250.00 | Máximo por sinal |
-| **Cooldown** | 5 minutos | Entre trades |
+| **Cooldown Base** | 5 minutos | Entre trades |
+| **Cooldown pós-SL** | 30 minutos | Bloqueia novas entradas após stop |
+| **Max trades/sessão** | 6 | Aderente ao PRD |
+| **Novas entradas até** | 17:25 BRT | Monitoramento segue até 17:55 |
 | **Intervalo Ciclos** | 30 segundos | Verificação de oportunidades |
 | **Confirmação Sinal** | 2 velas | Evita ruído de candle |
 
@@ -412,11 +415,11 @@ data/db/
 | **Aspecto** | **RL 5000** | **RL Direto** |
 |---|---|---|
 | **Magic Number** | 234500 | 234600 |
-| **Wrapper** | Com supervisão | Sem wrapper |
+| **Wrapper** | Com supervisão canônica | Sem wrapper |
 | **Session ID** | Via env variable | Geração autônoma |
 | **Paralelizável** | ✅ Sim | ✅ Sim |
 | **Heartbeat** | ✅ Sim | ❌ Não |
-| **Verif. posição** | Por tickets_proprios | Por ticket MT5 (15s) |
+| **Verif. posição** | `MotorDecisaoIsolado` + magic | Por ticket MT5 (15s) |
 | **Complexidade** | Média | Simples |
 
 ### ⚠️ Problemas Comuns

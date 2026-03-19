@@ -14,6 +14,7 @@ import time
 import signal
 import traceback
 from pathlib import Path
+import logging
 
 # Parse argumentos ANTES de limpar sys.argv
 SL_TP_MODE = 'dinamico'  # Padrão
@@ -36,20 +37,29 @@ os.chdir(ROOT_DIR)
 # Remover argumentos personalizados antes de importar script agente
 sys.argv = [sys.argv[0]]
 
-import logging
-from io import StringIO
+from src.infrastructure.monitoring.heartbeat_monitor import (
+    HeartbeatLoggingHandler,
+    HeartbeatMonitor,
+)
 
 # Passar modo via variável de ambiente
 os.environ['AGENTE_SL_TP_MODE'] = SL_TP_MODE
 
+HEARTBEAT_CHECK_INTERVAL_SECONDS = 5
+HEARTBEAT_TIMEOUT_SECONDS = 360
+heartbeat_monitor = HeartbeatMonitor(timeout_seconds=HEARTBEAT_TIMEOUT_SECONDS)
+
 # Redirecionar stderr para capturar tudo
 class DualWriter:
     """Escreve em arquivo e console simultaneamente."""
-    def __init__(self, console, file_handle):
+    def __init__(self, console, file_handle, heartbeat):
         self.console = console
         self.file_handle = file_handle
+        self.heartbeat = heartbeat
 
     def write(self, msg):
+        if msg.strip():
+            self.heartbeat.touch()
         self.console.write(msg)
         self.file_handle.write(msg)
         self.file_handle.flush()
@@ -60,8 +70,8 @@ class DualWriter:
 
 # Abrir arquivo de log
 log_file = open(os.path.join(ROOT_DIR, 'outputs', 'agente_supervision.log'), 'w', encoding='utf-8')
-sys.stdout = DualWriter(sys.__stdout__, log_file)
-sys.stderr = DualWriter(sys.__stderr__, log_file)
+sys.stdout = DualWriter(sys.__stdout__, log_file, heartbeat_monitor)
+sys.stderr = DualWriter(sys.__stderr__, log_file, heartbeat_monitor)
 
 # Configurar logging
 logging.basicConfig(
@@ -72,6 +82,7 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
+logging.getLogger().addHandler(HeartbeatLoggingHandler(heartbeat_monitor))
 
 logger = logging.getLogger(__name__)
 
@@ -84,17 +95,14 @@ logger.info(f"Time: {time.time()}")
 
 def monitor_thread():
     """Thread de monitoramento que checa se processo está vivo."""
-    last_heartbeat = time.time()
-
     while True:
-        time.sleep(5)
-        now = time.time()
-        elapsed = now - last_heartbeat
+        time.sleep(HEARTBEAT_CHECK_INTERVAL_SECONDS)
+        elapsed = heartbeat_monitor.elapsed()
 
-        if elapsed > 60:
+        if elapsed > HEARTBEAT_TIMEOUT_SECONDS:
             logger.warning(f"[MONITOR] Sem heartbeat por {elapsed:.0f}s - processo pode estar travado!")
-
-        logger.debug(f"[MONITOR] Heartbeat OK (elapsed: {elapsed:.1f}s)")
+        else:
+            logger.debug(f"[MONITOR] Heartbeat OK (elapsed: {elapsed:.1f}s)")
 
 # Iniciar thread de monitoramento
 monitor = threading.Thread(target=monitor_thread, daemon=True)
@@ -132,48 +140,23 @@ try:
 
     # Wrapper ao redor do import para capturar erros
     try:
-        from scripts.operar_novo_agente_rl_real_antiovertrading import (
-            inicializar_adaptador_mt5,
-            inicializar_agente_rl,
-            inicializar_rl_repo,
-            loop_operacao
-        )
+        from scripts.operar_novo_agente_rl_real_antiovertrading import main
         logger.info("[INIT] Importação bem-sucedida!")
     except Exception as e:
         logger.error(f"[INIT] ERRO ao importar: {e}", exc_info=True)
         raise
 
-    logger.info("[INIT] Inicializando adaptador MT5...")
-    try:
-        inicializar_adaptador_mt5()
-        logger.info("[INIT] MT5 inicializado com sucesso!")
-    except Exception as e:
-        logger.error(f"[INIT] ERRO ao inicializar MT5: {e}", exc_info=True)
-        raise
-
-    logger.info("[INIT] Inicializando agente RL...")
-    try:
-        inicializar_agente_rl()
-        logger.info("[INIT] Agente RL inicializado com sucesso!")
-    except Exception as e:
-        logger.error(f"[INIT] ERRO ao inicializar agente RL: {e}", exc_info=True)
-        raise
-
-    logger.info("[INIT] Inicializando RL Repository...")
-    try:
-        inicializar_rl_repo()
-        logger.info("[INIT] RL Repository inicializado com sucesso!")
-    except Exception as e:
-        logger.error(f"[INIT] ERRO ao inicializar RL Repository: {e}", exc_info=True)
-        raise
-
-    logger.info("[INIT] Todas as inicializações concluídas! Iniciando loop...")
+    logger.info("[INIT] Bootstrap canonico carregado. Iniciando runtime completo...")
     logger.info("=" * 80)
 
     # Executar loop principal com supervisão
     try:
-        loop_operacao()
-        logger.info("[MAIN] Loop operacao encerrado normalmente")
+        exit_code = main()
+        if exit_code == 0:
+            logger.info("[MAIN] Runtime RL 5000 encerrado normalmente")
+        else:
+            logger.error(f"[MAIN] Runtime RL 5000 encerrou com código {exit_code}")
+            sys.exit(exit_code)
     except KeyboardInterrupt:
         logger.info("[MAIN] Interrompido pelo usuário (Ctrl+C)")
     except Exception as e:

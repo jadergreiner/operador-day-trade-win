@@ -238,6 +238,34 @@ class TradingConfig(BaseSettings):
         description="Debug mode",
     )
 
+    @field_validator("debug", mode="before")
+    @classmethod
+    def validate_debug(cls, v: object) -> object:
+        """Aceita aliases comuns de debug/release vindos do ambiente."""
+        if isinstance(v, str):
+            normalizado = v.strip().lower()
+            if normalizado in {
+                "1",
+                "true",
+                "yes",
+                "on",
+                "debug",
+                "development",
+                "dev",
+            }:
+                return True
+            if normalizado in {
+                "0",
+                "false",
+                "no",
+                "off",
+                "release",
+                "production",
+                "prod",
+            }:
+                return False
+        return v
+
     @field_validator("log_level")
     @classmethod
     def validate_log_level(cls, v: str) -> str:

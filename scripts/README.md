@@ -314,6 +314,8 @@ python scripts/agente_com_supervision.py --sl-tp-mode dinamico
 - SL/TP dinâmicos (análise de topos/fundos)
 - Profit Protection Engine (break-even stop automático)
 - Session ID via environment variable
+- Produção estrita: até 6 trades/sessão, entradas só até 17:25
+- Confiança derivada dos Q-values do modelo
 
 **Modelos:** `data/models/novo_agente_rl/modelo_final/`
 
@@ -374,6 +376,7 @@ python scripts/agente_com_supervision.py --sl-tp-mode [dinamico|fixo]
 - Logging unificado
 - Recuperação automática de falhas
 - Redirection de stdout/stderr
+- Chama o `main()` canônico do runtime RL 5000
 
 **Logs:**
 - `outputs/agente_supervision.log` (saída completa)

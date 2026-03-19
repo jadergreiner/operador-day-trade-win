@@ -19,6 +19,14 @@ from src.domain.value_objects import Price, Symbol
 logger = logging.getLogger(__name__)
 
 
+AGENT_LABELS_BY_MAGIC: dict[int, str] = {
+    234500: "RL 5000",
+    234600: "RL Direto",
+    234700: "Micro Tend",
+    234800: "Diarios",
+}
+
+
 @dataclass
 class TickData:
     """Representa um tick do mercado."""
@@ -214,6 +222,14 @@ class MT5Adapter(IBrokerAdapter):
         ts = int(epoch_seconds)
         offset = self._time_offset_seconds or 0
         return datetime.utcfromtimestamp(ts + offset)
+
+    @staticmethod
+    def _build_order_comment(order: Order) -> str:
+        """Monta comentario curto e legivel para o ticket no MT5."""
+        agent_name = AGENT_LABELS_BY_MAGIC.get(order.magic_number, "Agente")
+        order_prefix = str(order.order_id)[:8]
+        comment = f"{agent_name}|EA{order.magic_number}|MA{order_prefix}"
+        return comment[:31]
 
     def _get_mt5_terminal_pid(self) -> Optional[int]:
         """
@@ -758,7 +774,7 @@ class MT5Adapter(IBrokerAdapter):
             "price": self._round_to_tick(float(price.value), tick_size),
             "deviation": 10,
             "magic": order.magic_number,
-            "comment": f"agente|EA{order.magic_number}|MA{str(order.order_id)[:8]}",
+            "comment": self._build_order_comment(order),
             "type_time": self._mt5.ORDER_TIME_GTC,
             "type_filling": self._mt5.ORDER_FILLING_RETURN,
         }

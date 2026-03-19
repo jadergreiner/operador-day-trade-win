@@ -452,6 +452,45 @@ class TestAgenteQLearningSelecaoAcao:
         acao = agente.selecionar_acao(estado)
         assert 0 <= acao < agente.n_acoes
 
+    def test_obter_acao_e_confianca_retorna_probabilidade_valida(
+        self,
+        agente: AgenteQLearningMiniIndice,
+        ambiente: AmbienteTradingMiniIndice,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A confiança deve ser derivada dos Q-values e ficar entre 0 e 1."""
+        estado = ambiente.reset()
+        agente._modelo_inicializado = True
+        monkeypatch.setattr(
+            agente,
+            "_prever_q_values",
+            lambda _estado: np.array([0.2, 1.5, -0.1], dtype=np.float32),
+        )
+
+        acao, confianca = agente.obter_acao_e_confianca(estado)
+
+        assert acao == 1
+        assert 0.0 <= confianca <= 1.0
+        assert confianca > 0.5
+
+    def test_obter_acao_e_confianca_falha_em_modo_seguro_com_q_invalido(
+        self,
+        agente: AgenteQLearningMiniIndice,
+        ambiente: AmbienteTradingMiniIndice,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Q-values inválidos devem retornar confiança zero."""
+        estado = ambiente.reset()
+        agente._modelo_inicializado = True
+        monkeypatch.setattr(
+            agente,
+            "_prever_q_values",
+            lambda _estado: np.array([np.nan, np.inf, 0.0], dtype=np.float32),
+        )
+
+        _, confianca = agente.obter_acao_e_confianca(estado)
+        assert confianca == 0.0
+
 
 class TestAgenteQLearningMemorizar:
     """Testes do armazenamento de experiências."""

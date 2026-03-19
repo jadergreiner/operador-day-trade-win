@@ -196,10 +196,20 @@ O sistema sempre pede ao operador uma escolha:
 - modo simulado, para observar sinais sem enviar ordens reais;
 - modo auto-trade, para permitir ordens reais no MetaTrader 5.
 
+No caso do RL 5000, o launcher padrao expõe apenas:
+
+- simulacao;
+- mercado real em producao estrita;
+- validacao GO LIVE com BL-01, BL-07 e BL-08.
+
 ### Ordens reais exigem confirmacao explicita
 
 Se o operador escolher o modo real, o sistema ainda pede uma confirmacao final.
 Sem essa confirmacao, a sessao e cancelada.
+
+No RL 5000, a sessao real segue o wrapper canonico
+`scripts/agente_com_supervision.py`, que centraliza heartbeat, logs e captura
+de excecoes.
 
 ### O sistema tenta entrar no dia em estado saudavel
 
@@ -238,6 +248,13 @@ Se esse teste falhar, a sessao e bloqueada.
 Esse controle existe para impedir operacao em ambiente considerado instavel,
 desalinhado ou mal sincronizado.
 
+No RL 5000, o pre-flight tambem valida:
+
+- banco SQLite principal;
+- credenciais e terminal MT5 configurados;
+- sincronizacao MT5 -> SQLite antes do auto-trade;
+- ultimo artefato `outputs/release_gates/go_live_decision.json`, quando existir.
+
 ### O sistema precisa estar conectado ao terminal MT5 correto
 
 O sistema nao aceita operar em qualquer terminal MetaTrader 5 encontrado na
@@ -254,6 +271,12 @@ Quando o modo auto-trade esta habilitado, o envio real segue este fluxo:
 - `MT5Adapter` direto (se API falhar ou ticket nao numerico)
 
 Isso garante rastreabilidade, resiliencia e isolamento antes do envio real.
+
+No RL 5000, o encadeamento operacional do launcher e:
+
+- `INICIAR_AGENTE_RL_5000.bat`
+- `scripts/agente_com_supervision.py`
+- `scripts/operar_novo_agente_rl_real_antiovertrading.py`
 
 ## Como o Sistema se Protege
 

@@ -57,6 +57,8 @@ Agente reinicia → consulta posições com pos.magic
 ### RL 5000 (Supervisionado) — Magic 234500
 
 ```text
+Launcher: INICIAR_AGENTE_RL_5000.bat
+Wrapper: scripts/agente_com_supervision.py
 Script: scripts/operar_novo_agente_rl_real_antiovertrading.py
 Magic Number: 234500
 Símbolo: WIN$N
@@ -70,6 +72,8 @@ Isolamento:
   - MotorDecisaoIsolado: rastreia posicoes por agent_id
     (substitui tickets_proprios: set[int] removido)
   - Persistencia: outputs/posicoes_ativas_agente_*.json
+  - Novas entradas bloqueadas a partir de 17:25
+  - Monitoramento/protecao ate 17:55
 
 Logs:
   - outputs/agente_supervision.log
