@@ -221,11 +221,11 @@ def sample_trade_feedback_pair() -> tuple[Dict, Dict]:
     Trade e feedback com correlação perfeita.
     """
     from datetime import timedelta
-    
+
     trade_id = str(uuid4())
     now = datetime.now()
     exit_time = now + timedelta(minutes=1)
-    
+
     trade = {
         "trade_id": trade_id,
         "symbol": "WIN$N",
@@ -238,7 +238,7 @@ def sample_trade_feedback_pair() -> tuple[Dict, Dict]:
         "pnl": 225.00,
         "status": "CLOSED"
     }
-    
+
     feedback = {
         "trade_id": trade_id,
         "outcome_type": "CLOSED",
@@ -247,7 +247,7 @@ def sample_trade_feedback_pair() -> tuple[Dict, Dict]:
         "correlation_score": 1.0,
         "timestamp": now.isoformat()
     }
-    
+
     return trade, feedback
 
 
@@ -303,7 +303,7 @@ def missing_feedback_outcomes() -> tuple[list[Dict], list[Dict]]:
         }
         for _ in range(3)
     ]
-    
+
     # Apenas feedback para 1 dos 3 trades
     feedbacks = [
         {
@@ -314,7 +314,7 @@ def missing_feedback_outcomes() -> tuple[list[Dict], list[Dict]]:
             "timestamp": datetime.now().isoformat()
         }
     ]
-    
+
     return trades, feedbacks
 
 
@@ -332,6 +332,36 @@ def pnl_mismatch_feedbacks() -> list[tuple[float, float]]:
         (200.0, 190.0),   # ✗ Diverge 10
         (-50.0, -50.0),   # ✓ Matched
     ]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# FIXTURES AC5.10 - ML/RL FEEDBACK INTEGRATION
+# ═══════════════════════════════════════════════════════════════════════════
+
+@pytest.fixture
+def sample_feedback_service():
+    """
+    Fixture para AC5.10: FeedbackIntegrationService com mocks
+
+    Importa FeedbackIntegrationService com dependências mockadas.
+    """
+    from src.application.ml_rl_feedback_integration import (
+        FeedbackIntegrationService,
+    )
+    from unittest.mock import Mock
+
+    # Mock das dependências
+    ml_pipeline_mock = Mock()
+    rl_trainer_mock = Mock()
+    db_repo_mock = Mock()
+    logger_mock = Mock()
+
+    return FeedbackIntegrationService(
+        ml_pipeline=ml_pipeline_mock,
+        rl_trainer=rl_trainer_mock,
+        db_repository=db_repo_mock,
+        logger=logger_mock,
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════

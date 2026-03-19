@@ -21,6 +21,8 @@ from .conftest_clean_architecture import (
     invalid_feedback_types,
     missing_feedback_outcomes,
     pnl_mismatch_feedbacks,
+    # AC5.10 - Feedback Integration fixtures
+    sample_feedback_service,
 )
 
 __all__ = [
@@ -38,4 +40,6 @@ __all__ = [
     "invalid_feedback_types",
     "missing_feedback_outcomes",
     "pnl_mismatch_feedbacks",
+    # AC5.10
+    "sample_feedback_service",
 ]
