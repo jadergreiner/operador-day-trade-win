@@ -126,8 +126,8 @@ class ProcessadorBDI:
         )
         self._mt5_proxy = MT5AdapterProxy(
             original_adapter=self._mt5_adapter,
-            use_api_rest=True,
-            fallback_to_mt5=True,
+            use_api_rest=False,
+            fallback_to_mt5=False,
         )
 
     def enviar_ordem(self, order: Order) -> Tuple[bool, str]:

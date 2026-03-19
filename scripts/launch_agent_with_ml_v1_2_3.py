@@ -565,6 +565,11 @@ def setup_p0_1_api():
         print("  [OK] API Health: OK")
         print("  " + "=" * 60)
 
+        use_api_rest = os.getenv("P0_1_USE_API_REST", "0").strip().lower() in {"1", "true", "yes", "on"}
+        if not use_api_rest:
+            print("  [INFO] P0-1 desabilitado por padrão - usando MT5 direto")
+            return None
+
         return api_client
 
     except Exception as e:
