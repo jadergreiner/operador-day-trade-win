@@ -138,6 +138,7 @@ def _make_manager(tmp_path: Path, rewards: list = None) -> DiarioOrderManager:
     manager._posicao = DiarioPosicaoStatus(session_id, str(tmp_path))
     manager._n_ciclos = 0
     manager._ultimo_sinal = None
+    manager._ultimo_snapshot_intraday = None
 
     rl_reader = MagicMock()
     rl_reader.get_today_rewards.return_value = rewards or []
@@ -170,6 +171,11 @@ def _make_manager(tmp_path: Path, rewards: list = None) -> DiarioOrderManager:
     manager._sinal_abertura = None
     manager._ultimo_neutro_registrado = 0
     manager._candles_no_neutro = None
+    manager._opening_context_raw = {}
+    manager._opening_context = {}
+    manager._latest_market_features_path = (
+        Path(tmp_path) / "outputs" / "analysis" / "diario_market_features_latest.json"
+    )
 
     return manager
 
@@ -682,6 +688,22 @@ class TestCiclo:
 
         assert resultado["acao"] == "BLOQUEADO"
         mgr._mt5.send_order.assert_not_called()
+
+    def test_ciclo_publica_snapshot_intraday_mesmo_bloqueado(self, tmp_path):
+        mgr = _make_manager(tmp_path)
+        candles = _candles_simples()
+        decisao = _fake_decisao("BUY", confidence=0.90, alignment=0.80)
+        guardian = _fake_guardian()
+
+        with patch.object(mgr, "_no_pregao", return_value=False):
+            resultado = mgr.ciclo(decisao, candles, guardian)
+
+        snapshot = resultado["diario_market_features"]
+        assert snapshot is not None
+        assert snapshot["session_id"] == "test_session_001"
+        assert snapshot["symbol"] == "WIN$N"
+        assert snapshot["macro_regime"] == ""
+        assert mgr._latest_market_features_path.exists()
 
     def test_ciclo_monitora_posicao_aberta(self, tmp_path):
         mgr = _make_manager(tmp_path)

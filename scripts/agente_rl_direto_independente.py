@@ -34,6 +34,7 @@ from typing import Optional, Tuple
 ROOT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 os.chdir(ROOT_DIR)
+TRADING_DB_PATH = str(ROOT_DIR / "data" / "db" / "trading.db")
 
 # Gerar session ID único para este agente
 SESSION_TIMESTAMP = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -111,6 +112,7 @@ try:
         RETCODE_ORDER_FAILED,
     )
     from src.application.opening_context_policy import (
+        apply_opening_context_strict_filters,
         evaluate_opening_context_gate,
         normalize_opening_context,
     )
@@ -119,6 +121,11 @@ try:
     )
     from src.application.opening_context_report import (
         generate_opening_context_vs_result_report,
+    )
+    from src.application.diario_market_features import (
+        apply_diario_soft_feature_influence,
+        build_contexto_operacional_com_diario,
+        load_diario_market_features_payload,
     )
     from src.application.ac6_bootstrap import build_ac6_components
     from src.application.opening_context_runtime import initialize_opening_context_runtime
@@ -668,13 +675,27 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
         True se ordem enviada com sucesso, False caso contrario.
     """
     global last_trade_time
+    normalized_context = (
+        normalize_opening_context(opening_context)
+        if opening_context is not None
+        else None
+    )
+    try:
+        diario_payload = load_diario_market_features_payload(TRADING_DB_PATH)
+    except Exception:
+        diario_payload = {"available": False, "snapshot": {}, "effective_snapshot": {}}
 
-    def _persist_hold_episode(motivo: str, fatores: list[str], contexto: dict[str, object]) -> None:
-        """Persiste HOLD neutro para aprendizagem quando o agente fica de fora."""
+    def _persist_hold_episode(
+        motivo: str,
+        fatores: list[str],
+        contexto: dict[str, object],
+        decisao_operacional: DecisaoOperacional = DecisaoOperacional.HOLD,
+    ) -> None:
+        """Persiste contexto neutro/cancelado para aprendizagem quando fica de fora."""
         if motor_decisao:
             try:
                 motor_decisao.registrar_decisao(
-                    DecisaoOperacional.HOLD,
+                    decisao_operacional,
                     reasoning=motivo,
                     confianca=confidence,
                     fatores=fatores,
@@ -696,7 +717,9 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
                     "reasoning": motivo,
                     "overall_confidence": confidence,
                     "alignment_score": None,
-                    "market_regime": getattr(opening_context, "regime_macro", None) if opening_context else None,
+                    "market_regime": (
+                        normalized_context.regime_macro if normalized_context else None
+                    ),
                     "macro_bias": "NEUTRAL",
                     "sentiment_bias": "NEUTRAL",
                     "technical_bias": "NEUTRAL",
@@ -706,10 +729,18 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
                 logger.warning(f"[WARN] Erro ao persistir episódio HOLD: {e}")
 
     if acao == "Aguardar":
+        contexto_hold = build_contexto_operacional_com_diario(
+            opening_context,
+            base_payload={},
+            diario_payload=diario_payload,
+            action=acao,
+            model_confidence=confidence,
+        )
         _persist_hold_episode(
             "Agente permaneceu fora do mercado por decisão operacional.",
             ["acao_agora=Aguardar"],
-            {},
+            contexto_hold,
+            DecisaoOperacional.HOLD,
         )
         return False
 
@@ -718,13 +749,38 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
             mt5_adapter,
             opening_context,
         )
+        diario_influence = apply_diario_soft_feature_influence(
+            acao,
+            confidence,
+            diario_payload,
+        )
+        confidence_for_gate = (
+            diario_influence.adjusted_confidence
+            if diario_influence.adjusted_confidence is not None
+            else confidence
+        )
         gate = evaluate_opening_context_gate(
             acao,
             opening_context,
-            confidence=confidence,
+            confidence=confidence_for_gate,
             market_confirmation=live_confirmation.to_dict(),
         )
-        contexto_operacional = gate.to_context_payload()
+        gate = apply_opening_context_strict_filters(gate)
+        contexto_operacional = build_contexto_operacional_com_diario(
+            opening_context,
+            base_payload=gate.to_context_payload(),
+            diario_payload=diario_payload,
+            diario_influence=diario_influence,
+            action=acao,
+            model_confidence=confidence,
+        )
+        if diario_influence.reasons and diario_influence.confidence_adjustment != 0:
+            logger.info(
+                "[DIARIO FEATURES] %s | ajuste_conf=%+.2f | alinhamento=%s",
+                ", ".join(diario_influence.reasons),
+                diario_influence.confidence_adjustment,
+                diario_influence.alignment,
+            )
         if not gate.allow_entry:
             logger.warning(
                 "[PRE-ABERTURA] Ordem %s bloqueada pelo contexto estrutural: %s",
@@ -735,6 +791,7 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
                 f"Bloqueada por contexto de abertura: {gate.summary}",
                 gate.reasons,
                 contexto_operacional,
+                DecisaoOperacional.CANCELAR,
             )
             return False
 
@@ -1220,7 +1277,7 @@ def main():
     logger.info('')
 
     opening_runtime = initialize_opening_context_runtime(
-        db_path=str(ROOT_DIR / "data" / "db" / "trading.db"),
+        db_path=TRADING_DB_PATH,
         agent_name="rl_direto",
         source="agente_rl_direto_independente",
         session_id=AGENT_SESSION_ID,
@@ -1332,9 +1389,10 @@ def main():
                                         ticket_motor,
                                         preco_atual,
                                         MotivoFechamento.CANCELADA,
-                                        contexto_operacional=normalize_opening_context(
-                                            opening_runtime
-                                        ).to_dict(),
+                                        contexto_operacional=build_contexto_operacional_com_diario(
+                                            getattr(opening_runtime, "features", None),
+                                            db_path=TRADING_DB_PATH,
+                                        ),
                                     )
                                     logger.warning(
                                         f'[CICLO {ciclo}] Limpeza local do motor para ticket '
@@ -1432,9 +1490,10 @@ def main():
                                 ticket_aberto,
                                 preco_saida_real,
                                 motivo_motor,
-                                contexto_operacional=normalize_opening_context(
-                                    opening_runtime
-                                ).to_dict(),
+                                contexto_operacional=build_contexto_operacional_com_diario(
+                                    getattr(opening_runtime, "features", None),
+                                    db_path=TRADING_DB_PATH,
+                                ),
                             )
                         posicao_tracker.registrar_posicao_fechada()
 
@@ -1500,7 +1559,7 @@ def main():
                             motor_decisao,
                             dados_df,
                             retry_mgr=retry_mgr,
-                            opening_context=opening_runtime.policy,
+                            opening_context=getattr(opening_runtime, "features", None),
                             confidence=confidence,
                         ):
                             logger.info(f'[CICLO {ciclo}] Ordem aberta com sucesso!')

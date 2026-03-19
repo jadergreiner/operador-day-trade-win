@@ -38,7 +38,7 @@ O histórico de evolução do micro é documentado em:
 
 | **Agente** | **Função** | **Script** | **Magic** |
 |---|---|---|---|
-| Diários | Logging + IA | `start_journals_*.py` | 234800 |
+| Diários | Operador contextual + IA + features intraday | `start_journals_*.py` | 234800 |
 | Micro Tendência | Sinais ML | `agente_micro_*.py` | 234700 |
 | RL 5000 | Trades RL | `operar_*_rl_*.py` | 234500 |
 | RL Direto | Trades paralelo | `agente_rl_direto_*.py` | 234600 |
@@ -59,7 +59,7 @@ Isso facilita auditoria e triagem visual por agente.
 MT5 (Dados de Mercado)
     ↓
 [Micro Tendência] → Gera ~29 sinais/dia (magic=234700)
-[Diários] → Registra tudo para auditoria (magic=234800)
+[Diários] → Opera, publica features intraday e registra auditoria (magic=234800)
 [RL 5000] → Trades com proteção lucro (magic=234500)
 [RL Direto] → Alternativa paralela (magic=234600)
     ↓
@@ -70,15 +70,25 @@ SQLite (trading.db) → trades.magic_number filtra por agente
 
 ## Agente 1: INICIAR_DIARIOS.bat
 
-**Magic Number:** 234800 (reservado — não envia ordens)
+**Magic Number:** 234800 (operador contextual ativo)
 
 ### 📋 Propósito
 
-Captura **três streams de dados paralelos**:
+Opera como **primeira camada contextual intraday** e também captura
+**três streams de dados paralelos**:
 
 1. **Trading Daily Journal** - O que aconteceu (5 min)
 2. **AI Reflection** - Análise do dia (10 min)
 3. **RL Performance** - Métricas de aprendizado (15 min)
+
+Além disso, publica um snapshot canônico em `outputs/analysis/diario_market_features_latest.json`
+e histórico append-only em `diario_market_features` no SQLite para que
+Micro, RL 5000 e RL Direto consumam:
+
+1. reversão intraday
+2. exaustão de movimento
+3. estresse/compra forte de dólar
+4. confirmações ou contradições por PETR4, VALE3, IBOV e EWZ
 
 Dados alimentam o ciclo de ML/RL para evolução contínua dos modelos.
 
@@ -509,7 +519,7 @@ ao enviar ordens ao MT5. Isso garante:
 | 234500 | RL 5000 | Produção |
 | 234600 | RL Direto | Produção (paralelo) |
 | 234700 | Micro Tendência | Produção |
-| 234800 | Diários | Reservado (não opera) |
+| 234800 | Diários | Operador contextual + publicador de features |
 
 ### Sync de Magic Numbers
 

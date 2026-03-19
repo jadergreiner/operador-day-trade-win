@@ -1524,7 +1524,7 @@ unico no MetaTrader 5. Isso permite:
 | 234500 | RL 5000 | `operar_novo_agente_rl_*` |
 | 234600 | RL Direto | `agente_rl_direto_*` |
 | 234700 | Micro Tendencia | `agente_micro_tendencia_*` |
-| 234800 | Diarios (reservado) | `start_journals_*` |
+| 234800 | Diarios (operador contextual) | `start_journals_*` |
 
 ### TradeClosureReason (Enum)
 

@@ -18,7 +18,7 @@ estes executores:
 
 | Agente | Launcher | Magic (EA ID) |
 |---|---|---|
-| Diários | `INICIAR_DIARIOS.bat` | 234800 (reservado) |
+| Diários | `INICIAR_DIARIOS.bat` | 234800 (operador contextual) |
 | Micro Tendência | `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | 234700 |
 | RL 5000 | `INICIAR_AGENTE_RL_5000.bat` | 234500 |
 | RL Direto | `INICIAR_AGENTE_RL_DIRETO.bat` | 234600 |

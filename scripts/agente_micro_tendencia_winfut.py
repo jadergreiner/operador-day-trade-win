@@ -19,6 +19,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, time as dtime
 from decimal import Decimal, ROUND_HALF_UP
+import json
 import math
 import os
 import sqlite3
@@ -163,6 +164,11 @@ from src.application.services.diary_feedback import (
 )
 from src.application.retreino_micro_tendencia import GerenciadorRetreino
 from src.application.opening_context_runtime import initialize_opening_context_runtime
+from src.application.diario_market_features import (
+    apply_diario_soft_feature_influence,
+    build_contexto_operacional_com_diario,
+    load_diario_market_features_payload,
+)
 from src.domain.services.atr_calibrator import ATRCalibrator
 from src.fibonacci_calculator import FibonacciCalculator
 
@@ -354,6 +360,22 @@ DIRECTIVE_DIVERGE_CYCLES = 3             # Ciclos necessários para suspender
 # Horários de pregão (Brasília)
 PREGAO_INICIO = dtime(9, 0)
 PREGAO_FIM = dtime(17, 55)
+
+
+def _build_micro_contexto_operacional() -> dict:
+    """Compõe o contexto operacional do Micro com snapshot intraday do Diario."""
+    base_context = getattr(_opening_context_runtime, "features", None)
+    diario_payload: dict[str, object] | None = None
+    if DB_PATH:
+        try:
+            diario_payload = load_diario_market_features_payload(DB_PATH)
+        except Exception:
+            diario_payload = None
+    return build_contexto_operacional_com_diario(
+        base_context,
+        db_path=DB_PATH,
+        diario_payload=diario_payload,
+    )
 
 # Thresholds do Score Macro (ajustados para 104 itens do MacroScoreEngine)
 # Com 104 itens e pesos ponderados, o range efetivo é muito maior que os
@@ -628,6 +650,7 @@ class CycleResult:
     atr_map: dict[str, Decimal] = field(default_factory=dict)  # Teia de Volatilidade
     # CALIBRACAO-MICRO-02: rastreabilidade do modo EXP_REDUZIDA
     exp_reduzida_ativo: bool = False
+    contexto_operacional: dict = field(default_factory=dict)
 
 
 # ────────────────────────────────────────────────────────────────
@@ -3321,6 +3344,42 @@ class MicroTradingManager:
                     extra_detail = f" [inativo {mins_inactive:.0f}min]"
                 print(f"     📊 IntraDay Adj: {adjustment_pct:+.1f}% → {weighted_confidence:.0f}%{extra_detail}")
 
+        diario_payload = None
+        if cycle_result is not None and getattr(cycle_result, "contexto_operacional", None):
+            contexto_operacional = cycle_result.contexto_operacional or {}
+            diario_payload = {
+                "available": contexto_operacional.get(
+                    "diario_market_features_available", False
+                ),
+                "is_stale": contexto_operacional.get(
+                    "diario_market_features_stale", False
+                ),
+                "source": contexto_operacional.get(
+                    "diario_market_features_source", "none"
+                ),
+                "snapshot": contexto_operacional.get("diario_market_features", {}),
+                "effective_snapshot": contexto_operacional.get(
+                    "diario_market_features_effective", {}
+                ),
+            }
+        if diario_payload:
+            diario_influence = apply_diario_soft_feature_influence(
+                "Comprar" if opp.direction == "COMPRA" else "Vender",
+                float(weighted_confidence) / 100.0,
+                diario_payload,
+            )
+            if diario_influence.confidence_adjustment != 0:
+                diario_adjustment_pct = diario_influence.confidence_adjustment * 100.0
+                weighted_confidence += diario_adjustment_pct
+                print(
+                    f"     📓 Diario: {diario_influence.alignment} | "
+                    f"ajuste={diario_adjustment_pct:+.1f}% → {weighted_confidence:.0f}%"
+                )
+                if cycle_result is not None:
+                    cycle_result.contexto_operacional[
+                        "diario_market_features_last_influence"
+                    ] = diario_influence.to_dict()
+
         # Reavalia com score misto + ajustes intraday
         if weighted_confidence < MIN_CONFIDENCE_TRADE:
             return False, f"Score ajustado {weighted_confidence:.0f}% < {MIN_CONFIDENCE_TRADE}% (base={opp.confidence:.0f}%)"
@@ -3429,6 +3488,7 @@ class MicroTradingManager:
                         "tp": float(opp.take_profit),
                         "risk_reward": float(opp.risk_reward),
                         "timestamp_entrada": datetime.now().isoformat(),
+                        "contexto_operacional": cycle_result.contexto_operacional or {},
                     }
                 trade = OpenTrade(
                     ticket=ticket,
@@ -3930,6 +3990,7 @@ def _run_cycle(mt5: MT5Adapter) -> CycleResult:
     global _directive_diverge_counter
 
     result = CycleResult(timestamp=datetime.now())
+    result.contexto_operacional = _build_micro_contexto_operacional()
     # 1) Score Macro (direcional do dia)
     items, raw_macro_score, macro_signal, macro_conf = _calc_macro_score(mt5)
 
@@ -4121,6 +4182,7 @@ def _create_micro_trend_tables(db_path: str) -> None:
             rsi REAL,
             num_opportunities INTEGER DEFAULT 0,
             exp_reduzida_ativo INTEGER DEFAULT 0,
+            contexto_operacional_json TEXT DEFAULT '{}',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -4238,6 +4300,7 @@ def _create_micro_trend_tables(db_path: str) -> None:
         ("mima_fan_score", "INTEGER"),
         ("divergence_notes", "TEXT"),
         ("aggression_ratio", "REAL"),
+        ("contexto_operacional_json", "TEXT DEFAULT '{}'"),
     ]:
         try:
             cursor.execute(f"ALTER TABLE simulated_trades ADD COLUMN {col_def[0]} {col_def[1]}")
@@ -4289,6 +4352,7 @@ def _ensure_micro_episode_columns(cursor) -> None:
             ("mima_fan_score", "INTEGER"),
             ("divergence_notes", "TEXT"),
             ("aggression_ratio", "REAL"),
+            ("contexto_operacional_json", "TEXT DEFAULT '{}'"),
         ],
         "micro_episodios": [
             ("episode_id", "TEXT"),
@@ -4367,8 +4431,9 @@ def _persist_cycle(db_path: str, result: CycleResult) -> int:
          exp_reduzida_ativo,
          macro_score_raw, directive_suspended,
          mima_8, mima_17, mima_34, mima_72, mima_144, mima_305, mima_610,
-         mima_alignment, mima_fan_score, divergence_notes, aggression_ratio)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         mima_alignment, mima_fan_score, divergence_notes, aggression_ratio,
+         contexto_operacional_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         result.timestamp.isoformat(),
         result.macro_score, result.macro_signal, float(result.macro_confidence),
@@ -4384,6 +4449,7 @@ def _persist_cycle(db_path: str, result: CycleResult) -> int:
         float(result.mima.m72.value), float(result.mima.m144.value), float(result.mima.m305.value),
         float(result.mima.m610.value), result.mima.alignment, result.mima.fan_score,
         result.divergence_notes, float(result.aggression_ratio) if result.aggression_ratio else 0.0,
+        json.dumps(result.contexto_operacional or {}, ensure_ascii=False),
     ))
     decision_id = cursor.lastrowid
     # Items macro

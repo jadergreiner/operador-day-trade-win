@@ -210,11 +210,7 @@ def evaluate_opening_context_gate(
     alignment: float | None = None,
     market_confirmation: Any | None = None,
 ) -> OpeningContextGateResult:
-    """Enriquce a acao com contexto de abertura sem bloquear por direcao.
-
-    O contexto de abertura deve atuar como feature e sinal explicativo para
-    o modelo aprender sozinho. Bloqueio externo fica restrito ao kill switch.
-    """
+    """Enriquece a acao com contexto de abertura e exige confirmacao minima."""
     normalized_action = normalize_action(action)
     policy = normalize_opening_context(context)
     allow_entry = normalized_action in {"BUY", "SELL"}
@@ -326,19 +322,60 @@ def evaluate_opening_context_gate(
     if allow_entry and not reasons:
         reasons.append("contexto_abertura_neutro")
 
-    return OpeningContextGateResult(
-        allow_entry=allow_entry,
-        normalized_action=normalized_action,
-        policy=policy,
-        reasons=reasons,
-        required_confirmations=required_confirmations,
-        confidence_used=confidence_used,
-        alignment_used=alignment_used,
-        live_market_confirmation=live_market_confirmation,
+    return apply_opening_context_strict_filters(
+        OpeningContextGateResult(
+            allow_entry=allow_entry,
+            normalized_action=normalized_action,
+            policy=policy,
+            reasons=reasons,
+            required_confirmations=required_confirmations,
+            confidence_used=confidence_used,
+            alignment_used=alignment_used,
+            live_market_confirmation=live_market_confirmation,
+        )
     )
 
 
+def apply_opening_context_strict_filters(
+    result: OpeningContextGateResult,
+) -> OpeningContextGateResult:
+    """Aplica bloqueios locais quando o contexto esta abertamente contrario.
+
+    O gate base continua sendo a camada explicativa/soft. Este helper
+    representa um uso mais conservador para agentes que ainda exigem
+    confirmacao minima de compra/venda na abertura.
+    """
+    if not result.allow_entry:
+        return result
+
+    reasons = set(result.reasons)
+    block_reason = ""
+    if result.normalized_action == "BUY":
+        if "compra_sem_confirmacao_live" in reasons:
+            block_reason = "compra_sem_confirmacao_live"
+        elif "vies_intraday_baixista" in reasons and (
+            "compra_sem_confirmacao_contextual" in reasons
+            or "compra_sem_alinhamento_suficiente" in reasons
+        ):
+            block_reason = "compra_contraria_contexto_abertura"
+    elif result.normalized_action == "SELL":
+        if "venda_sem_confirmacao_live" in reasons:
+            block_reason = "venda_sem_confirmacao_live"
+        elif "vies_intraday_altista" in reasons and (
+            "venda_sem_confirmacao_contextual" in reasons
+            or "venda_sem_alinhamento_suficiente" in reasons
+        ):
+            block_reason = "venda_contraria_contexto_abertura"
+
+    if block_reason:
+        result.allow_entry = False
+        if block_reason not in result.reasons:
+            result.reasons.append(block_reason)
+    return result
+
+
 __all__ = [
+    "apply_opening_context_strict_filters",
     "OpeningContextGateResult",
     "OpeningContextPolicy",
     "evaluate_opening_context_gate",

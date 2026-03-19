@@ -39,10 +39,15 @@ from src.application.diario_episodio_operador import (
     construir_episodio,
     construir_episodio_neutro,
 )
+from src.application.diario_market_features import (
+    build_diario_market_features_snapshot,
+    persist_diario_market_features_snapshot,
+)
 from src.application.opening_market_confirmation import (
     build_live_market_confirmation,
 )
 from src.application.opening_context_policy import (
+    apply_opening_context_strict_filters,
     evaluate_opening_context_gate,
     normalize_opening_context,
 )
@@ -327,6 +332,10 @@ class DiarioOrderManager:
         self._mt5 = mt5_adapter
         self._db_path = db_path
         self._session_id = session_id
+        self._outputs_dir = Path(outputs_dir)
+        self._latest_market_features_path = (
+            self._outputs_dir / "analysis" / "diario_market_features_latest.json"
+        )
         self._posicao = DiarioPosicaoStatus(session_id, outputs_dir)
         self._leitor = LeituraDeOperador()
         self._ep_repo = EpisodioOperadorRepo(db_path)
@@ -334,8 +343,10 @@ class DiarioOrderManager:
         self._sinal_abertura: Optional[SinalDiario] = None  # sinal quando abriu posicao
         self._n_ciclos = 0
         self._ultimo_sinal: Optional[SinalDiario] = None
+        self._ultimo_snapshot_intraday: Optional[dict[str, Any]] = None
         self._ultimo_neutro_registrado: int = 0  # ciclo do ultimo episodio neutro
         self._candles_no_neutro: Optional[list] = None  # snapshot para avaliar decisao
+        self._opening_context_raw = opening_context
         self._opening_context = normalize_opening_context(opening_context)
 
         if rl_reader is not None:
@@ -343,6 +354,44 @@ class DiarioOrderManager:
         else:
             from scripts.start_journals_full_display import RLPerformanceReader
             self._rl_reader = RLPerformanceReader(db_path)
+
+    def _opening_context_source(self) -> Any:
+        raw = getattr(self, "_opening_context_raw", None)
+        if raw not in (None, {}, []):
+            return raw
+        return getattr(self, "_opening_context", None)
+
+    def _publicar_snapshot_intraday(
+        self,
+        sinal: SinalDiario,
+        candles: list,
+        guardian_state: object,
+    ) -> dict[str, Any]:
+        latest_path = getattr(
+            self,
+            "_latest_market_features_path",
+            Path("outputs") / "analysis" / "diario_market_features_latest.json",
+        )
+        snapshot = build_diario_market_features_snapshot(
+            session_id=self._session_id,
+            symbol=SIMBOLO,
+            signal=sinal,
+            candles=candles,
+            guardian_state=guardian_state,
+            live_confirmation=sinal.confirmacao_live,
+            opening_context=self._opening_context_source(),
+        )
+        payload = snapshot.to_dict()
+        try:
+            persist_diario_market_features_snapshot(
+                self._db_path,
+                snapshot,
+                latest_json_path=latest_path,
+            )
+        except Exception as exc:
+            logger.warning("Falha ao persistir snapshot intraday do Diario: %s", exc)
+        self._ultimo_snapshot_intraday = payload
+        return payload
 
     # ── Horario de pregao ────────────────────────────────────────
 
@@ -495,16 +544,20 @@ class DiarioOrderManager:
         # ── Confianca final (ajustada pelos proprios episodios) ──
         confianca_final = self._ajustar_confianca(confianca_base, guardian_penalty)
         wr, n_ep = self._win_rate_propria()
+        opening_context_source = self._opening_context_source()
         live_confirmation = build_live_market_confirmation(
             self._mt5,
-            getattr(self, "_opening_context", None),
+            opening_context_source,
         )
         opening_context_gate = evaluate_opening_context_gate(
             direcao,
-            getattr(self, "_opening_context", None),
+            opening_context_source,
             confidence=confianca_final,
             alignment=alinhamento,
             market_confirmation=live_confirmation.to_dict(),
+        )
+        opening_context_gate = apply_opening_context_strict_filters(
+            opening_context_gate
         )
         contexto_flags = list(opening_context_gate.reasons)
 
@@ -727,6 +780,7 @@ class DiarioOrderManager:
             "ciclo": self._n_ciclos,
             "timestamp": datetime.now().isoformat(),
             "sinal": None,
+            "diario_market_features": None,
             "acao": "NENHUMA",
             "posicao_aberta": False,
             "detalhe": "",
@@ -735,6 +789,11 @@ class DiarioOrderManager:
         sinal = self.consolidar_sinal(decisao, candles, guardian_state, dir_analysis)
         self._ultimo_sinal = sinal
         resultado["sinal"] = sinal
+        resultado["diario_market_features"] = self._publicar_snapshot_intraday(
+            sinal,
+            candles,
+            guardian_state,
+        )
 
         # ── Posicao aberta: monitorar ──
         if self._posicao.tem_posicao_aberta():

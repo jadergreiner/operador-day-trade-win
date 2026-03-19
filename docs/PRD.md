@@ -336,7 +336,7 @@ MT5 (ticks RT)
 
 | Agente | Magic | Funcao |
 |--------|-------|--------|
-| Diarios | 234800 | Logging, reflexao IA |
+| Diarios | 234800 | Operador contextual, reflexao IA e publicacao de features intraday |
 | Micro Tend. | 234700 | Sinais ML LightGBM |
 | RL 5000 | 234500 | RL supervisionado |
 | RL Direto | 234600 | RL autonomo |
@@ -401,10 +401,11 @@ Scripts de lancamento:
 
 | Armazenamento | Tipo | Conteudo |
 |---------------|------|----------|
-| data/db/trading.db | SQLite | Trades, posicoes |
+| data/db/trading.db | SQLite | Trades, posicoes, snapshots intraday |
 | outputs/*.json | JSON | Posicoes ativas |
 | outputs/*.log | Log | Logs por agente |
 | outputs/diario_*.md | Markdown | Diarios |
+| outputs/analysis/diario_market_features_latest.json | JSON | Snapshot canonico do Diario para consumo multiagente |
 | data/backtest/*.json | JSON | Artefatos Gate 2 |
 | data/models/ | Pickle | Modelos ML/RL |
 | data/BDI/ | CSV | Calendario econ. |

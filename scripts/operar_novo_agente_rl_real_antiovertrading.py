@@ -22,6 +22,7 @@ import pandas as pd
 ROOT_DIR = Path(__file__).parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
+TRADING_DB_PATH = str(ROOT_DIR / "data" / "db" / "trading.db")
 
 from src.infrastructure.adapters.mt5_adapter import MT5Adapter
 from src.domain.value_objects.financial import Symbol, Price, Quantity
@@ -45,6 +46,7 @@ from src.application.motor_decisao_isolado import (
     MotivoFechamento,
 )
 from src.application.opening_context_policy import (
+    apply_opening_context_strict_filters,
     evaluate_opening_context_gate,
     normalize_opening_context,
 )
@@ -54,6 +56,11 @@ from src.application.opening_market_confirmation import (
 )
 from src.application.opening_context_report import (
     generate_opening_context_vs_result_report,
+)
+from src.application.diario_market_features import (
+    apply_diario_soft_feature_influence,
+    build_contexto_operacional_com_diario,
+    load_diario_market_features_payload,
 )
 from src.application.opening_context_runtime import initialize_opening_context_runtime
 try:
@@ -497,13 +504,27 @@ def enviar_ordem_mt5adapter(
 ) -> bool:
     """Envia ordem via MT5Adapter (com validações e SL/TP dinâmicos)."""
     global last_trade_time
+    normalized_context = (
+        normalize_opening_context(opening_context)
+        if opening_context is not None
+        else None
+    )
+    try:
+        diario_payload = load_diario_market_features_payload(TRADING_DB_PATH)
+    except Exception:
+        diario_payload = {"available": False, "snapshot": {}, "effective_snapshot": {}}
 
-    def _persist_hold_episode(motivo: str, fatores: list[str], contexto: dict[str, object]) -> None:
-        """Persiste HOLD neutro para aprendizagem quando o agente fica de fora."""
+    def _persist_hold_episode(
+        motivo: str,
+        fatores: list[str],
+        contexto: dict[str, object],
+        decisao_operacional: DecisaoOperacional = DecisaoOperacional.HOLD,
+    ) -> None:
+        """Persiste contexto neutro/cancelado para aprendizagem quando fica de fora."""
         if motor_isolado:
             try:
                 motor_isolado.registrar_decisao(
-                    DecisaoOperacional.HOLD,
+                    decisao_operacional,
                     reasoning=motivo,
                     confianca=confidence,
                     fatores=fatores,
@@ -525,7 +546,9 @@ def enviar_ordem_mt5adapter(
                     "reasoning": motivo,
                     "overall_confidence": confidence,
                     "alignment_score": None,
-                    "market_regime": getattr(opening_context, "regime_macro", None) if opening_context else None,
+                    "market_regime": (
+                        normalized_context.regime_macro if normalized_context else None
+                    ),
                     "macro_bias": "NEUTRAL",
                     "sentiment_bias": "NEUTRAL",
                     "technical_bias": "NEUTRAL",
@@ -536,10 +559,18 @@ def enviar_ordem_mt5adapter(
 
     try:
         if acao == "Aguardar":
+            contexto_hold = build_contexto_operacional_com_diario(
+                opening_context,
+                base_payload={},
+                diario_payload=diario_payload,
+                action=acao,
+                model_confidence=confidence,
+            )
             _persist_hold_episode(
                 "Agente permaneceu fora do mercado por decisão operacional.",
                 ["acao_agora=Aguardar"],
-                {},
+                contexto_hold,
+                DecisaoOperacional.HOLD,
             )
             return False
 
@@ -547,13 +578,38 @@ def enviar_ordem_mt5adapter(
             mt5_adapter,
             opening_context,
         )
+        diario_influence = apply_diario_soft_feature_influence(
+            acao,
+            confidence,
+            diario_payload,
+        )
+        confidence_for_gate = (
+            diario_influence.adjusted_confidence
+            if diario_influence.adjusted_confidence is not None
+            else confidence
+        )
         gate = evaluate_opening_context_gate(
             acao,
             opening_context,
-            confidence=confidence,
+            confidence=confidence_for_gate,
             market_confirmation=live_confirmation.to_dict(),
         )
-        contexto_operacional = gate.to_context_payload()
+        gate = apply_opening_context_strict_filters(gate)
+        contexto_operacional = build_contexto_operacional_com_diario(
+            opening_context,
+            base_payload=gate.to_context_payload(),
+            diario_payload=diario_payload,
+            diario_influence=diario_influence,
+            action=acao,
+            model_confidence=confidence,
+        )
+        if diario_influence.reasons and diario_influence.confidence_adjustment != 0:
+            logger.info(
+                "[DIARIO FEATURES] %s | ajuste_conf=%+.2f | alinhamento=%s",
+                ", ".join(diario_influence.reasons),
+                diario_influence.confidence_adjustment,
+                diario_influence.alignment,
+            )
         if not gate.allow_entry:
             logger.warning(
                 "[PRE-ABERTURA] Ordem %s bloqueada pelo contexto estrutural: %s",
@@ -564,6 +620,7 @@ def enviar_ordem_mt5adapter(
                 f"Bloqueada por contexto de abertura: {gate.summary}",
                 gate.reasons,
                 contexto_operacional,
+                DecisaoOperacional.CANCELAR,
             )
             return False
 
@@ -843,9 +900,10 @@ def monitorar_posicoes() -> bool:
                 motor_isolado.fechar_posicao(
                     pos.ticket, preco_fechamento,
                     MotivoFechamento.SL_ATINGIDO,
-                    contexto_operacional=normalize_opening_context(
-                        _opening_context_runtime
-                    ).to_dict(),
+                    contexto_operacional=build_contexto_operacional_com_diario(
+                        getattr(_opening_context_runtime, "features", None),
+                        db_path=TRADING_DB_PATH,
+                    ),
                 )
             return False
 
@@ -868,9 +926,10 @@ def monitorar_posicoes() -> bool:
                 volume=float(getattr(pos_mt5, 'volume', 1)),
                 stop_loss=float(getattr(pos_mt5, 'sl', 0)),
                 take_profit=float(getattr(pos_mt5, 'tp', 0)),
-                contexto_operacional=normalize_opening_context(
-                    _opening_context_runtime
-                ).to_dict(),
+                contexto_operacional=build_contexto_operacional_com_diario(
+                    getattr(_opening_context_runtime, "features", None),
+                    db_path=TRADING_DB_PATH,
+                ),
             )
             logger.info(f"[ISOLAMENTO] Ticket #{t} (magic={MAGIC_NUMBER}) "
                        f"recuperado do MT5 via MotorDecisaoIsolado.")
@@ -903,9 +962,10 @@ def monitorar_posicoes() -> bool:
                 t,
                 preco,
                 MotivoFechamento.SL_ATINGIDO,
-                contexto_operacional=normalize_opening_context(
-                    _opening_context_runtime
-                ).to_dict(),
+                contexto_operacional=build_contexto_operacional_com_diario(
+                    getattr(_opening_context_runtime, "features", None),
+                    db_path=TRADING_DB_PATH,
+                ),
             )
             logger.info(f"[ISOLAMENTO] Ticket #{t} fechado (SL/TP/manual).")
 
@@ -1469,7 +1529,7 @@ def loop_operacao():
                     vol,
                     dados=dados,
                     confidence=confidence,
-                    opening_context=getattr(_opening_context_runtime, "policy", None),
+                    opening_context=getattr(_opening_context_runtime, "features", None),
                 )
                 logger.debug(f"[CICLO {ciclo}] Ordem enviada com sucesso.")
                 last_signal = acao_str
@@ -1499,7 +1559,7 @@ if __name__ == "__main__":
     _monitor_posicao_rl = None
     if AC5_8_DISPONIVEL and MonitorPositionManager:
         try:
-            _db_path = str(ROOT_DIR / "data" / "db" / "trading.db")
+            _db_path = TRADING_DB_PATH
             _monitor_posicao_rl = MonitorPositionManager(
                 db_caminho=_db_path,
             )
@@ -1542,7 +1602,7 @@ if __name__ == "__main__":
         inicializar_agente_rl()
         inicializar_rl_repo()
         _opening_context_runtime = initialize_opening_context_runtime(
-            db_path=str(ROOT_DIR / "data" / "db" / "trading.db"),
+            db_path=TRADING_DB_PATH,
             agent_name="rl_5000",
             source="operar_novo_agente_rl_real_antiovertrading",
             session_id=AGENTE_ID,

@@ -3423,7 +3423,7 @@ def run_diario_order_manager():
     # nao precisa reimportar o script que ja esta rodando)
     opening_context = None
     if _opening_context_runtime is not None:
-        opening_context = _opening_context_runtime.policy
+        opening_context = _opening_context_runtime.features
     manager = DiarioOrderManager(
         mt5,
         db_path,

@@ -1275,7 +1275,7 @@ posicoes por agente de forma nativa.
 | RL 5000          | 234500 | Sim           |
 | Agente Direto    | 234600 | Sim           |
 | Micro Tendencia  | 234700 | Sim           |
-| Diarios          | 234800 | Nao (reserv.) |
+| Diarios          | 234800 | Sim           |
 ```
 
 **Implementacao em 4 pontos por agente:**
@@ -1315,7 +1315,7 @@ scripts/agente_micro_tendencia_winfut.py
   → monitor_hedge_orphans() filtra por magic
 
 scripts/start_journals_full_display.py
-  → MAGIC_NUMBER = 234800 (reservado)
+  → MAGIC_NUMBER = 234800 (operador contextual)
 ```
 
 ### Consequencias

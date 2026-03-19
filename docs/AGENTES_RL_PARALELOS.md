@@ -10,7 +10,7 @@ com posições completamente independentes**:
 | 1 | RL 5000 (Supervisionado) | `INICIAR_AGENTE_RL_5000.bat` | 234500 |
 | 2 | RL Direto (Autônomo) | `INICIAR_AGENTE_RL_DIRETO.bat` | 234600 |
 | 3 | Micro Tendência (ML) | `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | 234700 |
-| 4 | Diários (Auditoria) | `INICIAR_DIARIOS.bat` | 234800 |
+| 4 | Diários (Operador contextual) | `INICIAR_DIARIOS.bat` | 234800 |
 
 Cada agente:
 
@@ -113,14 +113,16 @@ Logs:
   - Terminal interativo (dashboard)
 ```
 
-### Diários (Auditoria) — Magic 234800 (reservado)
+### Diários (Operador Contextual) — Magic 234800
 
 ```text
 Script: scripts/start_journals_full_display.py
-Magic Number: 234800 (reservado, não envia ordens)
-Símbolo: WIN$N (leitura)
+Magic Number: 234800 (operador contextual ativo)
+Símbolo: WIN$N
 
 Função:
+  - Opera com lógica própria do Diário
+  - Publica snapshots intraday para os demais agentes
   - Trading Journal (narrativa macro/micro, 5 min)
   - AI Reflection (auto-avaliação, 10 min)
   - RL Performance Diary (rewards, 15 min)
@@ -387,7 +389,7 @@ chamadas `mt5.order_send()` raw usam
 | `INICIAR_AGENTE_RL_5000.bat` | 234500 | RL supervisionado |
 | `INICIAR_AGENTE_RL_DIRETO.bat` | 234600 | RL autônomo |
 | `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | 234700 | ML sinais |
-| `INICIAR_DIARIOS.bat` | 234800 | Auditoria |
+| `INICIAR_DIARIOS.bat` | 234800 | Operador contextual + auditoria |
 | Ctrl+C | — | Para o agente atual |
 
 ---

@@ -1,10 +1,10 @@
 @echo off
-title DIARIOS - OPERADOR QUANTICO [DIARIOS AUTOMATICOS] - EA ID: 234800
-REM Inicia os Diarios Automaticos do Operador Quantico
+title DIARIOS - OPERADOR CONTEXTUAL [DIARIOS AUTOMATICOS] - EA ID: 234800
+REM Inicia o operador contextual dos Diarios + canais de journaling
 REM Duplo clique neste arquivo para iniciar
 
 echo ================================================================================
-echo OPERADOR QUANTICO - DIARIOS AUTOMATICOS
+echo OPERADOR QUANTICO - DIARIOS AUTOMATICOS + FEATURES INTRADAY
 echo ================================================================================
 echo.
 

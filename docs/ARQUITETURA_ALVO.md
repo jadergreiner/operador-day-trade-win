@@ -25,7 +25,7 @@ alvo um destes quatro executores:
 
 | Agente | Launcher | Magic Number |
 |---|---|---|
-| Diários | `INICIAR_DIARIOS.bat` | 234800 (reservado) |
+| Diários | `INICIAR_DIARIOS.bat` | 234800 (operador contextual) |
 | Micro Tendência | `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | 234700 |
 | RL 5000 | `INICIAR_AGENTE_RL_5000.bat` | 234500 |
 | RL Direto | `INICIAR_AGENTE_RL_DIRETO.bat` | 234600 |
@@ -87,7 +87,7 @@ Toda consulta de posições filtra pelo magic do agente corrente.
 | 234500 | RL 5000 | `MAGIC_NUMBER` |
 | 234600 | RL Direto | `MAGIC_NUMBER` |
 | 234700 | Micro Tendência | `MAGIC_NUMBER` |
-| 234800 | Diários (reservado) | `MAGIC_NUMBER` |
+| 234800 | Diários (operador contextual) | `MAGIC_NUMBER` |
 
 ### Funções Protegidas por Magic
 
