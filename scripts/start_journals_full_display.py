@@ -21,6 +21,7 @@ import threading
 import time
 from decimal import Decimal
 from datetime import datetime, timedelta, date
+from typing import Any
 from config import get_config
 from src.application.services.trading_journal import TradingJournalService
 from src.application.services.quantum_operator import QuantumOperatorEngine
@@ -68,6 +69,41 @@ except ImportError:
     AC5_9_DISPONIVEL = False
     FeedbackValidator = None  # type: ignore[assignment,misc]
 
+# --- Grupo 3: Storytelling / Reflection Runtime (roadmap multiagentes) ---
+try:
+    from src.application.reflection_question_evolution import ReflectionQuestionEvolution
+    HAS_REFLECTION_QUESTION_EVOLUTION = True
+except ImportError:
+    HAS_REFLECTION_QUESTION_EVOLUTION = False
+    ReflectionQuestionEvolution = None  # type: ignore[assignment,misc]
+
+try:
+    from src.application.narrative_persistence import NarrativePersistence
+    HAS_NARRATIVE_PERSISTENCE = True
+except ImportError:
+    HAS_NARRATIVE_PERSISTENCE = False
+    NarrativePersistence = None  # type: ignore[assignment,misc]
+
+try:
+    from src.application.trade_narrative_correlator import TradeNarrativeCorrelator
+    HAS_TRADE_NARRATIVE_CORRELATOR = True
+except ImportError:
+    HAS_TRADE_NARRATIVE_CORRELATOR = False
+    TradeNarrativeCorrelator = None  # type: ignore[assignment,misc]
+
+try:
+    from src.application.narrative_dataset_exporter import build_dataset, to_json_payload
+    HAS_NARRATIVE_DATASET_EXPORTER = True
+except ImportError:
+    HAS_NARRATIVE_DATASET_EXPORTER = False
+    build_dataset = None  # type: ignore[assignment,misc]
+    to_json_payload = None  # type: ignore[assignment,misc]
+
+
+NARRATIVE_EXPORT_DIR = Path("outputs")
+NARRATIVE_EXPORT_EVERY_N_CYCLES = 3
+NARRATIVE_EXPORT_PREFIX = "narrative_dataset_ai_reflection"
+
 
 def _fetch_live_macro() -> dict:
     """Busca dados macro ao vivo via APIs gratuitas."""
@@ -113,6 +149,339 @@ def _get_db_path() -> str:
     """Retorna path do banco de dados do agente."""
     config = get_config()
     return getattr(config, "db_path", "data/db/trading.db")
+
+
+def _coerce_datetime(value: Any) -> datetime:
+    """Converte timestamps usados no runtime para datetime."""
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    raise TypeError("timestamp deve ser datetime ou string ISO")
+
+
+def _safe_float(value: Any, fallback: float = 0.0) -> float:
+    """Converte valores numericos para float sem derrubar o ciclo."""
+    try:
+        if value is None:
+            return fallback
+        return float(value)
+    except Exception:
+        return fallback
+
+
+def _build_reflection_question_context(
+    reflection: Any,
+    decision: Any,
+    episodes: list[dict[str, Any]],
+    opportunities: list[dict[str, Any]],
+    change_10min: float,
+) -> dict[str, Any]:
+    """Cria o contexto minimo para evolucao das perguntas de reflexao."""
+    decision_name = getattr(getattr(decision, "action", None), "value", None)
+    confidence = _safe_float(getattr(decision, "confidence", None), 0.0)
+    alignment = _safe_float(getattr(decision, "alignment_score", None), 0.0)
+
+    return {
+        "high_risk": confidence < 0.60 or abs(change_10min) >= 0.40,
+        "emotional_instability": str(getattr(reflection, "mood", "")).upper() in {
+            "CONFUSO",
+            "FRUSTRADO",
+            "CAOTICO",
+            "PRESSURE",
+            "PRESSIONADO",
+        },
+        "decision": decision_name or str(getattr(decision, "action", "")),
+        "confidence": confidence,
+        "alignment": alignment,
+        "market_move_10min": change_10min,
+        "episode_count": len(episodes),
+        "opportunity_count": len(opportunities),
+        "mood": getattr(reflection, "mood", None),
+    }
+
+
+def _build_narrative_text(
+    reflection: Any,
+    question_payloads: list[dict[str, Any]],
+    latest_episode: dict[str, Any] | None,
+) -> str:
+    """Resume a narrativa em texto simples para persistencia e dataset."""
+    parts = [
+        str(getattr(reflection, "honest_assessment", "")),
+        str(getattr(reflection, "what_im_seeing", "")),
+        str(getattr(reflection, "data_relevance", "")),
+        str(getattr(reflection, "am_i_useful", "")),
+        str(getattr(reflection, "my_data_correlation", "")),
+    ]
+    if latest_episode:
+        parts.append(
+            "Episodio RL: "
+            f"action={latest_episode.get('action')} "
+            f"macro_score={latest_episode.get('macro_score_final')} "
+            f"regime={latest_episode.get('market_regime')}"
+        )
+    if question_payloads:
+        prompts = " | ".join(item["prompt"] for item in question_payloads)
+        parts.append(f"Perguntas evolutivas: {prompts}")
+    return "\n".join(part for part in parts if part)
+
+
+def _build_trade_headline(reflection: Any, latest_episode: dict[str, Any] | None) -> str:
+    """Cria um headline curto para a narrativa persistida."""
+    if latest_episode:
+        action = latest_episode.get("action") or latest_episode.get("side") or "UNKNOWN"
+        episode_id = latest_episode.get("episode_id") or latest_episode.get("trade_id") or "NA"
+        return f"Trade {episode_id} - {action}"
+    return str(getattr(reflection, "one_liner", "Reflexao de mercado"))
+
+
+class NarrativeRuntimeBridge:
+    """Integra question evolution, persistence, correlation e export em runtime."""
+
+    def __init__(
+        self,
+        export_dir: Path | str = NARRATIVE_EXPORT_DIR,
+        export_every_n_cycles: int = NARRATIVE_EXPORT_EVERY_N_CYCLES,
+        question_evolution: Any | None = None,
+        persistence: Any | None = None,
+        correlator: Any | None = None,
+    ) -> None:
+        self.export_dir = Path(export_dir)
+        self.export_dir.mkdir(parents=True, exist_ok=True)
+        self.export_every_n_cycles = max(1, int(export_every_n_cycles))
+        self.question_evolution = question_evolution
+        self.persistence = persistence
+        self.correlator = correlator
+        self._used_prompts: list[str] = []
+        self._cycle_count = 0
+
+        if self.question_evolution is None and HAS_REFLECTION_QUESTION_EVOLUTION:
+            self.question_evolution = ReflectionQuestionEvolution()
+        if self.persistence is None and HAS_NARRATIVE_PERSISTENCE:
+            self.persistence = NarrativePersistence()
+        if self.correlator is None and HAS_TRADE_NARRATIVE_CORRELATOR:
+            self.correlator = TradeNarrativeCorrelator()
+
+    @property
+    def enabled(self) -> bool:
+        return self.question_evolution is not None or self.persistence is not None
+
+    def process_cycle(
+        self,
+        reflection: Any,
+        decision: Any,
+        episodes: list[dict[str, Any]],
+        opportunities: list[dict[str, Any]],
+        historical_sessions: list[Any],
+    ) -> dict[str, Any]:
+        """Processa um ciclo completo de reflexao e exportacao."""
+        self._cycle_count += 1
+        latest_episode = episodes[-1] if episodes else None
+        trade_id = str(
+            (latest_episode or {}).get("episode_id")
+            or (latest_episode or {}).get("trade_id")
+            or getattr(reflection, "entry_id", "reflection")
+        )
+
+        question_context = _build_reflection_question_context(
+            reflection=reflection,
+            decision=decision,
+            episodes=episodes,
+            opportunities=opportunities,
+            change_10min=_safe_float(getattr(reflection, "price_change_last_10min", 0.0)),
+        )
+
+        question_payloads: list[dict[str, Any]] = []
+        if self.question_evolution is not None:
+            try:
+                questions = self.question_evolution.evolve_questions(
+                    question_context,
+                    historical_sessions,
+                    used_prompts=self._used_prompts,
+                    limit=3,
+                )
+                question_payloads = [question.to_dict() for question in questions]
+                if question_payloads:
+                    print("Perguntas evolutivas:")
+                    for idx, question in enumerate(question_payloads, start=1):
+                        print(
+                            f"  {idx}. [{question['level']}/{question['category']}] "
+                            f"{question['prompt']}"
+                        )
+                    self._used_prompts.extend(item["prompt"] for item in question_payloads)
+            except Exception as exc:
+                print(f"[NARRATIVES] Falha ao gerar perguntas evolutivas: {exc}")
+
+        if self.persistence is not None:
+            try:
+                reflection_record = self._build_reflection_record(
+                    reflection=reflection,
+                    trade_id=trade_id,
+                    question_payloads=question_payloads,
+                    latest_episode=latest_episode,
+                    decision=decision,
+                    question_context=question_context,
+                )
+                self.persistence.save_narrative(reflection_record)
+
+                if latest_episode is not None:
+                    trade_record = self._build_trade_record(
+                        reflection=reflection,
+                        latest_episode=latest_episode,
+                        trade_id=trade_id,
+                        question_context=question_context,
+                    )
+                    self.persistence.save_narrative(trade_record)
+            except Exception as exc:
+                print(f"[NARRATIVES] Falha ao persistir narrativas em memoria: {exc}")
+
+        export_path: Path | None = None
+        if (
+            self.persistence is not None
+            and self.correlator is not None
+            and HAS_NARRATIVE_DATASET_EXPORTER
+            and self._cycle_count % self.export_every_n_cycles == 0
+        ):
+            try:
+                export_path = self.export_dataset(episodes)
+                if export_path is not None:
+                    print(f"[NARRATIVES] Dataset exportado em {export_path}")
+            except Exception as exc:
+                print(f"[NARRATIVES] Falha ao exportar dataset: {exc}")
+
+        return {
+            "trade_id": trade_id,
+            "questions": question_payloads,
+            "export_path": str(export_path) if export_path is not None else None,
+        }
+
+    def export_dataset(self, episodes: list[dict[str, Any]]) -> Path | None:
+        """Exporta o dataset de narrativas para JSON em outputs/."""
+        if self.persistence is None or self.correlator is None:
+            return None
+        records = self.persistence.list_all()
+        if not records:
+            return None
+
+        correlation = self.correlator.correlate(episodes, records)
+        dataset = build_dataset(records)
+        dataset["correlation_summary"] = {
+            "total_trades": correlation.get("total_trades", 0),
+            "total_narratives": correlation.get("total_narratives", 0),
+            "correlated_trades": correlation.get("correlated_trades", 0),
+            "correlation_rate": correlation.get("correlation_rate", 0.0),
+            "direct_matches": correlation.get("direct_matches", 0),
+            "temporal_matches": correlation.get("temporal_matches", 0),
+        }
+        dataset["correlation_features"] = self.correlator.extract_features(
+            correlation.get("correlations", [])
+        )
+
+        payload = to_json_payload(dataset)
+        output_path = self.export_dir / (
+            f"{NARRATIVE_EXPORT_PREFIX}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        )
+        output_path.write_text(payload, encoding="utf-8")
+        return output_path
+
+    def _build_reflection_record(
+        self,
+        reflection: Any,
+        trade_id: str,
+        question_payloads: list[dict[str, Any]],
+        latest_episode: dict[str, Any] | None,
+        decision: Any,
+        question_context: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Serializa a reflexao principal para persistencia narrativa."""
+        action_name = getattr(getattr(decision, "action", None), "value", None)
+        confidence = _safe_float(getattr(decision, "confidence", None))
+        alignment = _safe_float(getattr(decision, "alignment_score", None))
+        record_context = {
+            "source": "ai_reflection",
+            "decision": action_name or str(getattr(decision, "action", "")),
+            "confidence": confidence,
+            "alignment": alignment,
+            "current_price": _safe_float(getattr(reflection, "current_price", 0.0)),
+            "price_change_since_open": _safe_float(
+                getattr(reflection, "price_change_since_open", 0.0)
+            ),
+            "price_change_last_10min": _safe_float(
+                getattr(reflection, "price_change_last_10min", 0.0)
+            ),
+            "question_context": dict(question_context),
+            "questions": question_payloads,
+        }
+        if latest_episode is not None:
+            record_context["latest_episode"] = {
+                "episode_id": latest_episode.get("episode_id"),
+                "timestamp": latest_episode.get("timestamp"),
+                "action": latest_episode.get("action"),
+                "macro_score_final": latest_episode.get("macro_score_final"),
+                "market_regime": latest_episode.get("market_regime"),
+            }
+
+        return {
+            "trade_id": trade_id,
+            "timestamp": getattr(reflection, "timestamp"),
+            "headline": str(getattr(reflection, "one_liner", "Reflexao de mercado")),
+            "narrative": _build_narrative_text(reflection, question_payloads, latest_episode),
+            "category": "reflection",
+            "session_id": None,
+            "outcome": action_name,
+            "tags": [
+                "ai_reflection",
+                f"mood_{str(getattr(reflection, 'mood', 'unknown')).lower()}",
+                f"decision_{str(action_name or getattr(decision, 'action', 'unknown')).lower()}",
+            ],
+            "context": record_context,
+        }
+
+    def _build_trade_record(
+        self,
+        reflection: Any,
+        latest_episode: dict[str, Any],
+        trade_id: str,
+        question_context: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Serializa o ultimo trade do ciclo como narrativa correlacionavel."""
+        raw_timestamp = latest_episode.get("timestamp")
+        trade_timestamp = _coerce_datetime(raw_timestamp) if raw_timestamp else getattr(
+            reflection,
+            "timestamp",
+        )
+        action = latest_episode.get("action") or latest_episode.get("side") or "UNKNOWN"
+        headline = _build_trade_headline(reflection, latest_episode)
+
+        context = {
+            "source": "rl_episode",
+            "question_context": dict(question_context),
+            "episode_id": latest_episode.get("episode_id"),
+            "action": action,
+            "macro_score_final": latest_episode.get("macro_score_final"),
+            "micro_score": latest_episode.get("micro_score"),
+            "market_regime": latest_episode.get("market_regime"),
+            "session_phase": latest_episode.get("session_phase"),
+            "alignment_score": latest_episode.get("alignment_score"),
+        }
+
+        return {
+            "trade_id": trade_id,
+            "timestamp": trade_timestamp,
+            "headline": headline,
+            "narrative": (
+                f"Episodio RL {latest_episode.get('episode_id')} com acao {action}. "
+                f"Macro score={latest_episode.get('macro_score_final')} | "
+                f"micro score={latest_episode.get('micro_score')} | "
+                f"regime={latest_episode.get('market_regime')}"
+            ),
+            "category": "trade",
+            "session_id": None,
+            "outcome": str(action),
+            "tags": ["trade", "rl_episode"],
+            "context": context,
+        }
 
 
 # ────────────────────────────────────────────────────────────────
@@ -1862,6 +2231,7 @@ def run_ai_reflection():
     operator = QuantumOperatorEngine()
     journal = AIReflectionJournalService()
     price_tracker = PriceTracker()
+    narrative_bridge = NarrativeRuntimeBridge()
 
     # RL Reader para cruzar dados com o agente
     db_path = _get_db_path()
@@ -1892,6 +2262,10 @@ def run_ai_reflection():
             current_price = current_candle.close.value
             price_10min_ago = price_tracker.get_price_10min_ago()
             price_tracker.add_price(current_price)
+
+            episodes = rl_reader.get_today_episodes()
+            opportunities = rl_reader.get_today_opportunities()
+            historical_sessions = journal.get_today_entries()
 
             # Dados macro ao vivo
             macro = _fetch_live_macro()
@@ -1945,16 +2319,22 @@ def run_ai_reflection():
             print(reflection.my_data_correlation)
             print()
 
+            if narrative_bridge.enabled:
+                narrative_bridge.process_cycle(
+                    reflection=reflection,
+                    decision=decision,
+                    episodes=episodes,
+                    opportunities=opportunities,
+                    historical_sessions=historical_sessions,
+                )
+
             # ═══════════════════════════════════════════════════════════════
             # NOVO: ANÁLISE CRUZADA — IA questiona o agente
             # ═══════════════════════════════════════════════════════════════
             print("=" * 80)
             print("🔍 ANÁLISE CRUZADA: IA vs AGENTE MICRO TENDÊNCIA")
             print("=" * 80)
-
-            episodes = rl_reader.get_today_episodes()
             decisions_micro = rl_reader.get_today_micro_decisions()
-            opportunities = rl_reader.get_today_opportunities()
 
             if episodes:
                 # Comparar decisão da IA com decisão do agente

@@ -213,6 +213,22 @@ evitar bloqueadores entre agentes.
 
 ---
 
+## 🟢 Checkpoint Real — 2026-03-19 (Rodada 7)
+
+### Continuidade de Integracao (Storytelling + ML Ops)
+
+**Status geral:** Trilhas principais ja entregues; foco agora em acoplamento runtime no fluxo diario
+
+**Proximo foco:**
+- Integrar Storytelling e ML Ops no fluxo de diarios em runtime
+- Validar passagem de narrativas, sinais e features entre os modulos
+- Confirmar pontos de acoplamento sem quebrar os checkpoints ja validados
+
+**Bloqueadores desta continuidade:**
+- Nenhum bloqueador novo; apenas validar a composicao final em runtime
+
+---
+
 ## 🔗 Matriz de Dependências
 
 ```

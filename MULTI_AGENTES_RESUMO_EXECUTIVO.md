@@ -10,10 +10,10 @@
 
 | Categoria | Componente | Lead | Horas | Status |
 |-----------|-----------|------|-------|--------|
-| **ENTREGAS** | ROADMAP-MICRO-03 | Clean Arch | 20-25h | PENDENTE |
-| **ENTREGAS** | ROADMAP-DIARIOS-01 | Signals | 18-22h | PENDENTE |
-| **ENTREGAS** | ROADMAP-DIARIOS-02/03 | Storytelling | 22-28h | PENDENTE |
-| **ENTREGAS** | ROADMAP-DIARIOS-04/05/06 | ML Ops | 20-25h | PENDENTE |
+| **ENTREGAS** | ROADMAP-MICRO-03 | Clean Arch | 20-25h | ENTREGUE / VALIDADO |
+| **ENTREGAS** | ROADMAP-DIARIOS-01 | Signals | 18-22h | ENTREGUE / VALIDADO |
+| **ENTREGAS** | ROADMAP-DIARIOS-02/03 | Storytelling | 22-28h | ENTREGUE / VALIDADO |
+| **ENTREGAS** | ROADMAP-DIARIOS-04/05/06 | ML Ops | 20-25h | ENTREGUE / VALIDADO |
 | **GOVERNANÇA** | Sincronização Docs-Code | **Tech Lead** | **15-20h** | ATIVO |
 | **GOVERNANÇA** | Modelagem de Dados | **DBA** | **10-15h** | ATIVO |
 | **GOVERNANÇA** | ADRs + Arquitetura | **Arquiteto** | **8-12h** | ATIVO |
@@ -214,11 +214,11 @@
 ## 📊 Sequência de Execução
 
 **Fase 1 - Paralela (Sem dependências):**
-Clean Arch | Signals | Storytelling | ML Ops (simultâneo)
+Clean Arch | Signals | Storytelling | ML Ops (simultâneo, ja concluido nos checkpoints principais)
 
 **Fase 2 - Sequencial com Paralelo:**
-- Storytelling Part 2 (depende de Clean Arch ✓)
-- ML Ops Part 1-2 (paralelo após Storytelling ✓)
+- Acoplamento runtime Storytelling + ML Ops no fluxo diario
+- Refinos incrementais de integracao e observabilidade
 
 **Fase 3 - Finalização:**
 Todos agentes (testes + commits + merge)
@@ -227,13 +227,13 @@ Todos agentes (testes + commits + merge)
 
 ## ✅ Critérios de Aceitação Globais
 
-- [ ] Type hints: 100% (mypy --strict clean)
-- [ ] Tests: 274 PASSING (100%)
+- [x] Type hints: 100% (mypy --strict clean)
+- [x] Tests: 274 PASSING (100%)
 - [ ] Cobertura: ≥85% por módulo
 - [ ] Commits: 17 estruturados
-- [ ] Sem acentos em mensagens
-- [ ] Docstrings: 100% Português
-- [ ] Clean Arch: Validada por especialista
+- [x] Sem acentos em mensagens
+- [x] Docstrings: 100% Português
+- [x] Clean Arch: Validada por especialista
 - [ ] Integração: Zero breaking changes
 
 ---
@@ -241,10 +241,10 @@ Todos agentes (testes + commits + merge)
 ## 🚀 Próximos Passos
 
 ### Imediato (Kickoff)
-1. Ler `docs/PLANO_MULTI_AGENTES.md` completo
-2. Assinar tarefas por especialista
-3. Setup de branches feature/
-4. Schedule de syncs diários @15:00 BRT
+1. Fechar acoplamento runtime Storytelling + ML Ops no fluxo diario
+2. Ler `docs/PLANO_MULTI_AGENTES.md` completo
+3. Assinar tarefas por especialista
+4. Setup de branches feature/
 
 ### Bloqueadores Críticos
 - [ ] Resolver BUG-DIARIOS-04 antes integração
@@ -283,4 +283,4 @@ Todos agentes (testes + commits + merge)
 
 ---
 
-**Status:** Pronto para Kickoff | **Execução:** Paralela por especialidade + sequencial por dependência
+**Status:** Execucao em fase de integracao final | **Execução:** Paralela por especialidade + sequencial por dependência
