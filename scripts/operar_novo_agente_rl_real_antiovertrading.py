@@ -48,6 +48,7 @@ from src.application.opening_context_policy import (
     evaluate_opening_context_gate,
     normalize_opening_context,
 )
+from src.application.ac6_bootstrap import build_ac6_components
 from src.application.opening_market_confirmation import (
     build_live_market_confirmation,
 )
@@ -1475,33 +1476,26 @@ if __name__ == "__main__":
         except Exception as e:
             logger.warning(f"[!] AC5.9: {e}")
 
-    if _AC6_DISPONIVEL and DriftDetector:
+    if _AC6_DISPONIVEL and (DriftDetector or OnlineLearningController or BaselineComparator):
         try:
-            _drift_detector_rl = DriftDetector(
-                agent_id=str(AGENTE_ID),
-                drift_threshold_zscore=2.0,
+            ac6 = build_ac6_components(
+                drift_detector_cls=DriftDetector if _AC6_DISPONIVEL else None,
+                online_learning_cls=OnlineLearningController if _AC6_DISPONIVEL else None,
+                baseline_comparator_cls=BaselineComparator if _AC6_DISPONIVEL else None,
+                model_name=f"rl_5000_{AGENTE_ID}",
+                models_dir_root=ROOT_DIR / "data" / "models",
             )
-            logger.info("[OK] AC6.7 DriftDetector: Ativo")
+            _drift_detector_rl = ac6.drift_detector
+            _online_learning_rl = ac6.online_learning
+            _baseline_comparator_rl = ac6.baseline_comparator
+            if _drift_detector_rl is not None:
+                logger.info("[OK] AC6.7 DriftDetector: Ativo")
+            if _online_learning_rl is not None:
+                logger.info("[OK] AC6.8 OnlineLearningController: Ativo")
+            if _baseline_comparator_rl is not None:
+                logger.info("[OK] AC6.9 BaselineComparator: Ativo")
         except Exception as e:
-            logger.warning(f"[!] AC6.7: {e}")
-
-    if _AC6_DISPONIVEL and OnlineLearningController:
-        try:
-            _online_learning_rl = OnlineLearningController(
-                agent_id=str(AGENTE_ID),
-            )
-            logger.info("[OK] AC6.8 OnlineLearningController: Ativo")
-        except Exception as e:
-            logger.warning(f"[!] AC6.8: {e}")
-
-    if _AC6_DISPONIVEL and BaselineComparator:
-        try:
-            _baseline_comparator_rl = BaselineComparator(
-                agent_id=str(AGENTE_ID),
-            )
-            logger.info("[OK] AC6.9 BaselineComparator: Ativo")
-        except Exception as e:
-            logger.warning(f"[!] AC6.9: {e}")
+            logger.warning(f"[!] AC6 bootstrap: {e}")
 
     try:
         logger.info("Inicializando...")

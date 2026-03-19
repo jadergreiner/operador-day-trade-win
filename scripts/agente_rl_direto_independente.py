@@ -120,6 +120,7 @@ try:
     from src.application.opening_context_report import (
         generate_opening_context_vs_result_report,
     )
+    from src.application.ac6_bootstrap import build_ac6_components
     from src.application.opening_context_runtime import initialize_opening_context_runtime
     from src.application.trade_tracker_integration import TradeTrackerIntegration
     from src.application.trade_performance_tracker import TradeClosureReason
@@ -1148,33 +1149,26 @@ def main():
         except Exception as e:
             logger.warning(f'[WARN] AC5.9 init falhou: {e}')
 
-    if _AC6_DISPONIVEL and DriftDetector:
+    if _AC6_DISPONIVEL and (DriftDetector or OnlineLearningController or BaselineComparator):
         try:
-            _drift_detector_rl = DriftDetector(
-                agent_id=AGENT_SESSION_ID,
-                drift_threshold_zscore=2.0,
+            ac6 = build_ac6_components(
+                drift_detector_cls=DriftDetector if _AC6_DISPONIVEL else None,
+                online_learning_cls=OnlineLearningController if _AC6_DISPONIVEL else None,
+                baseline_comparator_cls=BaselineComparator if _AC6_DISPONIVEL else None,
+                model_name=f"rl_direto_{AGENT_SESSION_ID}",
+                models_dir_root=ROOT_DIR / 'data' / 'models',
             )
-            logger.info('[OK] AC6.7 DriftDetector: Ativo')
+            _drift_detector_rl = ac6.drift_detector
+            _online_learning_rl = ac6.online_learning
+            _baseline_comparator_rl = ac6.baseline_comparator
+            if _drift_detector_rl is not None:
+                logger.info('[OK] AC6.7 DriftDetector: Ativo')
+            if _online_learning_rl is not None:
+                logger.info('[OK] AC6.8 OnlineLearningController: Ativo')
+            if _baseline_comparator_rl is not None:
+                logger.info('[OK] AC6.9 BaselineComparator: Ativo')
         except Exception as e:
-            logger.warning(f'[WARN] AC6.7 init falhou: {e}')
-
-    if _AC6_DISPONIVEL and OnlineLearningController:
-        try:
-            _online_learning_rl = OnlineLearningController(
-                agent_id=AGENT_SESSION_ID,
-            )
-            logger.info('[OK] AC6.8 OnlineLearningController: Ativo')
-        except Exception as e:
-            logger.warning(f'[WARN] AC6.8 init falhou: {e}')
-
-    if _AC6_DISPONIVEL and BaselineComparator:
-        try:
-            _baseline_comparator_rl = BaselineComparator(
-                agent_id=AGENT_SESSION_ID,
-            )
-            logger.info('[OK] AC6.9 BaselineComparator: Ativo')
-        except Exception as e:
-            logger.warning(f'[WARN] AC6.9 init falhou: {e}')
+            logger.warning(f'[WARN] AC6 bootstrap falhou: {e}')
 
     logger.info('=' * 80)
     logger.info('INICIANDO LOOP OPERACIONAL COM RL')

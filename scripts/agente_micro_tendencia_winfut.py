@@ -205,6 +205,11 @@ except ImportError:
     BaselineComparator = None  # type: ignore[assignment,misc]
 
 try:
+    from src.application.ac6_bootstrap import build_ac6_components
+except ImportError:
+    build_ac6_components = None  # type: ignore[assignment,misc]
+
+try:
     from src.application.pipeline_episodios_micro import PipelineEpisodiosMicro
     PIPELINE_EPISODIOS_DISPONIVEL = True
 except ImportError:
@@ -4029,8 +4034,87 @@ def _create_micro_trend_tables(db_path: str) -> None:
             cursor.execute(f"ALTER TABLE micro_trend_decisions ADD COLUMN {col_def[0]} {col_def[1]}")
         except Exception:
             pass  # Coluna já existe
+
+    # FIX LEGADO: garantir colunas usadas pelos INSERTs atuais em DBs antigos
+    _ensure_micro_episode_columns(cursor)
     conn.commit()
     conn.close()
+
+
+def _ensure_micro_episode_columns(cursor) -> None:
+    """Garante colunas esperadas em tabelas legadas do Micro Tendencia."""
+    tables = {
+        "micro_trend_decisions": [
+            ("exp_reduzida_ativo", "INTEGER DEFAULT 0"),
+            ("macro_score_raw", "INTEGER"),
+            ("directive_suspended", "INTEGER DEFAULT 0"),
+            ("mima_8", "REAL"),
+            ("mima_17", "REAL"),
+            ("mima_34", "REAL"),
+            ("mima_72", "REAL"),
+            ("mima_144", "REAL"),
+            ("mima_305", "REAL"),
+            ("mima_610", "REAL"),
+            ("mima_alignment", "TEXT"),
+            ("mima_fan_score", "INTEGER"),
+            ("divergence_notes", "TEXT"),
+            ("aggression_ratio", "REAL"),
+        ],
+        "micro_episodios": [
+            ("episode_id", "TEXT"),
+            ("timestamp_entrada", "TEXT"),
+            ("timestamp_saida", "TEXT"),
+            ("direcao", "TEXT"),
+            ("preco_entrada", "REAL"),
+            ("preco_saida", "REAL"),
+            ("sl", "REAL"),
+            ("tp", "REAL"),
+            ("macro_score", "INTEGER"),
+            ("macro_signal", "TEXT"),
+            ("macro_confidence", "REAL"),
+            ("micro_score", "INTEGER"),
+            ("micro_trend", "TEXT"),
+            ("adx", "REAL"),
+            ("rsi", "REAL"),
+            ("smc_direction", "TEXT"),
+            ("confianca", "REAL"),
+            ("reason", "TEXT"),
+            ("risk_reward", "REAL"),
+            ("resultado_pts", "REAL"),
+            ("motivo_saida", "TEXT"),
+            ("outcome", "TEXT"),
+            ("duracao_s", "INTEGER"),
+            ("magic_number", "INTEGER DEFAULT 234700"),
+        ],
+        "execution_feedback": [
+            ("episode_id", "TEXT"),
+            ("trade_id", "TEXT"),
+            ("timestamp", "TEXT"),
+            ("outcome_type", "TEXT"),
+            ("pnl", "REAL"),
+            ("confianca_entrada", "REAL"),
+            ("macro_score", "INTEGER"),
+            ("motivo_saida", "TEXT"),
+            ("magic_number", "INTEGER DEFAULT 234700"),
+        ],
+    }
+
+    for table_name, columns in tables.items():
+        try:
+            cursor.execute(f"PRAGMA table_info({table_name})")
+            existing = {row[1] for row in cursor.fetchall()}
+        except Exception:
+            continue
+
+        for column_name, column_def in columns:
+            if column_name in existing:
+                continue
+            try:
+                cursor.execute(
+                    f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_def}"
+                )
+            except Exception:
+                pass
 
 
 def _persist_cycle(db_path: str, result: CycleResult) -> int:
@@ -4906,47 +4990,35 @@ def main():
         except Exception as e:
             print(f"  [!] AC5.9 FeedbackValidator: {str(e)[:50]}")
 
-    _baseline_metricas = {
-        "f1_score": 0.57, "win_rate": 0.55, "sharpe_ratio": 1.0,
-    }
-
     _drift_detector = None
-    if AC6_7_DISPONIVEL and DriftDetector:
+    _online_learning = None
+    _baseline_comparator = None
+    if build_ac6_components and (AC6_7_DISPONIVEL or AC6_8_DISPONIVEL or AC6_9_DISPONIVEL):
         try:
-            _drift_detector = DriftDetector(
-                baseline_f1=0.57,
-                baseline_win_rate=0.55,
-                baseline_sharpe=1.0,
-                drift_threshold_zscore=2.0,
+            ac6 = build_ac6_components(
+                drift_detector_cls=DriftDetector if AC6_7_DISPONIVEL else None,
+                online_learning_cls=OnlineLearningController if AC6_8_DISPONIVEL else None,
+                baseline_comparator_cls=BaselineComparator if AC6_9_DISPONIVEL else None,
+                model_name="micro_tendencia",
+                models_dir_root=ROOT_DIR / "data" / "models",
+                baseline_metrics={
+                    "f1_score": 0.57,
+                    "win_rate": 0.55,
+                    "sharpe_ratio": 1.0,
+                },
                 window_size=100,
             )
-            print(f"  [*] AC6.7 DriftDetector: Ativo")
+            _drift_detector = ac6.drift_detector
+            _online_learning = ac6.online_learning
+            _baseline_comparator = ac6.baseline_comparator
+            if _drift_detector is not None:
+                print(f"  [*] AC6.7 DriftDetector: Ativo")
+            if _online_learning is not None:
+                print(f"  [*] AC6.8 OnlineLearningController: Ativo")
+            if _baseline_comparator is not None:
+                print(f"  [*] AC6.9 BaselineComparator: Ativo")
         except Exception as e:
-            print(f"  [!] AC6.7 DriftDetector: {str(e)[:50]}")
-
-    _online_learning = None
-    if AC6_8_DISPONIVEL and OnlineLearningController:
-        try:
-            _online_learning = OnlineLearningController(
-                model_name="micro_tendencia",
-                baseline_metrics=_baseline_metricas,
-                models_dir="data/models",
-            )
-            print(f"  [*] AC6.8 OnlineLearningController: Ativo")
-        except Exception as e:
-            print(f"  [!] AC6.8 OnlineLearningController: {str(e)[:50]}")
-
-    _baseline_comparator = None
-    if AC6_9_DISPONIVEL and BaselineComparator:
-        try:
-            _baseline_comparator = BaselineComparator(
-                baseline_metrics=_baseline_metricas,
-                z_score_threshold=2.0,
-                models_dir="data/models",
-            )
-            print(f"  [*] AC6.9 BaselineComparator: Ativo")
-        except Exception as e:
-            print(f"  [!] AC6.9 BaselineComparator: {str(e)[:50]}")
+            print(f"  [!] AC6 bootstrap: {str(e)[:50]}")
 
     # CALIBRACAO-MICRO-03: Pipeline de episodios reais
     global _pipeline_episodios
