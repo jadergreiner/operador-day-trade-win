@@ -2986,6 +2986,78 @@ in position 34: character maps to <undefined>
 
 **Commit:** feat: Implementar P2-RL-1 Rollback Automatico de Modelo com testes 17/17
 
+#### 3. BL-01: Staging operacional com validacao automatizada
+
+**Status:** ✅ DONE (18/03/2026)
+
+**Objetivo:** garantir readiness minima de staging antes de operar com
+capital real.
+
+**Entregar:** ✅
+
+- validacao de estrutura critica de staging (db, modelos, outputs,
+  healthcheck);
+- script executavel para operador com exit code de aprovacao/reprovacao;
+- evidencia JSON em `outputs/release_gates/`.
+
+**Implementacao Completa:**
+
+- `src/application/release_gates.py`
+  - `StagingReadinessService` com checks de prontidao;
+  - `RelatorioGate` + `GateResultado` para auditoria serializavel.
+- `scripts/validate_staging_readiness.py`
+  - executa BL-01 e grava evidencia
+    `outputs/release_gates/bl01_staging_readiness.json`.
+
+**Validacao:**
+
+- Testes unitarios: `tests/unit/test_release_gates.py`
+  - 6/6 PASSING (inclui cenarios de aprovacao/reprovacao BL-01).
+- Formato: `black --check` OK no escopo alterado.
+
+**Agente impactado:** `INICIAR_AGENTE_RL_5000.bat`
+
+#### 4. BL-07: Gate de qualidade de release automatizado
+
+**Status:** ✅ DONE (18/03/2026)
+
+**Objetivo:** padronizar validacao de release com pytest+coverage, mypy
+strict, black e isort.
+
+**Entregar:** ✅
+
+- pipeline de comandos de qualidade com status por etapa;
+- script de execucao para operador;
+- opcao no launcher para validar BL-01 + BL-07 antes da operacao.
+
+**Implementacao Completa:**
+
+- `src/application/release_gates.py`
+  - `QualityGateService` com etapas:
+    - `pytest --cov=src --cov-fail-under=80`;
+    - `mypy src --strict`;
+    - `black --check src tests scripts`;
+    - `isort --check-only src tests scripts`.
+- `scripts/validate_release_quality_gate.py`
+  - executa BL-07 e grava evidencia
+    `outputs/release_gates/bl07_quality_gate.json`.
+- `scripts/validate_go_live_gates.py`
+  - orquestra BL-01 + BL-07 em sequencia.
+- `INICIAR_AGENTE_RL_5000.bat`
+  - nova opcao de menu:
+    `Validar GO LIVE (BL-01 + BL-07)`.
+
+**Validacao:**
+
+- Testes unitarios: `tests/unit/test_release_gates.py` (6/6 PASSING).
+- `black --check` OK no escopo alterado.
+- Execucao real do gate gera evidencia em
+  `outputs/release_gates/bl07_quality_gate.json`.
+- Status atual do ambiente: **REPROVADO** (dependencias de teste/formatacao
+  pendentes no baseline).
+
+**Agente impactado:** `INICIAR_AGENTE_RL_5000.bat`
+
 ### P2 - Capacidade futura
 
 #### 1. Trilha RL operacional

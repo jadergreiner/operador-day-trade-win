@@ -55,10 +55,11 @@ echo.
 echo   [1] AVALIAR MODELO (Simulacao)
 echo   [2] OPERAR MERCADO REAL (BALANCED) *** ATIVO ***
 echo   [3] OPERAR MERCADO REAL (ORIGINAL - SEM PROTECAO)
-echo   [4] Sair
+echo   [4] Validar GO LIVE (BL-01 + BL-07)
+echo   [5] Sair
 echo.
 
-set /p CHOICE="Escolha (1-4): "
+set /p CHOICE="Escolha (1-5): "
 
 if "%CHOICE%"=="1" (
     echo.
@@ -95,11 +96,27 @@ if "%CHOICE%"=="3" (
 
 if "%CHOICE%"=="4" (
     echo.
+    echo   [GATE] Executando BL-01 (staging) e BL-07 (quality)...
+    python scripts\validate_go_live_gates.py
+    if errorlevel 1 (
+        echo.
+        echo   [GATE] Reprovado - corrigir pendencias antes de operar.
+    ) else (
+        echo.
+        echo   [GATE] Aprovado - ambiente pronto para GO LIVE.
+    )
+    echo.
+    pause
+    goto :MENU
+)
+
+if "%CHOICE%"=="5" (
+    echo.
     echo   Encerrando...
     exit /b 0
 )
 
 echo.
-echo   [ERRO] Opcao invalida. Digite 1, 2, 3 ou 4.
+echo   [ERRO] Opcao invalida. Digite 1, 2, 3, 4 ou 5.
 echo.
 goto :MENU
