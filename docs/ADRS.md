@@ -28,6 +28,9 @@ From this update onward, the canonical docs set is:
 
 Legacy docs remain read-only for historical traceability.
 
+**Estado Atual:** as trilhas principais e o runtime bridge do fluxo diario ja
+estao implementados; a validacao operacional final segue em staging, UAT e Gate 2.
+
 ⭐ **CORE DO PRODUTO**: As decisões arquiteturais aqui registradas foram tomadas para suportar a execução eficiente de:
 
 - [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat)
@@ -2121,9 +2124,9 @@ class TestTerminalFallback:
 
 ---
 
-**Last Updated:** 23/03/2026
+**Last Updated:** 18/03/2026 BRT
 **Total ADRs:** 16
-**Status:** ✅ All decisions documented, 14 ACCEPTED, 2 SUPERSEDED
+**Status:** ✅ Canonical ADRs aligned with current runtime; staging/UAT/Gate 2 pendentes
 - `src/application/ac6_9_baseline_comparator.py`
 - `scripts/agente_micro_tendencia_winfut.py`
 - `scripts/operar_novo_agente_rl_real_antiovertrading.py`

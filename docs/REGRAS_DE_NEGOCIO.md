@@ -30,6 +30,9 @@ O campo Magic Number (EA ID) identifica o agente
 origem de cada ordem no MetaTrader 5. Ver
 [ADR-012](ADRS.md).
 
+Estado atual: as regras abaixo ja sao consumidas pelo runtime;
+o que segue pendente e a validacao operacional em staging/UAT/Gate 2.
+
 ## Isolamento entre Agentes
 
 ### Cada agente opera apenas suas proprias posicoes

@@ -32,6 +32,9 @@ Cada ordem enviada carrega o Magic Number do agente
 origem, garantindo filtragem e auditoria.
 Ver [ADR-012](ADRS.md) para decisao formal.
 
+O schema abaixo ja reflete o runtime atual dos Grupos 1 e 2
+e segue como base para staging, UAT e Gate 2.
+
 ## Diarios e Treinamento de Modelos
 
 Os diarios operacionais sao insumos formais para treinamento e avaliacao de
@@ -1764,6 +1767,6 @@ CREATE TABLE IF NOT EXISTS eventos_monitoramento (
 
 ---
 
-**ULTIMA ATUALIZACAO:** 17/03/2026 BRT |
+**ULTIMA ATUALIZACAO:** 18/03/2026 BRT |
 **STATUS**: Completo (23 tabelas SQL + P50 JSON +
-Magic Number isolation + AC5.8 monitor)
+Magic Number isolation + AC5.8 monitor) | staging/UAT/Gate 2 pendentes

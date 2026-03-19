@@ -1,5 +1,8 @@
 # 📊 STATUS DE ENTREGAS - Operador Day Trade WIN
 
+> Documento histórico/read-only. Para o estado atual, consulte
+> `docs/STATUS_ENTREGAS.md` e `docs/PLANO_MULTI_AGENTES.md`.
+
 **[SYNC] ÚLTIMA ATUALIZAÇÃO:** 2026-03-06T00:15:00Z
 **Status Geral:** 🟢 **OPERACIONAL - AC1-AC6 Real Implementation COMPLETE, 6/6 Tests PASSED**
 **Versão:** v1.3.0

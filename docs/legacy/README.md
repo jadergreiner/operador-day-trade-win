@@ -3,6 +3,9 @@
 **Projeto:** Operador Day Trade WIN
 **Organização:** Estrutura hierárquica por tipo/feature
 
+> Documento histórico/read-only. O estado atual do projeto está em
+> `docs/PLANO_MULTI_AGENTES.md`, `docs/BACKLOG.md` e `docs/STATUS_ENTREGAS.md`.
+
 ⚠️ **CORE DO PRODUTO:** Veja [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat) e [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat) na **raiz do projeto** - estes são os dois entry points principais que o sistema foi construído ao redor.
 
 ✅ **STATUS CRÍTICO (05/03/2026 20:00 - IMMEDIATE ACTIONS 48H EM PROGRESSO):**

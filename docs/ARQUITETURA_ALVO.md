@@ -34,6 +34,9 @@ Cada agente possui um Magic Number (EA ID) exclusivo no MT5
 para isolamento total de ordens e posicoes. Detalhes na secao
 [Isolamento por Magic Number](#isolamento-por-magic-number-ea-id).
 
+Estado atual: os Grupos 1 e 2 ja estao materializados no runtime;
+staging, UAT e Gate 2 permanecem como validacao operacional final.
+
 ## Isolamento por Magic Number (EA ID)
 
 **Status:** Implementado (16/03/2026)

@@ -3,7 +3,7 @@
 **Produto:** Operador Day Trade WIN
 **Versao:** 1.0
 **Data:** 18/03/2026
-**Status:** Em desenvolvimento (GO LIVE: 10/04/2026)
+**Status:** Base funcional ampla concluída em código e testes; GO LIVE ainda depende de staging/UAT/Gate 2 (10/04/2026)
 
 ---
 

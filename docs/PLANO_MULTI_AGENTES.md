@@ -1,21 +1,28 @@
 # 🤖 Plano de Multi Agentes — Entregas Backlog (Clean Code)
 
-**Status:** Planejamento Executivo
+**Status:** Execução principal concluida em codigo e testes unitarios; foco atual em staging, UAT e Gate 2
 
 ---
 
-## 📊 Visão Geral de Tarefas Pendentes + Governança
+## 📊 Estado Real (2026-03-19)
+
+- As trilhas Clean Arch, Signals, Storytelling e ML Ops já existem em `src/application/` e possuem suites em `tests/unit/` e `tests/` relacionadas.
+- O acoplamento runtime Storytelling + ML Ops está materializado em `src/application/diarios_runtime_mlops_bridge.py` e consumido por `scripts/start_journals_full_display.py`.
+- Nesta auditoria, a validação representativa executada passou com `60 passed` nos subconjuntos críticos de reconciliador, watchdog, correlator, pipeline adaptativo, bridge, coordenador e kill switch.
+- O que permanece em aberto é validação operacional: deploy em staging, UAT com operador, Gate 2 final e autorização para live trading.
+
+## 📊 Visão Geral de Entregas + Governança
 
 | # | Componente | Agente | Estado | Prioridade |
 |---|---|---|---|---|
 | **ENTREGAS CRÍTICAS** | | | | |
-| 1 | ROADMAP-MICRO-03 | Clean Arch | ❌ PENDENTE | 🔴 CRÍTICA |
-| 2 | ROADMAP-DIARIOS-01 | Signals | ❌ PENDENTE | 🟡 ALTA |
-| 3 | ROADMAP-DIARIOS-02 | Storytelling | ❌ PENDENTE | 🟡 ALTA |
-| 4 | ROADMAP-DIARIOS-03 | Storytelling | ❌ PENDENTE | 🟡 MÉDIA |
-| 5 | ROADMAP-DIARIOS-04 | ML Ops | ❌ PENDENTE | 🟡 MÉDIA |
-| 6 | ROADMAP-DIARIOS-05 | ML Ops | ❌ PENDENTE | 🟢 BAIXA |
-| 7 | ROADMAP-DIARIOS-06 | ML Ops | ❌ PENDENTE | 🟢 BAIXA |
+| 1 | ROADMAP-MICRO-03 | Clean Arch | ✅ ENTREGUE / VALIDADO | 🔴 CRÍTICA |
+| 2 | ROADMAP-DIARIOS-01 | Signals | ✅ ENTREGUE / VALIDADO | 🟡 ALTA |
+| 3 | ROADMAP-DIARIOS-02 | Storytelling | ✅ ENTREGUE / VALIDADO | 🟡 ALTA |
+| 4 | ROADMAP-DIARIOS-03 | Storytelling | ✅ ENTREGUE / VALIDADO | 🟡 MÉDIA |
+| 5 | ROADMAP-DIARIOS-04 | ML Ops | ✅ ENTREGUE / VALIDADO | 🟡 MÉDIA |
+| 6 | ROADMAP-DIARIOS-05 | ML Ops | ✅ ENTREGUE / VALIDADO | 🟢 BAIXA |
+| 7 | ROADMAP-DIARIOS-06 | ML Ops | ✅ ENTREGUE / VALIDADO | 🟢 BAIXA |
 | **GOVERNANÇA** | | | | |
 | G1 | Sincronização Docs-Code | Tech Lead | 🔄 CONTÍNUA | 🔴 CRÍTICA |
 | G2 | Modelagem de Dados | DBA | 🔄 CONTÍNUA | 🔴 CRÍTICA |
@@ -703,40 +710,35 @@ PRs: 1-2 features por PR
 
 ## 🎯 Próximos Passos (Após Entregas)
 
-### Fase 2 (Semana 4-5)
-1. **Integração Completa** (Todos agentes)
-   - Deploy em staging
-   - UAT com operador
-   - Performance benchmarks
+### Fase Operacional Imediata
+1. **Runtime staging**
+   - Subir o fluxo diário com `scripts/start_journals_full_display.py`
+   - Validar bridge Storytelling + ML Ops em ambiente controlado
+   - Registrar evidência de execução e health checks
 
-2. **Gate 2 Final** (Clean Arch Lead)
-   - Validação de reconciliação 100%
-   - Zero resultados `DESCONHECIDO`
-   - Live trading authorization
+2. **UAT com operador**
+   - Executar cenários guiados sobre a cadeia já integrada
+   - Confirmar comportamento de watchguards, narrativa, ML Ops e kill switch
+   - Registrar divergências antes de qualquer autorização operacional
 
-3. **Dashboard Unificado** (Signals Lead)
-   - Real-time health display
-   - Alertas estruturados
-   - Metricas consolidadas
+3. **Gate 2 final**
+   - Revalidar reconciliação e ausência de `DESCONHECIDO`
+   - Consolidar evidência de risco, PnL e rastreabilidade
+   - Emitir decisão explícita `PASS` ou `FAIL`
 
-### Fase 3 (Semana 6+)
-1. **Roadmap P3** (ML Ops Lead)
-   - Multi-agent coordination
-   - Advanced regime detection
-   - Portfolio optimization
-
-2. **Observabilidade Enterprise** (Signals Lead)
-   - Prometheus metrics
-   - Grafana dashboards
-   - Alert routing
+4. **Liberação para live trading**
+   - Somente após staging + UAT + Gate 2 aprovados
+   - Atualizar a documentação de operação e bloqueios remanescentes
+   - Recolher feedback para o próximo ciclo
 
 ---
 
 ## 📞 Escalonamento & Bloqueadores
 
 ### Bloqueadores Conhecidos
-- [ ] BUG-DIARIOS-04 (NameError motor_decisao) — **Resolver antes integração**
-- [ ] BUG-DIARIOS-02 (eficiencia_pct) — **Resolver antes ML Ops**
+- [x] BUG-DIARIOS-04 resolvido no código; manter somente para rastreabilidade histórica.
+- [x] BUG-DIARIOS-02 resolvido no código; manter somente para rastreabilidade histórica.
+- [ ] Bloqueador atual: validação operacional em staging/UAT/Gate 2.
 
 ### Pontos de Escalação
 | Problema | Escalador | Tempo |

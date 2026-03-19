@@ -23,6 +23,15 @@
 
 ---
 
+## 📌 Estado Real
+
+- As entregas principais das trilhas Clean Arch, Signals, Storytelling e ML Ops já existem em `src/application/` e em testes unitários/integrados no repositório.
+- O acoplamento runtime Storytelling + ML Ops já está implementado em `src/application/diarios_runtime_mlops_bridge.py` e consumido por `scripts/start_journals_full_display.py`.
+- A validação representativa executada nesta auditoria passou com `60 passed` nos subconjuntos críticos de reconciliador, watchdog, correlator, pipeline adaptativo, bridge, coordenador e kill switch.
+- O próximo passo operacional ainda não concluído é staging, UAT com operador e Gate 2 final.
+
+---
+
 ## 🤖 4 Agentes Especializados (Entregas)
 
 ### 1️⃣ Clean Architecture
@@ -201,12 +210,12 @@
 
 | Métrica | Meta | Real (Esperado) |
 |---------|------|-----------------|
-| Type Hints (%) | 100 | ~100 (mypy OK) |
-| Tests PASSING | 270+ | 274 (37+49+80+108) |
-| Cobertura (%) | ≥85 | ~87 (estimado) |
-| LOC Código | 4.500+ | ~4.500 (real) |
-| LOC Testes | 3.800+ | ~3.800 (real) |
-| Commits | 17 | 17 (3+3+5+6) |
+| Type Hints (%) | 100 | Validado nos módulos auditados |
+| Tests PASSING | 270+ | 60 na validação representativa desta auditoria |
+| Cobertura (%) | ≥85 | Nao revalidada nesta auditoria |
+| LOC Código | 4.500+ | Nao consolidado nesta auditoria |
+| LOC Testes | 3.800+ | Nao consolidado nesta auditoria |
+| Commits | 17 | Nao consolidado nesta auditoria |
 | Documentação | 100% | 100% Português |
 
 ---
@@ -214,27 +223,29 @@
 ## 📊 Sequência de Execução
 
 **Fase 1 - Paralela (Sem dependências):**
-Clean Arch | Signals | Storytelling | ML Ops (simultâneo, ja concluido nos checkpoints principais)
+Clean Arch | Signals | Storytelling | ML Ops (simultâneo, concluido nos checkpoints e validado em runtime)
 
 **Fase 2 - Sequencial com Paralelo:**
 - Acoplamento runtime Storytelling + ML Ops no fluxo diario
-- Refinos incrementais de integracao e observabilidade
+- Runtime staging
+- UAT com operador
+- Gate 2 final
 
 **Fase 3 - Finalização:**
-Todos agentes (testes + commits + merge)
+Todos agentes (fechamento operacional, merge e autorização final)
 
 ---
 
 ## ✅ Critérios de Aceitação Globais
 
 - [x] Type hints: 100% (mypy --strict clean)
-- [x] Tests: 274 PASSING (100%)
-- [ ] Cobertura: ≥85% por módulo
-- [ ] Commits: 17 estruturados
+- [x] Tests: subconjunto crítico validado nesta auditoria
+- [ ] Cobertura: ≥85% por módulo ainda precisa consolidação final
+- [ ] Commits: validar consolidacao final antes de fechar o ciclo
 - [x] Sem acentos em mensagens
 - [x] Docstrings: 100% Português
 - [x] Clean Arch: Validada por especialista
-- [ ] Integração: Zero breaking changes
+- [ ] Integração: staging/UAT/Gate 2 ainda pendentes de validação operacional
 
 ---
 

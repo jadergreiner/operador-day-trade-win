@@ -1,7 +1,7 @@
 {
   "versao": "1.0.0",
   "descricao": "Manifesto de sincronizacao de documentacao do projeto operador-day-trade-win",
-  "ultima_validacao": "2026-03-16T20:45:00-03:00",
+  "ultima_validacao": "2026-03-18T23:34:13.8348049-03:00",
   "documentos": [
     {
       "nome": "BACKLOG.md",
@@ -179,7 +179,7 @@
       "mensal": "Auditoria de consistencia entre todos os docs"
     }
   },
-  "last_update": "2026-03-18T21:28:17Z",
-  "last_health_check": "2026-03-18T21:28:17Z",
-  "status": "synchronized"
+  "last_update": "2026-03-18T23:34:13.8348049-03:00",
+  "last_health_check": "2026-03-18T23:34:13.8348049-03:00",
+  "status": "synchronized_operational_validation_pending"
 }

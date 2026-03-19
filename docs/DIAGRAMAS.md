@@ -9,7 +9,9 @@
 - [Diagrama de Classes (Mermaid)](#diagrama-de-classes-mermaid)
 - [Diagrama de Dados (ER - Mermaid)](#diagrama-de-dados-er-mermaid)
 - [Visao de Dependencias](#visao-de-dependencias)
-- [Notas](#notas)\n\n## Escopo de Execucao (4 Agentes)
+- [Notas](#notas)
+
+## Escopo de Execucao (4 Agentes)
 
 Os diagramas canonicos servem exclusivamente para evoluir
 estes executores:
@@ -28,6 +30,9 @@ ao MT5 carrega o magic do emissor. Toda consulta de posições
 filtra pelo magic do agente corrente.
 
 Referência: ADR-012 (`docs/ADRS.md`)
+
+Os diagramas abaixo representam o estado atual do runtime, incluindo o bridge
+Storytelling + ML Ops e os Grupos 1/2 já acoplados pelos scripts.
 
 ```text
 +-----------------------------------------------------+

@@ -21,6 +21,10 @@ Cada agente:
 - ✅ Gerencia suas próprias **posições e trades**
 - ✅ Filtra posições por `magic` (nativo MT5)
 
+Desde 17/03/2026, o Grupo 1 de isolamento e o Grupo 2 de feedback/aprendizado
+estao importados diretamente pelos scripts dos agentes. O foco atual e validar
+o runtime integrado em staging, UAT e Gate 2.
+
 ---
 
 ## Isolamento por Magic Number (EA ID) — ADR-012

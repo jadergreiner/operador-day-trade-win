@@ -10,7 +10,7 @@ Localizações de Integração:
 3. Registros no loop (linha ~5100-5300)
 4. Cleanup ao fim (linha ~5500)
 
-Status: v1.0 (18/03/2026)
+Status: v1.0 (18/03/2026) - documento de integracao alinhado ao runtime atual
 """
 
 # ────────────────────────────────────────────────────────────────────────
