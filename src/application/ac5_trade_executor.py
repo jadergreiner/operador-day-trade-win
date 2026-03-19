@@ -35,6 +35,7 @@ from uuid import UUID, uuid4
 import sqlite3
 import logging
 from decimal import Decimal
+import time
 
 from src.application.services.processador_bdi import get_processador_bdi, ProcessadorBDI
 from src.domain.entities import Order
@@ -174,6 +175,24 @@ class TradeExecutor:
         except sqlite3.Error as e:
             logger.error(f"[AC5-DB-ERROR] Connection failed: {e}")
             raise
+
+    def _commit_with_retry(self, max_attempts: int = 5, base_delay: float = 0.15) -> None:
+        """Commit com retry para reduzir lock do SQLite."""
+        last_exc: Exception | None = None
+        for attempt in range(max_attempts):
+            try:
+                if self.connection is None:
+                    raise sqlite3.OperationalError("Connection unavailable")
+                self.connection.commit()
+                return
+            except sqlite3.OperationalError as exc:
+                last_exc = exc
+                msg = str(exc).lower()
+                if "database is locked" not in msg and "database is busy" not in msg:
+                    raise
+                time.sleep(base_delay * (attempt + 1))
+        if last_exc:
+            raise last_exc
 
     def prepare_order_specification(
         self,
@@ -426,6 +445,11 @@ class TradeExecutor:
             True se registrado com sucesso
         """
         try:
+            def _to_sql_number(value):
+                if isinstance(value, Decimal):
+                    return float(value)
+                return value
+
             cursor = self.connection.cursor()
 
             if execution_result.status == OrderStatus.FILLED:
@@ -439,9 +463,9 @@ class TradeExecutor:
                     execution_result.order_id,
                     execution_result.signal_id,
                     execution_result.trade_id,
-                    execution_result.execution_price,
+                    _to_sql_number(execution_result.execution_price),
                     execution_result.execution_time,
-                    execution_result.volume_filled,
+                    _to_sql_number(execution_result.volume_filled),
                     "OPEN",
                     datetime.now(),
                 ))
@@ -453,7 +477,7 @@ class TradeExecutor:
                     WHERE signal_id = ?
                 """, (execution_result.trade_id, execution_result.signal_id))
 
-                self.connection.commit()
+                self._commit_with_retry()
                 logger.info(
                     f"[AC5-REGISTER] Registered trade {execution_result.trade_id} "
                     f"for signal {execution_result.signal_id}"

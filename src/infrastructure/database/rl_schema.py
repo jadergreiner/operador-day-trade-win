@@ -362,6 +362,7 @@ class RLRewardModel(Base):
     reward_normalized = Column(Float, nullable=True)
     # reward contínuo: pontos × sinal da ação (positivo=bom, negativo=ruim)
     reward_continuous = Column(Float, nullable=True)
+    decision_verdict = Column(String(40), nullable=True)  # HOLD_CORRECT / HOLD_TOO_EARLY / HOLD_TOO_LATE / BUY_CONFIRMADO / SELL_CONFIRMADO
 
     # ---- Contexto do mercado no horizonte ----
     max_favorable_points = Column(Numeric(10, 2), nullable=True)  # MFE

@@ -176,8 +176,12 @@ class BaselineComparator:
             z_score_threshold: Threshold Z-score para degradação (default: 2.0)
             models_dir: Diretório para persistência (default: ./models)
         """
-        self.baseline_metrics: Dict[str, float] = baseline_metrics
-        self.z_score_threshold: float = z_score_threshold
+        self.baseline_metrics: Dict[str, float] = {
+            key: float(value)
+            for key, value in baseline_metrics.items()
+            if value is not None
+        }
+        self.z_score_threshold: float = float(z_score_threshold)
         self.models_dir: Path = Path(models_dir or "models")
         self.models_dir.mkdir(exist_ok=True)
 
@@ -266,7 +270,8 @@ class BaselineComparator:
             if metric_name not in baseline_metrics:
                 continue
 
-            baseline_value = baseline_metrics[metric_name]
+            baseline_value = float(baseline_metrics[metric_name])
+            current_value = float(current_value)
 
             # Z-score simples: (current - baseline) / |baseline|
             # Métricas onde menor é melhor: win_rate, f1_score, sharpe_ratio

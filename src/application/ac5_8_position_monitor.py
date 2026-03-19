@@ -34,11 +34,13 @@ Referencia: docs/BACKLOG.md (AC5.8 Monitoramento em tempo real de execucao)
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from enum import Enum
+from decimal import Decimal
 from typing import Optional, List, Dict, Any, Tuple
 from uuid import uuid4
 import sqlite3
 import logging
 from contextlib import contextmanager
+import time
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -250,6 +252,22 @@ class MonitorPositionManager:
 
         self.bd_conexao.commit()
 
+    def _commit_with_retry(self, max_attempts: int = 5, base_delay: float = 0.15) -> None:
+        """Commit com retry para reduzir lock do SQLite."""
+        last_exc: Exception | None = None
+        for attempt in range(max_attempts):
+            try:
+                self.bd_conexao.commit()
+                return
+            except sqlite3.OperationalError as exc:
+                last_exc = exc
+                msg = str(exc).lower()
+                if "database is locked" not in msg and "database is busy" not in msg:
+                    raise
+                time.sleep(base_delay * (attempt + 1))
+        if last_exc:
+            raise last_exc
+
     # ====================================================================
     # OPERACOES DE ORDEM
     # ====================================================================
@@ -266,6 +284,11 @@ class MonitorPositionManager:
             True se registrada, False se erro (ex: duplicada)
         """
         try:
+            def _to_sql_number(value: Any) -> Any:
+                if isinstance(value, Decimal):
+                    return float(value)
+                return value
+
             cursor = self.bd_conexao.cursor()
             agora = datetime.now(timezone.utc).isoformat()
 
@@ -279,10 +302,10 @@ class MonitorPositionManager:
                 ordem_spec["signal_id"],
                 ordem_spec["symbol"],
                 ordem_spec["direcao"],
-                ordem_spec["volume"],
-                ordem_spec["preco_entrada"],
-                ordem_spec["sl"],
-                ordem_spec["tp"],
+                _to_sql_number(ordem_spec["volume"]),
+                _to_sql_number(ordem_spec["preco_entrada"]),
+                _to_sql_number(ordem_spec["sl"]),
+                _to_sql_number(ordem_spec["tp"]),
                 StatusOrdem.PENDING.value,
                 agora,
                 agora,
@@ -302,11 +325,11 @@ class MonitorPositionManager:
                 ordem_spec["signal_id"],
                 ordem_spec["symbol"],
                 ordem_spec["direcao"],
-                ordem_spec["volume"],
-                ordem_spec["preco_entrada"],
-                ordem_spec["sl"],
-                ordem_spec["tp"],
-                ordem_spec["preco_entrada"],  # Preço atual = entrada inicialmente
+                _to_sql_number(ordem_spec["volume"]),
+                _to_sql_number(ordem_spec["preco_entrada"]),
+                _to_sql_number(ordem_spec["sl"]),
+                _to_sql_number(ordem_spec["tp"]),
+                _to_sql_number(ordem_spec["preco_entrada"]),  # Preço atual = entrada inicialmente
                 0.0,  # PL inicial = 0
                 StatusPosicao.ABERTA.value,
                 agora,
@@ -319,7 +342,7 @@ class MonitorPositionManager:
                 f"Ordem registrada: {ordem_spec['symbol']} {ordem_spec['direcao']}",
             )
 
-            self.bd_conexao.commit()
+            self._commit_with_retry()
             logger.info(f"Ordem registrada: {ordem_spec['trade_id']}")
             return True
 
@@ -369,7 +392,7 @@ class MonitorPositionManager:
                 f"Status atualizado para {novo_status.value}",
             )
 
-            self.bd_conexao.commit()
+            self._commit_with_retry()
             logger.info(f"Status atualizado: {trade_id} -> {novo_status.value}")
             return True
 
@@ -407,31 +430,34 @@ class MonitorPositionManager:
                 logger.error(f"Posicao nao encontrada: {trade_id}")
                 return False
 
-            preco_entrada = row["preco_entrada"]
+            preco_entrada = Decimal(str(row["preco_entrada"]))
             direcao = row["direcao"]
-            volume = row["volume"]
+            volume = Decimal(str(row["volume"]))
+            preco_atual_dec = Decimal(str(preco_atual))
 
             # Calcular P&L
             if direcao == DirecaoOperacao.BUY.value:
-                pl = (preco_atual - preco_entrada) * volume
+                pl = (preco_atual_dec - preco_entrada) * volume
             else:  # SELL
-                pl = (preco_entrada - preco_atual) * volume
+                pl = (preco_entrada - preco_atual_dec) * volume
 
             # Atualizar preco e P&L
             cursor.execute("""
                 UPDATE posicoes_abertas
                 SET preco_atual = ?, pl = ?, atualizado_em = ?
                 WHERE trade_id = ?
-            """, (preco_atual, pl, agora, trade_id))
+            """, (float(preco_atual_dec), float(pl), agora, trade_id))
 
             self.registrar_evento(
                 trade_id,
                 "PRECO_ATUALIZADO",
-                f"Preco atualizado: {preco_atual} | P&L: {pl:.2f}",
+                f"Preco atualizado: {float(preco_atual_dec):.2f} | P&L: {float(pl):.2f}",
             )
 
-            self.bd_conexao.commit()
-            logger.debug(f"Preco atualizado: {trade_id} -> {preco_atual} | P&L: {pl:.2f}")
+            self._commit_with_retry()
+            logger.debug(
+                f"Preco atualizado: {trade_id} -> {float(preco_atual_dec):.2f} | P&L: {float(pl):.2f}"
+            )
             return True
 
         except Exception as e:
@@ -468,14 +494,15 @@ class MonitorPositionManager:
                 return False
 
             # Calcular P&L final
-            preco_entrada = row["preco_entrada"]
+            preco_entrada = Decimal(str(row["preco_entrada"]))
             direcao = row["direcao"]
-            volume = row["volume"]
+            volume = Decimal(str(row["volume"]))
+            preco_encerramento_dec = Decimal(str(preco_encerramento))
 
             if direcao == DirecaoOperacao.BUY.value:
-                pl_final = (preco_encerramento - preco_entrada) * volume
+                pl_final = (preco_encerramento_dec - preco_entrada) * volume
             else:  # SELL
-                pl_final = (preco_entrada - preco_encerramento) * volume
+                pl_final = (preco_entrada - preco_encerramento_dec) * volume
 
             # Mover para posicoes encerradas
             cursor.execute("""
@@ -487,7 +514,7 @@ class MonitorPositionManager:
                     preco_entrada, ?, ?, criado_em, ?
                 FROM posicoes_abertas
                 WHERE trade_id = ?
-            """, (preco_encerramento, pl_final, agora, trade_id))
+            """, (float(preco_encerramento_dec), float(pl_final), agora, trade_id))
 
             # Deletar posicao aberta
             cursor.execute("""
@@ -507,7 +534,7 @@ class MonitorPositionManager:
                 f"Posicao encerrada em {preco_encerramento} | P&L: {pl_final:.2f}",
             )
 
-            self.bd_conexao.commit()
+            self._commit_with_retry()
             logger.info(f"Posicao encerrada: {trade_id} | P&L: {pl_final:.2f}")
             return True
 
@@ -550,7 +577,7 @@ class MonitorPositionManager:
                 "Ordem cancelada pelo usuario",
             )
 
-            self.bd_conexao.commit()
+            self._commit_with_retry()
             logger.info(f"Ordem cancelada: {trade_id}")
             return True
 
@@ -594,7 +621,7 @@ class MonitorPositionManager:
                 f"Ordem rejeitada: {motivo}",
             )
 
-            self.bd_conexao.commit()
+            self._commit_with_retry()
             logger.warning(f"Ordem rejeitada: {trade_id} | Motivo: {motivo}")
             return True
 
@@ -681,7 +708,7 @@ class MonitorPositionManager:
                 ) VALUES (?, ?, ?, ?, ?)
             """, (evento_id, trade_id, tipo_evento, descricao, timestamp))
 
-            self.bd_conexao.commit()
+            self._commit_with_retry()
             return evento_id
 
         except Exception as e:

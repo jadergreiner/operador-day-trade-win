@@ -113,6 +113,30 @@ class ResultadoRetreino:
         }
 
 
+@dataclass
+class EstadoRetreino:
+    """Resumo do estado atual de aprendizado e treino do micro."""
+
+    episodios_acumulados: int
+    rewards_acumuladas: int
+    rewards_desde_ultimo_treino: int
+    rewards_ate_proximo_treino: int
+    threshold_rewards: int
+    ultima_versao_treino: str
+    ultima_data_treino: str
+
+    def para_dict(self) -> dict[str, Any]:
+        return {
+            "episodios_acumulados": self.episodios_acumulados,
+            "rewards_acumuladas": self.rewards_acumuladas,
+            "rewards_desde_ultimo_treino": self.rewards_desde_ultimo_treino,
+            "rewards_ate_proximo_treino": self.rewards_ate_proximo_treino,
+            "threshold_rewards": self.threshold_rewards,
+            "ultima_versao_treino": self.ultima_versao_treino,
+            "ultima_data_treino": self.ultima_data_treino,
+        }
+
+
 # ─────────────────────────────────────────────
 # Trigger de retreinamento
 # ─────────────────────────────────────────────
@@ -225,6 +249,19 @@ class TriggerRetreino:
         ultimo = self.contar_rewards_ultimo_treino()
         return max(0, total - ultimo)
 
+    def obter_estado(self) -> dict[str, Any]:
+        """Retorna um snapshot do estado de aprendizado do micro."""
+        total = self.contar_rewards_total()
+        ultimo = self.contar_rewards_ultimo_treino()
+        desde_ultimo = max(0, total - ultimo)
+        falta_para_proximo = max(0, self.threshold - desde_ultimo)
+        return {
+            "rewards_acumuladas": total,
+            "rewards_desde_ultimo_treino": desde_ultimo,
+            "rewards_ate_proximo_treino": falta_para_proximo,
+            "threshold_rewards": self.threshold,
+        }
+
     def deve_retreinar(self) -> bool:
         """Verifica se threshold foi atingido para disparar retreino.
 
@@ -299,6 +336,18 @@ class CarregadorEpisodios:
                 }
             )
         return episodios
+
+    def contar_episodios(self) -> int:
+        """Retorna a quantidade total de episodios persistidos."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) FROM micro_episodios")
+            row = cur.fetchone()
+            conn.close()
+            return int(row[0]) if row else 0
+        except Exception:
+            return 0
 
     def calcular_win_rate(self, episodios: list[dict[str, Any]]) -> float:
         """Calcula win rate ponderado por peso.
@@ -409,6 +458,10 @@ class VersonadorModelo:
         """
         return self.modelos_dir / f"{versao}.json"
 
+    def caminho_changelog(self) -> Path:
+        """Retorna o caminho do changelog de versoes do modelo."""
+        return self.modelos_dir / "CHANGELOG.md"
+
 
 # ─────────────────────────────────────────────
 # Gerenciador principal de retreino
@@ -439,6 +492,19 @@ class GerenciadorRetreino:
         self.trigger = TriggerRetreino(db_path)
         self.carregador = CarregadorEpisodios(db_path)
         self.versionador = VersonadorModelo(db_path, modelos_dir)
+
+    def obter_estado_aprendizado(self) -> EstadoRetreino:
+        """Retorna o estado atual de aprendizado e proximidade do proximo treino."""
+        estado_trigger = self.trigger.obter_estado()
+        return EstadoRetreino(
+            episodios_acumulados=self.carregador.contar_episodios(),
+            rewards_acumuladas=int(estado_trigger["rewards_acumuladas"]),
+            rewards_desde_ultimo_treino=int(estado_trigger["rewards_desde_ultimo_treino"]),
+            rewards_ate_proximo_treino=int(estado_trigger["rewards_ate_proximo_treino"]),
+            threshold_rewards=int(estado_trigger["threshold_rewards"]),
+            ultima_versao_treino=self.obter_ultima_versao_treino(),
+            ultima_data_treino=self.obter_ultima_data_treino(),
+        )
 
     def executar_retreino(
         self,
@@ -572,6 +638,39 @@ class GerenciadorRetreino:
             delta_win_rate=delta,
             rollback_realizado=rollback,
         )
+
+    def obter_resumo_changelog(self, max_linhas: int = 5) -> list[str]:
+        """Retorna as ultimas linhas uteis do changelog do modelo."""
+        try:
+            path = self.versionador.caminho_changelog()
+            if not path.exists():
+                return []
+            linhas = path.read_text(encoding="utf-8").splitlines()
+            if not linhas:
+                return []
+            return linhas[-max_linhas:]
+        except Exception:
+            return []
+
+    def obter_ultima_versao_treino(self) -> str:
+        """Retorna a ultima versao ativa persistida."""
+        versao = self.versionador.obter_versao_atual()
+        return versao or "N/A"
+
+    def obter_ultima_data_treino(self) -> str:
+        """Retorna a data do ultimo treino persistido."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT data_treino FROM model_metadata "
+                "WHERE ativo = 1 ORDER BY id DESC LIMIT 1"
+            )
+            row = cur.fetchone()
+            conn.close()
+            return str(row[0]) if row else "N/A"
+        except Exception:
+            return "N/A"
 
     # ──────────────────────────────────────────────────────────
     # Auxiliares internos
@@ -712,7 +811,53 @@ class GerenciadorRetreino:
                 ),
             )
 
+            self._registrar_changelog(
+                versao=versao,
+                data_treino=data_treino,
+                n_episodios=n_episodios,
+                win_rate_treino=win_rate_treino,
+                win_rate_validacao=win_rate_validacao,
+                delta=delta,
+                rollback=rollback,
+                notas=notas,
+            )
+
             conn.commit()
             conn.close()
         except Exception as exc:
             logger.error("Falha ao registrar treino no banco: %s", exc)
+
+    def _registrar_changelog(
+        self,
+        versao: str,
+        data_treino: str,
+        n_episodios: int,
+        win_rate_treino: float,
+        win_rate_validacao: float,
+        delta: float,
+        rollback: bool,
+        notas: str,
+    ) -> None:
+        """Acrescenta um registro legivel ao changelog do modelo."""
+        try:
+            path = self.versionador.caminho_changelog()
+            path.parent.mkdir(parents=True, exist_ok=True)
+            ultimo = self.obter_ultima_versao_treino()
+            ultima_data = self.obter_ultima_data_treino()
+            linhas = [
+                f"## {versao}",
+                f"- data_treino: {data_treino}",
+                f"- episodios_usados: {n_episodios}",
+                f"- win_rate_treino: {win_rate_treino:.3f}",
+                f"- win_rate_validacao: {win_rate_validacao:.3f}",
+                f"- delta_vs_anterior: {delta:.1f}pp",
+                f"- rollback_realizado: {rollback}",
+                f"- versao_anterior_ativa: {ultimo}",
+                f"- data_ultima_versao_ativa: {ultima_data}",
+                f"- notas: {notas}",
+                "",
+            ]
+            with open(path, "a", encoding="utf-8") as arq:
+                arq.write("\n".join(linhas))
+        except Exception as exc:
+            logger.warning("Falha ao registrar changelog do modelo: %s", exc)

@@ -210,7 +210,11 @@ def evaluate_opening_context_gate(
     alignment: float | None = None,
     market_confirmation: Any | None = None,
 ) -> OpeningContextGateResult:
-    """Aplica as flags estruturadas do contexto de abertura sobre uma acao."""
+    """Enriquce a acao com contexto de abertura sem bloquear por direcao.
+
+    O contexto de abertura deve atuar como feature e sinal explicativo para
+    o modelo aprender sozinho. Bloqueio externo fica restrito ao kill switch.
+    """
     normalized_action = normalize_action(action)
     policy = normalize_opening_context(context)
     allow_entry = normalized_action in {"BUY", "SELL"}
@@ -247,10 +251,8 @@ def evaluate_opening_context_gate(
             reasons.append("vies_intraday_baixista")
             if confidence_used is None or confidence_used < 0.72:
                 reasons.append("compra_sem_confirmacao_contextual")
-                allow_entry = False
             if alignment_used is not None and alignment_used < 0.65:
                 reasons.append("compra_sem_alinhamento_suficiente")
-                allow_entry = False
         elif "ALTISTA" in vies_upper:
             reasons.append("compra_alinhada_ao_vies")
         elif policy.watchlist:
@@ -261,7 +263,6 @@ def evaluate_opening_context_gate(
                 reasons.append("compra_confirmada_live")
             else:
                 reasons.append("compra_sem_confirmacao_live")
-                allow_entry = False
             if live_market_confirmation.get("monitors_positive"):
                 reasons.append(
                     "monitores_favoraveis:"
@@ -291,10 +292,8 @@ def evaluate_opening_context_gate(
             reasons.append("vies_intraday_altista")
             if confidence_used is None or confidence_used < 0.72:
                 reasons.append("venda_sem_confirmacao_contextual")
-                allow_entry = False
             if alignment_used is not None and alignment_used < 0.65:
                 reasons.append("venda_sem_alinhamento_suficiente")
-                allow_entry = False
         elif policy.watchlist:
             reasons.append("venda_monitorando_watchlist")
 
@@ -303,7 +302,6 @@ def evaluate_opening_context_gate(
                 reasons.append("venda_confirmada_live")
             elif "BAIXISTA" in vies_upper:
                 reasons.append("venda_sem_confirmacao_live")
-                allow_entry = False
             if live_market_confirmation.get("monitors_positive"):
                 reasons.append(
                     "monitores_favoraveis:"

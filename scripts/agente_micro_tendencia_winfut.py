@@ -21,6 +21,7 @@ from datetime import datetime, timedelta, time as dtime
 from decimal import Decimal, ROUND_HALF_UP
 import math
 import os
+import sqlite3
 import sys
 import time
 from typing import Optional
@@ -86,6 +87,48 @@ def _get_config() -> _MicroTrendConfig:
     return _MicroTrendConfig()
 
 
+def _format_learning_block(retreino_mgr: Optional["GerenciadorRetreino"]) -> str:
+    """Formata o bloco de aprendizado do micro para o terminal."""
+    try:
+        db_path = retreino_mgr.db_path if retreino_mgr else _get_config().db_path
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM micro_episodios")
+        episodios = int(cur.fetchone()[0] or 0)
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM rl_rewards r
+            INNER JOIN rl_episodes e ON e.episode_id = r.episode_id
+            WHERE e.source = 'MICRO_AGENT' AND r.is_evaluated = 1
+            """
+        )
+        recompensas = int(cur.fetchone()[0] or 0)
+        conn.close()
+
+        if retreino_mgr:
+            estado = retreino_mgr.obter_estado_aprendizado()
+            ultima_versao = estado.ultima_versao_treino or "N/A"
+            ultima_data = estado.ultima_data_treino or "N/A"
+            faltam = estado.rewards_ate_proximo_treino
+            threshold = estado.threshold_rewards
+        else:
+            ultima_versao = "N/A"
+            ultima_data = "N/A"
+            faltam = "N/A"
+            threshold = "N/A"
+
+        return (
+            "  📚 Aprendizado: "
+            f"episodios={episodios} | "
+            f"recompensas={recompensas} | "
+            f"faltam_para_treino={faltam}/{threshold}"
+            f" | ultimo_treino={ultima_versao} @ {ultima_data}"
+        )
+    except Exception as exc:
+        return f"  📚 Aprendizado: indisponivel ({exc})"
+
+
 from src.domain.value_objects import Symbol, Price, Quantity
 from src.domain.entities.trade import Order
 from src.domain.enums.trading_enums import TimeFrame, OrderSide, OrderType, TradeSignal
@@ -107,6 +150,7 @@ from src.application.services.diary_feedback import (
     create_diary_feedback_table,
     load_latest_feedback,
 )
+from src.application.retreino_micro_tendencia import GerenciadorRetreino
 from src.application.opening_context_runtime import initialize_opening_context_runtime
 from src.domain.services.atr_calibrator import ATRCalibrator
 from src.fibonacci_calculator import FibonacciCalculator
@@ -378,6 +422,35 @@ class VWAPData:
     upper_2: Decimal = Decimal("0")  # +2σ
     lower_1: Decimal = Decimal("0")  # -1σ
     lower_2: Decimal = Decimal("0")  # -2σ
+
+    def __float__(self) -> float:
+        return float(self.vwap)
+
+    def __bool__(self) -> bool:
+        return self.vwap > 0
+
+    def _coerce_other(self, other):
+        if isinstance(other, VWAPData):
+            return other.vwap
+        return other
+
+    def __lt__(self, other) -> bool:
+        return self.vwap < self._coerce_other(other)
+
+    def __le__(self, other) -> bool:
+        return self.vwap <= self._coerce_other(other)
+
+    def __gt__(self, other) -> bool:
+        return self.vwap > self._coerce_other(other)
+
+    def __ge__(self, other) -> bool:
+        return self.vwap >= self._coerce_other(other)
+
+    def __mul__(self, other):
+        return self.vwap * self._coerce_other(other)
+
+    def __rmul__(self, other):
+        return self._coerce_other(other) * self.vwap
 
 
 @dataclass
@@ -2655,6 +2728,15 @@ class OpenTrade:
     # Contexto rico do momento da entrada (CALIBRACAO-MICRO-03)
     context_entrada: "dict | None" = None
 
+    def __post_init__(self) -> None:
+        self.entry_price = Decimal(str(self.entry_price))
+        self.stop_loss = Decimal(str(self.stop_loss))
+        self.take_profit = Decimal(str(self.take_profit))
+        self.trailing_stop = Decimal(str(self.trailing_stop))
+        self.unrealized_pnl = Decimal(str(self.unrealized_pnl))
+        if not isinstance(self.quantity, int):
+            self.quantity = int(self.quantity)
+
 
 class IntraDayLearner:
     """Aprendizado EM TEMPO REAL durante o pregão.
@@ -2948,11 +3030,17 @@ class MicroTradingManager:
     Sempre teste em conta DEMO primeiro!
     """
 
-    def __init__(self, mt5: MT5Adapter, symbol_code: str = "WIN$N"):
+    def __init__(
+        self,
+        mt5: MT5Adapter,
+        symbol_code: str = "WIN$N",
+        monitor_posicao: "MonitorPositionManager | None" = None,
+    ):
         self.mt5 = mt5
         self.symbol = Symbol(symbol_code)
         self.open_trades: list[OpenTrade] = []
         self.closed_trades: list[dict] = []
+        self._monitor_posicao = monitor_posicao
         self.daily_pnl = Decimal("0")
         self.daily_trade_count = 0
         self._last_trade_date: Optional[str] = None
@@ -2961,6 +3049,7 @@ class MicroTradingManager:
         self._last_stop_loss_direction: Optional[str] = None
         self._watchdog_seen_tickets: set[int] = set()
         self._hydrate_today_summary_from_db()
+        self._rehydrate_open_trades_from_db()
 
     def _hydrate_today_summary_from_db(self) -> None:
         """Reidrata resumo do dia a partir da tabela trades após reinício.
@@ -3031,9 +3120,120 @@ class MicroTradingManager:
             self.daily_trade_count = 0
             self.closed_trades.clear()
 
+    def _rehydrate_open_trades_from_db(self) -> None:
+        """Reidrata posições abertas persistidas para não duplicar trades em restart."""
+        global DB_PATH
+        monitor = self._monitor_posicao
+        if monitor is None and DB_PATH and AC5_8_DISPONIVEL and MonitorPositionManager:
+            try:
+                monitor = MonitorPositionManager(db_caminho=DB_PATH)
+            except Exception:
+                monitor = None
+
+        if monitor is None:
+            return
+
+        try:
+            rows = monitor.listar_posicoes_abertas()
+        except Exception as exc:
+            print(f"  [AVISO] Falha ao reidratar posicoes abertas: {exc}")
+            return
+
+        symbol_text = str(self.symbol)
+        current_symbol = symbol_text.replace("$N", "")
+        rehydrated: list[OpenTrade] = []
+        for row in rows:
+            row_symbol = str(row.get("symbol", ""))
+            if row_symbol and current_symbol and current_symbol not in row_symbol and row_symbol not in current_symbol:
+                continue
+
+            direcao = str(row.get("direcao", "")).upper()
+            if direcao not in {"BUY", "SELL", "COMPRA", "VENDA"}:
+                continue
+
+            trade_id = str(row.get("trade_id", ""))
+            try:
+                ticket_value = int(trade_id)
+            except Exception:
+                ticket_value = None
+
+            entry_price = Decimal(str(row.get("preco_entrada", 0) or 0))
+            sl = Decimal(str(row.get("sl", 0) or 0))
+            tp = Decimal(str(row.get("tp", 0) or 0))
+            preco_atual = Decimal(str(row.get("preco_atual", row.get("preco_entrada", 0)) or 0))
+            pl = Decimal(str(row.get("pl", 0) or 0))
+            qty = int(row.get("volume", MAX_CONTRACTS) or MAX_CONTRACTS)
+            reason = str(row.get("signal_id", "") or "")
+
+            rehydrated.append(
+                OpenTrade(
+                    ticket=trade_id,
+                    position_ticket=ticket_value,
+                    direction="COMPRA" if direcao in {"BUY", "COMPRA"} else "VENDA",
+                    entry_price=entry_price,
+                    stop_loss=sl,
+                    take_profit=tp,
+                    quantity=qty,
+                    opened_at=datetime.fromisoformat(str(row.get("criado_em"))) if row.get("criado_em") else datetime.now(),
+                    trailing_stop=sl,
+                    unrealized_pnl=pl if pl != 0 else Decimal("0"),
+                    reason=reason,
+                    context_entrada={
+                        "rehydrated_from": "posicoes_abertas",
+                        "trade_id": trade_id,
+                        "preco_atual": float(preco_atual),
+                    },
+                )
+            )
+
+        if rehydrated:
+            self.open_trades = rehydrated
+            print(f"  ℹ Reidratação: posicoes_abertas={len(rehydrated)}")
+
+    def _sync_open_trades_with_broker(self) -> None:
+        """Sincroniza estado em memória com posições reais do broker."""
+        try:
+            broker_positions = self.mt5.get_positions(self.symbol)
+        except Exception:
+            return
+
+        broker_tickets: set[int] = set()
+        for pos in broker_positions or []:
+            try:
+                broker_tickets.add(int(getattr(pos, "ticket", 0) or 0))
+            except Exception:
+                continue
+
+        if not broker_tickets:
+            return
+
+        synchronized: list[OpenTrade] = []
+        removed = 0
+        for trade in self.open_trades:
+            ticket = trade.position_ticket
+            if ticket is None:
+                continue
+            if int(ticket) in broker_tickets:
+                synchronized.append(trade)
+            else:
+                removed += 1
+
+        if removed:
+            self.open_trades = synchronized
+            print(f"  ℹ Sincronização broker: removidas {removed} posição(ões) stale da memória")
+
     def can_trade(self) -> tuple[bool, str]:
         """Verifica se pode abrir nova operação. Retorna (pode, motivo)."""
         self._reset_daily_if_needed()
+        self._sync_open_trades_with_broker()
+
+        if self._monitor_posicao is not None:
+            try:
+                open_db = int(self._monitor_posicao.contar_posicoes_abertas())
+                if open_db > len(self.open_trades):
+                    self._rehydrate_open_trades_from_db()
+            except Exception:
+                pass
 
         if len(self.open_trades) >= MAX_POSITIONS:
             return False, f"Já tem {len(self.open_trades)} posição(ões) aberta(s)"
@@ -3224,6 +3424,7 @@ class MicroTradingManager:
 
     def manage_positions(self, current_price: Decimal) -> None:
         """Gerencia posições abertas: PnL, trailing stop, exits."""
+        self._sync_open_trades_with_broker()
         trades_to_close: list[tuple[OpenTrade, str]] = []
 
         for trade in self.open_trades:
@@ -3388,29 +3589,30 @@ class MicroTradingManager:
 
     def _close_position(self, trade: OpenTrade, exit_price: Decimal, reason: str) -> bool:
         """Fecha posição no MT5."""
-        close_side = OrderSide.SELL if trade.direction == "COMPRA" else OrderSide.BUY
-        open_side = OrderSide.BUY if trade.direction == "COMPRA" else OrderSide.SELL
-
-        # Em conta hedge, fechar por `position` evita abrir posição contrária acidental.
         close_position_ticket = trade.position_ticket
         if close_position_ticket is None:
             try:
+                open_side = OrderSide.BUY if trade.direction == "COMPRA" else OrderSide.SELL
                 close_position_ticket = self.mt5.resolve_open_position_ticket(self.symbol, open_side)
             except Exception:
                 close_position_ticket = None
 
-        order = Order(
-            symbol=self.symbol,
-            side=close_side,
-            order_type=OrderType.MARKET,
-            quantity=Quantity(trade.quantity),
-            price=Price(exit_price),
-            close_position_ticket=close_position_ticket,
-            magic_number=MAGIC_NUMBER,
-        )
-
         try:
-            ticket = self.mt5.send_order(order)
+            if close_position_ticket is not None:
+                closed = self.mt5.close_position_by_ticket(int(close_position_ticket))
+                ticket = str(close_position_ticket) if closed else None
+            else:
+                close_side = OrderSide.SELL if trade.direction == "COMPRA" else OrderSide.BUY
+                order = Order(
+                    symbol=self.symbol,
+                    side=close_side,
+                    order_type=OrderType.MARKET,
+                    quantity=Quantity(trade.quantity),
+                    price=Price(exit_price),
+                    magic_number=MAGIC_NUMBER,
+                )
+                ticket = self.mt5.send_order(order)
+
             if ticket:
                 # Calcula PnL
                 if trade.direction == "COMPRA":
@@ -5167,6 +5369,7 @@ def main():
 
     # Inicializa engine global de RL para evitar overhead
     rl_engine = None
+    retreino_mgr: Optional[GerenciadorRetreino] = None
     if all([create_engine, sessionmaker, SqliteRLRepository, RLPersistenceService]):
         try:
             engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
@@ -5178,6 +5381,15 @@ def main():
             rl_engine.initialize()
         except Exception as e:
             print(f"  ⚠ Erro ao inicializar engine RL: {e}")
+
+    if DB_PATH:
+        try:
+            retreino_mgr = GerenciadorRetreino(
+                db_path=DB_PATH,
+                modelos_dir=str(_Path("data/models/micro_tendencia")),
+            )
+        except Exception as e:
+            print(f"  ⚠ Erro ao inicializar retreino micro: {e}")
 
     while True:
         try:
@@ -5261,7 +5473,7 @@ def main():
 
             # Inicializa trading manager (mantém estado entre ciclos)
             if AUTO_TRADING_ENABLED and trading_mgr is None:
-                trading_mgr = MicroTradingManager(mt5, SYMBOL)
+                trading_mgr = MicroTradingManager(mt5, SYMBOL, _monitor_posicao)
 
             # Atualiza referência do MT5 no trading manager
             if trading_mgr:
@@ -5381,7 +5593,7 @@ def main():
                 if result.opportunities:
                     # Usa trading_mgr apenas para validação de regras
                     if trading_mgr is None:
-                        trading_mgr = MicroTradingManager(mt5, SYMBOL)
+                        trading_mgr = MicroTradingManager(mt5, SYMBOL, _monitor_posicao)
                     can_trade, cant_reason = trading_mgr.can_trade()
                     if can_trade:
                         best = max(result.opportunities,
@@ -5544,6 +5756,23 @@ def main():
                         print(f"  ✓ {evaluated} recompensas RL avaliadas")
                 except Exception as e:
                     print(f"  ⚠ RL Loop: {e}")
+
+            if retreino_mgr:
+                try:
+                    estado = retreino_mgr.obter_estado_aprendizado()
+                    ultima_versao = estado.ultima_versao_treino or "N/A"
+                    ultima_data = estado.ultima_data_treino or "N/A"
+                    print(_format_learning_block(retreino_mgr))
+                    print(
+                        "  🧠 Ultimo treino: "
+                        f"versao={ultima_versao} | data={ultima_data}"
+                    )
+                    print(
+                        "  🎯 Proximo treino/calibracao: "
+                        f"faltam {estado.rewards_ate_proximo_treino} rewards"
+                    )
+                except Exception as e:
+                    print(f"  ⚠ Status retreino indisponivel: {e}")
 
             # Desconecta MT5
             try:

@@ -1036,23 +1036,27 @@ class MT5Adapter(IBrokerAdapter):
         if position is None:
             return False
 
+        tradable_symbol = self._resolve_tradable_symbol(str(position.symbol))
+
         if int(position.type) == self._mt5.ORDER_TYPE_BUY:
             order_type = self._mt5.ORDER_TYPE_SELL
         else:
             order_type = self._mt5.ORDER_TYPE_BUY
 
-        tick = self._mt5.symbol_info_tick(position.symbol)
+        tick = self._mt5.symbol_info_tick(tradable_symbol)
+        if tick is None and tradable_symbol != position.symbol:
+            tick = self._mt5.symbol_info_tick(position.symbol)
         if tick is None:
             raise OrderExecutionError(
                 f"close_position_by_ticket: sem tick para {position.symbol}"
             )
 
-        tick_size = self._get_tick_size(position.symbol)
+        tick_size = self._get_tick_size(tradable_symbol)
         close_price = tick.bid if order_type == self._mt5.ORDER_TYPE_SELL else tick.ask
 
-        request = {
+        base_request = {
             "action": self._mt5.TRADE_ACTION_DEAL,
-            "symbol": position.symbol,
+            "symbol": tradable_symbol,
             "volume": float(position.volume),
             "type": order_type,
             "position": int(position.ticket),
@@ -1060,22 +1064,44 @@ class MT5Adapter(IBrokerAdapter):
             "deviation": 10,
             "magic": 234000,
             "comment": f"Watchdog close pos={position.ticket}",
-            "type_time": self._mt5.ORDER_TIME_GTC,
-            "type_filling": self._mt5.ORDER_FILLING_RETURN,
         }
 
-        result = self._mt5.order_send(request)
-        if result is None:
-            raise OrderExecutionError(
-                f"close_position_by_ticket: order_send None | last_error={self._mt5.last_error()}"
+        filling_options = [
+            getattr(self._mt5, "ORDER_FILLING_RETURN", None),
+            getattr(self._mt5, "ORDER_FILLING_IOC", None),
+            getattr(self._mt5, "ORDER_FILLING_FOK", None),
+        ]
+        filling_options = [f for f in filling_options if f is not None]
+
+        request_variants = []
+        for filling in filling_options:
+            request_variants.append(
+                {
+                    **base_request,
+                    "type_time": self._mt5.ORDER_TIME_GTC,
+                    "type_filling": filling,
+                }
+            )
+            request_variants.append(
+                {
+                    **base_request,
+                    "type_filling": filling,
+                }
             )
 
-        if result.retcode != self._mt5.TRADE_RETCODE_DONE:
-            raise OrderExecutionError(
-                f"close_position_by_ticket falhou: {result.comment} (code: {result.retcode})"
-            )
+        last_error: Optional[str] = None
+        for request in request_variants:
+            result = self._mt5.order_send(request)
+            if result is None:
+                last_error = f"order_send None | last_error={self._mt5.last_error()}"
+                continue
+            if result.retcode == self._mt5.TRADE_RETCODE_DONE:
+                return True
+            last_error = f"{result.comment} (code: {result.retcode})"
 
-        return True
+        raise OrderExecutionError(
+            f"close_position_by_ticket falhou: {last_error} | symbol={tradable_symbol} | ticket={position_ticket}"
+        )
 
     def get_account_balance(self) -> Decimal:
         """Obtem o saldo atual da conta."""

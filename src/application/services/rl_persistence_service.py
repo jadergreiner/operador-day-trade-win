@@ -359,14 +359,23 @@ class RLPersistenceService:
                     # que o HOLD "errou" — lateralizações pequenas são HOLD correto.
                     HOLD_TOLERANCE_PTS = Decimal("100")  # pts abaixo disso = mercado lateral
                     was_correct = 0
+                    decision_verdict = None
                     if action == "BUY" and direction == "UP":
                         was_correct = 1
+                        decision_verdict = "BUY_CONFIRMADO"
                     elif action == "SELL" and direction == "DOWN":
                         was_correct = 1
+                        decision_verdict = "SELL_CONFIRMADO"
                     elif action == "HOLD":
                         # HOLD é correto se o mercado não moveu significativamente
                         if abs(price_change) <= HOLD_TOLERANCE_PTS:
                             was_correct = 1  # Mercado lateral — HOLD correto
+                            decision_verdict = "HOLD_CORRECT"
+                        else:
+                            if price_change > 0:
+                                decision_verdict = "HOLD_PERDEU_ALTA"
+                            else:
+                                decision_verdict = "HOLD_PERDEU_BAIXA"
                         # Não penalizar HOLD por movimentos pequenos
 
                     # Reward normalizado: pontos na direção da ação
@@ -424,6 +433,7 @@ class RLPersistenceService:
                         "was_correct": was_correct,
                         "reward_normalized": reward_normalized,
                         "reward_continuous": reward_continuous,
+                        "decision_verdict": decision_verdict,
                         "max_favorable_points": mfe,
                         "max_adverse_points": mae,
                         "volatility_in_horizon": volatility,

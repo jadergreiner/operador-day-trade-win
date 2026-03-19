@@ -140,6 +140,9 @@ class PipelineEpisodiosMicro:
                     confianca_entrada REAL,
                     macro_score INTEGER,
                     motivo_saida TEXT,
+                    motivos_entrada TEXT,
+                    veredicto_pos_resultado TEXT,
+                    aprendizado_extra TEXT,
                     magic_number INTEGER DEFAULT 234700,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 )
@@ -194,6 +197,9 @@ class PipelineEpisodiosMicro:
                 ("risk_reward", "REAL"),
                 ("resultado_pts", "REAL"),
                 ("motivo_saida", "TEXT"),
+                ("motivos_entrada", "TEXT"),
+                ("veredicto_pos_resultado", "TEXT"),
+                ("aprendizado_extra", "TEXT"),
                 ("outcome", "TEXT"),
                 ("duracao_s", "INTEGER"),
                 ("magic_number", "INTEGER DEFAULT 234700"),
@@ -207,6 +213,9 @@ class PipelineEpisodiosMicro:
                 ("confianca_entrada", "REAL"),
                 ("macro_score", "INTEGER"),
                 ("motivo_saida", "TEXT"),
+                ("motivos_entrada", "TEXT"),
+                ("veredicto_pos_resultado", "TEXT"),
+                ("aprendizado_extra", "TEXT"),
                 ("magic_number", "INTEGER DEFAULT 234700"),
             ],
         }
@@ -266,6 +275,18 @@ class PipelineEpisodiosMicro:
         outcome = _determinar_outcome(pnl)
         ctx = context_entrada or {}
         ts_entrada = ctx.get("timestamp_entrada", ts_saida)
+        motivos_entrada = self._extrair_motivos_entrada(ctx)
+        veredicto_pos_resultado = self._avaliar_veredicto_pos_resultado(
+            direction=direction,
+            pnl=pnl,
+            ctx=ctx,
+        )
+        aprendizado_extra = self._gerar_aprendizado_extra(
+            outcome=outcome,
+            pnl=pnl,
+            ctx=ctx,
+            veredicto=veredicto_pos_resultado,
+        )
 
         # 1. Destino principal: micro_episodios (tabela propria do agente)
         try:
@@ -284,6 +305,9 @@ class PipelineEpisodiosMicro:
                 ts_entrada=ts_entrada,
                 ts_saida=ts_saida,
                 ctx=ctx,
+                motivos_entrada=motivos_entrada,
+                veredicto_pos_resultado=veredicto_pos_resultado,
+                aprendizado_extra=aprendizado_extra,
             )
         except Exception as e:
             logger.error("Falha ao persistir micro_episodio %s: %s", episode_id, e)
@@ -298,6 +322,9 @@ class PipelineEpisodiosMicro:
                 pnl=pnl,
                 ctx=ctx,
                 motivo_saida=motivo_saida,
+                motivos_entrada=motivos_entrada,
+                veredicto_pos_resultado=veredicto_pos_resultado,
+                aprendizado_extra=aprendizado_extra,
             )
         except Exception as e:
             logger.error("Falha ao persistir execution_feedback %s: %s", episode_id, e)
@@ -317,6 +344,9 @@ class PipelineEpisodiosMicro:
                 ts_entrada=ts_entrada,
                 ts_saida=ts_saida,
                 ctx=ctx,
+                motivos_entrada=motivos_entrada,
+                veredicto_pos_resultado=veredicto_pos_resultado,
+                aprendizado_extra=aprendizado_extra,
             )
         except Exception as e:
             logger.warning("Falha ao persistir diario_episodio %s: %s", episode_id, e)
@@ -332,6 +362,8 @@ class PipelineEpisodiosMicro:
             "direction": direction,
             "macro_score": ctx.get("macro_score"),
             "confianca": ctx.get("confianca"),
+            "motivos_entrada": motivos_entrada,
+            "veredicto_pos_resultado": veredicto_pos_resultado,
         })
 
         # 4. AC6.7: Drift a partir de 10 episodios
@@ -368,6 +400,9 @@ class PipelineEpisodiosMicro:
         ts_entrada: str,
         ts_saida: str,
         ctx: dict[str, Any],
+        motivos_entrada: str = "",
+        veredicto_pos_resultado: str = "",
+        aprendizado_extra: str = "",
     ) -> None:
         """Persiste na tabela micro_episodios."""
         conn = sqlite3.connect(self.db_path)
@@ -381,6 +416,7 @@ class PipelineEpisodiosMicro:
                 micro_score, micro_trend,
                 adx, rsi, smc_direction,
                 confianca, reason, risk_reward,
+                motivos_entrada, veredicto_pos_resultado, aprendizado_extra,
                 resultado_pts, motivo_saida, outcome, duracao_s
             ) VALUES (
                 ?, ?, ?,
@@ -388,7 +424,7 @@ class PipelineEpisodiosMicro:
                 ?, ?, ?,
                 ?, ?,
                 ?, ?, ?,
-                ?, ?, ?,
+                ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?
             )
             """,
@@ -400,6 +436,7 @@ class PipelineEpisodiosMicro:
                 ctx.get("micro_score"), ctx.get("micro_trend"),
                 ctx.get("adx"), ctx.get("rsi"), ctx.get("smc_direction"),
                 ctx.get("confianca"), ctx.get("reason"), ctx.get("risk_reward"),
+                motivos_entrada, veredicto_pos_resultado, aprendizado_extra,
                 pnl, motivo_saida, outcome, duracao_s,
             ),
         )
@@ -415,6 +452,9 @@ class PipelineEpisodiosMicro:
         pnl: float,
         ctx: dict[str, Any],
         motivo_saida: str,
+        motivos_entrada: str = "",
+        veredicto_pos_resultado: str = "",
+        aprendizado_extra: str = "",
     ) -> None:
         """Persiste na tabela execution_feedback para ciclo AC5.9."""
         conn = sqlite3.connect(self.db_path)
@@ -424,13 +464,15 @@ class PipelineEpisodiosMicro:
             INSERT INTO execution_feedback (
                 episode_id, trade_id, timestamp,
                 outcome_type, pnl, confianca_entrada,
-                macro_score, motivo_saida
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                macro_score, motivo_saida,
+                motivos_entrada, veredicto_pos_resultado, aprendizado_extra
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 episode_id, ticket, ts_saida,
                 outcome, pnl, ctx.get("confianca"),
                 ctx.get("macro_score"), motivo_saida,
+                motivos_entrada, veredicto_pos_resultado, aprendizado_extra,
             ),
         )
         conn.commit()
@@ -620,6 +662,69 @@ class PipelineEpisodiosMicro:
             )
         except Exception as e:
             logger.warning("Falha AC6.9: %s", e)
+
+    def _extrair_motivos_entrada(self, ctx: dict[str, Any]) -> str:
+        """Resume os motivos de entrada para aprendizagem posterior."""
+        partes: list[str] = []
+        for chave in (
+            "reason",
+            "macro_reason",
+            "macro_signal",
+            "micro_trend",
+            "smc_direction",
+            "guardian_state",
+            "diary_reason",
+            "market_context",
+        ):
+            valor = ctx.get(chave)
+            if valor:
+                partes.append(f"{chave}={valor}")
+        return " | ".join(partes[:8])
+
+    def _avaliar_veredicto_pos_resultado(
+        self,
+        direction: str,
+        pnl: float,
+        ctx: dict[str, Any],
+    ) -> str:
+        """Classifica se o resultado confirmou a tese ou pareceu casual."""
+        macro_score = ctx.get("macro_score")
+        try:
+            macro_score = float(macro_score) if macro_score is not None else None
+        except (TypeError, ValueError):
+            macro_score = None
+
+        if pnl > 0:
+            if direction == "COMPRA" and macro_score is not None and macro_score > 0:
+                return "MOTIVOS_CONFIRMADOS"
+            if direction == "VENDA" and macro_score is not None and macro_score < 0:
+                return "MOTIVOS_CONFIRMADOS"
+            return "RESULTADO_POSITIVO_POSSIVEL_CASUALIDADE"
+
+        if pnl < 0:
+            if direction == "COMPRA" and macro_score is not None and macro_score < 0:
+                return "MOTIVOS_CONTRARIOS_FORAM_PREVALENTES"
+            if direction == "VENDA" and macro_score is not None and macro_score > 0:
+                return "MOTIVOS_CONTRARIOS_FORAM_PREVALENTES"
+            return "MOTIVOS_NAO_CONFIRMADOS"
+
+        return "BREAKEVEN_EXIGE_MAIS_DADOS"
+
+    def _gerar_aprendizado_extra(
+        self,
+        outcome: str,
+        pnl: float,
+        ctx: dict[str, Any],
+        veredicto: str,
+    ) -> str:
+        """Gera uma frase curta de aprendizado para treino posterior."""
+        macro_score = ctx.get("macro_score")
+        macro_signal = ctx.get("macro_signal")
+        micro_score = ctx.get("micro_score")
+        return (
+            f"outcome={outcome} | pnl={pnl:.0f} | macro={macro_score} "
+            f"| signal={macro_signal} | micro={micro_score} | veredicto={veredicto}"
+        )
 
     # ──────────────────────────────────────────────────────────
     # Consultas de auditoria

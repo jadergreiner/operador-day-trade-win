@@ -433,16 +433,36 @@ class HistoricalDataProvider:
                     symbol=symbol,
                     timestamp=c.timestamp,
                     timeframe=timeframe.name,
-                    open=c.open.value,
-                    high=c.high.value,
-                    low=c.low.value,
-                    close=c.close.value,
-                    volume=c.volume,
+                    open=float(c.open.value),
+                    high=float(c.high.value),
+                    low=float(c.low.value),
+                    close=float(c.close.value),
+                    volume=int(c.volume),
                 )
                 session.add(mdl)
-            session.commit()
+
+            self._commit_with_retry(session, retries=3)
         finally:
             session.close()
+
+    def _commit_with_retry(self, session, retries: int = 3) -> None:
+        """Commit com retry simples para mitigar lock transitório do SQLite."""
+        import time
+        from sqlalchemy.exc import OperationalError
+
+        last_error = None
+        for attempt in range(1, retries + 1):
+            try:
+                session.commit()
+                return
+            except OperationalError as exc:
+                last_error = exc
+                session.rollback()
+                if "database is locked" not in str(exc).lower() or attempt == retries:
+                    raise
+                time.sleep(0.2 * attempt)
+        if last_error:
+            raise last_error
 
     def _load_m15_from_db(self, symbol: str, day_start: datetime) -> list[Candle]:
         """Carrega candles M15 do DB para a data alvo se existirem."""

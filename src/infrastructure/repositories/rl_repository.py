@@ -9,6 +9,9 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Optional
 
+import sqlite3
+import time
+
 from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
 
@@ -84,6 +87,56 @@ class SqliteRLRepository(IRLRepository):
 
     def __init__(self, session: Session) -> None:
         self.session = session
+        self._garantir_migracoes_legadas()
+
+    def _garantir_migracoes_legadas(self) -> None:
+        """Adiciona colunas novas em bancos SQLite legados."""
+        try:
+            bind = self.session.get_bind()
+            if bind is None:
+                return
+            url = getattr(bind, "url", None)
+            database = getattr(url, "database", None)
+            if not database:
+                return
+            conn = sqlite3.connect(database)
+            cur = conn.cursor()
+            cur.execute("PRAGMA table_info(rl_rewards)")
+            cols = {row[1] for row in cur.fetchall()}
+            if "decision_verdict" not in cols:
+                cur.execute(
+                    "ALTER TABLE rl_rewards ADD COLUMN decision_verdict TEXT"
+                )
+            conn.commit()
+            conn.close()
+        except Exception:
+            try:
+                conn.close()  # type: ignore[name-defined]
+            except Exception:
+                pass
+
+    @staticmethod
+    def _as_sql_value(value):
+        if isinstance(value, Decimal):
+            return float(value)
+        return value
+
+    def _commit_with_retry(self, max_attempts: int = 5, base_delay: float = 0.15) -> None:
+        """Commit com retry para reduzir falhas por lock do SQLite."""
+        last_exc: Exception | None = None
+        for attempt in range(max_attempts):
+            try:
+                self.session.commit()
+                return
+            except Exception as exc:
+                last_exc = exc
+                self.session.rollback()
+                msg = str(exc).lower()
+                if "database is locked" not in msg and "database is busy" not in msg:
+                    raise
+                time.sleep(base_delay * (attempt + 1))
+        if last_exc:
+            raise last_exc
 
     def save_episode(self, episode: dict) -> None:
         """Persiste um episódio completo."""
@@ -92,38 +145,38 @@ class SqliteRLRepository(IRLRepository):
             timestamp=episode["timestamp"],
             source=episode["source"],
             # Preços
-            win_price=episode.get("win_price"),
-            win_open_price=episode.get("win_open_price"),
-            win_high_of_day=episode.get("win_high_of_day"),
-            win_low_of_day=episode.get("win_low_of_day"),
+            win_price=self._as_sql_value(episode.get("win_price")),
+            win_open_price=self._as_sql_value(episode.get("win_open_price")),
+            win_high_of_day=self._as_sql_value(episode.get("win_high_of_day")),
+            win_low_of_day=self._as_sql_value(episode.get("win_low_of_day")),
             win_price_change_pct=episode.get("win_price_change_pct"),
             # Scores agregados
-            macro_score_final=episode.get("macro_score_final"),
-            macro_score_bullish=episode.get("macro_score_bullish"),
-            macro_score_bearish=episode.get("macro_score_bearish"),
+            macro_score_final=self._as_sql_value(episode.get("macro_score_final")),
+            macro_score_bullish=self._as_sql_value(episode.get("macro_score_bullish")),
+            macro_score_bearish=self._as_sql_value(episode.get("macro_score_bearish")),
             macro_score_neutral=episode.get("macro_score_neutral"),
             macro_items_available=episode.get("macro_items_available"),
             macro_confidence=episode.get("macro_confidence"),
             micro_score=episode.get("micro_score"),
             micro_trend=episode.get("micro_trend"),
             # Alinhamento
-            alignment_score=episode.get("alignment_score"),
-            overall_confidence=episode.get("overall_confidence"),
+            alignment_score=self._as_sql_value(episode.get("alignment_score")),
+            overall_confidence=self._as_sql_value(episode.get("overall_confidence")),
             # VWAP
-            vwap_value=episode.get("vwap_value"),
-            vwap_upper_1sigma=episode.get("vwap_upper_1sigma"),
-            vwap_lower_1sigma=episode.get("vwap_lower_1sigma"),
-            vwap_upper_2sigma=episode.get("vwap_upper_2sigma"),
-            vwap_lower_2sigma=episode.get("vwap_lower_2sigma"),
+            vwap_value=self._as_sql_value(episode.get("vwap_value")),
+            vwap_upper_1sigma=self._as_sql_value(episode.get("vwap_upper_1sigma")),
+            vwap_lower_1sigma=self._as_sql_value(episode.get("vwap_lower_1sigma")),
+            vwap_upper_2sigma=self._as_sql_value(episode.get("vwap_upper_2sigma")),
+            vwap_lower_2sigma=self._as_sql_value(episode.get("vwap_lower_2sigma")),
             vwap_position=episode.get("vwap_position"),
             # Pivots
-            pivot_pp=episode.get("pivot_pp"),
-            pivot_r1=episode.get("pivot_r1"),
-            pivot_r2=episode.get("pivot_r2"),
-            pivot_r3=episode.get("pivot_r3"),
-            pivot_s1=episode.get("pivot_s1"),
-            pivot_s2=episode.get("pivot_s2"),
-            pivot_s3=episode.get("pivot_s3"),
+            pivot_pp=self._as_sql_value(episode.get("pivot_pp")),
+            pivot_r1=self._as_sql_value(episode.get("pivot_r1")),
+            pivot_r2=self._as_sql_value(episode.get("pivot_r2")),
+            pivot_r3=self._as_sql_value(episode.get("pivot_r3")),
+            pivot_s1=self._as_sql_value(episode.get("pivot_s1")),
+            pivot_s2=self._as_sql_value(episode.get("pivot_s2")),
+            pivot_s3=self._as_sql_value(episode.get("pivot_s3")),
             # SMC
             smc_direction=episode.get("smc_direction"),
             smc_bos_score=episode.get("smc_bos_score"),
@@ -156,10 +209,10 @@ class SqliteRLRepository(IRLRepository):
             urgency=episode.get("urgency"),
             risk_level=episode.get("risk_level"),
             # Setup
-            entry_price=episode.get("entry_price"),
-            stop_loss=episode.get("stop_loss"),
-            take_profit=episode.get("take_profit"),
-            risk_reward_ratio=episode.get("risk_reward_ratio"),
+            entry_price=self._as_sql_value(episode.get("entry_price")),
+            stop_loss=self._as_sql_value(episode.get("stop_loss")),
+            take_profit=self._as_sql_value(episode.get("take_profit")),
+            risk_reward_ratio=self._as_sql_value(episode.get("risk_reward_ratio")),
             setup_type=episode.get("setup_type"),
             setup_quality=episode.get("setup_quality"),
             # Biases
@@ -172,7 +225,7 @@ class SqliteRLRepository(IRLRepository):
             session_date=episode.get("session_date"),
         )
         self.session.add(model)
-        self.session.commit()
+        self._commit_with_retry()
 
     def save_correlation_scores(
         self, episode_id: str, scores: list[dict]
@@ -199,7 +252,7 @@ class SqliteRLRepository(IRLRepository):
             )
             self.session.add(model)
 
-        self.session.commit()
+        self._commit_with_retry()
 
     def save_indicator_values(
         self, episode_id: str, indicators: list[dict]
@@ -220,7 +273,7 @@ class SqliteRLRepository(IRLRepository):
             )
             self.session.add(model)
 
-        self.session.commit()
+        self._commit_with_retry()
 
     def create_pending_rewards(
         self, episode_id: str, decision_data: dict
@@ -237,7 +290,7 @@ class SqliteRLRepository(IRLRepository):
             )
             self.session.add(model)
 
-        self.session.commit()
+        self._commit_with_retry()
 
     def evaluate_reward(
         self, episode_id: str, horizon_minutes: int, evaluation: dict
@@ -263,12 +316,13 @@ class SqliteRLRepository(IRLRepository):
         reward.was_correct = evaluation.get("was_correct")
         reward.reward_normalized = evaluation.get("reward_normalized")
         reward.reward_continuous = evaluation.get("reward_continuous")
+        reward.decision_verdict = evaluation.get("decision_verdict")
         reward.max_favorable_points = evaluation.get("max_favorable_points")
         reward.max_adverse_points = evaluation.get("max_adverse_points")
         reward.volatility_in_horizon = evaluation.get("volatility_in_horizon")
         reward.is_evaluated = 1
 
-        self.session.commit()
+        self._commit_with_retry()
 
     def get_pending_rewards(self, horizon_minutes: int) -> list[dict]:
         """Retorna recompensas pendentes de avaliação para um horizonte."""
@@ -339,6 +393,7 @@ class SqliteRLRepository(IRLRepository):
                 r.horizon_minutes: {
                     "reward_normalized": r.reward_normalized,
                     "reward_continuous": r.reward_continuous,
+                    "decision_verdict": getattr(r, "decision_verdict", None),
                     "was_correct": r.was_correct,
                     "price_change_points": float(r.price_change_points)
                     if r.price_change_points
@@ -590,7 +645,7 @@ class SqliteRLRepository(IRLRepository):
             notes=metrics.get("notes"),
         )
         self.session.add(model)
-        self.session.commit()
+        self._commit_with_retry()
 
     def seed_dimension_tables(self) -> None:
         """Popula tabelas de dimensão com dados do item_registry.

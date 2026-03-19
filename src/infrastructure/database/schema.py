@@ -12,6 +12,7 @@ from sqlalchemy import (
     Numeric,
     String,
     create_engine,
+    event,
 )
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -392,6 +393,10 @@ def create_database(db_path: str = "data/db/trading.db") -> None:
         db_path: Path to SQLite database file
     """
     engine = create_engine(f"sqlite:///{db_path}", echo=False)
+    with engine.connect() as connection:
+        connection.exec_driver_sql("PRAGMA journal_mode=WAL")
+        connection.exec_driver_sql("PRAGMA synchronous=NORMAL")
+        connection.exec_driver_sql("PRAGMA busy_timeout=30000")
     Base.metadata.create_all(engine)
     print(f"Database created at: {db_path}")
 
@@ -409,8 +414,23 @@ def get_session(db_path: str = "data/db/trading.db") -> Session:
     engine = create_engine(
         f"sqlite:///{db_path}",
         echo=False,
-        connect_args={"timeout": 5}  # 5 segundos timeout
+        connect_args={
+            "timeout": 30,
+            "check_same_thread": False,
+        }
     )
+
+    @event.listens_for(engine, "connect")
+    def _set_sqlite_pragmas(dbapi_connection, _connection_record) -> None:
+        try:
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.execute("PRAGMA busy_timeout=30000")
+            cursor.close()
+        except Exception:
+            pass
+
     SessionLocal = sessionmaker(bind=engine)
     return SessionLocal()
 

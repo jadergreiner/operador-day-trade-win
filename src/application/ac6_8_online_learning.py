@@ -184,8 +184,12 @@ class OnlineLearningController:
             baseline_metrics: Metricas baseline para validacao
             models_dir: Diretorio para salvar versoes (default: ./models)
         """
-        self.model_name: str = model_name
-        self.baseline_metrics: Dict[str, float] = baseline_metrics
+        self.model_name: str = str(model_name)
+        self.baseline_metrics: Dict[str, float] = {
+            key: float(value)
+            for key, value in baseline_metrics.items()
+            if value is not None
+        }
         self.models_dir: Path = Path(models_dir or "models")
         self.models_dir.mkdir(exist_ok=True)
 
@@ -303,10 +307,10 @@ class OnlineLearningController:
 
                 # Calcular Z-score (simplificado)
                 zscore = 0.0
+                baseline_value = float(baseline_value)
+                current_value = float(current_value)
                 if baseline_value != 0:
-                    zscore = (current_value - baseline_value) / abs(
-                        baseline_value
-                    )
+                    zscore = (current_value - baseline_value) / abs(baseline_value)
 
                 comparison[metric_name] = {
                     "baseline": baseline_value,

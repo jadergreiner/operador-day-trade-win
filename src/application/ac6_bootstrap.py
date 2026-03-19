@@ -36,11 +36,30 @@ def build_ac6_components(
     z_score_threshold: float = 2.0,
 ) -> AC6BootstrapResult:
     """Cria os componentes AC6 com parametros consistentes e fallback seguro."""
+    def _as_float(value: object, default: float) -> float:
+        try:
+            if value is None:
+                return default
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    def _as_int(value: object, default: int) -> int:
+        try:
+            if value is None:
+                return default
+            return int(float(value))
+        except (TypeError, ValueError):
+            return default
+
     metrics = dict(DEFAULT_AC6_BASELINE_METRICS)
     if baseline_metrics:
-        metrics.update({k: float(v) for k, v in baseline_metrics.items() if v is not None})
+        metrics.update({k: _as_float(v, metrics.get(k, 0.0)) for k, v in baseline_metrics.items() if v is not None})
 
     models_dir_root = Path(models_dir_root)
+    drift_threshold_zscore = _as_float(drift_threshold_zscore, 2.0)
+    window_size = _as_int(window_size, 100)
+    z_score_threshold = _as_float(z_score_threshold, 2.0)
     drift_detector = None
     online_learning = None
     baseline_comparator = None

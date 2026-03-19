@@ -49,6 +49,7 @@ from src.application.opening_context_report import (
     generate_opening_context_vs_result_report,
 )
 from src.application.confidence_utils import normalize_confidence
+from src.application.retreino_micro_tendencia import GerenciadorRetreino
 
 # ────────────────────────────────────────────────────────────────
 # Macro Data Provider (REC2/REC6: dados ao vivo, não hardcoded)
@@ -191,6 +192,30 @@ def _normalize_confidence_percent(value: Any) -> float:
     if conf > 1.0:
         return conf / 100.0
     return conf
+
+
+def _format_learning_block(db_path: str) -> str:
+    """Formata um bloco simples de aprendizado do micro tendencia."""
+    try:
+        mgr = GerenciadorRetreino(
+            db_path=db_path,
+            modelos_dir=str(project_root / "data" / "models" / "micro_tendencia"),
+        )
+        estado = mgr.obter_estado_aprendizado()
+        return (
+            "============================================================\n"
+            "             APRENDIZADO DO MICRO TENDENCIA\n"
+            "------------------------------------------------------------\n"
+            f"  Episodios do micro         : {estado.episodios_acumulados}\n"
+            f"  Recompensas do micro       : {estado.rewards_acumuladas}\n"
+            f"  Retreino do micro          : faltam {estado.rewards_ate_proximo_treino}"
+            f" / {estado.threshold_rewards} rewards\n"
+            f"  Ultimo retreino            : {estado.ultima_versao_treino}\n"
+            f"  Data do ultimo retreino    : {estado.ultima_data_treino}\n"
+            "============================================================"
+        )
+    except Exception as exc:
+        return f"[APRENDIZADO] indisponivel: {exc}"
 
 
 def _build_runtime_order_history(perf: dict[str, Any]) -> list[dict[str, Any]]:
@@ -3607,6 +3632,10 @@ def main():
                 )
             # Exibe painel de observabilidade (ROADMAP-DIARIOS-01)
             print(_painel_obs.exibir_painel_terminal())
+            try:
+                print(_format_learning_block(_get_db_path()))
+            except Exception as exc:
+                print(f"[APRENDIZADO] erro ao montar bloco: {exc}")
     except KeyboardInterrupt:
         print("\n\nDiários interrompidos pelo usuário.")
     finally:

@@ -489,8 +489,11 @@ class LeituraDeOperador:
 
         # Macro bias mudou (Guardian rastreia isso)
         scenario_changes = getattr(guardian_state, "scenario_changes", []) or []
-        if scenario_changes:
-            motivos.append(f"Cenario macro: {scenario_changes[-1] if scenario_changes else ''}")
+        if isinstance(scenario_changes, (list, tuple)):
+            if scenario_changes:
+                motivos.append(f"Cenario macro: {scenario_changes[-1]}")
+        elif scenario_changes:
+            motivos.append(f"Cenario macro: {scenario_changes}")
 
         mudou = len(motivos) > 0
         return mudou, "; ".join(motivos) if motivos else ""
