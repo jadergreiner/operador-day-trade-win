@@ -1,6 +1,6 @@
 # 🤖 Plano de Multi Agentes — Entregas Backlog (Clean Code)
 
-**Status:** Execução principal concluida em codigo e testes unitarios; foco atual em staging, UAT e Gate 2
+**Status:** Fase atual em validacao operacional multiagente; Gate 2 de escala continua valido e o GO LIVE depende do gate final operacional
 
 ---
 
@@ -9,7 +9,34 @@
 - As trilhas Clean Arch, Signals, Storytelling e ML Ops já existem em `src/application/` e possuem suites em `tests/unit/` e `tests/` relacionadas.
 - O acoplamento runtime Storytelling + ML Ops está materializado em `src/application/diarios_runtime_mlops_bridge.py` e consumido por `scripts/start_journals_full_display.py`.
 - Nesta auditoria, a validação representativa executada passou com `60 passed` nos subconjuntos críticos de reconciliador, watchdog, correlator, pipeline adaptativo, bridge, coordenador e kill switch.
-- O que permanece em aberto é validação operacional: deploy em staging, UAT com operador, Gate 2 final e autorização para live trading.
+- O que permanece em aberto é validação operacional: runtime RL/MT5 endurecido, `BL-07` canônico, `BL-08` operacional, fechamento diário por agente e autorização para live trading.
+
+## 🎯 Fechamento Pré-Go-Live (Estratégia 3 Agentes)
+
+### Agente 1 — Runtime RL/MT5
+
+- Ownership: `scripts/agente_rl_direto_independente.py`, `src/application/orders_executor.py`, `src/infrastructure/adapters/mt5_adapter.py`
+- Entrega: `TECH-001`, `TECH-002`, `TECH-003` e `INFRA-1`
+- Foco: preço de saída real, rastreio por ticket da sessão atual, backoff/rollover compartilhado para `10006`
+
+### Agente 2 — Release Gates/UAT
+
+- Ownership: `src/application/release_gates.py`, `scripts/validate_go_live_gates.py`, `tests/uat/uat_test_cases.py`
+- Entrega: `BL-01` estrutural, `BL-07` com allowlist explícita, `BL-08` operacional e `go_live_decision.json`
+- Foco: gate final operacional separado do Gate 2 de escala de capital
+
+### Agente 3 — Produto/Observabilidade/PRD
+
+- Ownership: `docs/PRD.md`, `prompts/fechamento_diario.py`, `prompts/schema_fechamento_diario.json`
+- Entrega: fechamento diário por agente, `ResultadoAgente`, `agente_impactado`, reclassificação do PRD e sincronização documental
+- Foco: distinguir código entregue, hardening operacional e GO LIVE autorizado
+
+### Checkpoints
+
+1. Checkpoint 0: manter o PASS de 12/03/2026 como evidência do Gate 2 de escala de capital.
+2. Checkpoint 1: rodar regressão focada dos módulos alterados, `BL-01` e a suíte canônica do release.
+3. Onda 2: executar staging controlado com os 4 agentes, rodar `BL-07`, `BL-08` e gerar fechamento diário por agente.
+4. Go/No-Go: liberar apenas quando não houver `preco_saida=0.0`, `DESCONHECIDO` persistente ou contaminação entre sessões.
 
 ## 📊 Visão Geral de Entregas + Governança
 

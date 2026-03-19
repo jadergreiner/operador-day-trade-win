@@ -11,6 +11,7 @@ from typing import Optional, Callable, Dict, Any
 from dataclasses import dataclass, field
 from enum import Enum
 from abc import ABC, abstractmethod
+import inspect
 import logging
 import uuid
 from datetime import datetime
@@ -19,6 +20,10 @@ import json
 # Importar classes para exportação
 from src.infrastructure.providers.mt5_adapter import OrderStatus
 from src.domain.entities.trade import Position
+from src.application.ordem_backoff_retry import (
+    GerenciadorRetryOrdem,
+    RETCODE_ORDER_FAILED,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -490,6 +495,12 @@ class OrdersExecutionOrchestrator:
             "monitor": MonitorExecutionCommand(mt5_adapter),
         }
 
+    async def _maybe_await(self, value: Any) -> Any:
+        """Aceita retornos síncronos e assíncronos sem duplicar lógica."""
+        if inspect.isawaitable(value):
+            return await value
+        return value
+
     async def enqueue_order(
         self,
         symbol: str,
@@ -667,20 +678,48 @@ class OrdersExecutionOrchestrator:
 
         order.add_audit(OrderState.VALIDATED, "Aprovado pelo Risk Framework")
 
-        # AC-2 & AC-3: Integrate with MT5Adapter with Retry Logic
-        retries = [0.1, 0.5, 2.0] # seconds
-        ticket = None
+        # AC-2 & AC-3: Integrate with MT5Adapter with retry/backoff contract
+        retry_mgr = GerenciadorRetryOrdem(
+            simbolo=str(order.symbol),
+            verificar_rollover=str(order.symbol).upper().startswith("WIN"),
+        )
 
-        for i, delay in enumerate(retries):
+        ticket = None
+        for attempt in range(1, 6):
             try:
-                # Assuming send_order exists in adapter and returns ticket
-                ticket = await self.mt5_adapter.send_order(order)
+                resultado_envio = await self._maybe_await(self.mt5_adapter.send_order(order))
+                if isinstance(resultado_envio, tuple):
+                    sucesso = bool(resultado_envio[0])
+                    ticket = resultado_envio[1] if sucesso else None
+                elif isinstance(resultado_envio, dict):
+                    sucesso = resultado_envio.get("success", True)
+                    ticket = (
+                        resultado_envio.get("ticket")
+                        or resultado_envio.get("mt5_ticket")
+                        or resultado_envio.get("order_id")
+                    ) if sucesso else None
+                else:
+                    ticket = resultado_envio
+
                 if ticket:
+                    retry_mgr.registrar_sucesso()
                     break
             except Exception as e:
-                logger.warning(f"Tentativa {i+1} falhou: {e}")
-                if i < len(retries) - 1:
-                    await asyncio.sleep(delay)
+                mensagem = str(e)
+                if "10006" not in mensagem:
+                    raise
+
+                resultado_retry = retry_mgr.registrar_falha_10006(RETCODE_ORDER_FAILED)
+                logger.warning(
+                    "Tentativa %s falhou com 10006: %s | backoff=%ss | falhas=%s",
+                    attempt,
+                    mensagem,
+                    resultado_retry.aguardar_segundos,
+                    resultado_retry.falhas_consecutivas,
+                )
+                if resultado_retry.deve_encerrar():
+                    break
+                await asyncio.sleep(resultado_retry.aguardar_segundos)
 
         execution_time_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
 

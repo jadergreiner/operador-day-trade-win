@@ -106,6 +106,10 @@ try:
     from src.application.services.novo_agente.pipeline_treinamento import PipelineTreinamentoRL
     from src.infrastructure.repositories.rl_repository import SqliteRLRepository
     from src.application.profit_protection_engine import ProfitProtectionEngine
+    from src.application.ordem_backoff_retry import (
+        GerenciadorRetryOrdem,
+        RETCODE_ORDER_FAILED,
+    )
     from src.application.trade_tracker_integration import TradeTrackerIntegration
     from src.application.trade_performance_tracker import TradeClosureReason
     from src.domain.enums.trading_enums import TimeFrame
@@ -197,6 +201,7 @@ RR_MINIMO = 1.5                 # TP sempre >= SL * 1.5
 CONFIRM_SIGNAL_BARS = 2  # Confirmação em N velas
 TARGET_PROFIT = 140.00
 STOP_LOSS_MAX = -250.00
+VALOR_PONTO_WINFUT = 0.20
 
 # Variáveis globais para estado do agente
 last_signal = "Aguardar"
@@ -242,6 +247,141 @@ def mapear_acao(acao_id: int) -> str:
     """Mapeia ID numérico para ação: 0=Aguardar, 1=Comprar, 2=Vender."""
     mapeamento = {0: "Aguardar", 1: "Comprar", 2: "Vender"}
     return mapeamento.get(acao_id, "Aguardar")
+
+
+def classificar_fechamento_trade(
+    preco_entrada: float,
+    preco_saida: float,
+    tipo_posicao: TipoPosicao,
+    volume: float = 1.0,
+) -> tuple[str, float]:
+    """Classifica o resultado de um fechamento e calcula PnL em reais."""
+    if tipo_posicao == TipoPosicao.COMPRADA:
+        diff = preco_saida - preco_entrada
+    else:
+        diff = preco_entrada - preco_saida
+
+    if diff > 0:
+        resultado = 'WIN'
+    elif diff < 0:
+        resultado = 'LOSS'
+    else:
+        resultado = 'BREAKEVEN'
+
+    pnl_reais = diff * volume * VALOR_PONTO_WINFUT
+    return resultado, pnl_reais
+
+
+def obter_contexto_fechamento_sessao_atual(
+    posicao_mgr: PosicaoIsoladaManager,
+    motor: MotorDecisaoIsolado,
+) -> Optional[dict]:
+    """Obtém o contexto de fechamento apenas se o ticket pertencer à sessão atual."""
+    if not posicao_mgr.tem_posicao_aberta():
+        return None
+
+    try:
+        metadados = posicao_mgr.obter_metadados_posicao()
+    except Exception as e:
+        logger.warning(f'[ISOLAMENTO] Não foi possível ler metadados da posição: {e}')
+        return None
+
+    session_id = str(metadados.get('session_id', ''))
+    if session_id and session_id != AGENT_SESSION_ID:
+        logger.warning(
+            f"[ISOLAMENTO] Sessão divergente detectada: arquivo={session_id}, "
+            f"agente={AGENT_SESSION_ID}"
+        )
+        return None
+
+    ticket = int(metadados.get('ticket', 0) or 0)
+    if ticket <= 0:
+        logger.warning('[ISOLAMENTO] Ticket inválido nos metadados da posição')
+        return None
+
+    posicao = motor.obter_posicao(ticket)
+    if posicao is None:
+        logger.warning(
+            f'[ISOLAMENTO] Ticket {ticket} da sessão atual não encontrado '
+            f'no motor isolado do agente'
+        )
+        return None
+
+    if posicao.agent_id != AGENT_SESSION_ID:
+        logger.warning(
+            f'[ISOLAMENTO] Ticket {ticket} pertence a outro agent_id '
+            f'({posicao.agent_id})'
+        )
+        return None
+
+    return {
+        'ticket': ticket,
+        'preco_entrada': float(posicao.preco_entrada),
+        'tipo': posicao.tipo,
+        'volume': float(posicao.volume),
+        'lado': posicao.tipo.value,
+    }
+
+
+def resolver_preco_saida_real(
+    mt5_adapter_local: object,
+    ticket: int,
+    tipo_posicao: TipoPosicao,
+    simbolo: str = SIMBOLO,
+) -> Optional[float]:
+    """Tenta obter o preço real de saída do MT5 para o ticket informado."""
+    try:
+        if hasattr(mt5_adapter_local, 'obter_preco_saida_por_ticket'):
+            side = OrderSide.BUY if tipo_posicao == TipoPosicao.COMPRADA else OrderSide.SELL
+            preco = mt5_adapter_local.obter_preco_saida_por_ticket(
+                ticket,
+                symbol=Symbol(simbolo) if Symbol else simbolo,
+                side=side,
+            )
+            if preco is not None:
+                return float(preco)
+    except Exception as e:
+        logger.warning(f'[MT5-CHECK] Falha ao obter preço real de saída do ticket {ticket}: {e}')
+
+    return None
+
+
+def enviar_ordem_com_backoff(
+    mt5_adapter_local: object,
+    order: object,
+    retry_mgr: Optional[GerenciadorRetryOrdem] = None,
+) -> Optional[str]:
+    """Envia ordem ao MT5 com backoff/rollover compartilhado para 10006."""
+    retry_mgr_local = retry_mgr or GerenciadorRetryOrdem(
+        simbolo=SIMBOLO,
+        limite_encerrar=5,
+        verificar_rollover=True,
+    )
+
+    while True:
+        try:
+            ticket = mt5_adapter_local.send_order(order)
+            retry_mgr_local.registrar_sucesso()
+            return ticket
+        except Exception as e:
+            mensagem = str(e)
+            if '10006' not in mensagem:
+                raise
+
+            logger.warning(f'[BACKOFF] Rejeição MT5 10006 detectada: {mensagem}')
+            resultado_retry = retry_mgr_local.registrar_falha_10006(RETCODE_ORDER_FAILED)
+            logger.warning(
+                f'[BACKOFF] status={resultado_retry.status.value} '
+                f'aguardar={resultado_retry.aguardar_segundos}s '
+                f'falhas={resultado_retry.falhas_consecutivas}'
+            )
+
+            if resultado_retry.deve_encerrar():
+                logger.error(resultado_retry.mensagem)
+                return None
+
+            if resultado_retry.aguardar_segundos > 0:
+                time.sleep(resultado_retry.aguardar_segundos)
 
 
 def verificar_confirmacao_sinal(sinal_atual: str, sinal_anterior: str) -> bool:
@@ -495,7 +635,8 @@ def _executar_pipeline_feedback_rl(trades_fechados: list) -> None:
 def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
                  posicao_tracker: object, rl_repo: object, trade_tracker: object,
                  motor_decisao: object,
-                 dados: Optional[pd.DataFrame] = None) -> bool:
+                 dados: Optional[pd.DataFrame] = None,
+                 retry_mgr: Optional[GerenciadorRetryOrdem] = None) -> bool:
     """Envia ordem para abrir posição no MT5.
 
     Args:
@@ -572,7 +713,7 @@ def enviar_ordem(mt5_adapter: object, acao: str, preco_atual: float,
             execution_method="automated",
         )
 
-        ticket = mt5_adapter.send_order(order)
+        ticket = enviar_ordem_com_backoff(mt5_adapter, order, retry_mgr=retry_mgr)
         if ticket:
             logger.info(f'[OK] Ordem enviada! Ticket: {ticket}')
 
@@ -731,6 +872,15 @@ def inicializar_componentes():
 
         logger.info('[OK] Profit Protection ativado')
 
+        # 5.5. Retry manager compartilhado para retcode 10006
+        logger.info('[INIT] Inicializando GerenciadorRetryOrdem...')
+        retry_mgr = GerenciadorRetryOrdem(
+            simbolo=SIMBOLO,
+            limite_encerrar=5,
+            verificar_rollover=True,
+        )
+        logger.info('[OK] GerenciadorRetryOrdem ativado')
+
         # 6. Anti-Overtrading Protection
         logger.info('[INIT] Inicializando proteção contra overtrading...')
         anti_overtrading = AntiOvertradingProtection(
@@ -760,6 +910,7 @@ def inicializar_componentes():
             'pipeline': pipeline,
             'agente': agente,
             'profit_protection': profit_protection,
+            'retry_mgr': retry_mgr,
             'anti_overtrading': anti_overtrading,
             'trade_tracker': trade_tracker,
         }
@@ -864,11 +1015,17 @@ def verificar_posicao_no_mt5(posicao_mgr: PosicaoIsoladaManager,
     if not posicao_mgr.tem_posicao_aberta():
         return False
 
-    posicoes = motor.obter_posicoes_abertas()
-    if not posicoes:
+    try:
+        metadados = posicao_mgr.obter_metadados_posicao()
+    except Exception as e:
+        logger.warning(f'[MT5-CHECK] Falha ao ler metadados de posição: {e}')
         return False
 
-    ticket = posicoes[0].ticket  # 1 posição por agente
+    ticket = int(metadados.get('ticket', 0) or 0)
+    if ticket <= 0:
+        logger.warning('[MT5-CHECK] Ticket inválido para verificação da posição')
+        return False
+
     try:
         positions = mt5_adapter_local.get_positions(Symbol(SIMBOLO))
         for pos in positions:
@@ -913,6 +1070,7 @@ def main():
     pipeline = componentes['pipeline']
     agente = componentes['agente']
     profit_protection = componentes['profit_protection']
+    retry_mgr = componentes['retry_mgr']
     rl_repo = componentes['rl_repo']
     anti_overtrading = componentes['anti_overtrading']  # 🛑 CRITICAL: Proteção contra overtrading
     trade_tracker = componentes['trade_tracker']  # 📊 Rastreamento de performance
@@ -1052,33 +1210,88 @@ def main():
                     )
 
                     if not ainda_aberta:
-                        # Obter dados da posição do motor antes de fechar
-                        posicoes_motor = motor_decisao.obter_posicoes_abertas()
-                        ticket_aberto = posicoes_motor[0].ticket if posicoes_motor else None
-                        preco_entrada_reg = posicoes_motor[0].preco_entrada if posicoes_motor else None
-                        tipo_reg = posicoes_motor[0].tipo if posicoes_motor else None
+                        contexto_fechamento = obter_contexto_fechamento_sessao_atual(
+                            posicao_tracker,
+                            motor_decisao,
+                        )
+
+                        if contexto_fechamento is None:
+                            ticket_local = None
+                            try:
+                                metadados_local = posicao_tracker.obter_metadados_posicao()
+                                ticket_local = int(metadados_local.get('ticket', 0) or 0)
+                            except Exception:
+                                ticket_local = None
+
+                            logger.warning(
+                                f'[CICLO {ciclo}] Posição sem contexto válido da sessão atual. '
+                                f'Registrando como DESCONHECIDO para evitar contaminação.'
+                            )
+
+                            trades_fechados_rl.append({
+                                'ticket': ticket_local,
+                                'resultado': 'DESCONHECIDO',
+                                'pnl': 0.0,
+                                'direcao': 'DESCONHECIDO',
+                            })
+
+                            posicoes_motor_ativas = motor_decisao.obter_posicoes_abertas()
+                            if posicoes_motor_ativas:
+                                ticket_motor = posicoes_motor_ativas[0].ticket
+                                try:
+                                    motor_decisao.fechar_posicao(
+                                        ticket_motor,
+                                        preco_atual,
+                                        MotivoFechamento.CANCELADA,
+                                    )
+                                    logger.warning(
+                                        f'[CICLO {ciclo}] Limpeza local do motor para ticket '
+                                        f'{ticket_motor} após divergência de sessão'
+                                    )
+                                except Exception as e:
+                                    logger.warning(
+                                        f'[CICLO {ciclo}] Falha ao limpar estado local do motor: {e}'
+                                    )
+
+                            posicao_tracker.registrar_posicao_fechada()
+                            continue
+
+                        ticket_aberto = int(contexto_fechamento['ticket'])
+                        preco_entrada_reg = float(contexto_fechamento['preco_entrada'])
+                        tipo_reg = contexto_fechamento['tipo']
+                        volume_reg = float(contexto_fechamento['volume'])
 
                         logger.info(
                             f'[CICLO {ciclo}] Posição ticket={ticket_aberto} '
                             f'FECHADA no MT5 (SL/TP ou manual)'
                         )
 
-                        # Determinar resultado (win/loss) pelo preço atual vs entrada
-                        resultado = 'DESCONHECIDO'
-                        pnl_estimado = 0.0
-                        if preco_entrada_reg and tipo_reg:
-                            diff = preco_atual - preco_entrada_reg
-                            if tipo_reg == TipoPosicao.VENDIDA:
-                                diff = -diff
-                            resultado = 'WIN' if diff > 0 else 'LOSS'
-                            pnl_estimado = diff * 0.20  # mini-índice: R$ 0.20/ponto
+                        preco_saida_real = resolver_preco_saida_real(
+                            mt5_adapter,
+                            ticket_aberto,
+                            tipo_reg,
+                            simbolo=SIMBOLO,
+                        )
+                        if preco_saida_real is None:
+                            logger.warning(
+                                f'[CICLO {ciclo}] Preço real de saída indisponível para '
+                                f'ticket={ticket_aberto}. Usando preço do candle como fallback.'
+                            )
+                            preco_saida_real = preco_atual
 
-                        # Acumular trade para pipeline AC5.9/AC6
+                        resultado, pnl_estimado = classificar_fechamento_trade(
+                            preco_entrada=preco_entrada_reg,
+                            preco_saida=preco_saida_real,
+                            tipo_posicao=tipo_reg,
+                            volume=volume_reg,
+                        )
+
                         trades_fechados_rl.append({
                             'ticket': ticket_aberto,
                             'resultado': resultado,
                             'pnl': pnl_estimado,
                             'direcao': 'BUY' if tipo_reg == TipoPosicao.COMPRADA else 'SELL',
+                            'preco_saida': preco_saida_real,
                         })
 
                         # AC5.8: Atualizar status da ordem para fechada
@@ -1103,10 +1316,12 @@ def main():
                                     TradeClosureReason.SL_HIT
                                     if resultado == 'LOSS'
                                     else TradeClosureReason.TP_HIT
+                                    if resultado == 'WIN'
+                                    else TradeClosureReason.MANUAL_CLOSE
                                 )
                                 trade_tracker.registrar_saida(
                                     ticket=ticket_aberto,
-                                    preco_saida=preco_atual,
+                                    preco_saida=preco_saida_real,
                                     motivo_fechamento=motivo,
                                 )
                             except Exception as e:
@@ -1118,15 +1333,18 @@ def main():
                                 MotivoFechamento.SL_ATINGIDO
                                 if resultado == 'LOSS'
                                 else MotivoFechamento.TP_ATINGIDO
+                                if resultado == 'WIN'
+                                else MotivoFechamento.MANUAL
                             )
                             motor_decisao.fechar_posicao(
-                                ticket_aberto, preco_atual, motivo_motor,
+                                ticket_aberto, preco_saida_real, motivo_motor,
                             )
                         posicao_tracker.registrar_posicao_fechada()
 
                         logger.info(
                             f'[CICLO {ciclo}] Resultado: {resultado} | '
                             f'PnL estimado: R${pnl_estimado:.2f} | '
+                            f'Preço saída: {preco_saida_real:.2f} | '
                             f'Pronto para próximo trade'
                         )
                         # Não fazer continue — deixar seguir para buscar novo sinal
@@ -1175,7 +1393,17 @@ def main():
                             continue
 
                         # 5. Enviar ordem
-                        if enviar_ordem(mt5_adapter, acao_str, preco_atual, posicao_tracker, rl_repo, trade_tracker, motor_decisao, dados_df):
+                        if enviar_ordem(
+                            mt5_adapter,
+                            acao_str,
+                            preco_atual,
+                            posicao_tracker,
+                            rl_repo,
+                            trade_tracker,
+                            motor_decisao,
+                            dados_df,
+                            retry_mgr=retry_mgr,
+                        ):
                             logger.info(f'[CICLO {ciclo}] Ordem aberta com sucesso!')
                             anti_overtrading.registrar_trade()  # 📝 Registrar trade na proteção
                             last_signal = acao_str

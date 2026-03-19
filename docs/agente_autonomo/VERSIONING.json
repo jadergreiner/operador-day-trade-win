@@ -3,7 +3,7 @@
     "Fechamento_Diario": {
       "version": "1.0.0",
       "status": "PRODUCTION_WITH_OPERATIONAL_VALIDATION_PENDING",
-      "last_change": "2026-03-18T23:34:13.8348049-03:00",
+      "last_change": "2026-03-19T03:57:52Z",
       "changelog": [
         {
           "version": "1.0.0",
@@ -11,8 +11,9 @@
           "changes": [
             "Prompt de fechamento diário implementado",
             "Script executor com parâmetro --foco",
-            "Schema de validação JSON",
-            "Integração automática com backlog"
+            "Schema de validação JSON com contrato por agente",
+            "Integração automática com backlog",
+            "Resultado consolidado por agente e precedencia documental"
           ]
         }
       ]

@@ -2,8 +2,8 @@
 
 **Produto:** Operador Day Trade WIN
 **Versao:** 1.0
-**Data:** 18/03/2026
-**Status:** Base funcional ampla concluída em código e testes; GO LIVE ainda depende de staging/UAT/Gate 2 (10/04/2026)
+**Data:** 19/03/2026
+**Status:** Base funcional ampla concluída em código; Gate 2 de escala de capital permanece válido; GO LIVE ainda depende de staging/UAT e do gate final operacional (10/04/2026)
 
 ---
 
@@ -12,7 +12,7 @@
 ### 1.1 Descricao
 
 Sistema de trading automatico para Mini Indice Futuro
-(WIN$N) na B3, operando via MetaTrader 5. Composto por
+(WIN/WIN$N) na B3, operando via MetaTrader 5. Composto por
 4 agentes paralelos independentes que combinam Machine
 Learning (LightGBM/XGBoost), Reinforcement Learning
 (Q-Learning) e analise macro para gerar sinais, executar
@@ -48,6 +48,13 @@ Automacao completa do ciclo de trading:
 | Dados | 3-5 indicadores | 85 itens macro |
 | Operacao | 1 ativo | 4 agentes |
 | Aprendizado | Subjetivo | Causal + RL |
+
+### 1.5 Precedência Documental e Contrato Operacional
+
+- Verdade operacional de pendências e fechamento: `docs/BACKLOG.md`, `docs/STATUS_ENTREGAS.md` e `docs/PLANO_MULTI_AGENTES.md`.
+- O PRD espelha esses documentos para rastreabilidade de release, não para substituir o status operacional deles.
+- O contrato imediato do fechamento diário é `prompts/fechamento_diario.md`, com `ResultadoAgente`, `agente_impactado`, `resultado_por_agente`, `resultado_consolidado` e `melhorias_por_agente`.
+- `Gate 2` neste documento significa apenas escala de capital; o gate final operacional é separado e depende de staging/UAT e evidência diária por agente.
 
 ---
 
@@ -126,23 +133,23 @@ Automacao completa do ciclo de trading:
 
 | RF | Descricao | Status |
 |----|-----------|--------|
-| RF-07 | Command Pattern ciclo de ordem | Impl. |
-| RF-08 | Estados: ENQUEUED→CLOSED | Impl. |
-| RF-09 | Monitor RT posicoes (15s) | Impl. |
-| RF-10 | Fechamento por ticket | Impl. |
-| RF-11 | Auditoria SQLite | Impl. |
-| RF-12 | Trailing stop (ProfitProtection) | Impl. |
-| RF-13 | SL/TP dinamico por ATR | Impl. |
+| RF-07 | Command Pattern ciclo de ordem | Impl. com hardening operacional pendente |
+| RF-08 | Estados: ENQUEUED→CLOSED | Impl. com hardening operacional pendente |
+| RF-09 | Monitor RT posicoes (15s) | Impl. com hardening operacional pendente |
+| RF-10 | Fechamento por ticket | Impl. com hardening operacional pendente |
+| RF-11 | Auditoria SQLite | Impl. com hardening operacional pendente |
+| RF-12 | Trailing stop (ProfitProtection) | Impl. com hardening operacional pendente |
+| RF-13 | SL/TP dinamico por ATR | Impl. com hardening operacional pendente |
 
 ### 4.3 Feedback e Aprendizado (AC6)
 
 | RF | Descricao | Status |
 |----|-----------|--------|
-| RF-14 | Saude feedback ML/RL | Impl. |
-| RF-15 | Drift Z-score (100 trades) | Impl. |
-| RF-16 | Online learning + rollback | Impl. |
-| RF-17 | Baseline vs atual | Impl. |
-| RF-18 | Versionamento semantico | Impl. |
+| RF-14 | Saude feedback ML/RL | Em validação operacional |
+| RF-15 | Drift Z-score (100 trades) | Em validação operacional |
+| RF-16 | Online learning + rollback | Em validação operacional |
+| RF-17 | Baseline vs atual | Em validação operacional |
+| RF-18 | Versionamento semantico | Em validação operacional |
 
 ### 4.4 Reinforcement Learning
 
@@ -158,11 +165,11 @@ Automacao completa do ciclo de trading:
 
 | RF | Descricao | Status |
 |----|-----------|--------|
-| RF-24 | Etapa 1: Deteccao de sinal | Impl. |
-| RF-25 | Etapa 2: Registro de decisao | Impl. |
-| RF-26 | Etapa 3: Monitoramento | Impl. |
-| RF-27 | Etapa 4: Fechamento c/ motivo | Impl. |
-| RF-28 | Ligacao causal via episode_id | Impl. |
+| RF-24 | Etapa 1: Deteccao de sinal | Em validação operacional |
+| RF-25 | Etapa 2: Registro de decisao | Em validação operacional |
+| RF-26 | Etapa 3: Monitoramento | Em validação operacional |
+| RF-27 | Etapa 4: Fechamento c/ motivo | Em validação operacional |
+| RF-28 | Ligacao causal via episode_id | Em validação operacional |
 
 ### 4.6 Gestao de Risco
 
@@ -200,12 +207,12 @@ Automacao completa do ciclo de trading:
 
 | RF | Descricao | Status |
 |----|-----------|--------|
-| RF-46 | Diarios automaticos Markdown | Impl. |
-| RF-47 | Reflexao IA sobre operacoes | Impl. |
-| RF-48 | Narrativa de sessao | Impl. |
-| RF-49 | Thread watchdog + health | Impl. |
-| RF-50 | Detector de vies direcional | Impl. |
-| RF-51 | Retreino adaptativo | Impl. |
+| RF-46 | Diarios automaticos Markdown | Parcial/Impl. com gap de fechamento por agente |
+| RF-47 | Reflexao IA sobre operacoes | Parcial/Impl. com gap de fechamento por agente |
+| RF-48 | Narrativa de sessao | Parcial/Impl. com gap de fechamento por agente |
+| RF-49 | Thread watchdog + health | Em validação operacional |
+| RF-50 | Detector de vies direcional | Em validação operacional |
+| RF-51 | Retreino adaptativo | Em validação operacional |
 
 ### 4.10 Interfaces e APIs
 
@@ -234,11 +241,11 @@ Automacao completa do ciclo de trading:
 
 | RNF | Descricao | Meta |
 |-----|-----------|------|
-| RNF-06 | Disponibilidade mercado | 99.5% |
-| RNF-07 | Recuperacao falha MT5 | Auto retry |
-| RNF-08 | Persistencia transacional | Obrigatorio |
-| RNF-09 | Backup diario automatico | data/backups/ |
-| RNF-10 | Rollback modelo degradado | Automatico |
+| RNF-06 | Disponibilidade mercado | 99.5% (em validação operacional) |
+| RNF-07 | Recuperacao falha MT5 | Auto retry (em validação operacional) |
+| RNF-08 | Persistencia transacional | Obrigatorio (em validação operacional) |
+| RNF-09 | Backup diario automatico | data/backups/ (em validação operacional) |
+| RNF-10 | Rollback modelo degradado | Automatico (em validação operacional) |
 
 ### 5.3 Qualidade de Codigo
 
@@ -410,7 +417,7 @@ Scripts de lancamento:
 | RN-09 | Motivos fechamento | TP/SL/MANUAL/TIMEOUT |
 | RN-10 | Trailing stop | Dinamico por ATR |
 
-### 8.3 Regras de Capital (Gate 2)
+### 8.3 Regras de Capital (Gate 2 de Escala)
 
 | Condicao | Capital | Exit Code |
 |----------|---------|-----------|
@@ -427,6 +434,10 @@ Artefatos obrigatorios em `data/backtest/`:
 - `p0_2_status.json`
 
 **Falha NUNCA libera capital ampliado.**
+
+> Neste PRD, `Gate 2` refere-se exclusivamente à escala de capital validada por backtest.
+> A liberação para produção depende de um gate final operacional separado, coberto por staging/UAT
+> e pelas evidências diárias por agente.
 
 ### 8.4 Regras de Isolamento
 
@@ -563,7 +574,7 @@ Artefatos obrigatorios em `data/backtest/`:
 - RL Model Rollback Manager
 - P1 Learning Engine (causal 7 etapas)
 
-### 11.4 Fase 4 - Multi-Agente e Guardian (Atual)
+### 11.4 Fase 4 - Multi-Agente e Guardian (Concluida)
 
 - Isolamento Magic Number (ADR-012)
 - Motor de Decisao Isolado
@@ -572,10 +583,11 @@ Artefatos obrigatorios em `data/backtest/`:
 - Macro Guardian Universal Log
 - Storytelling (Reflection Action Channel)
 
-### 11.5 Fase 5 - GO LIVE (10/04/2026)
+### 11.5 Fase 5 - Validacao Operacional e GO LIVE (Atual)
 
 - Validacao final de producao
-- Operacao com Gate 2 (capital scaling)
+- Operacao com Gate 2 de escala de capital ja validado
+- Gate final operacional separado de Gate 2
 - Monitoramento diario + diarios IA
 - Emergency rollback procedures
 - Metricas de sucesso em producao
@@ -588,6 +600,8 @@ Artefatos obrigatorios em `data/backtest/`:
 - Expansao para outros mercados
 
 ### 11.7 Status de Entregas (18/03/2026)
+
+> Os itens abaixo refletem entrega em código; a validação operacional final segue separada.
 
 | Componente | Status | Testes |
 |------------|--------|--------|
@@ -614,31 +628,42 @@ Artefatos obrigatorios em `data/backtest/`:
 
 ### 12.1 Criterios por Modulo
 
-| Modulo | Criterio |
-|--------|----------|
-| Pipeline ML | F1 >0.65 classificador |
-| Risk Gates | 3 gates sem bypass |
-| Isolamento | Zero interferencia 4 agentes |
-| Posicoes | Check ticket cada 15s |
-| Drift | Alerta Z-score threshold |
-| Online Learning | Rollback se degrada |
-| Guardian | Kill switch funcional |
-| Gate 2 | FAIL nunca libera ampliado |
+| Modulo | Criterio | Status |
+|--------|----------|--------|
+| Pipeline ML | F1 >0.65 classificador | OK |
+| Risk Gates | 3 gates sem bypass | OK |
+| Isolamento | Zero interferencia 4 agentes | OK |
+| Posicoes | Check ticket cada 15s | Em validacao operacional |
+| Drift | Alerta Z-score threshold | Em validacao operacional |
+| Online Learning | Rollback se degrada | Em validacao operacional |
+| Guardian | Kill switch funcional | Em validacao operacional |
+| Gate 2 | FAIL nunca libera ampliado | Validado como escala de capital |
 
 ### 12.2 Criterios Globais para GO LIVE
 
-| ID | Descricao |
-|----|-----------|
-| CA-01 | Testes unitarios passando |
-| CA-02 | mypy --strict sem erros |
-| CA-03 | Cobertura >=80% modulos |
-| CA-04 | 5 dias simulado sem bugs |
-| CA-05 | Gate 2 P0-2 com dados reais |
-| CA-06 | Diarios IA coerentes |
-| CA-07 | 4 agentes paralelos OK |
-| CA-08 | Kill switch testado |
-| CA-09 | Backup/restore validado |
-| CA-10 | Documentacao atualizada |
+| ID | Descricao | Status |
+|----|-----------|--------|
+| CA-01 | Testes unitarios passando | OK |
+| CA-02 | mypy --strict sem erros | OK |
+| CA-03 | Cobertura >=80% modulos | OK |
+| CA-04 | 5 dias simulado sem bugs | Pend. evidencia operacional |
+| CA-05 | Gate 2 P0-2 com dados reais | Validado como escala de capital |
+| CA-06 | Diarios IA coerentes | Em validacao operacional |
+| CA-07 | 4 agentes paralelos OK | Em validacao operacional |
+| CA-08 | Kill switch testado | Em validacao operacional |
+| CA-09 | Backup/restore validado | Em validacao operacional |
+| CA-10 | Documentacao atualizada | Pend. fechamento canonico |
+
+### 12.3 Matriz de Evidencias
+
+| Criterio | Script/Teste | Evidencia | Owner |
+|---------|--------------|-----------|-------|
+| BL-01 | `scripts/validate_staging_readiness.py` | `outputs/release_gates/bl01_*.json` | Agente 2 |
+| BL-07 | `scripts/validate_go_live_gates.py` | `outputs/release_gates/bl07_*.json` | Agente 2 |
+| Runtime RL/MT5 sem `preco_saida=0.0` e sem `DESCONHECIDO` persistente | `tests/unit/test_agente_rl_direto_runtime.py` + `tests/unit/test_mt5_adapter_runtime.py` | `outputs/agente_posicao_*.json` e logs do `RL_DIRETO` | Agente 1 |
+| Fechamento diario por agente | `prompts/fechamento_diario.py` + `tests/unit/test_fechamento_diario.py` | `data/fechamento_diario/*` e `docs/agente_autonomo/AGENTE_AUTONOMO_BACKLOG.md` | Agente 3 |
+| Gate final operacional | `tests/uat/uat_test_cases.py` | `outputs/release_gates/bl08_*.json` e `go_live_decision.json` | Agente 2 |
+| Gate 2 de escala de capital | `data/backtest/gate2_decision.json` | `data/backtest/*.json` | Produto/Trading |
 
 ---
 
@@ -717,7 +742,8 @@ Artefatos obrigatorios em `data/backtest/`:
 | TP | Take Profit |
 | ATR | Average True Range |
 | BDI | Calendario economico |
-| Gate 2 | Backtest → capital scaling |
+| Gate 2 | Escala de capital validada por backtest |
+| Gate final | Validacao operacional antes do GO LIVE |
 | Drift | Degradacao modelo ML |
 | P1 Learning | Causal 7 etapas |
 | Guardian | Monitor macro emergencias |

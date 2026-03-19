@@ -2,13 +2,14 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, Optional
 import json
 import logging
 import os
 import time
+from pathlib import Path
 
 from src.domain.entities import Order
 from src.domain.enums.trading_enums import OrderSide, TimeFrame
@@ -153,6 +154,61 @@ class MT5Adapter(IBrokerAdapter):
         self._session_fingerprint: Optional[dict] = None
         self._trading_halted: bool = False
 
+    @staticmethod
+    def _normalizar_caminho_terminal(caminho: Optional[str]) -> str:
+        """Normaliza caminhos para comparação segura e tolerante a variações."""
+        if not caminho:
+            return ""
+        return str(Path(caminho)).replace("\\", "/").lower().strip()
+
+    def _terminal_corresponde_ao_esperado(self, expected_path: str, actual_path: str) -> bool:
+        """Compara paths do terminal com tolerância a variações de instalação."""
+        expected_norm = self._normalizar_caminho_terminal(expected_path)
+        actual_norm = self._normalizar_caminho_terminal(actual_path)
+
+        if not expected_norm or not actual_norm:
+            return False
+
+        if expected_norm == actual_norm:
+            return True
+
+        expected_name = Path(expected_norm).name
+        actual_name = Path(actual_norm).name
+        if expected_name and expected_name != actual_name:
+            return False
+
+        expected_parent = Path(expected_norm).parent.as_posix()
+        actual_parent = Path(actual_norm).parent.as_posix()
+        if expected_parent and expected_parent in actual_parent:
+            return True
+        if actual_parent and actual_parent in expected_parent:
+            return True
+
+        generic_tokens = {
+            "c:",
+            "program",
+            "files",
+            "programfiles",
+            "program files",
+            "program files (x86)",
+            "mt5",
+            "terminal64.exe",
+            "metatrader",
+            "metaquotes",
+        }
+
+        def _tokens(text: str) -> set[str]:
+            tokens = {
+                token.strip()
+                for token in text.replace("/", " ").replace("\\", " ").split()
+                if token.strip()
+            }
+            return {token for token in tokens if token not in generic_tokens}
+
+        expected_tokens = _tokens(expected_parent)
+        actual_tokens = _tokens(actual_parent)
+        return len(expected_tokens.intersection(actual_tokens)) > 0
+
     def _normalize_timestamp(self, epoch_seconds: int) -> datetime:
         """Normaliza timestamps do MT5 para horario de Brasilia (UTC-3)."""
         ts = int(epoch_seconds)
@@ -183,9 +239,15 @@ class MT5Adapter(IBrokerAdapter):
 
                     # Se terminal_exe_path foi especificado, VALIDA MATCH (proteção contra FBS/XP/outro)
                     if self.terminal_exe_path:
-                        # CRÍTICO: Rejeita qualquer terminal que não corresponda EXATAMENTE
-                        if self.terminal_exe_path.lower() not in exe_path.lower():
-                            logger.debug(f"Terminal mismatch: expected {self.terminal_exe_path}, got {exe_path}")
+                        if not self._terminal_corresponde_ao_esperado(
+                            self.terminal_exe_path,
+                            exe_path,
+                        ):
+                            logger.debug(
+                                "Terminal mismatch: expected %s, got %s",
+                                self.terminal_exe_path,
+                                exe_path,
+                            )
                             continue
 
                     return int(proc.info['pid'])
@@ -860,6 +922,102 @@ class MT5Adapter(IBrokerAdapter):
         if not positions and tradable != symbol.code:
             positions = self._mt5.positions_get(symbol=symbol.code)
         return list(positions) if positions else []
+
+    def obter_preco_saida_por_ticket(
+        self,
+        position_ticket: int,
+        symbol: Optional[Symbol] = None,
+        side: Optional[OrderSide] = None,
+        lookback_days: int = 7,
+    ) -> Optional[float]:
+        """Obtém o preço real de saída de um ticket pela história do MT5.
+
+        Prioridade:
+        1. Deal de fechamento na history_deals_get()
+        2. Tick atual da posição ainda visível no terminal
+        3. Tick atual do símbolo, como fallback seguro
+        """
+        self._ensure_connected()
+
+        ticket_int = int(position_ticket)
+
+        # 1) Se a posição ainda existir no terminal, usar preço atual mais seguro
+        try:
+            positions = self._mt5.positions_get()
+            if positions:
+                for position in positions:
+                    pos_ticket = int(getattr(position, "ticket", 0) or 0)
+                    if pos_ticket != ticket_int:
+                        continue
+
+                    pos_symbol = str(getattr(position, "symbol", "") or "")
+                    tick = self._mt5.symbol_info_tick(pos_symbol)
+                    if tick is not None:
+                        if int(getattr(position, "type", -1)) == self._mt5.ORDER_TYPE_BUY:
+                            return float(getattr(tick, "bid", 0.0) or 0.0)
+                        return float(getattr(tick, "ask", 0.0) or 0.0)
+
+                    price_current = getattr(position, "price_current", None)
+                    if price_current is not None:
+                        return float(price_current)
+        except Exception as e:
+            logger.debug("Failed to resolve live position price for ticket %s: %s", ticket_int, e)
+
+        # 2) Histórico de deals para obter o preço real de fechamento
+        try:
+            if hasattr(self._mt5, "history_deals_get"):
+                end_dt = datetime.utcnow()
+                start_dt = end_dt - timedelta(days=max(1, int(lookback_days)))
+                deals = self._mt5.history_deals_get(start_dt, end_dt)
+                if deals:
+                    candidatos = []
+                    for deal in deals:
+                        deal_ticket = int(
+                            getattr(deal, "position_id", 0)
+                            or getattr(deal, "position", 0)
+                            or 0
+                        )
+                        if deal_ticket != ticket_int:
+                            continue
+
+                        entry = getattr(deal, "entry", None)
+                        entry_text = str(entry).upper() if entry is not None else ""
+                        if entry_text and ("OUT" not in entry_text and "CLOSE" not in entry_text):
+                            continue
+
+                        candidatos.append(deal)
+
+                    if candidatos:
+                        candidatos.sort(
+                            key=lambda deal: int(getattr(deal, "time", 0) or 0),
+                            reverse=True,
+                        )
+                        preco = getattr(candidatos[0], "price", None)
+                        if preco is not None:
+                            return float(preco)
+        except Exception as e:
+            logger.debug("Failed to resolve history price for ticket %s: %s", ticket_int, e)
+
+        # 3) Fallback por símbolo para evitar retorno vazio quando a história
+        # ainda não está disponível no terminal.
+        try:
+            if symbol is not None:
+                tick = self._mt5.symbol_info_tick(symbol.code)
+                if tick is not None:
+                    if side == OrderSide.BUY:
+                        return float(getattr(tick, "bid", 0.0) or 0.0)
+                    if side == OrderSide.SELL:
+                        return float(getattr(tick, "ask", 0.0) or 0.0)
+                    return float(
+                        getattr(tick, "last", 0.0)
+                        or getattr(tick, "bid", 0.0)
+                        or getattr(tick, "ask", 0.0)
+                        or 0.0
+                    )
+        except Exception as e:
+            logger.debug("Failed to resolve fallback symbol price for ticket %s: %s", ticket_int, e)
+
+        return None
 
     def close_position_by_ticket(self, position_ticket: int) -> bool:
         """Fecha uma posição específica pelo ticket (seguro para conta hedge)."""

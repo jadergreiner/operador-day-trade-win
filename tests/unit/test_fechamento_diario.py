@@ -10,13 +10,17 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
+import prompts.fechamento_diario as fechamento_diario
 from prompts.fechamento_diario import (
     FOCOS_VALIDOS,
+    ResultadoAgente,
     CapturaDia,
     CapturaMelhoria,
     AprendizadoOperacional,
     SinteseFechamento,
     _contar_por_categoria,
+    _coletar_resultados_agente,
+    _atualizar_backlog,
     _timestamp_agora,
     _checksum_arquivo,
     _validar_sintese,
@@ -97,6 +101,44 @@ def melhoria_ml() -> CapturaMelhoria:
 
 
 @pytest.fixture()
+def resultado_agente_lucrativo() -> ResultadoAgente:
+    """Retorna resultado positivo de exemplo para um agente."""
+    return ResultadoAgente(
+        agente="agente direto",
+        executor=" INICIAR_AGENTE_RL_DIRETO.bat ",
+        resultado_reais=12.5,
+        trades_executados=2,
+        trades_encerrados=2,
+        wins=2,
+        losses=0,
+        win_rate_pct=100.0,
+        maior_ganho_reais=12.5,
+        maior_perda_reais=0.0,
+        relacao_risco_retorno="1:2.5",
+        veredicto="lucrativo",
+    )
+
+
+@pytest.fixture()
+def resultado_agente_deficitario() -> ResultadoAgente:
+    """Retorna resultado negativo de exemplo para um agente."""
+    return ResultadoAgente(
+        agente="DIARIOS",
+        executor="INICIAR_DIARIOS.bat",
+        resultado_reais=-3.75,
+        trades_executados=3,
+        trades_encerrados=3,
+        wins=1,
+        losses=2,
+        win_rate_pct=33.33,
+        maior_ganho_reais=1.25,
+        maior_perda_reais=-3.75,
+        relacao_risco_retorno="1:0.33",
+        veredicto="deficitario",
+    )
+
+
+@pytest.fixture()
 def sintese_completa(
     captura_padrao: CapturaDia,
     melhoria_tecnica: CapturaMelhoria,
@@ -107,6 +149,54 @@ def sintese_completa(
         captura=captura_padrao,
         aprendizados=AprendizadoOperacional(),
         melhorias=[melhoria_tecnica, melhoria_funcional],
+    )
+
+
+@pytest.fixture()
+def sintese_com_resultados(
+    captura_padrao: CapturaDia,
+    melhoria_tecnica: CapturaMelhoria,
+    melhoria_funcional: CapturaMelhoria,
+    resultado_agente_lucrativo: ResultadoAgente,
+    resultado_agente_deficitario: ResultadoAgente,
+) -> SinteseFechamento:
+    """Retorna síntese com resultados explícitos por agente."""
+    return SinteseFechamento(
+        captura=captura_padrao,
+        aprendizados=AprendizadoOperacional(),
+        melhorias=[melhoria_tecnica, melhoria_funcional],
+        resultados_agente=[
+            resultado_agente_lucrativo,
+            resultado_agente_deficitario,
+            ResultadoAgente(
+                agente="MICRO_TENDENCIA",
+                executor="INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat",
+                resultado_reais=0.0,
+                trades_executados=0,
+                trades_encerrados=0,
+                wins=0,
+                losses=0,
+                win_rate_pct=0.0,
+                maior_ganho_reais=0.0,
+                maior_perda_reais=0.0,
+                relacao_risco_retorno="0:0",
+                veredicto="NEUTRO",
+            ),
+            ResultadoAgente(
+                agente="RL_5000",
+                executor="INICIAR_AGENTE_RL_5000.bat",
+                resultado_reais=0.0,
+                trades_executados=0,
+                trades_encerrados=0,
+                wins=0,
+                losses=0,
+                win_rate_pct=0.0,
+                maior_ganho_reais=0.0,
+                maior_perda_reais=0.0,
+                relacao_risco_retorno="0:0",
+                veredicto="NEUTRO",
+            ),
+        ],
     )
 
 
@@ -182,6 +272,54 @@ class TestCapturaMelhoria:
         """sync_com deve conter documentos relacionados."""
         assert "AGENTE_AUTONOMO_FEATURES.md" in melhoria_funcional.sync_com
 
+    def test_agente_impactado_padrao(self, melhoria_tecnica: CapturaMelhoria) -> None:
+        """agente_impactado deve assumir TODOS por padrão."""
+        assert melhoria_tecnica.agente_impactado == "TODOS"
+
+    def test_agente_impactado_normalizado(self) -> None:
+        """agente_impactado deve ser normalizado para o contrato canônico."""
+        melhoria = CapturaMelhoria(
+            id="TECH-999",
+            titulo="Teste",
+            descricao="Descrição de teste",
+            categoria="tecnico",
+            prioridade="media",
+            esforco="medio",
+            agente_impactado="agente direto",
+        )
+        assert melhoria.agente_impactado == "RL_DIRETO"
+
+
+class TestResultadoAgente:
+    """Testes da dataclass ResultadoAgente."""
+
+    def test_normalizacao_agent_e_veredicto(self) -> None:
+        """Agente e veredicto devem ser normalizados."""
+        resultado = ResultadoAgente(
+            agente="rl direto",
+            executor="  INICIAR_AGENTE_RL_DIRETO.bat  ",
+            resultado_reais=-1.25,
+            trades_executados=1,
+            trades_encerrados=1,
+            wins=0,
+            losses=1,
+            win_rate_pct=0.0,
+            maior_ganho_reais=0.0,
+            maior_perda_reais=-1.25,
+            relacao_risco_retorno="1:1",
+            veredicto="deficitário",
+        )
+        assert resultado.agente == "RL_DIRETO"
+        assert resultado.executor == "INICIAR_AGENTE_RL_DIRETO.bat"
+        assert resultado.veredicto == "DEFICITARIO"
+
+    def test_to_dict_preserva_campos(self, resultado_agente_lucrativo: ResultadoAgente) -> None:
+        """to_dict deve expor todos os campos serializáveis."""
+        dados = resultado_agente_lucrativo.to_dict()
+        assert dados["agente"] == "RL_DIRETO"
+        assert dados["veredicto"] == "LUCRATIVO"
+        assert dados["resultado_reais"] == 12.5
+
 
 class TestSinteseFechamento:
     """Testes da dataclass SinteseFechamento."""
@@ -194,6 +332,9 @@ class TestSinteseFechamento:
         assert "captura_dia" in dados
         assert "aprendizados" in dados
         assert "melhorias" in dados
+        assert "resultado_consolidado" in dados
+        assert "resultado_por_agente" in dados
+        assert "aprendizados_por_agente" in dados
         assert "resumo" in dados
 
     def test_para_dict_resumo_contagens(
@@ -207,12 +348,69 @@ class TestSinteseFechamento:
         assert resumo["por_categoria"]["funcional"] == 1
         assert resumo["por_categoria"]["governanca"] == 0
 
+    def test_para_dict_resultado_consolidado(
+        self, sintese_com_resultados: SinteseFechamento
+    ) -> None:
+        """resultado_consolidado deve agregar os agentes explicitamente passados."""
+        dados = sintese_com_resultados.para_dict()
+        consolidado = dados["resultado_consolidado"]
+        assert consolidado["resultado_total_reais"] == pytest.approx(8.75)
+        assert consolidado["resultado_total_pct"] == pytest.approx(0.0175)
+        assert consolidado["trades_executados_total"] == 5
+        assert consolidado["trades_encerrados_total"] == 5
+        assert consolidado["wins_total"] == 3
+        assert consolidado["losses_total"] == 2
+        assert consolidado["win_rate_geral_pct"] == pytest.approx(60.0)
+        assert consolidado["agentes_em_alerta"] == ["DIARIOS"]
+
+    def test_para_dict_resultado_por_agente(
+        self, sintese_com_resultados: SinteseFechamento
+    ) -> None:
+        """resultado_por_agente deve expor o contrato novo por agente."""
+        dados = sintese_com_resultados.para_dict()
+        resultados = {item["agente"]: item for item in dados["resultado_por_agente"]}
+        assert resultados["RL_DIRETO"]["veredicto"] == "LUCRATIVO"
+        assert resultados["DIARIOS"]["veredicto"] == "DEFICITARIO"
+        assert resultados["DIARIOS"]["resultado_reais"] == pytest.approx(-3.75)
+        assert resultados["MICRO_TENDENCIA"]["veredicto"] == "NEUTRO"
+        assert resultados["RL_5000"]["veredicto"] == "NEUTRO"
+
+    def test_para_dict_melhorias_por_agente(
+        self, sintese_completa: SinteseFechamento
+    ) -> None:
+        """melhorias_por_agente deve contabilizar o agente impactado."""
+        melhoria_agente = CapturaMelhoria(
+            id="TECH-002",
+            titulo="Ajuste por agente",
+            descricao="Melhoria vinculada a um agente específico",
+            categoria="tecnico",
+            prioridade="alta",
+            esforco="pequeno",
+            agente_impactado="RL_DIRETO",
+        )
+        dados = SinteseFechamento(
+            captura=sintese_completa.captura,
+            aprendizados=AprendizadoOperacional(),
+            melhorias=[melhoria_agente],
+            resultados_agente=[],
+        ).para_dict()
+        assert dados["melhorias_por_agente"]["RL_DIRETO"] == 1
+        assert dados["itens_criticos"][0]["agente_impactado"] == "RL_DIRETO"
+
+    def test_para_dict_aprendizados_por_agente(
+        self, sintese_com_resultados: SinteseFechamento
+    ) -> None:
+        """aprendizados_por_agente deve acompanhar todos os agentes operacionais."""
+        dados = sintese_com_resultados.para_dict()
+        agentes = [item["agente"] for item in dados["aprendizados_por_agente"]]
+        assert agentes == ["RL_DIRETO", "DIARIOS", "MICRO_TENDENCIA", "RL_5000"]
+
     def test_para_dict_itens_criticos(
         self, sintese_completa: SinteseFechamento
     ) -> None:
         """Deve listar apenas itens com prioridade alta."""
         dados = sintese_completa.para_dict()
-        criticos = dados["resumo"]["itens_criticos"]
+        criticos = dados["itens_criticos"]
         assert len(criticos) == 1
         assert criticos[0]["id"] == "TECH-001"
 
@@ -221,7 +419,7 @@ class TestSinteseFechamento:
     ) -> None:
         """sync_manifest_atualizado deve ser True no foco fechamento."""
         dados = sintese_completa.para_dict()
-        sync = dados["resumo"]["sincronizacao"]
+        sync = dados["sincronizacao"]
         assert sync["backlog_atualizado"] is True
         assert sync["sync_manifest_atualizado"] is True
 
@@ -238,7 +436,122 @@ class TestSinteseFechamento:
             melhorias=[],
         )
         dados = sintese.para_dict()
-        assert dados["resumo"]["sincronizacao"]["sync_manifest_atualizado"] is False
+        assert dados["sincronizacao"]["sync_manifest_atualizado"] is False
+
+
+class TestColetaResultadosAgente:
+    """Testes da coleta automática por agente em outputs/."""
+
+    def test_coleta_snapshots_por_data(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Deve agregar snapshots da data informada sem duplicar sessão."""
+
+        def salvar(nome: str, conteudo: dict[str, object]) -> None:
+            (tmp_path / nome).write_text(
+                json.dumps(conteudo, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+
+        salvar(
+            "agente_posicao_agente_direto_20260318_170000.json",
+            {
+                "session_id": "agente_direto_20260318_170000",
+                "owner": "rl_direto_v3.0",
+                "aberta": False,
+                "ticket": "1001",
+                "preco_entrada": 100.0,
+                "direcao": "BUY",
+                "preco_saida": 105.0,
+                "timestamp": "2026-03-18T17:05:00Z",
+            },
+        )
+        salvar(
+            "agente_posicao_agente_direto_20260318_171000.json",
+            {
+                "session_id": "agente_direto_20260318_171000",
+                "owner": "rl_direto_v3.0",
+                "aberta": False,
+                "ultimo_fechamento": {
+                    "ticket": "1002",
+                    "resultado": "LOSS",
+                    "pnl": -2.0,
+                    "timestamp": "2026-03-18T17:10:00Z",
+                },
+                "timestamp": "2026-03-18T17:10:00Z",
+            },
+        )
+        salvar(
+            "agente_posicao_diarios_20260318_120000.json",
+            {
+                "session_id": "diarios_20260318_120000",
+                "aberta": False,
+                "ticket": "2001",
+                "preco_entrada": 200.0,
+                "direcao": "SELL",
+                "ultimo_preco": 190.0,
+                "abertura_ts": "2026-03-18T12:00:00",
+                "timestamp": "2026-03-18T12:10:00Z",
+            },
+        )
+        salvar(
+            "agente_posicao_micro_tendencia_20260318_090000.json",
+            {
+                "session_id": "micro_tendencia_20260318_090000",
+                "aberta": True,
+                "open_time": "2026-03-18T09:00:00Z",
+                "timestamp": "2026-03-18T09:00:00Z",
+            },
+        )
+
+        monkeypatch.setattr(fechamento_diario, "CAMINHO_OUTPUTS", tmp_path)
+        resultados = _coletar_resultados_agente("2026-03-18")
+        mapa = {resultado.agente: resultado for resultado in resultados}
+
+        assert mapa["RL_DIRETO"].resultado_reais == pytest.approx(-1.0)
+        assert mapa["RL_DIRETO"].trades_executados == 2
+        assert mapa["RL_DIRETO"].trades_encerrados == 2
+        assert mapa["RL_DIRETO"].veredicto == "DEFICITARIO"
+        assert mapa["DIARIOS"].resultado_reais == pytest.approx(2.0)
+        assert mapa["DIARIOS"].win_rate_pct == pytest.approx(100.0)
+        assert mapa["MICRO_TENDENCIA"].trades_executados == 1
+        assert mapa["MICRO_TENDENCIA"].trades_encerrados == 0
+        assert mapa["RL_5000"].resultado_reais == 0.0
+
+
+class TestAtualizarBacklog:
+    """Testes do append no backlog do agente autônomo."""
+
+    def test_backlog_registra_resultado_e_agente_impactado(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, sintese_com_resultados: SinteseFechamento
+    ) -> None:
+        """O append deve incluir consolidado por agente e agente impactado."""
+        backlog = tmp_path / "AGENTE_AUTONOMO_BACKLOG.md"
+        backlog.write_text("# Backlog\n", encoding="utf-8")
+        monkeypatch.setattr(fechamento_diario, "CAMINHO_BACKLOG", backlog)
+
+        melhoria = CapturaMelhoria(
+            id="TECH-777",
+            titulo="Ajuste de fechamento",
+            descricao="Melhoria ligada ao RL Direto",
+            categoria="tecnico",
+            prioridade="alta",
+            esforco="medio",
+            agente_impactado="agente direto",
+        )
+        sintese = SinteseFechamento(
+            captura=sintese_com_resultados.captura,
+            aprendizados=AprendizadoOperacional(),
+            melhorias=[melhoria],
+            resultados_agente=sintese_com_resultados.resultados_agente,
+        )
+
+        _atualizar_backlog(sintese)
+
+        conteudo = backlog.read_text(encoding="utf-8")
+        assert "Resultado Consolidado" in conteudo
+        assert "Resultado por Agente" in conteudo
+        assert "agente_impactado: RL_DIRETO" in conteudo
 
 
 # ---------------------------------------------------------------------------
@@ -356,6 +669,14 @@ class TestValidarSintese:
             "captura_dia": {"timestamp": "2026-02-20T17:00:00Z"},
             "aprendizados": {},
             "melhorias": [],
+            "aprendizados_por_agente": [],
+            "resultado_consolidado": {},
+            "resultado_por_agente": [],
+            "melhorias_por_categoria": {},
+            "melhorias_por_agente": {},
+            "itens_criticos": [],
+            "agentes_em_alerta": [],
+            "sincronizacao": {},
             "resumo": {},
         }
         with patch(
@@ -367,7 +688,20 @@ class TestValidarSintese:
     def test_campo_obrigatorio_ausente(self) -> None:
         """Campo obrigatório ausente deve gerar erro."""
         schema = {
-            "required": ["captura_dia", "aprendizados", "melhorias", "resumo"]
+            "required": [
+                "captura_dia",
+                "aprendizados",
+                "melhorias",
+                "aprendizados_por_agente",
+                "resultado_consolidado",
+                "resultado_por_agente",
+                "melhorias_por_categoria",
+                "melhorias_por_agente",
+                "itens_criticos",
+                "agentes_em_alerta",
+                "sincronizacao",
+                "resumo",
+            ]
         }
         dados = {"captura_dia": {}, "aprendizados": {}}
         with patch(
@@ -375,6 +709,7 @@ class TestValidarSintese:
         ):
             erros = _validar_sintese(dados)
         assert any("melhorias" in e for e in erros)
+        assert any("resultado_consolidado" in e for e in erros)
         assert any("resumo" in e for e in erros)
 
     def test_foco_invalido(self) -> None:
@@ -391,6 +726,14 @@ class TestValidarSintese:
             "captura_dia": {"foco": "invalido"},
             "aprendizados": {},
             "melhorias": [],
+            "aprendizados_por_agente": [],
+            "resultado_consolidado": {},
+            "resultado_por_agente": [],
+            "melhorias_por_categoria": {},
+            "melhorias_por_agente": {},
+            "itens_criticos": [],
+            "agentes_em_alerta": [],
+            "sincronizacao": {},
             "resumo": {},
         }
         with patch(
@@ -533,6 +876,8 @@ class TestExecutar:
         assert "captura_dia" in conteudo
         assert "aprendizados" in conteudo
         assert "melhorias" in conteudo
+        assert "resultado_consolidado" in conteudo
+        assert "resultado_por_agente" in conteudo
 
     def test_data_invalida_retorna_codigo_2(self, tmp_path: Path) -> None:
         """Data inválida deve retornar código 2."""

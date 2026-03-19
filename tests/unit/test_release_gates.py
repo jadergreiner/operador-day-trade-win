@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+import sys
 
 from src.application.release_gates import (
     ExecutorComando,
     GateResultado,
+    GoLiveDecision,
+    OperationalUATService,
     QualityGateService,
+    RelatorioGate,
     StagingReadinessService,
 )
 
@@ -30,6 +35,25 @@ class ExecutorFalsoFalha:
     ) -> tuple[int, str, str]:
         _ = timeout_segundos
         return 1, "", f"falha: {' '.join(comando)}"
+
+
+def _criar_relatorio(
+    nome: str,
+    aprovado: bool,
+    evidencias: list[str],
+) -> RelatorioGate:
+    return RelatorioGate(
+        nome=nome,
+        resultados=[
+            GateResultado(
+                nome=f"{nome}_check",
+                sucesso=aprovado,
+                mensagem="ok" if aprovado else "falhou",
+            )
+        ],
+        aprovado=aprovado,
+        metadados={"evidencias": evidencias},
+    )
 
 
 def test_staging_readiness_aprova_estrutura_minima(tmp_path: Path) -> None:
@@ -104,6 +128,150 @@ def test_quality_gate_reprova_quando_um_comando_falha() -> None:
     assert any(
         item.nome == "mypy_strict" and not item.sucesso for item in relatorio.resultados
     )
+
+
+def test_quality_gate_usa_suite_canonica_explicitamente_sem_ati5() -> None:
+    """BL-07 deve usar allowlist explicita e excluir o suite ATI-5."""
+    comandos: list[list[str]] = []
+
+    class ExecutorCaptura:
+        def __call__(
+            self, comando: list[str], timeout_segundos: int
+        ) -> tuple[int, str, str]:
+            _ = timeout_segundos
+            comandos.append(list(comando))
+            return 0, "ok", ""
+
+    servico = QualityGateService(executor=ExecutorCaptura())
+    relatorio = servico.executar()
+
+    assert relatorio.aprovado is True
+    assert "tests/unit/test_ati5_ml_features.py" not in servico.test_targets
+    assert comandos
+    assert comandos[0][0] == sys.executable
+    primeiro = " ".join(comandos[0])
+    assert "pytest tests" not in primeiro
+    assert "-m pytest" in primeiro
+    assert "tests/unit/test_release_gates.py" in primeiro
+    assert "tests/unit/test_validate_documentation.py" in primeiro
+
+
+def test_operational_uat_aprova_com_evidencias_locais(tmp_path: Path) -> None:
+    """BL-08 aprova com docs, runtime e artefatos locais do produto atual."""
+    (tmp_path / "docs").mkdir(parents=True)
+    (tmp_path / "docs" / "PRD.md").write_text(
+        "Produto WIN/WIN$N para operacao real.",
+        encoding="utf-8",
+    )
+    (tmp_path / "docs" / "OPERACAO_4_AGENTES.md").write_text(
+        "\n".join(
+            [
+                "## Agente 1: INICIAR_DIARIOS.bat",
+                "## Agente 2: INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat",
+                "## Agente 3: INICIAR_AGENTE_RL_5000.bat",
+                "## Agente 4: INICIAR_AGENTE_RL_DIRETO.bat",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "data" / "db").mkdir(parents=True)
+    (tmp_path / "data" / "db" / "trading.db").write_text("ok", encoding="utf-8")
+    (tmp_path / "data" / "db" / "last_session_summary.json").write_text(
+        json.dumps({"status": "ok"}),
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates").mkdir(parents=True)
+    (tmp_path / "outputs").mkdir(exist_ok=True)
+    (tmp_path / "tests" / "uat").mkdir(parents=True)
+    (tmp_path / "tests" / "uat" / "uat_test_cases.py").write_text(
+        "# runner limpo\n",
+        encoding="utf-8",
+    )
+
+    (tmp_path / "outputs" / "release_gates" / "bl01_staging_readiness.json").write_text(
+        json.dumps({"aprovado": True}),
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates" / "bl07_quality_gate.json").write_text(
+        json.dumps({"aprovado": True}),
+        encoding="utf-8",
+    )
+
+    servico = OperationalUATService(base_dir=tmp_path)
+    relatorio = servico.executar()
+
+    assert relatorio.aprovado is True
+    assert relatorio.nome == "uat_operacional"
+    assert all(item.sucesso for item in relatorio.resultados)
+    assert relatorio.metadados["produto_alvo"] == "WIN/WIN$N"
+
+
+def test_operational_uat_reprova_quando_legado_btcusd_aparece(tmp_path: Path) -> None:
+    """BL-08 reprova se o runner ou docs ainda expuserem BTCUSD."""
+    (tmp_path / "docs").mkdir(parents=True)
+    (tmp_path / "docs" / "PRD.md").write_text(
+        "Produto WIN/WIN$N para operacao real.",
+        encoding="utf-8",
+    )
+    (tmp_path / "docs" / "OPERACAO_4_AGENTES.md").write_text(
+        "\n".join(
+            [
+                "## Agente 1: INICIAR_DIARIOS.bat",
+                "## Agente 2: INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat",
+                "## Agente 3: INICIAR_AGENTE_RL_5000.bat",
+                "## Agente 4: INICIAR_AGENTE_RL_DIRETO.bat",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "data" / "db").mkdir(parents=True)
+    (tmp_path / "data" / "db" / "trading.db").write_text("ok", encoding="utf-8")
+    (tmp_path / "data" / "db" / "last_session_summary.json").write_text(
+        json.dumps({"status": "ok"}),
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates").mkdir(parents=True)
+    (tmp_path / "tests" / "uat").mkdir(parents=True)
+    (tmp_path / "tests" / "uat" / "uat_test_cases.py").write_text(
+        "print('BTCUSD')\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates" / "bl01_staging_readiness.json").write_text(
+        json.dumps({"aprovado": True}),
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates" / "bl07_quality_gate.json").write_text(
+        json.dumps({"aprovado": True}),
+        encoding="utf-8",
+    )
+
+    servico = OperationalUATService(base_dir=tmp_path)
+    relatorio = servico.executar()
+
+    assert relatorio.aprovado is False
+    assert any(
+        item.nome == "legacy_markers_absent" and not item.sucesso
+        for item in relatorio.resultados
+    )
+
+
+def test_go_live_decision_serializa_gates_e_evidencias() -> None:
+    """A decisao final deve ser serializavel e consolidar os 3 gates."""
+    staging = _criar_relatorio("staging_readiness", True, ["e1", "e2"])
+    quality = _criar_relatorio("quality_gate_release", True, ["e2", "e3"])
+    uat = _criar_relatorio("uat_operacional", False, ["e4"])
+
+    decision = GoLiveDecision.from_gates(gates=[staging, quality, uat])
+    payload = decision.para_dict()
+
+    assert payload["aprovado"] is False
+    assert payload["decisao"] == "NO_GO"
+    assert payload["produto_alvo"] == "WIN/WIN$N"
+    assert payload["resumo"]["total_gates"] == 3
+    assert payload["resumo"]["gates_aprovados"] == ["staging_readiness", "quality_gate_release"]
+    assert payload["resumo"]["gates_reprovados"] == ["uat_operacional"]
+    assert payload["evidencias"] == ["e1", "e2", "e3", "e4"]
+    assert payload["gates"][2]["nome"] == "uat_operacional"
 
 
 def test_executor_comando_retorna_saida_de_processo() -> None:
