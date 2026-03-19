@@ -66,6 +66,54 @@ evitar bloqueadores entre agentes.
 
 ---
 
+## 🟢 Checkpoint Real — 2026-03-18 (Rodada 3)
+
+### Execucao Paralela Concluida (ML Ops / ROADMAP-DIARIOS-04)
+
+**Status geral:** Pipeline adaptativo inicial entregue e validado
+
+**Entregas implementadas:**
+- `src/application/adaptive_retraining_pipeline.py`
+- `tests/unit/test_adaptive_retraining_pipeline.py`
+
+**Validacao executada:**
+- `pytest -q tests/unit/test_adaptive_retraining_pipeline.py`
+- Resultado: `14 passed`
+
+**Resumo operacional desta rodada:**
+- Avaliacao de gatilho por performance, drift e vies
+- Planejamento de retreino com prioridade e janela off-peak
+- Suporte a metricas planas e aninhadas para encaixe com outros modulos
+
+**Bloqueadores desta rodada:**
+- Nenhum bloqueador tecnico para seguir para o restante do roadmap ML Ops
+
+---
+
+## 🟢 Checkpoint Real — 2026-03-18 (Storytelling A)
+
+### Execucao Paralela Concluida (Trade Narrative Correlator)
+
+**Status geral:** Entrega concluida e validada
+
+**Entregas implementadas:**
+- `src/application/trade_narrative_correlator.py`
+- `tests/unit/test_trade_narrative_correlator.py`
+
+**Validacao executada:**
+- `pytest -q tests/unit/test_narrative_persistence.py tests/unit/test_trade_narrative_correlator.py`
+- Resultado: `24 passed`
+
+**Resumo funcional desta rodada:**
+- Match prioritario por `trade_id`
+- Fallback temporal simples com janela configuravel
+- Saida serializavel para correlacao e features
+
+**Bloqueadores desta rodada:**
+- Nenhum bloqueador para seguir com Storytelling B
+
+---
+
 ## 🔗 Matriz de Dependências
 
 ```
