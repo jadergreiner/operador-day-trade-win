@@ -52,6 +52,7 @@ outputs/*.txt
 outputs/*.log
 outputs/*.json
 outputs/agent_feedback_live.txt
+data/db/trading_diario_episodios.json
 
 # Configurações de Estado / Voláteis
 data/models/*.pkl
