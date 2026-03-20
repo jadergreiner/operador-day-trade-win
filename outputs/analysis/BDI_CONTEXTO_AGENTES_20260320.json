@@ -1,0 +1,185 @@
+{
+  "report_date": "2026-03-20",
+  "source_bulletin_date": "2026-03-19",
+  "source_file": "data/BDI/BDI_00_20260319.pdf",
+  "supporting_files": [
+    "data/BDI/bdi_20260319_key_data.txt",
+    "outputs/analysis/diario_market_features_latest.json"
+  ],
+  "context_type": "bdi_operational_analysis",
+  "soft_context_only": true,
+  "market_state": {
+    "regime_macro": "ESTAVEL",
+    "intraday_bias": "NEUTRO_LEVEMENTE_COMPRADOR",
+    "confidence": 0.64,
+    "score_guardian_hint": 0.58,
+    "summary": "Fechamento positivo com liquidez acima da media, DOL cedendo no dia e lideranca concentrada em VALE, ENEV e bancos, mas com PETR4, PRIO3 e B3SA3 ainda fracas."
+  },
+  "bdi_summary": {
+    "ibovespa_close": 180270.0,
+    "ibovespa_change_pct": 0.35,
+    "derivatives_minis_contracts": 69016730,
+    "derivatives_non_minis_contracts": 43189768,
+    "trades_count": 4572498,
+    "financial_volume_brl_mn": 38027.531408,
+    "minis_vs_month_pct": 3.6,
+    "non_minis_vs_month_pct": 4.17,
+    "trades_vs_month_pct": 5.11,
+    "financial_volume_vs_month_pct": 3.1
+  },
+  "session_close_calibration": {
+    "ibov": {
+      "open": 179624.0,
+      "close": 180271.0,
+      "delta_pct": 0.3602,
+      "direction": "UP"
+    },
+    "dol": {
+      "open": 5256.0,
+      "close": 5240.5,
+      "delta_pct": -0.2949,
+      "direction": "DOWN"
+    },
+    "petr4": {
+      "open": 47.2,
+      "close": 46.65,
+      "delta_pct": -1.1653,
+      "direction": "DOWN"
+    },
+    "vale3": {
+      "open": 74.17,
+      "close": 76.6,
+      "delta_pct": 3.2763,
+      "direction": "UP"
+    },
+    "enev3": {
+      "open": 24.35,
+      "close": 25.34,
+      "delta_pct": 4.0657,
+      "direction": "UP"
+    },
+    "prio3": {
+      "open": 67.5,
+      "close": 66.1,
+      "delta_pct": -2.0741,
+      "direction": "DOWN"
+    },
+    "itub4": {
+      "open": 42.0,
+      "close": 42.64,
+      "delta_pct": 0.85,
+      "direction": "UP"
+    },
+    "bbas3": {
+      "open": 23.29,
+      "close": 23.52,
+      "delta_pct": 0.46,
+      "direction": "UP"
+    },
+    "b3sa3": {
+      "open": 16.89,
+      "close": 16.85,
+      "delta_pct": -1.57,
+      "direction": "DOWN"
+    }
+  },
+  "soft_features": {
+    "liquidity_regime": "ACIMA_MEDIA",
+    "leadership_regime": "MISTO_COM_VALE_E_BANCOS",
+    "oil_beta_state": "FRACO",
+    "usd_flow_state": "CEDENDO_NO_FECHAMENTO",
+    "ibov_close_positive": true,
+    "atr_reference_points": 613.9286,
+    "stop_tactical_points": [
+      123,
+      154
+    ],
+    "stop_standard_points": [
+      154,
+      203
+    ],
+    "target_scalp_points": [
+      123,
+      203
+    ],
+    "target_directional_points": [
+      307,
+      491
+    ],
+    "target_expansion_points": 614
+  },
+  "trading_playbook": {
+    "long_conditions": [
+      "DOL abaixo de 5240.5 ou sem retomar a pressao da abertura anterior em 5256.0",
+      "VALE3 positiva e sustentando acima da abertura",
+      "ITUB4 ou BBAS3 confirmando junto do indice",
+      "PETR4 pelo menos neutra",
+      "WIN acima da abertura com pullback curto"
+    ],
+    "short_conditions": [
+      "DOL retomando forca e recuperando 5256.0 para cima",
+      "PETR4 fraca e VALE3 devolvendo parte da alta anterior",
+      "bancos falhando em confirmar compra",
+      "WIN perdendo minima de abertura com repique fraco"
+    ],
+    "avoid_conditions": [
+      "breakout de compra com so VALE3 positiva",
+      "venda precoce contra DOL em queda e IBOV sustentado",
+      "projetar alvo acima de 0.5 ATR sem confirmacao intermercado"
+    ]
+  },
+  "agent_instructions": {
+    "guardian": {
+      "regime_macro": "ESTAVEL",
+      "coordination_mode": "informativo_sem_bloqueio_binario",
+      "risk_attention_triggers": [
+        "DOL forte",
+        "PETR4 fraca",
+        "perda de minima do WIN"
+      ]
+    },
+    "micro_trend": {
+      "entry_mode": "confirmacao",
+      "buy_aggressiveness": "moderada_se_vale_e_bancos_confirmarem",
+      "rebound_treatment": "mais_confiavel_com_dol_comportado"
+    },
+    "momentum": {
+      "require_volume_confirmation": true,
+      "require_cross_asset_confirmation": true,
+      "buy_breakout_priority": "media",
+      "sell_breakout_priority": "alta_se_dol_reacelerar"
+    },
+    "risk": {
+      "atr_reference_points": 613.9286,
+      "prefer_soft_limits": true,
+      "use_context_for_target_stop": true,
+      "cross_asset_confirmation_required": true
+    }
+  },
+  "watchlist": [
+    "VALE3",
+    "PETR4",
+    "ITUB4",
+    "BBAS3",
+    "ENEV3",
+    "PRIO3",
+    "B3SA3",
+    "DOL"
+  ],
+  "operational_tags": [
+    "liquidez_acima_media",
+    "ibov_positivo",
+    "dolar_cedendo",
+    "heavyweights_mistos",
+    "vale_lidera",
+    "petroleo_fraco",
+    "bancos_ajudam",
+    "usar_atr_para_calibracao",
+    "operar_confirmacao"
+  ],
+  "notes": [
+    "Contexto soft: nao bloquear operacoes apenas com base neste arquivo.",
+    "Usar confirmacao intraday para ampliar alvo acima de 0.5 ATR.",
+    "Se DOL reacelerar, reduzir agressividade compradora e comprimir alvos."
+  ]
+}

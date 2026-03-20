@@ -1,0 +1,68 @@
+======================================================================
+RELATORIO OPERACIONAL - BOLETIM BDI
+======================================================================
+Data operacional: 20/03/2026
+Fonte: fechamento de 19/03/2026
+Arquivo: data/BDI/BDI_00_20260319.pdf
+
+LEITURA RAPIDA
+----------------------------------------------------------------------
+  Regime: ESTAVEL
+  Vies intraday: NEUTRO / LEVEMENTE COMPRADOR
+  Ibovespa: 180.270,00 (+0,35%)
+  Liquidez BDI: acima da media do mes
+  DOL no fechamento: 5.240,5 (-0,29% vs abertura)
+  ATR WIN referencia: 613,9 pts
+
+DRIVERS DO DIA
+----------------------------------------------------------------------
+  - minis +3,60% vs media do mes
+  - negocios +5,11% vs media do mes
+  - VALE3 e ENEV3 puxaram melhor o fechamento
+  - ITUB4 e BBAS3 ajudaram no suporte
+  - PETR4, PRIO3 e B3SA3 terminaram fracos
+
+PLAYBOOK WIN
+----------------------------------------------------------------------
+  COMPRAS:
+  - DOL abaixo de 5.240,5 ou sem reacelerar
+  - VALE3 forte
+  - ITUB4 e/ou BBAS3 confirmando
+  - PETR4 pelo menos neutra
+  - WIN acima da abertura
+
+  VENDAS:
+  - DOL retomando 5.256,0 para cima
+  - PETR4 fraca e VALE3 devolvendo alta
+  - falha dos bancos em sustentar compra
+  - perda da minima de abertura no WIN
+
+  EVITAR:
+  - breakout de compra com lideranca estreita
+  - venda contra DOL em queda
+  - alvo longo demais sem confirmacao adicional
+
+FEATURES SOFT PARA MODELOS
+----------------------------------------------------------------------
+  - liquidity_regime = ACIMA_MEDIA
+  - leadership_regime = MISTO_COM_VALE_E_BANCOS
+  - atr_reference_points = 613,93
+  - stop_tatico = 123 a 154 pts
+  - stop_padrao = 154 a 203 pts
+  - alvo_scalp = 123 a 203 pts
+  - alvo_direcional = 307 a 491 pts
+
+WATCHLIST
+----------------------------------------------------------------------
+  VALE3 | PETR4 | ITUB4 | BBAS3 | ENEV3 | PRIO3 | B3SA3 | DOL
+
+ARQUIVOS GERADOS
+----------------------------------------------------------------------
+  outputs/analysis/BDI_ANALISE_OPERACIONAL_20260320.md
+  outputs/analysis/BDI_CONTEXTO_AGENTES_20260320.json
+
+OBSERVACAO
+----------------------------------------------------------------------
+  Contexto informacional. Usar para calibrar leitura, alvo e stop.
+  Nao tratar o BDI como bloqueio automatico de operacao.
+======================================================================
