@@ -311,7 +311,7 @@ MT5 (ticks RT)
   → MLClassifier (LightGBM/XGBoost)
   → MacroScoreEngine (85 itens)
   → RiskValidator (3 Gates)
-  → OrdersExecutor (maquina estados)
+  → OrdersExecutor (máquina de estados)
   → PositionMonitor (15s por ticket)
   → ProfitProtection (trailing stop)
   → FeedbackLoop (drift + learning)
@@ -341,7 +341,7 @@ MT5 (ticks RT)
 | RL 5000 | 234500 | RL supervisionado |
 | RL Direto | 234600 | RL autonomo |
 
-Scripts de lancamento:
+Scripts de lançamento:
 
 - **Diarios:** `start_journals_full_display.py`
 - **Micro Tendencia:** `agente_micro_tendencia_winfut.py`
