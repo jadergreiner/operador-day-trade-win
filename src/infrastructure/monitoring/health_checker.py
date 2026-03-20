@@ -15,6 +15,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 # Configuração de Logs
 logging.basicConfig(
     level=logging.INFO,
@@ -150,51 +152,82 @@ class HealthChecker:
 
         return all_passed, results
 
+    @staticmethod
+    def _is_sqlite_lock_error(exc: Exception) -> bool:
+        msg = str(exc).lower()
+        return "database is locked" in msg or "database is busy" in msg
+
     def _log_health_to_db(self, results):
         """Data Engineer: Persistência de logs de saúde"""
-        conn = None
-        try:
-            os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-            conn = sqlite3.connect(self.db_path, timeout=30.0)
-            conn.execute("PRAGMA busy_timeout=30000")
-            cursor = conn.cursor()
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        last_error: Exception | None = None
 
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS system_health_logs (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    gov_status TEXT,
-                    mt5_status TEXT,
-                    latency_p95 REAL,
-                    all_passed INTEGER
+        for attempt in range(1, 6):
+            conn = None
+            try:
+                with sqlite_write_lock(self.db_path, timeout=5.0):
+                    conn = sqlite3.connect(self.db_path, timeout=30.0)
+                    conn.execute("PRAGMA busy_timeout=30000")
+                    cursor = conn.cursor()
+
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS system_health_logs (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            gov_status TEXT,
+                            mt5_status TEXT,
+                            latency_p95 REAL,
+                            all_passed INTEGER
+                        )
+                    """)
+
+                    cursor.execute("""
+                        INSERT INTO system_health_logs (gov_status, mt5_status, latency_p95, all_passed)
+                        VALUES (?, ?, ?, ?)
+                    """, (
+                        str(results['governance'][1]),
+                        str(results['mt5'][1]),
+                        results['latency'][1],
+                        1 if all(r[0] for r in results.values()) else 0
+                    ))
+
+                    conn.commit()
+                    logger.info("💾 Log de saúde salvo no banco de dados.")
+                    return
+            except sqlite3.OperationalError as e:
+                last_error = e
+                if not self._is_sqlite_lock_error(e):
+                    logger.error(f"❌ Falha ao logar saúde no DB: {e}")
+                    return
+                if attempt < 5:
+                    time.sleep(0.15 * attempt)
+                    continue
+                logger.warning(
+                    "⚠️ Falha transitória ao logar saúde no DB: database locked após retries"
                 )
-            """)
-
-            cursor.execute("""
-                INSERT INTO system_health_logs (gov_status, mt5_status, latency_p95, all_passed)
-                VALUES (?, ?, ?, ?)
-            """, (
-                str(results['governance'][1]),
-                str(results['mt5'][1]),
-                results['latency'][1],
-                1 if all(r[0] for r in results.values()) else 0
-            ))
-
-            conn.commit()
-            logger.info("💾 Log de saúde salvo no banco de dados.")
-        except sqlite3.OperationalError as e:
-            if "database is locked" in str(e).lower():
-                logger.error("❌ Falha ao logar saúde no DB: database is locked")
-            else:
+                return
+            except TimeoutError as e:
+                last_error = e
+                if attempt < 5:
+                    time.sleep(0.15 * attempt)
+                    continue
+                logger.warning(
+                    "⚠️ Falha transitória ao logar saúde no DB: timeout aguardando lock"
+                )
+                return
+            except Exception as e:
+                last_error = e
                 logger.error(f"❌ Falha ao logar saúde no DB: {e}")
-        except Exception as e:
-            logger.error(f"❌ Falha ao logar saúde no DB: {e}")
-        finally:
-            if conn is not None:
-                try:
-                    conn.close()
-                except Exception:
-                    pass
+                return
+            finally:
+                if conn is not None:
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
+
+        if last_error is not None:
+            logger.debug(f"Health check DB log finalizou sem persistir: {last_error}")
 
 
 class MT5IsolationHealthCheck:

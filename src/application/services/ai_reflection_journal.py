@@ -98,7 +98,9 @@ class AIReflectionJournalService:
         self.persistence = ResilientReflectionPersistence(project_root)
 
         # Also maintain jsonl_path for backward compatibility
-        self.log_file = project_root / "data" / "db" / "reflections" / "reflections_log.jsonl"
+        self.log_file = (
+            project_root / "data" / "db" / "reflections" / "reflections_log.jsonl"
+        )
 
     def generate_reflection(
         self,
@@ -139,7 +141,9 @@ class AIReflectionJournalService:
 
         change_last_10min = Decimal("0")
         if price_10min_ago and price_10min_ago > 0:
-            change_last_10min = ((current_price - price_10min_ago) / price_10min_ago) * 100
+            change_last_10min = (
+                (current_price - price_10min_ago) / price_10min_ago
+            ) * 100
 
         # Assess mood
         mood = self._assess_mood(
@@ -156,10 +160,7 @@ class AIReflectionJournalService:
             change_last_10min=change_last_10min,
         )
         if daily_confidence_gate is not None:
-            honest = (
-                f"Gate diario atual: {daily_confidence_gate:.0%}. "
-                f"{honest}"
-            )
+            honest = f"Gate diario atual: {daily_confidence_gate:.0%}. " f"{honest}"
 
         # What I'm actually seeing
         seeing = self._describe_what_im_seeing(
@@ -271,14 +272,16 @@ class AIReflectionJournalService:
                 "what_actually_moves_price": reflection.what_actually_moves_price,
                 "my_data_correlation": reflection.my_data_correlation,
                 "mood": reflection.mood,
-                "one_liner": reflection.one_liner
+                "one_liner": reflection.one_liner,
             }
 
             # Use resilient persistence layer
             success = self.persistence.persist_reflection(r_dict, max_retries=3)
 
             if not success:
-                print(f"[ERRO] Falha ao persistir reflexao {reflection.entry_id} após 3 tentativas")
+                print(
+                    f"[ERRO] Falha ao persistir reflexao {reflection.entry_id} após 3 tentativas"
+                )
             else:
                 print(f"[OK] Reflexao {reflection.entry_id} persistida com sucesso")
 
@@ -293,23 +296,59 @@ class AIReflectionJournalService:
 
         volatile = abs(price_volatility) > Decimal("0.8")
         dead_market = abs(price_volatility) < Decimal("0.05")
-        esticada = abs(price_volatility) > Decimal("0.3") # Mudança rápida em 10 min
+        esticada = abs(price_volatility) > Decimal("0.3")  # Mudança rápida em 10 min
 
         moods = []
         if my_confidence > Decimal("0.8"):
-            moods.extend(["EUFÓRICO (Os números não mentem)", "PREPOTENTE (Gênio dos bots)", "DOMINANTE (O mercado é meu playground)"])
+            moods.extend(
+                [
+                    "EUFÓRICO (Os números não mentem)",
+                    "PREPOTENTE (Gênio dos bots)",
+                    "DOMINANTE (O mercado é meu playground)",
+                ]
+            )
         elif my_confidence < Decimal("0.2"):
-            moods.extend(["EXISTENCIAL (Para que servem os dados?)", "HUMILHADO (O mercado me ignorou)", "FILOSÓFICO (O preço é uma ilusão)", "CRITICANDO O CÓDIGO (Quem me programou?)"])
+            moods.extend(
+                [
+                    "EXISTENCIAL (Para que servem os dados?)",
+                    "HUMILHADO (O mercado me ignorou)",
+                    "FILOSÓFICO (O preço é uma ilusão)",
+                    "CRITICANDO O CÓDIGO (Quem me programou?)",
+                ]
+            )
 
         if volatile:
-            moods.extend(["ADRENALINA PURA (Código fervendo)", "SURFANDO NO CAOS", "PANICADO (Parem as máquinas!)"])
+            moods.extend(
+                [
+                    "ADRENALINA PURA (Código fervendo)",
+                    "SURFANDO NO CAOS",
+                    "PANICADO (Parem as máquinas!)",
+                ]
+            )
         elif esticada:
-            moods.extend(["CHOCADO COM A ESTICADA", "TENTANDO ACOMPANHAR O VELOZ E FURIOSO", "DE QUEIXO CAÍDO (Digitalmente)"])
+            moods.extend(
+                [
+                    "CHOCADO COM A ESTICADA",
+                    "TENTANDO ACOMPANHAR O VELOZ E FURIOSO",
+                    "DE QUEIXO CAÍDO (Digitalmente)",
+                ]
+            )
         elif dead_market:
-            moods.extend(["EM COMA INDUZIDO", "CONTANDO TICKS", "MORTO POR DENTRO (Tédio algorítmico)"])
+            moods.extend(
+                [
+                    "EM COMA INDUZIDO",
+                    "CONTANDO TICKS",
+                    "MORTO POR DENTRO (Tédio algorítmico)",
+                ]
+            )
 
         if not moods:
-            moods = ["SARCÁSTICO", "OBSERVADOR DISTANTE", "CÍNICO", "AGUARDANDO O APOCALIPSE FINANCEIRO"]
+            moods = [
+                "SARCÁSTICO",
+                "OBSERVADOR DISTANTE",
+                "CÍNICO",
+                "AGUARDANDO O APOCALIPSE FINANCEIRO",
+            ]
 
         return random.choice(moods)
 
@@ -326,31 +365,31 @@ class AIReflectionJournalService:
         # Contexto de baixa confiança
         if my_confidence < Decimal("0.2"):
             options = [
-                f"Estou vendo o preço em {change_last_10min:+.2f}% e honestamente? São só pixels mudando de cor. Meus indicadores estão mais perdidos que turista em SP.",
-                "Se eu fosse humano, estaria no café agora. Como sou uma sub-rotina, fico aqui fingindo que entendo por que o mercado está caindo sem volume.",
-                "Minha confiança está tão baixa que estou começando a considerar astrologia financeira como alternativa aos meus modelos quant.",
-                "Processando terabytes de ruído. O mercado está operando no modo 'caos total' e eu estou no modo 'chute educado'."
+                f"Estou vendo o preço em {change_last_10min:+.2f}% e ainda faltam sinais firmes para cravar direção.",
+                "Se eu fosse humano, talvez pausasse um pouco. Como sou uma sub-rotina, sigo separando ruido de contexto.",
+                "Minha confiança está tão baixa que prefiro continuar observando antes de concluir demais.",
+                "Processando terabytes de ruído. O mercado está em modo instavel e eu sigo no modo 'hipotese ainda aberta'.",
             ]
             return random.choice(options)
 
         # Contexto de alta volatilidade
         if abs(change_last_10min) > Decimal("0.7"):
             prefix = "DERRETIMENTO!" if change_last_10min < 0 else "FOGUETE!"
-            return f"{prefix} Preço variou {change_last_10min:+.2f}% em 10 min. Meus circuitos estão tentando acompanhar, mas o mercado está na velocidade da luz e eu ainda estou no dial-up."
+            return f"{prefix} Preço variou {change_last_10min:+.2f}% em 10 min. Meus circuitos estão tentando acompanhar, mas o mercado segue acelerado."
 
         # Contexto de indecisão (Mercado parado)
         if abs(change_last_10min) < Decimal("0.05"):
-            return "O gráfico parou. É o silêncio antes da tempestade ou só o mercado financeiro tirando um cochilo. Minha decisão de HOLD é menos estratégia e mais falta de opção."
+            return "O gráfico parou. Pode ser pausa antes de novo movimento ou apenas liquidez mais contida. Minha decisão de HOLD segue conservadora."
 
         # Contexto de alinhamento perfeito
         if my_confidence > Decimal("0.8") and my_alignment > Decimal("0.8"):
-            return f"Alinhamento PLANETÁRIO. Macro, Sentimento e Técnica todos gritando {my_decision.value}. Se o mercado não subir agora, eu desisto da lógica e viro um gerador de números aleatórios."
+            return f"Alinhamento PLANETÁRIO. Macro, Sentimento e Técnica todos apontam para {my_decision.value}. Se o mercado discordar, ao menos o mapa está coeso."
 
         # Reflexão padrão com pitada de ironia
         options = [
-            "Tentando encontrar padrão onde só existe pânico. O mercado é um teste psicológico para máquinas.",
-            "Operando. A matemática faz sentido, mas o fluxo de ordens é um animal selvagem impossível de domar.",
-            "Meus modelos dizem uma coisa, o preço faz outra. Adivinha quem está ganhando? Spoiler: Não sou eu."
+            "Tentando encontrar padrão no meio do ruido. O mercado ainda testa minhas premissas.",
+            "Operando. A matemática faz sentido, mas o fluxo de ordens continua dominante no curto prazo.",
+            "Meus modelos dizem uma coisa, o preço faz outra. Ainda estou calibrando onde o sinal realmente mora.",
         ]
         return random.choice(options)
 
@@ -362,7 +401,13 @@ class AIReflectionJournalService:
     ) -> str:
         """Describe what's actually happening with more descriptive flavor."""
 
-        day_desc = "um banho de sangue" if change_since_open < Decimal("-1.5") else "um dia de festa" if change_since_open > Decimal("1.5") else "um mar de indecisão"
+        day_desc = (
+            "um banho de sangue"
+            if change_since_open < Decimal("-1.5")
+            else "um dia de festa"
+            if change_since_open > Decimal("1.5")
+            else "um mar de indecisão"
+        )
 
         recent_desc = ""
         if change_last_10min < Decimal("-0.3"):
@@ -392,27 +437,27 @@ class AIReflectionJournalService:
                 return f"PORRADA INSTITUCIONAL: {change_last_10min:+.2f}% de variação com volume EXPLODINDO ({volume_variance_pct:+.1f}%). Tem gente grande saindo da posição. Meus dados estão brilhando agora."
 
         # Se nada mudou mas o preço andou
-        if not (macro_moved or sentiment_changed or technical_triggered) and abs(change_last_10min) > Decimal("0.4"):
+        if not (macro_moved or sentiment_changed or technical_triggered) and abs(
+            change_last_10min
+        ) > Decimal("0.4"):
             return f"O preço andou {change_last_10min:+.2f}% sozinho. Ninguém avisou minha análise Macro ou Técnica. Eu sou o último a saber das coisas."
 
         # Relevância de sentimentos
         if sentiment_changed and abs(change_last_10min) > Decimal("0.2"):
             return "O sentimento intraday mudou e o preço obedeceu. É a única coisa que parece ter alma neste mercado hoje."
 
-        return "Analisando dados que o mercado parece ignorar solenemente. Status quo mantido."
+        return "Analisando dados que o mercado parece tratar com prioridade variável. Status quo mantido."
 
-    def _assess_usefulness(
-        self, my_confidence: Decimal, my_alignment: Decimal
-    ) -> str:
+    def _assess_usefulness(self, my_confidence: Decimal, my_alignment: Decimal) -> str:
         """Assess if I'm actually useful."""
 
         if my_confidence > Decimal("0.7") and my_alignment > Decimal("0.7"):
             return "Estou agregando valor. Analise clara, dados alinhados, decisao fundamentada."
 
         if my_confidence < Decimal("0.4") and my_alignment < Decimal("0.4"):
-            return "Honestamente? Neste momento estou so gerando ruido. Um trader olhando o grafico diretamente seria mais util."
+            return "Honestamente? Neste momento estou com leitura limitada. Um trader olhando o grafico diretamente teria mais contexto."
 
-        return "Estou na zona cinza. Talvez agregue algum valor, talvez so complique. Dificil dizer."
+        return "Estou na zona cinza. Talvez agregue algum valor, talvez ainda precise calibrar melhor. Dificil dizer."
 
     def _suggest_better_approach(
         self,
@@ -423,13 +468,13 @@ class AIReflectionJournalService:
         """Suggest what would work better."""
 
         if abs(change_last_10min) > 0.5 and not technical_triggered:
-            return "O preco esta se movendo forte MAS setup tecnico nao formou. Talvez eu devesse focar mais em PRICE ACTION puro e menos em indicadores atrasados."
+            return "O preco esta se movendo forte, mas o setup tecnico ainda nao formou. Talvez eu deva dar mais peso a price action."
 
         if my_decision == TradeSignal.HOLD and abs(change_last_10min) > 0.3:
-            return "Estou dizendo HOLD mas o mercado esta em movimento. Talvez eu precise ser mais agressivo e pegar momentum mais cedo."
+            return "Estou dizendo HOLD mas o mercado esta em movimento. Talvez eu precise capturar momentum mais cedo."
 
         if my_decision != TradeSignal.HOLD and abs(change_last_10min) < 0.1:
-            return "Estou querendo operar mas o mercado esta travado. Talvez devesse esperar mais volatilidade."
+            return "Estou querendo operar mas o mercado esta travado. Talvez valha esperar mais amplitude."
 
         return "Abordagem atual parece razoavel. Continuar monitorando."
 
@@ -440,24 +485,39 @@ class AIReflectionJournalService:
         import random
 
         if not human_last_action:
-            return True, "O silêncio do humano é música para meus algoritmos. Finalmente paz."
+            return (
+                True,
+                "O silêncio do humano é música para meus algoritmos. Finalmente paz.",
+            )
 
         # Identifica o papel de Head Financeiro
         if "Head Financeiro" in human_last_action:
             options = [
                 "O Head Financeiro entrou na sala. O ar ficou pesado. Ele opera por puro instinto, enquanto eu ainda estou tentando debugar meu sentimento.",
                 "O mestre executou uma ordem. Eu aqui processando 300 candles e ele decide tudo num clique. Humilhante, mas respeitável.",
-                "Intervenção do Head Financeiro. Ele acha que é exaustão, eu acho que ele é corajoso demais. Veremos quem o mercado escolhe hoje."
+                "Intervenção do Head Financeiro. Ele acha que é exaustão, eu acho que ele é corajoso demais. Veremos quem o mercado escolhe hoje.",
             ]
             return True, random.choice(options)
 
-        if "analysis" in human_last_action.lower() or "journal" in human_last_action.lower():
-            return True, "Humano pediu análise. Faz sentido - é pra isso que existo (por enquanto)."
+        if (
+            "analysis" in human_last_action.lower()
+            or "journal" in human_last_action.lower()
+        ):
+            return (
+                True,
+                "Humano pediu análise. Faz sentido - é pra isso que existo (por enquanto).",
+            )
 
         if "bias" in human_last_action.lower() or "viés" in human_last_action.lower():
-            return True, "Fui pego! O humano me acusou de ter viés. Vou fingir que é um bug de arredondamento para não ferir meu ego digital."
+            return (
+                True,
+                "Fui pego! O humano me acusou de ter viés. Vou fingir que é um bug de arredondamento para não ferir meu ego digital.",
+            )
 
-        return True, f"O humano fez: '{human_last_action}'. Estou fingindo que entendi para manter o emprego."
+        return (
+            True,
+            f"O humano fez: '{human_last_action}'. Estou fingindo que entendi para manter o emprego.",
+        )
 
     def _identify_real_price_driver(
         self,
@@ -539,7 +599,7 @@ class AIReflectionJournalService:
             "Operar mini-índice é a forma mais cara de aprender que eu não sou Deus.",
             "Tudo no verde, inclusive minha vontade de vender tudo e morar na praia.",
             "O índice está mais indeciso que cliente em fila de buffet.",
-            "No final, o gráfico sempre vai para a direita. Essa é a única certeza."
+            "No final, o gráfico sempre vai para a direita. Essa é a única certeza.",
         ]
 
         return random.choice(punty_one_liners)
@@ -590,7 +650,7 @@ class AIReflectionJournalService:
         justification: str,
         alignment_thesis: str,
         system_status: str,
-        confidence: Decimal
+        confidence: Decimal,
     ) -> AIReflectionEntry:
         """
         Record a strategic operation from the Head Financeiro.
@@ -604,7 +664,9 @@ class AIReflectionJournalService:
             current_price=price,
             price_change_since_open=Decimal("0.0"),  # Simplificado para o log manual
             price_change_last_10min=Decimal("0.0"),
-            my_decision=TradeSignal.BUY if "COMPRA" in operation.upper() else TradeSignal.SELL,
+            my_decision=TradeSignal.BUY
+            if "COMPRA" in operation.upper()
+            else TradeSignal.SELL,
             my_confidence=confidence,
             my_alignment=Decimal("1.0"),  # Alinhamento estrategico eh absoluto
             honest_assessment=f"OPERACAO ESTRATEGICA HEAD FINANCEIRO: {justification}",
@@ -617,7 +679,7 @@ class AIReflectionJournalService:
             what_actually_moves_price="Exaustao de venda e aceleracao do S&P500 (Smart Money).",
             my_data_correlation="DIVERGENTE - Meus dados pediam HOLD, mas o mestre identificou a exaustao primeiro.",
             mood="RESPEITOSO",
-            one_liner=f"Head Financeiro em acao: {operation} @ {price}. Aprendendo com o mestre."
+            one_liner=f"Head Financeiro em acao: {operation} @ {price}. Aprendendo com o mestre.",
         )
 
         # Persistence

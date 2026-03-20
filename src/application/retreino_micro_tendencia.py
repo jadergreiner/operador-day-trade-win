@@ -215,6 +215,104 @@ class TriggerRetreino:
         except Exception:
             return False
 
+    def _salvar_model_metadata(
+        self,
+        cur: sqlite3.Cursor,
+        versao: str,
+        data_treino: str,
+        modelo_path: str,
+        win_rate_validacao: float,
+        n_episodios: int,
+        notas: str,
+        win_rate_treino: float = 0.0,
+        delta: float = 0.0,
+        rollback: bool = False,
+    ) -> None:
+        """Persiste o metadado ativo do modelo no schema atual.
+
+        O projeto convive com dois formatos de `model_metadata`:
+        - schema legado com `versao`/`ativo`
+        - schema atual com `model_name`/`version`
+
+        Este helper faz upsert no formato disponível para evitar quebra por
+        `UNIQUE constraint` ao registrar novas versões.
+        """
+        if self._tem_coluna("model_metadata", "model_name"):
+            cur.execute("UPDATE model_metadata SET is_active = 0")
+            training_metrics = json.dumps(
+                {
+                    "win_rate_treino": win_rate_treino,
+                    "win_rate_validacao": win_rate_validacao,
+                    "n_episodios": n_episodios,
+                    "delta_vs_anterior": delta,
+                    "rollback": rollback,
+                    "notas": notas,
+                },
+                ensure_ascii=False,
+            )
+            cur.execute(
+                """
+                INSERT INTO model_metadata (
+                    model_name, model_type, version, trained_at,
+                    training_metrics, hyperparameters, file_path,
+                    is_active, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+                ON CONFLICT(model_name) DO UPDATE SET
+                    model_type = excluded.model_type,
+                    version = excluded.version,
+                    trained_at = excluded.trained_at,
+                    training_metrics = excluded.training_metrics,
+                    hyperparameters = excluded.hyperparameters,
+                    file_path = excluded.file_path,
+                    is_active = excluded.is_active,
+                    updated_at = excluded.updated_at
+                """,
+                (
+                    "micro_tendencia",
+                    "LightGBM_micro_tendencia",
+                    versao,
+                    data_treino,
+                    training_metrics,
+                    json.dumps({}, ensure_ascii=False),
+                    modelo_path,
+                    data_treino,
+                    data_treino,
+                ),
+            )
+            return
+
+        if self._tem_coluna("model_metadata", "versao"):
+            cur.execute("UPDATE model_metadata SET ativo = 0")
+            cur.execute(
+                """
+                INSERT INTO model_metadata (
+                    versao, data_treino, modelo_path,
+                    win_rate_validacao, n_episodios, ativo, notas
+                ) VALUES (?, ?, ?, ?, ?, 1, ?)
+                ON CONFLICT(versao) DO UPDATE SET
+                    data_treino = excluded.data_treino,
+                    modelo_path = excluded.modelo_path,
+                    win_rate_validacao = excluded.win_rate_validacao,
+                    n_episodios = excluded.n_episodios,
+                    ativo = excluded.ativo,
+                    notas = excluded.notas
+                """,
+                (
+                    versao,
+                    data_treino,
+                    modelo_path,
+                    win_rate_validacao,
+                    n_episodios,
+                    notas,
+                ),
+            )
+
+            return
+
+        logger.warning(
+            "model_metadata sem colunas conhecidas para persistencia segura."
+        )
+
     def contar_rewards_total(self) -> int:
         """Retorna total de rewards avaliados em rl_rewards.
 
@@ -357,35 +455,11 @@ class TriggerRetreino:
                 "bootstrap": True,
                 "fonte": str(path),
             }
+            notas = f"Bootstrap inicial | rewards_total={rewards_total} | modelo={modelo_path}"
 
             conn = sqlite3.connect(self.db_path)
             cur = conn.cursor()
-            if self._tem_coluna("model_metadata", "version"):
-                cur.execute(
-                    "UPDATE model_metadata SET is_active = 0 WHERE model_name = ?",
-                    ("micro_tendencia",),
-                )
-                cur.execute(
-                    """
-                    INSERT INTO model_metadata (
-                        model_name, model_type, version, trained_at,
-                        training_metrics, hyperparameters, file_path,
-                        is_active, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
-                    """,
-                    (
-                        "micro_tendencia",
-                        "LightGBM_micro_tendencia",
-                        versao,
-                        data_treino,
-                        json.dumps(metrics, ensure_ascii=False),
-                        json.dumps({}, ensure_ascii=False),
-                        modelo_path,
-                        datetime.now().isoformat(),
-                        datetime.now().isoformat(),
-                    ),
-                )
-            elif self._tem_coluna("rl_training_metrics", "model_version"):
+            if self._tem_coluna("rl_training_metrics", "model_version"):
                 cur.execute(
                     """
                     INSERT INTO rl_training_metrics (
@@ -447,6 +521,18 @@ class TriggerRetreino:
                         notas,
                     ),
                 )
+            self._salvar_model_metadata(
+                cur=cur,
+                versao=versao,
+                data_treino=data_treino,
+                modelo_path=modelo_path,
+                win_rate_validacao=0.0,
+                n_episodios=n_episodios,
+                notas=notas,
+                win_rate_treino=0.0,
+                delta=0.0,
+                rollback=False,
+            )
             conn.commit()
             conn.close()
             return versao
@@ -951,23 +1037,16 @@ class GerenciadorRetreino:
                     0,
                     modelo_path,
                     notas,
-                ),
-            )
-            cur.execute(
-                """
-                INSERT INTO model_metadata (
-                    versao, data_treino, modelo_path,
-                    win_rate_validacao, n_episodios, ativo, notas
-                ) VALUES (?, ?, ?, ?, ?, 1, ?)
-                """,
-                (
-                    versao,
-                    data_treino,
-                    modelo_path,
-                    win_rate_validacao,
-                    n_episodios,
-                    notas,
-                ),
+                    ),
+                )
+            self._salvar_model_metadata(
+                cur=cur,
+                versao=versao,
+                data_treino=data_treino,
+                modelo_path=modelo_path,
+                win_rate_validacao=win_rate_validacao,
+                n_episodios=n_episodios,
+                notas=notas,
             )
             conn.commit()
             conn.close()
@@ -1205,37 +1284,18 @@ class GerenciadorRetreino:
                     ),
                 )
 
-            if self._tem_coluna("model_metadata", "version"):
-                cur.execute("UPDATE model_metadata SET is_active = 0")
-                cur.execute(
-                    """
-                    INSERT INTO model_metadata (
-                        model_name, model_type, version, trained_at,
-                        training_metrics, hyperparameters, file_path,
-                        is_active, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
-                    """,
-                    (
-                        "micro_tendencia",
-                        "LightGBM_micro_tendencia",
-                        versao,
-                        data_treino,
-                        json.dumps(
-                            {
-                                "win_rate_treino": win_rate_treino,
-                                "win_rate_validacao": win_rate_validacao,
-                                "n_episodios": n_episodios,
-                                "delta_vs_anterior": delta,
-                                "rollback": rollback,
-                            },
-                            ensure_ascii=False,
-                        ),
-                        json.dumps({}, ensure_ascii=False),
-                        modelo_path,
-                        data_treino,
-                        data_treino,
-                    ),
-                )
+            self._salvar_model_metadata(
+                cur=cur,
+                versao=versao,
+                data_treino=data_treino,
+                modelo_path=modelo_path,
+                win_rate_validacao=win_rate_validacao,
+                n_episodios=n_episodios,
+                notas=notas,
+                win_rate_treino=win_rate_treino,
+                delta=delta,
+                rollback=rollback,
+            )
 
             self._registrar_changelog(
                 versao=versao,

@@ -1248,6 +1248,23 @@ class AntiOvertradingProtection:
         self.is_in_cooldown = False
         self.cooldown_until = None
 
+    def _liberar_cooldown_expirado(self, now: datetime) -> None:
+        """Normaliza o estado quando o cooldown já venceu."""
+        if not self.is_in_cooldown or not self.cooldown_until:
+            return
+
+        if now < self.cooldown_until:
+            return
+
+        self.is_in_cooldown = False
+        self.cooldown_until = None
+
+        if self.consecutive_losses > 0:
+            logger.info(
+                "[ANTIOVERTRADING] Cooldown expirado - resetando sequencia de perdas"
+            )
+            self.consecutive_losses = 0
+
     def pode_monitorar(self, agora: Optional[datetime] = None) -> bool:
         """Expõe a janela estendida de monitoramento do agente."""
         now = agora or datetime.now()
@@ -1273,9 +1290,8 @@ class AntiOvertradingProtection:
         if self.is_in_cooldown and self.cooldown_until and now < self.cooldown_until:
             remaining = (self.cooldown_until - now).total_seconds()
             return False, f"❌ Em cooldown global ({remaining:.0f}s restantes)"
-        else:
-            self.is_in_cooldown = False
-            self.cooldown_until = None
+
+        self._liberar_cooldown_expirado(now)
 
         # 3. Verificar limite diário do PRD
         if self.daily_trade_count >= self.max_trades_per_day:
@@ -1349,6 +1365,22 @@ class AntiOvertradingProtection:
         logger.info(
             f"[ANTIOVERTRADING] ✅ Ganho registrado - contador de perdas resetado"
         )
+
+
+def registrar_bloqueio_anti_overtrading(ciclo: int, acao_str: str, motivo: str) -> None:
+    """Registra no log quando um sinal confirmado é bloqueado pela proteção."""
+    motivo_normalizado = motivo.lower()
+    if "cooldown global" in motivo_normalizado:
+        logger.warning(
+            f"[CICLO {ciclo}] SINAL CONFIRMADO: {acao_str} | "
+            f"ORDEM BLOQUEADA por cooldown pós-loss: {motivo}"
+        )
+        return
+
+    logger.warning(
+        f"[CICLO {ciclo}] SINAL CONFIRMADO: {acao_str} | "
+        f"ORDEM BLOQUEADA pela proteção anti-overtrading: {motivo}"
+    )
 
 
 # ============================================================================
@@ -1795,14 +1827,15 @@ def main():
 
                         # 4.5. 🛑 Verificar proteção contra overtrading
                         pode_tradear, motivo = anti_overtrading.pode_tradear()
-                        logger.info(f"[CICLO {ciclo}] {motivo}")
 
                         if not pode_tradear:
-                            logger.warning(
-                                f"[CICLO {ciclo}] Ordem BLOQUEADA pela proteção anti-overtrading"
-                            )
+                            registrar_bloqueio_anti_overtrading(ciclo, acao_str, motivo)
                             time.sleep(5)
                             continue
+
+                        logger.info(
+                            f"[CICLO {ciclo}] Proteção anti-overtrading: {motivo}"
+                        )
 
                         # 5. Enviar ordem
                         if enviar_ordem(

@@ -126,7 +126,7 @@ class TradingJournalService:
             symbol=symbol,
             current_price=current_price,
             decision_data=decision_data,
-            volume_variance_pct=volume_variance_pct
+            volume_variance_pct=volume_variance_pct,
         )
 
         # Generate headline
@@ -147,7 +147,7 @@ class TradingJournalService:
             feeling=feeling,
             decision_data=decision_data,
             daily_confidence_gate=daily_confidence_gate,
-            volume_variance_pct=volume_variance_pct
+            volume_variance_pct=volume_variance_pct,
         )
 
         # Extract tags for learning
@@ -252,7 +252,9 @@ class TradingJournalService:
 
         # Opening paragraph - set the scene
         if price_change > 0:
-            opening = f"Sao {time_str}. O {symbol} amanheceu buscando terreno mais alto. "
+            opening = (
+                f"Sao {time_str}. O {symbol} amanheceu buscando terreno mais alto. "
+            )
             opening += f"Abriu em R$ {opening_price:,.2f} e agora negocia a R$ {current_price:,.2f}, "
             opening += f"uma alta de {price_change:.2f}%. "
         elif price_change < 0:
@@ -270,7 +272,9 @@ class TradingJournalService:
             range_pct = Decimal("0")
 
         vol_para = f"A amplitude intraday ja atingiu {range_pct:.2f}%, "
-        vol_para += f"oscilando entre a maxima de R$ {high:,.2f} e minima de R$ {low:,.2f}. "
+        vol_para += (
+            f"oscilando entre a maxima de R$ {high:,.2f} e minima de R$ {low:,.2f}. "
+        )
 
         if range_pct > 2.0:
             vol_para += "Volatilidade ALTA esta deixando o mercado nervoso. "
@@ -295,7 +299,7 @@ class TradingJournalService:
             if volume_variance_pct and volume_variance_pct > Decimal("20"):
                 sent_para += "Volume ALTO confirma pressao vendedora REAL. "
             elif volume_variance_pct and volume_variance_pct < Decimal("-20"):
-                sent_para += "Mas volume BAIXO sugere movimento SEM conviccao - possivel armadilha. "
+                sent_para += "Mas volume BAIXO sugere movimento mais sensivel a ruido - pedir confirmacao extra. "
             else:
                 sent_para += "Cada tentativa de recuperacao e punida com mais vendas. "
             sent_para += "Topos e fundos descendentes pintam cenario pessimista. "
@@ -311,14 +315,22 @@ class TradingJournalService:
         confidence = decision_data.get("confidence", Decimal("0.5"))
 
         if action == TradeSignal.BUY:
-            decision_para = f"DECISAO: Buscar COMPRA com {confidence:.0%} de confianca. "
-            decision_para += f"Razao: {decision_data.get('primary_reason', 'Setup identificado')}. "
+            decision_para = (
+                f"DECISAO: Buscar COMPRA com {confidence:.0%} de confianca. "
+            )
+            decision_para += (
+                f"Razao: {decision_data.get('primary_reason', 'Setup identificado')}. "
+            )
         elif action == TradeSignal.SELL:
             decision_para = f"DECISAO: Buscar VENDA com {confidence:.0%} de confianca. "
-            decision_para += f"Razao: {decision_data.get('primary_reason', 'Setup identificado')}. "
+            decision_para += (
+                f"Razao: {decision_data.get('primary_reason', 'Setup identificado')}. "
+            )
         else:
-            decision_para = f"DECISAO: AGUARDAR. Confianca baixa ({confidence:.0%}). "
-            decision_para += f"Razao: {decision_data.get('primary_reason', 'Sem setup claro')}. "
+            decision_para = f"DECISAO: OBSERVAR. Confianca baixa ({confidence:.0%}). "
+            decision_para += (
+                f"Razao: {decision_data.get('primary_reason', 'Sem setup claro')}. "
+            )
 
         if daily_confidence_gate is not None:
             decision_para += f"Gate diario atual: {daily_confidence_gate:.0%}. "
@@ -331,11 +343,20 @@ class TradingJournalService:
             symbol=symbol,
             current_price=current_price,
             decision_data=decision_data,
-            volume_variance_pct=volume_variance_pct
+            volume_variance_pct=volume_variance_pct,
         )
 
         # Combine all
-        narrative = opening + "\n" + head_analise + "\n\n" + vol_para + sent_para + decision_para + conclusion
+        narrative = (
+            opening
+            + "\n"
+            + head_analise
+            + "\n\n"
+            + vol_para
+            + sent_para
+            + decision_para
+            + conclusion
+        )
 
         return narrative
 
@@ -344,7 +365,7 @@ class TradingJournalService:
         symbol: Symbol,
         current_price: Decimal,
         decision_data: dict,
-        volume_variance_pct: Optional[Decimal] = None
+        volume_variance_pct: Optional[Decimal] = None,
     ) -> str:
         """O monitoramento em tempo real do que um HEAD de trading observa."""
         import random
@@ -352,7 +373,12 @@ class TradingJournalService:
         # SMC / Liquidity
         liquidity_zones = [182100, 183500, 181800, 184200, 182800]
         chosen_zone = random.choice(liquidity_zones)
-        smc_concepts = ["Order Block", "Fair Value Gap", "Mitigation Block", "Breaker Structure"]
+        smc_concepts = [
+            "Order Block",
+            "Fair Value Gap",
+            "Mitigation Block",
+            "Breaker Structure",
+        ]
         smc = random.choice(smc_concepts)
 
         # Fibonacci
@@ -360,13 +386,30 @@ class TradingJournalService:
         fibo = random.choice(fibo_levels)
 
         # WDO Flow
-        wdo_flow = ["saída de fluxo (venda)", "entrada de fluxo (compra)", "proteção de player", "arbitragem agressiva"]
+        wdo_flow = [
+            "saída de fluxo (venda)",
+            "entrada de fluxo (compra)",
+            "proteção de player",
+            "arbitragem agressiva",
+        ]
         wdo = random.choice(wdo_flow)
-        wdo_impact = "positivo" if "saída" in wdo or "venda" in wdo else "negativo" if "entrada" in wdo else "neutro"
+        wdo_impact = (
+            "positivo"
+            if "saída" in wdo or "venda" in wdo
+            else "negativo"
+            if "entrada" in wdo
+            else "neutro"
+        )
 
         # Volume/Aggression
         vol_text = "crescendo" if (volume_variance_pct or 0) > 0 else "abaixo da média"
-        aggression = "compradora" if decision_data.get("sentiment_bias") == "BULLISH" else "vendedora" if decision_data.get("sentiment_bias") == "BEARISH" else "equilibrada"
+        aggression = (
+            "compradora"
+            if decision_data.get("sentiment_bias") == "BULLISH"
+            else "vendedora"
+            if decision_data.get("sentiment_bias") == "BEARISH"
+            else "equilibrada"
+        )
 
         analysis = (
             f"--- [ANÁLISE DO HEAD FINANCEIRO] ---\n"
@@ -383,10 +426,10 @@ class TradingJournalService:
         """Generate concluding thought."""
 
         if action == TradeSignal.HOLD:
-            return "Paciencia eh virtude. Preservar capital eh prioridade maxima."
+            return "Capital preservado enquanto a estrutura fica mais clara."
 
         if feeling in ["PANIC", "FRENZY", "CHAOS"]:
-            return "Mercado emocional exige cautela extra. Risk management rigoroso."
+            return "Mercado emocional pede disciplina extra. Risk management rigoroso."
 
         if feeling in ["CALM", "OPTIMISTIC", "CAUTIOUS"]:
             return "Condicoes favoraveis para operacao disciplinada."

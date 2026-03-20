@@ -38,6 +38,7 @@ from src.application.diario_order_manager import (
 # Helpers / Fakes
 # ────────────────────────────────────────────────────────────────
 
+
 def _fake_candle(open_: float, high: float, low: float, close: float) -> MagicMock:
     c = MagicMock()
     c.open.value = open_
@@ -47,8 +48,9 @@ def _fake_candle(open_: float, high: float, low: float, close: float) -> MagicMo
     return c
 
 
-def _candles_simples(n: int = 20, preco_base: float = 100000.0,
-                     atr_pts: float = 200.0) -> list:
+def _candles_simples(
+    n: int = 20, preco_base: float = 100000.0, atr_pts: float = 200.0
+) -> list:
     """Cria n candles com ATR aproximado de atr_pts."""
     candles = []
     for i in range(n):
@@ -57,8 +59,12 @@ def _candles_simples(n: int = 20, preco_base: float = 100000.0,
     return candles
 
 
-def _fake_decisao(action: str = "BUY", confidence: float = 0.80,
-                  alignment: float = 0.70, macro_bias: str = "BULLISH") -> MagicMock:
+def _fake_decisao(
+    action: str = "BUY",
+    confidence: float = 0.80,
+    alignment: float = 0.70,
+    macro_bias: str = "BULLISH",
+) -> MagicMock:
     d = MagicMock()
     d.action.value = action
     d.confidence = confidence
@@ -69,8 +75,9 @@ def _fake_decisao(action: str = "BUY", confidence: float = 0.80,
     return d
 
 
-def _fake_guardian(kill_switch: bool = False, bias_override: str = "",
-                   penalty: float = 0.0) -> MagicMock:
+def _fake_guardian(
+    kill_switch: bool = False, bias_override: str = "", penalty: float = 0.0
+) -> MagicMock:
     g = MagicMock()
     g.active_kill_switch = kill_switch
     g.bias_override = bias_override
@@ -191,8 +198,8 @@ def _make_manager(
 # calcular_atr / calcular_momentum
 # ────────────────────────────────────────────────────────────────
 
-class TestCalcularAtr:
 
+class TestCalcularAtr:
     def test_atr_calculado_corretamente(self):
         # 15 candles com TR fixo de 200 pts
         candles = [_fake_candle(100000, 100200, 100000, 100100) for _ in range(16)]
@@ -208,6 +215,7 @@ class TestCalcularAtr:
         # TR enorme
         candles = [_fake_candle(100000, 105000, 95000, 100000) for _ in range(20)]
         from src.application.diario_order_manager import ATR_MAXIMO
+
         atr = calcular_atr(candles)
         assert atr <= float(ATR_MAXIMO)
 
@@ -219,7 +227,6 @@ class TestCalcularAtr:
 
 
 class TestCalcularMomentum:
-
     def test_momentum_positivo_em_alta(self):
         candles = _candles_simples(n=10, preco_base=100000.0)
         # Ultimo close > 5 velas atras
@@ -245,12 +252,16 @@ class TestCalcularMomentum:
 # DiarioPosicao: serialização
 # ────────────────────────────────────────────────────────────────
 
-class TestDiarioPosicao:
 
+class TestDiarioPosicao:
     def test_to_dict_campos_obrigatorios(self):
         pos = DiarioPosicao(
-            aberta=True, ticket=123, direcao="BUY",
-            preco_entrada=100000.0, sl=99700.0, tp=100500.0,
+            aberta=True,
+            ticket=123,
+            direcao="BUY",
+            preco_entrada=100000.0,
+            sl=99700.0,
+            tp=100500.0,
             atr_entrada=200.0,
         )
         d = pos.to_dict()
@@ -260,9 +271,14 @@ class TestDiarioPosicao:
 
     def test_from_dict_round_trip(self):
         original = DiarioPosicao(
-            aberta=True, ticket=456, direcao="SELL",
-            preco_entrada=99000.0, sl=99300.0, tp=98400.0,
-            atr_entrada=180.0, max_ganho_pts=150.0,
+            aberta=True,
+            ticket=456,
+            direcao="SELL",
+            preco_entrada=99000.0,
+            sl=99300.0,
+            tp=98400.0,
+            atr_entrada=180.0,
+            max_ganho_pts=150.0,
         )
         recuperado = DiarioPosicao.from_dict(original.to_dict())
         assert recuperado.direcao == "SELL"
@@ -279,13 +295,18 @@ class TestDiarioPosicao:
 # DiarioPosicaoStatus
 # ────────────────────────────────────────────────────────────────
 
-class TestDiarioPosicaoStatus:
 
+class TestDiarioPosicaoStatus:
     def test_registrar_abertura_persiste_json(self, tmp_path):
         st = DiarioPosicaoStatus("sess1", str(tmp_path))
-        st.registrar_abertura(ticket=1001, direcao="BUY",
-                               preco_entrada=100000.0, sl=99700.0,
-                               tp=100500.0, atr_entrada=200.0)
+        st.registrar_abertura(
+            ticket=1001,
+            direcao="BUY",
+            preco_entrada=100000.0,
+            sl=99700.0,
+            tp=100500.0,
+            atr_entrada=200.0,
+        )
         assert st.tem_posicao_aberta()
         json_path = tmp_path / "agente_posicao_diarios_sess1.json"
         assert json_path.exists()
@@ -294,38 +315,47 @@ class TestDiarioPosicaoStatus:
 
     def test_registrar_fechamento(self, tmp_path):
         st = DiarioPosicaoStatus("sess2", str(tmp_path))
-        st.registrar_abertura(ticket=2001, direcao="SELL",
-                               preco_entrada=99000.0, sl=99300.0, tp=98400.0)
+        st.registrar_abertura(
+            ticket=2001, direcao="SELL", preco_entrada=99000.0, sl=99300.0, tp=98400.0
+        )
         st.registrar_fechamento("teste")
         assert not st.tem_posicao_aberta()
 
     def test_atualizar_preco_max_ganho_buy(self, tmp_path):
         st = DiarioPosicaoStatus("sess3", str(tmp_path))
-        st.registrar_abertura(ticket=3001, direcao="BUY",
-                               preco_entrada=100000.0, sl=99700.0, tp=100500.0)
+        st.registrar_abertura(
+            ticket=3001, direcao="BUY", preco_entrada=100000.0, sl=99700.0, tp=100500.0
+        )
         st.atualizar_preco(100250.0)
         assert st.posicao.max_ganho_pts == pytest.approx(250.0)
 
     def test_atualizar_preco_max_ganho_sell(self, tmp_path):
         st = DiarioPosicaoStatus("sess4", str(tmp_path))
-        st.registrar_abertura(ticket=4001, direcao="SELL",
-                               preco_entrada=100000.0, sl=100300.0, tp=99400.0)
+        st.registrar_abertura(
+            ticket=4001, direcao="SELL", preco_entrada=100000.0, sl=100300.0, tp=99400.0
+        )
         st.atualizar_preco(99700.0)
         assert st.posicao.max_ganho_pts == pytest.approx(300.0)
 
     def test_max_ganho_nao_reduz(self, tmp_path):
         st = DiarioPosicaoStatus("sess5", str(tmp_path))
-        st.registrar_abertura(ticket=5001, direcao="BUY",
-                               preco_entrada=100000.0, sl=99700.0, tp=100500.0)
+        st.registrar_abertura(
+            ticket=5001, direcao="BUY", preco_entrada=100000.0, sl=99700.0, tp=100500.0
+        )
         st.atualizar_preco(100300.0)
         st.atualizar_preco(100100.0)
         assert st.posicao.max_ganho_pts == pytest.approx(300.0)
 
     def test_recarregar_do_arquivo(self, tmp_path):
         st = DiarioPosicaoStatus("sess6", str(tmp_path))
-        st.registrar_abertura(ticket=6001, direcao="BUY",
-                               preco_entrada=100000.0, sl=99700.0,
-                               tp=100500.0, atr_entrada=200.0)
+        st.registrar_abertura(
+            ticket=6001,
+            direcao="BUY",
+            preco_entrada=100000.0,
+            sl=99700.0,
+            tp=100500.0,
+            atr_entrada=200.0,
+        )
         st2 = DiarioPosicaoStatus("sess6", str(tmp_path))
         assert st2.posicao.atr_entrada == 200.0
 
@@ -334,8 +364,8 @@ class TestDiarioPosicaoStatus:
 # _deve_fechar_por_reversao
 # ────────────────────────────────────────────────────────────────
 
-class TestDeveFecharPorReversao:
 
+class TestDeveFecharPorReversao:
     def _atr_entrada(self) -> float:
         return 200.0
 
@@ -346,8 +376,12 @@ class TestDeveFecharPorReversao:
         mgr = _make_manager(tmp_path)
         atr = self._atr_entrada()
         mgr._posicao.registrar_abertura(
-            ticket=1, direcao="BUY", preco_entrada=100000.0,
-            sl=99700.0, tp=100500.0, atr_entrada=atr,
+            ticket=1,
+            direcao="BUY",
+            preco_entrada=100000.0,
+            sl=99700.0,
+            tp=100500.0,
+            atr_entrada=atr,
         )
         mgr._posicao.atualizar_preco(100200.0)
         preco_reversao = 100200.0 - self._limite_reversao() - 1
@@ -359,8 +393,12 @@ class TestDeveFecharPorReversao:
         mgr = _make_manager(tmp_path)
         atr = self._atr_entrada()
         mgr._posicao.registrar_abertura(
-            ticket=2, direcao="SELL", preco_entrada=100000.0,
-            sl=100300.0, tp=99400.0, atr_entrada=atr,
+            ticket=2,
+            direcao="SELL",
+            preco_entrada=100000.0,
+            sl=100300.0,
+            tp=99400.0,
+            atr_entrada=atr,
         )
         mgr._posicao.atualizar_preco(99800.0)
         preco_reversao = 99800.0 + self._limite_reversao() + 1
@@ -372,8 +410,12 @@ class TestDeveFecharPorReversao:
         atr = self._atr_entrada()
         limite = self._limite_reversao()  # 1.2 * 200 = 240
         mgr._posicao.registrar_abertura(
-            ticket=3, direcao="BUY", preco_entrada=100000.0,
-            sl=99700.0, tp=100500.0, atr_entrada=atr,
+            ticket=3,
+            direcao="BUY",
+            preco_entrada=100000.0,
+            sl=99700.0,
+            tp=100500.0,
+            atr_entrada=atr,
         )
         mgr._posicao.atualizar_preco(100200.0)
         # Recuo de apenas 50 pts (< 240 → nao aciona criterio 1)
@@ -388,8 +430,12 @@ class TestDeveFecharPorReversao:
         mgr = _make_manager(tmp_path)
         atr = 200.0
         mgr._posicao.registrar_abertura(
-            ticket=4, direcao="BUY", preco_entrada=100000.0,
-            sl=99700.0, tp=100500.0, atr_entrada=atr,
+            ticket=4,
+            direcao="BUY",
+            preco_entrada=100000.0,
+            sl=99700.0,
+            tp=100500.0,
+            atr_entrada=atr,
         )
         # Ganho maximo de 400 pts (> 0.8 * 200 = 160)
         mgr._posicao.atualizar_preco(100400.0)
@@ -418,8 +464,12 @@ class TestDeveFecharPorReversao:
         mgr = _make_manager(tmp_path)
         atr = 200.0
         mgr._posicao.registrar_abertura(
-            ticket=5, direcao="BUY", preco_entrada=100000.0,
-            sl=99700.0, tp=100500.0, atr_entrada=atr,
+            ticket=5,
+            direcao="BUY",
+            preco_entrada=100000.0,
+            sl=99700.0,
+            tp=100500.0,
+            atr_entrada=atr,
         )
         # Ganho maximo de 100 pts (< 0.8*200=160 → abaixo do limiar)
         mgr._posicao.atualizar_preco(100100.0)
@@ -433,8 +483,8 @@ class TestDeveFecharPorReversao:
 # consolidar_sinal
 # ────────────────────────────────────────────────────────────────
 
-class TestConsolidarSinal:
 
+class TestConsolidarSinal:
     def test_sinal_valido_pode_operar(self, tmp_path):
         mgr = _make_manager(tmp_path)
         candles = _candles_simples(n=20, atr_pts=200.0)
@@ -524,6 +574,29 @@ class TestConsolidarSinal:
         assert sinal.pode_operar is False
         assert "confianca" in sinal.motivo_bloqueio
 
+    def test_bloqueio_trend_follow_baixa_confianca(self, tmp_path):
+        mgr = _make_manager(tmp_path)
+        candles = _candles_simples()
+        decisao = _fake_decisao("NEUTRO", confidence=0.07, alignment=0.82)
+        guardian = _fake_guardian()
+
+        leitura_mock = MagicMock()
+        leitura_mock.ajuste_confianca = -0.22
+        leitura_mock.divergencia_critica = False
+        leitura_mock.risco_armadilha = "MEDIA"
+        leitura_mock.direcao_preferida = "SELL"
+        leitura_mock.pullback_saudavel = True
+        leitura_mock.resumo = "Pullback saudavel: entrada na direcao da tendencia"
+        leitura_mock.armadilhas = []
+        mgr._leitor.ler.return_value = leitura_mock
+
+        with patch.object(mgr, "_no_pregao", return_value=True):
+            sinal = mgr.consolidar_sinal(decisao, candles, guardian)
+
+        assert sinal.pode_operar is False
+        assert sinal.motivo_bloqueio.startswith("trend_follow_baixa_confianca:")
+        assert "direcao_neutro" not in sinal.motivo_bloqueio
+
     def test_gatilho_diario_de_confianca_usa_override_cauteloso(self, tmp_path):
         override_path = tmp_path / "confidence_override_today.json"
         override_path.write_text(
@@ -584,7 +657,9 @@ class TestConsolidarSinal:
         assert "contexto_abertura" in sinal.motivo_bloqueio
         assert "vies_intraday_baixista" in sinal.contexto_flags
 
-    def test_confirmacao_live_bloqueia_compra_sem_petr_vale_dol_ewz_ibov(self, tmp_path):
+    def test_confirmacao_live_bloqueia_compra_sem_petr_vale_dol_ewz_ibov(
+        self, tmp_path
+    ):
         mgr = _make_manager(tmp_path)
         _configure_live_market_data(
             mgr._mt5,
@@ -630,7 +705,9 @@ class TestConsolidarSinal:
         mgr = _make_manager(tmp_path, rewards=rewards)
         candles = _candles_simples()
         # Confianca base levemente abaixo do limiar
-        decisao = _fake_decisao("BUY", confidence=CONFIANCA_MINIMA - 0.06, alignment=0.75)
+        decisao = _fake_decisao(
+            "BUY", confidence=CONFIANCA_MINIMA - 0.06, alignment=0.75
+        )
         guardian = _fake_guardian()
 
         with patch.object(mgr, "_no_pregao", return_value=True):
@@ -640,10 +717,9 @@ class TestConsolidarSinal:
 
     def test_win_rate_baixo_penaliza_confianca(self, tmp_path):
         # 2 acertos em 10 (20% wr) → penalidade -0.12
-        rewards = (
-            [{"is_evaluated": 1, "was_correct": 1}] * 2 +
-            [{"is_evaluated": 1, "was_correct": 0}] * 8
-        )
+        rewards = [{"is_evaluated": 1, "was_correct": 1}] * 2 + [
+            {"is_evaluated": 1, "was_correct": 0}
+        ] * 8
         mgr = _make_manager(tmp_path, rewards=rewards)
         candles = _candles_simples()
         decisao = _fake_decisao("BUY", confidence=0.70, alignment=0.75)
@@ -675,8 +751,8 @@ class TestConsolidarSinal:
 # ciclo completo
 # ────────────────────────────────────────────────────────────────
 
-class TestCiclo:
 
+class TestCiclo:
     def test_ciclo_abre_posicao(self, tmp_path):
         mgr = _make_manager(tmp_path)
         candles = _candles_simples(n=20, atr_pts=200.0)
@@ -735,8 +811,12 @@ class TestCiclo:
     def test_ciclo_monitora_posicao_aberta(self, tmp_path):
         mgr = _make_manager(tmp_path)
         mgr._posicao.registrar_abertura(
-            ticket=7001, direcao="BUY", preco_entrada=100000.0,
-            sl=99700.0, tp=100500.0, atr_entrada=200.0,
+            ticket=7001,
+            direcao="BUY",
+            preco_entrada=100000.0,
+            sl=99700.0,
+            tp=100500.0,
+            atr_entrada=200.0,
         )
         # MT5 retorna posicao aberta
         mgr._mt5.get_positions.return_value = [
@@ -756,8 +836,12 @@ class TestCiclo:
     def test_ciclo_detecta_fechamento_mt5(self, tmp_path):
         mgr = _make_manager(tmp_path)
         mgr._posicao.registrar_abertura(
-            ticket=8001, direcao="BUY", preco_entrada=100000.0,
-            sl=99700.0, tp=100500.0, atr_entrada=200.0,
+            ticket=8001,
+            direcao="BUY",
+            preco_entrada=100000.0,
+            sl=99700.0,
+            tp=100500.0,
+            atr_entrada=200.0,
         )
         mgr._mt5.get_positions.return_value = []  # MT5 ja fechou
 
@@ -775,8 +859,12 @@ class TestCiclo:
         mgr = _make_manager(tmp_path)
         atr = 200.0
         mgr._posicao.registrar_abertura(
-            ticket=9001, direcao="BUY", preco_entrada=100000.0,
-            sl=99700.0, tp=100500.0, atr_entrada=atr,
+            ticket=9001,
+            direcao="BUY",
+            preco_entrada=100000.0,
+            sl=99700.0,
+            tp=100500.0,
+            atr_entrada=atr,
         )
         mgr._posicao.atualizar_preco(100300.0)
 
@@ -799,8 +887,12 @@ class TestCiclo:
     def test_ciclo_fecha_por_guardian(self, tmp_path):
         mgr = _make_manager(tmp_path)
         mgr._posicao.registrar_abertura(
-            ticket=10001, direcao="BUY", preco_entrada=100000.0,
-            sl=99700.0, tp=100500.0, atr_entrada=200.0,
+            ticket=10001,
+            direcao="BUY",
+            preco_entrada=100000.0,
+            sl=99700.0,
+            tp=100500.0,
+            atr_entrada=200.0,
         )
         mgr._mt5.get_positions.return_value = [
             {"ticket": 10001, "magic": MAGIC_NUMBER, "price_current": 100050.0}

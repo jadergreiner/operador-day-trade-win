@@ -72,14 +72,14 @@ CONFIANCA_MINIMA_CAUTELOSA = 0.35
 # Alinhamento minimo entre macro/tecnico/sentimento (0-1)
 ALINHAMENTO_MINIMO = 0.55
 # Multiplicadores de ATR para SL e TP
-SL_ATR_MULT = 1.5   # SL = preco +/- 1.5 * ATR
-TP_ATR_MULT = 2.5   # TP = preco +/- 2.5 * ATR (R:R ~1.67)
+SL_ATR_MULT = 1.5  # SL = preco +/- 1.5 * ATR
+TP_ATR_MULT = 2.5  # TP = preco +/- 2.5 * ATR (R:R ~1.67)
 # ATR minimo em pontos (proteção contra mercado parado)
 ATR_MINIMO = 80
 # ATR maximo em pontos (proteção contra volatilidade extrema)
 ATR_MAXIMO = 800
 # Reversao: pontos contra a posicao para fechar antecipado
-REVERSAO_ATR_MULT = 1.2   # fecha se preco reverteu 1.2*ATR desde o ultimo tick
+REVERSAO_ATR_MULT = 1.2  # fecha se preco reverteu 1.2*ATR desde o ultimo tick
 # Devolucao de ganho: % do ganho maximo que aciona fechamento
 REVERSAO_PCT_GANHO = 0.60
 # Horario de pregao
@@ -90,6 +90,7 @@ HORA_FIM = (17, 30)
 # ────────────────────────────────────────────────────────────────
 # ATR a partir de candles
 # ────────────────────────────────────────────────────────────────
+
 
 def calcular_atr(candles: list, periodo: int = 14) -> float:
     """
@@ -130,24 +131,26 @@ def calcular_momentum(candles: list, janela: int = 5) -> float:
 # Sinal consolidado
 # ────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class SinalDiario:
     """Decisao consolidada do Agente Diarios para um ciclo."""
+
     timestamp: str
-    direcao: str          # "BUY", "SELL", "NEUTRO"
-    confianca: float      # 0.0-1.0 (ajustada pelos episodios proprios)
-    alinhamento: float    # alignment_score do QuantumOperatorEngine
+    direcao: str  # "BUY", "SELL", "NEUTRO"
+    confianca: float  # 0.0-1.0 (ajustada pelos episodios proprios)
+    alinhamento: float  # alignment_score do QuantumOperatorEngine
     macro_bias: str
     tecnico_bias: str
     sentimento_bias: str
-    atr: float            # ATR da sessao atual em pontos
-    momentum: float       # momentum das ultimas 5 velas
+    atr: float  # ATR da sessao atual em pontos
+    momentum: float  # momentum das ultimas 5 velas
     preco_atual: float
-    sl: float             # stop loss calculado
-    tp: float             # take profit calculado
+    sl: float  # stop loss calculado
+    tp: float  # take profit calculado
     guardian_ok: bool
     guardian_penalty: float
-    win_rate_propria: float   # win rate dos episodios proprios do Diarios
+    win_rate_propria: float  # win rate dos episodios proprios do Diarios
     n_episodios_proprios: int
     leitura: Optional[LeituraOperador] = None  # percepcao contextual do operador
     vies_intraday: str = ""
@@ -162,6 +165,7 @@ class SinalDiario:
 # Estado da posicao (JSON — mesmo padrao dos outros agentes)
 # ────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class DiarioPosicao:
     aberta: bool = False
@@ -170,7 +174,7 @@ class DiarioPosicao:
     preco_entrada: float = 0.0
     sl: float = 0.0
     tp: float = 0.0
-    atr_entrada: float = 0.0    # ATR no momento da entrada
+    atr_entrada: float = 0.0  # ATR no momento da entrada
     abertura_ts: str = ""
     session_id: str = ""
     max_ganho_pts: float = 0.0
@@ -276,7 +280,12 @@ class DiarioPosicaoStatus:
             self._salvar()
         logger.info(
             "Posicao aberta: ticket=%s dir=%s entrada=%.0f SL=%.0f TP=%.0f ATR=%.0f",
-            ticket, direcao, preco_entrada, sl, tp, atr_entrada,
+            ticket,
+            direcao,
+            preco_entrada,
+            sl,
+            tp,
+            atr_entrada,
         )
 
     def atualizar_preco(self, preco_atual: float) -> None:
@@ -309,6 +318,7 @@ class DiarioPosicaoStatus:
 # ────────────────────────────────────────────────────────────────
 # Motor principal
 # ────────────────────────────────────────────────────────────────
+
 
 class DiarioOrderManager:
     """
@@ -366,6 +376,7 @@ class DiarioOrderManager:
             self._rl_reader = rl_reader
         else:
             from scripts.start_journals_full_display import RLPerformanceReader
+
             self._rl_reader = RLPerformanceReader(db_path)
 
     def _confidence_gate_minima(self) -> float:
@@ -471,12 +482,30 @@ class DiarioOrderManager:
         confianca_base = max(0.0, confianca_base - guardian_penalty / 100.0)
         return confianca_base
 
+    def _eh_contexto_trend_follow(
+        self,
+        leitura: Optional[LeituraOperador],
+    ) -> bool:
+        """Detecta quando a leitura aponta para pullback/trend-follow."""
+        if leitura is None:
+            return False
+
+        resumo = str(getattr(leitura, "resumo", "") or "").lower()
+        direcao = str(getattr(leitura, "direcao_preferida", "NEUTRO")).upper()
+
+        return direcao in ("BUY", "SELL") and (
+            getattr(leitura, "pullback_saudavel", False)
+            or "pullback" in resumo
+            or "trend" in resumo
+            or "direcao da tendencia" in resumo
+        )
+
     # ── Consolidar decisao propria ───────────────────────────────
 
     def consolidar_sinal(
         self,
-        decisao: object,        # OperatorDecision
-        candles: list,          # Candles M15 ao vivo
+        decisao: object,  # OperatorDecision
+        candles: list,  # Candles M15 ao vivo
         guardian_state: object,
         dir_analysis: Optional[dict] = None,
     ) -> SinalDiario:
@@ -529,10 +558,14 @@ class DiarioOrderManager:
         # Se momentum forte na direcao oposta (> 1.5*ATR), reduz confianca
         if direcao == "BUY" and momentum < -(atr * 1.5):
             confianca_base = max(0.0, confianca_base - 0.10)
-            logger.debug("Momentum BUY contradiz: %.0f pts, penalidade aplicada", momentum)
+            logger.debug(
+                "Momentum BUY contradiz: %.0f pts, penalidade aplicada", momentum
+            )
         elif direcao == "SELL" and momentum > (atr * 1.5):
             confianca_base = max(0.0, confianca_base - 0.10)
-            logger.debug("Momentum SELL contradiz: %.0f pts, penalidade aplicada", momentum)
+            logger.debug(
+                "Momentum SELL contradiz: %.0f pts, penalidade aplicada", momentum
+            )
 
         # ── Penalidade de contradicoes macro ──
         if dir_analysis:
@@ -556,14 +589,17 @@ class DiarioOrderManager:
         confianca_base = max(0.0, confianca_base + leitura.ajuste_confianca)
 
         # Se leitura indica direcao preferida diferente da macro → NEUTRO
-        if (leitura.direcao_preferida not in ("NEUTRO", "") and
-                leitura.direcao_preferida != direcao and
-                direcao != "NEUTRO"):
+        if (
+            leitura.direcao_preferida not in ("NEUTRO", "")
+            and leitura.direcao_preferida != direcao
+            and direcao != "NEUTRO"
+        ):
             # Leitura e macro divergem: reduzir confianca adicionalmente
             confianca_base = max(0.0, confianca_base - 0.10)
             logger.debug(
                 "Leitura diverge da macro: leitura=%s macro=%s, penalidade -0.10",
-                leitura.direcao_preferida, direcao,
+                leitura.direcao_preferida,
+                direcao,
             )
 
         # ── Confianca final (ajustada pelos proprios episodios) ──
@@ -603,6 +639,7 @@ class DiarioOrderManager:
         pode_operar = True
         motivo_bloqueio = ""
         confianca_minima_efetiva = self._confidence_gate_minima()
+        contexto_trend_follow = self._eh_contexto_trend_follow(leitura)
 
         if not self._no_pregao():
             pode_operar = False
@@ -612,10 +649,18 @@ class DiarioOrderManager:
             motivo_bloqueio = "guardian_kill_switch"
         elif direcao == "NEUTRO":
             pode_operar = False
-            motivo_bloqueio = "direcao_neutro"
+            if contexto_trend_follow:
+                motivo_bloqueio = (
+                    f"trend_follow_baixa_confianca:{confianca_final:.2f}<"
+                    f"{confianca_minima_efetiva:.2f}"
+                )
+            else:
+                motivo_bloqueio = "direcao_neutro"
         elif alinhamento < ALINHAMENTO_MINIMO:
             pode_operar = False
-            motivo_bloqueio = f"alinhamento_baixo:{alinhamento:.2f}<{ALINHAMENTO_MINIMO}"
+            motivo_bloqueio = (
+                f"alinhamento_baixo:{alinhamento:.2f}<{ALINHAMENTO_MINIMO}"
+            )
         elif confianca_final < confianca_minima_efetiva:
             pode_operar = False
             motivo_bloqueio = (
@@ -669,12 +714,19 @@ class DiarioOrderManager:
     def _posicao_existe_no_mt5(self, ticket: int) -> tuple[bool, float]:
         try:
             from src.domain.value_objects import Symbol
+
             posicoes = self._mt5.get_positions(Symbol(SIMBOLO))
             for pos in posicoes:
-                t = getattr(pos, "ticket", None) or (pos.get("ticket") if isinstance(pos, dict) else None)
-                magic = getattr(pos, "magic", None) or (pos.get("magic") if isinstance(pos, dict) else None)
+                t = getattr(pos, "ticket", None) or (
+                    pos.get("ticket") if isinstance(pos, dict) else None
+                )
+                magic = getattr(pos, "magic", None) or (
+                    pos.get("magic") if isinstance(pos, dict) else None
+                )
                 if t == ticket and magic == MAGIC_NUMBER:
-                    preco = getattr(pos, "price_current", 0) or (pos.get("price_current", 0) if isinstance(pos, dict) else 0)
+                    preco = getattr(pos, "price_current", 0) or (
+                        pos.get("price_current", 0) if isinstance(pos, dict) else 0
+                    )
                     return True, float(preco)
             return False, 0.0
         except Exception as e:
@@ -719,7 +771,10 @@ class DiarioOrderManager:
 
             ganho_devolvido = pos.max_ganho_pts - ganho_atual
             if ganho_devolvido >= pos.max_ganho_pts * REVERSAO_PCT_GANHO:
-                return True, f"devolucao_{ganho_devolvido:.0f}pts_de_{pos.max_ganho_pts:.0f}"
+                return (
+                    True,
+                    f"devolucao_{ganho_devolvido:.0f}pts_de_{pos.max_ganho_pts:.0f}",
+                )
 
         return False, ""
 
@@ -775,8 +830,14 @@ class DiarioOrderManager:
                 logger.info(
                     "Ordem enviada: dir=%s preco=%.0f SL=%.0f TP=%.0f "
                     "ATR=%.0f conf=%.2f align=%.2f ticket=%s",
-                    sinal.direcao, sinal.preco_atual, sinal.sl, sinal.tp,
-                    sinal.atr, sinal.confianca, sinal.alinhamento, ticket_str,
+                    sinal.direcao,
+                    sinal.preco_atual,
+                    sinal.sl,
+                    sinal.tp,
+                    sinal.atr,
+                    sinal.confianca,
+                    sinal.alinhamento,
+                    ticket_str,
                 )
                 return True
             else:
@@ -833,7 +894,9 @@ class DiarioOrderManager:
 
             if not existe:
                 # Registrar episodio: SL/TP atingido pelo MT5
-                preco_saida_est = pos.ultimo_preco if pos.ultimo_preco > 0 else pos.preco_entrada
+                preco_saida_est = (
+                    pos.ultimo_preco if pos.ultimo_preco > 0 else pos.preco_entrada
+                )
                 self._registrar_episodio(pos, "sl_tp_mt5", preco_saida_est)
                 self._posicao.registrar_fechamento("sl_tp_mt5")
                 resultado["acao"] = "POSICAO_FECHADA_MT5"
@@ -846,7 +909,9 @@ class DiarioOrderManager:
                 fechou = self._fechar_posicao("guardian_kill_switch")
                 if fechou:
                     self._registrar_episodio(pos, "guardian_kill_switch", preco_atual)
-                resultado["acao"] = "FECHAMENTO_GUARDIAN" if fechou else "ERRO_FECHAR_GUARDIAN"
+                resultado["acao"] = (
+                    "FECHAMENTO_GUARDIAN" if fechou else "ERRO_FECHAR_GUARDIAN"
+                )
                 resultado["detalhe"] = "Guardian ativo"
                 resultado["posicao_aberta"] = not fechou
                 return resultado
@@ -858,7 +923,9 @@ class DiarioOrderManager:
                     fechou = self._fechar_posicao(motivo_rev)
                     if fechou:
                         self._registrar_episodio(pos, motivo_rev, preco_atual)
-                    resultado["acao"] = "FECHAMENTO_REVERSAO" if fechou else "ERRO_FECHAR_REVERSAO"
+                    resultado["acao"] = (
+                        "FECHAMENTO_REVERSAO" if fechou else "ERRO_FECHAR_REVERSAO"
+                    )
                     resultado["detalhe"] = f"Reversao: {motivo_rev}"
                     resultado["posicao_aberta"] = not fechou
                     return resultado
@@ -869,8 +936,11 @@ class DiarioOrderManager:
 
             pos_atual = self._posicao.posicao
             if preco_atual > 0:
-                ganho = (preco_atual - pos_atual.preco_entrada) if pos_atual.direcao == "BUY" \
+                ganho = (
+                    (preco_atual - pos_atual.preco_entrada)
+                    if pos_atual.direcao == "BUY"
                     else (pos_atual.preco_entrada - preco_atual)
+                )
                 resultado["detalhe"] = (
                     f"dir={pos_atual.direcao} entrada={pos_atual.preco_entrada:.0f} "
                     f"atual={preco_atual:.0f} ganho={ganho:+.0f}pts "
@@ -892,7 +962,9 @@ class DiarioOrderManager:
 
         abriu = self._abrir_posicao(sinal)
         if abriu:
-            self._sinal_abertura = sinal  # guardar para registrar episodio no fechamento
+            self._sinal_abertura = (
+                sinal  # guardar para registrar episodio no fechamento
+            )
             resultado["acao"] = "ORDEM_ENVIADA"
             resultado["detalhe"] = (
                 f"dir={sinal.direcao} preco={sinal.preco_atual:.0f} "
@@ -934,9 +1006,7 @@ class DiarioOrderManager:
         finally:
             self._sinal_abertura = None
 
-    def _registrar_episodio_neutro(
-        self, sinal: SinalDiario, candles: list
-    ) -> None:
+    def _registrar_episodio_neutro(self, sinal: SinalDiario, candles: list) -> None:
         """
         Registra episodio quando o agente decidiu ficar fora (NEUTRO).
 
@@ -951,8 +1021,10 @@ class DiarioOrderManager:
         registra como 'decisao correta'.
         """
         # Avaliar episodio neutro anterior (se houver)
-        if (self._candles_no_neutro is not None
-                and self._n_ciclos - self._ultimo_neutro_registrado >= 10):
+        if (
+            self._candles_no_neutro is not None
+            and self._n_ciclos - self._ultimo_neutro_registrado >= 10
+        ):
             self._avaliar_episodio_neutro(sinal, candles)
 
         # Registrar novo snapshot neutro a cada 10 ciclos
@@ -1000,8 +1072,11 @@ class DiarioOrderManager:
             logger.info(
                 "Episodio neutro registrado: sugestao=%s var=%.0f "
                 "hipotetico=%.0f acerto_fora=%s motivo=%s",
-                direcao_sugerida, variacao, resultado_hipotetico,
-                foi_acerto_ficar_fora, sinal_atual.motivo_bloqueio,
+                direcao_sugerida,
+                variacao,
+                resultado_hipotetico,
+                foi_acerto_ficar_fora,
+                sinal_atual.motivo_bloqueio,
             )
         except Exception as e:
             logger.error("Erro ao avaliar episodio neutro: %s", e)

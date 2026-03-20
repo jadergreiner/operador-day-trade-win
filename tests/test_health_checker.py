@@ -2,7 +2,9 @@
 import sys
 import os
 import unittest
+import sqlite3
 from pathlib import Path
+from unittest.mock import patch
 
 # Adiciona diretórios ao sys.path
 root_dir = Path(__file__).parent.parent
@@ -57,6 +59,40 @@ class TestHealthChecker(unittest.TestCase):
 
         # Verificar se ha pelo menos 1 registro
         cursor.execute("SELECT count(*) FROM system_health_logs")
+        count = cursor.fetchone()[0]
+        self.assertGreaterEqual(count, 1)
+        conn.close()
+
+    def test_db_logging_retries_on_sqlite_lock(self):
+        """Testa retry em lock transitório do SQLite."""
+        checker = HealthChecker(workspace_root=str(Path(self.workspace_root) / "tmp_health"))
+        results = {
+            "governance": (True, "Sincronizado"),
+            "mt5": (True, "Conectado"),
+            "latency": (True, 10.0),
+        }
+
+        original_connect = sqlite3.connect
+        attempts = {"count": 0}
+
+        def fake_connect(*args, **kwargs):
+            attempts["count"] += 1
+            if attempts["count"] < 3:
+                raise sqlite3.OperationalError("database is locked")
+            return original_connect(*args, **kwargs)
+
+        with patch(
+            "src.infrastructure.monitoring.health_checker.sqlite3.connect",
+            side_effect=fake_connect,
+        ):
+            checker._log_health_to_db(results)
+
+        self.assertGreaterEqual(attempts["count"], 3)
+        conn = sqlite3.connect(checker.db_path)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT count(*) FROM system_health_logs"
+        )
         count = cursor.fetchone()[0]
         self.assertGreaterEqual(count, 1)
         conn.close()

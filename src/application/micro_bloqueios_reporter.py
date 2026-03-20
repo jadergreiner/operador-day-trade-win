@@ -101,7 +101,7 @@ class MicroBloqueiosReporter:
 
     Persiste cada oportunidade rejeitada em SQLite e gera relatorio
     Markdown estruturado ao encerramento do pregao, mostrando quais
-    flags causaram mais paralisia operacional.
+    flags mais reduziram a ativacao operacional.
 
     Args:
         db_path: Caminho para o banco SQLite. Padrao: data/db/trading.db.
@@ -155,7 +155,8 @@ class MicroBloqueiosReporter:
         """Cria tabela micro_trend_bloqueios e indices se nao existirem."""
         conn = self._conectar()
         cursor = conn.cursor()
-        cursor.execute(f"""
+        cursor.execute(
+            f"""
             CREATE TABLE IF NOT EXISTS {self._TABELA} (
                 id                  INTEGER PRIMARY KEY AUTOINCREMENT,
                 timestamp           TEXT    NOT NULL,
@@ -168,15 +169,20 @@ class MicroBloqueiosReporter:
                 delta               REAL    NOT NULL,
                 detalhes            TEXT
             )
-        """)
-        cursor.execute(f"""
+        """
+        )
+        cursor.execute(
+            f"""
             CREATE INDEX IF NOT EXISTS idx_mtb_data_pregao
             ON {self._TABELA}(data_pregao)
-        """)
-        cursor.execute(f"""
+        """
+        )
+        cursor.execute(
+            f"""
             CREATE INDEX IF NOT EXISTS idx_mtb_flag
             ON {self._TABELA}(flag_bloqueador)
-        """)
+        """
+        )
         conn.commit()
         conn.close()
 
@@ -193,23 +199,26 @@ class MicroBloqueiosReporter:
         """
         conn = self._conectar()
         cursor = conn.cursor()
-        cursor.execute(f"""
+        cursor.execute(
+            f"""
             INSERT INTO {self._TABELA}
             (timestamp, data_pregao, hora_pregao, opportunity_id,
              flag_bloqueador, confianca_calculada, confianca_necessaria,
              delta, detalhes)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            bloqueio.timestamp.isoformat(),
-            bloqueio.timestamp.date().isoformat(),
-            bloqueio.timestamp.strftime("%H:%M"),
-            bloqueio.opportunity_id,
-            bloqueio.flag_bloqueador.value,
-            bloqueio.confianca_calculada,
-            bloqueio.confianca_necessaria,
-            bloqueio.delta,
-            bloqueio.detalhes,
-        ))
+        """,
+            (
+                bloqueio.timestamp.isoformat(),
+                bloqueio.timestamp.date().isoformat(),
+                bloqueio.timestamp.strftime("%H:%M"),
+                bloqueio.opportunity_id,
+                bloqueio.flag_bloqueador.value,
+                bloqueio.confianca_calculada,
+                bloqueio.confianca_necessaria,
+                bloqueio.delta,
+                bloqueio.detalhes,
+            ),
+        )
         conn.commit()
         bloqueio_id: int = cursor.lastrowid or 0
         conn.close()
@@ -235,21 +244,27 @@ class MicroBloqueiosReporter:
         cursor = conn.cursor()
 
         if flag is not None:
-            cursor.execute(f"""
+            cursor.execute(
+                f"""
                 SELECT timestamp, opportunity_id, flag_bloqueador,
                        confianca_calculada, confianca_necessaria, delta, detalhes
                 FROM {self._TABELA}
                 WHERE data_pregao = ? AND flag_bloqueador = ?
                 ORDER BY timestamp
-            """, (data.isoformat(), flag.value))
+            """,
+                (data.isoformat(), flag.value),
+            )
         else:
-            cursor.execute(f"""
+            cursor.execute(
+                f"""
                 SELECT timestamp, opportunity_id, flag_bloqueador,
                        confianca_calculada, confianca_necessaria, delta, detalhes
                 FROM {self._TABELA}
                 WHERE data_pregao = ?
                 ORDER BY timestamp
-            """, (data.isoformat(),))
+            """,
+                (data.isoformat(),),
+            )
 
         rows = cursor.fetchall()
         conn.close()
@@ -288,17 +303,21 @@ class MicroBloqueiosReporter:
         cursor = conn.cursor()
 
         # Contagem por flag
-        cursor.execute(f"""
+        cursor.execute(
+            f"""
             SELECT flag_bloqueador, COUNT(*) as qtd
             FROM {self._TABELA}
             WHERE data_pregao = ?
             GROUP BY flag_bloqueador
             ORDER BY qtd DESC
-        """, (data.isoformat(),))
+        """,
+            (data.isoformat(),),
+        )
         por_flag_rows = cursor.fetchall()
 
         # Agregados numericos
-        cursor.execute(f"""
+        cursor.execute(
+            f"""
             SELECT
                 COUNT(*) as total,
                 AVG(delta) as delta_medio,
@@ -306,7 +325,9 @@ class MicroBloqueiosReporter:
                 AVG(confianca_necessaria) as conf_nec_media
             FROM {self._TABELA}
             WHERE data_pregao = ?
-        """, (data.isoformat(),))
+        """,
+            (data.isoformat(),),
+        )
         agr = cursor.fetchone()
         conn.close()
 
@@ -371,9 +392,8 @@ class MicroBloqueiosReporter:
             "",
             "## Resumo do Pregao",
             "",
-            f"- **Total de bloqueios:** {total}",
-            f"- **Delta medio (gap confianca):** "
-            f"{stats['delta_medio']:.2f}%",
+            f"- **Total de oportunidades retidas:** {total}",
+            f"- **Delta medio (gap confianca):** " f"{stats['delta_medio']:.2f}%",
             f"- **Confianca media calculada:** "
             f"{stats['confianca_media_calculada']:.1f}%",
             f"- **Confianca media necessaria:** "
@@ -410,22 +430,22 @@ class MicroBloqueiosReporter:
         linhas += ["", "## Recomendacao", ""]
         if total == 0:
             linhas.append(
-                "_Nenhum bloqueio registrado. Verificar se agente operou._"
+                "_Nenhuma oportunidade retida registrada. Verificar se agente operou._"
             )
         elif total >= 50:
             linhas.append(
-                "**ATENCAO:** Agente excessivamente conservador — "
-                f"{total} oportunidades bloqueadas. "
+                "**ATENCAO:** Agente muito seletivo — "
+                f"{total} oportunidades retidas. "
                 "Revisar thresholds de confianca (CALIBRACAO-MICRO-01)."
             )
         elif total >= 20:
             linhas.append(
-                f"Volume moderado de bloqueios ({total}). "
-                "Monitorar se producao de trades esta adequada."
+                f"Volume moderado de retenções ({total}). "
+                "Monitorar se a producao de trades esta adequada."
             )
         else:
             linhas.append(
-                f"Volume baixo de bloqueios ({total}). Parametros calibrados."
+                f"Volume baixo de retenções ({total}). Parametros calibrados."
             )
 
         conteudo = "\n".join(linhas) + "\n"

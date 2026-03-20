@@ -66,6 +66,7 @@ try:
         get_fred_dxy,
         get_fred_vix,
     )
+
     HAS_MACRO_PROVIDER = True
 except ImportError:
     HAS_MACRO_PROVIDER = False
@@ -75,6 +76,7 @@ try:
     from src.application.ac5_9_feedback_validator import (
         FeedbackValidator,
     )
+
     AC5_9_DISPONIVEL = True
 except ImportError:
     AC5_9_DISPONIVEL = False
@@ -82,7 +84,10 @@ except ImportError:
 
 # --- Grupo 3: Storytelling / Reflection Runtime (roadmap multiagentes) ---
 try:
-    from src.application.reflection_question_evolution import ReflectionQuestionEvolution
+    from src.application.reflection_question_evolution import (
+        ReflectionQuestionEvolution,
+    )
+
     HAS_REFLECTION_QUESTION_EVOLUTION = True
 except ImportError:
     HAS_REFLECTION_QUESTION_EVOLUTION = False
@@ -90,6 +95,7 @@ except ImportError:
 
 try:
     from src.application.narrative_persistence import NarrativePersistence
+
     HAS_NARRATIVE_PERSISTENCE = True
 except ImportError:
     HAS_NARRATIVE_PERSISTENCE = False
@@ -97,13 +103,18 @@ except ImportError:
 
 try:
     from src.application.trade_narrative_correlator import TradeNarrativeCorrelator
+
     HAS_TRADE_NARRATIVE_CORRELATOR = True
 except ImportError:
     HAS_TRADE_NARRATIVE_CORRELATOR = False
     TradeNarrativeCorrelator = None  # type: ignore[assignment,misc]
 
 try:
-    from src.application.narrative_dataset_exporter import build_dataset, to_json_payload
+    from src.application.narrative_dataset_exporter import (
+        build_dataset,
+        to_json_payload,
+    )
+
     HAS_NARRATIVE_DATASET_EXPORTER = True
 except ImportError:
     HAS_NARRATIVE_DATASET_EXPORTER = False
@@ -112,6 +123,7 @@ except ImportError:
 
 try:
     from src.application.diarios_runtime_mlops_bridge import DiarioRuntimeMlOpsBridge
+
     HAS_MLOPS_RUNTIME_BRIDGE = True
 except ImportError:
     HAS_MLOPS_RUNTIME_BRIDGE = False
@@ -252,12 +264,16 @@ def _build_runtime_order_history(perf: dict[str, Any]) -> list[dict[str, Any]]:
             pts = _safe_float(entry.get("pts", 0.0), 0.0)
             history.append(
                 {
-                    "quality_score": 100.0 if _safe_float(entry.get("correct", 0), 0.0) == 1.0 else 40.0,
+                    "quality_score": 100.0
+                    if _safe_float(entry.get("correct", 0), 0.0) == 1.0
+                    else 40.0,
                     "fill_rate": 1.0,
                     "latency_ms": 120.0,
                     "slippage_points": abs(pts) * 0.02,
                     "status": "FILLED",
-                    "outcome": "WIN" if _safe_float(entry.get("correct", 0), 0.0) == 1.0 else "LOSS",
+                    "outcome": "WIN"
+                    if _safe_float(entry.get("correct", 0), 0.0) == 1.0
+                    else "LOSS",
                 }
             )
     return history
@@ -295,7 +311,8 @@ def _build_reflection_question_context(
 
     return {
         "high_risk": confidence < 0.60 or abs(change_10min) >= 0.40,
-        "emotional_instability": str(getattr(reflection, "mood", "")).upper() in {
+        "emotional_instability": str(getattr(reflection, "mood", "")).upper()
+        in {
             "CONFUSO",
             "FRUSTRADO",
             "CAOTICO",
@@ -338,11 +355,15 @@ def _build_narrative_text(
     return "\n".join(part for part in parts if part)
 
 
-def _build_trade_headline(reflection: Any, latest_episode: dict[str, Any] | None) -> str:
+def _build_trade_headline(
+    reflection: Any, latest_episode: dict[str, Any] | None
+) -> str:
     """Cria um headline curto para a narrativa persistida."""
     if latest_episode:
         action = latest_episode.get("action") or latest_episode.get("side") or "UNKNOWN"
-        episode_id = latest_episode.get("episode_id") or latest_episode.get("trade_id") or "NA"
+        episode_id = (
+            latest_episode.get("episode_id") or latest_episode.get("trade_id") or "NA"
+        )
         return f"Trade {episode_id} - {action}"
     return str(getattr(reflection, "one_liner", "Reflexao de mercado"))
 
@@ -400,7 +421,9 @@ class NarrativeRuntimeBridge:
             decision=decision,
             episodes=episodes,
             opportunities=opportunities,
-            change_10min=_safe_float(getattr(reflection, "price_change_last_10min", 0.0)),
+            change_10min=_safe_float(
+                getattr(reflection, "price_change_last_10min", 0.0)
+            ),
         )
 
         question_payloads: list[dict[str, Any]] = []
@@ -420,7 +443,9 @@ class NarrativeRuntimeBridge:
                             f"  {idx}. [{question['level']}/{question['category']}] "
                             f"{question['prompt']}"
                         )
-                    self._used_prompts.extend(item["prompt"] for item in question_payloads)
+                    self._used_prompts.extend(
+                        item["prompt"] for item in question_payloads
+                    )
             except Exception as exc:
                 print(f"[NARRATIVES] Falha ao gerar perguntas evolutivas: {exc}")
 
@@ -537,7 +562,9 @@ class NarrativeRuntimeBridge:
             "trade_id": trade_id,
             "timestamp": getattr(reflection, "timestamp"),
             "headline": str(getattr(reflection, "one_liner", "Reflexao de mercado")),
-            "narrative": _build_narrative_text(reflection, question_payloads, latest_episode),
+            "narrative": _build_narrative_text(
+                reflection, question_payloads, latest_episode
+            ),
             "category": "reflection",
             "session_id": None,
             "outcome": action_name,
@@ -558,9 +585,13 @@ class NarrativeRuntimeBridge:
     ) -> dict[str, Any]:
         """Serializa o ultimo trade do ciclo como narrativa correlacionavel."""
         raw_timestamp = latest_episode.get("timestamp")
-        trade_timestamp = _coerce_datetime(raw_timestamp) if raw_timestamp else getattr(
-            reflection,
-            "timestamp",
+        trade_timestamp = (
+            _coerce_datetime(raw_timestamp)
+            if raw_timestamp
+            else getattr(
+                reflection,
+                "timestamp",
+            )
         )
         action = latest_episode.get("action") or latest_episode.get("side") or "UNKNOWN"
         headline = _build_trade_headline(reflection, latest_episode)
@@ -599,6 +630,7 @@ class NarrativeRuntimeBridge:
 # RL Performance Reader — Leitura direta do SQLite
 # ────────────────────────────────────────────────────────────────
 
+
 class RLPerformanceReader:
     """Lê e analisa episódios/rewards RL do banco do agente."""
 
@@ -612,7 +644,8 @@ class RLPerformanceReader:
             conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT episode_id, timestamp, source, action,
                        win_price, win_open_price, win_high_of_day, win_low_of_day,
                        macro_score_final, micro_score, micro_trend,
@@ -626,7 +659,9 @@ class RLPerformanceReader:
                 FROM rl_episodes
                 WHERE session_date = ? OR date(timestamp) = ?
                 ORDER BY timestamp ASC
-            """, (today, today))
+            """,
+                (today, today),
+            )
             rows = [dict(r) for r in cursor.fetchall()]
             conn.close()
             return rows
@@ -640,7 +675,8 @@ class RLPerformanceReader:
             conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT r.episode_id, r.horizon_minutes, r.action_at_decision,
                        r.win_price_at_decision, r.win_price_at_evaluation,
                        r.price_change_points, r.price_change_pct,
@@ -651,7 +687,9 @@ class RLPerformanceReader:
                 FROM rl_rewards r
                 WHERE date(r.timestamp_decision) = ?
                 ORDER BY r.timestamp_decision ASC, r.horizon_minutes ASC
-            """, (today,))
+            """,
+                (today,),
+            )
             rows = [dict(r) for r in cursor.fetchall()]
             conn.close()
             return rows
@@ -665,7 +703,8 @@ class RLPerformanceReader:
             conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT id, timestamp, macro_score, macro_signal, macro_confidence,
                        micro_score, micro_trend, price_current, price_open,
                        vwap, pivot_pp, smc_direction, smc_equilibrium,
@@ -674,7 +713,9 @@ class RLPerformanceReader:
                 FROM micro_trend_decisions
                 WHERE date(timestamp) = ?
                 ORDER BY timestamp ASC
-            """, (today,))
+            """,
+                (today,),
+            )
             rows = [dict(r) for r in cursor.fetchall()]
             conn.close()
             return rows
@@ -688,14 +729,17 @@ class RLPerformanceReader:
             conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT o.direction, o.entry, o.stop_loss, o.take_profit,
                        o.risk_reward, o.confidence, o.reason, o.region,
                        o.timestamp
                 FROM micro_trend_opportunities o
                 WHERE date(o.timestamp) = ?
                 ORDER BY o.timestamp ASC
-            """, (today,))
+            """,
+                (today,),
+            )
             rows = [dict(r) for r in cursor.fetchall()]
             conn.close()
             return rows
@@ -709,13 +753,16 @@ class RLPerformanceReader:
             conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT r.price, r.label, r.tipo, r.confluences,
                        r.distance_pct, r.timestamp, r.decision_id
                 FROM micro_trend_regions r
                 WHERE date(r.timestamp) = ?
                 ORDER BY r.timestamp ASC
-            """, (today,))
+            """,
+                (today,),
+            )
             rows = [dict(r) for r in cursor.fetchall()]
             conn.close()
             return rows
@@ -730,23 +777,29 @@ class RLPerformanceReader:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             # Pegar o último decision_id do dia
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT id FROM micro_trend_decisions
                 WHERE date(timestamp) = ?
                 ORDER BY id DESC LIMIT 1
-            """, (today,))
+            """,
+                (today,),
+            )
             row = cursor.fetchone()
             if not row:
                 conn.close()
                 return []
             last_id = row["id"]
             # Buscar todos os items desse ciclo
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT symbol, category, score, price_current, price_open
                 FROM micro_trend_items
                 WHERE decision_id = ?
                 ORDER BY category, item_number
-            """, (last_id,))
+            """,
+                (last_id,),
+            )
             rows = [dict(r) for r in cursor.fetchall()]
             conn.close()
             return rows
@@ -764,20 +817,25 @@ class RLPerformanceReader:
             conn = sqlite3.connect(self.db_path)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT d.id as decision_id, d.timestamp,
                        i.category, i.score, i.symbol
                 FROM micro_trend_items i
                 JOIN micro_trend_decisions d ON d.id = i.decision_id
                 WHERE date(d.timestamp) = ?
                 ORDER BY d.timestamp ASC, i.category
-            """, (today,))
+            """,
+                (today,),
+            )
             rows = cursor.fetchall()
             conn.close()
 
             # Agrupar por decision_id → categoria → soma de scores
             history = {}  # {category: [(timestamp, score_sum, n_items)]}
-            cycle_data = {}  # {decision_id: {category: {score_sum, n_items, timestamp}}}
+            cycle_data = (
+                {}
+            )  # {decision_id: {category: {score_sum, n_items, timestamp}}}
 
             for r in rows:
                 did = r["decision_id"]
@@ -834,7 +892,13 @@ class RLPerformanceReader:
         for item in items:
             cat = item["category"]
             if cat not in categories:
-                categories[cat] = {"score": 0, "pos": 0, "neg": 0, "n": 0, "symbols": []}
+                categories[cat] = {
+                    "score": 0,
+                    "pos": 0,
+                    "neg": 0,
+                    "n": 0,
+                    "symbols": [],
+                }
             categories[cat]["score"] += item["score"]
             categories[cat]["n"] += 1
             if item["score"] > 0:
@@ -848,31 +912,52 @@ class RLPerformanceReader:
         positive_cats = [c for c, d in categories.items() if d["score"] > 0]
         negative_cats = [c for c, d in categories.items() if d["score"] < 0]
         neutral_cats = [c for c, d in categories.items() if d["score"] == 0]
+        direction_label = (
+            "ALTISTA"
+            if total_score > 0
+            else "BAIXISTA"
+            if total_score < 0
+            else "NEUTRO"
+        )
+        score_label = f"{total_score:+d}"
 
         # Macro dados do episódio mais recente
         last_ep = episodes[-1] if episodes else {}
         macro_conf = float(last_ep.get("macro_confidence", 0))
+        score_strength = min(90, max(10, abs(total_score)))
+        confidence_base = (
+            int(round(macro_conf * 100)) if macro_conf > 0 else score_strength
+        )
+        confidence_base = max(confidence_base, score_strength)
 
         # ── 2. CONCENTRAÇÃO — score inflado por 1 categoria? ──
         if categories:
-            sorted_cats = sorted(categories.items(), key=lambda x: abs(x[1]["score"]), reverse=True)
+            sorted_cats = sorted(
+                categories.items(), key=lambda x: abs(x[1]["score"]), reverse=True
+            )
             top_cat, top_data = sorted_cats[0]
-            top_contribution_pct = abs(top_data["score"]) / max(abs(total_score), 1) * 100
+            top_contribution_pct = (
+                abs(top_data["score"]) / max(abs(total_score), 1) * 100
+            )
 
             if top_contribution_pct > 40 and len(categories) > 3:
                 result["vieses_detectados"].append(
                     f"CONCENTRAÇÃO: '{top_cat}' contribui {top_contribution_pct:.0f}% do score total "
                     f"(+{top_data['score']} de {total_score:+d}). "
-                    f"Se essa categoria estiver errada, o direcional inteiro é questionável.")
+                    f"Se essa categoria estiver errada, o direcional inteiro merece validação."
+                )
 
             # Top 2 dominam?
             if len(sorted_cats) >= 2:
-                top2_score = abs(sorted_cats[0][1]["score"]) + abs(sorted_cats[1][1]["score"])
+                top2_score = abs(sorted_cats[0][1]["score"]) + abs(
+                    sorted_cats[1][1]["score"]
+                )
                 top2_pct = top2_score / max(abs(total_score), 1) * 100
                 if top2_pct > 65:
                     result["vieses_detectados"].append(
                         f"2 categorias ({sorted_cats[0][0]} + {sorted_cats[1][0]}) "
-                        f"dominam {top2_pct:.0f}% do score. Diversificação fraca.")
+                        f"dominam {top2_pct:.0f}% do score. Diversificação limitada."
+                    )
 
         # ── 3. CONTRADIÇÕES ENTRE CATEGORIAS CORRELACIONADAS ──
         # a) Brasil vs Global
@@ -881,11 +966,13 @@ class RLPerformanceReader:
         if br_score > 5 and gl_score < -2:
             result["contradicoes"].append(
                 f"BRASIL vs GLOBAL: Índices Brasil +{br_score} mas Globais {gl_score}. "
-                f"Rally brasileiro ISOLADO? Cuidado com correção se globais piorarem.")
+                f"Rally brasileiro ISOLADO? Cuidado com correção se globais piorarem."
+            )
         elif br_score < -5 and gl_score > 2:
             result["contradicoes"].append(
                 f"BRASIL vs GLOBAL: Índices Brasil {br_score} contra Globais +{gl_score}. "
-                f"Problema DOMÉSTICO específico? Pode reverter se global puxar.")
+                f"Problema DOMÉSTICO específico? Pode reverter se global puxar."
+            )
 
         # b) Dólar vs Ações Brasil (inversamente correlacionados)
         dolar_score = categories.get("DOLAR_CAMBIO", {}).get("score", 0)
@@ -893,18 +980,21 @@ class RLPerformanceReader:
         if dolar_score > 0 and acoes_score > 0:
             result["contradicoes"].append(
                 f"CONTRADIÇÃO: Dólar +{dolar_score} E Ações Brasil +{acoes_score}. "
-                f"Normalmente inversamente correlacionados. Sinal confuso.")
+                f"Normalmente inversamente correlacionados. Sinal confuso."
+            )
         if dolar_score < -2 and acoes_score > 3:
             result["questionamentos"].append(
                 f"ALINHAMENTO FORTE: Dólar caindo ({dolar_score}) + Ações subindo (+{acoes_score}). "
-                f"Fluxo estrangeiro entrando? Confirma tendência de alta.")
+                f"Fluxo estrangeiro entrando? Confirma tendência de alta."
+            )
 
         # c) Commodities vs Câmbio
         comm_score = categories.get("COMMODITIES", {}).get("score", 0)
         if comm_score > 3 and dolar_score > 0:
             result["contradicoes"].append(
                 f"COMMODITIES vs DÓLAR: Commodities +{comm_score} mas Dólar +{dolar_score}. "
-                f"Commodities em alta normalmente pressionam dólar pra baixo no Brasil.")
+                f"Commodities em alta normalmente pressionam dólar pra baixo no Brasil."
+            )
 
         # d) Juros vs Ações
         juros_score = categories.get("JUROS_RENDA_FIXA", {}).get("score", 0)
@@ -914,18 +1004,21 @@ class RLPerformanceReader:
             result["questionamentos"].append(
                 f"JUROS E AÇÕES subindo juntos (juros +{juros_total}, ações +{acoes_score}). "
                 f"Normal em cenário de queda de juros onde bonds sobem. "
-                f"Se for alta de juros futuros, cuidado — equity pode sofrer depois.")
+                f"Se for alta de juros futuros, cuidado — equity pode sofrer depois."
+            )
 
         # e) Cripto vs Risk-on
         cripto_score = categories.get("CRIPTOMOEDAS", {}).get("score", 0)
         if cripto_score < -3 and total_score > 10:
             result["questionamentos"].append(
                 f"ATENÇÃO: Cripto em queda ({cripto_score}) com mercado geral bullish (+{total_score}). "
-                f"Cripto frequentemente antecipa risk-off. Monitorar reversão global.")
+                f"Cripto frequentemente antecipa risk-off. Monitorar reversão global."
+            )
         elif cripto_score > 3 and total_score < -5:
             result["questionamentos"].append(
                 f"Cripto subindo (+{cripto_score}) contra mercado geral ({total_score}). "
-                f"Pode indicar fuga de capital para ativos alternativos.")
+                f"Pode indicar fuga de capital para ativos alternativos."
+            )
 
         # f) Volatilidade vs Score
         vol_score = categories.get("VOLATILIDADE", {}).get("score", 0)
@@ -933,18 +1026,21 @@ class RLPerformanceReader:
             result["questionamentos"].append(
                 f"VIX/Volatilidade negativa ({vol_score}) com score bullish (+{total_score}). "
                 f"Normal — volatilidade sobe em mercado de queda. Mas se VIX dispara "
-                f"com score ainda positivo, pode ser sinal prévio de reversão.")
+                f"com score ainda positivo, pode ser sinal prévio de reversão."
+            )
 
         # g) Indicadores técnicos vs Score macro
         tech_score = categories.get("INDICADORES_TECNICOS", {}).get("score", 0)
         if total_score > 10 and tech_score < 0:
             result["contradicoes"].append(
                 f"MACRO vs TÉCNICO: Score macro +{total_score} mas indicadores técnicos {tech_score}. "
-                f"Fundamentos puxando mas gráfico não confirma ainda — CUIDADO com timing.")
+                f"Fundamentos puxando mas gráfico ainda não confirma — observar timing."
+            )
         elif total_score < -10 and tech_score > 0:
             result["contradicoes"].append(
                 f"MACRO vs TÉCNICO: Score macro {total_score} mas técnico +{tech_score}. "
-                f"Gráfico ainda positivo mas fundamentos deteriorando. Pode ser atraso.")
+                f"Gráfico ainda positivo mas fundamentos deteriorando. Pode ser atraso."
+            )
 
         # h) Fluxo vs Score
         fluxo_score = categories.get("FLUXO_MICROESTRUTURA", {}).get("score", 0)
@@ -952,17 +1048,20 @@ class RLPerformanceReader:
             result["questionamentos"].append(
                 f"Score forte (+{total_score}) mas fluxo/microestrutura neutro ({fluxo_score}). "
                 f"Preço pode não ter o empurrão necessário para seguir — risco de "
-                f"'todos sabem que é COMPRA' mas ninguém está comprando.")
+                f"'todos sabem que é COMPRA' mas ninguém está comprando."
+            )
 
         # ── 4. CONFIANÇA vs SCORE ──
         if total_score > 20 and macro_conf < 0.65:
             result["questionamentos"].append(
                 f"Score alto (+{total_score}) mas confiança baixa ({macro_conf*100:.0f}%). "
-                f"Muitos itens indisponíveis? Dados parciais podem distorcer o score.")
+                f"Muitos itens indisponíveis? Dados parciais podem distorcer o score."
+            )
         elif total_score > 5 and total_score < 15 and macro_conf > 0.80:
             result["questionamentos"].append(
                 f"Score modesto (+{total_score}) mas confiança alta ({macro_conf*100:.0f}%). "
-                f"Mercado dividido entre categorias — direcional fraco apesar da confiança.")
+                f"Mercado dividido entre categorias — direcional com força limitada apesar da confiança."
+            )
 
         # ── 5. MUITAS CATEGORIAS NEGATIVAS ──
         if len(negative_cats) >= len(positive_cats) and total_score > 0:
@@ -970,7 +1069,8 @@ class RLPerformanceReader:
                 f"MAIS categorias negativas ({len(negative_cats)}) que positivas "
                 f"({len(positive_cats)}), mas score total positivo (+{total_score}). "
                 f"Poucas categorias de peso estão carregando o score inteiro. "
-                f"Diversificação FRACA do sinal.")
+                f"Diversificação limitada do sinal."
+            )
 
         # ── 6. EVOLUÇÃO INTRA-DIA ──
         if cat_history:
@@ -991,8 +1091,8 @@ class RLPerformanceReader:
             if len(total_by_cycle) >= 3:
                 total_by_cycle.sort()
                 scores_cycle = [s for _, s in total_by_cycle]
-                first_half = scores_cycle[:len(scores_cycle)//2]
-                second_half = scores_cycle[len(scores_cycle)//2:]
+                first_half = scores_cycle[: len(scores_cycle) // 2]
+                second_half = scores_cycle[len(scores_cycle) // 2 :]
                 avg_first = sum(first_half) / len(first_half) if first_half else 0
                 avg_second = sum(second_half) / len(second_half) if second_half else 0
 
@@ -1000,30 +1100,40 @@ class RLPerformanceReader:
                     result["questionamentos"].append(
                         f"DETERIORAÇÃO: Score médio caiu de +{avg_first:.0f} "
                         f"(1ª metade) para +{avg_second:.0f} (2ª metade). "
-                        f"Momentum do direcional ENFRAQUECENDO.")
+                        f"Momentum do direcional ENFRAQUECENDO."
+                    )
                 elif avg_first < -5 and avg_second > avg_first * 0.5:
                     result["questionamentos"].append(
                         f"RECUPERAÇÃO: Score melhorando de {avg_first:.0f} para "
-                        f"{avg_second:.0f}. Tendência de reversão em andamento.")
+                        f"{avg_second:.0f}. Tendência de reversão em andamento."
+                    )
 
                 # Categoria que mudou de sinal
                 for cat, hist in cat_history.items():
                     if len(hist) >= 3:
-                        first_scores = [s for _, s, _ in hist[:len(hist)//2]]
-                        last_scores = [s for _, s, _ in hist[len(hist)//2:]]
-                        avg_f = sum(first_scores) / len(first_scores) if first_scores else 0
-                        avg_l = sum(last_scores) / len(last_scores) if last_scores else 0
+                        first_scores = [s for _, s, _ in hist[: len(hist) // 2]]
+                        last_scores = [s for _, s, _ in hist[len(hist) // 2 :]]
+                        avg_f = (
+                            sum(first_scores) / len(first_scores) if first_scores else 0
+                        )
+                        avg_l = (
+                            sum(last_scores) / len(last_scores) if last_scores else 0
+                        )
                         if avg_f > 2 and avg_l < -1:
                             result["contradicoes"].append(
                                 f"VIRADA: '{cat}' mudou de +{avg_f:.0f} para {avg_l:.0f} "
-                                f"durante o dia. Categoria virou contra o direcional.")
+                                f"durante o dia. Categoria virou contra o direcional."
+                            )
                         elif avg_f < -2 and avg_l > 1:
                             result["questionamentos"].append(
                                 f"VIRADA POSITIVA: '{cat}' saiu de {avg_f:.0f} para "
-                                f"+{avg_l:.0f}. Categoria agora apoia o direcional.")
+                                f"+{avg_l:.0f}. Categoria agora apoia o direcional."
+                            )
 
         # ── 7. DETALHES POR CATEGORIA ──
-        for cat, data in sorted(categories.items(), key=lambda x: abs(x[1]["score"]), reverse=True):
+        for cat, data in sorted(
+            categories.items(), key=lambda x: abs(x[1]["score"]), reverse=True
+        ):
             pct_of_total = data["score"] / max(abs(total_score), 1) * 100
             # Consenso interno da categoria
             if data["n"] > 3:
@@ -1031,47 +1141,70 @@ class RLPerformanceReader:
             else:
                 consenso = 100 if data["score"] != 0 else 0
 
-            alinhado_str = "✓ ALINHADO" if (data["score"] > 0 and total_score > 0) or (data["score"] < 0 and total_score < 0) else "✗ CONTRA"
+            alinhado_str = (
+                "✓ ALINHADO"
+                if (data["score"] > 0 and total_score > 0)
+                or (data["score"] < 0 and total_score < 0)
+                else "✗ CONTRA"
+            )
             if data["score"] == 0:
                 alinhado_str = "= NEUTRO"
 
-            result["detalhes_categorias"].append({
-                "categoria": cat,
-                "score": data["score"],
-                "pos": data["pos"],
-                "neg": data["neg"],
-                "n_items": data["n"],
-                "pct_of_total": pct_of_total,
-                "consenso_interno": consenso,
-                "alinhado": alinhado_str,
-            })
+            result["detalhes_categorias"].append(
+                {
+                    "categoria": cat,
+                    "score": data["score"],
+                    "pos": data["pos"],
+                    "neg": data["neg"],
+                    "n_items": data["n"],
+                    "pct_of_total": pct_of_total,
+                    "consenso_interno": consenso,
+                    "alinhado": alinhado_str,
+                }
+            )
 
         # ── VEREDICTO ──
         n_issues = len(result["contradicoes"]) + len(result["vieses_detectados"])
         n_questions = len(result["questionamentos"])
+        strong_positive = total_score > 0 and len(positive_cats) >= len(negative_cats)
+        strong_negative = total_score < 0 and len(negative_cats) > len(positive_cats)
 
-        if n_issues == 0 and n_questions <= 1:
+        if n_issues == 0 and n_questions <= 1 and (strong_positive or strong_negative):
+            cat_label = (
+                f"{len(positive_cats)} categorias positivas"
+                if total_score > 0
+                else f"{len(negative_cats)} categorias negativas"
+            )
             result["veredicto"] = (
-                f"DIRECIONAL SÓLIDO — Score +{total_score} com {len(positive_cats)} categorias "
-                f"positivas, sem contradições significativas. Operar com confiança.")
-            result["confianca_ajustada"] = min(90, int(macro_conf * 100) + 5)
+                f"DIRECIONAL SÓLIDO ({direction_label}) — Score {score_label} com "
+                f"{cat_label}, sem contradições significativas. Operar com confiança."
+            )
+            result["confianca_ajustada"] = min(90, confidence_base + 5)
         elif n_issues <= 1 and n_questions <= 3:
+            cat_label = (
+                f"{len(positive_cats)} categorias positivas"
+                if total_score >= 0
+                else f"{len(negative_cats)} categorias negativas"
+            )
             result["veredicto"] = (
-                f"DIRECIONAL QUESTIONÁVEL — Score +{total_score} com "
-                f"{n_issues} contradição(ões) e {n_questions} questão(ões). "
-                f"Operar apenas se confirmado por técnico + fluxo.")
-            result["confianca_ajustada"] = max(40, int(macro_conf * 100) - 10)
+                f"DIRECIONAL QUESTIONÁVEL ({direction_label}) — Score {score_label} com "
+                f"{cat_label}, {n_issues} contradição(ões) e {n_questions} questão(ões). "
+                f"Operar apenas se confirmado por técnico + fluxo."
+            )
+            result["confianca_ajustada"] = max(40, confidence_base - 10)
         elif n_issues >= 2:
             result["veredicto"] = (
-                f"DIRECIONAL FRACO — Score +{total_score} mas {n_issues} contradições "
+                f"DIRECIONAL COM FORÇA LIMITADA ({direction_label}) — Score {score_label} mas {n_issues} contradições "
                 f"entre categorias. O score pode estar INFLADO. "
-                f"Reduzir exposição ou aguardar confirmação.")
-            result["confianca_ajustada"] = max(30, int(macro_conf * 100) - 20)
+                f"Reduzir exposição e pedir confirmação adicional."
+            )
+            result["confianca_ajustada"] = max(30, confidence_base - 20)
         else:
             result["veredicto"] = (
-                f"DIRECIONAL INCERTO — {n_questions} questões abertas, "
-                f"mercado dividido. Cautela recomendada.")
-            result["confianca_ajustada"] = max(35, int(macro_conf * 100) - 15)
+                f"DIRECIONAL INCERTO ({direction_label}) — {score_label}, {n_questions} questões abertas, "
+                f"mercado dividido. Cautela recomendada."
+            )
+            result["confianca_ajustada"] = max(35, confidence_base - 15)
 
         return result
 
@@ -1118,8 +1251,8 @@ class RLPerformanceReader:
                 unique_regions.append(reg)
 
         # Analisar cada região
-        TOUCH_ZONE = 50.0      # pts — considera "chegou na região"
-        CONFIRM_MOVE = 100.0   # pts — movimento de confirmação
+        TOUCH_ZONE = 50.0  # pts — considera "chegou na região"
+        CONFIRM_MOVE = 100.0  # pts — movimento de confirmação
         results = []
 
         current_price = price_history[-1][1] if price_history else 0
@@ -1190,15 +1323,17 @@ class RLPerformanceReader:
                         status = "TOCOU"
                         detail = f"Toque em {first_touch_ts[:19]}"
 
-            results.append({
-                "price": reg_price,
-                "label": label,
-                "tipo": tipo,
-                "confluences": confluences,
-                "status": status,
-                "detail": detail,
-                "n_touches": len(touches),
-            })
+            results.append(
+                {
+                    "price": reg_price,
+                    "label": label,
+                    "tipo": tipo,
+                    "confluences": confluences,
+                    "status": status,
+                    "detail": detail,
+                    "n_touches": len(touches),
+                }
+            )
 
         # Ordenar por preço (maior→menor)
         results.sort(key=lambda x: x["price"], reverse=True)
@@ -1227,13 +1362,17 @@ class RLPerformanceReader:
 
         # Fallback para micro decisions se RL não tem dados de high/low
         if market_high == 0 and decisions:
-            prices = [float(d["price_current"]) for d in decisions if d.get("price_current")]
+            prices = [
+                float(d["price_current"]) for d in decisions if d.get("price_current")
+            ]
             if prices:
                 market_high = max(prices)
                 market_low = min(prices)
 
         if episodes:
-            market_open = float(episodes[0].get("win_open_price") or episodes[0].get("win_price") or 0)
+            market_open = float(
+                episodes[0].get("win_open_price") or episodes[0].get("win_price") or 0
+            )
             market_current = float(episodes[-1].get("win_price") or 0)
         elif decisions:
             market_open = float(decisions[0].get("price_open") or 0)
@@ -1255,14 +1394,21 @@ class RLPerformanceReader:
         for r in evaluated:
             h = r["horizon_minutes"]
             if h not in rewards_by_horizon:
-                rewards_by_horizon[h] = {"total": 0, "correct": 0, "pts": [], "normalized": []}
+                rewards_by_horizon[h] = {
+                    "total": 0,
+                    "correct": 0,
+                    "pts": [],
+                    "normalized": [],
+                }
             rewards_by_horizon[h]["total"] += 1
             if r.get("was_correct") == 1:
                 rewards_by_horizon[h]["correct"] += 1
             if r.get("price_change_points") is not None:
                 rewards_by_horizon[h]["pts"].append(float(r["price_change_points"]))
             if r.get("reward_normalized") is not None:
-                rewards_by_horizon[h]["normalized"].append(float(r["reward_normalized"]))
+                rewards_by_horizon[h]["normalized"].append(
+                    float(r["reward_normalized"])
+                )
 
         # --- Ações tomadas ---
         actions = {}
@@ -1344,7 +1490,11 @@ class RLPerformanceReader:
         _pts_capturados = 0.0
         for r in rewards:
             acao = r.get("action_at_decision", "")
-            if acao in ("BUY", "SELL") and r.get("is_evaluated") == 1 and r.get("was_correct") == 1:
+            if (
+                acao in ("BUY", "SELL")
+                and r.get("is_evaluated") == 1
+                and r.get("was_correct") == 1
+            ):
                 pts = float(r.get("price_change_points") or 0)
                 if pts > 0:
                     _pts_capturados += pts
@@ -1368,16 +1518,28 @@ class RLPerformanceReader:
         total_ep = len(episodes)
         if total_ep > 0:
             # Qual o sinal macro dominante?
-            dominant_signal = max(macro_signals, key=macro_signals.get) if macro_signals else "UNKNOWN"
+            dominant_signal = (
+                max(macro_signals, key=macro_signals.get)
+                if macro_signals
+                else "UNKNOWN"
+            )
             dominant_signal_pct = macro_signals.get(dominant_signal, 0) / total_ep * 100
 
             # Qual a ação dominante do agente?
-            dominant_action = max(agent_actions, key=agent_actions.get) if agent_actions else "UNKNOWN"
+            dominant_action = (
+                max(agent_actions, key=agent_actions.get)
+                if agent_actions
+                else "UNKNOWN"
+            )
             dominant_action_pct = agent_actions.get(dominant_action, 0) / total_ep * 100
 
             # CONTRADIÇÃO: Macro diz COMPRA mas agente fica HOLD
-            compra_signals = macro_signals.get("BULLISH", 0) + macro_signals.get("COMPRA", 0)
-            venda_signals = macro_signals.get("BEARISH", 0) + macro_signals.get("VENDA", 0)
+            compra_signals = macro_signals.get("BULLISH", 0) + macro_signals.get(
+                "COMPRA", 0
+            )
+            venda_signals = macro_signals.get("BEARISH", 0) + macro_signals.get(
+                "VENDA", 0
+            )
             holds = agent_actions.get("HOLD", 0)
             buys = agent_actions.get("BUY", 0)
             sells = agent_actions.get("SELL", 0)
@@ -1450,9 +1612,9 @@ class RLPerformanceReader:
                 result["parametros_questionados"].append(
                     f"📏 ADX médio = {avg_adx:.1f} (último: {last_adx:.1f}, máx: {max_adx:.1f}). "
                     f"ADX>25 indica TENDÊNCIA FORTE, mas 0 oportunidades foram geradas. "
-                    f"QUESTÃO: Os thresholds de score (±5) estão altos demais para um "
-                    f"mercado tendencial? Com ADX>25, thresholds adaptativos de ±3 seriam "
-                    f"mais apropriados."
+                    f"QUESTÃO: filtros de trend-following/pullback estão ativos? "
+                    f"Em tendência forte, thresholds adaptativos de ±3 podem ser mais apropriados "
+                    f"do que manter bloqueios genéricos de reversão."
                 )
 
             if max_adx > 40 and len(opportunities) == 0:
@@ -1497,7 +1659,9 @@ class RLPerformanceReader:
             last_micro = micro_scores[-1]
 
             # Preço subindo mas micro score negativo
-            prices = [float(d["price_current"]) for d in decisions if d.get("price_current")]
+            prices = [
+                float(d["price_current"]) for d in decisions if d.get("price_current")
+            ]
             if len(prices) >= 10:
                 price_change = prices[-1] - prices[0]
                 if price_change > 500 and avg_micro < 0:
@@ -1519,8 +1683,16 @@ class RLPerformanceReader:
                     result["nota_agente"] -= 1
 
             # Tendências detectadas
-            reversao_pct = micro_trends.get("REVERSÃO", 0) / len(decisions) * 100 if decisions else 0
-            if reversao_pct > 50 and len(prices) >= 10 and abs(prices[-1] - prices[0]) > 500:
+            reversao_pct = (
+                micro_trends.get("REVERSÃO", 0) / len(decisions) * 100
+                if decisions
+                else 0
+            )
+            if (
+                reversao_pct > 50
+                and len(prices) >= 10
+                and abs(prices[-1] - prices[0]) > 500
+            ):
                 result["incoerencias"].append(
                     f"🔴 FALSA REVERSÃO: {reversao_pct:.0f}% das decisões classificaram "
                     f"como REVERSÃO, mas o mercado moveu {prices[-1]-prices[0]:+.0f} pts. "
@@ -1530,7 +1702,9 @@ class RLPerformanceReader:
 
         # ── 6. CUSTO DE OPORTUNIDADE ──
         if decisions:
-            prices = [float(d["price_current"]) for d in decisions if d.get("price_current")]
+            prices = [
+                float(d["price_current"]) for d in decisions if d.get("price_current")
+            ]
             if len(prices) >= 5:
                 price_range = max(prices) - min(prices)
                 price_direction = prices[-1] - prices[0]
@@ -1543,7 +1717,8 @@ class RLPerformanceReader:
                     # BUG-DIARIOS-02: eficiencia_pct calculada sempre (nao apenas n_ops==0)
                     eficiencia = (
                         min(_pts_capturados / capturable * 100, 100.0)
-                        if capturable > 0 else 0.0
+                        if capturable > 0
+                        else 0.0
                     )
                     result["custo_oportunidade"] = {
                         "range_total": price_range,
@@ -1585,7 +1760,8 @@ class RLPerformanceReader:
                     f"📊 Macro Score médio = {avg_macro:.0f} (último: {last_macro:.0f}, "
                     f"máx: {max_macro:.0f}). Score >30 indica VIÉS COMPRADOR claro, "
                     f"mas agente ficou HOLD {hold_pct:.0f}%. "
-                    f"Se macro_score > 30, por que o micro_score não consegue chegar a +5?"
+                    f"Se macro_score > 30, por que o micro_score não consegue chegar a +5? "
+                    f"Se houver ADX alto, talvez o agente precise priorizar continuação de tendência."
                 )
 
             if max_macro >= 50 and len(opportunities) == 0:
@@ -1602,7 +1778,9 @@ class RLPerformanceReader:
             vwap_positions[vp] = vwap_positions.get(vp, 0) + 1
 
         if total_ep > 0:
-            above_vwap = vwap_positions.get("ABOVE_2S", 0) + vwap_positions.get("ABOVE_1S", 0)
+            above_vwap = vwap_positions.get("ABOVE_2S", 0) + vwap_positions.get(
+                "ABOVE_1S", 0
+            )
             above_pct = above_vwap / total_ep * 100
 
             if above_pct > 70 and premium_pct > 80:
@@ -1632,8 +1810,8 @@ class RLPerformanceReader:
 
         if hold_pct > 85:
             result["sugestoes"].append(
-                f"HOLD em {hold_pct:.0f}% indica PARALISIA. O agente precisa de "
-                f"mecanismos de 'forçar' ação quando a oportunidade é clara: "
+                f"HOLD em {hold_pct:.0f}% sugere cautela excessiva. O agente pode "
+                f"precisar de mecanismos para ampliar ação quando a oportunidade é clara: "
                 f"macro forte + ADX alto + preço em zona de compra."
             )
 
@@ -1688,7 +1866,10 @@ class RLPerformanceReader:
                 after.append(ep)
 
         if len(before) < 5 or len(after) < 5:
-            return {"has_comparison": False, "reason": f"Janelas muito pequenas (antes={len(before)}, depois={len(after)})"}
+            return {
+                "has_comparison": False,
+                "reason": f"Janelas muito pequenas (antes={len(before)}, depois={len(after)})",
+            }
 
         # Métricas ANTES
         before_holds = sum(1 for e in before if e.get("action") == "HOLD")
@@ -1716,7 +1897,9 @@ class RLPerformanceReader:
         current_wr = total_correct / total_eval * 100 if total_eval > 0 else 0
 
         # Avaliar se melhorou
-        hold_melhorou = after_hold_pct < before_hold_pct if previous.hold_pct > 80 else True
+        hold_melhorou = (
+            after_hold_pct < before_hold_pct if previous.hold_pct > 80 else True
+        )
         opps_melhorou = opps_after > opps_before
         diversificou = (after_buys + after_sells) > (before_buys + before_sells)
 
@@ -1725,10 +1908,14 @@ class RLPerformanceReader:
 
         if hold_melhorou and before_hold_pct > 80:
             score_melhoria += 2
-            detalhes.append(f"✓ HOLD reduziu: {before_hold_pct:.0f}% → {after_hold_pct:.0f}%")
+            detalhes.append(
+                f"✓ HOLD reduziu: {before_hold_pct:.0f}% → {after_hold_pct:.0f}%"
+            )
         elif not hold_melhorou and before_hold_pct > 80:
             score_melhoria -= 1
-            detalhes.append(f"✗ HOLD não reduziu: {before_hold_pct:.0f}% → {after_hold_pct:.0f}%")
+            detalhes.append(
+                f"✗ HOLD não reduziu: {before_hold_pct:.0f}% → {after_hold_pct:.0f}%"
+            )
 
         if opps_melhorou:
             score_melhoria += 2
@@ -1739,15 +1926,19 @@ class RLPerformanceReader:
 
         if diversificou:
             score_melhoria += 1
-            detalhes.append(f"✓ Mais ações: BUY {before_buys}→{after_buys}, SELL {before_sells}→{after_sells}")
+            detalhes.append(
+                f"✓ Mais ações: BUY {before_buys}→{after_buys}, SELL {before_sells}→{after_sells}"
+            )
 
         # Contexto
         return {
             "has_comparison": True,
-            "feedback_avaliado_id": getattr(previous, 'id', '?'),
+            "feedback_avaliado_id": getattr(previous, "id", "?"),
             "nota_anterior": previous.nota_agente,
             "nota_atual": current.nota_agente,
-            "sugestoes_anteriores": previous.sugestoes[:2] if previous.sugestoes else [],
+            "sugestoes_anteriores": previous.sugestoes[:2]
+            if previous.sugestoes
+            else [],
             "threshold_anterior": f"{previous.threshold_sugerido_buy}/{previous.threshold_sugerido_sell}",
             "smc_bypass_anterior": previous.smc_bypass_recomendado,
             # Antes vs Depois
@@ -1771,9 +1962,12 @@ class RLPerformanceReader:
             "melhorou": score_melhoria > 0,
             "detalhes": detalhes,
             "veredicto": (
-                "FEEDBACK EFICAZ — sugestões melhoraram o agente" if score_melhoria >= 2
-                else "FEEDBACK PARCIAL — melhoria limitada" if score_melhoria > 0
-                else "FEEDBACK INEFICAZ — sem melhoria ou piora" if score_melhoria == 0
+                "FEEDBACK EFICAZ — sugestões melhoraram o agente"
+                if score_melhoria >= 2
+                else "FEEDBACK PARCIAL — melhoria limitada"
+                if score_melhoria > 0
+                else "FEEDBACK INEFICAZ — sem melhoria ou piora"
+                if score_melhoria == 0
                 else "FEEDBACK CONTRAPRODUCENTE — agente piorou"
             ),
         }
@@ -1808,7 +2002,9 @@ class RLPerformanceReader:
             return result
 
         # Contexto de mercado
-        prices = [float(d["price_current"]) for d in decisions if d.get("price_current")]
+        prices = [
+            float(d["price_current"]) for d in decisions if d.get("price_current")
+        ]
         if not prices:
             result["veredicto_geral"] = "Sem histórico de preços"
             return result
@@ -1819,7 +2015,13 @@ class RLPerformanceReader:
         market_range = market_high - market_low
         price_open = prices[0]
         price_direction = current_price - price_open  # + = alta, - = baixa
-        direction_label = "ALTA" if price_direction > 0 else "BAIXA" if price_direction < 0 else "FLAT"
+        direction_label = (
+            "ALTA"
+            if price_direction > 0
+            else "BAIXA"
+            if price_direction < 0
+            else "FLAT"
+        )
 
         # ADX médio (força da tendência)
         adx_values = [float(d["adx"]) for d in decisions if d.get("adx")]
@@ -1831,7 +2033,9 @@ class RLPerformanceReader:
         for ep in episodes:
             sig = ep.get("macro_bias", "UNKNOWN")
             macro_signals[sig] = macro_signals.get(sig, 0) + 1
-        macro_dom = max(macro_signals, key=macro_signals.get) if macro_signals else "UNKNOWN"
+        macro_dom = (
+            max(macro_signals, key=macro_signals.get) if macro_signals else "UNKNOWN"
+        )
 
         # SMC dominante
         smc_eq = {}
@@ -1853,7 +2057,9 @@ class RLPerformanceReader:
                 recent_regions[price_key] = reg
 
         # Analisar cada região única
-        for price_key, reg in sorted(recent_regions.items(), key=lambda x: x[0], reverse=True):
+        for price_key, reg in sorted(
+            recent_regions.items(), key=lambda x: x[0], reverse=True
+        ):
             reg_price = float(reg["price"])
             label = reg.get("label", "?")
             tipo = reg.get("tipo", "?")
@@ -1889,30 +2095,37 @@ class RLPerformanceReader:
                 n_touches = beh.get("n_touches", 0)
                 if "RESPEITOU" in beh["status"]:
                     analysis["argumentos_pro"].append(
-                        f"Preço JÁ RESPEITOU este nível ({beh['detail']})")
+                        f"Preço JÁ RESPEITOU este nível ({beh['detail']})"
+                    )
                     analysis["confianca_nivel"] += 3
                 elif "FUROU" in beh["status"]:
                     analysis["argumentos_contra"].append(
-                        f"Preço JÁ FUROU este nível ({beh['detail']}) — região INVALIDADA")
+                        f"Preço JÁ FUROU este nível ({beh['detail']}) — região INVALIDADA"
+                    )
                     analysis["confianca_nivel"] -= 3
                 elif "TESTANDO" in beh["status"]:
-                    analysis["argumentos_pro"].append("Preço TESTANDO agora — decisão iminente")
+                    analysis["argumentos_pro"].append(
+                        "Preço TESTANDO agora — decisão iminente"
+                    )
                     analysis["confianca_nivel"] += 1
                 if n_touches >= 3:
                     analysis["argumentos_contra"].append(
-                        f"Tocou {n_touches}x — região DESGASTADA, próximo toque pode furar")
+                        f"Tocou {n_touches}x — região DESGASTADA, próximo toque pode furar"
+                    )
                     analysis["confianca_nivel"] -= 1
 
             # ── CONFLUÊNCIA REAL vs ARTIFICIAL ──
             if conf >= 4:
                 analysis["argumentos_pro"].append(
-                    f"Confluência alta ({conf}★) — múltiplos indicadores independentes convergem")
+                    f"Confluência alta ({conf}★) — múltiplos indicadores independentes convergem"
+                )
                 analysis["confianca_nivel"] += 2
             elif conf >= 2:
                 analysis["confianca_nivel"] += 1
             if conf == 1:
                 analysis["argumentos_contra"].append(
-                    "Confluência baixa (1★) — nível FRACO, apenas 1 indicador")
+                    "Confluência baixa (1★) — nível FRACO, apenas 1 indicador"
+                )
                 analysis["confianca_nivel"] -= 1
 
             # Verificar se a confluência é real (fontes diversas) ou artificial
@@ -1923,10 +2136,13 @@ class RLPerformanceReader:
             has_fvg = "fvg" in label_lower
             has_topo = "topo" in label_lower
             has_fundo = "fundo" in label_lower
-            source_count = sum([has_vwap, has_pivot, has_ob, has_fvg, has_topo, has_fundo])
+            source_count = sum(
+                [has_vwap, has_pivot, has_ob, has_fvg, has_topo, has_fundo]
+            )
             if conf >= 3 and source_count <= 1:
                 analysis["argumentos_contra"].append(
-                    f"Confluência pode ser ARTIFICIAL — label indica apenas 1 tipo ({label})")
+                    f"Confluência pode ser ARTIFICIAL — label indica apenas 1 tipo ({label})"
+                )
 
             # ── ANÁLISE CONTEXTUAL POR TIPO ──
 
@@ -1935,27 +2151,32 @@ class RLPerformanceReader:
                 if price_direction > 0 and trend_strong:
                     analysis["argumentos_contra"].append(
                         f"Mercado em ALTA FORTE (ADX {avg_adx:.0f}, +{price_direction:.0f} pts). "
-                        f"Resistências tendem a ser ROMPIDAS em tendência forte.")
+                        f"Resistências tendem a ser ROMPIDAS em tendência forte."
+                    )
                     analysis["confianca_nivel"] -= 2
                 if macro_dom in ("BULLISH", "COMPRA"):
                     analysis["argumentos_contra"].append(
-                        f"Macro BULLISH — vender em resistência contra a maré é PERIGOSO.")
+                        f"Macro BULLISH — vender em resistência contra a maré é PERIGOSO."
+                    )
                     analysis["confianca_nivel"] -= 1
                 if smc_dom == "PREMIUM" and avg_adx > 30:
                     analysis["argumentos_contra"].append(
                         "SMC PREMIUM + ADX>30 = tendência de alta FORTE. "
-                        "PREMIUM é relativo — em rally, o topo antigo vira piso.")
+                        "PREMIUM é relativo — em rally, o topo antigo vira piso."
+                    )
                     analysis["confianca_nivel"] -= 1
                 if distance > 0 and distance < market_range * 0.15:
                     analysis["argumentos_pro"].append(
                         f"Resistência PRÓXIMA ({distance:.0f} pts) — "
-                        f"bom para TAKE PROFIT parcial, não necessariamente venda.")
+                        f"bom para TAKE PROFIT parcial, não necessariamente venda."
+                    )
                     analysis["confianca_nivel"] += 1
 
                 # Em contra-tendência, resistência é mais confiável como referência
                 if price_direction < -100 and avg_adx < 20:
                     analysis["argumentos_pro"].append(
-                        "Mercado sem tendência clara — resistência tem mais chance de segurar.")
+                        "Mercado sem tendência clara — resistência tem mais chance de segurar."
+                    )
                     analysis["confianca_nivel"] += 2
 
             # SUPORTE — faz sentido COMPRAR aqui?
@@ -1963,26 +2184,31 @@ class RLPerformanceReader:
                 if price_direction < 0 and trend_strong:
                     analysis["argumentos_contra"].append(
                         f"Mercado em BAIXA FORTE (ADX {avg_adx:.0f}, {price_direction:.0f} pts). "
-                        f"Suportes tendem a ser ROMPIDOS em queda forte.")
+                        f"Suportes tendem a ser ROMPIDOS em queda forte."
+                    )
                     analysis["confianca_nivel"] -= 2
                 if macro_dom in ("BEARISH", "VENDA"):
                     analysis["argumentos_contra"].append(
-                        f"Macro BEARISH — comprar em suporte contra a tendência é PERIGOSO.")
+                        f"Macro BEARISH — comprar em suporte contra a tendência é PERIGOSO."
+                    )
                     analysis["confianca_nivel"] -= 1
                 if distance < 0 and abs(distance) < market_range * 0.15:
                     analysis["argumentos_pro"].append(
                         f"Suporte PRÓXIMO ({abs(distance):.0f} pts) — "
-                        f"bom para STOP LOSS referência ou entry em pullback.")
+                        f"bom para STOP LOSS referência ou entry em pullback."
+                    )
                     analysis["confianca_nivel"] += 1
                 if macro_dom in ("BULLISH", "COMPRA") and abs(distance_pct) < 0.3:
                     analysis["argumentos_pro"].append(
-                        "Macro BULLISH + suporte próximo = zona ideal para BUY em pullback.")
+                        "Macro BULLISH + suporte próximo = zona ideal para BUY em pullback."
+                    )
                     analysis["confianca_nivel"] += 3
 
                 # Suporte forte em mercado lateral
                 if abs(price_direction) < 100 and avg_adx < 20:
                     analysis["argumentos_pro"].append(
-                        "Mercado LATERAL — suporte tem alta chance de segurar para bounce.")
+                        "Mercado LATERAL — suporte tem alta chance de segurar para bounce."
+                    )
                     analysis["confianca_nivel"] += 2
 
             # ── VOLUME ──
@@ -1997,25 +2223,29 @@ class RLPerformanceReader:
             if vol_strength >= 5:
                 analysis["volume_confirma"] = True
                 analysis["argumentos_pro"].append(
-                    f"Preço teve {vol_strength} interações nesta zona — volume CONFIRMA interesse.")
+                    f"Preço teve {vol_strength} interações nesta zona — volume CONFIRMA interesse."
+                )
                 analysis["confianca_nivel"] += 1
             elif vol_strength == 0:
                 analysis["volume_confirma"] = False
                 analysis["argumentos_contra"].append(
-                    "Preço não negociou nesta zona — nível TEÓRICO, sem confirmação de volume.")
+                    "Preço não negociou nesta zona — nível TEÓRICO, sem confirmação de volume."
+                )
 
             # ── ADVOGADO DO DIABO: ARMADILHAS ──
             # Trap: suporte falso em queda forte
             if tipo == "SUPORTE" and price_direction < -200 and avg_adx > 30:
                 analysis["argumentos_contra"].append(
-                    "⚠ POSSÍVEL ARMADILHA: suporte em queda forte (>200 pts) com ADX>30 "
-                    "pode ser 'dead cat bounce'. Confirmar com volume + reversão clara.")
+                    "⚠ ZONA DE TESTE: suporte em queda forte (>200 pts) com ADX>30 "
+                    "pode gerar repique técnico. Confirmar com volume + reversão clara."
+                )
 
             # Trap: resistência falsa em alta forte
             if tipo == "RESISTENCIA" and price_direction > 200 and avg_adx > 30:
                 analysis["argumentos_contra"].append(
-                    "⚠ POSSÍVEL ARMADILHA: resistência em alta forte (>200 pts) com ADX>30 "
-                    "provavelmente será rompida. NÃO vender short aqui.")
+                    "⚠ ZONA DE TESTE: resistência em alta forte (>200 pts) com ADX>30 "
+                    "tem maior chance de rompimento. Evitar short sem confirmação."
+                )
 
             # ── VEREDICTO ──
             pros = len(analysis["argumentos_pro"])
@@ -2026,67 +2256,89 @@ class RLPerformanceReader:
                 analysis["veredicto"] = "FORTE — operar com confiança"
                 analysis["favoravel"] = True
             elif score >= 2:
-                analysis["veredicto"] = "MODERADO — operar com cautela, confirmar volume"
+                analysis["veredicto"] = "MODERADO — aguarda confirmação de volume"
                 analysis["favoravel"] = True
             elif score >= 0:
-                analysis["veredicto"] = "FRACO — apenas como referência de TP/SL, não entry"
+                analysis[
+                    "veredicto"
+                ] = "PONTO DE OBSERVAÇÃO — útil para TP/SL, não como entrada"
                 analysis["favoravel"] = False
             else:
-                analysis["veredicto"] = "CONTRA-INDICADO — nível provavelmente será furado"
+                analysis["veredicto"] = "NÃO PRIORITÁRIO — nível com chance reduzida"
                 analysis["favoravel"] = False
 
             # Classificar como oportunidade real ou armadilha
             if analysis["favoravel"] and score >= 3:
                 result["oportunidades_reais"].append(
                     f"{label} @ {reg_price:.0f} ({tipo}) — {analysis['veredicto']} "
-                    f"(score {score})")
+                    f"(score {score})"
+                )
             elif score < 0:
                 result["armadilhas_possiveis"].append(
                     f"{label} @ {reg_price:.0f} ({tipo}) — {analysis['veredicto']} "
-                    f"(score {score}): {analysis['argumentos_contra'][0] if analysis['argumentos_contra'] else 'risco elevado'}")
+                    f"(score {score}): {analysis['argumentos_contra'][0] if analysis['argumentos_contra'] else 'risco elevado'}"
+                )
 
             result["regioes_analisadas"].append(analysis)
 
         # ── VEREDICTO GERAL ──
         n_regioes = len(result["regioes_analisadas"])
-        n_fortes = sum(1 for r in result["regioes_analisadas"] if r["confianca_nivel"] >= 3)
-        n_fracas = sum(1 for r in result["regioes_analisadas"] if r["confianca_nivel"] < 0)
+        n_fortes = sum(
+            1 for r in result["regioes_analisadas"] if r["confianca_nivel"] >= 3
+        )
+        n_fracas = sum(
+            1 for r in result["regioes_analisadas"] if r["confianca_nivel"] < 0
+        )
 
         if n_fortes > 0 and n_fracas == 0:
             result["veredicto_geral"] = (
                 f"MERCADO BEM MAPEADO — {n_fortes}/{n_regioes} regiões fortes. "
-                f"Contexto: {direction_label}, ADX {avg_adx:.0f}, Macro {macro_dom}.")
+                f"Contexto: {direction_label}, ADX {avg_adx:.0f}, Macro {macro_dom}."
+            )
         elif n_fortes > 0 and n_fracas > 0:
             result["veredicto_geral"] = (
                 f"MISTO — {n_fortes} regiões confiáveis, {n_fracas} duvidosas. "
                 f"Operar apenas nos níveis FORTES. "
-                f"Contexto: {direction_label}, ADX {avg_adx:.0f}.")
+                f"Contexto: {direction_label}, ADX {avg_adx:.0f}."
+            )
         elif n_fracas >= n_regioes * 0.7:
             result["veredicto_geral"] = (
                 f"CUIDADO — {n_fracas}/{n_regioes} regiões fracas ou contra-indicadas. "
                 f"Mercado em {direction_label} forte, níveis podem ser rompidos. "
-                f"Priorizar TREND FOLLOWING sobre FADE.")
+                f"Priorizar TREND FOLLOWING sobre FADE."
+            )
         else:
             result["veredicto_geral"] = (
                 f"NEUTRO — {n_regioes} regiões mapeadas, nenhuma excepcionalmente forte. "
-                f"Operar com cautela e confirmação.")
+                f"Operar com cautela e confirmação."
+            )
 
         # Alertas específicos
         if n_fracas > n_fortes and n_regioes > 2:
             result["alertas"].append(
                 "MAIS regiões fracas que fortes — o mapeamento pode estar "
-                "gerando falsa sensação de segurança.")
+                "gerando falsa sensação de segurança."
+            )
         if market_range > 500 and n_regioes < 3:
             result["alertas"].append(
                 f"Range grande ({market_range:.0f} pts) mas poucas regiões ({n_regioes}). "
-                f"O agente pode estar cego em zonas importantes.")
-        if trend_strong and all(r.get("tipo") == "RESISTENCIA" for r in result["regioes_analisadas"] if r.get("distance_pts", 0) > 0):
-            suportes_proximos = [r for r in result["regioes_analisadas"]
-                                 if r["tipo"] == "SUPORTE" and abs(r.get("distance_pct", 1)) < 0.5]
+                f"O agente pode estar cego em zonas importantes."
+            )
+        if trend_strong and all(
+            r.get("tipo") == "RESISTENCIA"
+            for r in result["regioes_analisadas"]
+            if r.get("distance_pts", 0) > 0
+        ):
+            suportes_proximos = [
+                r
+                for r in result["regioes_analisadas"]
+                if r["tipo"] == "SUPORTE" and abs(r.get("distance_pct", 1)) < 0.5
+            ]
             if suportes_proximos and macro_dom in ("BULLISH", "COMPRA"):
                 result["alertas"].append(
                     f"OPORTUNIDADE: Suportes próximos em mercado BULLISH com ADX {avg_adx:.0f}. "
-                    f"Considerar BUY em pullback até suporte ao invés de esperar DISCOUNT.")
+                    f"Considerar BUY em pullback até suporte ao invés de esperar DISCOUNT."
+                )
 
         return result
 
@@ -2139,7 +2391,9 @@ class RLPerformanceReader:
                     f"Revisar lógica de scoring e thresholds."
                 )
         elif total_eval > 0:
-            diags.append(f"📋 Poucos rewards avaliados ({total_eval}). Aguardar mais dados.")
+            diags.append(
+                f"📋 Poucos rewards avaliados ({total_eval}). Aguardar mais dados."
+            )
 
         # Distribuição de ações
         holds = actions.get("HOLD", 0)
@@ -2176,8 +2430,10 @@ class RLPerformanceReader:
 # Price Tracker
 # ────────────────────────────────────────────────────────────────
 
+
 class PriceTracker:
     """Track price history."""
+
     def __init__(self):
         self.prices = []
 
@@ -2204,6 +2460,7 @@ _painel_obs: ObservabilidadeDiarios = ObservabilidadeDiarios(
 # ────────────────────────────────────────────────────────────────
 # Thread 1: Trading Journal (narrativa macro)
 # ────────────────────────────────────────────────────────────────
+
 
 def run_trading_journal():
     """Run trading journal in separate thread."""
@@ -2305,11 +2562,17 @@ def run_trading_journal():
             print()
             print("-" * 80)
             print("CONTEXTO:")
-            print(f"  Macro: {decision_data['macro_bias']} | Fundamentos: {decision_data['fundamental_bias']}")
-            print(f"  Sentimento: {decision_data['sentiment_bias']} | Tecnica: {decision_data['technical_bias']}")
+            print(
+                f"  Macro: {decision_data['macro_bias']} | Fundamentos: {decision_data['fundamental_bias']}"
+            )
+            print(
+                f"  Sentimento: {decision_data['sentiment_bias']} | Tecnica: {decision_data['technical_bias']}"
+            )
             print(f"  Alinhamento: {normalize_confidence(entry.alignment_score):.0%}")
             print()
-            print(f"DECISAO: {narrative.decision.value} ({normalize_confidence(narrative.confidence):.0%})")
+            print(
+                f"DECISAO: {narrative.decision.value} ({normalize_confidence(narrative.confidence):.0%})"
+            )
             print(f"Entry ID: {entry.entry_id}")
             print()
 
@@ -2325,6 +2588,7 @@ def run_trading_journal():
 # ────────────────────────────────────────────────────────────────
 # Thread 2: AI Reflection
 # ────────────────────────────────────────────────────────────────
+
 
 def run_ai_reflection():
     """Run AI reflection in separate thread — COM análise cruzada do agente."""
@@ -2399,7 +2663,11 @@ def run_ai_reflection():
                 embi_spread=250,
             )
 
-            change_10min = ((current_price - price_10min_ago) / price_10min_ago * 100) if price_10min_ago > 0 else 0
+            change_10min = (
+                ((current_price - price_10min_ago) / price_10min_ago * 100)
+                if price_10min_ago > 0
+                else 0
+            )
 
             # Create reflection
             reflection = journal.generate_reflection(
@@ -2467,8 +2735,12 @@ def run_ai_reflection():
                 hold_pct = total_holds / total_episodes * 100 if total_episodes else 0
 
                 print()
-                print(f"  IA diz: {ai_decision} (conf: {normalize_confidence(decision.confidence):.0%})")
-                print(f"  Agente diz: {agent_action} (macro_score: {agent_macro_score}, SMC: {agent_smc})")
+                print(
+                    f"  IA diz: {ai_decision} (conf: {normalize_confidence(decision.confidence):.0%})"
+                )
+                print(
+                    f"  Agente diz: {agent_action} (macro_score: {agent_macro_score}, SMC: {agent_smc})"
+                )
                 print(f"  Oportunidades hoje: {len(opportunities)}")
                 print(f"  Ações: HOLD {total_holds}/{total_episodes} ({hold_pct:.0f}%)")
 
@@ -2482,36 +2754,77 @@ def run_ai_reflection():
 
                 # 1. IA diz BUY/SELL mas agente fica HOLD
                 if ai_decision != "HOLD" and agent_action == "HOLD":
-                    print(f"  ❓ Eu (IA) estou vendo {ai_decision} com {normalize_confidence(decision.confidence):.0%} de confiança,")
+                    print(
+                        f"  ❓ Eu (IA) estou vendo {ai_decision} com {normalize_confidence(decision.confidence):.0%} de confiança,"
+                    )
                     print(f"     mas o agente micro está em HOLD. POR QUÊ?")
                     if agent_smc == "PREMIUM" and ai_decision == "BUY":
-                        print(f"     → CAUSA PROVÁVEL: Filtro SMC está em PREMIUM, vetando BUY.")
-                        print(f"       QUESTÃO: Se o macro score é {agent_macro_score} e eu")
-                        print(f"       recomendo {ai_decision}, o SMC deveria ser relaxado?")
+                        print(
+                            f"     → CAUSA PROVÁVEL: Filtro SMC está em PREMIUM, vetando BUY."
+                        )
+                        print(
+                            f"       QUESTÃO: Se o macro score é {agent_macro_score} e eu"
+                        )
+                        print(
+                            f"       recomendo {ai_decision}, o SMC deveria ser relaxado?"
+                        )
                     has_questions = True
 
                 # 2. Muitos HOLDs em mercado tendencial
                 if hold_pct > 80 and decisions_micro:
-                    prices = [float(d["price_current"]) for d in decisions_micro if d.get("price_current")]
+                    prices = [
+                        float(d["price_current"])
+                        for d in decisions_micro
+                        if d.get("price_current")
+                    ]
+                    recent_adx = [
+                        float(d["adx"]) for d in decisions_micro if d.get("adx")
+                    ]
                     if len(prices) >= 5:
                         move = prices[-1] - prices[0]
                         if abs(move) > 300:
-                            print(f"  ❓ Mercado moveu {move:+.0f} pts mas agente ficou HOLD {hold_pct:.0f}%.")
-                            print(f"     QUESTÃO AO HUMANO: Os parâmetros estão corretos?")
-                            print(f"     Os thresholds (±5) podem estar altos demais.")
+                            print(
+                                f"  ❓ Mercado moveu {move:+.0f} pts mas agente ficou HOLD {hold_pct:.0f}%."
+                            )
+                            if recent_adx and max(recent_adx) >= 25:
+                                print(
+                                    f"     ADX forte detectado (último {recent_adx[-1]:.0f}, pico {max(recent_adx):.0f})."
+                                )
+                                print(
+                                    f"     QUESTÃO AO HUMANO: o agente deveria estar em trend following/pullback, não HOLD?"
+                                )
+                            else:
+                                print(
+                                    f"     QUESTÃO AO HUMANO: Os parâmetros estão corretos?"
+                                )
+                                print(
+                                    f"     Os thresholds (±5) podem estar altos demais."
+                                )
                             has_questions = True
 
                 # 3. Zero oportunidades
                 if len(opportunities) == 0 and total_episodes > 10:
-                    print(f"  ❓ {total_episodes} ciclos de análise, 0 oportunidades geradas.")
+                    print(
+                        f"  ❓ {total_episodes} ciclos de análise, 0 oportunidades geradas."
+                    )
                     print(f"     QUESTÃO: Qual filtro está bloqueando?")
                     # Investigar
-                    smc_premium = sum(1 for e in episodes if e.get("smc_equilibrium") == "PREMIUM")
-                    compra_macro = sum(1 for e in episodes if e.get("macro_bias") in ("BULLISH", "COMPRA"))
+                    smc_premium = sum(
+                        1 for e in episodes if e.get("smc_equilibrium") == "PREMIUM"
+                    )
+                    compra_macro = sum(
+                        1
+                        for e in episodes
+                        if e.get("macro_bias") in ("BULLISH", "COMPRA")
+                    )
                     if smc_premium > total_episodes * 0.7:
-                        print(f"     → SMC PREMIUM em {smc_premium/total_episodes*100:.0f}% é o bloqueio principal.")
+                        print(
+                            f"     → SMC PREMIUM em {smc_premium/total_episodes*100:.0f}% é o bloqueio principal."
+                        )
                     if compra_macro > total_episodes * 0.7:
-                        print(f"     → Macro diz COMPRA {compra_macro/total_episodes*100:.0f}%! CONTRADIÇÃO com HOLD.")
+                        print(
+                            f"     → Macro diz COMPRA {compra_macro/total_episodes*100:.0f}%! CONTRADIÇÃO com HOLD."
+                        )
                     has_questions = True
 
                 # 4. Win rate baixa
@@ -2521,21 +2834,33 @@ def run_ai_reflection():
                     correct = sum(1 for r in evaluated if r.get("was_correct") == 1)
                     wr = correct / len(evaluated) * 100
                     if wr < 30:
-                        print(f"  ❓ Win rate = {wr:.1f}%. O sistema de recompensas está")
-                        print(f"     penalizando HOLD injustamente ou o agente está realmente errado?")
+                        print(
+                            f"  ❓ Win rate = {wr:.1f}%. O sistema de recompensas está"
+                        )
+                        print(
+                            f"     penalizando HOLD injustamente ou o agente está realmente errado?"
+                        )
                         has_questions = True
 
                 # 5. Verificar ADX alto sem ação
                 if decisions_micro:
-                    recent_adx = [float(d["adx"]) for d in decisions_micro[-10:] if d.get("adx")]
+                    recent_adx = [
+                        float(d["adx"]) for d in decisions_micro[-10:] if d.get("adx")
+                    ]
                     if recent_adx and max(recent_adx) > 40 and len(opportunities) == 0:
                         print(f"  ❓ ADX nos últimos ciclos: {max(recent_adx):.0f}.")
-                        print(f"     Tendência FORTE detectada sem nenhuma ação do agente.")
-                        print(f"     QUESTÃO: O agente deveria ter modo 'trend following'?")
+                        print(
+                            f"     Tendência FORTE detectada sem nenhuma ação do agente."
+                        )
+                        print(
+                            f"     QUESTÃO: O agente deveria ter modo 'trend following'?"
+                        )
                         has_questions = True
 
                 if not has_questions:
-                    print("  ✓ Nenhuma inconsistência detectada entre IA e agente neste ciclo.")
+                    print(
+                        "  ✓ Nenhuma inconsistência detectada entre IA e agente neste ciclo."
+                    )
 
             else:
                 print()
@@ -2550,6 +2875,7 @@ def run_ai_reflection():
     except Exception as e:
         print(f"[AI REFLECTION] Erro: {e}")
         import traceback
+
         traceback.print_exc()
     finally:
         mt5.disconnect()
@@ -2559,12 +2885,15 @@ def run_ai_reflection():
 # Thread 3: RL Performance Diary (NOVO)
 # ────────────────────────────────────────────────────────────────
 
+
 def run_rl_performance_diary():
     """Diário de performance RL — lê rewards do SQLite e reflete."""
 
     db_path = _get_db_path()
     reader = RLPerformanceReader(db_path)
-    mlops_runtime_bridge = DiarioRuntimeMlOpsBridge() if HAS_MLOPS_RUNTIME_BRIDGE else None
+    mlops_runtime_bridge = (
+        DiarioRuntimeMlOpsBridge() if HAS_MLOPS_RUNTIME_BRIDGE else None
+    )
     count = 0
 
     try:
@@ -2573,7 +2902,9 @@ def run_rl_performance_diary():
             now = datetime.now()
 
             print("\n" + "▓" * 80)
-            print(f"  RL PERFORMANCE DIARY - RELATÓRIO #{count} - {now.strftime('%H:%M:%S')}")
+            print(
+                f"  RL PERFORMANCE DIARY - RELATÓRIO #{count} - {now.strftime('%H:%M:%S')}"
+            )
             print("▓" * 80)
             print(f"Gate diario de confidence: {_current_daily_confidence_gate():.0%}")
 
@@ -2584,16 +2915,24 @@ def run_rl_performance_diary():
             print("  ╔══════════════════════════════════════════════════════════════╗")
             print(f"  ║  RANGE DO MERCADO HOJE                                     ║")
             print("  ╠══════════════════════════════════════════════════════════════╣")
-            print(f"  ║  Abertura: {perf['market_open']:>10.0f}    Atual: {perf['market_current']:>10.0f}          ║")
-            print(f"  ║  Máxima:   {perf['market_high']:>10.0f}    Mínima: {perf['market_low']:>10.0f}          ║")
-            print(f"  ║  Range:    {perf['market_range_pts']:>10.0f} pts   Var: {perf['market_change_pts']:>+10.0f} pts      ║")
+            print(
+                f"  ║  Abertura: {perf['market_open']:>10.0f}    Atual: {perf['market_current']:>10.0f}          ║"
+            )
+            print(
+                f"  ║  Máxima:   {perf['market_high']:>10.0f}    Mínima: {perf['market_low']:>10.0f}          ║"
+            )
+            print(
+                f"  ║  Range:    {perf['market_range_pts']:>10.0f} pts   Var: {perf['market_change_pts']:>+10.0f} pts      ║"
+            )
             print("  ╚══════════════════════════════════════════════════════════════╝")
 
             # ── Episódios RL ──
             print()
             print(f"  📊 EPISÓDIOS RL:     {perf['n_episodes']}")
             print(f"  📊 DECISÕES MICRO:   {perf['n_micro_decisions']}")
-            print(f"  📊 OPORTUNIDADES:    {perf['n_opportunities']} (BUY: {perf['opp_buy']} | SELL: {perf['opp_sell']})")
+            print(
+                f"  📊 OPORTUNIDADES:    {perf['n_opportunities']} (BUY: {perf['opp_buy']} | SELL: {perf['opp_sell']})"
+            )
 
             # ── Distribuição de Ações ──
             if perf["actions_distribution"]:
@@ -2618,25 +2957,39 @@ def run_rl_performance_diary():
                     wr = (correct / total * 100) if total > 0 else 0
                     avg_pts = sum(data["pts"]) / len(data["pts"]) if data["pts"] else 0
                     icon = "✓" if wr >= 50 else "✗"
-                    print(f"  │  {h:>4} min│  {total:>4}  │    {correct:>4}  │  {wr:>5.1f}%  │  {avg_pts:>+8.1f} {icon}  │")
+                    print(
+                        f"  │  {h:>4} min│  {total:>4}  │    {correct:>4}  │  {wr:>5.1f}%  │  {avg_pts:>+8.1f} {icon}  │"
+                    )
                 print("  └──────────┴────────┴──────────┴──────────┴──────────────┘")
 
             # ── Performance global ──
             print()
-            print(f"  WIN RATE GLOBAL: {perf['win_rate_pct']:.1f}%  "
-                  f"({perf['correct_count']} ✓ / {perf['incorrect_count']} ✗ "
-                  f"de {perf['n_rewards_evaluated']} avaliados, "
-                  f"{perf['n_rewards_pending']} pendentes)")
+            print(
+                f"  WIN RATE GLOBAL: {perf['win_rate_pct']:.1f}%  "
+                f"({perf['correct_count']} ✓ / {perf['incorrect_count']} ✗ "
+                f"de {perf['n_rewards_evaluated']} avaliados, "
+                f"{perf['n_rewards_pending']} pendentes)"
+            )
 
             # ── Comportamento das Regiões ──
             region_behavior = reader.analyze_region_behavior()
             if region_behavior:
                 print()
-                print("  ┌─────────────────────────────────────────────────────────────┐")
-                print("  │  COMPORTAMENTO DAS REGIÕES — Respeitou ou Furou?           │")
-                print("  ├──────────┬──────────────────────────┬───────────────────────┤")
-                print("  │  Preço   │ Região                   │ Status                │")
-                print("  ├──────────┼──────────────────────────┼───────────────────────┤")
+                print(
+                    "  ┌─────────────────────────────────────────────────────────────┐"
+                )
+                print(
+                    "  │  COMPORTAMENTO DAS REGIÕES — Respeitou ou Furou?           │"
+                )
+                print(
+                    "  ├──────────┬──────────────────────────┬───────────────────────┤"
+                )
+                print(
+                    "  │  Preço   │ Região                   │ Status                │"
+                )
+                print(
+                    "  ├──────────┼──────────────────────────┼───────────────────────┤"
+                )
 
                 # Stats
                 n_respeitou = 0
@@ -2667,24 +3020,38 @@ def run_rl_performance_diary():
                         icon = "  "
 
                     stars = "★" * min(conf, 5) + "☆" * max(0, 5 - conf)
-                    print(f"  │ {price:>8.0f} │ {label:<24} │ {icon} {status:<10} {detail:<10}│")
+                    print(
+                        f"  │ {price:>8.0f} │ {label:<24} │ {icon} {status:<10} {detail:<10}│"
+                    )
 
-                print("  └──────────┴──────────────────────────┴───────────────────────┘")
+                print(
+                    "  └──────────┴──────────────────────────┴───────────────────────┘"
+                )
 
                 # Resumo
                 total_regions = len(region_behavior)
                 if n_testado > 0:
                     taxa_respeito = n_respeitou / n_testado * 100
-                    print(f"  📐 {total_regions} regiões mapeadas | {n_testado} testadas | "
-                          f"{n_respeitou} respeitaram ({taxa_respeito:.0f}%) | {n_furou} furaram")
+                    print(
+                        f"  📐 {total_regions} regiões mapeadas | {n_testado} testadas | "
+                        f"{n_respeitou} respeitaram ({taxa_respeito:.0f}%) | {n_furou} furaram"
+                    )
                     if taxa_respeito >= 70:
-                        print("  ✓ Regiões com alta taxa de respeito — mapeamento confiável.")
+                        print(
+                            "  ✓ Regiões com alta taxa de respeito — mapeamento confiável."
+                        )
                     elif taxa_respeito >= 40:
-                        print("  ⚡ Regiões com eficácia moderada — filtrar por confluência.")
+                        print(
+                            "  ⚡ Regiões com eficácia moderada — filtrar por confluência."
+                        )
                     else:
-                        print("  ⚠ Maioria das regiões foi furada — revisar critérios de mapeamento.")
+                        print(
+                            "  ⚠ Boa parte das regiões perdeu força — recalibrar critérios de mapeamento."
+                        )
                 else:
-                    print(f"  📐 {total_regions} regiões mapeadas | Nenhuma testada pelo preço ainda.")
+                    print(
+                        f"  📐 {total_regions} regiões mapeadas | Nenhuma testada pelo preço ainda."
+                    )
 
             # ── Diagnóstico ──
             print()
@@ -2708,11 +3075,17 @@ def run_rl_performance_diary():
 
             if has_critical:
                 print()
-                print("  ╔══════════════════════════════════════════════════════════════╗")
+                print(
+                    "  ╔══════════════════════════════════════════════════════════════╗"
+                )
                 print("  ║  🔍 ANÁLISE CRÍTICA — INTELIGÊNCIA DO DIÁRIO               ║")
-                print(f"  ║  NOTA DO AGENTE: {coherence['nota_agente']}/10"
-                      f"{'':>{44-len(str(coherence['nota_agente']))}}║")
-                print("  ╚══════════════════════════════════════════════════════════════╝")
+                print(
+                    f"  ║  NOTA DO AGENTE: {coherence['nota_agente']}/10"
+                    f"{'':>{44-len(str(coherence['nota_agente']))}}║"
+                )
+                print(
+                    "  ╚══════════════════════════════════════════════════════════════╝"
+                )
 
                 if coherence["alertas_criticos"]:
                     print()
@@ -2779,8 +3152,12 @@ def run_rl_performance_diary():
                 if coherence["custo_oportunidade"]:
                     co = coherence["custo_oportunidade"]
                     print("  💰 CUSTO DE OPORTUNIDADE:")
-                    print(f"    Range: {co['range_total']:.0f} pts | Direção: {co['direcao_pts']:+.0f} pts")
-                    print(f"    Capturável (estimado): {co['capturable_estimado']:.0f} pts")
+                    print(
+                        f"    Range: {co['range_total']:.0f} pts | Direção: {co['direcao_pts']:+.0f} pts"
+                    )
+                    print(
+                        f"    Capturável (estimado): {co['capturable_estimado']:.0f} pts"
+                    )
                     print(f"    Capturado pelo agente: {co['pts_capturados']:.0f} pts")
                     print(f"    Eficiência: {co['eficiencia_pct']:.0f}%")
                     print()
@@ -2822,15 +3199,23 @@ def run_rl_performance_diary():
                     print(f"  {verd_icon} EFETIVIDADE DO FEEDBACK ANTERIOR:")
                     print(f"    Veredicto: {verd}")
                     print(f"    Score melhoria: {eff['score_melhoria']:+d}")
-                    print(f"    Nota: {eff['nota_anterior']}/10 → {eff['nota_atual']}/10")
+                    print(
+                        f"    Nota: {eff['nota_anterior']}/10 → {eff['nota_atual']}/10"
+                    )
                     print(f"    Threshold anterior: {eff['threshold_anterior']}")
-                    print(f"    SMC bypass anterior: {'SIM' if eff['smc_bypass_anterior'] else 'NÃO'}")
+                    print(
+                        f"    SMC bypass anterior: {'SIM' if eff['smc_bypass_anterior'] else 'NÃO'}"
+                    )
                     b = eff["before"]
                     a = eff["after"]
-                    print(f"    ANTES  ({b['episodios']} eps): HOLD {b['hold_pct']:.0f}% | "
-                          f"BUY {b['buys']} | SELL {b['sells']} | Opps {b['opportunidades']}")
-                    print(f"    DEPOIS ({a['episodios']} eps): HOLD {a['hold_pct']:.0f}% | "
-                          f"BUY {a['buys']} | SELL {a['sells']} | Opps {a['opportunities']}")
+                    print(
+                        f"    ANTES  ({b['episodios']} eps): HOLD {b['hold_pct']:.0f}% | "
+                        f"BUY {b['buys']} | SELL {b['sells']} | Opps {b['opportunidades']}"
+                    )
+                    print(
+                        f"    DEPOIS ({a['episodios']} eps): HOLD {a['hold_pct']:.0f}% | "
+                        f"BUY {a['buys']} | SELL {a['sells']} | Opps {a['opportunities']}"
+                    )
                     for d in eff.get("detalhes", []):
                         print(f"    {d}")
                     print()
@@ -2857,7 +3242,9 @@ def run_rl_performance_diary():
                     # Tabela por categoria
                     det_cats = dir_analysis.get("detalhes_categorias", [])
                     if det_cats:
-                        print("    CATEGORIA                    SCORE  ITENS  +/-    %TOTAL  STATUS")
+                        print(
+                            "    CATEGORIA                    SCORE  ITENS  +/-    %TOTAL  STATUS"
+                        )
                         print("    " + "─" * 72)
                         for dc in det_cats:
                             cat_name = dc["categoria"][:30]
@@ -2867,8 +3254,10 @@ def run_rl_performance_diary():
                             neg = dc["neg"]
                             pct = dc["pct_of_total"]
                             ali = dc["alinhado"]
-                            print(f"    {cat_name:<30} {sc:>+4d}   {ni:>2d}   "
-                                  f"{pos}↑{neg}↓  {pct:>5.0f}%  {ali}")
+                            print(
+                                f"    {cat_name:<30} {sc:>+4d}   {ni:>2d}   "
+                                f"{pos}↑{neg}↓  {pct:>5.0f}%  {ali}"
+                            )
                         print()
 
                     # Vieses detectados
@@ -2932,13 +3321,21 @@ def run_rl_performance_diary():
                         dist = r["distance_pts"]
                         icon = "🔴" if r["tipo"] == "RESISTENCIA" else "🟢"
                         score = r["confianca_nivel"]
-                        score_bar = ("█" * max(0, min(10, score + 3))) + ("░" * max(0, 10 - max(0, score + 3)))
-                        beh_txt = f" [{r['comportamento']}]" if r.get("comportamento") else ""
+                        score_bar = ("█" * max(0, min(10, score + 3))) + (
+                            "░" * max(0, 10 - max(0, score + 3))
+                        )
+                        beh_txt = (
+                            f" [{r['comportamento']}]" if r.get("comportamento") else ""
+                        )
 
-                        print(f"    {icon} {r['label'][:28]:<28} @ {r['price']:.0f} "
-                              f"({dist:+.0f} pts) {'★' * min(5, r['confluences'])}")
-                        print(f"       Confiança: [{score_bar}] {score:+d}"
-                              f"  → {r['veredicto']}{beh_txt}")
+                        print(
+                            f"    {icon} {r['label'][:28]:<28} @ {r['price']:.0f} "
+                            f"({dist:+.0f} pts) {'★' * min(5, r['confluences'])}"
+                        )
+                        print(
+                            f"       Confiança: [{score_bar}] {score:+d}"
+                            f"  → {r['veredicto']}{beh_txt}"
+                        )
 
                         if r["argumentos_pro"]:
                             for arg in r["argumentos_pro"][:2]:
@@ -2966,9 +3363,13 @@ def run_rl_performance_diary():
                                 if line.strip():
                                     print(line)
 
-                        vol_txt = ("Volume CONFIRMA" if r["volume_confirma"]
-                                   else "Volume NÃO confirma" if r["volume_confirma"] is False
-                                   else "Volume: sem dados")
+                        vol_txt = (
+                            "Volume CONFIRMA"
+                            if r["volume_confirma"]
+                            else "Volume NÃO confirma"
+                            if r["volume_confirma"] is False
+                            else "Volume: sem dados"
+                        )
                         print(f"       📊 {vol_txt}")
                         print()
 
@@ -3025,9 +3426,11 @@ def run_rl_performance_diary():
                     conf = _normalize_confidence_percent(o.get("confidence"))
                     reason = (o.get("reason") or "")[:40]
                     icon = "🟢" if direction == "BUY" else "🔴"
-                    print(f"    {icon} {ts} | {direction:>4} @ {entry:.0f} "
-                          f"| SL {sl:.0f} | TP {tp:.0f} | R:R {rr:.1f} "
-                          f"| Conf {conf:.0%} | {reason}")
+                    print(
+                        f"    {icon} {ts} | {direction:>4} @ {entry:.0f} "
+                        f"| SL {sl:.0f} | TP {tp:.0f} | R:R {rr:.1f} "
+                        f"| Conf {conf:.0%} | {reason}"
+                    )
 
             # ══════════════════════════════════════════════════════════════
             # PERSISTIR FEEDBACK NO SQLITE — para RL do agente
@@ -3042,7 +3445,9 @@ def run_rl_performance_diary():
                 for ep in episodes:
                     sig = ep.get("macro_bias", "UNKNOWN")
                     macro_signals[sig] = macro_signals.get(sig, 0) + 1
-                macro_dom = max(macro_signals, key=macro_signals.get) if macro_signals else ""
+                macro_dom = (
+                    max(macro_signals, key=macro_signals.get) if macro_signals else ""
+                )
 
                 # SMC dominante
                 smc_eq = {}
@@ -3054,7 +3459,11 @@ def run_rl_performance_diary():
                 # ADX médio e micro score médio
                 adx_vals = [float(d["adx"]) for d in decisions if d.get("adx")]
                 adx_med = sum(adx_vals) / len(adx_vals) if adx_vals else 0
-                micro_vals = [float(d["micro_score"]) for d in decisions if d.get("micro_score") is not None]
+                micro_vals = [
+                    float(d["micro_score"])
+                    for d in decisions
+                    if d.get("micro_score") is not None
+                ]
                 micro_med = sum(micro_vals) / len(micro_vals) if micro_vals else 0
 
                 # Calcular thresholds sugeridos baseado em ADX
@@ -3065,7 +3474,9 @@ def run_rl_performance_diary():
                 total_ep = len(episodes)
                 premium_count = smc_eq.get("PREMIUM", 0)
                 premium_pct = premium_count / total_ep * 100 if total_ep else 0
-                compra_count = macro_signals.get("BULLISH", 0) + macro_signals.get("COMPRA", 0)
+                compra_count = macro_signals.get("BULLISH", 0) + macro_signals.get(
+                    "COMPRA", 0
+                )
                 compra_pct = compra_count / total_ep * 100 if total_ep else 0
                 smc_bypass = premium_pct > 80 and compra_pct > 70
 
@@ -3079,32 +3490,42 @@ def run_rl_performance_diary():
                     if eff_check.get("has_comparison"):
                         score_m = eff_check["score_melhoria"]
                         prev_buy_th = int(eff_check["threshold_anterior"].split("/")[0])
-                        prev_sell_th = int(eff_check["threshold_anterior"].split("/")[1])
+                        prev_sell_th = int(
+                            eff_check["threshold_anterior"].split("/")[1]
+                        )
 
                         if score_m >= 2:
                             # EFICAZ — manter ou ser mais agressivo
                             if suggested_buy > 2:
                                 suggested_buy = max(prev_buy_th - 1, 2)
                                 suggested_sell = min(prev_sell_th + 1, -2)
-                                print(f"  📈 Evolução: feedback EFICAZ → thresholds mais agressivos "
-                                      f"{prev_buy_th}/{prev_sell_th} → {suggested_buy}/{suggested_sell}")
+                                print(
+                                    f"  📈 Evolução: feedback EFICAZ → thresholds mais agressivos "
+                                    f"{prev_buy_th}/{prev_sell_th} → {suggested_buy}/{suggested_sell}"
+                                )
                         elif score_m <= -1:
                             # CONTRAPRODUCENTE — recuar para default
                             suggested_buy = 5
                             suggested_sell = -5
                             smc_bypass = False
-                            print(f"  📉 Evolução: feedback CONTRAPRODUCENTE → revertendo para "
-                                  f"defaults 5/-5, SMC bypass OFF")
+                            print(
+                                f"  📉 Evolução: feedback CONTRAPRODUCENTE → revertendo para "
+                                f"defaults 5/-5, SMC bypass OFF"
+                            )
                         elif score_m == 0:
                             # INEFICAZ — manter sugestão mas ativar bypass se não ativo
                             if not smc_bypass and premium_pct > 60:
                                 smc_bypass = True
-                                print(f"  🔄 Evolução: feedback INEFICAZ → ativando SMC bypass "
-                                      f"(premium {premium_pct:.0f}%)")
+                                print(
+                                    f"  🔄 Evolução: feedback INEFICAZ → ativando SMC bypass "
+                                    f"(premium {premium_pct:.0f}%)"
+                                )
                             if not trend_follow and adx_med > 25:
                                 trend_follow = True
-                                print(f"  🔄 Evolução: feedback INEFICAZ → ativando trend follow "
-                                      f"(ADX {adx_med:.0f})")
+                                print(
+                                    f"  🔄 Evolução: feedback INEFICAZ → ativando trend follow "
+                                    f"(ADX {adx_med:.0f})"
+                                )
                 except Exception as evo_err:
                     print(f"  ⚠ Erro na evolução acumulativa: {evo_err}")
 
@@ -3120,14 +3541,20 @@ def run_rl_performance_diary():
                                 "dir_analysis": dir_analysis or {},
                                 "guardian_state": guardian_snapshot,
                                 "order_history": _build_runtime_order_history(perf),
-                                "execution_patterns": _build_runtime_execution_patterns(perf),
+                                "execution_patterns": _build_runtime_execution_patterns(
+                                    perf
+                                ),
                             }
                         )
                         summary = mlops_payload.get("summary", {})
                         regime = summary.get("regime", "RANGING")
-                        kill_status = "ATIVO" if summary.get("kill_switch_active") else "OFF"
+                        kill_status = (
+                            "ATIVO" if summary.get("kill_switch_active") else "OFF"
+                        )
                         exec_mode = summary.get("execution_mode", "BALANCED")
-                        retrain = "SIM" if summary.get("retraining_triggered") else "NAO"
+                        retrain = (
+                            "SIM" if summary.get("retraining_triggered") else "NAO"
+                        )
                         print(
                             "  🤖 MLOps runtime: "
                             f"regime={regime} | kill_switch={kill_status} | "
@@ -3172,9 +3599,13 @@ def run_rl_performance_diary():
                     if dir_analysis:
                         dir_vieses_list = dir_analysis.get("vieses_detectados", [])
                         dir_contradicoes_list = dir_analysis.get("contradicoes", [])
-                        dir_questionamentos_list = dir_analysis.get("questionamentos", [])
+                        dir_questionamentos_list = dir_analysis.get(
+                            "questionamentos", []
+                        )
                         veredicto_dir = dir_analysis.get("veredicto", "")
-                        confianca_dir_adj = float(dir_analysis.get("confianca_ajustada", 0))
+                        confianca_dir_adj = float(
+                            dir_analysis.get("confianca_ajustada", 0)
+                        )
                 except Exception:
                     pass
 
@@ -3204,7 +3635,9 @@ def run_rl_performance_diary():
                     sugestoes=sugestoes_feedback,
                     custo_oportunidade_pts=co.get("capturable_estimado", 0),
                     eficiencia_pct=co.get("eficiencia_pct", 0),
-                    hold_pct=perf["actions_distribution"].get("HOLD", 0) / max(perf["n_episodes"], 1) * 100,
+                    hold_pct=perf["actions_distribution"].get("HOLD", 0)
+                    / max(perf["n_episodes"], 1)
+                    * 100,
                     win_rate_pct=perf["win_rate_pct"],
                     market_range_pts=perf["market_range_pts"],
                     n_opportunities=perf["n_opportunities"],
@@ -3237,7 +3670,9 @@ def run_rl_performance_diary():
                     feedback.guardian_kill_switch = gf["guardian_kill_switch"]
                     feedback.guardian_kill_reason = gf["guardian_kill_reason"]
                     feedback.guardian_reduced_exposure = gf["guardian_reduced_exposure"]
-                    feedback.guardian_confidence_penalty = gf["guardian_confidence_penalty"]
+                    feedback.guardian_confidence_penalty = gf[
+                        "guardian_confidence_penalty"
+                    ]
                     feedback.guardian_bias_override = gf["guardian_bias_override"]
                     feedback.guardian_scenario_changes = gf["guardian_scenario_changes"]
                     feedback.guardian_alertas = gf["guardian_alertas"]
@@ -3246,10 +3681,14 @@ def run_rl_performance_diary():
 
                 fb_id = save_diary_feedback(db_path, feedback)
                 if fb_id:
-                    print(f"  💾 Feedback salvo no SQLite (ID={fb_id}, nota={coherence['nota_agente']}/10)")
-                    print(f"     → Agente pode ler: threshold={suggested_buy}/{suggested_sell}, "
-                          f"SMC_bypass={'SIM' if smc_bypass else 'NÃO'}, "
-                          f"trend_follow={'SIM' if trend_follow else 'NÃO'}")
+                    print(
+                        f"  💾 Feedback salvo no SQLite (ID={fb_id}, nota={coherence['nota_agente']}/10)"
+                    )
+                    print(
+                        f"     → Agente pode ler: threshold={suggested_buy}/{suggested_sell}, "
+                        f"SMC_bypass={'SIM' if smc_bypass else 'NÃO'}, "
+                        f"trend_follow={'SIM' if trend_follow else 'NÃO'}"
+                    )
                     _painel_obs.registrar_gravacao("DIARIOS")
                 else:
                     print("  ⚠ Falha ao salvar feedback no SQLite")
@@ -3261,22 +3700,26 @@ def run_rl_performance_diary():
                 try:
                     _fv = FeedbackValidator()
                     # Converte dados RL em formato de trades/feedback
-                    _trades = [
-                        {
-                            "trade_id": str(i),
-                            "outcome": (
-                                "WIN" if h.get("correct") else "LOSS"
-                            ),
-                            "pnl": float(h.get("pts", 0)),
-                        }
-                        for i, h in enumerate(
-                            perf.get("rewards_by_horizon", {})
-                            .get(5, {}).get("entries", [])
-                        )
-                    ] if perf.get("rewards_by_horizon") else []
+                    _trades = (
+                        [
+                            {
+                                "trade_id": str(i),
+                                "outcome": ("WIN" if h.get("correct") else "LOSS"),
+                                "pnl": float(h.get("pts", 0)),
+                            }
+                            for i, h in enumerate(
+                                perf.get("rewards_by_horizon", {})
+                                .get(5, {})
+                                .get("entries", [])
+                            )
+                        ]
+                        if perf.get("rewards_by_horizon")
+                        else []
+                    )
                     if _trades:
                         _report = _fv.validate_feedback_health(
-                            trades=_trades, feedback=_trades,
+                            trades=_trades,
+                            feedback=_trades,
                         )
                         _icon = {
                             "HEALTHY": "🟢",
@@ -3303,6 +3746,7 @@ def run_rl_performance_diary():
     except Exception as e:
         print(f"[RL DIARY] Erro: {e}")
         import traceback
+
         traceback.print_exc()
 
 
@@ -3368,7 +3812,9 @@ def run_macro_guardian():
                 critical_alerts = [a for a in new_alerts if a.severity == "CRITICAL"]
                 if critical_alerts:
                     try:
-                        guardian_fields = guardian_state_to_feedback_fields(_guardian_state)
+                        guardian_fields = guardian_state_to_feedback_fields(
+                            _guardian_state
+                        )
 
                         # Criar um feedback parcial do guardian
                         feedback = DiaryFeedback(
@@ -3376,12 +3822,24 @@ def run_macro_guardian():
                             timestamp=now.isoformat(),
                             source="macro_guardian",
                             nota_agente=10,  # Guardian não avalia nota
-                            guardian_kill_switch=guardian_fields["guardian_kill_switch"],
-                            guardian_kill_reason=guardian_fields["guardian_kill_reason"],
-                            guardian_reduced_exposure=guardian_fields["guardian_reduced_exposure"],
-                            guardian_confidence_penalty=guardian_fields["guardian_confidence_penalty"],
-                            guardian_bias_override=guardian_fields["guardian_bias_override"],
-                            guardian_scenario_changes=guardian_fields["guardian_scenario_changes"],
+                            guardian_kill_switch=guardian_fields[
+                                "guardian_kill_switch"
+                            ],
+                            guardian_kill_reason=guardian_fields[
+                                "guardian_kill_reason"
+                            ],
+                            guardian_reduced_exposure=guardian_fields[
+                                "guardian_reduced_exposure"
+                            ],
+                            guardian_confidence_penalty=guardian_fields[
+                                "guardian_confidence_penalty"
+                            ],
+                            guardian_bias_override=guardian_fields[
+                                "guardian_bias_override"
+                            ],
+                            guardian_scenario_changes=guardian_fields[
+                                "guardian_scenario_changes"
+                            ],
                             guardian_alertas=guardian_fields["guardian_alertas"],
                             active=True,
                         )
@@ -3404,6 +3862,7 @@ def run_macro_guardian():
     except Exception as e:
         print(f"[MACRO GUARDIAN] Erro fatal: {e}")
         import traceback
+
         traceback.print_exc()
 
 
@@ -3456,9 +3915,11 @@ def run_diario_order_manager():
     confianca_minima_efetiva = manager._confidence_gate_minima()
 
     print(f"\n[DIARIO EXECUCAO] Iniciado | session={session_id} | magic=234800")
-    print(f"[DIARIO EXECUCAO] Ciclo: {EXECUCAO_INTERVAL_SEC}s | "
-          f"Confianca minima: {confianca_minima_efetiva:.0%} | "
-          f"SL/TP: por ATR | Autonomo")
+    print(
+        f"[DIARIO EXECUCAO] Ciclo: {EXECUCAO_INTERVAL_SEC}s | "
+        f"Confianca minima: {confianca_minima_efetiva:.0%} | "
+        f"SL/TP: por ATR | Autonomo"
+    )
 
     # Aguardar os outros threads estabilizarem
     time.sleep(15)
@@ -3471,8 +3932,10 @@ def run_diario_order_manager():
                 # ── Obter candles e decisao macro ──
                 candles = mt5.get_candles(symbol, TimeFrame.M15, count=100)
                 if not candles:
-                    print(f"[DIARIO EXECUCAO] {agora.strftime('%H:%M:%S')} "
-                          "Sem candles, aguardando...")
+                    print(
+                        f"[DIARIO EXECUCAO] {agora.strftime('%H:%M:%S')} "
+                        "Sem candles, aguardando..."
+                    )
                     time.sleep(EXECUCAO_INTERVAL_SEC)
                     continue
 
@@ -3499,7 +3962,9 @@ def run_diario_order_manager():
                     pass
 
                 # ── Executar ciclo do motor (autonomo) ──
-                resultado = manager.ciclo(decisao_macro, candles, guardian_state, dir_analysis)
+                resultado = manager.ciclo(
+                    decisao_macro, candles, guardian_state, dir_analysis
+                )
 
                 # ── Display do ciclo ──
                 sinal = resultado.get("sinal")
@@ -3518,32 +3983,44 @@ def run_diario_order_manager():
                     "ERRO_ORDEM": "⚠️",
                 }.get(acao, "?")
 
-                print(f"\n[DIARIO EXECUCAO] {agora.strftime('%H:%M:%S')} "
-                      f"{icone} {acao}")
+                print(
+                    f"\n[DIARIO EXECUCAO] {agora.strftime('%H:%M:%S')} "
+                    f"{icone} {acao}"
+                )
 
                 if sinal:
-                    print(f"  dir={sinal.direcao} conf={normalize_confidence(sinal.confianca):.0%} "
-                          f"align={normalize_confidence(sinal.alinhamento):.0%} "
-                          f"ATR={sinal.atr:.0f} mom={sinal.momentum:+.0f} "
-                          f"guardian={'OK' if sinal.guardian_ok else 'KILL'} "
-                          f"wr_propria={sinal.win_rate_propria:.0f}% "
-                          f"ep={sinal.n_episodios_proprios}")
+                    print(
+                        f"  dir={sinal.direcao} conf={normalize_confidence(sinal.confianca):.0%} "
+                        f"align={normalize_confidence(sinal.alinhamento):.0%} "
+                        f"ATR={sinal.atr:.0f} mom={sinal.momentum:+.0f} "
+                        f"guardian={'OK' if sinal.guardian_ok else 'KILL'} "
+                        f"wr_propria={sinal.win_rate_propria:.0f}% "
+                        f"ep={sinal.n_episodios_proprios}"
+                    )
                     if sinal.leitura:
                         L = sinal.leitura
-                        print(f"  leitura: {L.fase_sessao} | {L.qualidade_movimento} | "
-                              f"corr={L.correlacao_estado} | arm={L.risco_armadilha} | "
-                              f"ajuste={L.ajuste_confianca:+.2f}")
-                        print(f"  \"{L.resumo}\"")
+                        print(
+                            f"  leitura: {L.fase_sessao} | {L.qualidade_movimento} | "
+                            f"corr={L.correlacao_estado} | arm={L.risco_armadilha} | "
+                            f"ajuste={L.ajuste_confianca:+.2f}"
+                        )
+                        print(f'  "{L.resumo}"')
 
                 if detalhe:
                     print(f"  {detalhe}")
 
-                if not pos_aberta and sinal and not sinal.pode_operar and sinal.motivo_bloqueio:
+                if (
+                    not pos_aberta
+                    and sinal
+                    and not sinal.pode_operar
+                    and sinal.motivo_bloqueio
+                ):
                     print(f"  Bloqueio: {sinal.motivo_bloqueio}")
 
             except Exception as ciclo_err:
                 print(f"[DIARIO EXECUCAO] Erro no ciclo: {ciclo_err}")
                 import traceback
+
                 traceback.print_exc()
 
             time.sleep(EXECUCAO_INTERVAL_SEC)
@@ -3551,6 +4028,7 @@ def run_diario_order_manager():
     except Exception as e:
         print(f"[DIARIO EXECUCAO] Erro fatal: {e}")
         import traceback
+
         traceback.print_exc()
     finally:
         mt5.disconnect()
@@ -3559,6 +4037,7 @@ def run_diario_order_manager():
 # ────────────────────────────────────────────────────────────────
 # Main
 # ────────────────────────────────────────────────────────────────
+
 
 def main():
     """Main entry point."""
@@ -3578,7 +4057,9 @@ def main():
     print("  5. Diario Order Manager    — a cada 30 segundos (execucao de ordens)")
     print()
     print(f"  DB: {_get_db_path()}")
-    print(f"  Macro Provider: {'LIVE' if HAS_MACRO_PROVIDER else 'FALLBACK (hardcoded)'}")
+    print(
+        f"  Macro Provider: {'LIVE' if HAS_MACRO_PROVIDER else 'FALLBACK (hardcoded)'}"
+    )
     print(f"  Magic Number (Diarios): 234800")
     print()
     _opening_context_runtime = initialize_opening_context_runtime(
@@ -3608,36 +4089,46 @@ def main():
     # Watchdog monitora e reinicia threads mortas automaticamente
     watchdog = ThreadWatchdog(intervalo_verificacao_seg=30.0)
 
-    watchdog.registrar_thread(ConfiguracaoThread(
-        nome="TradingJournal",
-        funcao_alvo=run_trading_journal,
-        intervalo_reinicio_seg=10,
-        max_reinicios=20,
-    ))
-    watchdog.registrar_thread(ConfiguracaoThread(
-        nome="AIReflection",
-        funcao_alvo=run_ai_reflection,
-        intervalo_reinicio_seg=10,
-        max_reinicios=20,
-    ))
-    watchdog.registrar_thread(ConfiguracaoThread(
-        nome="RLDiary",
-        funcao_alvo=run_rl_performance_diary,
-        intervalo_reinicio_seg=10,
-        max_reinicios=20,
-    ))
-    watchdog.registrar_thread(ConfiguracaoThread(
-        nome="MacroGuardian",
-        funcao_alvo=run_macro_guardian,
-        intervalo_reinicio_seg=10,
-        max_reinicios=20,
-    ))
-    watchdog.registrar_thread(ConfiguracaoThread(
-        nome="DiarioExecucao",
-        funcao_alvo=run_diario_order_manager,
-        intervalo_reinicio_seg=10,
-        max_reinicios=20,
-    ))
+    watchdog.registrar_thread(
+        ConfiguracaoThread(
+            nome="TradingJournal",
+            funcao_alvo=run_trading_journal,
+            intervalo_reinicio_seg=10,
+            max_reinicios=20,
+        )
+    )
+    watchdog.registrar_thread(
+        ConfiguracaoThread(
+            nome="AIReflection",
+            funcao_alvo=run_ai_reflection,
+            intervalo_reinicio_seg=10,
+            max_reinicios=20,
+        )
+    )
+    watchdog.registrar_thread(
+        ConfiguracaoThread(
+            nome="RLDiary",
+            funcao_alvo=run_rl_performance_diary,
+            intervalo_reinicio_seg=10,
+            max_reinicios=20,
+        )
+    )
+    watchdog.registrar_thread(
+        ConfiguracaoThread(
+            nome="MacroGuardian",
+            funcao_alvo=run_macro_guardian,
+            intervalo_reinicio_seg=10,
+            max_reinicios=20,
+        )
+    )
+    watchdog.registrar_thread(
+        ConfiguracaoThread(
+            nome="DiarioExecucao",
+            funcao_alvo=run_diario_order_manager,
+            intervalo_reinicio_seg=10,
+            max_reinicios=20,
+        )
+    )
 
     watchdog.iniciar()
 

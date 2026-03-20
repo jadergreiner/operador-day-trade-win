@@ -445,6 +445,85 @@ class TestGerenciadorRetreino:
         assert row[0] == resultado.versao
         assert row[1] == 1
 
+    def test_bootstrap_modelo_atual_faz_upsert_em_model_name(
+        self, tmp_path
+    ):
+        """Bootstrap do schema novo atualiza a mesma linha ativa."""
+        db_path = tmp_path / "bootstrap_model_name.db"
+        modelos_dir = tmp_path / "modelos"
+        modelos_dir.mkdir(parents=True, exist_ok=True)
+        modelo_path = modelos_dir / "lgbm.pkl"
+        modelo_path.write_text("modelo fake", encoding="utf-8")
+
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+        cur.execute(
+            """
+            CREATE TABLE rl_training_metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                versao TEXT NOT NULL,
+                data_treino TEXT NOT NULL,
+                n_episodios_usados INTEGER NOT NULL,
+                n_rewards_no_treino INTEGER NOT NULL,
+                win_rate_treino REAL NOT NULL,
+                win_rate_validacao REAL NOT NULL,
+                delta_vs_anterior REAL NOT NULL,
+                rollback_realizado INTEGER NOT NULL DEFAULT 0,
+                modelo_path TEXT NOT NULL,
+                notas TEXT DEFAULT '',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE model_metadata (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                model_name TEXT NOT NULL,
+                model_type TEXT NOT NULL,
+                version TEXT NOT NULL,
+                trained_at TEXT NOT NULL,
+                training_metrics TEXT,
+                hyperparameters TEXT,
+                file_path TEXT NOT NULL,
+                is_active INTEGER DEFAULT 1,
+                created_at TEXT,
+                updated_at TEXT
+            )
+            """
+        )
+        cur.execute(
+            "CREATE UNIQUE INDEX ix_model_metadata_model_name "
+            "ON model_metadata (model_name)"
+        )
+        conn.commit()
+        conn.close()
+
+        trigger = TriggerRetreino(str(db_path))
+        primeira = trigger.bootstrap_modelo_atual(
+            str(modelo_path), rewards_total=10, n_episodios=20
+        )
+        segunda = trigger.bootstrap_modelo_atual(
+            str(modelo_path), rewards_total=11, n_episodios=21
+        )
+
+        assert primeira is not None
+        assert segunda is not None
+
+        conn = sqlite3.connect(db_path)
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT COUNT(*), model_name, version, is_active "
+            "FROM model_metadata"
+        )
+        contagem, model_name, version, is_active = cur.fetchone()
+        conn.close()
+
+        assert contagem == 1
+        assert model_name == "micro_tendencia"
+        assert version == segunda
+        assert is_active == 1
+
     def test_rollback_acionado_por_degradacao(
         self, db_temp, modelos_dir_temp
     ):

@@ -18,7 +18,7 @@ def test_trading_journal_inclui_gate_diario_na_narrativa() -> None:
         high=Decimal("181200"),
         low=Decimal("179900"),
         decision_data={
-            "action": TradeSignal.BUY,
+            "action": TradeSignal.HOLD,
             "confidence": Decimal("0.71"),
             "primary_reason": "Setup com alinhamento bom",
             "sentiment_bias": "BULLISH",
@@ -27,18 +27,20 @@ def test_trading_journal_inclui_gate_diario_na_narrativa() -> None:
     )
 
     assert "Gate diario atual: 35%" in narrative.detailed_narrative
+    assert "DECISAO: OBSERVAR." in narrative.detailed_narrative
 
 
 def test_ai_reflection_inclui_gate_diario_na_autoavaliacao(monkeypatch) -> None:
     journal = AIReflectionJournalService()
     monkeypatch.setattr(journal, "_persist_to_disk", lambda reflection: None)
+    monkeypatch.setattr("random.choice", lambda seq: seq[0])
 
     reflection = journal.generate_reflection(
         current_price=Decimal("180500"),
         opening_price=Decimal("180000"),
         price_10min_ago=Decimal("180200"),
         my_decision=TradeSignal.BUY,
-        my_confidence=Decimal("0.58"),
+        my_confidence=Decimal("0.18"),
         my_alignment=Decimal("0.63"),
         macro_moved=False,
         sentiment_changed=True,
@@ -48,3 +50,4 @@ def test_ai_reflection_inclui_gate_diario_na_autoavaliacao(monkeypatch) -> None:
     )
 
     assert reflection.honest_assessment.startswith("Gate diario atual: 35%.")
+    assert "sinais firmes" in reflection.honest_assessment

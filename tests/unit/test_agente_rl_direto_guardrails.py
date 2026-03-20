@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from datetime import time as dtime
 from unittest.mock import MagicMock, patch
@@ -8,6 +9,7 @@ from scripts.agente_rl_direto_independente import (
     MAX_TRADES_PER_SESSION,
     AntiOvertradingProtection,
     enviar_ordem,
+    registrar_bloqueio_anti_overtrading,
     verificar_horario_trading,
     verificar_janela_novas_entradas,
 )
@@ -47,6 +49,20 @@ def test_anti_overtrading_ativa_cooldown_pos_loss_por_30_minutos() -> None:
     assert "cooldown global" in motivo.lower()
 
 
+def test_anti_overtrading_libera_pos_cooldown_sem_bloqueio_permanente() -> None:
+    protecao = AntiOvertradingProtection()
+    agora = datetime(2026, 3, 19, 11, 0)
+
+    protecao.registrar_perda(agora)
+    protecao.registrar_perda(agora.replace(minute=1))
+
+    permitido, motivo = protecao.pode_tradear(agora.replace(minute=31))
+
+    assert permitido is True
+    assert protecao.consecutive_losses == 0
+    assert "permitido" in motivo.lower()
+
+
 def test_enviar_ordem_bloqueia_fora_da_janela_de_novas_entradas() -> None:
     mt5_adapter = MagicMock()
     posicao_tracker = MagicMock()
@@ -70,3 +86,22 @@ def test_enviar_ordem_bloqueia_fora_da_janela_de_novas_entradas() -> None:
 
     assert ok is False
     mt5_adapter.get_positions.assert_not_called()
+
+
+def test_registrar_bloqueio_anti_overtrading_destaca_cooldown_em_log(
+    caplog,
+) -> None:
+    with caplog.at_level(
+        logging.WARNING, logger="scripts.agente_rl_direto_independente"
+    ):
+        registrar_bloqueio_anti_overtrading(
+            1661,
+            "Vender",
+            "❌ Em cooldown global (299s restantes)",
+        )
+
+    assert any(
+        "SINAL CONFIRMADO: Vender" in record.message
+        and "cooldown pós-loss" in record.message
+        for record in caplog.records
+    )

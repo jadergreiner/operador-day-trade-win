@@ -288,9 +288,7 @@ class TestEstatisticas:
         assert stats["por_flag"]["CONFIANCA"] == 1
         assert stats["por_flag"]["EXP_REDUZIDA"] == 1
 
-    def test_estatisticas_top5_flags(
-        self, reporter: MicroBloqueiosReporter
-    ) -> None:
+    def test_estatisticas_top5_flags(self, reporter: MicroBloqueiosReporter) -> None:
         """Top 5 flags mais frequentes presente nas estatisticas."""
         for _ in range(3):
             reporter.registrar_bloqueio(
@@ -349,12 +347,13 @@ class TestEstatisticas:
 class TestGerarRelatorio:
     """Testa geracao de relatorio Markdown para o pregao."""
 
-    def test_gerar_relatorio_sem_dados(
-        self, reporter: MicroBloqueiosReporter
-    ) -> None:
+    def test_gerar_relatorio_sem_dados(self, reporter: MicroBloqueiosReporter) -> None:
         relatorio = reporter.gerar_relatorio_pregao(data=date(2026, 3, 18))
-        assert "micro_bloqueios" in relatorio.lower() or "bloqueios" in relatorio.lower()
+        assert (
+            "micro_bloqueios" in relatorio.lower() or "bloqueios" in relatorio.lower()
+        )
         assert "18/03/2026" in relatorio or "2026-03-18" in relatorio
+        assert "oportunidades retidas" in relatorio.lower()
 
     def test_gerar_relatorio_contem_top5(
         self,
@@ -402,9 +401,7 @@ class TestGerarRelatorio:
 class TestFluxoCompleto:
     """Testa fluxo completo de um pregao com varios bloqueios."""
 
-    def test_pregao_com_multiplos_flags(
-        self, reporter: MicroBloqueiosReporter
-    ) -> None:
+    def test_pregao_com_multiplos_flags(self, reporter: MicroBloqueiosReporter) -> None:
         flags_e_qtds = [
             (FlagBloqueador.EXP_REDUZIDA, 5),
             (FlagBloqueador.CONFIANCA, 3),

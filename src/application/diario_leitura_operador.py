@@ -32,28 +32,28 @@ from typing import Optional
 # ────────────────────────────────────────────────────────────────
 
 # Fase da sessao de trading
-FASE_ABERTURA = "ABERTURA"       # 09:00 - 10:00 (alta volatilidade, armadilhas)
-FASE_MANHA = "MANHA"             # 10:00 - 12:00 (tendencia principal do dia)
-FASE_ALMOCO = "ALMOCO"           # 12:00 - 13:30 (liquidez reduzida, evitar)
-FASE_TARDE = "TARDE"             # 13:30 - 16:00 (segundo movimento do dia)
-FASE_FECHAMENTO = "FECHAMENTO"   # 16:00 - 17:30 (reversao ou aceleracao)
+FASE_ABERTURA = "ABERTURA"  # 09:00 - 10:00 (alta volatilidade, armadilhas)
+FASE_MANHA = "MANHA"  # 10:00 - 12:00 (tendencia principal do dia)
+FASE_ALMOCO = "ALMOCO"  # 12:00 - 13:30 (contexto de liquidez mais sensivel)
+FASE_TARDE = "TARDE"  # 13:30 - 16:00 (segundo movimento do dia)
+FASE_FECHAMENTO = "FECHAMENTO"  # 16:00 - 17:30 (reversao ou aceleracao)
 
 # Posicao no range diario
-POSICAO_EXTREMO_ALTO = "EXTREMO_ALTO"     # top 10% do range
-POSICAO_ALTO = "ALTO"                      # top 11-35% do range
-POSICAO_MEIO = "MEIO"                      # meio do range (30-70%)
-POSICAO_BAIXO = "BAIXO"                    # bottom 11-35% do range
+POSICAO_EXTREMO_ALTO = "EXTREMO_ALTO"  # top 10% do range
+POSICAO_ALTO = "ALTO"  # top 11-35% do range
+POSICAO_MEIO = "MEIO"  # meio do range (30-70%)
+POSICAO_BAIXO = "BAIXO"  # bottom 11-35% do range
 POSICAO_EXTREMO_BAIXO = "EXTREMO_BAIXO"  # bottom 10% do range
 
 # Qualidade do movimento
-MOVIMENTO_FORTE = "FORTE"           # direcional, volume crescente
-MOVIMENTO_FRACO = "FRACO"           # direc. com volume decrescente (exaustao)
-MOVIMENTO_CHOP = "CHOP"             # sem direcao, lateralizando
-MOVIMENTO_SPIKE = "SPIKE"           # movimento rapido sem continuidade tipica
+MOVIMENTO_FORTE = "FORTE"  # direcional, volume crescente
+MOVIMENTO_FRACO = "FRACO"  # direc. com volume decrescente (exaustao)
+MOVIMENTO_CHOP = "CHOP"  # sem direcao, lateralizando
+MOVIMENTO_SPIKE = "SPIKE"  # movimento rapido sem continuidade tipica
 
 # Estado de correlacao inter-mercado
-CORRELACAO_ALINHADA = "ALINHADA"    # dolar, SP500, juros todos apontando mesmo lado
-CORRELACAO_MISTA = "MISTA"          # sinais contraditórios entre mercados
+CORRELACAO_ALINHADA = "ALINHADA"  # dolar, SP500, juros todos apontando mesmo lado
+CORRELACAO_MISTA = "MISTA"  # sinais contraditórios entre mercados
 CORRELACAO_DIVERGENTE = "DIVERGENTE"  # WIN indo contra os correlatos principais
 
 # Risco de armadilha
@@ -66,6 +66,7 @@ ARMADILHA_BAIXA = "BAIXA"
 # Estrutura de saida
 # ────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class LeituraOperador:
     """
@@ -75,45 +76,46 @@ class LeituraOperador:
     que informa se o momento e adequado para operar, em qual direcao
     faz mais sentido e quais armadilhas evitar.
     """
+
     timestamp: str
 
     # ── Contexto do dia ──────────────────────────────────────────
-    fase_sessao: str           # ABERTURA, MANHA, ALMOCO, TARDE, FECHAMENTO
-    posicao_no_range: str      # onde o preco esta no range do dia
-    range_pts: float           # amplitude total do dia em pontos
-    range_expandindo: bool     # range esta crescendo (true) ou comprimindo
+    fase_sessao: str  # ABERTURA, MANHA, ALMOCO, TARDE, FECHAMENTO
+    posicao_no_range: str  # onde o preco esta no range do dia
+    range_pts: float  # amplitude total do dia em pontos
+    range_expandindo: bool  # range esta crescendo (true) ou comprimindo
 
     # ── Qualidade do movimento atual ────────────────────────────
-    qualidade_movimento: str   # FORTE, FRACO, CHOP, SPIKE
-    exaustao_detectada: bool   # movimento perdendo forca (velocidade cai)
-    pullback_saudavel: bool    # recuo dentro de tendencia (oportunidade)
+    qualidade_movimento: str  # FORTE, FRACO, CHOP, SPIKE
+    exaustao_detectada: bool  # movimento perdendo forca (velocidade cai)
+    pullback_saudavel: bool  # recuo dentro de tendencia (oportunidade)
 
     # ── Nocao de barato/caro relativo ───────────────────────────
-    desvio_vwap_pts: float     # preco atual - VWAP em pontos
-    desvio_vwap_direcao: str   # "ACIMA", "ABAIXO", "NA_VWAP"
-    preco_extremo: bool        # esta em extremo do dia (top/bottom 10%)
+    desvio_vwap_pts: float  # preco atual - VWAP em pontos
+    desvio_vwap_direcao: str  # "ACIMA", "ABAIXO", "NA_VWAP"
+    preco_extremo: bool  # esta em extremo do dia (top/bottom 10%)
     potencial_mean_reversion: bool  # caro/barato demais → candidato a reverter
 
     # ── Correlacoes inter-mercado ────────────────────────────────
-    correlacao_estado: str     # ALINHADA, MISTA, DIVERGENTE
-    dolar_favoravel: bool      # dolar apoia a direcao do WIN
-    sp500_favoravel: bool      # SP500 apoia a direcao do WIN
+    correlacao_estado: str  # ALINHADA, MISTA, DIVERGENTE
+    dolar_favoravel: bool  # dolar apoia a direcao do WIN
+    sp500_favoravel: bool  # SP500 apoia a direcao do WIN
     commodities_favoravel: bool  # commodities/PETR4/VALE3 apoiam
     divergencia_critica: bool  # WIN contradiz todos os correlatos (perigo)
 
     # ── Armadilhas identificadas ─────────────────────────────────
-    risco_armadilha: str       # ALTA, MEDIA, BAIXA
-    armadilhas: list[str]      # descricao das armadilhas identificadas
+    risco_armadilha: str  # ALTA, MEDIA, BAIXA
+    armadilhas: list[str]  # descricao das armadilhas identificadas
 
     # ── Mudanca de cenario ───────────────────────────────────────
-    cenario_mudou: bool        # algo mudou desde a abertura
-    motivo_mudanca: str        # o que mudou
+    cenario_mudou: bool  # algo mudou desde a abertura
+    motivo_mudanca: str  # o que mudou
 
     # ── Veredicto operacional ────────────────────────────────────
-    momento_favoravel: bool    # e um bom momento para operar?
-    direcao_preferida: str     # "BUY", "SELL", "NEUTRO"
-    confianca_leitura: float   # 0.0-1.0 (confianca na leitura)
-    resumo: str                # frase curta do operador sobre o momento
+    momento_favoravel: bool  # e um bom momento para operar?
+    direcao_preferida: str  # "BUY", "SELL", "NEUTRO"
+    confianca_leitura: float  # 0.0-1.0 (confianca na leitura)
+    resumo: str  # frase curta do operador sobre o momento
 
     # Ajuste de confianca a aplicar no sinal final
     # Positivo = boost, Negativo = penalidade
@@ -123,6 +125,7 @@ class LeituraOperador:
 # ────────────────────────────────────────────────────────────────
 # Motor de leitura
 # ────────────────────────────────────────────────────────────────
+
 
 class LeituraDeOperador:
     """
@@ -150,9 +153,7 @@ class LeituraDeOperador:
 
     # ── Posicao no range do dia ──────────────────────────────────
 
-    def _posicao_no_range(
-        self, preco: float, high: float, low: float
-    ) -> str:
+    def _posicao_no_range(self, preco: float, high: float, low: float) -> str:
         if high <= low:
             return POSICAO_MEIO
         pct = (preco - low) / (high - low)
@@ -186,7 +187,9 @@ class LeituraDeOperador:
         # Calcular corpos e direcoes das ultimas 5 velas
         ultimas = candles[-5:]
         corpos = [abs(float(c.close.value) - float(c.open.value)) for c in ultimas]
-        direcoes = [1 if float(c.close.value) >= float(c.open.value) else -1 for c in ultimas]
+        direcoes = [
+            1 if float(c.close.value) >= float(c.open.value) else -1 for c in ultimas
+        ]
 
         corpo_medio = sum(corpos) / len(corpos) if corpos else 0
         ultimo_corpo = corpos[-1]
@@ -196,7 +199,9 @@ class LeituraDeOperador:
             return MOVIMENTO_SPIKE, False, False
 
         # CHOP: alternancia de direcoes sem tendencia
-        mudancas = sum(1 for i in range(1, len(direcoes)) if direcoes[i] != direcoes[i - 1])
+        mudancas = sum(
+            1 for i in range(1, len(direcoes)) if direcoes[i] != direcoes[i - 1]
+        )
         if mudancas >= 3:
             return MOVIMENTO_CHOP, False, False
 
@@ -209,7 +214,9 @@ class LeituraDeOperador:
 
         # Exaustao: corpos decrescentes em tendencia (ultimas 3 velas)
         if len(corpos) >= 3:
-            exaustao = corpos[-3] > corpos[-2] > corpos[-1] and corpos[-1] < corpo_medio * 0.5
+            exaustao = (
+                corpos[-3] > corpos[-2] > corpos[-1] and corpos[-1] < corpo_medio * 0.5
+            )
         else:
             exaustao = False
 
@@ -236,7 +243,9 @@ class LeituraDeOperador:
         soma_pv = 0.0
         soma_v = 0.0
         for c in candles:
-            preco_tipico = (float(c.high.value) + float(c.low.value) + float(c.close.value)) / 3
+            preco_tipico = (
+                float(c.high.value) + float(c.low.value) + float(c.close.value)
+            ) / 3
             vol = float(getattr(c, "volume", None) or 1)
             soma_pv += preco_tipico * vol
             soma_v += vol
@@ -315,11 +324,11 @@ class LeituraDeOperador:
             return total
 
         score_dolar = _score_categoria("DOLAR_CAMBIO")
-        score_sp500 = sum(s for sym, (cat, s) in scores.items()
-                          if cat == "INDICES_GLOBAIS")
+        score_sp500 = sum(
+            s for sym, (cat, s) in scores.items() if cat == "INDICES_GLOBAIS"
+        )
         score_commodities = _score_categoria("COMMODITIES") + sum(
-            s for sym, (cat, s) in scores.items()
-            if sym in ("PETR4", "VALE3")
+            s for sym, (cat, s) in scores.items() if sym in ("PETR4", "VALE3")
         )
 
         # Fallback: usar biases do QuantumOperatorEngine
@@ -331,22 +340,34 @@ class LeituraDeOperador:
         # Dolar favoravel: WIN sobe → dolar fraco (score dolar negativo)
         # WIN cai → dolar forte (score dolar positivo)
         if score_dolar != 0:
-            dolar_fav = (win_sobe and score_dolar < 0) or (not win_sobe and score_dolar > 0)
+            dolar_fav = (win_sobe and score_dolar < 0) or (
+                not win_sobe and score_dolar > 0
+            )
         else:
             # Fallback via macro_bias
-            dolar_fav = (win_sobe and "BULL" in macro_bias) or (not win_sobe and "BEAR" in macro_bias)
+            dolar_fav = (win_sobe and "BULL" in macro_bias) or (
+                not win_sobe and "BEAR" in macro_bias
+            )
 
         # SP500 favoravel: correlacao direta
         if score_sp500 != 0:
-            sp500_fav = (win_sobe and score_sp500 > 0) or (not win_sobe and score_sp500 < 0)
+            sp500_fav = (win_sobe and score_sp500 > 0) or (
+                not win_sobe and score_sp500 < 0
+            )
         else:
-            sp500_fav = (win_sobe and "BULL" in macro_bias) or (not win_sobe and "BEAR" in macro_bias)
+            sp500_fav = (win_sobe and "BULL" in macro_bias) or (
+                not win_sobe and "BEAR" in macro_bias
+            )
 
         # Commodities favoraveis: correlacao direta (Brasil exportador)
         if score_commodities != 0:
-            comm_fav = (win_sobe and score_commodities > 0) or (not win_sobe and score_commodities < 0)
+            comm_fav = (win_sobe and score_commodities > 0) or (
+                not win_sobe and score_commodities < 0
+            )
         else:
-            comm_fav = (win_sobe and "BULL" in fundamental_bias) or (not win_sobe and "BEAR" in fundamental_bias)
+            comm_fav = (win_sobe and "BULL" in fundamental_bias) or (
+                not win_sobe and "BEAR" in fundamental_bias
+            )
 
         # Divergencia critica: WIN vai contra TODOS os tres correlatos
         divergencia = not dolar_fav and not sp500_fav and not comm_fav
@@ -392,7 +413,10 @@ class LeituraDeOperador:
         score_risco = 0
 
         # 1. ABERTURA FALSA: primeiros 60 min em extremo do dia
-        if fase == FASE_ABERTURA and posicao in (POSICAO_EXTREMO_ALTO, POSICAO_EXTREMO_BAIXO):
+        if fase == FASE_ABERTURA and posicao in (
+            POSICAO_EXTREMO_ALTO,
+            POSICAO_EXTREMO_BAIXO,
+        ):
             armadilhas.append(
                 "ABERTURA_FALSA: Preco em extremo nos primeiros 60 min. "
                 "Gaps de abertura frequentemente fecham. Aguardar confirmacao."
@@ -400,7 +424,10 @@ class LeituraDeOperador:
             score_risco += 2
 
         # 2. FAKEOUT: rompimento de range com qualidade fraca
-        if posicao in (POSICAO_EXTREMO_ALTO, POSICAO_EXTREMO_BAIXO) and qualidade == MOVIMENTO_FRACO:
+        if (
+            posicao in (POSICAO_EXTREMO_ALTO, POSICAO_EXTREMO_BAIXO)
+            and qualidade == MOVIMENTO_FRACO
+        ):
             armadilhas.append(
                 "FAKEOUT_PROVAVEL: Rompimento de extremo com movimento fraco. "
                 "Rompimentos verdadeiros tem volume e corpo crescentes."
@@ -410,8 +437,8 @@ class LeituraDeOperador:
         # 3. SQUEEZE DE LIQUIDEZ: spike no almoco
         if fase == FASE_ALMOCO and qualidade == MOVIMENTO_SPIKE:
             armadilhas.append(
-                "SPIKE_ALMOCO: Movimento rapido no horario de baixa liquidez. "
-                "Spikes sem participacao institucional revertam rapidamente."
+                "SPIKE_ALMOCO: Movimento rapido no horario de almoco. "
+                "Spikes sem participacao institucional tendem a perder continuidade."
             )
             score_risco += 3
 
@@ -485,7 +512,9 @@ class LeituraDeOperador:
 
         # Kill switch ativo
         if getattr(guardian_state, "active_kill_switch", False):
-            motivos.append(f"Guardian kill switch: {getattr(guardian_state, 'kill_switch_reason', '')}")
+            motivos.append(
+                f"Guardian kill switch: {getattr(guardian_state, 'kill_switch_reason', '')}"
+            )
 
         # Macro bias mudou (Guardian rastreia isso)
         scenario_changes = getattr(guardian_state, "scenario_changes", []) or []
@@ -526,7 +555,7 @@ class LeituraDeOperador:
         - Exaustao + extremo = contra-tendencia (mean reversion)
 
         Nao e bom momento quando:
-        - Almoco + CHOP = liquidez ruim
+        - CHOP + divergencia/armadilha/exaustao = sinal fraco
         - Divergencia critica
         - Exaustao sem extremo (movimento morrendo no meio)
         - Cenario mudou (regras do jogo diferentes)
@@ -534,8 +563,6 @@ class LeituraDeOperador:
         ajuste = 0.0
 
         # Penalidades
-        if fase == FASE_ALMOCO:
-            ajuste -= 0.15  # liquidez ruim, qualquer coisa pode acontecer
         if divergencia:
             ajuste -= 0.20  # risco alto de armadilha
         if risco_armadilha == ARMADILHA_ALTA:
@@ -560,7 +587,9 @@ class LeituraDeOperador:
         # Direcao preferida
         if mean_reversion:
             # Caro demais → prefere vender; barato demais → prefere comprar
-            direcao_pref = "SELL" if posicao in (POSICAO_EXTREMO_ALTO, POSICAO_ALTO) else "BUY"
+            direcao_pref = (
+                "SELL" if posicao in (POSICAO_EXTREMO_ALTO, POSICAO_ALTO) else "BUY"
+            )
             resumo_base = "Mean reversion: preco em extremo, preferir contra-tendencia"
         elif pullback:
             direcao_pref = direcao_decisao  # pullback confirma a tendencia
@@ -574,15 +603,18 @@ class LeituraDeOperador:
         elif qualidade == MOVIMENTO_FORTE and correlacao == CORRELACAO_ALINHADA:
             direcao_pref = direcao_decisao
             resumo_base = "Movimento forte com correlatos alinhados: momento favoravel"
-        elif fase == FASE_ALMOCO:
-            direcao_pref = "NEUTRO"
-            resumo_base = "Horario de almoco: liquidez reduzida, risco de spike falso"
         else:
             direcao_pref = direcao_decisao
-            resumo_base = f"Mercado {qualidade.lower()}, fase {fase.lower()}"
+            if fase == FASE_ALMOCO:
+                resumo_base = (
+                    "Contexto de almoco: liquidez mais sensivel observada "
+                    "como feature de ambiente"
+                )
+            else:
+                resumo_base = f"Mercado {qualidade.lower()}, fase {fase.lower()}"
 
         # Momento favoravel: ajuste final positivo E sem divergencia critica
-        momento_fav = ajuste > -0.10 and not divergencia and fase != FASE_ALMOCO
+        momento_fav = ajuste > -0.10 and not divergencia
 
         # Confianca da leitura (independente da confianca do sinal)
         confianca = max(0.30, min(0.95, 0.65 + ajuste))
@@ -649,10 +681,12 @@ class LeituraDeOperador:
 
         # Range expandindo? Comparar com 80% dos candles anteriores
         if len(candles) >= 10:
-            range_anterior = max(float(c.high.value) for c in candles[:-5]) - \
-                             min(float(c.low.value) for c in candles[:-5])
-            range_atual = max(float(c.high.value) for c in candles[-5:]) - \
-                          min(float(c.low.value) for c in candles[-5:])
+            range_anterior = max(float(c.high.value) for c in candles[:-5]) - min(
+                float(c.low.value) for c in candles[:-5]
+            )
+            range_atual = max(float(c.high.value) for c in candles[-5:]) - min(
+                float(c.low.value) for c in candles[-5:]
+            )
             range_expandindo = range_atual > range_anterior * 1.1
         else:
             range_expandindo = False
@@ -672,24 +706,46 @@ class LeituraDeOperador:
             acao = decisao.action.value
         direcao = acao if acao in ("BUY", "SELL") else "NEUTRO"
 
-        corr_estado, dolar_fav, sp500_fav, comm_fav, divergencia = \
-            self._avaliar_correlacoes(direcao, macro_items, decisao)
+        (
+            corr_estado,
+            dolar_fav,
+            sp500_fav,
+            comm_fav,
+            divergencia,
+        ) = self._avaliar_correlacoes(direcao, macro_items, decisao)
 
         risco_arm, armadilhas = self._identificar_armadilhas(
-            fase, posicao, qualidade, exaustao, corr_estado,
-            divergencia, range_pts, desvio, atr, candles,
+            fase,
+            posicao,
+            qualidade,
+            exaustao,
+            corr_estado,
+            divergencia,
+            range_pts,
+            desvio,
+            atr,
+            candles,
         )
 
         cenario_mudou, motivo_mudanca = self._detectar_mudanca_cenario(
-            guardian_state, macro_items, decisao,
+            guardian_state,
+            macro_items,
+            decisao,
         )
 
-        momento_fav, direcao_pref, confianca_leitura, resumo, ajuste = \
-            self._veredicto(
-                fase, qualidade, exaustao, pullback, corr_estado,
-                divergencia, risco_arm, posicao, mean_rev,
-                cenario_mudou, direcao,
-            )
+        momento_fav, direcao_pref, confianca_leitura, resumo, ajuste = self._veredicto(
+            fase,
+            qualidade,
+            exaustao,
+            pullback,
+            corr_estado,
+            divergencia,
+            risco_arm,
+            posicao,
+            mean_rev,
+            cenario_mudou,
+            direcao,
+        )
 
         return LeituraOperador(
             timestamp=agora,

@@ -303,14 +303,47 @@ def _sync_to_sqlite(db_path: Path, sync_trades: list[SyncTrade]) -> tuple[int, i
     return inserted, updated, unchanged
 
 
+def _run_with_write_lock_retry(
+    db_path: Path,
+    action,
+    *,
+    attempts: int = 4,
+    base_wait_seconds: float = 1.5,
+) -> object | None:
+    """Executa uma ação inteira sob lock de escrita com retry para contenção transitória."""
+    for attempt in range(1, attempts + 1):
+        try:
+            with sqlite_write_lock(db_path, timeout=5.0):
+                return action()
+        except TimeoutError:
+            if attempt == attempts:
+                return None
+            wait_s = base_wait_seconds * attempt
+            print(
+                f"[WARN] Lock SQLite ocupado para sync MT5 "
+                f"(tentativa {attempt}/{attempts}). Novo retry em {wait_s:.1f}s..."
+            )
+            time.sleep(wait_s)
+    return None
+
+
 def main() -> int:
     args = _parse_args()
 
     db_path = Path(args.db_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with sqlite_write_lock(db_path):
-        create_database(str(db_path))
+    create_result = _run_with_write_lock_retry(
+        db_path,
+        lambda: (create_database(str(db_path)), True)[1],
+    )
+    if create_result is None:
+        print(
+            "[WARN] SQLite ocupado por outro processo. "
+            "Sync MT5 será pulado nesta execução."
+        )
+        mt5.shutdown()
+        return 0
 
     ok, msg = _connect_mt5()
     if not ok:
@@ -346,8 +379,19 @@ def main() -> int:
             sync_trades.append(t)
 
     try:
-        with sqlite_write_lock(db_path):
-            inserted, updated, unchanged = _sync_to_sqlite(db_path, sync_trades)
+        sync_result = _run_with_write_lock_retry(
+            db_path,
+            lambda: _sync_to_sqlite(db_path, sync_trades),
+        )
+        if sync_result is None:
+            print(
+                "[WARN] SQLite ocupado por outro processo durante sync. "
+                "Sincronização será pulada."
+            )
+            mt5.shutdown()
+            return 0
+
+        inserted, updated, unchanged = sync_result
     except sqlite3.OperationalError as e:
         print(f"[ERRO] Falha SQLite durante sincronização: {e}")
         mt5.shutdown()

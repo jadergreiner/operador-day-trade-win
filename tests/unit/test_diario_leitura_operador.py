@@ -49,6 +49,7 @@ from src.application.diario_leitura_operador import (
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class _Preco:
     value: float
@@ -63,7 +64,13 @@ class _Candle:
     volume: float = 100.0
 
 
-def _candle(o: float, c: float, h: Optional[float] = None, l: Optional[float] = None, vol: float = 100.0) -> _Candle:
+def _candle(
+    o: float,
+    c: float,
+    h: Optional[float] = None,
+    l: Optional[float] = None,
+    vol: float = 100.0,
+) -> _Candle:
     return _Candle(
         open=_Preco(o),
         close=_Preco(c),
@@ -105,6 +112,7 @@ def _decisao(acao: str = "BUY") -> MagicMock:
 
 
 # ── _fase_sessao ─────────────────────────────────────────────────────────────
+
 
 class TestFaseSessao:
     def setup_method(self):
@@ -150,12 +158,16 @@ class TestFaseSessao:
 
 # ── _posicao_no_range ────────────────────────────────────────────────────────
 
+
 class TestPosicaoNoRange:
     def setup_method(self):
         self.leitor = LeituraDeOperador()
 
     def test_extremo_alto(self):
-        assert self.leitor._posicao_no_range(99_500, 100_000, 90_000) == POSICAO_EXTREMO_ALTO
+        assert (
+            self.leitor._posicao_no_range(99_500, 100_000, 90_000)
+            == POSICAO_EXTREMO_ALTO
+        )
 
     def test_alto(self):
         assert self.leitor._posicao_no_range(97_000, 100_000, 90_000) == POSICAO_ALTO
@@ -167,13 +179,17 @@ class TestPosicaoNoRange:
         assert self.leitor._posicao_no_range(92_000, 100_000, 90_000) == POSICAO_BAIXO
 
     def test_extremo_baixo(self):
-        assert self.leitor._posicao_no_range(90_100, 100_000, 90_000) == POSICAO_EXTREMO_BAIXO
+        assert (
+            self.leitor._posicao_no_range(90_100, 100_000, 90_000)
+            == POSICAO_EXTREMO_BAIXO
+        )
 
     def test_high_igual_low_retorna_meio(self):
         assert self.leitor._posicao_no_range(100_000, 100_000, 100_000) == POSICAO_MEIO
 
 
 # ── _qualidade_movimento ─────────────────────────────────────────────────────
+
 
 class TestQualidadeMovimento:
     def setup_method(self):
@@ -191,15 +207,17 @@ class TestQualidadeMovimento:
         # Se primeiros 4 = 10 cada e ultimo = 500:
         # media = (10*4+500)/5 = 540/5 = 108, ultimo/media = 500/108 = 4.6x → SPIKE
         candles = [_candle(100_000, 100_010)] * 4  # corpo 10
-        candles.append(_candle(100_000, 100_500))   # corpo 500 >> 2.5x
+        candles.append(_candle(100_000, 100_500))  # corpo 500 >> 2.5x
         q, ex, pb = self.leitor._qualidade_movimento(candles)
         assert q == MOVIMENTO_SPIKE
 
     def test_chop_alternancia(self):
         # Alta-baixa-alta-baixa-alta → 4 mudancas
         cs = [
-            _candle(100, 110), _candle(110, 100),
-            _candle(100, 110), _candle(110, 100),
+            _candle(100, 110),
+            _candle(110, 100),
+            _candle(100, 110),
+            _candle(110, 100),
             _candle(100, 110),
         ]
         q, ex, pb = self.leitor._qualidade_movimento(cs)
@@ -246,6 +264,7 @@ class TestQualidadeMovimento:
 
 # ── _calcular_vwap_aproximado ────────────────────────────────────────────────
 
+
 class TestVwap:
     def setup_method(self):
         self.leitor = LeituraDeOperador()
@@ -260,8 +279,8 @@ class TestVwap:
         assert vwap == pytest.approx(100.0)
 
     def test_dois_candles_ponderado(self):
-        c1 = _candle(100, 100, h=110, l=90, vol=100)   # tipico=100
-        c2 = _candle(200, 200, h=210, l=190, vol=300)   # tipico=200
+        c1 = _candle(100, 100, h=110, l=90, vol=100)  # tipico=100
+        c2 = _candle(200, 200, h=210, l=190, vol=300)  # tipico=200
         vwap = self.leitor._calcular_vwap_aproximado([c1, c2])
         # (100*100 + 200*300) / 400 = (10000 + 60000)/400 = 175
         assert vwap == pytest.approx(175.0)
@@ -275,6 +294,7 @@ class TestVwap:
 
 
 # ── _avaliar_barato_caro ─────────────────────────────────────────────────────
+
 
 class TestBaratoCaro:
     def setup_method(self):
@@ -324,12 +344,15 @@ class TestBaratoCaro:
 
 # ── _avaliar_correlacoes ─────────────────────────────────────────────────────
 
+
 class TestCorrelacoes:
     def setup_method(self):
         self.leitor = LeituraDeOperador()
 
     def test_neutro_retorna_mista(self):
-        estado, d, s, c, div = self.leitor._avaliar_correlacoes("NEUTRO", [], MagicMock())
+        estado, d, s, c, div = self.leitor._avaliar_correlacoes(
+            "NEUTRO", [], MagicMock()
+        )
         assert estado == CORRELACAO_MISTA
 
     def test_alinhada_buy(self):
@@ -352,9 +375,21 @@ class TestCorrelacoes:
     def test_divergente_todos_contra(self):
         # WIN quer subir mas todos os correlatos contra
         items = [
-            {"category": "DOLAR_CAMBIO", "symbol": "DOLAR", "score": "3"},   # dolar forte = contra BUY
-            {"category": "INDICES_GLOBAIS", "symbol": "SP500", "score": "-2"}, # SP cai = contra BUY
-            {"category": "COMMODITIES", "symbol": "PETR4", "score": "-1"},    # commodities cai = contra BUY
+            {
+                "category": "DOLAR_CAMBIO",
+                "symbol": "DOLAR",
+                "score": "3",
+            },  # dolar forte = contra BUY
+            {
+                "category": "INDICES_GLOBAIS",
+                "symbol": "SP500",
+                "score": "-2",
+            },  # SP cai = contra BUY
+            {
+                "category": "COMMODITIES",
+                "symbol": "PETR4",
+                "score": "-1",
+            },  # commodities cai = contra BUY
         ]
         decisao = MagicMock()
         decisao.macro_bias = "NEUTRO"
@@ -374,6 +409,7 @@ class TestCorrelacoes:
 
 
 # ── _identificar_armadilhas ──────────────────────────────────────────────────
+
 
 class TestArmadilhas:
     def setup_method(self):
@@ -442,6 +478,7 @@ class TestArmadilhas:
 
 # ── _detectar_mudanca_cenario ────────────────────────────────────────────────
 
+
 class TestMudancaCenario:
     def setup_method(self):
         self.leitor = LeituraDeOperador()
@@ -477,6 +514,7 @@ class TestMudancaCenario:
 
 # ── _veredicto ───────────────────────────────────────────────────────────────
 
+
 class TestVeredicto:
     def setup_method(self):
         self.leitor = LeituraDeOperador()
@@ -503,8 +541,14 @@ class TestVeredicto:
         assert momento is True
         assert ajuste > 0  # bonus manha + correlacao alinhada
 
-    def test_almoco_nao_favoravel(self):
-        momento, dir, conf, resumo, ajuste = self._v(fase=FASE_ALMOCO)
+    def test_almoco_e_feature_nao_veto(self):
+        momento, dir, conf, resumo, ajuste = self._v(
+            fase=FASE_ALMOCO,
+            qualidade=MOVIMENTO_CHOP,
+            correlacao=CORRELACAO_MISTA,
+        )
+        assert dir == "BUY"
+        assert "feature" in resumo.lower()
         assert momento is False
 
     def test_divergencia_nao_favoravel(self):
@@ -518,15 +562,11 @@ class TestVeredicto:
         assert ajuste_pb > ajuste_base
 
     def test_mean_reversion_direcao_sell(self):
-        _, dir, _, _, _ = self._v(
-            mean_reversion=True, posicao=POSICAO_EXTREMO_ALTO
-        )
+        _, dir, _, _, _ = self._v(mean_reversion=True, posicao=POSICAO_EXTREMO_ALTO)
         assert dir == "SELL"
 
     def test_mean_reversion_direcao_buy(self):
-        _, dir, _, _, _ = self._v(
-            mean_reversion=True, posicao=POSICAO_EXTREMO_BAIXO
-        )
+        _, dir, _, _, _ = self._v(mean_reversion=True, posicao=POSICAO_EXTREMO_BAIXO)
         assert dir == "BUY"
 
     def test_exaustao_no_meio_penalidade(self):
@@ -546,6 +586,7 @@ class TestVeredicto:
 
 # ── ler() ────────────────────────────────────────────────────────────────────
 
+
 class TestLer:
     def setup_method(self):
         self.leitor = LeituraDeOperador()
@@ -564,7 +605,11 @@ class TestLer:
         leitura = self.leitor.ler(candles, self.decisao, self.guardian, atr=200.0)
         assert isinstance(leitura, LeituraOperador)
         assert leitura.fase_sessao in (
-            FASE_ABERTURA, FASE_MANHA, FASE_ALMOCO, FASE_TARDE, FASE_FECHAMENTO
+            FASE_ABERTURA,
+            FASE_MANHA,
+            FASE_ALMOCO,
+            FASE_TARDE,
+            FASE_FECHAMENTO,
         )
         assert isinstance(leitura.timestamp, str)
         assert isinstance(leitura.resumo, str)
@@ -591,7 +636,9 @@ class TestLer:
             {"category": "DOLAR_CAMBIO", "symbol": "DOLAR", "score": "-2"},
             {"category": "INDICES_GLOBAIS", "symbol": "SP500", "score": "2"},
         ]
-        leitura = self.leitor.ler(candles, self.decisao, self.guardian, macro_items=items)
+        leitura = self.leitor.ler(
+            candles, self.decisao, self.guardian, macro_items=items
+        )
         assert isinstance(leitura, LeituraOperador)
 
     def test_desvio_vwap_positivo(self):
@@ -605,8 +652,22 @@ class TestLer:
         # Primeiros candles pequenos, ultimos grandes
         candles = []
         for i in range(5):
-            candles.append(_candle(100_000 + i * 10, 100_050 + i * 10, h=100_060 + i * 10, l=99_990 + i * 10))
+            candles.append(
+                _candle(
+                    100_000 + i * 10,
+                    100_050 + i * 10,
+                    h=100_060 + i * 10,
+                    l=99_990 + i * 10,
+                )
+            )
         for i in range(5):
-            candles.append(_candle(100_050 + i * 300, 100_350 + i * 300, h=100_400 + i * 300, l=100_000 + i * 300))
+            candles.append(
+                _candle(
+                    100_050 + i * 300,
+                    100_350 + i * 300,
+                    h=100_400 + i * 300,
+                    l=100_000 + i * 300,
+                )
+            )
         leitura = self.leitor.ler(candles, self.decisao, self.guardian, atr=200.0)
         assert leitura.range_expandindo is True
