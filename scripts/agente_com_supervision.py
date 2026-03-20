@@ -34,6 +34,23 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 os.chdir(ROOT_DIR)
 
+
+def _resolve_launcher_db_path(default_name: str, env_var: str) -> Path:
+    """Resolve banco isolado para este launcher, com override explícito opcional."""
+    override = os.getenv(env_var, "").strip()
+    if override:
+        return Path(override).expanduser()
+    return ROOT_DIR / "data" / "db" / default_name
+
+
+AGENTE_DB_PATH = _resolve_launcher_db_path(
+    "trading_rl_5000.db",
+    "RL5000_DB_PATH",
+)
+os.environ["RL5000_DB_PATH"] = str(AGENTE_DB_PATH)
+os.environ["DB_PATH"] = str(AGENTE_DB_PATH)
+os.environ["TRADING_DB_PATH"] = str(AGENTE_DB_PATH)
+
 # Remover argumentos personalizados antes de importar script agente
 sys.argv = [sys.argv[0]]
 

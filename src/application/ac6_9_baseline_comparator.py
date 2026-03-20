@@ -241,8 +241,9 @@ class BaselineComparator:
 
     def comparar_metricas(
         self,
-        current_metrics: Dict[str, float],
+        current_metrics: Optional[Dict[str, float]] = None,
         baseline_version: str = "v1.0.0",
+        **kwargs: Any,
     ) -> ComparisonResult:
         """Compara métricas atuais contra baseline.
 
@@ -255,6 +256,14 @@ class BaselineComparator:
         Returns:
             ComparisonResult com resultado da comparação
         """
+        if current_metrics is None:
+            current_metrics = kwargs.pop("metricas_atuais", None)
+        if current_metrics is None:
+            raise TypeError("current_metrics é obrigatório")
+        if kwargs:
+            unexpected = ", ".join(sorted(kwargs.keys()))
+            raise TypeError(f"Argumentos inesperados: {unexpected}")
+
         # Obter baseline
         baseline_record = self.obter_baseline(baseline_version)
         if baseline_record is None:

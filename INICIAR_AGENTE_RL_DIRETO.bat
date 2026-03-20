@@ -15,6 +15,11 @@ title RL DIRETO - OPERADOR RL AUTONOMO [PRODUCAO ESTRITA] - EA ID: 234600 [%myda
 cd /d "%~dp0"
 if not exist "outputs" mkdir outputs >nul 2>&1
 
+set "RL_DIRETO_DB_PATH=%cd%\data\db\trading_rl_direto.db"
+set "DB_PATH=%RL_DIRETO_DB_PATH%"
+set "TRADING_DB_PATH=%RL_DIRETO_DB_PATH%"
+set "AGENTE_DIRETO_LOG_DIR=%cd%\outputs"
+
 echo.
 echo   ============================================================
 echo   OPERADOR RL DIRETO - PRODUCAO ESTRITA
@@ -38,13 +43,17 @@ echo   [OK] Launcher canonico com bootstrap, confirmacao e pre-flight
 echo   [OK] Estado isolado por magic 234600 + session_id unico
 echo   [OK] Logs separados em outputs\agente_direto_*.log
 echo   [OK] Runtime com contexto de abertura e isolamento formal
+echo   [OK] SQLite isolado do agente direto: %RL_DIRETO_DB_PATH%
 echo   [OK] Pode rodar em paralelo com INICIAR_AGENTE_RL_5000.bat
+echo   [OK] Artefatos de ciclo: diario_episodios + execution_feedback com motivos_entrada, veredicto_pos_resultado e aprendizado_extra
 echo   ============================================================
 echo.
 echo   Alvo exibido pelo runtime: R$140.00 / Stop Loss exibido: -R$250.00
 echo.
 echo   Script real: scripts\agente_rl_direto_independente.py --mode dinamico
 echo   Gate operacional: outputs\release_gates\go_live_decision.json
+echo   Logs runtime: %AGENTE_DIRETO_LOG_DIR%\agente_direto_*.log
+echo   Logs debug: %AGENTE_DIRETO_LOG_DIR%\agente_direto_debug_*.log
 echo.
 echo   ============================================================
 echo.
@@ -106,8 +115,10 @@ if "%CHOICE%"=="2" (
     echo   [START] OPERACAO REAL COM AGENTE DIRETO ISOLADO
     echo   Objetivo visual do runtime: Lucro R$ 140,00 ou Prejuizo -R$ 250,00
     echo   Modo SL/TP: DINAMICO
-    echo   Logs esperados: outputs\agente_direto_*.log
+    echo   Logs esperados: %AGENTE_DIRETO_LOG_DIR%\agente_direto_*.log
+    echo   Logs debug: %AGENTE_DIRETO_LOG_DIR%\agente_direto_debug_*.log
     echo   Artefato GO LIVE: outputs\release_gates\go_live_decision.json
+    echo   Persistencia extra: diario_episodios / execution_feedback com contexto enriquecido
     echo.
     python scripts\agente_rl_direto_independente.py --mode dinamico
     if errorlevel 1 (
@@ -208,11 +219,11 @@ goto :confirm_loop
 echo.
 echo   [PRE-FLIGHT] Validando ambiente para auto-trade...
 
-if not exist "data\db\trading.db" (
-    echo   [ERRO] SQLite principal ausente: data\db\trading.db
-    exit /b 1
+if not exist "%RL_DIRETO_DB_PATH%" (
+    echo   [INFO] SQLite isolado ainda nao existe. Sera criado no bootstrap.
+) else (
+    echo   [OK] SQLite isolado encontrado: %RL_DIRETO_DB_PATH%
 )
-echo   [OK] SQLite principal encontrado
 
 if not exist "scripts\system_health_monitor.py" (
     echo   [ERRO] Script de health check ausente.
@@ -238,8 +249,8 @@ if errorlevel 1 (
 )
 echo   [OK] Health check aprovado
 
-echo   [SYNC] Sincronizando trades MT5 para SQLite...
-python scripts\sync_mt5_trades_to_db.py --days-back 3
+echo   [SYNC] Sincronizando trades MT5 para SQLite isolado...
+python scripts\sync_mt5_trades_to_db.py --db "%RL_DIRETO_DB_PATH%" --days-back 3 --lock-timeout 0
 if errorlevel 1 (
     echo   [ERRO] Falha na sincronizacao MT5 -> SQLite.
     exit /b 1

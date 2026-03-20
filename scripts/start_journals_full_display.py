@@ -24,6 +24,7 @@ from decimal import Decimal
 from datetime import datetime, timedelta, date
 from typing import Any
 from config import get_config
+from src.infrastructure.database.db_paths import resolve_operational_db_path
 from src.application.services.trading_journal import TradingJournalService
 from src.application.services.quantum_operator import QuantumOperatorEngine
 from src.application.services.ai_reflection_journal import AIReflectionJournalService
@@ -188,8 +189,12 @@ MAGIC_NUMBER = 234800
 # ────────────────────────────────────────────────────────────────
 def _get_db_path() -> str:
     """Retorna path do banco de dados do agente."""
-    config = get_config()
-    return getattr(config, "db_path", "data/db/trading.db")
+    return str(
+        resolve_operational_db_path(
+            project_root,
+            default_name="trading_diarios.db",
+        )
+    )
 
 
 def _coerce_datetime(value: Any) -> datetime:

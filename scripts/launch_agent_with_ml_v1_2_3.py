@@ -34,6 +34,23 @@ root_dir = Path(current_dir).parent
 if str(root_dir) not in sys.path:
     sys.path.insert(0, str(root_dir))
 
+
+def _resolve_launcher_db_path(default_name: str, env_var: str) -> Path:
+    """Resolve banco isolado para este launcher, com override explícito opcional."""
+    override = os.getenv(env_var, "").strip()
+    if override:
+        return Path(override).expanduser()
+    return root_dir / "data" / "db" / default_name
+
+
+AGENT_DB_PATH = _resolve_launcher_db_path(
+    "trading_micro_tendencia.db",
+    "MICRO_TENDENCIA_DB_PATH",
+)
+os.environ["MICRO_TENDENCIA_DB_PATH"] = str(AGENT_DB_PATH)
+os.environ["DB_PATH"] = str(AGENT_DB_PATH)
+os.environ["TRADING_DB_PATH"] = str(AGENT_DB_PATH)
+
 # ─ Global process handles ─
 _api_process = None
 _ati1_process = None
@@ -252,7 +269,7 @@ def start_execution_monitor_subprocess():
         cmd = [
             sys.executable,
             str(monitor_script),
-            "--db", "data/db/trading.db",
+            "--db", str(AGENT_DB_PATH),
             "--trader-id", trader_id,
             "--ati1-url", ati1_url,
         ]
@@ -666,7 +683,7 @@ def main():
     print("  " + "=" * 60)
 
     opening_runtime = initialize_opening_context_runtime(
-        db_path=str(root_dir / "data" / "db" / "trading.db"),
+        db_path=str(AGENT_DB_PATH),
         agent_name="micro_tendencia_launcher",
         source="launch_agent_with_ml_v1_2_3",
         mode=" ".join(sys.argv[1:]).strip(),
@@ -710,7 +727,7 @@ def main():
     finally:
         try:
             relatorio = generate_opening_context_vs_result_report(
-                db_path=str(root_dir / "data" / "db" / "trading.db"),
+                db_path=str(AGENT_DB_PATH),
                 output_dir=root_dir / "outputs" / "analysis",
                 outputs_root=root_dir / "outputs",
             )

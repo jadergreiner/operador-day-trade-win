@@ -37,9 +37,10 @@ from src.application.services.ml.target_engineering import (
     TargetConfig,
     TargetEngineer,
 )
+from src.infrastructure.database.db_paths import resolve_operational_db_path
 
 # ── Paths ────────────────────────────────────────────────────────────
-DB_PATH = ROOT_DIR / "data" / "db" / "trading.db"
+DB_PATH = resolve_operational_db_path(ROOT_DIR, default_name="trading_rl_5000.db")
 MODEL_DIR = ROOT_DIR / "data" / "models" / "lgbm"
 REPORT_DIR = ROOT_DIR / "data" / "ml" / "reports"
 
@@ -64,7 +65,8 @@ DEFAULT_LGBM_PARAMS = {
 # Features que NÃO devem ser usadas como input (IDs, targets, metadata)
 EXCLUDE_FEATURES = {
     "episode_id", "timestamp", "session_date", "source",
-    "action", "reasoning", "created_at",
+    "action", "original_action", "blocked_reason", "state_vector",
+    "reasoning", "created_at",
     "target_reward_composite", "target_class", "target_class_encoded",
     "target_direction", "target_profitable",
     "cf_reward_buy", "cf_reward_sell", "cf_reward_hold",

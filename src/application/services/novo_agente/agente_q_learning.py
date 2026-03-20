@@ -232,6 +232,39 @@ class AgenteQLearningMiniIndice:
 
         return erro
 
+    def treinar_batch(
+        self,
+        estados: np.ndarray,
+        acoes: np.ndarray,
+        recompensas: np.ndarray,
+        proximos_estados: Optional[np.ndarray] = None,
+        terminados: Optional[np.ndarray] = None,
+    ) -> Optional[float]:
+        """Treina o agente diretamente a partir de um lote já preparado."""
+        if estados.size == 0:
+            return None
+
+        estados = np.asarray(estados, dtype=np.float32)
+        acoes = np.asarray(acoes, dtype=np.int32)
+        recompensas = np.asarray(recompensas, dtype=np.float32)
+        if proximos_estados is None:
+            proximos_estados = np.zeros_like(estados, dtype=np.float32)
+        else:
+            proximos_estados = np.asarray(proximos_estados, dtype=np.float32)
+        if terminados is None:
+            terminados = np.ones(len(estados), dtype=bool)
+        else:
+            terminados = np.asarray(terminados, dtype=bool)
+
+        alvos_q = self._calcular_alvos_td(
+            estados,
+            acoes,
+            recompensas,
+            proximos_estados,
+            terminados,
+        )
+        return self._treinar_rede(estados, alvos_q)
+
     def encerrar_episodio(self) -> None:
         """Atualiza epsilon ao encerrar um episódio (exploração decai)."""
         self.n_episodios += 1

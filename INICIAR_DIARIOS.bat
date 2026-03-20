@@ -10,6 +10,10 @@ echo.
 
 cd /d "%~dp0"
 
+set "DIARIOS_DB_PATH=%CD%\data\db\trading_diarios.db"
+set "DB_PATH=%DIARIOS_DB_PATH%"
+set "TRADING_DB_PATH=%DIARIOS_DB_PATH%"
+
 REM ========================================================================
 REM P0-2: Iniciar validacao de backtest em BACKGROUND (nao bloqueia)
 REM ========================================================================

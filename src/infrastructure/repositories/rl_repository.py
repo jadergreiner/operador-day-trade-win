@@ -222,6 +222,9 @@ class SqliteRLRepository(IRLRepository):
             technical_bias=episode.get("technical_bias"),
             # Meta
             reasoning=episode.get("reasoning"),
+            original_action=episode.get("original_action"),
+            blocked_reason=episode.get("blocked_reason"),
+            state_vector=episode.get("state_vector"),
             session_date=episode.get("session_date"),
         )
         self.session.add(model)
@@ -371,8 +374,8 @@ class SqliteRLRepository(IRLRepository):
         if end_date:
             query = query.filter(RLEpisodeModel.timestamp <= end_date)
 
-        query = query.order_by(RLEpisodeModel.timestamp.asc()).limit(limit)
-        episodes = query.all()
+        query = query.order_by(RLEpisodeModel.timestamp.desc()).limit(limit)
+        episodes = list(reversed(query.all()))
 
         results = []
         for ep in episodes:
@@ -408,6 +411,9 @@ class SqliteRLRepository(IRLRepository):
                     "timestamp": ep.timestamp,
                     "source": ep.source,
                     "action": ep.action,
+                    "original_action": ep.original_action,
+                    "blocked_reason": ep.blocked_reason,
+                    "state_vector": ep.state_vector,
                     # Estado resumido
                     "win_price": float(ep.win_price) if ep.win_price else None,
                     "macro_score_final": (
@@ -491,6 +497,9 @@ class SqliteRLRepository(IRLRepository):
                 "market_regime": ep.market_regime,
                 "market_condition": ep.market_condition,
                 "session_phase": ep.session_phase,
+                "original_action": ep.original_action,
+                "blocked_reason": ep.blocked_reason,
+                "state_vector": ep.state_vector,
                 "action": ep.action,
             },
             "correlations": [

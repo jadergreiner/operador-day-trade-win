@@ -26,6 +26,7 @@ Filosofia:
 
 from datetime import datetime
 from decimal import Decimal
+import sqlite3
 
 from sqlalchemy import (
     JSON,
@@ -38,6 +39,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    create_engine,
 )
 
 from src.infrastructure.database.schema import Base
@@ -219,6 +221,9 @@ class RLEpisodeModel(Base):
 
     # ---- Metadados ----
     reasoning = Column(Text, nullable=True)
+    original_action = Column(String(10), nullable=True)
+    blocked_reason = Column(String(200), nullable=True)
+    state_vector = Column(JSON, nullable=True)
     session_date = Column(String(10), nullable=True, index=True)  # YYYY-MM-DD
     created_at = Column(DateTime, default=datetime.now)
 
@@ -451,3 +456,43 @@ def create_rl_tables(engine) -> None:
         RLTrainingMetricsModel.__table__,
     ]
     Base.metadata.create_all(engine, tables=tables)
+
+
+def ensure_rl_database(db_path: str) -> None:
+    """Garante que o banco operacional RL exista com o schema completo."""
+    engine = create_engine(f"sqlite:///{db_path}", echo=False)
+    with engine.connect() as connection:
+        connection.exec_driver_sql("PRAGMA journal_mode=WAL")
+        connection.exec_driver_sql("PRAGMA synchronous=NORMAL")
+        connection.exec_driver_sql("PRAGMA busy_timeout=30000")
+    Base.metadata.create_all(engine)
+    create_rl_tables(engine)
+    _ensure_rl_episode_columns(db_path)
+
+
+def _ensure_rl_episode_columns(db_path: str) -> None:
+    """Aplica colunas novas em bancos RL já existentes."""
+    conn = sqlite3.connect(db_path)
+    try:
+        cur = conn.cursor()
+        cur.execute("PRAGMA table_info(rl_episodes)")
+        cols = {row[1] for row in cur.fetchall()}
+        alter_statements = []
+        if "original_action" not in cols:
+            alter_statements.append(
+                "ALTER TABLE rl_episodes ADD COLUMN original_action TEXT"
+            )
+        if "blocked_reason" not in cols:
+            alter_statements.append(
+                "ALTER TABLE rl_episodes ADD COLUMN blocked_reason TEXT"
+            )
+        if "state_vector" not in cols:
+            alter_statements.append(
+                "ALTER TABLE rl_episodes ADD COLUMN state_vector JSON"
+            )
+        for stmt in alter_statements:
+            cur.execute(stmt)
+        if alter_statements:
+            conn.commit()
+    finally:
+        conn.close()

@@ -9,8 +9,15 @@ from pathlib import Path
 import sqlite3
 import json
 from datetime import datetime, timedelta
+import sys
 
-DB_PATH = Path(__file__).parent / "data" / "db" / "trading.db"
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from src.infrastructure.database.db_paths import resolve_operational_db_path
+
+DB_PATH = resolve_operational_db_path(ROOT_DIR, default_name="trading_rl_5000.db")
 
 def analyze_rl_data():
     """Analisar dados RL e sugerir treinamento."""
@@ -28,9 +35,20 @@ def analyze_rl_data():
     cursor.execute("SELECT COUNT(*) FROM rl_rewards")
     reward_count = cursor.fetchone()[0]
 
+    cursor.execute("""
+        SELECT
+            COUNT(*) as total_hold,
+            SUM(CASE WHEN blocked_reason IS NOT NULL AND TRIM(blocked_reason) <> '' THEN 1 ELSE 0 END) as hold_bloqueado,
+            SUM(CASE WHEN blocked_reason IS NULL OR TRIM(blocked_reason) = '' THEN 1 ELSE 0 END) as hold_genuino
+        FROM rl_episodes
+        WHERE action = 'HOLD'
+    """)
+    hold_total, hold_blocked, hold_genuine = cursor.fetchone()
+
     print(f"\n📊 VOLUME DE DADOS RL:")
     print(f"   Episódios: {episode_count:,} (MIN para treino: 100)")
     print(f"   Recompensas: {reward_count:,} (MIN para treino: 500)")
+    print(f"   HOLD total: {hold_total:,} | bloqueado: {hold_blocked:,} | genuíno: {hold_genuine:,}")
 
     readiness = "✅ PRONTO" if episode_count >= 100 and reward_count >= 500 else "⚠️ INSUFICIENTE"
     print(f"   Status: {readiness}")

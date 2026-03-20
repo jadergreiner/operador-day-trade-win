@@ -492,6 +492,9 @@ class PipelineEpisodiosMicro:
         ts_entrada: str,
         ts_saida: str,
         ctx: dict[str, Any],
+        motivos_entrada: str = "",
+        veredicto_pos_resultado: str = "",
+        aprendizado_extra: str = "",
     ) -> None:
         """Persiste na tabela diario_episodios (formato EpisodioOperador)."""
         conn = sqlite3.connect(self.db_path)
@@ -524,6 +527,9 @@ class PipelineEpisodiosMicro:
                 confianca_entrada REAL,
                 alinhamento_entrada REAL,
                 momentum_entrada REAL,
+                motivos_entrada TEXT,
+                veredicto_pos_resultado TEXT,
+                aprendizado_extra TEXT,
                 foi_acerto INTEGER,
                 max_ganho_pts REAL,
                 eficiencia REAL
@@ -555,6 +561,7 @@ class PipelineEpisodiosMicro:
                 divergencia_critica, risco_armadilha, preco_extremo,
                 desvio_vwap_pts, ajuste_confianca_leitura,
                 confianca_entrada, alinhamento_entrada, momentum_entrada,
+                motivos_entrada, veredicto_pos_resultado, aprendizado_extra,
                 foi_acerto, max_ganho_pts, eficiencia
             ) VALUES (
                 ?, ?, ?,
@@ -564,6 +571,7 @@ class PipelineEpisodiosMicro:
                 ?, ?, ?,
                 ?, ?, ?,
                 ?, ?,
+                ?, ?, ?,
                 ?, ?, ?,
                 ?, ?, ?
             )
@@ -577,6 +585,7 @@ class PipelineEpisodiosMicro:
                 0, "BAIXO", 0,
                 0.0, 0.0,
                 confianca, confianca, confianca,
+                motivos_entrada, veredicto_pos_resultado, aprendizado_extra,
                 foi_acerto, max(pnl, 0.0),
                 (pnl / max(pnl, 1.0)) if pnl > 0 else 0.0,
             ),
@@ -596,9 +605,21 @@ class PipelineEpisodiosMicro:
             alertas = self.drift_detector.detectar_drift(self._episodios_batch)
             if alertas:
                 for a in alertas[:3]:
+                    metric = getattr(a, "metric", None)
+                    if metric is None and isinstance(a, dict):
+                        metric = a.get("metric")
+                    zscore = getattr(a, "zscore", None)
+                    if zscore is None and isinstance(a, dict):
+                        zscore = a.get("zscore")
+                    severity = getattr(a, "severity", None)
+                    if severity is None and isinstance(a, dict):
+                        severity = a.get("severity")
+                    severity_value = getattr(severity, "value", severity)
                     logger.warning(
                         "AC6.7 Drift: metric=%s z=%.2f severidade=%s",
-                        a.metric, a.zscore, getattr(a.severity, "value", a.severity),
+                        metric,
+                        float(zscore or 0.0),
+                        severity_value,
                     )
                 print(
                     f"  ⚠ AC6.7: {len(alertas)} alerta(s) de drift "
@@ -645,7 +666,9 @@ class PipelineEpisodiosMicro:
                 "f1_score": 0.57,  # Placeholder: calculado apos retreino real
                 "sharpe_ratio": 1.0,
             }
-            comparacao = self.baseline_comparator.comparar_metricas(metricas_atuais)
+            comparacao = self.baseline_comparator.comparar_metricas(
+                current_metrics=metricas_atuais
+            )
             feedback = self.baseline_comparator.gerar_feedback(comparacao)
             icone = {"CONTINUE": "🟢", "MONITOR": "🟡", "ROLLBACK": "🔴"}.get(
                 feedback.recommended_action, "⚪"

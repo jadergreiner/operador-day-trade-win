@@ -15,6 +15,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+from src.infrastructure.database.db_paths import resolve_operational_db_path
 from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
 
 # Configuração de Logs
@@ -27,10 +28,11 @@ logger = logging.getLogger("HealthChecker")
 class HealthChecker:
     """Validador de saude do sistema Operador Day Trade WIN"""
 
-    def __init__(self, workspace_root=None):
+    def __init__(self, workspace_root=None, db_lock_timeout: float = 5.0):
         self.workspace_root = workspace_root or str(Path(__file__).parent.parent.parent.parent)
-        self.db_path = os.path.join(self.workspace_root, "data", "db", "trading.db")
+        self.db_path = str(resolve_operational_db_path(self.workspace_root))
         self.status_entregas_path = self._resolve_status_entregas_path()
+        self.db_lock_timeout = db_lock_timeout
 
     def _resolve_status_entregas_path(self) -> Optional[str]:
         """
@@ -161,11 +163,12 @@ class HealthChecker:
         """Data Engineer: Persistência de logs de saúde"""
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         last_error: Exception | None = None
+        max_attempts = 1 if self.db_lock_timeout <= 0 else 5
 
-        for attempt in range(1, 6):
+        for attempt in range(1, max_attempts + 1):
             conn = None
             try:
-                with sqlite_write_lock(self.db_path, timeout=5.0):
+                with sqlite_write_lock(self.db_path, timeout=self.db_lock_timeout):
                     conn = sqlite3.connect(self.db_path, timeout=30.0)
                     conn.execute("PRAGMA busy_timeout=30000")
                     cursor = conn.cursor()
@@ -199,21 +202,15 @@ class HealthChecker:
                 if not self._is_sqlite_lock_error(e):
                     logger.error(f"❌ Falha ao logar saúde no DB: {e}")
                     return
-                if attempt < 5:
+                if attempt < max_attempts and self.db_lock_timeout > 0:
                     time.sleep(0.15 * attempt)
                     continue
-                logger.warning(
-                    "⚠️ Falha transitória ao logar saúde no DB: database locked após retries"
-                )
                 return
             except TimeoutError as e:
                 last_error = e
-                if attempt < 5:
+                if attempt < max_attempts and self.db_lock_timeout > 0:
                     time.sleep(0.15 * attempt)
                     continue
-                logger.warning(
-                    "⚠️ Falha transitória ao logar saúde no DB: timeout aguardando lock"
-                )
                 return
             except Exception as e:
                 last_error = e

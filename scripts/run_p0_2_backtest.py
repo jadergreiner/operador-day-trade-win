@@ -24,6 +24,7 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
+from src.infrastructure.database.db_paths import resolve_operational_db_path
 from src.infrastructure.backtests.backtest_engine import BacktestEngine
 from src.infrastructure.backtests.dataset_auditor import audit_dataset
 from src.infrastructure.reports.backtest_reporter import BacktestReporter
@@ -39,7 +40,7 @@ DATASET_PATH = "data/training_dataset.csv"
 BACKTEST_OUTPUT_DIR = Path("data/backtest")
 REPORTS_OUTPUT_DIR = Path("data/backtest/reports")
 LOGS_OUTPUT_DIR = Path("data/logs")
-DEFAULT_DB_PATH = "data/db/trading.db"
+DEFAULT_DB_PATH = str(resolve_operational_db_path(project_root))
 DEFAULT_SYMBOL = "WINJ26"
 DEFAULT_TIMEFRAME = "M5"
 DEFAULT_LOOKBACK_DAYS = 365

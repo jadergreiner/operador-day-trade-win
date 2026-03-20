@@ -4,8 +4,15 @@
 import sqlite3
 from pathlib import Path
 from datetime import datetime, timedelta
+import sys
 
-DB_PATH = Path(__file__).parent / "data" / "db" / "trading.db"
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from src.infrastructure.database.db_paths import resolve_operational_db_path
+
+DB_PATH = resolve_operational_db_path(ROOT_DIR, default_name="trading_rl_5000.db")
 
 def report():
     conn = sqlite3.connect(str(DB_PATH))
@@ -25,11 +32,24 @@ def report():
     cursor.execute("SELECT COUNT(DISTINCT episode_id) FROM rl_rewards")
     n_evaluated = cursor.fetchone()[0]
 
+    cursor.execute("""
+        SELECT
+            COUNT(*) as total_hold,
+            SUM(CASE WHEN blocked_reason IS NOT NULL AND TRIM(blocked_reason) <> '' THEN 1 ELSE 0 END) as hold_bloqueado,
+            SUM(CASE WHEN blocked_reason IS NULL OR TRIM(blocked_reason) = '' THEN 1 ELSE 0 END) as hold_genuino
+        FROM rl_episodes
+        WHERE action = 'HOLD'
+    """)
+    hold_total, hold_blocked, hold_genuine = cursor.fetchone()
+
     print(f"\n1️⃣  COLETA DE DADOS (✅ ATIVA)")
     print(f"   {'─'*76}")
     print(f"   Episódios RL:          {n_episodes:>6,} registros   [MIN: 100   STATUS: ✅ OK]")
     print(f"   Recompensas:           {n_rewards:>6,} registros   [MIN: 500   STATUS: ✅ OK]")
     print(f"   Episódios Avaliados:   {n_evaluated:>6,} episódios  [Pronto para treino]")
+    print(f"   HOLD total:            {hold_total:>6,} episódios")
+    print(f"   HOLD bloqueado:        {hold_blocked:>6,} episódios")
+    print(f"   HOLD genuíno:          {hold_genuine:>6,} episódios")
 
     # ========== ANÁLISE DE RECOMPENSAS ==========
     cursor.execute("""

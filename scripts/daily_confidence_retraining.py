@@ -6,7 +6,7 @@ Executado diariamente (startup via INICIAR_DIARIOS.bat) para recalcular confiden
 baseado em WIN RATE REAL do pregão anterior (não esperado/teórico).
 
 Lógica:
-  1. Carrega trades executados do pregão anterior (data/db/trading.db)
+  1. Carrega trades executados do pregão anterior (data/db/trading_diarios.db)
   2. Calcula WIN RATE real = (wins / total_trades)
   3. Ajusta confidence incrementalmente:
      - WIN RATE > 60%: confidence += 0.03 (boost positivo)
@@ -41,16 +41,23 @@ from typing import Optional, Tuple
 
 # Setup paths
 PROJECT_ROOT = Path(__file__).parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 DATA_DIR = PROJECT_ROOT / "data"
-DB_DIR = DATA_DIR / "db"
 CONFIG_DIR = PROJECT_ROOT / "config"
 LOGS_DIR = DATA_DIR / "logs"
+
+from src.infrastructure.database.db_paths import resolve_operational_db_path
 
 # Create logs directory if not exists
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 LOG_FILE = LOGS_DIR / "daily_confidence_retraining.log"
-TRADING_DB_FILE = DB_DIR / "trading.db"
+TRADING_DB_FILE = resolve_operational_db_path(
+    PROJECT_ROOT,
+    default_name="trading_diarios.db",
+)
 CONFIDENCE_CONFIG_FILE = CONFIG_DIR / "confidence_override_today.json"
 
 # Constants for confidence adjustment

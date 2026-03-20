@@ -25,7 +25,8 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from config.settings import get_config
-from src.infrastructure.database.schema import create_database
+from src.infrastructure.database.db_paths import resolve_operational_db_path
+from src.infrastructure.database.rl_schema import ensure_rl_database
 from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
 
 
@@ -60,8 +61,14 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--db-path",
         type=str,
-        default=str(ROOT_DIR / "data" / "db" / "trading.db"),
+        default=str(resolve_operational_db_path(ROOT_DIR)),
         help="Caminho do SQLite local.",
+    )
+    parser.add_argument(
+        "--lock-timeout",
+        type=float,
+        default=5.0,
+        help="Tempo máximo de espera pelo lock SQLite antes de pular o sync.",
     )
     return parser.parse_args()
 
@@ -309,11 +316,19 @@ def _run_with_write_lock_retry(
     *,
     attempts: int = 4,
     base_wait_seconds: float = 1.5,
+    lock_timeout: float = 5.0,
 ) -> object | None:
     """Executa uma ação inteira sob lock de escrita com retry para contenção transitória."""
+    if lock_timeout <= 0:
+        try:
+            with sqlite_write_lock(db_path, timeout=0.0):
+                return action()
+        except TimeoutError:
+            return None
+
     for attempt in range(1, attempts + 1):
         try:
-            with sqlite_write_lock(db_path, timeout=5.0):
+            with sqlite_write_lock(db_path, timeout=lock_timeout):
                 return action()
         except TimeoutError:
             if attempt == attempts:
@@ -335,7 +350,8 @@ def main() -> int:
 
     create_result = _run_with_write_lock_retry(
         db_path,
-        lambda: (create_database(str(db_path)), True)[1],
+        lambda: (ensure_rl_database(str(db_path)), True)[1],
+        lock_timeout=args.lock_timeout,
     )
     if create_result is None:
         print(
@@ -382,6 +398,7 @@ def main() -> int:
         sync_result = _run_with_write_lock_retry(
             db_path,
             lambda: _sync_to_sqlite(db_path, sync_trades),
+            lock_timeout=args.lock_timeout,
         )
         if sync_result is None:
             print(

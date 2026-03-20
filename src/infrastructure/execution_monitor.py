@@ -13,6 +13,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from src.infrastructure.database.db_paths import resolve_operational_db_path
 from src.infrastructure.position_monitor import PositionMonitor
 from src.infrastructure.position_broadcaster import PositionBroadcaster, PositionMessage
 
@@ -21,10 +22,15 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ExecutionMonitorConfig:
-    db_path: str = "data/db/trading.db"
+    db_path: str | None = None
     trader_id: str = "TRADER_001"
     order_poll_interval_ms: int = 500
     status_broadcast_interval_ms: int = 2000
+
+    def __post_init__(self) -> None:
+        if not self.db_path:
+            repo_root = Path(__file__).resolve().parent.parent.parent
+            self.db_path = str(resolve_operational_db_path(repo_root))
 
 
 class _BroadcastAdapter:

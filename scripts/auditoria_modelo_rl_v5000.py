@@ -14,6 +14,11 @@ import sqlite3
 from pathlib import Path
 from collections import Counter
 import logging
+import sys
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,8 +26,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-ROOT_DIR = Path(__file__).parent.parent
-DB_PATH = ROOT_DIR / "data" / "db" / "trading.db"
+from src.infrastructure.database.db_paths import resolve_operational_db_path
+
+DB_PATH = resolve_operational_db_path(ROOT_DIR, default_name="trading_rl_5000.db")
 
 
 def conectar_banco():
@@ -97,6 +103,48 @@ def analisar_distribuicao_acoes(conn):
 
     except Exception as e:
         logger.error(f"Erro na análise: {e}")
+        return None
+
+
+def analisar_origem_hold(conn):
+    """Analisa HOLD genuíno versus HOLD bloqueado por validações."""
+    logger.info("\n" + "=" * 80)
+    logger.info("1.1️⃣  ORIGEM DOS HOLD")
+    logger.info("=" * 80)
+
+    query = """
+    SELECT
+        COUNT(*) as total_hold,
+        SUM(CASE WHEN blocked_reason IS NOT NULL AND TRIM(blocked_reason) <> '' THEN 1 ELSE 0 END) as hold_bloqueado,
+        SUM(CASE WHEN blocked_reason IS NULL OR TRIM(blocked_reason) = '' THEN 1 ELSE 0 END) as hold_genuino,
+        SUM(CASE WHEN original_action = 'BUY' THEN 1 ELSE 0 END) as hold_origem_buy,
+        SUM(CASE WHEN original_action = 'SELL' THEN 1 ELSE 0 END) as hold_origem_sell
+    FROM rl_episodes
+    WHERE action = 'HOLD'
+    """
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute(query)
+        row = cursor.fetchone()
+        if not row:
+            logger.warning("Nenhum HOLD encontrado!")
+            return None
+
+        total_hold = row["total_hold"] or 0
+        hold_bloqueado = row["hold_bloqueado"] or 0
+        hold_genuino = row["hold_genuino"] or 0
+        origem_buy = row["hold_origem_buy"] or 0
+        origem_sell = row["hold_origem_sell"] or 0
+
+        logger.info(f"Total HOLD:          {total_hold}")
+        logger.info(f"HOLD bloqueado:      {hold_bloqueado}")
+        logger.info(f"HOLD genuíno:        {hold_genuino}")
+        logger.info(f"Origem BUY:          {origem_buy}")
+        logger.info(f"Origem SELL:         {origem_sell}")
+        return row
+    except Exception as e:
+        logger.error(f"Erro ao analisar HOLD: {e}")
         return None
 
 
@@ -314,6 +362,7 @@ def main():
     try:
         # 1. Distribuição de ações
         dist = analisar_distribuicao_acoes(conn)
+        hold = analisar_origem_hold(conn)
 
         # 2. Taxa de sucesso
         success = analisar_taxa_sucesso(conn)

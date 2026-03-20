@@ -401,7 +401,7 @@ Scripts de lançamento:
 
 | Armazenamento | Tipo | Conteudo |
 |---------------|------|----------|
-| data/db/trading.db | SQLite | Trades, posicoes, snapshots intraday |
+| data/db/*.db | SQLite | Bancos operacionais isolados por agente |
 | outputs/*.json | JSON | Posicoes ativas |
 | outputs/*.log | Log | Logs por agente |
 | outputs/diario_*.md | Markdown | Diarios |
@@ -484,9 +484,13 @@ Artefatos obrigatorios em `data/backtest/`:
 
 1. Validar ambiente (Python, MT5, SQLite)
 2. Operador escolhe o launcher canonico do agente: `INICIAR_AGENTE_RL_5000.bat` ou `INICIAR_AGENTE_RL_DIRETO.bat`
+   - `launch_agent_with_ml_v1_2_3.py` usa `data/db/trading_micro_tendencia.db`
+   - `agente_com_supervision.py` usa `data/db/trading_rl_5000.db`
+   - `agente_rl_direto_independente.py` usa `data/db/trading_rl_direto.db`
+   - `INICIAR_DIARIOS.bat` usa `data/db/trading_diarios.db` e exporta `DIARIOS_DB_PATH`
 3. Em modo simulado, usar a opção de avaliação correspondente; em modo real, exigir confirmação humana explícita
 4. Pre-flight: confianca, heartbeat, latencia
-5. Sincronizar trades MT5 → SQLite
+5. Sincronizar trades MT5 → SQLite em modo best effort; se o lock do banco estiver ocupado, o pre-flight registra o aviso e segue sem bloquear a operação real
 6. Aplicar licoes BDI
 7. Carregar dataset ML
 8. Iniciar diarios de observabilidade
@@ -543,6 +547,9 @@ Artefatos obrigatorios em `data/backtest/`:
 | MT5_SERVER | Servidor MT5 | Sim |
 | MT5_TERMINAL_PATH | Caminho terminal | Sim |
 | DB_PATH | Caminho SQLite | Sim |
+| MICRO_TENDENCIA_DB_PATH | Override do SQLite do launcher micro tendência | Nao |
+| RL5000_DB_PATH | Override do SQLite do launcher RL 5000 | Nao |
+| RL_DIRETO_DB_PATH | Override do SQLite do launcher RL direto | Nao |
 | MODEL_PATH | Dir. modelos | Sim |
 | FRED_API_KEY | API FRED | Nao |
 | TWELVEDATA_API_KEY | API TwelveData | Nao |
@@ -856,7 +863,7 @@ operador-day-trade-win/
 │   ├── performance/
 │   └── uat/
 ├── data/
-│   ├── db/trading.db
+│   ├── db/*.db
 │   ├── models/
 │   ├── backtest/
 │   └── BDI/

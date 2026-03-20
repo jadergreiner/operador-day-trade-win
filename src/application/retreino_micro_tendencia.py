@@ -818,6 +818,33 @@ class GerenciadorRetreino:
         """Atalho para consultar colunas usando a mesma conexao do trigger."""
         return self.trigger._tem_coluna(tabela, coluna)
 
+    def _salvar_model_metadata(
+        self,
+        cur: sqlite3.Cursor,
+        versao: str,
+        data_treino: str,
+        modelo_path: str,
+        win_rate_validacao: float,
+        n_episodios: int,
+        notas: str,
+        win_rate_treino: float = 0.0,
+        delta: float = 0.0,
+        rollback: bool = False,
+    ) -> None:
+        """Delega a persistencia do metadado para o helper do TriggerRetreino."""
+        self.trigger._salvar_model_metadata(
+            cur=cur,
+            versao=versao,
+            data_treino=data_treino,
+            modelo_path=modelo_path,
+            win_rate_validacao=win_rate_validacao,
+            n_episodios=n_episodios,
+            notas=notas,
+            win_rate_treino=win_rate_treino,
+            delta=delta,
+            rollback=rollback,
+        )
+
     def obter_estado_aprendizado(self) -> EstadoRetreino:
         """Retorna o estado atual de aprendizado e proximidade do proximo treino."""
         estado_trigger = self.trigger.obter_estado()

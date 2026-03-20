@@ -19,7 +19,7 @@ def main():
     print("==============================================================================")
     print("")
 
-    checker = HealthChecker()
+    checker = HealthChecker(db_lock_timeout=0.0)
     passed, detail = checker.run_pre_flight()
 
     if passed:

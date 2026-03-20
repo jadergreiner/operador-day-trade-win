@@ -116,9 +116,13 @@ def _create_opening_context_audit_table_unlocked(db_path: str) -> None:
         raise last_error
 
 
-def create_opening_context_audit_table(db_path: str) -> None:
+def create_opening_context_audit_table(
+    db_path: str,
+    *,
+    lock_timeout: float = 5.0,
+) -> None:
     """Cria a tabela de auditoria se necessario."""
-    with sqlite_write_lock(db_path):
+    with sqlite_write_lock(db_path, timeout=lock_timeout):
         _create_opening_context_audit_table_unlocked(db_path)
 
 
@@ -131,6 +135,7 @@ def persist_opening_context_audit(
     macro_context: Mapping[str, Any] | None = None,
     session_id: str = "",
     mode: str = "",
+    lock_timeout: float = 0.0,
 ) -> int:
     """Persiste o contexto de abertura para auditoria comparativa."""
     context = dict(macro_context or {})
@@ -155,31 +160,34 @@ def persist_opening_context_audit(
     )
 
     last_error: sqlite3.OperationalError | None = None
-    with sqlite_write_lock(db_path):
-        _create_opening_context_audit_table_unlocked(db_path)
-        for attempt in range(1, _MAX_RETRIES_LOCK + 1):
-            conn = _open_connection(db_path)
-            try:
-                cursor = conn.cursor()
-                cursor.execute(
-                    """
-                    INSERT INTO opening_context_audit (
-                        date, timestamp, agent_name, session_id, mode, source,
-                        prompt_abertura_agentes, regime_macro, vies_intraday,
-                        kill_switch_ativo, kill_switch_reason, watchlist_json, contexto_json
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    record.to_row(),
-                )
-                conn.commit()
-                return int(cursor.lastrowid or 0)
-            except sqlite3.OperationalError as exc:
-                last_error = exc
-                if not _is_sqlite_lock_error(exc) or attempt == _MAX_RETRIES_LOCK:
-                    raise
-                time.sleep(_BASE_BACKOFF_SECONDS * attempt)
-            finally:
-                conn.close()
+    try:
+        with sqlite_write_lock(db_path, timeout=lock_timeout):
+            _create_opening_context_audit_table_unlocked(db_path)
+            for attempt in range(1, _MAX_RETRIES_LOCK + 1):
+                conn = _open_connection(db_path)
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        """
+                        INSERT INTO opening_context_audit (
+                            date, timestamp, agent_name, session_id, mode, source,
+                            prompt_abertura_agentes, regime_macro, vies_intraday,
+                            kill_switch_ativo, kill_switch_reason, watchlist_json, contexto_json
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        record.to_row(),
+                    )
+                    conn.commit()
+                    return int(cursor.lastrowid or 0)
+                except sqlite3.OperationalError as exc:
+                    last_error = exc
+                    if not _is_sqlite_lock_error(exc) or attempt == _MAX_RETRIES_LOCK:
+                        raise
+                    time.sleep(_BASE_BACKOFF_SECONDS * attempt)
+                finally:
+                    conn.close()
+    except TimeoutError:
+        return 0
 
     if last_error:
         raise last_error

@@ -355,6 +355,103 @@ class PipelineTreinamentoRL:
 
         return resultados
 
+    def treinar_incremental_de_episodios(
+        self,
+        episodios: list[dict],
+        *,
+        horizonte_padrao: int = 30,
+        max_amostras: int = 64,
+        salvar_modelo: bool = True,
+    ) -> dict:
+        """Executa um retrain incremental a partir de episódios já avaliados."""
+        if self._agente is None:
+            raise RuntimeError("Agente não inicializado.")
+
+        if not episodios:
+            return {"executado": False, "motivo": "sem_episodios"}
+
+        amostras: list[tuple[np.ndarray, int, float]] = []
+        acao_map = {"HOLD": 0, "BUY": 1, "SELL": 2}
+
+        for ep in episodios[-max_amostras:]:
+            state_vector = ep.get("state_vector")
+            if not state_vector:
+                continue
+
+            action = str(ep.get("action", "")).upper().strip()
+            if action not in acao_map:
+                continue
+
+            rewards = ep.get("rewards") or {}
+            if isinstance(rewards, dict) and rewards:
+                reward_values = []
+                for reward_data in rewards.values():
+                    if not isinstance(reward_data, dict):
+                        continue
+                    reward_val = reward_data.get("reward_normalized")
+                    if reward_val is not None:
+                        reward_values.append(float(reward_val))
+                if reward_values:
+                    reward = float(np.mean(reward_values))
+                else:
+                    continue
+            else:
+                reward = ep.get(f"reward_norm_{horizonte_padrao}m")
+                if reward is None:
+                    continue
+                reward = float(reward)
+
+            state_arr = np.asarray(state_vector, dtype=np.float32)
+            if state_arr.size != self._agente.tamanho_estado:
+                logger.debug(
+                    "Ignorando episódio %s por estado incompatível (%s != %s)",
+                    ep.get("episode_id"),
+                    state_arr.size,
+                    self._agente.tamanho_estado,
+                )
+                continue
+
+            amostras.append((state_arr, acao_map[action], reward))
+
+        if not amostras:
+            return {"executado": False, "motivo": "sem_amostras_validas"}
+
+        estados = np.stack([item[0] for item in amostras]).astype(np.float32)
+        acoes = np.array([item[1] for item in amostras], dtype=np.int32)
+        recompensas = np.array([item[2] for item in amostras], dtype=np.float32)
+        proximos_estados = np.zeros_like(estados)
+        terminados = np.ones(len(amostras), dtype=bool)
+
+        loss = self._agente.treinar_batch(
+            estados=estados,
+            acoes=acoes,
+            recompensas=recompensas,
+            proximos_estados=proximos_estados,
+            terminados=terminados,
+        )
+
+        if salvar_modelo:
+            try:
+                self.salvar_modelo("modelo_final")
+            except Exception as exc:
+                logger.warning("Falha ao persistir modelo incremental: %s", exc)
+
+        resumo = {
+            "executado": True,
+            "amostras": len(amostras),
+            "loss": loss,
+            "reward_media": float(np.mean(recompensas)),
+            "reward_min": float(np.min(recompensas)),
+            "reward_max": float(np.max(recompensas)),
+        }
+        logger.info(
+            "Retreino incremental RL executado: amostras=%d | loss=%s | reward_media=%.4f",
+            resumo["amostras"],
+            f"{loss:.6f}" if loss is not None else "None",
+            resumo["reward_media"],
+        )
+        return resumo
+
     def salvar_modelo(self, nome: str = "modelo_final") -> Path:
         """Salva o modelo treinado e o relatório em disco.
 

@@ -22,7 +22,9 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-DB_PATH = ROOT_DIR / "data" / "db" / "trading.db"
+from src.infrastructure.database.db_paths import resolve_operational_db_path
+
+DB_PATH = resolve_operational_db_path(ROOT_DIR, default_name="trading_rl_5000.db")
 DEFAULT_OUTPUT = ROOT_DIR / "data" / "ml" / "training_dataset.parquet"
 
 # Categorias de correlação agrupadas (resumo dos 106 símbolos)
@@ -99,6 +101,7 @@ def extract_episodes(
         market_regime, market_condition, session_phase,
         candle_pattern_score,
         action, urgency, risk_level,
+        original_action, blocked_reason, state_vector,
         entry_price, stop_loss, take_profit, risk_reward_ratio,
         setup_type, setup_quality,
         macro_bias, fundamental_bias, sentiment_bias, technical_bias,

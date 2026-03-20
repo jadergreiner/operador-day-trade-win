@@ -13,13 +13,17 @@ root_dir = Path(__file__).parent.parent
 if str(root_dir) not in sys.path:
     sys.path.insert(0, str(root_dir))
 
+from src.infrastructure.database.db_paths import resolve_operational_db_path
 from src.infrastructure.ati1_broadcast_client import Ati1BroadcastClient
 from src.infrastructure.execution_monitor import ExecutionMonitor, ExecutionMonitorConfig
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Start Execution Monitor")
-    parser.add_argument("--db", default="data/db/trading.db")
+    parser.add_argument(
+        "--db",
+        default=str(resolve_operational_db_path(root_dir)),
+    )
     parser.add_argument("--trader-id", default="TRADER_001")
     parser.add_argument("--ati1-url", default="http://127.0.0.1:8000")
     parser.add_argument("--ati1-token", default=None)

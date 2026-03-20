@@ -11,6 +11,11 @@ REM ============================================================
 cd /d "%~dp0"
 if not exist "outputs" mkdir outputs >nul 2>&1
 
+set "RL_5000_DB_PATH=%cd%\data\db\trading.db"
+set "DB_PATH=%RL_5000_DB_PATH%"
+set "TRADING_DB_PATH=%RL_5000_DB_PATH%"
+set "AGENTE_RL_5000_LOG_DIR=%cd%\outputs"
+
 echo.
 echo   ============================================================
 echo   OPERADOR RL v5000 - PRODUCAO ESTRITA
@@ -35,9 +40,16 @@ echo   [OK] Confirmacao multi-vela (2 candles)
 echo   [OK] Novas entradas so ate 17:25 BRT
 echo   [OK] Monitoramento/protecao ate 17:55 BRT
 echo   [OK] Cooldown base 5 min e pos-SL 30 min
+echo   [OK] SQLite principal: %RL_5000_DB_PATH%
+echo   [OK] Logs runtime: %AGENTE_RL_5000_LOG_DIR%\agente_*.log
+echo   [OK] Logs debug: %AGENTE_RL_5000_LOG_DIR%\agente_debug_*.log
+echo   [OK] Artefatos de ciclo: diario_episodios + execution_feedback com contexto enriquecido
 echo   ============================================================
 echo.
 echo   Alvo: R$140.00 / Stop Loss: -R$250.00
+echo.
+echo   Script real: scripts\agente_com_supervision.py --sl-tp-mode dinamico
+echo   Gate operacional: outputs\release_gates\go_live_decision.json
 echo.
 echo   ============================================================
 echo.
@@ -83,7 +95,10 @@ if "%CHOICE%"=="2" (
     echo   [START] OPERACAO REAL COM WRAPPER CANONICO
     echo   Objetivo: Lucro R$ 140,00 ou Prejuizo -R$ 250,00
     echo   Modo SL/TP: DINAMICO
+    echo   Logs esperados: %AGENTE_RL_5000_LOG_DIR%\agente_*.log
+    echo   Logs debug: %AGENTE_RL_5000_LOG_DIR%\agente_debug_*.log
     echo   Artefato GO LIVE: outputs\release_gates\go_live_decision.json
+    echo   Persistencia extra: diario_episodios / execution_feedback com contexto enriquecido
     echo.
     python scripts\agente_com_supervision.py --sl-tp-mode dinamico
     echo.
@@ -188,7 +203,7 @@ if not exist "data\db\trading.db" (
     echo   [ERRO] SQLite principal ausente: data\db\trading.db
     exit /b 1
 )
-echo   [OK] SQLite principal encontrado
+echo   [OK] SQLite principal encontrado: %RL_5000_DB_PATH%
 
 if not exist "scripts\system_health_monitor.py" (
     echo   [ERRO] Script de health check ausente.
@@ -215,7 +230,7 @@ if errorlevel 1 (
 echo   [OK] Health check aprovado
 
 echo   [SYNC] Sincronizando trades MT5 para SQLite...
-python scripts\sync_mt5_trades_to_db.py --days-back 3
+python scripts\sync_mt5_trades_to_db.py --days-back 3 --lock-timeout 0
 if errorlevel 1 (
     echo   [ERRO] Falha na sincronizacao MT5 -> SQLite.
     exit /b 1
