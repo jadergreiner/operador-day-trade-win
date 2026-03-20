@@ -287,9 +287,9 @@ Automacao completa do ciclo de trading:
 ### 6.1 Camadas
 
 ```text
-[Orquestracao]   BAT canônicos → 4 agentes paralelos
+[Orquestracao]   BAT canonicos → 4 agentes paralelos
        |
-[Scripts]        scripts/*.py → entrypoints
+[Scripts]        scripts/*.py → pontos de entrada
        |
 [Interfaces]     FastAPI REST + WebSocket RT
        |
@@ -483,7 +483,7 @@ Artefatos obrigatorios em `data/backtest/`:
 ### 8.5 Regras de Startup
 
 1. Validar ambiente (Python, MT5, SQLite)
-2. Operador escolhe o launcher canônico do agente: `INICIAR_AGENTE_RL_5000.bat` ou `INICIAR_AGENTE_RL_DIRETO.bat`
+2. Operador escolhe o launcher canonico do agente: `INICIAR_AGENTE_RL_5000.bat` ou `INICIAR_AGENTE_RL_DIRETO.bat`
 3. Em modo simulado, usar a opção de avaliação correspondente; em modo real, exigir confirmação humana explícita
 4. Pre-flight: confianca, heartbeat, latencia
 5. Sincronizar trades MT5 → SQLite
