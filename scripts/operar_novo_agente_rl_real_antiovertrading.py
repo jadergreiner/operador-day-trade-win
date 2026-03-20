@@ -14,17 +14,35 @@ import logging
 import os
 import sys
 import time
+from dataclasses import dataclass, field
 from pathlib import Path
 from datetime import datetime, time as dtime, timedelta
-from typing import Optional
+from typing import Any, Mapping, Optional
 import pandas as pd
 
 ROOT_DIR = Path(__file__).parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
-TRADING_DB_PATH = str(ROOT_DIR / "data" / "db" / "trading.db")
+
+
+def _resolve_trading_db_path(default_name: str = "trading_rl_5000.db") -> str:
+    """Resolve o SQLite do RL v5000 com override explícito opcional."""
+    override = (
+        os.getenv("RL5000_DB_PATH", "").strip()
+        or os.getenv("TRADING_DB_PATH", "").strip()
+    )
+    if override:
+        return str(Path(override).expanduser())
+    return str(ROOT_DIR / "data" / "db" / default_name)
+
+
+TRADING_DB_PATH = _resolve_trading_db_path()
+os.environ["RL5000_DB_PATH"] = TRADING_DB_PATH
+os.environ["DB_PATH"] = TRADING_DB_PATH
+os.environ["TRADING_DB_PATH"] = TRADING_DB_PATH
 
 from src.infrastructure.adapters.mt5_adapter import MT5Adapter
+from src.infrastructure.database.rl_schema import ensure_rl_database
 from src.domain.value_objects.financial import Symbol, Price, Quantity
 from src.domain.entities.trade import Order
 from src.domain.enums.trading_enums import OrderSide, TimeFrame, OrderType
@@ -45,11 +63,183 @@ from src.application.motor_decisao_isolado import (
     TipoPosicao,
     MotivoFechamento,
 )
-from src.application.opening_context_policy import (
-    apply_opening_context_strict_filters,
-    evaluate_opening_context_gate,
-    normalize_opening_context,
-)
+try:
+    from src.application.decision_context_policy import (
+        DecisionContext,
+        compute_context_score,
+        apply_context_to_confidence,
+    )
+    _DECISION_CONTEXT_POLICY_DISPONIVEL = True
+except ImportError:
+    _DECISION_CONTEXT_POLICY_DISPONIVEL = False
+    from src.application.opening_context_policy import normalize_opening_context
+
+    @dataclass(slots=True)
+    class DecisionContext:
+        """Fallback local para o contrato de contexto decisional."""
+
+        action: str
+        raw_confidence: float = 0.0
+        opening_context: Any = None
+        normalized_context: Any = None
+        market_confirmation: dict[str, Any] = field(default_factory=dict)
+        diario_payload: dict[str, Any] = field(default_factory=dict)
+        volatility: float | None = None
+        feature_flags: dict[str, Any] = field(default_factory=dict)
+        reason_codes: list[str] = field(default_factory=list)
+        reasons: list[str] = field(default_factory=list)
+        context_score: float = 1.0
+        context_penalty: float = 0.0
+        adjusted_confidence: float | None = None
+
+    def _safe_text(value: Any, default: str = "") -> str:
+        text = str(value or "").strip()
+        return text if text else default
+
+    def _safe_float(value: Any, default: float = 0.0) -> float:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    def _safe_bool(value: Any, default: bool = False) -> bool:
+        if isinstance(value, bool):
+            return value
+        if value is None:
+            return default
+        if isinstance(value, (int, float)):
+            return bool(value)
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"1", "true", "yes", "sim", "ativo", "on"}:
+                return True
+            if normalized in {"0", "false", "no", "nao", "off"}:
+                return False
+        return default
+
+    def _safe_mapping(value: Any) -> dict[str, Any]:
+        if isinstance(value, Mapping):
+            return dict(value)
+        return {}
+
+    def _dedupe_preserving_order(items: list[str]) -> list[str]:
+        return list(dict.fromkeys(item for item in items if item))
+
+    def compute_context_score(decision_context: DecisionContext) -> DecisionContext:
+        """Calcula score/penalty soft do contexto sem bloquear a entrada."""
+        normalized_context = decision_context.normalized_context
+        if normalized_context is None and decision_context.opening_context is not None:
+            normalized_context = normalize_opening_context(decision_context.opening_context)
+
+        feature_flags = dict(decision_context.feature_flags or {})
+        reason_codes = list(decision_context.reason_codes or [])
+        reasons = list(decision_context.reasons or [])
+        market_confirmation = _safe_mapping(decision_context.market_confirmation)
+        action = _safe_text(decision_context.action).upper()
+
+        regime_macro = _safe_text(getattr(normalized_context, "regime_macro", ""))
+        vies_intraday = _safe_text(getattr(normalized_context, "vies_intraday", "")).upper()
+        kill_switch_ativo = _safe_bool(
+            getattr(normalized_context, "kill_switch_ativo", False)
+        )
+        watchlist = list(getattr(normalized_context, "watchlist", []) or [])
+        heavyweights = list(getattr(normalized_context, "heavyweights", []) or [])
+        live_unresolved = list(market_confirmation.get("unresolved_symbols", []) or [])
+        live_reasons = list(market_confirmation.get("reasons", []) or [])
+        buy_confirmed = _safe_bool(market_confirmation.get("buy_confirmed"))
+        sell_quality_confirmed = _safe_bool(
+            market_confirmation.get("sell_quality_confirmed")
+        )
+        volatility = decision_context.volatility
+        penalty = 0.0
+
+        feature_flags.update(
+            {
+                "has_opening_context": decision_context.opening_context is not None,
+                "has_normalized_context": normalized_context is not None,
+                "regime_macro": regime_macro or None,
+                "vies_intraday": vies_intraday or None,
+                "kill_switch_ativo": kill_switch_ativo,
+                "watchlist_size": len(watchlist),
+                "heavyweights_size": len(heavyweights),
+                "live_buy_confirmed": buy_confirmed,
+                "live_sell_quality_confirmed": sell_quality_confirmed,
+                "live_unresolved_symbols": len(live_unresolved),
+                "volatility_pct": round(float(volatility), 4) if volatility is not None else None,
+                "volatility_below_minimum": (
+                    volatility is not None
+                    and volatility < AntiOvertradingConfig.MIN_VOLATILITY_PERCENT
+                ),
+            }
+        )
+
+        if kill_switch_ativo:
+            penalty += 0.35
+            reason_codes.append("kill_switch_abertura_ativo")
+            reasons.append("Kill switch da abertura ativo.")
+
+        if action == "BUY":
+            if "BAIX" in vies_intraday:
+                penalty += 0.18
+                reason_codes.append("vies_intraday_baixista")
+                reasons.append("Viés intraday baixista contraria compra.")
+            if buy_confirmed:
+                reason_codes.append("compra_confirmada_live")
+                reasons.append("Compra confirmada no live market.")
+            else:
+                penalty += 0.22
+                reason_codes.append("compra_sem_confirmacao_live")
+                reasons.append("Compra sem confirmação live.")
+        elif action == "SELL":
+            if "ALT" in vies_intraday:
+                penalty += 0.18
+                reason_codes.append("vies_intraday_altista")
+                reasons.append("Viés intraday altista contraria venda.")
+            if sell_quality_confirmed:
+                reason_codes.append("venda_confirmada_live")
+                reasons.append("Venda qualificada no live market.")
+            else:
+                penalty += 0.22
+                reason_codes.append("venda_sem_confirmacao_live")
+                reasons.append("Venda sem confirmação live.")
+
+        if live_unresolved:
+            penalty += 0.05
+            reason_codes.append("ativos_sem_confirmacao_live")
+            reasons.append(
+                "Símbolos sem confirmação live: " + ",".join(live_unresolved)
+            )
+        if live_reasons:
+            reason_codes.extend(
+                item for item in live_reasons if isinstance(item, str) and item
+            )
+
+        if volatility is not None and volatility < AntiOvertradingConfig.MIN_VOLATILITY_PERCENT:
+            penalty += 0.10
+            reason_codes.append("volatilidade_abaixo_minima")
+            reasons.append("Volatilidade abaixo do mínimo contextual.")
+
+        if action in {"BUY", "SELL"} and getattr(normalized_context, "watchlist", None):
+            reason_codes.append("watchlist_operacional_disponivel")
+
+        penalty = max(0.0, min(1.0, penalty))
+        context_score = max(0.0, min(1.0, 1.0 - penalty))
+
+        decision_context.normalized_context = normalized_context
+        decision_context.feature_flags = feature_flags
+        decision_context.reason_codes = _dedupe_preserving_order(reason_codes)
+        decision_context.reasons = _dedupe_preserving_order(reasons)
+        decision_context.context_penalty = round(penalty, 4)
+        decision_context.context_score = round(context_score, 4)
+        return decision_context
+
+    def apply_context_to_confidence(confidence: float, decision_context: DecisionContext) -> float:
+        """Aplica o score contextual à confiança-base do modelo."""
+        base_confidence = max(0.0, min(1.0, _safe_float(confidence)))
+        context_score = max(0.0, min(1.0, _safe_float(decision_context.context_score, 1.0)))
+        adjusted_confidence = max(0.0, min(1.0, base_confidence * context_score))
+        decision_context.adjusted_confidence = round(adjusted_confidence, 6)
+        return decision_context.adjusted_confidence
 from src.application.ac6_bootstrap import build_ac6_components
 from src.application.opening_market_confirmation import (
     build_live_market_confirmation,
@@ -63,6 +253,7 @@ from src.application.diario_market_features import (
     load_diario_market_features_payload,
 )
 from src.application.opening_context_runtime import initialize_opening_context_runtime
+from src.application.services.rl_persistence_service import RLPersistenceService
 try:
     from src.application.ac5_8_position_monitor import (
         MonitorPositionManager,
@@ -111,6 +302,7 @@ class AntiOvertradingConfig:
     MIN_VOLUME = 1000
     MIN_CONFIDENCE_SCORE = 0.45
     MIN_RISK_REWARD = 1.5
+    RISK_REWARD_TOLERANCE = 1e-6
     SETUP_LOOKBACK_BARS = CONFIRM_SIGNAL_BARS
     STOP_SETUP_BUFFER_PONTOS = 10.0
     TARGET_BUFFER_PONTOS = 20.0
@@ -203,6 +395,7 @@ _feedback_validator_rl: Optional[object] = None
 _drift_detector_rl: Optional[object] = None
 _online_learning_rl: Optional[object] = None
 _baseline_comparator_rl: Optional[object] = None
+_rl_persistence_service: Optional[object] = None
 _trades_fechados_rl: list = []  # Acumulador para pipeline AC5.9/AC6
 _opening_context_runtime = None
 
@@ -272,17 +465,18 @@ def inicializar_agente_rl() -> PipelineTreinamentoRL:
 
 def inicializar_rl_repo():
     """Inicializa repositório RL com retry logic."""
-    global rl_repo
-    db_path = str(ROOT_DIR / "data" / "db" / "trading.db")
+    global rl_repo, _rl_persistence_service
     max_retries = 3
     retry_delay = 2
 
     for tentativa in range(max_retries):
         try:
             logger.info(f"[DB] Conectando RL repo (tentativa {tentativa+1}/{max_retries})...")
-            session = get_session(db_path)
+            ensure_rl_database(TRADING_DB_PATH)
+            session = get_session(TRADING_DB_PATH)
             rl_repo = SqliteRLRepository(session)
             rl_repo.seed_dimension_tables()
+            _rl_persistence_service = RLPersistenceService(rl_repo)
             logger.info("[OK] RL Repository pronto")
             return rl_repo
         except Exception as e:
@@ -361,7 +555,7 @@ def calcular_volatilidade(dados: pd.DataFrame) -> float:
     return volatilidade
 
 
-def obter_acao_do_modelo(dados: pd.DataFrame) -> tuple[int, float]:
+def obter_acao_do_modelo(dados: pd.DataFrame) -> tuple[int, float, list[float]]:
     """
     Extrai ação do modelo RL.
     Retorna (action_id, confidence_score)
@@ -371,7 +565,7 @@ def obter_acao_do_modelo(dados: pd.DataFrame) -> tuple[int, float]:
 
         if pipeline is None or getattr(pipeline, "_agente", None) is None:
             logger.error("Pipeline RL nao inicializado")
-            return 0, 0.0
+            return 0, 0.0, []
 
         ambiente = AmbienteTradingMiniIndice(dados=dados)
         ambiente.reset()
@@ -382,12 +576,26 @@ def obter_acao_do_modelo(dados: pd.DataFrame) -> tuple[int, float]:
             estado,
             modo_producao=True,
         )
+        state_vector = estado.astype(float).tolist()
 
-        return acao_id, confidence
+        return acao_id, confidence, state_vector
 
     except Exception as e:
         logger.error(f"Erro ao obter ação: {e}")
-        return 0, 0.0
+        return 0, 0.0, []
+
+
+def mapear_acao_operacional_para_rl(acao: str) -> str:
+    """Converte a ação operacional para o rótulo canônico do RL."""
+    mapa = {
+        "Aguardar": "HOLD",
+        "Comprar": "BUY",
+        "Vender": "SELL",
+        "HOLD": "HOLD",
+        "BUY": "BUY",
+        "SELL": "SELL",
+    }
+    return mapa.get((acao or "").strip(), "HOLD")
 
 
 def verificar_cooldown() -> bool:
@@ -418,11 +626,13 @@ def verificar_cooldown() -> bool:
     minutos = restante / 60
     if restante_stop >= restante_base and restante_stop > 0:
         logger.warning(
-            f"[COOLDOWN] Pos-SL ativo. Aguarde {minutos:.1f} min antes de nova entrada."
+            "[GUARD] BLOCKED: cooldown_pos_sl | "
+            f"Pos-SL ativo. Aguarde {minutos:.1f} min antes de nova entrada."
         )
     else:
         logger.warning(
-            f"[COOLDOWN] Base ativo. Aguarde {minutos:.1f} min antes de nova entrada."
+            "[GUARD] BLOCKED: cooldown_base | "
+            f"Cooldown base ativo. Aguarde {minutos:.1f} min antes de nova entrada."
         )
     return False
 
@@ -431,7 +641,7 @@ def verificar_limite_trades() -> bool:
     """Aplica o limite operacional padrão do PRD: máximo de 6 trades/dia."""
     if trades_executed_today >= AntiOvertradingConfig.MAX_TRADES_PER_SESSION:
         logger.warning(
-            "[LIMITE] Maximo de %d trades na sessao atingido. "
+            "[GUARD] BLOCKED: limite_operacional | Maximo de %d trades na sessao atingido. "
             "Sem novas entradas ate o encerramento do pregao.",
             AntiOvertradingConfig.MAX_TRADES_PER_SESSION,
         )
@@ -463,9 +673,20 @@ def verificar_confirmacao_sinal(sinal_atual: str, sinal_anterior: str) -> bool:
         return False
 
     if sinal_atual == sinal_anterior:
-        signal_confirmation_count += 1
-        logger.info(f"[OK] Sinal CONFIRMADO ({signal_confirmation_count}/{AntiOvertradingConfig.CONFIRM_SIGNAL_BARS})")
-        return signal_confirmation_count >= AntiOvertradingConfig.CONFIRM_SIGNAL_BARS
+        signal_confirmation_count = min(
+            signal_confirmation_count + 1,
+            AntiOvertradingConfig.CONFIRM_SIGNAL_BARS,
+        )
+        if signal_confirmation_count >= AntiOvertradingConfig.CONFIRM_SIGNAL_BARS:
+            logger.info(
+                f"[OK] Sinal CONFIRMADO ({signal_confirmation_count}/{AntiOvertradingConfig.CONFIRM_SIGNAL_BARS}) - ciclo fechado"
+            )
+            signal_confirmation_count = 0
+            return True
+        logger.info(
+            f"[OK] Sinal CONFIRMADO ({signal_confirmation_count}/{AntiOvertradingConfig.CONFIRM_SIGNAL_BARS})"
+        )
+        return False
     else:
         signal_confirmation_count = 1
         logger.info(f"[SINAL] Novo sinal detectado: {sinal_atual}")
@@ -484,6 +705,60 @@ def calcular_risk_reward(acao: str, preco_atual: float, sl: float, tp: float) ->
     if risk <= 0:
         return 0.0
     return abs(reward / risk)
+
+
+def _decision_context_payload(contexto: Any) -> dict[str, Any]:
+    """Extrai metadados de contexto em formato seguro para payload/persistência."""
+    if contexto is None:
+        return {
+            "context_score": None,
+            "context_penalty": None,
+            "feature_flags": {},
+            "reason_codes": [],
+            "raw_confidence": None,
+            "adjusted_confidence": None,
+        }
+
+    feature_flags = getattr(contexto, "feature_flags", {}) or {}
+    if isinstance(feature_flags, Mapping):
+        feature_flags = dict(feature_flags)
+    else:
+        feature_flags = {}
+
+    reason_codes = list(getattr(contexto, "reason_codes", []) or [])
+    if not isinstance(reason_codes, list):
+        reason_codes = list(reason_codes) if reason_codes else []
+
+    try:
+        context_score = round(float(getattr(contexto, "context_score", 0.0)), 6)
+    except (TypeError, ValueError):
+        context_score = None
+    try:
+        context_penalty = round(float(getattr(contexto, "context_penalty", 0.0)), 6)
+    except (TypeError, ValueError):
+        context_penalty = None
+    try:
+        raw_confidence = round(float(getattr(contexto, "raw_confidence", 0.0)), 6)
+    except (TypeError, ValueError):
+        raw_confidence = None
+    try:
+        adjusted_confidence_raw = getattr(contexto, "adjusted_confidence", None)
+        adjusted_confidence = (
+            round(float(adjusted_confidence_raw), 6)
+            if adjusted_confidence_raw is not None
+            else None
+        )
+    except (TypeError, ValueError):
+        adjusted_confidence = None
+
+    return {
+        "context_score": context_score,
+        "context_penalty": context_penalty,
+        "feature_flags": feature_flags,
+        "reason_codes": reason_codes,
+        "raw_confidence": raw_confidence,
+        "adjusted_confidence": adjusted_confidence,
+    }
 
 
 def inferir_motivo_fechamento(
@@ -637,17 +912,20 @@ def enviar_ordem_mt5adapter(
     dados: Optional[pd.DataFrame] = None,
     confidence: float = 0.0,
     opening_context: object = None,
+    state_vector: Optional[list[float]] = None,
+    original_action: Optional[str] = None,
 ) -> bool:
     """Envia ordem via MT5Adapter (com validações e SL/TP dinâmicos)."""
     global last_trade_time
     if mt5_adapter is None:
-        logger.error("[ENVIO] MT5Adapter nao inicializado.")
+        logger.warning("[GUARD] BLOCKED: mt5_adapter_indisponivel")
         return False
 
     motor = get_motor_isolado()
+    normalize_opening_context_fn = globals().get("normalize_opening_context")
     normalized_context = (
-        normalize_opening_context(opening_context)
-        if opening_context is not None
+        normalize_opening_context_fn(opening_context)
+        if callable(normalize_opening_context_fn) and opening_context is not None
         else None
     )
     try:
@@ -660,6 +938,13 @@ def enviar_ordem_mt5adapter(
         fatores: list[str],
         contexto: dict[str, object],
         decisao_operacional: DecisaoOperacional = DecisaoOperacional.HOLD,
+        *,
+        blocked_reason: Optional[str] = None,
+        original_action: Optional[str] = None,
+        state_vector: Optional[list[float]] = None,
+        context_score: Optional[float] = None,
+        feature_flags: Optional[dict[str, object]] = None,
+        reason_codes: Optional[list[str]] = None,
     ) -> None:
         """Persiste contexto neutro/cancelado para aprendizagem quando fica de fora."""
         try:
@@ -682,10 +967,16 @@ def enviar_ordem_mt5adapter(
                     "source": "RL_AGENT_V5000",
                     "win_price": preco_atual,
                     "action": "HOLD",
+                    "original_action": original_action or "HOLD",
+                    "blocked_reason": blocked_reason,
+                    "state_vector": state_vector,
                     "symbol": SIMBOLO,
                     "reasoning": motivo,
                     "overall_confidence": confidence,
                     "alignment_score": None,
+                    "context_score": context_score,
+                    "feature_flags": feature_flags or {},
+                    "reason_codes": reason_codes or [],
                     "market_regime": (
                         normalized_context.regime_macro if normalized_context else None
                     ),
@@ -701,7 +992,12 @@ def enviar_ordem_mt5adapter(
         if acao == "Aguardar":
             contexto_hold = build_contexto_operacional_com_diario(
                 opening_context,
-                base_payload={},
+                base_payload={
+                    "context_score": 1.0,
+                    "context_penalty": 0.0,
+                    "feature_flags": {"action_aguardar": True},
+                    "reason_codes": ["acao_agora=Aguardar"],
+                },
                 diario_payload=diario_payload,
                 action=acao,
                 model_confidence=confidence,
@@ -711,52 +1007,16 @@ def enviar_ordem_mt5adapter(
                 ["acao_agora=Aguardar"],
                 contexto_hold,
                 DecisaoOperacional.HOLD,
+                original_action="HOLD",
+                state_vector=state_vector,
+                context_score=1.0,
+                feature_flags={"action_aguardar": True},
+                reason_codes=["acao_agora=Aguardar"],
             )
             return False
 
-        if confidence <= 0.0:
-            contexto_hold = build_contexto_operacional_com_diario(
-                opening_context,
-                base_payload={},
-                diario_payload=diario_payload,
-                action=acao,
-                model_confidence=confidence,
-            )
-            _persist_hold_episode(
-                "Confiança indisponível para operação real.",
-                ["model_confidence=0.0"],
-                contexto_hold,
-                DecisaoOperacional.CANCELAR,
-            )
-            logger.warning(
-                "[PRE-ABERTURA] Ordem %s bloqueada: confiança do modelo indisponível.",
-                acao,
-            )
-            return False
-
-        if confidence < AntiOvertradingConfig.MIN_CONFIDENCE_SCORE:
-            contexto_hold = build_contexto_operacional_com_diario(
-                opening_context,
-                base_payload={},
-                diario_payload=diario_payload,
-                action=acao,
-                model_confidence=confidence,
-            )
-            _persist_hold_episode(
-                (
-                    "Confiança abaixo do mínimo operacional "
-                    f"({confidence:.2%} < {AntiOvertradingConfig.MIN_CONFIDENCE_SCORE:.0%})."
-                ),
-                [f"model_confidence={confidence:.4f}"],
-                contexto_hold,
-                DecisaoOperacional.CANCELAR,
-            )
-            logger.warning(
-                "[PRE-ABERTURA] Ordem %s bloqueada: confiança %.2f abaixo do mínimo %.2f.",
-                acao,
-                confidence,
-                AntiOvertradingConfig.MIN_CONFIDENCE_SCORE,
-            )
+        if dados is None or len(dados) < 20:
+            logger.warning("[GUARD] BLOCKED: dados_insuficientes")
             return False
 
         live_confirmation = build_live_market_confirmation(
@@ -768,25 +1028,56 @@ def enviar_ordem_mt5adapter(
             confidence,
             diario_payload,
         )
-        confidence_for_gate = (
+        confidence_for_context = (
             diario_influence.adjusted_confidence
             if diario_influence.adjusted_confidence is not None
             else confidence
         )
-        gate = evaluate_opening_context_gate(
-            acao,
-            opening_context,
-            confidence=confidence_for_gate,
+        decision_context = DecisionContext(
+            action=acao,
+            raw_confidence=confidence_for_context,
+            opening_context=opening_context,
             market_confirmation=live_confirmation.to_dict(),
+            diario_payload=diario_payload,
+            volatility=vol,
+            feature_flags={
+                "daily_influence_available": bool(
+                    getattr(diario_influence, "available", False)
+                ),
+                "daily_influence_alignment": getattr(
+                    diario_influence, "alignment", "NEUTRAL"
+                ),
+                "daily_influence_reasons": list(
+                    getattr(diario_influence, "reasons", []) or []
+                ),
+                "daily_influence_adjustment": getattr(
+                    diario_influence, "confidence_adjustment", 0.0
+                ),
+            },
+            reason_codes=list(getattr(diario_influence, "reasons", []) or []),
         )
-        gate = apply_opening_context_strict_filters(gate)
+        decision_context = compute_context_score(decision_context)
+        normalized_context = getattr(
+            decision_context, "normalized_context", normalized_context
+        )
+        confidence_efetiva = apply_context_to_confidence(
+            confidence_for_context,
+            decision_context,
+        )
         contexto_operacional = build_contexto_operacional_com_diario(
             opening_context,
-            base_payload=gate.to_context_payload(),
+            base_payload=_decision_context_payload(decision_context),
             diario_payload=diario_payload,
             diario_influence=diario_influence,
             action=acao,
-            model_confidence=confidence,
+            model_confidence=confidence_efetiva,
+        )
+        confidence = confidence_efetiva
+        logger.info(
+            "[CONTEXT] score=%.4f penalty=%.4f reasons=%s",
+            decision_context.context_score,
+            decision_context.context_penalty,
+            ",".join(decision_context.reason_codes or ["contexto_neutro"]),
         )
         if diario_influence.reasons and diario_influence.confidence_adjustment != 0:
             logger.info(
@@ -795,17 +1086,44 @@ def enviar_ordem_mt5adapter(
                 diario_influence.confidence_adjustment,
                 diario_influence.alignment,
             )
-        if not gate.allow_entry:
+        if confidence_efetiva <= 0.0:
             logger.warning(
-                "[PRE-ABERTURA] Ordem %s bloqueada pelo contexto estrutural: %s",
-                acao,
-                gate.summary,
+                "[GUARD] BLOCKED: confidence_indisponivel"
             )
             _persist_hold_episode(
-                f"Bloqueada por contexto de abertura: {gate.summary}",
-                gate.reasons,
+                "Confiança indisponível para operação real.",
+                ["model_confidence=0.0"],
                 contexto_operacional,
                 DecisaoOperacional.CANCELAR,
+                blocked_reason="model_confidence_indisponivel",
+                original_action=mapear_acao_operacional_para_rl(acao),
+                state_vector=state_vector,
+                context_score=decision_context.context_score,
+                feature_flags=decision_context.feature_flags,
+                reason_codes=decision_context.reason_codes,
+            )
+            return False
+
+        if confidence_efetiva < AntiOvertradingConfig.MIN_CONFIDENCE_SCORE:
+            logger.warning(
+                "[GUARD] BLOCKED: confidence_abaixo_minimo | %.4f < %.4f",
+                confidence_efetiva,
+                AntiOvertradingConfig.MIN_CONFIDENCE_SCORE,
+            )
+            _persist_hold_episode(
+                (
+                    "Confiança abaixo do mínimo operacional "
+                    f"({confidence_efetiva:.2%} < {AntiOvertradingConfig.MIN_CONFIDENCE_SCORE:.0%})."
+                ),
+                [f"model_confidence={confidence_efetiva:.4f}"],
+                contexto_operacional,
+                DecisaoOperacional.CANCELAR,
+                blocked_reason="confidence_abaixo_minimo",
+                original_action=mapear_acao_operacional_para_rl(acao),
+                state_vector=state_vector,
+                context_score=decision_context.context_score,
+                feature_flags=decision_context.feature_flags,
+                reason_codes=decision_context.reason_codes,
             )
             return False
 
@@ -823,20 +1141,23 @@ def enviar_ordem_mt5adapter(
             if minhas_posicoes:
                 tickets = [int(getattr(p, 'ticket', 0)) for p in minhas_posicoes]
                 logger.warning(
-                    f'[GUARDA] BLOQUEADO: Já existe(m) {len(minhas_posicoes)} '
+                    f'[GUARD] BLOCKED: posicao_aberta_mesmo_magic | Já existe(m) {len(minhas_posicoes)} '
                     f'posição(ões) aberta(s) com magic={MAGIC_NUMBER} '
                     f'(tickets={tickets}). Ordem NÃO enviada.'
                 )
                 return False
         except Exception as e:
-            logger.warning(f'[GUARDA] Erro ao verificar posições MT5: {e}. '
-                          f'Prosseguindo com cautela.')
+            logger.warning(
+                f'[GUARD] BLOCKED: falha_verificacao_posicoes_mt5 | {e}'
+            )
+            return False
 
         if acao == "Comprar":
             side = OrderSide.BUY
         elif acao == "Vender":
             side = OrderSide.SELL
         else:
+            logger.warning("[GUARD] BLOCKED: acao_invalida")
             return False
 
         # Calcular SL/TP dinamicamente se temos dados
@@ -852,21 +1173,29 @@ def enviar_ordem_mt5adapter(
                 tp = preco_atual - TAKE_PROFIT_PONTOS
 
         risk_reward = calcular_risk_reward(acao, preco_atual, sl, tp)
-        if risk_reward < AntiOvertradingConfig.MIN_RISK_REWARD:
+        if (
+            risk_reward + AntiOvertradingConfig.RISK_REWARD_TOLERANCE
+            < AntiOvertradingConfig.MIN_RISK_REWARD
+        ):
+            logger.warning(
+                "[GUARD] BLOCKED: risk_reward_abaixo_minimo | %.6f < %.6f",
+                risk_reward,
+                AntiOvertradingConfig.MIN_RISK_REWARD,
+            )
             _persist_hold_episode(
                 (
                     "Risk/Reward abaixo do mínimo operacional "
-                    f"({risk_reward:.2f}:1 < {AntiOvertradingConfig.MIN_RISK_REWARD:.2f}:1)."
+                    f"({risk_reward:.6f}:1 < {AntiOvertradingConfig.MIN_RISK_REWARD:.2f}:1)."
                 ),
                 [f"risk_reward={risk_reward:.4f}"],
                 contexto_operacional,
                 DecisaoOperacional.CANCELAR,
-            )
-            logger.warning(
-                "[PRE-ABERTURA] Ordem %s bloqueada: risk/reward %.2f abaixo do mínimo %.2f.",
-                acao,
-                risk_reward,
-                AntiOvertradingConfig.MIN_RISK_REWARD,
+                blocked_reason="risk_reward_abaixo_minimo",
+                original_action=mapear_acao_operacional_para_rl(acao),
+                state_vector=state_vector,
+                context_score=decision_context.context_score,
+                feature_flags=decision_context.feature_flags,
+                reason_codes=decision_context.reason_codes,
             )
             return False
 
@@ -947,9 +1276,19 @@ def enviar_ordem_mt5adapter(
                     "source": "RL_AGENT_V5000",
                     "win_price": preco_atual,
                     "action": acao.upper(),
+                    "original_action": (
+                        original_action or mapear_acao_operacional_para_rl(acao)
+                    ),
+                    "blocked_reason": None,
+                    "state_vector": state_vector,
                     "symbol": SIMBOLO,
                     "volatility": vol,
-                    "overall_confidence": confidence,
+                    "raw_confidence": decision_context.raw_confidence,
+                    "overall_confidence": confidence_efetiva,
+                    "context_score": decision_context.context_score,
+                    "context_penalty": decision_context.context_penalty,
+                    "feature_flags": decision_context.feature_flags,
+                    "reason_codes": decision_context.reason_codes,
                     "risk_reward": risk_reward,
                 }
                 rl_repo.save_episode(episode)
@@ -1029,15 +1368,16 @@ def processar_protecao_lucros() -> None:
         logger.error(f"Erro em processar_protecao_lucros: {e}")
 
 
-def _executar_pipeline_feedback_rl() -> None:
+def _executar_pipeline_feedback_rl(
+    *,
+    preco_referencia: Optional[float] = None,
+) -> None:
     """Executa pipeline AC5.9->AC6.7->AC6.8->AC6.9 a cada 10 ciclos.
 
     Alimentado com trades fechados acumulados em _trades_fechados_rl
     para fechar o loop de aprendizado do RL 5000.
     """
     trades_data = list(_trades_fechados_rl)
-    if not trades_data:
-        return
 
     # AC5.9: Validacao de saude do feedback
     if _feedback_validator_rl:
@@ -1092,6 +1432,34 @@ def _executar_pipeline_feedback_rl() -> None:
                 logger.info(f'[AC6.9] Baseline: {fb}')
         except Exception as e:
             logger.warning(f'[AC6.9] Erro: {e}')
+
+    if (
+        _rl_persistence_service is not None
+        and rl_repo is not None
+        and pipeline is not None
+        and preco_referencia is not None
+    ):
+        try:
+            avaliadas = _rl_persistence_service.evaluate_pending_rewards(
+                lambda: float(preco_referencia)
+            )
+            if avaliadas <= 0:
+                return
+
+            episodios = rl_repo.get_episodes_for_training(limit=256)
+            resumo = pipeline.treinar_incremental_de_episodios(
+                episodios,
+                max_amostras=64,
+                salvar_modelo=True,
+            )
+            if resumo.get("executado"):
+                logger.info(
+                    '[RL-LEARN] Retreino incremental concluido | '
+                    f'avaliadas={avaliadas} | amostras={resumo.get("amostras")} | '
+                    f'loss={resumo.get("loss") if resumo.get("loss") is not None else "None"}'
+                )
+        except Exception as e:
+            logger.warning(f'[RL-LEARN] Erro: {e}')
 
 
 def monitorar_posicoes() -> bool:
@@ -1647,13 +2015,6 @@ def loop_operacao():
         ciclo += 1
         logger.info(f"\n[CICLO {ciclo}] Iniciando iteração do loop...")
 
-        # Grupo 2: Pipeline Feedback/Aprendizado (a cada 10 ciclos)
-        if ciclo % 10 == 0:
-            try:
-                _executar_pipeline_feedback_rl()
-            except Exception as _e:
-                logger.warning(f'[PIPELINE-FEEDBACK] Erro: {_e}')
-
         # BUG-4 (18/03/2026): guard de horario ANTES das protecoes de lucro
         # para evitar ~380 ERRORs/dia por desconexao MT5 esperada fora do pregao.
         logger.debug(f"[CICLO {ciclo}] Verificando horário de trading...")
@@ -1688,6 +2049,7 @@ def loop_operacao():
 
         logger.debug(f"[CICLO {ciclo}] Monitorando posições abertas...")
         if monitorar_posicoes():
+            logger.warning("[GUARD] BLOCKED: posicao_aberta")
             logger.info("[WAIT] Posicao em aberto. Aguardando fechar...")
             logger.debug(f"[CICLO {ciclo}] Dormindo 30s (posição aberta)...")
             time.sleep(30)
@@ -1695,6 +2057,7 @@ def loop_operacao():
             continue
 
         if not verificar_janela_novas_entradas():
+            logger.warning("[GUARD] BLOCKED: janela_novas_entradas_encerrada")
             logger.info(
                 "[JANELA] Novas entradas bloqueadas a partir de 17:25. "
                 "Mantendo apenas monitoramento ate o fim do pregao."
@@ -1712,7 +2075,7 @@ def loop_operacao():
         logger.debug(f"[CICLO {ciclo}] Dados carregados: {len(dados) if dados is not None else 0} candles")
 
         if dados is None or len(dados) < 20:
-            logger.warning("[!] Dados insuficientes. Aguardando 30s...")
+            logger.warning("[GUARD] BLOCKED: dados_insuficientes")
             logger.debug(f"[CICLO {ciclo}] Dormindo 30s (dados insuficientes)...")
             time.sleep(30)
             logger.debug(f"[CICLO {ciclo}] Retornando ao início do loop após sleep.")
@@ -1727,15 +2090,10 @@ def loop_operacao():
         # ANTI-OVERTRADING VALIDATIONS
         # ════════════════════════════════════════════════════════════════
 
-        # 1. Verificar volatilidade
+        # 1. Volatilidade agora entra como feature contextual, não como bloqueio binário
         logger.debug(f"[CICLO {ciclo}] Calculando volatilidade...")
         vol = calcular_volatilidade(dados)
         logger.debug(f"[CICLO {ciclo}] Volatilidade calculada: {vol:.3f}%")
-
-        if not verificar_volatilidade(vol):
-            logger.debug(f"[CICLO {ciclo}] Volatilidade insuficiente. Aguardando 60s...")
-            time.sleep(60)
-            continue
 
         # 2. Verificar cooldown
         logger.debug(f"[CICLO {ciclo}] Verificando cooldown...")
@@ -1748,11 +2106,18 @@ def loop_operacao():
         try:
             # 4. Obter ação do modelo
             logger.debug(f"[CICLO {ciclo}] Obtendo ação do modelo...")
-            acao_id, confidence = obter_acao_do_modelo(dados)
+            acao_id, confidence, state_vector = obter_acao_do_modelo(dados)
             mapeamento = {1: "Comprar", 0: "Aguardar", 2: "Vender"}
             acao_str = mapeamento.get(acao_id, "Aguardar")
             preco_atual = float(dados['close'].iloc[-1])
             logger.debug(f"[CICLO {ciclo}] Ação obtida: {acao_str} (confiança: {confidence:.2%})")
+
+            # Grupo 2: Pipeline Feedback/Aprendizado (a cada 10 ciclos)
+            if ciclo % 10 == 0:
+                try:
+                    _executar_pipeline_feedback_rl(preco_referencia=preco_atual)
+                except Exception as _e:
+                    logger.warning(f'[PIPELINE-FEEDBACK] Erro: {_e}')
 
             # 5. Verificar confirmação multi-vela
             logger.debug(f"[CICLO {ciclo}] Verificando confirmação do sinal...")
@@ -1768,6 +2133,8 @@ def loop_operacao():
                     dados=dados,
                     confidence=confidence,
                     opening_context=getattr(_opening_context_runtime, "features", None),
+                    state_vector=state_vector,
+                    original_action=mapear_acao_operacional_para_rl(acao_str),
                 )
                 last_signal = acao_str
                 if ordem_enviada:
@@ -1895,7 +2262,7 @@ def main() -> int:
     finally:
         try:
             relatorio_contexto = generate_opening_context_vs_result_report(
-                db_path=str(ROOT_DIR / "data" / "db" / "trading.db"),
+                db_path=TRADING_DB_PATH,
                 output_dir=ROOT_DIR / "outputs" / "analysis",
                 outputs_root=ROOT_DIR / "outputs",
             )
@@ -1907,7 +2274,7 @@ def main() -> int:
             logger.warning(f"[PRE-ABERTURA] Falha ao gerar relatório final: {e}")
 
         if _monitor_posicao_rl:
-            _monitor_posicao_rl.fechar_conexao()
+            _monitor_posicao_rl.fechar()
         if mt5_adapter:
             mt5_adapter.disconnect()
             logger.info("[OK] MT5 desconectado.")
