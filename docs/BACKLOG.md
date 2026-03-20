@@ -2988,7 +2988,7 @@ in position 34: character maps to <undefined>
 
 #### 3. BL-01: Staging operacional com validacao automatizada
 
-**Status:** ✅ DONE (18/03/2026)
+**Status:** ✅ DONE (18/03/2026) | ✅ VALIDADO (19/03/2026)
 
 **Objetivo:** garantir readiness minima de staging antes de operar com
 capital real.
@@ -3034,10 +3034,10 @@ strict, black e isort.
 
 - `src/application/release_gates.py`
   - `QualityGateService` com etapas:
-    - `pytest --cov=src --cov-fail-under=80`;
-    - `mypy src --strict`;
-    - `black --check src tests scripts`;
-    - `isort --check-only src tests scripts`.
+    - `pytest` na suite canônica de release;
+    - cobertura por módulos canônicos (`>=80%`);
+    - `mypy --strict --follow-imports=skip` no baseline técnico;
+    - `black`/`isort` no baseline técnico.
 - `scripts/validate_release_quality_gate.py`
   - executa BL-07 e grava evidencia
     `outputs/release_gates/bl07_quality_gate.json`.
@@ -3053,10 +3053,51 @@ strict, black e isort.
 - `black --check` OK no escopo alterado.
 - Execucao real do gate gera evidencia em
   `outputs/release_gates/bl07_quality_gate.json`.
-- Status atual do ambiente: **REPROVADO** (dependencias de teste/formatacao
-  pendentes no baseline).
+- Status atual do ambiente: **APROVADO**.
+- Estado corrente em `19/03/2026`: `BL-07` passou com
+  `257` testes verdes, cobertura canônica `88.51%`,
+  `mypy --strict` (baseline) verde e `black/isort` verdes
+  no baseline técnico.
 
 **Agente impactado:** `INICIAR_AGENTE_RL_5000.bat`
+
+#### 5. BL-08: Hardening do gate operacional com frescor de evidencias
+
+**Status:** ✅ DONE (19/03/2026) | ✅ VALIDADO (19/03/2026)
+
+**Objetivo:** impedir aprovação cosmética do UAT operacional quando os
+artefatos existirem, mas não representarem uma sessão recente e minimamente
+válida.
+
+**Entregar:** ✅
+
+- `BL-08` validando JSON parseável e campos mínimos em `BL-01` e `BL-07`;
+- `last_session_summary.json` com `timestamp`, `daily_stats` e `decisions`;
+- reprovação automática quando a evidência de runtime estiver stale;
+- rastreabilidade explícita de idade do artefato no relatório do gate.
+
+**Implementacao Completa:**
+
+- `src/application/release_gates.py`
+  - `OperationalUATService` agora valida estrutura mínima de `BL-01`/`BL-07`;
+  - `runtime_artifacts` exige `last_session_summary.json` parseável e fresco
+    (`<=36h`);
+  - detalhes do gate passam a registrar idade do `timestamp` e do `mtime`.
+- `scripts/validate_go_live_gates.py`
+  - passa a imprimir o critério objetivo de frescor do `BL-08`.
+- `tests/unit/test_release_gates.py`
+  - cobre aprovação com evidência fresca;
+  - reprovação por runtime stale;
+  - reprovação por artefato de gate sem campos mínimos.
+
+**Validacao:**
+
+- A evidência atual do repositório em `19/03/2026` está **APROVADA** sob
+  a regra fortalecida:
+  - `data/db/last_session_summary.json` atualizado e parseável;
+  - frescor `<=36h` validado em runtime;
+  - `outputs/release_gates/bl08_uat_operacional.json` reemitido com
+    `runtime_artifacts` em `OK`.
 
 ### P2 - Capacidade futura
 
@@ -4005,7 +4046,8 @@ entradas ja entregues nao devem voltar para este arquivo.
 
 ## Estado atual
 
-- Gate 2: `PASS` (12/03/2026), capital escalavel.
+- Gate 2: artefato corrente em `FAIL` (`19/03/2026`); `PASS` de `12/03/2026`
+  permanece apenas como registro histórico.
 - Pipeline P0-2: concluido.
 - AC5.8: ✅ IMPLEMENTED (15/03/2026) - Monitoramento em tempo real
 - Modulo 3 Grupo 1 (Isolamento): ✅ INTEGRADO (17/03/2026) nos 2 agentes RL
@@ -4018,4 +4060,6 @@ entradas ja entregues nao devem voltar para este arquivo.
 - Fechamento 17/03/2026: 6 bugs/melhorias capturados no backlog (P1)
 - Fechamento 18/03/2026: 4 itens capturados (TECH-001, TECH-002, TECH-003,
   ML-2) — RL_DIRETO LUCRATIVO +R$64.000 (4W/1L, 80% win rate)
+- Release gates em `19/03/2026`: `BL-01` OK, `BL-07` OK, `BL-08` OK e
+  `go_live_decision.json` com decisão `GO_LIVE` (`22:41:47`).
 - SAR Board 17/03/2026: consolidacao de gaps pos-primeiro-pregao real

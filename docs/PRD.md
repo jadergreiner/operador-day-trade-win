@@ -3,7 +3,7 @@
 **Produto:** Operador Day Trade WIN
 **Versao:** 1.0
 **Data:** 19/03/2026
-**Status:** Base funcional ampla concluída em código; Gate 2 de escala de capital permanece válido; GO LIVE ainda depende de staging/UAT e do gate final operacional (10/04/2026)
+**Status:** Base funcional ampla concluída em código; gate operacional (`BL-01` + `BL-07` + `BL-08`) aprovado com `GO_LIVE` às `22:41:47` de `19/03/2026`; `Gate 2` corrente segue em `FAIL` para escala de capital
 
 ---
 
@@ -208,9 +208,9 @@ Automacao completa do ciclo de trading:
 
 | RF | Descricao | Status |
 |----|-----------|--------|
-| RF-46 | Diarios automaticos Markdown | Parcial/Impl. com gap de fechamento por agente |
-| RF-47 | Reflexao IA sobre operacoes | Parcial/Impl. com gap de fechamento por agente |
-| RF-48 | Narrativa de sessao | Parcial/Impl. com gap de fechamento por agente |
+| RF-46 | Diarios automaticos Markdown | Impl. |
+| RF-47 | Reflexao IA sobre operacoes | Impl. |
+| RF-48 | Narrativa de sessao | Impl. |
 | RF-49 | Thread watchdog + health | Em validação operacional |
 | RF-50 | Detector de vies direcional | Em validação operacional |
 | RF-51 | Retreino adaptativo | Em validação operacional |
@@ -632,9 +632,9 @@ Artefatos obrigatorios em `data/backtest/`:
 - Modelos ML avancados
 - Expansao para outros mercados
 
-### 11.7 Status de Entregas (18/03/2026)
+### 11.7 Status de Entregas (19/03/2026)
 
-> Os itens abaixo refletem entrega em código; a validação operacional final segue separada.
+> Os itens abaixo refletem entrega em código; a validação operacional final segue separada e prevalece o estado dos artefatos correntes em `19/03/2026`.
 
 | Componente | Status | Testes |
 |------------|--------|--------|
@@ -670,22 +670,22 @@ Artefatos obrigatorios em `data/backtest/`:
 | Drift | Alerta Z-score threshold | Em validacao operacional |
 | Online Learning | Rollback se degrada | Em validacao operacional |
 | Guardian | Kill switch funcional | Em validacao operacional |
-| Gate 2 | FAIL nunca libera ampliado | Validado como escala de capital |
+| Gate 2 | FAIL nunca libera ampliado | Artefato atual `FAIL` em 19/03/2026; PASS historico de 12/03/2026 nao substitui o estado corrente |
 
 ### 12.2 Criterios Globais para GO LIVE
 
 | ID | Descricao | Status |
 |----|-----------|--------|
-| CA-01 | Testes unitarios passando | OK |
-| CA-02 | mypy --strict sem erros | OK |
-| CA-03 | Cobertura >=80% modulos | OK |
+| CA-01 | Testes unitarios passando | PASS em 19/03/2026 (suite canônica `BL-07`: 257 testes verdes) |
+| CA-02 | mypy --strict sem erros | PASS em 19/03/2026 (baseline canônico de type-check no `BL-07`) |
+| CA-03 | Cobertura >=80% modulos | PASS em 19/03/2026 (`BL-07` com 88.51% nos módulos canônicos) |
 | CA-04 | 5 dias simulado sem bugs | Pend. evidencia operacional |
-| CA-05 | Gate 2 P0-2 com dados reais | Validado como escala de capital |
+| CA-05 | Gate 2 P0-2 com dados reais | FAIL no artefato atual de 19/03/2026; PASS historico em 12/03/2026 mantido apenas como referencia |
 | CA-06 | Diarios IA coerentes | Em validacao operacional |
 | CA-07 | 4 agentes paralelos OK | Em validacao operacional |
 | CA-08 | Kill switch testado | Em validacao operacional |
 | CA-09 | Backup/restore validado | Em validacao operacional |
-| CA-10 | Documentacao atualizada | Pend. fechamento canonico |
+| CA-10 | Documentacao atualizada | PASS em 19/03/2026; PRD/STATUS/BACKLOG sincronizados com os artefatos correntes de gate |
 
 ### 12.3 Matriz de Evidencias
 
@@ -693,7 +693,7 @@ Artefatos obrigatorios em `data/backtest/`:
 |---------|--------------|-----------|-------|
 | BL-01 | `scripts/validate_staging_readiness.py` | `outputs/release_gates/bl01_*.json` | Agente 2 |
 | BL-07 | `scripts/validate_release_quality_gate.py` + `scripts/validate_go_live_gates.py` | `outputs/release_gates/bl07_*.json` | Agente 2 |
-| BL-08 | `tests/uat/uat_test_cases.py` + `scripts/validate_go_live_gates.py` | `outputs/release_gates/bl08_*.json` e `go_live_decision.json` | Agente 2 |
+| BL-08 | `tests/uat/uat_test_cases.py` + `scripts/validate_go_live_gates.py` | `outputs/release_gates/bl08_*.json` e `go_live_decision.json` com `last_session_summary.json` parseavel e fresco (`<=36h`) | Agente 2 |
 | Runtime RL/MT5 sem `preco_saida=0.0` e sem `DESCONHECIDO` persistente | `tests/unit/test_agente_rl_direto_runtime.py` + `tests/unit/test_mt5_adapter_runtime.py` | `outputs/agente_posicao_*.json` e logs do `RL_DIRETO` | Agente 1 |
 | Fechamento diario por agente | `prompts/fechamento_diario.py` + `tests/unit/test_fechamento_diario.py` | `data/fechamento_diario/*` e `docs/agente_autonomo/AGENTE_AUTONOMO_BACKLOG.md` | Agente 3 |
 | Gate 2 de escala de capital | `data/backtest/gate2_decision.json` | `data/backtest/*.json` | Produto/Trading |

@@ -4,7 +4,9 @@ S1-1: Configuração MT5 Production.
 """
 
 import pytest
+
 from src.application.orders_executor import ExecutionOrder, OrderState
+
 
 def test_order_state_transitions():
     order = ExecutionOrder(
@@ -16,7 +18,7 @@ def test_order_state_transitions():
         stop_loss=119800.0,
         take_profit=120500.0,
         detector_spike=2.0,
-        ml_classifier_score=0.85
+        ml_classifier_score=0.85,
     )
 
     assert order.state == OrderState.ENQUEUED

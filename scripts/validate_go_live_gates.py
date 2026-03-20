@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 if str(BASE_DIR) not in sys.path:
@@ -41,7 +41,9 @@ def executar_go_live_pipeline(
     quality = quality_service or QualityGateService()
 
     staging_report = staging.executar()
-    _persist_json(release_dir / "bl01_staging_readiness.json", staging_report.para_dict())
+    _persist_json(
+        release_dir / "bl01_staging_readiness.json", staging_report.para_dict()
+    )
 
     quality_report = quality.executar()
     _persist_json(release_dir / "bl07_quality_gate.json", quality_report.para_dict())
@@ -72,9 +74,28 @@ def main() -> int:
         for item in gate.resultados:
             item_status = "OK" if item.sucesso else "FAIL"
             print(f" - [{item_status}] {item.nome}: {item.mensagem}")
+        if gate.nome == "quality_gate_release":
+            print(
+                " - [INFO] Suite canonica: "
+                f"{len(gate.metadados.get('test_targets', []))} alvos | "
+                f"coverage minima: {gate.metadados.get('coverage_threshold')}%"
+            )
+            print(
+                " - [INFO] Baseline tecnico: "
+                f"{len(gate.metadados.get('coverage_targets', []))} modulos cobertura | "
+                f"{len(gate.metadados.get('mypy_targets', []))} arquivos mypy | "
+                f"{len(gate.metadados.get('format_targets', []))} arquivos lint/format"
+            )
+        if gate.nome == "uat_operacional":
+            print(
+                " - [INFO] BL-08 exige last_session_summary valido "
+                f"e fresco <= {gate.metadados.get('runtime_evidence_max_age_hours')}h"
+            )
 
     print(f"[GO-LIVE] DECISAO: {decision.decisao}")
-    print(f"[GO-LIVE] Artefato salvo: {BASE_DIR / 'outputs' / 'release_gates' / 'go_live_decision.json'}")
+    print(
+        f"[GO-LIVE] Artefato salvo: {BASE_DIR / 'outputs' / 'release_gates' / 'go_live_decision.json'}"
+    )
     return 0 if decision.aprovado else 1
 
 

@@ -7,43 +7,46 @@ Responsabilidade: Gerenciar ciclo de vida de uma ordem (enfileirado → enviado 
 Status: SPRINT 1 - Eng Sr (Skeleton)
 """
 
-from typing import Optional, Callable, Dict, Any
-from dataclasses import dataclass, field
-from enum import Enum
-from abc import ABC, abstractmethod
 import inspect
+import json
 import logging
 import uuid
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from datetime import datetime
-import json
+from enum import Enum
+from typing import Any, Callable, Dict, Optional
+
+from src.application.ordem_backoff_retry import (
+    RETCODE_ORDER_FAILED,
+    GerenciadorRetryOrdem,
+)
+from src.domain.entities.trade import Position
 
 # Importar classes para exportação
 from src.infrastructure.providers.mt5_adapter import OrderStatus
-from src.domain.entities.trade import Position
-from src.application.ordem_backoff_retry import (
-    GerenciadorRetryOrdem,
-    RETCODE_ORDER_FAILED,
-)
 
 logger = logging.getLogger(__name__)
 
 
 class OrderState(Enum):
     """Estado da ordem no sistema"""
-    ENQUEUED = "ENQUEUED"           # Enfileirada aguardando validação
-    VALIDATED = "VALIDATED"         # Passou nas gates de risco
-    SENT_TO_MT5 = "SENT_TO_MT5"     # Enviada ao MT5
+
+    ENQUEUED = "ENQUEUED"  # Enfileirada aguardando validação
+    VALIDATED = "VALIDATED"  # Passou nas gates de risco
+    SENT_TO_MT5 = "SENT_TO_MT5"  # Enviada ao MT5
     ACCEPTED_BY_MT5 = "ACCEPTED_BY_MT5"
-    EXECUTED = "EXECUTED"           # Executada em mercado
+    EXECUTED = "EXECUTED"  # Executada em mercado
     PARTIALLY_CLOSED = "PARTIALLY_CLOSED"
     CLOSED = "CLOSED"
-    REJECTED = "REJECTED"           # Falha em validação ou MT5
+    REJECTED = "REJECTED"  # Falha em validação ou MT5
     CANCELLED = "CANCELLED"
 
 
 @dataclass
 class OrderAuditLog:
     """Registro de auditoria de cada estado/transição"""
+
     timestamp: datetime
     state: OrderState
     message: str
@@ -61,6 +64,7 @@ class ExecutionOrder:
     3. Se aprovado: envia a MT5
     4. Monitora execução até fechamento
     """
+
     order_id: str  # Unique ID para auditoria
     symbol: str
     order_type: str  # BUY or SELL
@@ -102,15 +106,13 @@ class ExecutionOrder:
             timestamp=datetime.utcnow(),
             state=new_state,
             message=message,
-            metadata=metadata
+            metadata=metadata,
         )
         self.audit_log.append(log_entry)
         self.state = new_state
         self.updated_at = datetime.utcnow()
 
-        logger.info(
-            f"[{self.order_id}] {new_state.value}: {message}"
-        )
+        logger.info(f"[{self.order_id}] {new_state.value}: {message}")
 
     def to_trade(self, mt5_ticket: str) -> "Trade":
         """
@@ -125,10 +127,11 @@ class ExecutionOrder:
         Returns:
             Trade entity pronta para persistência
         """
-        from src.domain.entities import Trade
-        from src.domain.value_objects import Symbol, Quantity, Price, Money
-        from src.domain.enums.trading_enums import OrderSide, TradeStatus
         from decimal import Decimal
+
+        from src.domain.entities import Trade
+        from src.domain.enums.trading_enums import OrderSide, TradeStatus
+        from src.domain.value_objects import Money, Price, Quantity, Symbol
 
         # Mapeia side (string "BUY"/"SELL" → OrderSide enum)
         side = OrderSide.BUY if self.order_type.upper() == "BUY" else OrderSide.SELL
@@ -142,10 +145,12 @@ class ExecutionOrder:
             entry_time=self.execution_time or datetime.utcnow(),
             broker_trade_id=mt5_ticket,
             stop_loss=Price(Decimal(str(self.stop_loss))) if self.stop_loss else None,
-            take_profit=Price(Decimal(str(self.take_profit))) if self.take_profit else None,
+            take_profit=Price(Decimal(str(self.take_profit)))
+            if self.take_profit
+            else None,
             status=TradeStatus.OPEN,
             commission=Money(Decimal("0")),  # Será atualizado após execução final
-            notes=f"Detector\u003d{self.detector_spike:.2f}σ, ML\u003d{self.ml_classifier_score:.2%}"
+            notes=f"Detector\u003d{self.detector_spike:.2f}σ, ML\u003d{self.ml_classifier_score:.2%}",
         )
 
         return trade
@@ -179,10 +184,7 @@ class ValidateOrderCommand(OrderExecutionCommand):
         """Validação de risco"""
         # TODO: Implementar após Risk Validator pronto
         logger.info(f"[{order.order_id}] Validando risco...")
-        order.add_audit(
-            OrderState.VALIDATED,
-            "Passou em validação de risco"
-        )
+        order.add_audit(OrderState.VALIDATED, "Passou em validação de risco")
         return True
 
     async def undo(self, order: ExecutionOrder) -> bool:
@@ -236,29 +238,33 @@ class SendToMT5Command(OrderExecutionCommand):
             False se rejeitado ou falha de persistência crítica
         """
         import asyncio
-        from src.domain.exceptions.domain_exceptions import OrderExecutionError
-        from src.domain.entities import Order
-        from src.domain.value_objects import Symbol, Quantity, Price
-        from src.domain.enums.trading_enums import OrderSide, OrderType
         from decimal import Decimal
+
+        from src.domain.entities import Order
+        from src.domain.enums.trading_enums import OrderSide, OrderType
+        from src.domain.exceptions.domain_exceptions import OrderExecutionError
+        from src.domain.value_objects import Price, Quantity, Symbol
 
         try:
             # 1. ENVIAR AO MT5
             logger.info(f"[{order.order_id}] Enviando a MT5...")
-            order.add_audit(
-                OrderState.SENT_TO_MT5,
-                "Iniciando envio a MT5"
-            )
+            order.add_audit(OrderState.SENT_TO_MT5, "Iniciando envio a MT5")
 
             # Chamar MT5Adapter.send_order() que retorna ticket string
             ticket = self.mt5_adapter.send_order(
                 Order(
                     symbol=Symbol(order.symbol),
-                    side=OrderSide.BUY if order.order_type.upper() == "BUY" else OrderSide.SELL,
+                    side=OrderSide.BUY
+                    if order.order_type.upper() == "BUY"
+                    else OrderSide.SELL,
                     quantity=Quantity(int(order.volume)),  # Converte para int
                     order_type=OrderType.MARKET,
-                    stop_loss=Price(Decimal(str(order.stop_loss))) if order.stop_loss else None,
-                    take_profit=Price(Decimal(str(order.take_profit))) if order.take_profit else None,
+                    stop_loss=Price(Decimal(str(order.stop_loss)))
+                    if order.stop_loss
+                    else None,
+                    take_profit=Price(Decimal(str(order.take_profit)))
+                    if order.take_profit
+                    else None,
                 )
             )
 
@@ -269,13 +275,15 @@ class SendToMT5Command(OrderExecutionCommand):
             order.add_audit(
                 OrderState.ACCEPTED_BY_MT5,
                 f"Ticket {ticket} recebido de MT5",
-                {"ticket": ticket, "execution_time": order.execution_time.isoformat()}
+                {"ticket": ticket, "execution_time": order.execution_time.isoformat()},
             )
 
             # 3-5. CONVERTER PARA TRADE E PERSISTIR COM RETRY
             trade = order.to_trade(ticket)
 
-            logger.info(f"[{order.order_id}] Persistindo trade ticket={ticket} em BD...")
+            logger.info(
+                f"[{order.order_id}] Persistindo trade ticket={ticket} em BD..."
+            )
 
             # Retry logic: 3x com exponential backoff (0.5s, 1s, 2s)
             persisted = await self._persist_with_retry(
@@ -286,18 +294,22 @@ class SendToMT5Command(OrderExecutionCommand):
                 order.add_audit(
                     OrderState.EXECUTED,
                     f"Trade persistido com sucesso em BD (ticket={ticket})",
-                    {"trade_id": str(trade.trade_id), "persisted": True}
+                    {"trade_id": str(trade.trade_id), "persisted": True},
                 )
-                logger.info(f"[{order.order_id}] Trade persistido: trade_id={trade.trade_id}")
+                logger.info(
+                    f"[{order.order_id}] Trade persistido: trade_id={trade.trade_id}"
+                )
                 return True
             else:
                 # Persistência falhou após retries
                 order.add_audit(
                     OrderState.REJECTED,
                     f"Falha de persistência após {self.max_retries} tentativas",
-                    {"ticket": ticket, "reason": "database_persistence_failed"}
+                    {"ticket": ticket, "reason": "database_persistence_failed"},
                 )
-                logger.error(f"[{order.order_id}] FALHA CRÍTICA: Não conseguiu persistir trade em BD")
+                logger.error(
+                    f"[{order.order_id}] FALHA CRÍTICA: Não conseguiu persistir trade em BD"
+                )
                 # TODO: Adicionar a dead-letter queue
                 return False
 
@@ -305,7 +317,7 @@ class SendToMT5Command(OrderExecutionCommand):
             order.add_audit(
                 OrderState.REJECTED,
                 f"Erro ao enviar a MT5: {str(e)}",
-                {"error": str(e), "error_type": "OrderExecutionError"}
+                {"error": str(e), "error_type": "OrderExecutionError"},
             )
             logger.error(f"[{order.order_id}] Erro MT5: {e}")
             return False
@@ -314,7 +326,7 @@ class SendToMT5Command(OrderExecutionCommand):
             order.add_audit(
                 OrderState.REJECTED,
                 f"Erro inesperado: {str(e)}",
-                {"error": str(e), "error_type": type(e).__name__}
+                {"error": str(e), "error_type": type(e).__name__},
             )
             logger.error(f"[{order.order_id}] Erro inesperado: {e}", exc_info=True)
             return False
@@ -324,7 +336,7 @@ class SendToMT5Command(OrderExecutionCommand):
         trade: "Trade",
         order: ExecutionOrder,
         max_retries: int = 3,
-        backoff_seconds: Optional[list] = None
+        backoff_seconds: Optional[list] = None,
     ) -> bool:
         """
         Persiste trade em BD com retry logic e exponential backoff.
@@ -347,7 +359,9 @@ class SendToMT5Command(OrderExecutionCommand):
             try:
                 # Tentar persistir
                 self.trade_repository.save(trade)
-                logger.info(f"[{order.order_id}] Persistência bem-sucedida na tentativa {attempt + 1}")
+                logger.info(
+                    f"[{order.order_id}] Persistência bem-sucedida na tentativa {attempt + 1}"
+                )
                 return True
 
             except Exception as e:
@@ -389,10 +403,7 @@ class MonitorExecutionCommand(OrderExecutionCommand):
         """Monitora até fechamento"""
         # TODO: Implementar loop de monitoramento
         logger.info(f"[{order.order_id}] Iniciando monitoramento...")
-        order.add_audit(
-            OrderState.EXECUTED,
-            "Monitorando execução"
-        )
+        order.add_audit(OrderState.EXECUTED, "Monitorando execução")
         return True
 
     async def undo(self, order: ExecutionOrder) -> bool:
@@ -404,6 +415,7 @@ class MonitorExecutionCommand(OrderExecutionCommand):
 # ============================================================================
 # STATE MACHINE: Orquestra transições
 # ============================================================================
+
 
 class OrderStateMachine:
     """
@@ -418,34 +430,19 @@ class OrderStateMachine:
 
     # Transições permitidas
     VALID_TRANSITIONS = {
-        OrderState.ENQUEUED: [
-            OrderState.VALIDATED,
-            OrderState.REJECTED
-        ],
-        OrderState.VALIDATED: [
-            OrderState.SENT_TO_MT5,
-            OrderState.REJECTED
-        ],
-        OrderState.SENT_TO_MT5: [
-            OrderState.ACCEPTED_BY_MT5,
-            OrderState.REJECTED
-        ],
-        OrderState.ACCEPTED_BY_MT5: [
-            OrderState.EXECUTED,
-            OrderState.REJECTED
-        ],
+        OrderState.ENQUEUED: [OrderState.VALIDATED, OrderState.REJECTED],
+        OrderState.VALIDATED: [OrderState.SENT_TO_MT5, OrderState.REJECTED],
+        OrderState.SENT_TO_MT5: [OrderState.ACCEPTED_BY_MT5, OrderState.REJECTED],
+        OrderState.ACCEPTED_BY_MT5: [OrderState.EXECUTED, OrderState.REJECTED],
         OrderState.EXECUTED: [
             OrderState.CLOSED,
             OrderState.PARTIALLY_CLOSED,
-            OrderState.REJECTED
+            OrderState.REJECTED,
         ],
-        OrderState.PARTIALLY_CLOSED: [
-            OrderState.CLOSED,
-            OrderState.REJECTED
-        ],
+        OrderState.PARTIALLY_CLOSED: [OrderState.CLOSED, OrderState.REJECTED],
         OrderState.REJECTED: [],
         OrderState.CANCELLED: [],
-        OrderState.CLOSED: []
+        OrderState.CLOSED: [],
     }
 
     @staticmethod
@@ -457,6 +454,7 @@ class OrderStateMachine:
 # ============================================================================
 # EXECUTOR PRINCIPAL
 # ============================================================================
+
 
 class OrdersExecutionOrchestrator:
     """
@@ -482,16 +480,20 @@ class OrdersExecutionOrchestrator:
         risk_processor,
         mt5_adapter,
         trade_repository,
-        event_bus: Optional[Any] = None
+        event_bus: Optional[Any] = None,
     ):
         self.risk_processor = risk_processor
         self.mt5_adapter = mt5_adapter
         self.trade_repository = trade_repository  # NOVO - dependency injection
         self.event_bus = event_bus
         self.orders: Dict[str, ExecutionOrder] = {}
+        self.last_monitoring_snapshot: Optional[Dict[str, Any]] = None
+        self.stop_loss_events: list[Dict[str, Any]] = []
         self.commands = {
             "validate": ValidateOrderCommand(risk_processor),
-            "send_mt5": SendToMT5Command(mt5_adapter, trade_repository),  # NOVO - pass repository
+            "send_mt5": SendToMT5Command(
+                mt5_adapter, trade_repository
+            ),  # NOVO - pass repository
             "monitor": MonitorExecutionCommand(mt5_adapter),
         }
 
@@ -511,7 +513,7 @@ class OrdersExecutionOrchestrator:
         take_profit: float,
         detector_spike: float,
         ml_score: float,
-        trader_approval: bool = False
+        trader_approval: bool = False,
     ) -> ExecutionOrder:
         """
         Enfileira nova ordem para execução.
@@ -529,7 +531,7 @@ class OrdersExecutionOrchestrator:
             take_profit=take_profit,
             detector_spike=detector_spike,
             ml_classifier_score=ml_score,
-            trader_approval=trader_approval
+            trader_approval=trader_approval,
         )
 
         self.orders[order.order_id] = order
@@ -540,11 +542,14 @@ class OrdersExecutionOrchestrator:
 
         # Publicar evento (para WebSocket, alertas, etc)
         if self.event_bus:
-            await self.event_bus.publish("order.enqueued", {
-                "order_id": order.order_id,
-                "symbol": order.symbol,
-                "ml_score": order.ml_classifier_score
-            })
+            await self.event_bus.publish(
+                "order.enqueued",
+                {
+                    "order_id": order.order_id,
+                    "symbol": order.symbol,
+                    "ml_score": order.ml_classifier_score,
+                },
+            )
 
         return order
 
@@ -564,18 +569,12 @@ class OrdersExecutionOrchestrator:
         try:
             # 1. Validação
             if not await self.commands["validate"].execute(order):
-                order.add_audit(
-                    OrderState.REJECTED,
-                    "Falha em validação de risco"
-                )
+                order.add_audit(OrderState.REJECTED, "Falha em validação de risco")
                 return False
 
             # 2. Envio a MT5
             if not await self.commands["send_mt5"].execute(order):
-                order.add_audit(
-                    OrderState.REJECTED,
-                    "Falha ao enviar a MT5"
-                )
+                order.add_audit(OrderState.REJECTED, "Falha ao enviar a MT5")
                 return False
 
             # 3. Monitoramento
@@ -585,10 +584,7 @@ class OrdersExecutionOrchestrator:
 
         except Exception as e:
             logger.error(f"Erro processando ordem {order_id}: {e}")
-            order.add_audit(
-                OrderState.REJECTED,
-                f"Exceção: {str(e)}"
-            )
+            order.add_audit(OrderState.REJECTED, f"Exceção: {str(e)}")
             return False
 
     def get_order_status(self, order_id: str) -> Optional[Dict]:
@@ -603,7 +599,7 @@ class OrdersExecutionOrchestrator:
             "symbol": order.symbol,
             "ml_score": order.ml_classifier_score,
             "pnl": order.pnl_close,
-            "updated_at": order.updated_at.isoformat()
+            "updated_at": order.updated_at.isoformat(),
         }
 
     def export_audit_json(self, order_id: str) -> str:
@@ -625,10 +621,10 @@ class OrdersExecutionOrchestrator:
                     "timestamp": log.timestamp.isoformat(),
                     "state": log.state.value,
                     "message": log.message,
-                    "metadata": log.metadata
+                    "metadata": log.metadata,
                 }
                 for log in order.audit_log
-            ]
+            ],
         }
         return json.dumps(audit_data, indent=2, ensure_ascii=False)
 
@@ -646,6 +642,7 @@ class OrdersExecutionOrchestrator:
         Related: GitHub Issue #7 - ENG-201
         """
         import asyncio
+
         start_time = datetime.utcnow()
 
         # AC-1: Validate order against Risk Framework
@@ -660,20 +657,23 @@ class OrdersExecutionOrchestrator:
             proposed_position_size=order.volume,
             proposed_stop_loss=abs(order.entry_price - order.stop_loss) * order.volume,
             proposed_symbol=order.symbol,
-            proposed_order_type=order.order_type
+            proposed_order_type=order.order_type,
         )
 
         approved, results = self.risk_processor.validate_order(context)
         gates_passed = [r.status == GateStatus.PASS for r in results]
 
         if not approved:
-            reason = next((r.message for r in results if r.status == GateStatus.FAIL), "Risk Validation Failed")
+            reason = next(
+                (r.message for r in results if r.status == GateStatus.FAIL),
+                "Risk Validation Failed",
+            )
             order.add_audit(OrderState.REJECTED, f"Risco Rejeitado: {reason}")
             return {
                 "success": False,
                 "order_id": order.order_id,
                 "rejection_reason": reason,
-                "gates_passed": gates_passed
+                "gates_passed": gates_passed,
             }
 
         order.add_audit(OrderState.VALIDATED, "Aprovado pelo Risk Framework")
@@ -687,17 +687,23 @@ class OrdersExecutionOrchestrator:
         ticket = None
         for attempt in range(1, 6):
             try:
-                resultado_envio = await self._maybe_await(self.mt5_adapter.send_order(order))
+                resultado_envio = await self._maybe_await(
+                    self.mt5_adapter.send_order(order)
+                )
                 if isinstance(resultado_envio, tuple):
                     sucesso = bool(resultado_envio[0])
                     ticket = resultado_envio[1] if sucesso else None
                 elif isinstance(resultado_envio, dict):
                     sucesso = resultado_envio.get("success", True)
                     ticket = (
-                        resultado_envio.get("ticket")
-                        or resultado_envio.get("mt5_ticket")
-                        or resultado_envio.get("order_id")
-                    ) if sucesso else None
+                        (
+                            resultado_envio.get("ticket")
+                            or resultado_envio.get("mt5_ticket")
+                            or resultado_envio.get("order_id")
+                        )
+                        if sucesso
+                        else None
+                    )
                 else:
                     ticket = resultado_envio
 
@@ -725,13 +731,15 @@ class OrdersExecutionOrchestrator:
 
         if ticket:
             order.mt5_ticket = ticket
-            order.add_audit(OrderState.SENT_TO_MT5, f"Ordem enviada com ticket {ticket}")
+            order.add_audit(
+                OrderState.SENT_TO_MT5, f"Ordem enviada com ticket {ticket}"
+            )
             return {
                 "success": True,
                 "order_id": order.order_id,
                 "mt5_ticket": ticket,
                 "gates_passed": gates_passed,
-                "execution_time_ms": execution_time_ms
+                "execution_time_ms": execution_time_ms,
             }
         else:
             order.add_audit(OrderState.REJECTED, "Falha no envio ao MT5 após retries")
@@ -740,8 +748,9 @@ class OrdersExecutionOrchestrator:
                 "order_id": order.order_id,
                 "rejection_reason": "MT5_SEND_FAILED",
                 "gates_passed": gates_passed,
-                "execution_time_ms": execution_time_ms
+                "execution_time_ms": execution_time_ms,
             }
+
     # ==================== TODO-2: EXECUTE_ORDER END ====================
 
     # ==================== TODO-3: MONITOR_POSITIONS START (Line 158, GitHub Issue #7) ====================
@@ -750,38 +759,106 @@ class OrdersExecutionOrchestrator:
         Faz polling de posições abertas e calcula PnL.
         """
         import time
+
         start_time = time.time()
 
         try:
-            positions = await self.mt5_adapter.get_positions()
+            positions = await self._maybe_await(self.mt5_adapter.get_positions())
+            positions = positions or []
             total_pnl = 0.0
             pos_list = []
+            stop_loss_events = []
 
             for pos in positions:
-                pnl = pos.profit_loss
-                total_pnl += pnl
-                pos_list.append({
-                    "symbol": pos.symbol,
-                    "volume": pos.volume,
-                    "pnl_unrealized": pnl,
-                    "entry_price": pos.entry_price
-                })
+                symbol = getattr(pos, "symbol", "UNKNOWN")
+                volume = float(getattr(pos, "volume", getattr(pos, "size", 0.0)) or 0.0)
+                entry_price = float(
+                    getattr(pos, "entry_price", getattr(pos, "price_open", 0.0)) or 0.0
+                )
+                side = str(
+                    getattr(pos, "type", getattr(pos, "order_type", "BUY")) or "BUY"
+                ).upper()
+                position_id = (
+                    getattr(pos, "order_id", None)
+                    or getattr(pos, "position_id", None)
+                    or getattr(pos, "ticket", None)
+                )
+                stop_loss = getattr(pos, "stop_loss", getattr(pos, "sl", None))
+                current_price = getattr(
+                    pos, "current_price", getattr(pos, "price_current", None)
+                )
 
-                # AC-6: Detect stop-loss
-                if pnl <= -500: # Exemplo de threshold global
-                     logger.warning(f"Stop Loss detectado para {pos.symbol}")
+                if current_price is None and hasattr(
+                    self.mt5_adapter, "get_current_price"
+                ):
+                    try:
+                        current_price = await self._maybe_await(
+                            self.mt5_adapter.get_current_price(symbol)
+                        )
+                    except Exception:
+                        current_price = None
+
+                pnl = getattr(pos, "profit_loss", getattr(pos, "profit", None))
+                if pnl is None and current_price is not None and entry_price:
+                    if side in {"SELL", "SHORT"}:
+                        pnl = (entry_price - float(current_price)) * volume
+                    else:
+                        pnl = (float(current_price) - entry_price) * volume
+                pnl = float(pnl or 0.0)
+                total_pnl += pnl
+                pos_list.append(
+                    {
+                        "symbol": symbol,
+                        "volume": volume,
+                        "pnl_unrealized": pnl,
+                        "entry_price": entry_price,
+                        "current_price": float(current_price)
+                        if current_price is not None
+                        else None,
+                        "position_id": str(position_id)
+                        if position_id is not None
+                        else None,
+                    }
+                )
+
+                stop_loss_hit = False
+                if stop_loss is not None and current_price is not None:
+                    stop_loss_value = float(stop_loss)
+                    current_price_value = float(current_price)
+                    if side in {"SELL", "SHORT"}:
+                        stop_loss_hit = current_price_value >= stop_loss_value
+                    else:
+                        stop_loss_hit = current_price_value <= stop_loss_value
+                elif pnl <= -500:
+                    stop_loss_hit = True
+
+                if stop_loss_hit and position_id is not None:
+                    logger.warning(
+                        "Stop Loss detectado para %s (posicao=%s)", symbol, position_id
+                    )
+                    close_result = await self.handle_stop_loss(str(position_id))
+                    stop_loss_events.append(
+                        {
+                            "position_id": str(position_id),
+                            "symbol": symbol,
+                            "close_success": bool(close_result.get("success")),
+                        }
+                    )
 
             monitoring_time_ms = (time.time() - start_time) * 1000
-
-            return {
+            result = {
                 "total_positions": len(positions),
                 "positions": pos_list,
                 "total_pnl_unrealized": total_pnl,
-                "monitoring_time_ms": monitoring_time_ms
+                "monitoring_time_ms": monitoring_time_ms,
+                "stop_loss_events": stop_loss_events,
             }
+            self.last_monitoring_snapshot = result
+            return result
         except Exception as e:
             logger.error(f"Erro ao monitorar posições: {e}")
             return None
+
     # ==================== TODO-3: MONITOR_POSITIONS END ====================
 
     # ==================== TODO-4: HANDLE_STOP_LOSS START (Line 188, GitHub Issue #7) ====================
@@ -791,14 +868,39 @@ class OrdersExecutionOrchestrator:
         """
         logger.info(f"Executando handle_stop_loss para {order_id}")
         # AC-9: Close at market price
-        success = await self.mt5_adapter.close_position_by_id(order_id)
+        raw_result = await self._maybe_await(
+            self.mt5_adapter.close_position_by_id(order_id)
+        )
+        success = (
+            raw_result.get("success", False)
+            if isinstance(raw_result, dict)
+            else bool(raw_result)
+        )
 
         if success:
-             message = f"Posição {order_id} fechada por Stop Loss"
-             logger.info(message)
-             return {"success": True, "message": message}
+            message = f"Posição {order_id} fechada por Stop Loss"
+            logger.info(message)
+            for order in self.orders.values():
+                if order.order_id == order_id or str(order.mt5_ticket) == str(order_id):
+                    order.add_audit(
+                        OrderState.CLOSED,
+                        message,
+                        {
+                            "trigger": "stop_loss",
+                            "closed_at": datetime.utcnow().isoformat(),
+                        },
+                    )
+                    break
+            event = {
+                "order_id": str(order_id),
+                "closed_at": datetime.utcnow().isoformat(),
+                "provider_result": raw_result if isinstance(raw_result, dict) else None,
+            }
+            self.stop_loss_events.append(event)
+            return {"success": True, "message": message, "event": event}
         else:
-             return {"success": False, "message": "Falha ao fechar posição"}
+            return {"success": False, "message": "Falha ao fechar posição"}
+
     # ==================== TODO-4: HANDLE_STOP_LOSS END ====================
 
 

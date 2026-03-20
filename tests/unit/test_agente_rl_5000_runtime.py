@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import importlib
 import sys
-from datetime import datetime, time as dtime, timedelta
+from datetime import datetime
+from datetime import time as dtime
+from datetime import timedelta
 from types import SimpleNamespace
 
 import pandas as pd
 import pytest
-
 
 MODULE_NAME = "scripts.operar_novo_agente_rl_real_antiovertrading"
 
@@ -96,9 +97,18 @@ def test_inferir_motivo_fechamento_classifica_tp_sl_e_manual() -> None:
         stop_loss=100120.0,
     )
 
-    assert mod.inferir_motivo_fechamento(posicao_buy, 100130.0) == mod.MotivoFechamento.TP_ATINGIDO
-    assert mod.inferir_motivo_fechamento(posicao_buy, 99870.0) == mod.MotivoFechamento.SL_ATINGIDO
-    assert mod.inferir_motivo_fechamento(posicao_sell, 99990.0) == mod.MotivoFechamento.MANUAL
+    assert (
+        mod.inferir_motivo_fechamento(posicao_buy, 100130.0)
+        == mod.MotivoFechamento.TP_ATINGIDO
+    )
+    assert (
+        mod.inferir_motivo_fechamento(posicao_buy, 99870.0)
+        == mod.MotivoFechamento.SL_ATINGIDO
+    )
+    assert (
+        mod.inferir_motivo_fechamento(posicao_sell, 99990.0)
+        == mod.MotivoFechamento.MANUAL
+    )
 
 
 def test_obter_acao_do_modelo_usa_confianca_do_modelo(
@@ -159,7 +169,8 @@ def test_sl_dinamico_de_compra_usa_minima_do_setup_de_entrada() -> None:
         100060.0 - mod.AntiOvertradingConfig.STOP_SETUP_BUFFER_PONTOS
     )
     assert tp == pytest.approx(
-        float(dados.tail(20)["high"].max()) + mod.AntiOvertradingConfig.TARGET_BUFFER_PONTOS
+        float(dados.tail(20)["high"].max())
+        + mod.AntiOvertradingConfig.TARGET_BUFFER_PONTOS
     )
 
 
@@ -203,5 +214,6 @@ def test_sl_dinamico_de_venda_usa_maxima_do_setup_de_entrada() -> None:
         100150.0 + mod.AntiOvertradingConfig.STOP_SETUP_BUFFER_PONTOS
     )
     assert tp == pytest.approx(
-        float(dados.tail(20)["low"].min()) - mod.AntiOvertradingConfig.TARGET_BUFFER_PONTOS
+        float(dados.tail(20)["low"].min())
+        - mod.AntiOvertradingConfig.TARGET_BUFFER_PONTOS
     )

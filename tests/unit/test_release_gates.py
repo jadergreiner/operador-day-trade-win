@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import sys
+from datetime import datetime, timedelta
+from pathlib import Path
 
 from src.application.release_gates import (
     ExecutorComando,
@@ -54,6 +55,20 @@ def _criar_relatorio(
         aprovado=aprovado,
         metadados={"evidencias": evidencias},
     )
+
+
+def _runtime_summary_payload(*, timestamp: datetime | None = None) -> dict[str, object]:
+    referencia = timestamp or datetime.now()
+    return {
+        "timestamp": referencia.isoformat(timespec="seconds"),
+        "daily_stats": {
+            "total_trades": 1,
+            "winners": 1,
+            "losers": 0,
+            "open_positions": 0,
+        },
+        "decisions": [],
+    }
 
 
 def test_staging_readiness_aprova_estrutura_minima(tmp_path: Path) -> None:
@@ -154,6 +169,19 @@ def test_quality_gate_usa_suite_canonica_explicitamente_sem_ati5() -> None:
     assert "-m pytest" in primeiro
     assert "tests/unit/test_release_gates.py" in primeiro
     assert "tests/unit/test_validate_documentation.py" in primeiro
+    assert "--cov=src.application.release_gates" in primeiro
+    assert "--cov-fail-under=80" in primeiro
+
+    segundo = " ".join(comandos[1])
+    assert "-m mypy" in segundo
+    assert "--strict" in segundo
+    assert "--follow-imports=skip" in segundo
+    assert "src/application/release_gates.py" in segundo
+
+    terceiro = " ".join(comandos[2])
+    quarto = " ".join(comandos[3])
+    assert "src/application/release_gates.py" in terceiro
+    assert "src/application/release_gates.py" in quarto
 
 
 def test_operational_uat_aprova_com_evidencias_locais(tmp_path: Path) -> None:
@@ -177,7 +205,7 @@ def test_operational_uat_aprova_com_evidencias_locais(tmp_path: Path) -> None:
     (tmp_path / "data" / "db").mkdir(parents=True)
     (tmp_path / "data" / "db" / "trading.db").write_text("ok", encoding="utf-8")
     (tmp_path / "data" / "db" / "last_session_summary.json").write_text(
-        json.dumps({"status": "ok"}),
+        json.dumps(_runtime_summary_payload()),
         encoding="utf-8",
     )
     (tmp_path / "outputs" / "release_gates").mkdir(parents=True)
@@ -189,11 +217,13 @@ def test_operational_uat_aprova_com_evidencias_locais(tmp_path: Path) -> None:
     )
 
     (tmp_path / "outputs" / "release_gates" / "bl01_staging_readiness.json").write_text(
-        json.dumps({"aprovado": True}),
+        json.dumps({"nome": "staging_readiness", "aprovado": True, "resultados": []}),
         encoding="utf-8",
     )
     (tmp_path / "outputs" / "release_gates" / "bl07_quality_gate.json").write_text(
-        json.dumps({"aprovado": True}),
+        json.dumps(
+            {"nome": "quality_gate_release", "aprovado": True, "resultados": []}
+        ),
         encoding="utf-8",
     )
 
@@ -227,7 +257,7 @@ def test_operational_uat_reprova_quando_legado_btcusd_aparece(tmp_path: Path) ->
     (tmp_path / "data" / "db").mkdir(parents=True)
     (tmp_path / "data" / "db" / "trading.db").write_text("ok", encoding="utf-8")
     (tmp_path / "data" / "db" / "last_session_summary.json").write_text(
-        json.dumps({"status": "ok"}),
+        json.dumps(_runtime_summary_payload()),
         encoding="utf-8",
     )
     (tmp_path / "outputs" / "release_gates").mkdir(parents=True)
@@ -237,11 +267,13 @@ def test_operational_uat_reprova_quando_legado_btcusd_aparece(tmp_path: Path) ->
         encoding="utf-8",
     )
     (tmp_path / "outputs" / "release_gates" / "bl01_staging_readiness.json").write_text(
-        json.dumps({"aprovado": True}),
+        json.dumps({"nome": "staging_readiness", "aprovado": True, "resultados": []}),
         encoding="utf-8",
     )
     (tmp_path / "outputs" / "release_gates" / "bl07_quality_gate.json").write_text(
-        json.dumps({"aprovado": True}),
+        json.dumps(
+            {"nome": "quality_gate_release", "aprovado": True, "resultados": []}
+        ),
         encoding="utf-8",
     )
 
@@ -251,6 +283,117 @@ def test_operational_uat_reprova_quando_legado_btcusd_aparece(tmp_path: Path) ->
     assert relatorio.aprovado is False
     assert any(
         item.nome == "legacy_markers_absent" and not item.sucesso
+        for item in relatorio.resultados
+    )
+
+
+def test_operational_uat_reprova_runtime_stale(tmp_path: Path) -> None:
+    """BL-08 reprova quando a evidencia diaria de runtime esta velha."""
+    (tmp_path / "docs").mkdir(parents=True)
+    (tmp_path / "docs" / "PRD.md").write_text(
+        "Produto WIN/WIN$N para operacao real.",
+        encoding="utf-8",
+    )
+    (tmp_path / "docs" / "OPERACAO_4_AGENTES.md").write_text(
+        "\n".join(
+            [
+                "## Agente 1: INICIAR_DIARIOS.bat",
+                "## Agente 2: INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat",
+                "## Agente 3: INICIAR_AGENTE_RL_5000.bat",
+                "## Agente 4: INICIAR_AGENTE_RL_DIRETO.bat",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "data" / "db").mkdir(parents=True)
+    (tmp_path / "data" / "db" / "trading.db").write_text("ok", encoding="utf-8")
+    runtime_path = tmp_path / "data" / "db" / "last_session_summary.json"
+    runtime_path.write_text(
+        json.dumps(
+            _runtime_summary_payload(
+                timestamp=datetime.now() - timedelta(days=3),
+            )
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates").mkdir(parents=True)
+    (tmp_path / "tests" / "uat").mkdir(parents=True)
+    (tmp_path / "tests" / "uat" / "uat_test_cases.py").write_text(
+        "# runner limpo\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates" / "bl01_staging_readiness.json").write_text(
+        json.dumps({"nome": "staging_readiness", "aprovado": True, "resultados": []}),
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates" / "bl07_quality_gate.json").write_text(
+        json.dumps(
+            {"nome": "quality_gate_release", "aprovado": True, "resultados": []}
+        ),
+        encoding="utf-8",
+    )
+
+    servico = OperationalUATService(
+        base_dir=tmp_path, runtime_evidence_max_age_hours=36
+    )
+    relatorio = servico.executar()
+
+    assert relatorio.aprovado is False
+    assert any(
+        item.nome == "runtime_artifacts"
+        and not item.sucesso
+        and "idade" in item.mensagem
+        for item in relatorio.resultados
+    )
+
+
+def test_operational_uat_reprova_release_artifact_sem_campos_minimos(
+    tmp_path: Path,
+) -> None:
+    """BL-08 reprova quando BL-01/BL-07 existem, mas nao sao evidencias validas."""
+    (tmp_path / "docs").mkdir(parents=True)
+    (tmp_path / "docs" / "PRD.md").write_text(
+        "Produto WIN/WIN$N para operacao real.",
+        encoding="utf-8",
+    )
+    (tmp_path / "docs" / "OPERACAO_4_AGENTES.md").write_text(
+        "\n".join(
+            [
+                "## Agente 1: INICIAR_DIARIOS.bat",
+                "## Agente 2: INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat",
+                "## Agente 3: INICIAR_AGENTE_RL_5000.bat",
+                "## Agente 4: INICIAR_AGENTE_RL_DIRETO.bat",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "data" / "db").mkdir(parents=True)
+    (tmp_path / "data" / "db" / "trading.db").write_text("ok", encoding="utf-8")
+    (tmp_path / "data" / "db" / "last_session_summary.json").write_text(
+        json.dumps(_runtime_summary_payload()),
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates").mkdir(parents=True)
+    (tmp_path / "tests" / "uat").mkdir(parents=True)
+    (tmp_path / "tests" / "uat" / "uat_test_cases.py").write_text(
+        "# runner limpo\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates" / "bl01_staging_readiness.json").write_text(
+        json.dumps({"aprovado": True}),
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates" / "bl07_quality_gate.json").write_text(
+        json.dumps({"nome": "quality_gate_release"}),
+        encoding="utf-8",
+    )
+
+    servico = OperationalUATService(base_dir=tmp_path)
+    relatorio = servico.executar()
+
+    assert relatorio.aprovado is False
+    assert any(
+        item.nome == "release_artifacts" and not item.sucesso
         for item in relatorio.resultados
     )
 
@@ -268,7 +411,10 @@ def test_go_live_decision_serializa_gates_e_evidencias() -> None:
     assert payload["decisao"] == "NO_GO"
     assert payload["produto_alvo"] == "WIN/WIN$N"
     assert payload["resumo"]["total_gates"] == 3
-    assert payload["resumo"]["gates_aprovados"] == ["staging_readiness", "quality_gate_release"]
+    assert payload["resumo"]["gates_aprovados"] == [
+        "staging_readiness",
+        "quality_gate_release",
+    ]
     assert payload["resumo"]["gates_reprovados"] == ["uat_operacional"]
     assert payload["evidencias"] == ["e1", "e2", "e3", "e4"]
     assert payload["gates"][2]["nome"] == "uat_operacional"

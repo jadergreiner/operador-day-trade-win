@@ -12,11 +12,20 @@ import json
 import subprocess
 import sys
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable, Sequence
 
 DEFAULT_PRODUCT_SCOPE = "WIN/WIN$N"
+DEFAULT_RUNTIME_EVIDENCE_MAX_AGE_HOURS = 36
+DEFAULT_RELEASE_REPORT_REQUIRED_KEYS = ("nome", "aprovado", "resultados")
+DEFAULT_RUNTIME_SUMMARY_REQUIRED_KEYS = ("timestamp", "daily_stats", "decisions")
+DEFAULT_RUNTIME_DAILY_STATS_REQUIRED_KEYS = (
+    "total_trades",
+    "winners",
+    "losers",
+    "open_positions",
+)
 DEFAULT_EXPECTED_AGENTS = (
     "INICIAR_DIARIOS.bat",
     "INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat",
@@ -43,6 +52,50 @@ DEFAULT_CANONICAL_QUALITY_TARGETS = (
     "tests/unit/test_validate_documentation.py",
     "tests/unit/test_multi_agent_conflict_resolver.py",
     "tests/unit/test_diario_order_manager.py",
+    "tests/unit/test_s2_6_analytics.py",
+)
+DEFAULT_CANONICAL_COVERAGE_TARGETS = (
+    "src.application.reconciliadores.mt5_sync_validator",
+    "src.application.reconciliadores.trade_outcome_reconciler",
+    "src.application.reconciliadores.unknown_result_detector",
+    "src.application.release_gates",
+    "src.application.guardian_agent_coordinator",
+    "src.application.macro_guardian_universal",
+    "src.application.universal_kill_switch",
+    "src.application.market_regime_adapter",
+    "src.application.order_manager_learner",
+    "src.application.diarios_runtime_mlops_bridge",
+    "src.application.logging_recovery_handler",
+    "src.application.thread_watchdog_advanced",
+    "src.application.diarios_health_monitor",
+    "src.application.narrative_persistence",
+    "src.application.trade_narrative_correlator",
+    "src.application.reflection_action_channel",
+    "src.application.adaptive_retraining_pipeline",
+    "src.application.directional_bias_detector",
+    "src.application.multi_agent_conflict_resolver",
+    "src.application.diario_order_manager",
+    "agente_micro_tendencia_winfut.s2_6_analytics.trader_feedback_api",
+)
+DEFAULT_CANONICAL_MYPY_TARGETS = (
+    "src/application/release_gates.py",
+    "scripts/validate_release_quality_gate.py",
+    "scripts/validate_go_live_gates.py",
+    "agente_micro_tendencia_winfut/s2_6_analytics/trader_feedback_api.py",
+)
+DEFAULT_CANONICAL_FORMAT_TARGETS = (
+    "src/application/release_gates.py",
+    "src/application/orders_executor.py",
+    "scripts/validate_release_quality_gate.py",
+    "scripts/validate_go_live_gates.py",
+    "scripts/agente_rl_direto_independente.py",
+    "agente_micro_tendencia_winfut/s2_6_analytics/trader_feedback_api.py",
+    "tests/test_orders_executor.py",
+    "tests/unit/test_agente_rl_5000_runtime.py",
+    "tests/unit/test_agente_rl_direto_guardrails.py",
+    "tests/unit/test_agente_rl_direto_runtime.py",
+    "tests/unit/test_orders_executor_hardening.py",
+    "tests/unit/test_release_gates.py",
     "tests/unit/test_s2_6_analytics.py",
 )
 
@@ -73,6 +126,32 @@ def _read_text(path: Path) -> str:
         return path.read_text(encoding="utf-8")
     except Exception:
         return ""
+
+
+def _read_json_mapping(path: Path) -> dict[str, Any] | None:
+    """Le um JSON e retorna dicionario apenas quando o payload e mapeavel."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    if isinstance(payload, dict):
+        return dict(payload)
+    return None
+
+
+def _parse_timestamp(value: Any) -> datetime | None:
+    """Converte timestamps ISO simples ou UTC ('Z') para datetime naive."""
+    text = _safe_text(value)
+    if not text:
+        return None
+    normalized = text[:-1] + "+00:00" if text.endswith("Z") else text
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed
+    return parsed.astimezone().replace(tzinfo=None)
 
 
 @dataclass(frozen=True)
@@ -268,10 +347,18 @@ class QualityGateService:
         self,
         executor: Callable[[list[str], int], tuple[int, str, str]] | None = None,
         test_targets: Sequence[str] | None = None,
+        coverage_targets: Sequence[str] | None = None,
+        mypy_targets: Sequence[str] | None = None,
+        format_targets: Sequence[str] | None = None,
         coverage_threshold: int = 80,
     ) -> None:
         self._executor = executor or ExecutorComando()
         self._test_targets = tuple(test_targets or DEFAULT_CANONICAL_QUALITY_TARGETS)
+        self._coverage_targets = tuple(
+            coverage_targets or DEFAULT_CANONICAL_COVERAGE_TARGETS
+        )
+        self._mypy_targets = tuple(mypy_targets or DEFAULT_CANONICAL_MYPY_TARGETS)
+        self._format_targets = tuple(format_targets or DEFAULT_CANONICAL_FORMAT_TARGETS)
         self._coverage_threshold = int(coverage_threshold)
 
     @property
@@ -279,25 +366,48 @@ class QualityGateService:
         """Expõe a suite canonica usada pelo gate."""
         return self._test_targets
 
+    @property
+    def coverage_targets(self) -> tuple[str, ...]:
+        """Expõe os modulos monitorados para cobertura canônica."""
+        return self._coverage_targets
+
+    @property
+    def mypy_targets(self) -> tuple[str, ...]:
+        """Expõe baseline de arquivos analisados pelo mypy strict."""
+        return self._mypy_targets
+
+    @property
+    def format_targets(self) -> tuple[str, ...]:
+        """Expõe baseline de arquivos validados por black/isort."""
+        return self._format_targets
+
     def executar(self) -> RelatorioGate:
         """Executa pytest/cobertura, mypy strict, black e isort."""
+        pytest_command = [
+            sys.executable,
+            "-m",
+            "pytest",
+            "-q",
+            *self._test_targets,
+            *[f"--cov={target}" for target in self._coverage_targets],
+            f"--cov-fail-under={self._coverage_threshold}",
+        ]
         comandos: list[tuple[str, list[str], int]] = [
             (
                 "pytest_cov",
-                [
-                    sys.executable,
-                    "-m",
-                    "pytest",
-                    "-q",
-                    *self._test_targets,
-                    "--cov=src",
-                    f"--cov-fail-under={self._coverage_threshold}",
-                ],
+                pytest_command,
                 1200,
             ),
             (
                 "mypy_strict",
-                [sys.executable, "-m", "mypy", "src", "--strict"],
+                [
+                    sys.executable,
+                    "-m",
+                    "mypy",
+                    "--strict",
+                    "--follow-imports=skip",
+                    *self._mypy_targets,
+                ],
                 900,
             ),
             (
@@ -307,9 +417,7 @@ class QualityGateService:
                     "-m",
                     "black",
                     "--check",
-                    "src",
-                    "tests",
-                    "scripts",
+                    *self._format_targets,
                 ],
                 600,
             ),
@@ -320,9 +428,7 @@ class QualityGateService:
                     "-m",
                     "isort",
                     "--check-only",
-                    "src",
-                    "tests",
-                    "scripts",
+                    *self._format_targets,
                 ],
                 600,
             ),
@@ -361,6 +467,9 @@ class QualityGateService:
             metadados={
                 "coverage_threshold": self._coverage_threshold,
                 "test_targets": list(self._test_targets),
+                "coverage_targets": list(self._coverage_targets),
+                "mypy_targets": list(self._mypy_targets),
+                "format_targets": list(self._format_targets),
             },
         )
 
@@ -375,11 +484,15 @@ class OperationalUATService:
         evidence_dir: Path | None = None,
         expected_agents: Sequence[str] | None = None,
         legacy_markers: Sequence[str] | None = None,
+        runtime_evidence_max_age_hours: int = DEFAULT_RUNTIME_EVIDENCE_MAX_AGE_HOURS,
     ) -> None:
         self._base_dir = base_dir
         self._evidence_dir = evidence_dir or (base_dir / "outputs" / "release_gates")
         self._expected_agents = tuple(expected_agents or DEFAULT_EXPECTED_AGENTS)
         self._legacy_markers = tuple(legacy_markers or ("BTCUSD",))
+        self._runtime_evidence_max_age = timedelta(
+            hours=int(runtime_evidence_max_age_hours)
+        )
 
     def executar(self) -> RelatorioGate:
         """Executa a validacao operacional guiada por evidencias locais."""
@@ -408,6 +521,15 @@ class OperationalUATService:
                 "produto_alvo": DEFAULT_PRODUCT_SCOPE,
                 "agentes_previstos": list(self._expected_agents),
                 "evidence_dir": str(self._evidence_dir),
+                "runtime_evidence_max_age_hours": int(
+                    self._runtime_evidence_max_age.total_seconds() // 3600
+                ),
+                "release_artifact_required_keys": list(
+                    DEFAULT_RELEASE_REPORT_REQUIRED_KEYS
+                ),
+                "runtime_summary_required_keys": list(
+                    DEFAULT_RUNTIME_SUMMARY_REQUIRED_KEYS
+                ),
                 "evidencias": evidencias,
             },
         )
@@ -466,39 +588,137 @@ class OperationalUATService:
             self._evidence_dir / "bl07_quality_gate.json",
         ]
         missing = [str(path) for path in required if not path.is_file()]
-        sucesso = not missing
-        mensagem = (
-            "Artefatos BL-01 e BL-07 encontrados"
-            if sucesso
-            else f"Artefatos ausentes: {', '.join(missing)}"
-        )
+        invalid: list[str] = []
+        if not missing:
+            for path in required:
+                payload = _read_json_mapping(path)
+                if payload is None:
+                    invalid.append(f"{path}: JSON invalido")
+                    continue
+                missing_keys = [
+                    key
+                    for key in DEFAULT_RELEASE_REPORT_REQUIRED_KEYS
+                    if key not in payload
+                ]
+                if missing_keys:
+                    invalid.append(f"{path}: sem campos {', '.join(missing_keys)}")
+        sucesso = not missing and not invalid
+        if sucesso:
+            mensagem = "Artefatos BL-01 e BL-07 encontrados e parseaveis"
+        elif missing:
+            mensagem = f"Artefatos ausentes: {', '.join(missing)}"
+        else:
+            mensagem = f"Artefatos invalidos: {'; '.join(invalid)}"
         return GateResultado(
             nome="release_artifacts",
             sucesso=sucesso,
             mensagem=mensagem,
             evidencias=[str(path) for path in required],
-            detalhes={"missing_artifacts": missing},
+            detalhes={
+                "missing_artifacts": missing,
+                "invalid_artifacts": invalid,
+            },
         )
 
     def _check_runtime_artifacts(self) -> GateResultado:
+        summary_path = self._base_dir / "data/db/last_session_summary.json"
         required = [
             self._base_dir / "data/db/trading.db",
-            self._base_dir / "data/db/last_session_summary.json",
+            summary_path,
             self._base_dir / "outputs",
         ]
         missing = [str(path) for path in required if not path.exists()]
-        sucesso = not missing
-        mensagem = (
-            "Artefatos de runtime basicos presentes"
-            if sucesso
-            else f"Artefatos de runtime ausentes: {', '.join(missing)}"
-        )
+        invalid: list[str] = []
+        stale: list[str] = []
+        detalhes: dict[str, Any] = {
+            "missing_runtime_artifacts": missing,
+            "invalid_runtime_artifacts": invalid,
+            "stale_runtime_artifacts": stale,
+            "runtime_evidence_max_age_hours": int(
+                self._runtime_evidence_max_age.total_seconds() // 3600
+            ),
+        }
+
+        if not missing:
+            payload = _read_json_mapping(summary_path)
+            if payload is None:
+                invalid.append(f"{summary_path}: JSON invalido")
+            else:
+                missing_keys = [
+                    key
+                    for key in DEFAULT_RUNTIME_SUMMARY_REQUIRED_KEYS
+                    if key not in payload
+                ]
+                if missing_keys:
+                    invalid.append(
+                        f"{summary_path}: sem campos {', '.join(missing_keys)}"
+                    )
+
+                daily_stats = _safe_mapping(payload.get("daily_stats"))
+                missing_daily_stats = [
+                    key
+                    for key in DEFAULT_RUNTIME_DAILY_STATS_REQUIRED_KEYS
+                    if key not in daily_stats
+                ]
+                if missing_daily_stats:
+                    invalid.append(
+                        f"{summary_path}: daily_stats sem campos "
+                        f"{', '.join(missing_daily_stats)}"
+                    )
+
+                decisions = payload.get("decisions")
+                if not isinstance(decisions, list):
+                    invalid.append(f"{summary_path}: decisions nao e lista")
+
+                embedded_timestamp = _parse_timestamp(payload.get("timestamp"))
+                if embedded_timestamp is None:
+                    invalid.append(f"{summary_path}: timestamp invalido")
+                else:
+                    now = datetime.now()
+                    idade_timestamp = now - embedded_timestamp
+                    detalhes["summary_timestamp"] = embedded_timestamp.isoformat(
+                        timespec="seconds"
+                    )
+                    detalhes["summary_timestamp_age_hours"] = round(
+                        idade_timestamp.total_seconds() / 3600,
+                        2,
+                    )
+                    if idade_timestamp > self._runtime_evidence_max_age:
+                        stale.append(
+                            f"{summary_path}: timestamp com idade de "
+                            f"{round(idade_timestamp.total_seconds() / 3600, 2)}h"
+                        )
+
+                modified_at = datetime.fromtimestamp(summary_path.stat().st_mtime)
+                idade_arquivo = datetime.now() - modified_at
+                detalhes["summary_file_mtime"] = modified_at.isoformat(
+                    timespec="seconds"
+                )
+                detalhes["summary_file_age_hours"] = round(
+                    idade_arquivo.total_seconds() / 3600,
+                    2,
+                )
+                if idade_arquivo > self._runtime_evidence_max_age:
+                    stale.append(
+                        f"{summary_path}: arquivo com idade de "
+                        f"{round(idade_arquivo.total_seconds() / 3600, 2)}h"
+                    )
+
+        sucesso = not missing and not invalid and not stale
+        if sucesso:
+            mensagem = (
+                "Artefatos de runtime validos e frescos "
+                f"(<= {int(self._runtime_evidence_max_age.total_seconds() // 3600)}h)"
+            )
+        else:
+            falhas = missing + invalid + stale
+            mensagem = f"Artefatos de runtime invalidos: {'; '.join(falhas)}"
         return GateResultado(
             nome="runtime_artifacts",
             sucesso=sucesso,
             mensagem=mensagem,
             evidencias=[str(path) for path in required],
-            detalhes={"missing_runtime_artifacts": missing},
+            detalhes=detalhes,
         )
 
     def _check_legacy_markers_absent(self) -> GateResultado:

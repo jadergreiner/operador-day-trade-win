@@ -1,7 +1,7 @@
-"""Application layer - use cases and services."""
+"""Application layer package.
 
-from src.application import services
+Nao importa automaticamente modulos de servicos para reduzir side effects
+durante discovery de testes e checagens de qualidade.
+"""
 
-__all__ = [
-    "services",
-]
+__all__ = ["services"]

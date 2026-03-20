@@ -10,12 +10,15 @@ API para comunicacao bidirecional com o trader:
 
 import asyncio
 import json
-from datetime import datetime
-from typing import Callable, Dict, Optional, Any, Set
+import threading
 from dataclasses import asdict
+from datetime import datetime
+from typing import Any, Callable, Coroutine, Dict, Optional, Set
 
 from .config import AnalyticsConfig
-from .models import Signal, TraderFeedback, InterventionType
+from .models import InterventionType, Signal, SignalStatus, TraderFeedback
+
+FeedbackCallback = Callable[[Dict[str, Any]], Any]
 
 
 class TraderFeedbackAPI:
@@ -31,12 +34,12 @@ class TraderFeedbackAPI:
         self.config = config or AnalyticsConfig()
         self.clients: Set[str] = set()  # Traders conectados
         self.pending_signals: Dict[str, Signal] = {}  # Sinais aguardando aprovacao
-        self.callbacks: Dict[str, Callable] = {}  # Callbacks para eventos
+        self.callbacks: Dict[str, FeedbackCallback] = {}  # Callbacks para eventos
 
     def register_callback(
         self,
         event_name: str,
-        callback: Callable,
+        callback: FeedbackCallback,
     ) -> None:
         """
         Registra callback para um evento
@@ -46,6 +49,58 @@ class TraderFeedbackAPI:
             callback: Funcao callback
         """
         self.callbacks[event_name] = callback
+
+    @staticmethod
+    def _get_running_loop() -> Optional[asyncio.AbstractEventLoop]:
+        """
+        Obtem o loop atual quando houver um loop em execucao.
+
+        Returns:
+            Loop ativo ou None em contexto sincrono
+        """
+        try:
+            return asyncio.get_running_loop()
+        except RuntimeError:
+            return None
+
+    @staticmethod
+    def _run_coroutine_in_new_loop(
+        coroutine: Coroutine[Any, Any, Any],
+    ) -> None:
+        """
+        Executa uma coroutine em um loop dedicado.
+
+        Args:
+            coroutine: Coroutine a executar
+        """
+        asyncio.run(coroutine)
+
+    def _dispatch_coroutine(
+        self,
+        coroutine: Coroutine[Any, Any, Any],
+    ) -> None:
+        """
+        Despacha uma coroutine de forma segura com ou sem loop ativo.
+
+        Em runtime async, preserva o comportamento fire-and-forget com
+        loop.create_task(). Em contextos sincronos, executa em thread daemon
+        com loop dedicado para evitar RuntimeError e manter compatibilidade.
+
+        Args:
+            coroutine: Coroutine a despachar
+        """
+        loop = self._get_running_loop()
+        if loop is not None:
+            loop.create_task(coroutine)
+            return
+
+        thread = threading.Thread(
+            target=self._run_coroutine_in_new_loop,
+            args=(coroutine,),
+            daemon=True,
+            name="s2_6_analytics_async_dispatch",
+        )
+        thread.start()
 
     async def trigger_callback(
         self,
@@ -81,7 +136,7 @@ class TraderFeedbackAPI:
         self.pending_signals[signal.signal_id] = signal
 
         # Callback para notificar traders conectados
-        asyncio.create_task(
+        self._dispatch_coroutine(
             self.trigger_callback(
                 "signal_submitted",
                 {
@@ -99,7 +154,7 @@ class TraderFeedbackAPI:
 
         # Configurar timeout se especificado
         if timeout_seconds:
-            asyncio.create_task(
+            self._dispatch_coroutine(
                 self._signal_timeout(signal.signal_id, timeout_seconds)
             )
 
@@ -122,7 +177,7 @@ class TraderFeedbackAPI:
             return False
 
         signal = self.pending_signals.pop(signal_id)
-        signal.status = signal.status.APPROVED
+        signal.status = SignalStatus.APPROVED
         signal.approved_by = trader_id
         signal.approval_timestamp = datetime.now()
 
@@ -158,7 +213,7 @@ class TraderFeedbackAPI:
             return False
 
         signal = self.pending_signals.pop(signal_id)
-        signal.status = signal.status.REJECTED
+        signal.status = SignalStatus.REJECTED
 
         await self.trigger_callback(
             "signal_rejected",

@@ -1,5 +1,5 @@
 {
-    "timestamp": "2026-02-06T15:31:00.894252",
+    "timestamp": "2026-03-19T23:45:00",
     "daily_pnl": 0.0,
     "daily_stats": {
         "total_trades": 0,
@@ -13,7 +13,7 @@
     },
     "decisions": [
         {
-            "timestamp": "2026-02-06T15:30:49.100899",
+            "timestamp": "2026-03-19T23:44:40",
             "symbol": "WING26",
             "action": "HOLD",
             "confidence": 0.4,

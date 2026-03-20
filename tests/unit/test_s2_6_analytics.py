@@ -2,20 +2,22 @@
 Unit Tests para S2-6: Analytics de Intervencao Manual
 """
 
-import pytest
+import threading
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any, Dict
+
+import pytest
 
 from agente_micro_tendencia_winfut.s2_6_analytics import (
-    AnalyticsDashboard,
-    TraderFeedbackAPI,
-    ManualOverrideLogger,
     AnalyticsConfig,
+    AnalyticsDashboard,
+    ManualOverrideLogger,
+    TraderFeedbackAPI,
 )
 from agente_micro_tendencia_winfut.s2_6_analytics.models import (
+    InterventionType,
     Signal,
     SignalStatus,
-    InterventionType,
 )
 
 
@@ -111,10 +113,9 @@ def test_dashboard_approve_signal(
 
     # Simular aprovacao
     import asyncio
+
     asyncio.run(
-        dashboard.feedback_api.approve_signal(
-            sample_signal.signal_id, "trader_001"
-        )
+        dashboard.feedback_api.approve_signal(sample_signal.signal_id, "trader_001")
     )
 
     pending = dashboard.feedback_api.get_pending_signals()
@@ -205,6 +206,84 @@ def test_trader_feedback_api(config: AnalyticsConfig) -> None:
     # Desregistrar trader
     api.unregister_trader("trader_001")
     assert "trader_001" not in api.get_connected_traders()
+
+
+def test_submit_signal_for_approval_without_running_loop_triggers_callback(
+    config: AnalyticsConfig,
+    sample_signal: Signal,
+) -> None:
+    """WHEN: Submeter sinal sem loop ativo
+    THEN: Callback deve ser processado sem RuntimeError"""
+    api = TraderFeedbackAPI(config)
+    callback_called = threading.Event()
+    callback_payload: Dict[str, Any] = {}
+
+    def on_signal_submitted(data: Dict[str, Any]) -> None:
+        callback_payload.update(data)
+        callback_called.set()
+
+    api.register_callback("signal_submitted", on_signal_submitted)
+
+    api.submit_signal_for_approval(sample_signal)
+
+    assert callback_called.wait(timeout=1.0)
+    assert callback_payload["signal_id"] == sample_signal.signal_id
+    assert api.get_pending_count() == 1
+
+
+def test_submit_signal_timeout_without_running_loop_uses_async_callback(
+    config: AnalyticsConfig,
+    sample_signal: Signal,
+) -> None:
+    """WHEN: Timeout ocorrer sem loop ativo
+    THEN: Timeout deve auto-rejeitar e disparar callback async"""
+    api = TraderFeedbackAPI(config)
+    timeout_called = threading.Event()
+    timeout_payload: Dict[str, Any] = {}
+
+    async def on_signal_timeout(data: Dict[str, Any]) -> None:
+        timeout_payload.update(data)
+        timeout_called.set()
+
+    api.register_callback("signal_timeout", on_signal_timeout)
+
+    api.submit_signal_for_approval(sample_signal, timeout_seconds=0.01)
+
+    assert timeout_called.wait(timeout=1.0)
+    assert timeout_payload["signal_id"] == sample_signal.signal_id
+    assert timeout_payload["action"] == "auto_rejected"
+    assert api.get_pending_count() == 0
+
+
+def test_submit_signal_for_approval_uses_running_loop_when_available(
+    config: AnalyticsConfig,
+    sample_signal: Signal,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """WHEN: Houver loop ativo
+    THEN: Coroutines devem ser agendadas no loop atual"""
+
+    class FakeLoop:
+        def __init__(self) -> None:
+            self.coroutines = []
+
+        def create_task(self, coroutine: Any) -> None:
+            self.coroutines.append(coroutine)
+
+    fake_loop = FakeLoop()
+    monkeypatch.setattr(
+        "agente_micro_tendencia_winfut.s2_6_analytics.trader_feedback_api."
+        "asyncio.get_running_loop",
+        lambda: fake_loop,
+    )
+
+    api = TraderFeedbackAPI(config)
+    api.submit_signal_for_approval(sample_signal, timeout_seconds=1.0)
+
+    assert len(fake_loop.coroutines) == 2
+
+    for coroutine in fake_loop.coroutines:
+        coroutine.close()
 
 
 def test_dashboard_data_structure(

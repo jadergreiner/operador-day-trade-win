@@ -1,9 +1,7 @@
-"""Source root module."""
+"""Source root package.
 
-from src import application, domain, infrastructure
+Evita imports recursivos/pesados em tempo de importacao do pacote raiz.
+Os subpacotes continuam acessiveis normalmente via imports explicitos.
+"""
 
-__all__ = [
-    "domain",
-    "application",
-    "infrastructure",
-]
+__all__ = ["application", "domain", "infrastructure"]

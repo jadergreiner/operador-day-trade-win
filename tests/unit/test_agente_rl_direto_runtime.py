@@ -14,13 +14,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.application.motor_decisao_isolado import (
-    DecisaoOperacional,
-    MotorDecisaoIsolado,
-    TipoPosicao,
-)
-from src.application.ordem_backoff_retry import GerenciadorRetryOrdem
-from src.application.posicao_isolamento import PosicaoIsoladaManager
 from scripts.agente_rl_direto_independente import (
     AGENT_SESSION_ID,
     classificar_fechamento_trade,
@@ -28,6 +21,13 @@ from scripts.agente_rl_direto_independente import (
     enviar_ordem_com_backoff,
     obter_contexto_fechamento_sessao_atual,
 )
+from src.application.motor_decisao_isolado import (
+    DecisaoOperacional,
+    MotorDecisaoIsolado,
+    TipoPosicao,
+)
+from src.application.ordem_backoff_retry import GerenciadorRetryOrdem
+from src.application.posicao_isolamento import PosicaoIsoladaManager
 
 
 class TestRuntimeFechamento:
@@ -118,7 +118,9 @@ class TestRuntimeFechamento:
 
 
 class TestRuntimeIsolationExtras:
-    def test_contexto_fechamento_retorna_none_quando_session_diverge(self, tmp_path) -> None:
+    def test_contexto_fechamento_retorna_none_quando_session_diverge(
+        self, tmp_path
+    ) -> None:
         posicao_mgr = PosicaoIsoladaManager(
             session_id="sessao_a",
             agent_version="rl_direto_v3.0",
@@ -159,20 +161,25 @@ class TestRuntimeIsolationExtras:
             data_dir=tmp_path,
         )
 
-        ok = enviar_ordem(
-            mt5_adapter=mt5_adapter,
-            acao="Comprar",
-            preco_atual=100000.0,
-            posicao_tracker=posicao_tracker,
-            rl_repo=None,
-            trade_tracker=None,
-            motor_decisao=motor,
-            opening_context={
-                "vies_intraday": "NEUTRO_LEVEMENTE_BAIXISTA",
-                "watchlist": ["PETR4", "VALE3", "DOL"],
-            },
-            confidence=0.68,
-        )
+        with patch("scripts.agente_rl_direto_independente.datetime") as mock_dt:
+            fake_now = MagicMock()
+            fake_now.time.return_value = datetime(2026, 3, 19, 10, 30).time()
+            mock_dt.now.return_value = fake_now
+
+            ok = enviar_ordem(
+                mt5_adapter=mt5_adapter,
+                acao="Comprar",
+                preco_atual=100000.0,
+                posicao_tracker=posicao_tracker,
+                rl_repo=None,
+                trade_tracker=None,
+                motor_decisao=motor,
+                opening_context={
+                    "vies_intraday": "NEUTRO_LEVEMENTE_BAIXISTA",
+                    "watchlist": ["PETR4", "VALE3", "DOL"],
+                },
+                confidence=0.68,
+            )
 
         assert ok is False
         assert motor.decisoes[-1].decisao == DecisaoOperacional.CANCELAR
