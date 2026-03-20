@@ -16,7 +16,7 @@ SYMBOL_ALIASES = {
     "EWZ": ("EWZ", "BEWZ39"),
     "IBOV": ("IBOV", "WIN$N", "BOVA11"),
 }
-PRICE_SUPPORT_THRESHOLD_PCT = 0.10
+PRICE_SUPPORT_THRESHOLD_PCT = 0.05
 DOL_STRONG_THRESHOLD_PCT = 0.20
 DOL_CALM_THRESHOLD_PCT = 0.15
 
@@ -190,7 +190,9 @@ def build_live_market_confirmation(
     if monitors_negative:
         reasons.append(f"monitores_contrarios:{','.join(monitors_negative)}")
 
-    buy_confirmed = heavyweights_buy_confirmed and dol_comportado
+    buy_confirmed = heavyweights_buy_confirmed and (
+        dol_comportado or bool(monitors_positive)
+    )
     sell_quality_confirmed = dol_forte
 
     return OpeningLiveMarketConfirmation(

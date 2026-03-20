@@ -351,8 +351,13 @@ def apply_opening_context_strict_filters(
     reasons = set(result.reasons)
     block_reason = ""
     if result.normalized_action == "BUY":
-        if "compra_sem_confirmacao_live" in reasons:
-            block_reason = "compra_sem_confirmacao_live"
+        live_confirmation = result.live_market_confirmation
+        has_negative_monitors = bool(live_confirmation.get("monitors_negative"))
+        if (
+            "compra_sem_confirmacao_live" in reasons
+            and has_negative_monitors
+        ):
+            block_reason = "compra_contraria_contexto_abertura"
         elif "vies_intraday_baixista" in reasons and (
             "compra_sem_confirmacao_contextual" in reasons
             or "compra_sem_alinhamento_suficiente" in reasons

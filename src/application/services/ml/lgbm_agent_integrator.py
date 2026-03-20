@@ -176,17 +176,25 @@ class LGBMAgentIntegrator:
         try:
             features = {}
 
+            def _as_float(value, default: float = 0.0) -> float:
+                try:
+                    if value is None:
+                        return default
+                    return float(value)
+                except (TypeError, ValueError):
+                    return default
+
             # Validação básica
             if cycle_result is None or opp is None:
                 return None
 
             # ─ PREÇOS BÁSICOS ─
-            features["win_price"] = getattr(cycle_result, "price_current", None) or 0.0
-            features["win_open_price"] = getattr(cycle_result, "price_open", None) or 0.0
+            features["win_price"] = _as_float(getattr(cycle_result, "price_current", None))
+            features["win_open_price"] = _as_float(getattr(cycle_result, "price_open", None))
 
             # ─ MACRO SCORE ─
-            features["macro_score_final"] = getattr(cycle_result, "macro_score", None) or 0
-            features["macro_confidence"] = getattr(cycle_result, "macro_confidence", None) or 0
+            features["macro_score_final"] = _as_float(getattr(cycle_result, "macro_score", None))
+            features["macro_confidence"] = _as_float(getattr(cycle_result, "macro_confidence", None))
             macro_signal = getattr(cycle_result, "macro_signal", "NEUTRO")
             features["macro_bias"] = (
                 1 if macro_signal == "COMPRA"
@@ -194,21 +202,21 @@ class LGBMAgentIntegrator:
             )
 
             # ─ MICRO SCORE ─
-            features["micro_score"] = getattr(cycle_result, "micro_score", None) or 0
+            features["micro_score"] = _as_float(getattr(cycle_result, "micro_score", None))
             opp_direction = getattr(opp, "direction", "VENDA")
             features["micro_trend"] = (
                 1 if opp_direction == "COMPRA" else 0
             )  # Encoded 0/1
 
             # ─ VWAP ─
-            vwap = getattr(cycle_result, "vwap", None) or 0.0
+            vwap = _as_float(getattr(cycle_result, "vwap", None))
             features["vwap_value"] = vwap
             features["vwap_upper_1sigma"] = vwap * 1.01 if vwap > 0 else 0
             features["vwap_lower_1sigma"] = vwap * 0.99 if vwap > 0 else 0
             features["vwap_upper_2sigma"] = vwap * 1.02 if vwap > 0 else 0
             features["vwap_lower_2sigma"] = vwap * 0.98 if vwap > 0 else 0
 
-            price_current = getattr(cycle_result, "price_current", None) or 0.0
+            price_current = _as_float(getattr(cycle_result, "price_current", None))
             if vwap > 0 and price_current > 0:
                 features["vwap_position"] = (
                     1 if price_current > vwap
@@ -390,6 +398,20 @@ class LGBMAgentIntegrator:
                          "dist_upper_2s_pct", "dist_lower_2s_pct",
                          "vwap_band_width_pct"]:
                 features[dist] = 0.0
+
+            # Normaliza qualquer Decimal remanescente para float, evitando
+            # incompatibilidade com pandas / LightGBM / operações aritméticas.
+            for key, value in list(features.items()):
+                if isinstance(value, bool):
+                    features[key] = int(value)
+                    continue
+                if isinstance(value, (int, float, np.integer, np.floating)):
+                    features[key] = float(value)
+                    continue
+                try:
+                    features[key] = float(value)
+                except (TypeError, ValueError):
+                    features[key] = 0.0
 
             return features
 

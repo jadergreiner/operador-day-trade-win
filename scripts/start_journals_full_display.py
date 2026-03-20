@@ -45,6 +45,7 @@ from src.application.services.macro_scenario_guardian import (
 from src.application.diario_order_manager import DiarioOrderManager
 from src.application.diarios_watchdog import ThreadWatchdog, ConfiguracaoThread
 from src.application.diario_observability_panel import ObservabilidadeDiarios
+from src.application.log_labels import OPENING_CONTEXT_LABEL
 from src.application.opening_context_runtime import initialize_opening_context_runtime
 from src.application.opening_context_report import (
     generate_opening_context_vs_result_report,
@@ -4021,6 +4022,11 @@ def run_diario_order_manager():
                     and sinal.motivo_bloqueio
                 ):
                     print(f"  Bloqueio: {sinal.motivo_bloqueio}")
+                    if sinal.motivo_bloqueio.startswith("direcao_neutro:"):
+                        print(
+                            "  neutro_origem="
+                            f"{sinal.motivo_bloqueio.split(':', 1)[1]}"
+                        )
 
             except Exception as ciclo_err:
                 print(f"[DIARIO EXECUCAO] Erro no ciclo: {ciclo_err}")
@@ -4168,11 +4174,11 @@ def main():
                 outputs_root=project_root / "outputs",
             )
             print(
-                "[PRE-ABERTURA] Relatorio contexto x resultado gerado: "
+                f"{OPENING_CONTEXT_LABEL} Relatorio contexto x resultado gerado: "
                 f"{relatorio.markdown_path}"
             )
         except Exception as exc:
-            print(f"[PRE-ABERTURA] Falha ao gerar relatorio final: {exc}")
+            print(f"{OPENING_CONTEXT_LABEL} Falha ao gerar relatorio final: {exc}")
 
 
 if __name__ == "__main__":

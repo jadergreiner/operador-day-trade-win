@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from src.application.guardian_agent_coordinator import GuardianAgentCoordinator
+from src.application.log_labels import OPENING_CONTEXT_LABEL
 from src.application.macro_guardian_universal import MacroGuardianUniversal
 from src.application.opening_context_audit import persist_opening_context_audit
 from src.application.opening_context_policy import (
@@ -74,11 +75,14 @@ def initialize_opening_context_runtime(
         # Auditoria é suporte operacional; não deve bloquear a inicialização do agente.
         if logger is not None:
             logger.warning(
-                "[PRE-ABERTURA] Falha ao persistir auditoria de contexto: %s",
+                "%s Falha ao persistir auditoria de contexto: %s",
+                OPENING_CONTEXT_LABEL,
                 exc,
             )
         elif printer is not None:
-            printer(f"[PRE-ABERTURA] Falha ao persistir auditoria de contexto: {exc}")
+            printer(
+                f"{OPENING_CONTEXT_LABEL} Falha ao persistir auditoria de contexto: {exc}"
+            )
 
     return OpeningContextRuntime(
         macro_guardian=macro_guardian,
@@ -125,7 +129,7 @@ def _emit_opening_prompt(
     """Exibe o resumo operacional de abertura em canais humanos."""
     lines = [
         "",
-        "[PRE-ABERTURA] Contexto operacional carregado",
+        f"{OPENING_CONTEXT_LABEL} Contexto operacional carregado",
         f"  Regime macro: {regime_macro or 'N/D'}",
         f"  Vies intraday: {vies_intraday or 'N/D'}",
     ]

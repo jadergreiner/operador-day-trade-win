@@ -253,6 +253,7 @@ from src.application.diario_market_features import (
     load_diario_market_features_payload,
 )
 from src.application.opening_context_runtime import initialize_opening_context_runtime
+from src.application.log_labels import OPENING_CONTEXT_LABEL
 from src.application.services.rl_persistence_service import RLPersistenceService
 try:
     from src.application.ac5_8_position_monitor import (
@@ -2226,7 +2227,8 @@ def inicializar_componentes_auxiliares() -> None:
     )
     if _opening_context_runtime.prompt_abertura_agentes:
         logger.info(
-            "[PRE-ABERTURA] Prompt operacional lido pelo agente: %s",
+            "%s Prompt operacional lido pelo agente: %s",
+            OPENING_CONTEXT_LABEL,
             _opening_context_runtime.prompt_abertura_agentes,
         )
 
@@ -2267,11 +2269,16 @@ def main() -> int:
                 outputs_root=ROOT_DIR / "outputs",
             )
             logger.info(
-                "[PRE-ABERTURA] Relatório contexto x resultado gerado: %s",
+                "%s Relatório contexto x resultado gerado: %s",
+                OPENING_CONTEXT_LABEL,
                 relatorio_contexto.markdown_path,
             )
         except Exception as e:
-            logger.warning(f"[PRE-ABERTURA] Falha ao gerar relatório final: {e}")
+            logger.warning(
+                "%s Falha ao gerar relatório final: %s",
+                OPENING_CONTEXT_LABEL,
+                e,
+            )
 
         if _monitor_posicao_rl:
             _monitor_posicao_rl.fechar()

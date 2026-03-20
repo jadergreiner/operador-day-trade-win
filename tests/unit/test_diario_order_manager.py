@@ -585,7 +585,9 @@ class TestConsolidarSinal:
         leitura_mock.divergencia_critica = False
         leitura_mock.risco_armadilha = "MEDIA"
         leitura_mock.direcao_preferida = "SELL"
+        leitura_mock.exaustao_detectada = False
         leitura_mock.pullback_saudavel = True
+        leitura_mock.cenario_mudou = False
         leitura_mock.resumo = "Pullback saudavel: entrada na direcao da tendencia"
         leitura_mock.armadilhas = []
         mgr._leitor.ler.return_value = leitura_mock
@@ -594,8 +596,8 @@ class TestConsolidarSinal:
             sinal = mgr.consolidar_sinal(decisao, candles, guardian)
 
         assert sinal.pode_operar is False
-        assert sinal.motivo_bloqueio.startswith("trend_follow_baixa_confianca:")
-        assert "direcao_neutro" not in sinal.motivo_bloqueio
+        assert "trend_follow_baixa_confianca:" in sinal.motivo_bloqueio
+        assert sinal.motivo_bloqueio.startswith("direcao_neutro:")
 
     def test_gatilho_diario_de_confianca_usa_override_cauteloso(self, tmp_path):
         override_path = tmp_path / "confidence_override_today.json"

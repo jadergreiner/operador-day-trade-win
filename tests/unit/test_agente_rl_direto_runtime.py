@@ -149,7 +149,7 @@ class TestRuntimeIsolationExtras:
         contexto = obter_contexto_fechamento_sessao_atual(posicao_mgr, motor)
         assert contexto is None
 
-    def test_enviar_ordem_bloqueia_quando_contexto_abertura_contraria_compra(
+    def test_enviar_ordem_permite_quando_contexto_abertura_so_gera_alerta_leve(
         self,
         tmp_path,
     ) -> None:
@@ -181,10 +181,4 @@ class TestRuntimeIsolationExtras:
                 confidence=0.68,
             )
 
-        assert ok is False
-        assert motor.decisoes[-1].decisao == DecisaoOperacional.CANCELAR
-        assert (
-            motor.decisoes[-1].contexto_operacional["contexto_abertura_liberado"]
-            is False
-        )
-        assert "live_market_confirmation" in motor.decisoes[-1].contexto_operacional
+        assert ok is True

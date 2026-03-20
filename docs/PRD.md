@@ -55,6 +55,7 @@ Automacao completa do ciclo de trading:
 - O PRD espelha esses documentos para rastreabilidade de release, não para substituir o status operacional deles.
 - Governança do micro tendência: `docs/MICRO_TENDENCIA_CHANGELOG_GOVERNANCA.md` e `docs/MICRO_TENDENCIA_CHANGELOG_TEMPLATE.md`.
 - O contrato imediato do fechamento diário é `prompts/fechamento_diario.md`, com `ResultadoAgente`, `agente_impactado`, `resultado_por_agente`, `resultado_consolidado` e `melhorias_por_agente`.
+- O marcador operacional de inicialização e relatório do contexto de mercado é `JANELA_OPERACIONAL`; ele substitui o rótulo histórico `PRE-ABERTURA` nos logs do runtime.
 - `Gate 2` neste documento significa apenas escala de capital; o gate final operacional é separado e depende de staging/UAT e evidência diária por agente.
 
 ---
@@ -494,6 +495,8 @@ Artefatos obrigatorios em `data/backtest/`:
 6. Aplicar licoes BDI
 7. Carregar dataset ML
 8. Iniciar diarios de observabilidade
+
+Observacao: durante a inicialização, o contexto operacional de mercado é anunciado nos logs como `JANELA_OPERACIONAL`.
 
 ### 8.6 Regras do Guardian
 

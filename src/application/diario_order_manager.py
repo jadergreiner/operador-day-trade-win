@@ -482,6 +482,34 @@ class DiarioOrderManager:
         confianca_base = max(0.0, confianca_base - guardian_penalty / 100.0)
         return confianca_base
 
+    def _motivo_direcao_neutra(
+        self,
+        leitura: Optional[LeituraOperador],
+        direcao_decisao: str,
+        contexto_trend_follow: bool,
+        confianca_final: float,
+        confianca_minima_efetiva: float,
+        kill_switch: bool,
+    ) -> str:
+        """Classifica a subcondicao que levou o sinal a NEUTRO."""
+        if kill_switch:
+            return "direcao_neutro:guardian_kill_switch"
+        if leitura is not None:
+            if leitura.exaustao_detectada:
+                return "direcao_neutro:exaustao_detectada"
+            if leitura.divergencia_critica:
+                return "direcao_neutro:divergencia_critica"
+            if leitura.cenario_mudou:
+                return "direcao_neutro:cenario_mudou"
+        if contexto_trend_follow and confianca_final < confianca_minima_efetiva:
+            return (
+                "direcao_neutro:trend_follow_baixa_confianca:"
+                f"{confianca_final:.2f}<{confianca_minima_efetiva:.2f}"
+            )
+        if direcao_decisao == "NEUTRO":
+            return "direcao_neutro:direcao_decisao_neutra"
+        return "direcao_neutro:indefinido"
+
     def _eh_contexto_trend_follow(
         self,
         leitura: Optional[LeituraOperador],
@@ -649,13 +677,14 @@ class DiarioOrderManager:
             motivo_bloqueio = "guardian_kill_switch"
         elif direcao == "NEUTRO":
             pode_operar = False
-            if contexto_trend_follow:
-                motivo_bloqueio = (
-                    f"trend_follow_baixa_confianca:{confianca_final:.2f}<"
-                    f"{confianca_minima_efetiva:.2f}"
-                )
-            else:
-                motivo_bloqueio = "direcao_neutro"
+            motivo_bloqueio = self._motivo_direcao_neutra(
+                leitura,
+                direcao,
+                contexto_trend_follow,
+                confianca_final,
+                confianca_minima_efetiva,
+                kill_switch,
+            )
         elif alinhamento < ALINHAMENTO_MINIMO:
             pode_operar = False
             motivo_bloqueio = (

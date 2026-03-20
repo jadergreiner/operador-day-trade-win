@@ -40,7 +40,29 @@ def test_gate_bloqueia_compra_contra_vies_baixista_sem_confirmacao() -> None:
     assert result.required_confirmations == ["PETR4", "VALE3", "DOL", "IBOV", "EWZ"]
 
 
-def test_gate_compra_propagates_confirmacao_live_com_monitores() -> None:
+def test_gate_compra_permite_sem_confirmacao_forte_mas_com_monitores_positivos() -> None:
+    result = evaluate_opening_context_gate(
+        "Comprar",
+        {
+            "vies_intraday": "NEUTRO",
+            "watchlist": ["PETR4", "VALE3", "DOL"],
+        },
+        confidence=0.85,
+        alignment=0.8,
+        market_confirmation={
+            "buy_confirmed": False,
+            "monitors_positive": ["EWZ"],
+            "monitors_negative": [],
+        },
+    )
+
+    assert result.allow_entry is True
+    assert "compra_sem_confirmacao_live" in result.reasons
+    assert "monitores_favoraveis:EWZ" in result.reasons
+    assert result.to_context_payload()["live_market_confirmation"]["buy_confirmed"] is False
+
+
+def test_gate_compra_bloqueia_sem_confirmacao_forte_com_monitores_contrarios() -> None:
     result = evaluate_opening_context_gate(
         "Comprar",
         {
@@ -58,9 +80,8 @@ def test_gate_compra_propagates_confirmacao_live_com_monitores() -> None:
 
     assert result.allow_entry is False
     assert "compra_sem_confirmacao_live" in result.reasons
-    assert "monitores_favoraveis:EWZ" in result.reasons
     assert "monitores_contrarios:IBOV" in result.reasons
-    assert result.to_context_payload()["live_market_confirmation"]["buy_confirmed"] is False
+    assert "compra_contraria_contexto_abertura" in result.reasons
 
 
 def test_gate_bloqueia_quando_kill_switch_da_abertura_esta_ativo() -> None:

@@ -162,6 +162,7 @@ try:
     from src.application.opening_context_runtime import (
         initialize_opening_context_runtime,
     )
+    from src.application.log_labels import OPENING_CONTEXT_LABEL
     from src.application.opening_market_confirmation import (
         build_live_market_confirmation,
     )
@@ -2189,7 +2190,8 @@ def main():
     )
     if opening_runtime.prompt_abertura_agentes:
         logger.info(
-            "[PRE-ABERTURA] Prompt operacional lido pelo agente: %s",
+            "%s Prompt operacional lido pelo agente: %s",
+            OPENING_CONTEXT_LABEL,
             opening_runtime.prompt_abertura_agentes,
         )
 
@@ -2581,11 +2583,16 @@ def main():
                 outputs_root=OUTPUTS_DIR,
             )
             logger.info(
-                "[PRE-ABERTURA] Relatório contexto x resultado gerado: %s",
+                "%s Relatório contexto x resultado gerado: %s",
+                OPENING_CONTEXT_LABEL,
                 relatorio_contexto.markdown_path,
             )
         except Exception as e:
-            logger.warning(f"[PRE-ABERTURA] Falha ao gerar relatório final: {e}")
+            logger.warning(
+                "%s Falha ao gerar relatório final: %s",
+                OPENING_CONTEXT_LABEL,
+                e,
+            )
 
         try:
             mt5_adapter.desconectar()
