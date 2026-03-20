@@ -17,6 +17,7 @@ import pytest
 
 from src.application.diario_order_manager import (
     CONFIANCA_MINIMA,
+    CONFIANCA_MINIMA_CAUTELOSA,
     ALINHAMENTO_MINIMO,
     MAGIC_NUMBER,
     ATR_MINIMO,
@@ -121,7 +122,11 @@ def _configure_live_market_data(
     mt5.get_daily_candle.side_effect = _daily
 
 
-def _make_manager(tmp_path: Path, rewards: list = None) -> DiarioOrderManager:
+def _make_manager(
+    tmp_path: Path,
+    rewards: list = None,
+    confidence_override_path: Path | None = None,
+) -> DiarioOrderManager:
     mt5 = MagicMock()
     mt5.get_positions.return_value = []
     mt5.send_order.return_value = "999001"
@@ -176,6 +181,8 @@ def _make_manager(tmp_path: Path, rewards: list = None) -> DiarioOrderManager:
     manager._latest_market_features_path = (
         Path(tmp_path) / "outputs" / "analysis" / "diario_market_features_latest.json"
     )
+    if confidence_override_path is not None:
+        manager._confidence_override_path = confidence_override_path
 
     return manager
 
@@ -516,6 +523,26 @@ class TestConsolidarSinal:
 
         assert sinal.pode_operar is False
         assert "confianca" in sinal.motivo_bloqueio
+
+    def test_gatilho_diario_de_confianca_usa_override_cauteloso(self, tmp_path):
+        override_path = tmp_path / "confidence_override_today.json"
+        override_path.write_text(
+            json.dumps(
+                {
+                    "confidence_current": 0.32,
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        mgr = _make_manager(
+            tmp_path,
+            confidence_override_path=override_path,
+        )
+
+        assert mgr._confidence_gate_minima() == pytest.approx(
+            CONFIANCA_MINIMA_CAUTELOSA
+        )
 
     def test_bloqueio_hold(self, tmp_path):
         mgr = _make_manager(tmp_path)

@@ -20,6 +20,9 @@ echo.
 call :bootstrap_checks
 if errorlevel 1 exit /b 1
 
+call :show_daily_gate
+if errorlevel 1 exit /b 1
+
 echo.
 echo   ============================================================
 echo   CONTRATO OPERACIONAL RL 5000
@@ -149,6 +152,17 @@ if not exist "scripts\validate_go_live_gates.py" (
     exit /b 1
 )
 
+exit /b 0
+
+:show_daily_gate
+echo.
+echo   [BOOTSTRAP] Gate diario de confidence...
+python -c "from pathlib import Path; import json; p=Path('config/confidence_override_today.json'); gate=0.60; gate=float(json.loads(p.read_text(encoding='utf-8')).get('confidence_current', gate)) if p.exists() else gate; gate=max(0.35, min(0.60, gate)); print(f'  [OK] Gate diario de confidence: {gate:.0%}')"
+if errorlevel 1 (
+    echo   [WARN] Nao foi possivel carregar o gate diario; usando padrao 60%%.
+    exit /b 0
+)
+echo.
 exit /b 0
 
 :get_confirmation

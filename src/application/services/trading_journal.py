@@ -94,6 +94,7 @@ class TradingJournalService:
         high: Decimal,
         low: Decimal,
         decision_data: dict,
+        daily_confidence_gate: Optional[Decimal] = None,
         volume_today: Optional[int] = None,
         volume_avg_3days: Optional[int] = None,
         volume_variance_pct: Optional[Decimal] = None,
@@ -145,6 +146,7 @@ class TradingJournalService:
             price_change=price_change,
             feeling=feeling,
             decision_data=decision_data,
+            daily_confidence_gate=daily_confidence_gate,
             volume_variance_pct=volume_variance_pct
         )
 
@@ -241,6 +243,7 @@ class TradingJournalService:
         price_change: Decimal,
         feeling: str,
         decision_data: dict,
+        daily_confidence_gate: Optional[Decimal] = None,
         volume_variance_pct: Optional[Decimal] = None,
     ) -> str:
         """Generate detailed storytelling narrative."""
@@ -316,6 +319,9 @@ class TradingJournalService:
         else:
             decision_para = f"DECISAO: AGUARDAR. Confianca baixa ({confidence:.0%}). "
             decision_para += f"Razao: {decision_data.get('primary_reason', 'Sem setup claro')}. "
+
+        if daily_confidence_gate is not None:
+            decision_para += f"Gate diario atual: {daily_confidence_gate:.0%}. "
 
         # Conclusion
         conclusion = self._generate_conclusion(feeling, action)

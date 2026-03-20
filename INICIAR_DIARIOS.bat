@@ -26,6 +26,10 @@ python scripts\daily_confidence_retraining.py
 echo [09:34] P50-B OK - Confidence retrainado
 echo.
 
+echo [09:34] Gate diario de confidence (bootstrap)...
+python -c "from pathlib import Path; import json; p=Path('config/confidence_override_today.json'); gate=0.60; gate=float(json.loads(p.read_text(encoding='utf-8')).get('confidence_current', gate)) if p.exists() else gate; gate=max(0.35, min(0.60, gate)); print(f'[09:34] Gate diario de confidence: {gate:.0%}')"
+echo.
+
 echo Iniciando sistema com narrativa completa...
 echo.
 

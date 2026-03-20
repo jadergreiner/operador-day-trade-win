@@ -49,6 +49,10 @@ from src.application.opening_context_report import (
     generate_opening_context_vs_result_report,
 )
 from src.application.confidence_utils import normalize_confidence
+from src.application.confidence_utils import (
+    load_daily_confidence_override,
+    resolve_daily_confidence_gate,
+)
 from src.application.retreino_micro_tendencia import GerenciadorRetreino
 
 # ────────────────────────────────────────────────────────────────
@@ -117,6 +121,17 @@ except ImportError:
 NARRATIVE_EXPORT_DIR = Path("outputs")
 NARRATIVE_EXPORT_EVERY_N_CYCLES = 3
 NARRATIVE_EXPORT_PREFIX = "narrative_dataset_ai_reflection"
+
+
+def _current_daily_confidence_gate() -> Decimal:
+    """Resolve o gate diario usado nas narrativas."""
+    override = load_daily_confidence_override()
+    gate = resolve_daily_confidence_gate(
+        override,
+        default_gate=0.65,
+        cautious_floor=0.35,
+    )
+    return Decimal(str(gate))
 
 
 def _fetch_live_macro() -> dict:
@@ -2219,6 +2234,7 @@ def run_trading_journal():
             print("\n" + "=" * 80)
             print(f"TRADING JOURNAL - ENTRADA #{count} - {now.strftime('%H:%M:%S')}")
             print("=" * 80)
+            print(f"Gate diario de confidence: {_current_daily_confidence_gate():.0%}")
 
             candles = mt5.get_candles(symbol, TimeFrame.M15, count=100)
             if not candles:
@@ -2249,6 +2265,7 @@ def run_trading_journal():
             )
 
             # Create narrative
+            daily_confidence_gate = _current_daily_confidence_gate()
             decision_data = {
                 "action": decision.action,
                 "confidence": decision.confidence,
@@ -2269,6 +2286,7 @@ def run_trading_journal():
                 high=high,
                 low=low,
                 decision_data=decision_data,
+                daily_confidence_gate=daily_confidence_gate,
             )
 
             entry = journal.save_entry(narrative, decision_data)
@@ -2348,6 +2366,8 @@ def run_ai_reflection():
             print("\n" + "=" * 80)
             print(f"AI REFLECTION - REFLEXAO #{count} - {now.strftime('%H:%M:%S')}")
             print("=" * 80)
+            daily_confidence_gate = _current_daily_confidence_gate()
+            print(f"Gate diario de confidence: {daily_confidence_gate:.0%}")
 
             candles = mt5.get_candles(symbol, TimeFrame.M15, count=100)
             if not candles:
@@ -2393,6 +2413,7 @@ def run_ai_reflection():
                 sentiment_changed=abs(change_10min) > 0.3,
                 technical_triggered=decision.recommended_entry is not None,
                 human_last_action="observando",
+                daily_confidence_gate=daily_confidence_gate,
             )
 
             entry = journal.save_entry(reflection)
@@ -2554,6 +2575,7 @@ def run_rl_performance_diary():
             print("\n" + "▓" * 80)
             print(f"  RL PERFORMANCE DIARY - RELATÓRIO #{count} - {now.strftime('%H:%M:%S')}")
             print("▓" * 80)
+            print(f"Gate diario de confidence: {_current_daily_confidence_gate():.0%}")
 
             perf = reader.analyze_performance()
 
@@ -3431,10 +3453,12 @@ def run_diario_order_manager():
         rl_reader=rl_reader,
         opening_context=opening_context,
     )
+    confianca_minima_efetiva = manager._confidence_gate_minima()
 
     print(f"\n[DIARIO EXECUCAO] Iniciado | session={session_id} | magic=234800")
     print(f"[DIARIO EXECUCAO] Ciclo: {EXECUCAO_INTERVAL_SEC}s | "
-          f"Confianca minima: 60% | SL/TP: por ATR | Autonomo")
+          f"Confianca minima: {confianca_minima_efetiva:.0%} | "
+          f"SL/TP: por ATR | Autonomo")
 
     # Aguardar os outros threads estabilizarem
     time.sleep(15)
@@ -3543,6 +3567,7 @@ def main():
     print("=" * 80)
     print("DIÁRIOS AUTOMÁTICOS — COM ANÁLISE RL + GUARDIAN MACRO")
     print("=" * 80)
+    print(f"Gate diario de confidence: {_current_daily_confidence_gate():.0%}")
     print()
     print("Iniciando 5 diários em paralelo...")
     print()

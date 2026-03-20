@@ -25,6 +25,7 @@ cd BAT
 INICIAR_DIARIOS.bat
 ```
 Aguarde 2-3 minutos até ver ✅ "Sistema Pronto"
+O bootstrap do terminal agora também mostra o `daily_confidence_gate` antes do Python iniciar.
 
 **Segundo operador (em outra janela de CMD):**
 ```

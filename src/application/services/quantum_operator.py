@@ -8,8 +8,15 @@ para tomar decisoes inteligentes de trading como Head Financeiro.
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
+import logging
+from pathlib import Path
 from typing import Any, Optional
 
+from src.application.confidence_utils import (
+    CONFIDENCE_OVERRIDE_TODAY_FILE,
+    load_daily_confidence_override,
+    resolve_daily_confidence_gate,
+)
 from src.application.services.fundamental_analysis import (
     BrazilFundamentals,
     FundamentalAnalysisService,
@@ -34,6 +41,8 @@ from src.application.services.technical_analysis import (
 from src.domain.enums.trading_enums import TradeSignal
 from src.domain.value_objects import Symbol
 from src.infrastructure.adapters.mt5_adapter import MT5Adapter
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -100,6 +109,7 @@ class QuantumOperatorEngine:
         mt5_adapter: Optional[MT5Adapter] = None,
         macro_score_repository: Optional[Any] = None,
         rl_persistence_service: Optional[Any] = None,
+        confidence_override_path: str | Path | None = None,
     ) -> None:
         """Inicializa o Operador Quantico.
 
@@ -111,6 +121,11 @@ class QuantumOperatorEngine:
             rl_persistence_service: Servico de persistencia para RL.
         """
         self._rl_service = rl_persistence_service
+        self._confidence_override_path = (
+            Path(confidence_override_path)
+            if confidence_override_path is not None
+            else CONFIDENCE_OVERRIDE_TODAY_FILE
+        )
         # Macro: usa MacroScoreEngine se MT5 disponivel, senao fallback legado
         self._mt5_adapter = mt5_adapter
         self.macro_score_engine: Optional[MacroScoreEngine] = None
@@ -129,6 +144,29 @@ class QuantumOperatorEngine:
 
         self._last_decision: Optional[TradingDecision] = None
         self._last_macro_score: Optional[MacroScoreResult] = None
+
+    def _daily_confidence_gate(self) -> tuple[float | None, Decimal]:
+        """Retorna o override diario bruto e o threshold efetivo."""
+        override = load_daily_confidence_override(self._confidence_override_path)
+        threshold = resolve_daily_confidence_gate(
+            override,
+            default_gate=0.65,
+            cautious_floor=0.35,
+        )
+        return override, Decimal(str(threshold))
+
+    def _calibrate_confidence_for_day(
+        self,
+        confidence: Decimal,
+        threshold_day_trade: Decimal,
+    ) -> Decimal:
+        """Puxa a confidence final levemente para o gate do dia.
+
+        Isso faz o sinal nascer calibrado com o contexto diário sem
+        destruir a leitura do setup original.
+        """
+        confidence = (confidence * Decimal("0.80")) + (threshold_day_trade * Decimal("0.20"))
+        return min(confidence, Decimal("0.95"))
 
     def analyze_and_decide(
         self,
@@ -275,6 +313,8 @@ class QuantumOperatorEngine:
             alignment=alignment_score,
         )
 
+        daily_override, threshold_day_trade = self._daily_confidence_gate()
+
         # Toma a decisao
         action, confidence, urgency = self._make_final_decision(
             macro_bias=macro_bias,
@@ -285,6 +325,8 @@ class QuantumOperatorEngine:
             alignment=alignment_score,
             risk_level=risk_level,
             market_regime=market_regime,
+            daily_override=daily_override,
+            threshold_day_trade=threshold_day_trade,
         )
 
         # Gera raciocinio
@@ -320,6 +362,8 @@ class QuantumOperatorEngine:
             primary_reason=primary_reason,
             alignment=alignment_score,
             risk_level=risk_level,
+            daily_override=daily_override,
+            daily_confidence_gate=threshold_day_trade,
         )
 
         decision = TradingDecision(
@@ -340,6 +384,16 @@ class QuantumOperatorEngine:
             supporting_factors=supporting_factors,
             warning_factors=warning_factors,
             executive_summary=executive_summary,
+        )
+
+        logger.info(
+            "QuantumOperator decision | symbol=%s action=%s confidence=%.2f daily_gate=%.2f override=%s urgency=%s",
+            symbol,
+            action.value,
+            float(confidence),
+            float(threshold_day_trade),
+            f"{daily_override:.2f}" if daily_override is not None else "none",
+            urgency,
         )
 
         return decision
@@ -450,6 +504,8 @@ class QuantumOperatorEngine:
         alignment: Decimal,
         risk_level: str,
         market_regime: str,
+        daily_override: float | None,
+        threshold_day_trade: Decimal,
     ) -> tuple[TradeSignal, Decimal, str]:
         """
         Toma a decisao final de trading com modelo hierarquico de DAY TRADE.
@@ -517,10 +573,9 @@ class QuantumOperatorEngine:
         elif alignment >= Decimal("0.80"):  # Core + 1 dimensão
             urgency = "OPPORTUNISTIC"
 
-        # Threshold para operar: 65% (day trade)
-        THRESHOLD_DAY_TRADE = Decimal("0.65")
+        confidence = self._calibrate_confidence_for_day(confidence, threshold_day_trade)
 
-        if confidence < THRESHOLD_DAY_TRADE:
+        if confidence < threshold_day_trade:
             return TradeSignal.HOLD, confidence, "PATIENT"
 
         # DECISÃO FINAL
@@ -651,6 +706,8 @@ class QuantumOperatorEngine:
         primary_reason: str,
         alignment: Decimal,
         risk_level: str,
+        daily_override: float | None,
+        daily_confidence_gate: Decimal,
     ) -> str:
         """Gera resumo executivo para o Head Financeiro."""
         action_text = {
@@ -666,6 +723,7 @@ class QuantumOperatorEngine:
 
 DECISAO: {action_text[action]}
 CONFIANCA: {confidence:.0%}
+DAILY GATE: {daily_confidence_gate:.0%} ({f'{daily_override:.0%}' if daily_override is not None else 'sem override'})
 ALINHAMENTO: {alignment:.0%}
 RISCO: {risk_level}
 

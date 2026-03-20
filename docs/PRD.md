@@ -727,7 +727,7 @@ Artefatos obrigatorios em `data/backtest/`:
 | CA-03 | Cobertura >=80% modulos | PASS em 19/03/2026 (`BL-07` com 88.51% nos módulos canônicos) |
 | CA-04 | 5 dias simulado sem bugs | Pend. evidencia operacional |
 | CA-05 | Gate 2 P0-2 com dados reais | FAIL no artefato atual de 19/03/2026; PASS historico em 12/03/2026 mantido apenas como referencia |
-| CA-06 | Diarios IA coerentes | Em validacao operacional |
+| CA-06 | Diarios IA coerentes | Em validacao operacional; bootstrap e narrativas agora exibem `daily_confidence_gate` em `INICIAR_DIARIOS.bat`, `INICIAR_AGENTE_RL_5000.bat` e `start_journals_full_display.py` |
 | CA-07 | 4 agentes paralelos OK | Em validacao operacional |
 | CA-08 | Kill switch testado | Em validacao operacional |
 | CA-09 | Backup/restore validado | Em validacao operacional |

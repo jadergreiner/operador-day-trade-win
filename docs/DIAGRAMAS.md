@@ -80,6 +80,28 @@ Storytelling + ML Ops e os Grupos 1/2 já acoplados pelos scripts.
    `tickets_proprios: set[int]` (RL 5000) e
    `AgentePosicaoStatus` inline (RL Direto).
 
+## Bootstrap Diario de Confidence
+
+```text
+INICIAR_DIARIOS.bat
+  -> scripts/daily_confidence_retraining.py
+  -> bootstrap console
+    -> prints daily_confidence_gate
+  -> scripts/start_journals_full_display.py
+    -> main()
+      -> Thread 1: Trading Journal
+      -> Thread 2: AI Reflection
+      -> Thread 3: RL Performance Diary
+      -> Thread 4: Macro Scenario Guardian
+      -> Thread 5: Diario Order Manager
+
+INICIAR_AGENTE_RL_5000.bat
+  -> bootstrap console
+    -> prints daily_confidence_gate
+  -> menu / preflight
+    -> agente_com_supervision.py
+```
+
 ## Visao de Fluxo - Gate 2
 
 ```text

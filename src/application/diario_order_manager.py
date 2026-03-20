@@ -51,6 +51,11 @@ from src.application.opening_context_policy import (
     evaluate_opening_context_gate,
     normalize_opening_context,
 )
+from src.application.confidence_utils import (
+    CONFIDENCE_OVERRIDE_TODAY_FILE,
+    load_daily_confidence_override,
+    resolve_daily_confidence_gate,
+)
 
 logger = logging.getLogger("diario_order_manager")
 
@@ -62,6 +67,8 @@ VOLUME = 1
 # ── Parametros de entrada ────────────────────────────────────────
 # Confianca minima do QuantumOperatorEngine para considerar entrada
 CONFIANCA_MINIMA = 0.60
+# Piso cauteloso quando houver confidence diaria do P50-B
+CONFIANCA_MINIMA_CAUTELOSA = 0.35
 # Alinhamento minimo entre macro/tecnico/sentimento (0-1)
 ALINHAMENTO_MINIMO = 0.55
 # Multiplicadores de ATR para SL e TP
@@ -328,11 +335,17 @@ class DiarioOrderManager:
         outputs_dir: str = "outputs",
         rl_reader: Optional[object] = None,
         opening_context: Optional[Any] = None,
+        confidence_override_path: str | Path | None = None,
     ):
         self._mt5 = mt5_adapter
         self._db_path = db_path
         self._session_id = session_id
         self._outputs_dir = Path(outputs_dir)
+        self._confidence_override_path = (
+            Path(confidence_override_path)
+            if confidence_override_path is not None
+            else CONFIDENCE_OVERRIDE_TODAY_FILE
+        )
         self._latest_market_features_path = (
             self._outputs_dir / "analysis" / "diario_market_features_latest.json"
         )
@@ -354,6 +367,18 @@ class DiarioOrderManager:
         else:
             from scripts.start_journals_full_display import RLPerformanceReader
             self._rl_reader = RLPerformanceReader(db_path)
+
+    def _confidence_gate_minima(self) -> float:
+        """Retorna o threshold efetivo do gate de confianca."""
+        if not hasattr(self, "_confidence_override_path"):
+            return CONFIANCA_MINIMA
+
+        override = load_daily_confidence_override(self._confidence_override_path)
+        return resolve_daily_confidence_gate(
+            override,
+            default_gate=CONFIANCA_MINIMA,
+            cautious_floor=CONFIANCA_MINIMA_CAUTELOSA,
+        )
 
     def _opening_context_source(self) -> Any:
         raw = getattr(self, "_opening_context_raw", None)
@@ -577,6 +602,7 @@ class DiarioOrderManager:
         # ── Decisao final ──
         pode_operar = True
         motivo_bloqueio = ""
+        confianca_minima_efetiva = self._confidence_gate_minima()
 
         if not self._no_pregao():
             pode_operar = False
@@ -590,9 +616,12 @@ class DiarioOrderManager:
         elif alinhamento < ALINHAMENTO_MINIMO:
             pode_operar = False
             motivo_bloqueio = f"alinhamento_baixo:{alinhamento:.2f}<{ALINHAMENTO_MINIMO}"
-        elif confianca_final < CONFIANCA_MINIMA:
+        elif confianca_final < confianca_minima_efetiva:
             pode_operar = False
-            motivo_bloqueio = f"confianca_baixa:{confianca_final:.2f}<{CONFIANCA_MINIMA}"
+            motivo_bloqueio = (
+                f"confianca_baixa:{confianca_final:.2f}<"
+                f"{confianca_minima_efetiva:.2f}"
+            )
         elif atr < ATR_MINIMO:
             pode_operar = False
             motivo_bloqueio = f"mercado_parado:ATR={atr:.0f}<{ATR_MINIMO}"

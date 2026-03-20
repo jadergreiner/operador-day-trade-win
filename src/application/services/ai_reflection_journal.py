@@ -112,6 +112,7 @@ class AIReflectionJournalService:
         sentiment_changed: bool,
         technical_triggered: bool,
         human_last_action: Optional[str] = None,
+        daily_confidence_gate: Optional[Decimal] = None,
         volume_variance_pct: Optional[Decimal] = None,
     ) -> AIReflection:
         """
@@ -154,6 +155,11 @@ class AIReflectionJournalService:
             my_alignment=my_alignment,
             change_last_10min=change_last_10min,
         )
+        if daily_confidence_gate is not None:
+            honest = (
+                f"Gate diario atual: {daily_confidence_gate:.0%}. "
+                f"{honest}"
+            )
 
         # What I'm actually seeing
         seeing = self._describe_what_im_seeing(
