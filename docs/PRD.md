@@ -287,7 +287,7 @@ Automacao completa do ciclo de trading:
 ### 6.1 Camadas
 
 ```text
-[Orquestracao]   BAT → 4 agentes paralelos
+[Orquestracao]   BAT canônicos → 4 agentes paralelos
        |
 [Scripts]        scripts/*.py → entrypoints
        |
@@ -346,7 +346,7 @@ Scripts de lancamento:
 - **Diarios:** `start_journals_full_display.py`
 - **Micro Tendencia:** `agente_micro_tendencia_winfut.py`
 - **RL 5000:** `INICIAR_AGENTE_RL_5000.bat` -> `scripts/agente_com_supervision.py` -> `operar_novo_agente_rl_real_antiovertrading.py`
-- **RL Direto:** `agente_rl_direto_independente.py`
+- **RL Direto:** `INICIAR_AGENTE_RL_DIRETO.bat` -> `scripts/agente_rl_direto_independente.py`
 
 #### 7.1.1 Governanca operacional do Micro Tendencia
 
@@ -483,8 +483,8 @@ Artefatos obrigatorios em `data/backtest/`:
 ### 8.5 Regras de Startup
 
 1. Validar ambiente (Python, MT5, SQLite)
-2. Operador escolhe: `--simulate` ou `--auto-trade`
-3. Trading real: confirmacao humana explicita
+2. Operador escolhe o launcher canônico do agente: `INICIAR_AGENTE_RL_5000.bat` ou `INICIAR_AGENTE_RL_DIRETO.bat`
+3. Em modo simulado, usar a opção de avaliação correspondente; em modo real, exigir confirmação humana explícita
 4. Pre-flight: confianca, heartbeat, latencia
 5. Sincronizar trades MT5 → SQLite
 6. Aplicar licoes BDI
