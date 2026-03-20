@@ -15,6 +15,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 
 def setup_interventions_table(db_path: str) -> bool:
     """
@@ -30,50 +32,53 @@ def setup_interventions_table(db_path: str) -> bool:
     - P&L
     """
     try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
+        with sqlite_write_lock(db_path):
+            conn = sqlite3.connect(db_path)
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA busy_timeout=30000")
+            cursor = conn.cursor()
 
-        # Criar tabela principal
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS trader_interventions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp DATETIME NOT NULL,
-                symbol TEXT NOT NULL,
-                action TEXT NOT NULL,
-                reason TEXT,
-                ml_signal FLOAT,
-                trader_decision TEXT,
-                result TEXT,
-                p_and_l FLOAT,
-                created_at DATETIME,
-                updated_at DATETIME,
-                notes TEXT
-            )
-        """)
+            # Criar tabela principal
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS trader_interventions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp DATETIME NOT NULL,
+                    symbol TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    reason TEXT,
+                    ml_signal FLOAT,
+                    trader_decision TEXT,
+                    result TEXT,
+                    p_and_l FLOAT,
+                    created_at DATETIME,
+                    updated_at DATETIME,
+                    notes TEXT
+                )
+            """)
 
-        # Criar índices para performance
-        cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_timestamp
-            ON trader_interventions(timestamp)
-        """)
+            # Criar índices para performance
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_timestamp
+                ON trader_interventions(timestamp)
+            """)
 
-        cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_symbol
-            ON trader_interventions(symbol)
-        """)
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_symbol
+                ON trader_interventions(symbol)
+            """)
 
-        cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_action
-            ON trader_interventions(action)
-        """)
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_action
+                ON trader_interventions(action)
+            """)
 
-        cursor.execute("""
-            CREATE INDEX IF NOT EXISTS idx_result
-            ON trader_interventions(result)
-        """)
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_result
+                ON trader_interventions(result)
+            """)
 
-        conn.commit()
-        conn.close()
+            conn.commit()
+            conn.close()
 
         print("✅ Tabela 'trader_interventions' criada com sucesso")
         return True
@@ -86,17 +91,20 @@ def setup_interventions_table(db_path: str) -> bool:
 def optimize_database(db_path: str) -> bool:
     """Otimiza e valida database."""
     try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
+        with sqlite_write_lock(db_path):
+            conn = sqlite3.connect(db_path)
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA busy_timeout=30000")
+            cursor = conn.cursor()
 
-        # Analyze para otimizar queries
-        cursor.execute("ANALYZE")
+            # Analyze para otimizar queries
+            cursor.execute("ANALYZE")
 
-        # Vacuum para compactar
-        cursor.execute("VACUUM")
+            # Vacuum para compactar
+            cursor.execute("VACUUM")
 
-        conn.commit()
-        conn.close()
+            conn.commit()
+            conn.close()
 
         print("✅ Database otimizado (ANALYZE + VACUUM)")
         return True

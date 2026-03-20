@@ -14,6 +14,8 @@ from datetime import datetime
 from decimal import Decimal
 import json
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 DB_PATH = Path("data/db/trading.db")
 
 
@@ -27,91 +29,94 @@ def recover_historical_sl_tp() -> bool:
     3. Preenche valores retroativamente
     """
     try:
-        conn = sqlite3.connect(str(DB_PATH))
-        cursor = conn.cursor()
+        with sqlite_write_lock(DB_PATH):
+            conn = sqlite3.connect(str(DB_PATH))
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA busy_timeout=30000")
+            cursor = conn.cursor()
 
-        print("\n" + "=" * 100)
-        print("🔍 RECUPERAÇÃO DE SL/TP EM ORDEM HISTÓRICAS AUTOMÁTICAS")
-        print("=" * 100)
+            print("\n" + "=" * 100)
+            print("🔍 RECUPERAÇÃO DE SL/TP EM ORDEM HISTÓRICAS AUTOMÁTICAS")
+            print("=" * 100)
 
-        # 1. Identificar ordens automáticas sem SL/TP
-        cursor.execute("""
-            SELECT id, trade_id, symbol, side, entry_price, entry_time
-            FROM trades
-            WHERE execution_method = 'automated'
-            AND (stop_loss IS NULL OR take_profit IS NULL)
-            ORDER BY entry_time DESC
-        """)
+            # 1. Identificar ordens automáticas sem SL/TP
+            cursor.execute("""
+                SELECT id, trade_id, symbol, side, entry_price, entry_time
+                FROM trades
+                WHERE execution_method = 'automated'
+                AND (stop_loss IS NULL OR take_profit IS NULL)
+                ORDER BY entry_time DESC
+            """)
 
-        orders_to_fix = cursor.fetchall()
-        
-        if not orders_to_fix:
-            print("\n✅ Todas as ordens automáticas já têm SL/TP registrado!")
+            orders_to_fix = cursor.fetchall()
+            
+            if not orders_to_fix:
+                print("\n✅ Todas as ordens automáticas já têm SL/TP registrado!")
+                conn.close()
+                return True
+
+            print(f"\n⚠️ Encontradas {len(orders_to_fix)} ordens automáticas sem SL/TP:")
+            
+            # 2. Processar cada ordem
+            fixed_count = 0
+            for order_id, trade_id, symbol, side, entry_price, entry_time in orders_to_fix:
+                print(f"\n  📊 Order ID {order_id} ({trade_id})")
+                print(f"     Símbolo: {symbol}, Lado: {side}, Entrada: {entry_price}")
+                
+                # Tentar recuperar de logs
+                sl_tp_found = _try_recover_from_logs(trade_id, symbol, side, entry_price)
+                
+                if sl_tp_found:
+                    sl, tp = sl_tp_found
+                    print(f"     ✅ Recuperado: SL={sl}, TP={tp}")
+                    
+                    cursor.execute("""
+                        UPDATE trades
+                        SET stop_loss = ?, take_profit = ?, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                    """, (sl, tp, order_id))
+                    
+                    fixed_count += 1
+                else:
+                    # Fallback: Calcular baseado em estratégia padrão
+                    sl, tp = _estimate_sl_tp(side, entry_price)
+                    print(f"     ⚠️ Estimado (fallback): SL={sl}, TP={tp}")
+                    
+                    cursor.execute("""
+                        UPDATE trades
+                        SET stop_loss = ?, take_profit = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ?
+                    """, (
+                        sl, tp, 
+                        "SL/TP recuperado retroativamente (estimado de estratégia)", 
+                        order_id
+                    ))
+                    
+                    fixed_count += 1
+
+            print(f"\n{'='*100}")
+            print(f"✅ RESULTADO: {fixed_count}/{len(orders_to_fix)} ordens atualizadas")
+            print(f"{'='*100}")
+
+            # 3. Verificação final
+            cursor.execute("""
+                SELECT COUNT(*) as incompletas
+                FROM trades
+                WHERE execution_method = 'automated'
+                AND (stop_loss IS NULL OR take_profit IS NULL)
+            """)
+            
+            remaining = cursor.fetchone()[0]
+            
+            if remaining == 0:
+                print("\n✅ Todos os dados de ordens automáticas agora estão COMPLETOS!")
+                print("   Sistema pode treinar com dados limpos a partir de agora.")
+            else:
+                print(f"\n⚠️ Ainda existem {remaining} ordens incompletas")
+
+            conn.commit()
             conn.close()
             return True
-
-        print(f"\n⚠️ Encontradas {len(orders_to_fix)} ordens automáticas sem SL/TP:")
-        
-        # 2. Processar cada ordem
-        fixed_count = 0
-        for order_id, trade_id, symbol, side, entry_price, entry_time in orders_to_fix:
-            print(f"\n  📊 Order ID {order_id} ({trade_id})")
-            print(f"     Símbolo: {symbol}, Lado: {side}, Entrada: {entry_price}")
-            
-            # Tentar recuperar de logs
-            sl_tp_found = _try_recover_from_logs(trade_id, symbol, side, entry_price)
-            
-            if sl_tp_found:
-                sl, tp = sl_tp_found
-                print(f"     ✅ Recuperado: SL={sl}, TP={tp}")
-                
-                cursor.execute("""
-                    UPDATE trades
-                    SET stop_loss = ?, take_profit = ?, updated_at = CURRENT_TIMESTAMP
-                    WHERE id = ?
-                """, (sl, tp, order_id))
-                
-                fixed_count += 1
-            else:
-                # Fallback: Calcular baseado em estratégia padrão
-                sl, tp = _estimate_sl_tp(side, entry_price)
-                print(f"     ⚠️ Estimado (fallback): SL={sl}, TP={tp}")
-                
-                cursor.execute("""
-                    UPDATE trades
-                    SET stop_loss = ?, take_profit = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
-                    WHERE id = ?
-                """, (
-                    sl, tp, 
-                    "SL/TP recuperado retroativamente (estimado de estratégia)", 
-                    order_id
-                ))
-                
-                fixed_count += 1
-
-        print(f"\n{'='*100}")
-        print(f"✅ RESULTADO: {fixed_count}/{len(orders_to_fix)} ordens atualizadas")
-        print(f"{'='*100}")
-
-        # 3. Verificação final
-        cursor.execute("""
-            SELECT COUNT(*) as incompletas
-            FROM trades
-            WHERE execution_method = 'automated'
-            AND (stop_loss IS NULL OR take_profit IS NULL)
-        """)
-        
-        remaining = cursor.fetchone()[0]
-        
-        if remaining == 0:
-            print("\n✅ Todos os dados de ordens automáticas agora estão COMPLETOS!")
-            print("   Sistema pode treinar com dados limpos a partir de agora.")
-        else:
-            print(f"\n⚠️ Ainda existem {remaining} ordens incompletas")
-
-        conn.commit()
-        conn.close()
-        return True
 
     except Exception as e:
         print(f"❌ Erro na recuperação: {e}")

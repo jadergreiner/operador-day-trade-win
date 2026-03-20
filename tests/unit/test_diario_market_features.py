@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
+from concurrent.futures import ThreadPoolExecutor
+import sqlite3
 
 from src.application.diario_market_features import (
     DiarioMarketFeaturesSnapshot,
@@ -18,6 +20,7 @@ from src.application.diario_market_features import (
     persist_diario_market_features_snapshot,
     summarize_correlated_confirmations,
 )
+from src.application.services.diary_feedback import DiaryFeedback, save_diary_feedback
 
 
 def _price(value: float) -> SimpleNamespace:
@@ -211,3 +214,49 @@ def test_build_contexto_operacional_com_diario_anexa_snapshot_e_influencia() -> 
         contexto["diario_market_features_soft_influence"]["alignment"] == "ALIGNED"
     )
     assert contexto["confidence_used_diario_adjusted"] > 0.66
+
+
+def test_concurrent_writes_no_mesmo_sqlite_nao_explodem(tmp_path: Path) -> None:
+    db_path = tmp_path / "trading.db"
+    latest_json = tmp_path / "outputs" / "analysis" / "diario_market_features_latest.json"
+
+    def write_snapshot(idx: int) -> int:
+        payload = _sample_snapshot(datetime.now().isoformat(timespec="seconds"))
+        payload.session_id = f"sessao_{idx}"
+        return persist_diario_market_features_snapshot(
+            db_path,
+            payload,
+            latest_json_path=latest_json,
+        )
+
+    def write_feedback(idx: int) -> int:
+        feedback = DiaryFeedback(
+            date="2026-03-20",
+            timestamp=datetime.now().isoformat(timespec="seconds"),
+            source=f"teste_{idx}",
+            nota_agente=idx + 1,
+            alertas_criticos=[f"alerta_{idx}"],
+        )
+        return save_diary_feedback(str(db_path), feedback)
+
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = [
+            executor.submit(write_snapshot, 1),
+            executor.submit(write_feedback, 1),
+            executor.submit(write_snapshot, 2),
+            executor.submit(write_feedback, 2),
+        ]
+        results = [future.result() for future in futures]
+
+    assert all(result > 0 for result in results)
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT COUNT(*) FROM diario_market_features")
+    snapshot_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM diary_feedback")
+    feedback_count = cursor.fetchone()[0]
+    conn.close()
+
+    assert snapshot_count == 2
+    assert feedback_count == 2

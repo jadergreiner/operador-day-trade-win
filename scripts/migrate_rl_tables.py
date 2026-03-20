@@ -23,6 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -45,43 +46,44 @@ def main():
     print(f"📦 Criando tabelas RL em: {db_path}")
     print()
 
-    # Cria engine
-    engine = create_engine(f"sqlite:///{db_path}", echo=False)
+    with sqlite_write_lock(db_path):
+        # Cria engine
+        engine = create_engine(f"sqlite:///{db_path}", echo=False)
 
-    # Cria tabelas
-    create_rl_tables(engine)
-    print("✅ Tabelas criadas:")
-    print("   - dim_correlation_items")
-    print("   - dim_technical_indicators")
-    print("   - rl_episodes")
-    print("   - rl_correlation_scores")
-    print("   - rl_indicator_values")
-    print("   - rl_rewards")
-    print("   - rl_training_metrics")
-    print()
+        # Cria tabelas
+        create_rl_tables(engine)
+        print("✅ Tabelas criadas:")
+        print("   - dim_correlation_items")
+        print("   - dim_technical_indicators")
+        print("   - rl_episodes")
+        print("   - rl_correlation_scores")
+        print("   - rl_indicator_values")
+        print("   - rl_rewards")
+        print("   - rl_training_metrics")
+        print()
 
-    # Popula dimensões
-    print("📊 Populando tabelas de dimensão...")
-    SessionLocal = sessionmaker(bind=engine)
-    session = SessionLocal()
+        # Popula dimensões
+        print("📊 Populando tabelas de dimensão...")
+        SessionLocal = sessionmaker(bind=engine)
+        session = SessionLocal()
 
-    repo = SqliteRLRepository(session)
-    repo.seed_dimension_tables()
+        repo = SqliteRLRepository(session)
+        repo.seed_dimension_tables()
 
-    # Conta registros
-    from src.infrastructure.database.rl_schema import (
-        DimCorrelationItemModel,
-        DimTechnicalIndicatorModel,
-    )
+        # Conta registros
+        from src.infrastructure.database.rl_schema import (
+            DimCorrelationItemModel,
+            DimTechnicalIndicatorModel,
+        )
 
-    n_items = session.query(DimCorrelationItemModel).count()
-    n_indicators = session.query(DimTechnicalIndicatorModel).count()
+        n_items = session.query(DimCorrelationItemModel).count()
+        n_indicators = session.query(DimTechnicalIndicatorModel).count()
 
-    print(f"   ✅ {n_items} itens de correlação cadastrados")
-    print(f"   ✅ {n_indicators} indicadores técnicos cadastrados")
-    print()
+        print(f"   ✅ {n_items} itens de correlação cadastrados")
+        print(f"   ✅ {n_indicators} indicadores técnicos cadastrados")
+        print()
 
-    session.close()
+        session.close()
 
     print("🎯 Migration concluída com sucesso!")
     print()

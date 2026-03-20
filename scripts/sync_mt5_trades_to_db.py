@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import sqlite3
 import sys
+import time
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
@@ -25,6 +26,7 @@ if str(ROOT_DIR) not in sys.path:
 
 from config.settings import get_config
 from src.infrastructure.database.schema import create_database
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
 
 
 @dataclass
@@ -261,12 +263,54 @@ def _upsert_trade(conn: sqlite3.Connection, trade: SyncTrade) -> tuple[str, int]
     return "updated", existing_id
 
 
+def _sync_to_sqlite(db_path: Path, sync_trades: list[SyncTrade]) -> tuple[int, int, int]:
+    inserted = 0
+    updated = 0
+    unchanged = 0
+
+    max_attempts = 4
+    for attempt in range(1, max_attempts + 1):
+        conn: sqlite3.Connection | None = None
+        try:
+            conn = sqlite3.connect(str(db_path), timeout=30.0)
+            conn.execute("PRAGMA busy_timeout=30000")
+
+            for t in sync_trades:
+                result, _ = _upsert_trade(conn, t)
+                if result == "inserted":
+                    inserted += 1
+                elif result == "updated":
+                    updated += 1
+                else:
+                    unchanged += 1
+
+            conn.commit()
+            return inserted, updated, unchanged
+        except sqlite3.OperationalError as e:
+            locked = "database is locked" in str(e).lower()
+            if not locked or attempt == max_attempts:
+                raise
+            wait_s = attempt * 0.75
+            print(
+                f"[WARN] SQLite ocupado durante sync (tentativa {attempt}/{max_attempts}). "
+                f"Novo retry em {wait_s:.2f}s..."
+            )
+            time.sleep(wait_s)
+        finally:
+            if conn is not None:
+                conn.close()
+
+    return inserted, updated, unchanged
+
+
 def main() -> int:
     args = _parse_args()
 
     db_path = Path(args.db_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    create_database(str(db_path))
+
+    with sqlite_write_lock(db_path):
+        create_database(str(db_path))
 
     ok, msg = _connect_mt5()
     if not ok:
@@ -301,23 +345,14 @@ def main() -> int:
         if t is not None:
             sync_trades.append(t)
 
-    inserted = 0
-    updated = 0
-    unchanged = 0
-
-    conn = sqlite3.connect(str(db_path))
     try:
-        for t in sync_trades:
-            result, _ = _upsert_trade(conn, t)
-            if result == "inserted":
-                inserted += 1
-            elif result == "updated":
-                updated += 1
-            else:
-                unchanged += 1
-        conn.commit()
+        with sqlite_write_lock(db_path):
+            inserted, updated, unchanged = _sync_to_sqlite(db_path, sync_trades)
+    except sqlite3.OperationalError as e:
+        print(f"[ERRO] Falha SQLite durante sincronização: {e}")
+        mt5.shutdown()
+        return 3
     finally:
-        conn.close()
         mt5.shutdown()
 
     print(

@@ -34,6 +34,8 @@ from datetime import datetime, date
 from decimal import Decimal
 from typing import Optional
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 
 @dataclass
 class HeadDirective:
@@ -152,57 +154,66 @@ INSERT INTO head_directives (
 """
 
 
+def _create_directives_table_unlocked(db_path: str) -> None:
+    conn = sqlite3.connect(db_path)
+    try:
+        conn.execute(_CREATE_TABLE_SQL)
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def create_directives_table(db_path: str) -> None:
     """Cria a tabela de diretivas se não existir."""
-    conn = sqlite3.connect(db_path)
-    conn.execute(_CREATE_TABLE_SQL)
-    conn.commit()
-    conn.close()
+    with sqlite_write_lock(db_path):
+        _create_directives_table_unlocked(db_path)
 
 
 def save_directive(db_path: str, directive: HeadDirective) -> int:
     """Salva uma diretiva no banco. Retorna o ID."""
-    create_directives_table(db_path)
+    with sqlite_write_lock(db_path):
+        _create_directives_table_unlocked(db_path)
 
-    # Desativa diretivas anteriores do mesmo dia
-    conn = sqlite3.connect(db_path)
-    conn.execute(
-        "UPDATE head_directives SET active = 0 WHERE date = ? AND active = 1",
-        (directive.date,),
-    )
+        conn = sqlite3.connect(db_path)
+        try:
+            # Desativa diretivas anteriores do mesmo dia
+            conn.execute(
+                "UPDATE head_directives SET active = 0 WHERE date = ? AND active = 1",
+                (directive.date,),
+            )
 
-    cursor = conn.execute(_INSERT_SQL, (
-        directive.date,
-        directive.created_at or datetime.now().isoformat(),
-        directive.source,
-        directive.analyst,
-        directive.direction,
-        directive.confidence_market,
-        directive.aggressiveness,
-        directive.position_size_pct,
-        directive.stop_loss_pts,
-        directive.max_daily_trades,
-        directive.max_rsi_for_buy,
-        directive.min_rsi_for_sell,
-        directive.min_adx_for_entry,
-        directive.forbidden_zone_above,
-        directive.forbidden_zone_below,
-        directive.ideal_buy_zone_low,
-        directive.ideal_buy_zone_high,
-        directive.ideal_sell_zone_low,
-        directive.ideal_sell_zone_high,
-        1 if directive.reduce_before_event else 0,
-        directive.event_description,
-        directive.event_time,
-        directive.notes,
-        directive.risk_scenario,
-        1 if directive.active else 0,
-    ))
+            cursor = conn.execute(_INSERT_SQL, (
+                directive.date,
+                directive.created_at or datetime.now().isoformat(),
+                directive.source,
+                directive.analyst,
+                directive.direction,
+                directive.confidence_market,
+                directive.aggressiveness,
+                directive.position_size_pct,
+                directive.stop_loss_pts,
+                directive.max_daily_trades,
+                directive.max_rsi_for_buy,
+                directive.min_rsi_for_sell,
+                directive.min_adx_for_entry,
+                directive.forbidden_zone_above,
+                directive.forbidden_zone_below,
+                directive.ideal_buy_zone_low,
+                directive.ideal_buy_zone_high,
+                directive.ideal_sell_zone_low,
+                directive.ideal_sell_zone_high,
+                1 if directive.reduce_before_event else 0,
+                directive.event_description,
+                directive.event_time,
+                directive.notes,
+                directive.risk_scenario,
+                1 if directive.active else 0,
+            ))
 
-    conn.commit()
-    row_id = cursor.lastrowid
-    conn.close()
-    return row_id
+            conn.commit()
+            return cursor.lastrowid
+        finally:
+            conn.close()
 
 
 def load_active_directive(db_path: str, target_date: str = "") -> Optional[HeadDirective]:

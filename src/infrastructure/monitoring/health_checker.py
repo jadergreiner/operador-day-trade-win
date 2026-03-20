@@ -152,9 +152,11 @@ class HealthChecker:
 
     def _log_health_to_db(self, results):
         """Data Engineer: Persistência de logs de saúde"""
+        conn = None
         try:
             os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-            conn = sqlite3.connect(self.db_path)
+            conn = sqlite3.connect(self.db_path, timeout=30.0)
+            conn.execute("PRAGMA busy_timeout=30000")
             cursor = conn.cursor()
 
             cursor.execute("""
@@ -179,10 +181,20 @@ class HealthChecker:
             ))
 
             conn.commit()
-            conn.close()
             logger.info("💾 Log de saúde salvo no banco de dados.")
+        except sqlite3.OperationalError as e:
+            if "database is locked" in str(e).lower():
+                logger.error("❌ Falha ao logar saúde no DB: database is locked")
+            else:
+                logger.error(f"❌ Falha ao logar saúde no DB: {e}")
         except Exception as e:
             logger.error(f"❌ Falha ao logar saúde no DB: {e}")
+        finally:
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
 
 class MT5IsolationHealthCheck:

@@ -60,15 +60,25 @@ def initialize_opening_context_runtime(
         printer=printer,
         logger=logger,
     )
-    persist_opening_context_audit(
-        db_path,
-        agent_name=agent_name,
-        source=source,
-        prompt_abertura_agentes=prompt,
-        macro_context=features,
-        session_id=session_id,
-        mode=mode,
-    )
+    try:
+        persist_opening_context_audit(
+            db_path,
+            agent_name=agent_name,
+            source=source,
+            prompt_abertura_agentes=prompt,
+            macro_context=features,
+            session_id=session_id,
+            mode=mode,
+        )
+    except Exception as exc:
+        # Auditoria é suporte operacional; não deve bloquear a inicialização do agente.
+        if logger is not None:
+            logger.warning(
+                "[PRE-ABERTURA] Falha ao persistir auditoria de contexto: %s",
+                exc,
+            )
+        elif printer is not None:
+            printer(f"[PRE-ABERTURA] Falha ao persistir auditoria de contexto: {exc}")
 
     return OpeningContextRuntime(
         macro_guardian=macro_guardian,

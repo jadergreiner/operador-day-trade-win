@@ -13,6 +13,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional, Sequence
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 DEFAULT_SOURCE = "macro_scenario_guardian"
 TABLE_NAME = "macro_guardian_log"
 
@@ -74,8 +76,7 @@ def _row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
     }
 
 
-def ensure_macro_guardian_log_table(db_path: str | Path) -> None:
-    """Cria a tabela macro_guardian_log se ainda não existir."""
+def _ensure_macro_guardian_log_table_unlocked(db_path: str | Path) -> None:
     _ensure_parent_dir(db_path)
     conn = _get_connection(db_path)
     try:
@@ -109,54 +110,64 @@ def ensure_macro_guardian_log_table(db_path: str | Path) -> None:
         conn.close()
 
 
+def ensure_macro_guardian_log_table(db_path: str | Path) -> None:
+    """Cria a tabela macro_guardian_log se ainda não existir."""
+    with sqlite_write_lock(db_path):
+        _ensure_macro_guardian_log_table_unlocked(db_path)
+
+
 def persist_macro_guardian_events(
     db_path: str | Path,
     events: Iterable[Mapping[str, Any]],
     source: str = DEFAULT_SOURCE,
 ) -> int:
     """Persiste eventos do macro guardian e retorna quantos foram inseridos."""
-    ensure_macro_guardian_log_table(db_path)
-    conn = _get_connection(db_path)
-    inserted = 0
-    try:
-        with conn:
-            for event in events:
-                severity = _normalize_severity(event.get("severity"))
-                timestamp = str(event.get("timestamp") or _now_iso())
-                tipo_evento = str(event.get("tipo_evento") or event.get("category") or "macro_event")
-                descricao = str(event.get("descricao") or event.get("message") or "")
-                action = event.get("action")
-                valor_atual = event.get("valor_atual")
-                valor_anterior = event.get("valor_anterior")
-                score_impacto = event.get("score_impacto")
-                kill_switch_ativo = _coerce_bool(event.get("kill_switch_ativo", False))
+    def _persist() -> int:
+        _ensure_macro_guardian_log_table_unlocked(db_path)
+        conn = _get_connection(db_path)
+        inserted = 0
+        try:
+            with conn:
+                for event in events:
+                    severity = _normalize_severity(event.get("severity"))
+                    timestamp = str(event.get("timestamp") or _now_iso())
+                    tipo_evento = str(event.get("tipo_evento") or event.get("category") or "macro_event")
+                    descricao = str(event.get("descricao") or event.get("message") or "")
+                    action = event.get("action")
+                    valor_atual = event.get("valor_atual")
+                    valor_anterior = event.get("valor_anterior")
+                    score_impacto = event.get("score_impacto")
+                    kill_switch_ativo = _coerce_bool(event.get("kill_switch_ativo", False))
 
-                conn.execute(
-                    f"""
-                    INSERT INTO {TABLE_NAME} (
-                        timestamp, severity, tipo_evento, descricao,
-                        valor_atual, valor_anterior, score_impacto, action,
-                        source, kill_switch_ativo, payload_json
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        timestamp,
-                        severity,
-                        tipo_evento,
-                        descricao,
-                        valor_atual,
-                        valor_anterior,
-                        score_impacto,
-                        None if action is None else str(action),
-                        source,
-                        kill_switch_ativo,
-                        _serialize_payload(event),
-                    ),
-                )
-                inserted += 1
-    finally:
-        conn.close()
-    return inserted
+                    conn.execute(
+                        f"""
+                        INSERT INTO {TABLE_NAME} (
+                            timestamp, severity, tipo_evento, descricao,
+                            valor_atual, valor_anterior, score_impacto, action,
+                            source, kill_switch_ativo, payload_json
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            timestamp,
+                            severity,
+                            tipo_evento,
+                            descricao,
+                            valor_atual,
+                            valor_anterior,
+                            score_impacto,
+                            None if action is None else str(action),
+                            source,
+                            kill_switch_ativo,
+                            _serialize_payload(event),
+                        ),
+                    )
+                    inserted += 1
+        finally:
+            conn.close()
+        return inserted
+
+    with sqlite_write_lock(db_path):
+        return _persist()
 
 
 def fetch_recent_macro_guardian_events(

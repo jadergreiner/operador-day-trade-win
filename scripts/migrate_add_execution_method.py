@@ -9,48 +9,52 @@ Execution: python migrate_add_execution_method.py
 import sqlite3
 from pathlib import Path
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 DB_PATH = Path("data/db/trading.db")
 
 
 def migrate_add_execution_method() -> bool:
     """Adiciona coluna execution_method à tabela trades."""
     try:
-        conn = sqlite3.connect(str(DB_PATH))
-        cursor = conn.cursor()
+        with sqlite_write_lock(DB_PATH):
+            conn = sqlite3.connect(str(DB_PATH))
+            try:
+                cursor = conn.cursor()
 
-        # Verificar se a coluna já existe
-        cursor.execute("PRAGMA table_info(trades)")
-        columns = cursor.fetchall()
-        column_names = [col[1] for col in columns]
+                # Verificar se a coluna já existe
+                cursor.execute("PRAGMA table_info(trades)")
+                columns = cursor.fetchall()
+                column_names = [col[1] for col in columns]
 
-        if "execution_method" in column_names:
-            print("✅ Coluna 'execution_method' já existe na tabela trades")
-            conn.close()
-            return True
+                if "execution_method" in column_names:
+                    print("✅ Coluna 'execution_method' já existe na tabela trades")
+                    return True
 
-        print("🔄 Adicionando coluna 'execution_method' à tabela trades...")
+                print("🔄 Adicionando coluna 'execution_method' à tabela trades...")
 
-        # Adicionar a coluna
-        cursor.execute(
-            """
-            ALTER TABLE trades
-            ADD COLUMN execution_method VARCHAR(20) DEFAULT 'manual' NOT NULL
-            """
-        )
+                # Adicionar a coluna
+                cursor.execute(
+                    """
+                    ALTER TABLE trades
+                    ADD COLUMN execution_method VARCHAR(20) DEFAULT 'manual' NOT NULL
+                    """
+                )
 
-        print("✅ Coluna adicionada com sucesso")
+                print("✅ Coluna adicionada com sucesso")
 
-        # Verificar resultado
-        cursor.execute("PRAGMA table_info(trades)")
-        columns = cursor.fetchall()
-        print(f"\n📋 Nova estrutura de trades:")
-        print(f"{'Coluna':<25} {'Tipo':<20}")
-        print("=" * 45)
-        for col in columns:
-            print(f"{col[1]:<25} {col[2]:<20}")
+                # Verificar resultado
+                cursor.execute("PRAGMA table_info(trades)")
+                columns = cursor.fetchall()
+                print(f"\n📋 Nova estrutura de trades:")
+                print(f"{'Coluna':<25} {'Tipo':<20}")
+                print("=" * 45)
+                for col in columns:
+                    print(f"{col[1]:<25} {col[2]:<20}")
 
-        conn.commit()
-        conn.close()
+                conn.commit()
+            finally:
+                conn.close()
 
         print("\n✅ Migração concluída com sucesso!")
         return True

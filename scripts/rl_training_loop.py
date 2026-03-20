@@ -18,6 +18,8 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 import argparse
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -60,6 +62,11 @@ class RLTrainingPipeline:
         """Conectar ao banco."""
         self.conn = sqlite3.connect(str(self.db_path))
         self.conn.row_factory = sqlite3.Row
+        try:
+            self.conn.execute("PRAGMA journal_mode=WAL")
+            self.conn.execute("PRAGMA busy_timeout=30000")
+        except sqlite3.Error:
+            pass
         logger.info(f"Conectado a {self.db_path}")
 
     def close(self):
@@ -215,26 +222,27 @@ class RLTrainingPipeline:
 
     def save_training_metrics(self, metrics: Dict):
         """Salvar métricas de treinamento no banco."""
-        cursor = self.conn.cursor()
+        with sqlite_write_lock(self.db_path):
+            cursor = self.conn.cursor()
 
-        cursor.execute("""
-            INSERT INTO rl_training_metrics
-            (f1_score, roc_auc, precision, recall, train_samples,
-             test_samples, model_type, training_timestamp, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            metrics['f1'],
-            metrics['roc_auc'],
-            metrics['precision'],
-            metrics['recall'],
-            metrics['train_size'],
-            metrics['test_size'],
-            'RandomForest',
-            metrics['timestamp'],
-            datetime.now().isoformat()
-        ))
+            cursor.execute("""
+                INSERT INTO rl_training_metrics
+                (f1_score, roc_auc, precision, recall, train_samples,
+                 test_samples, model_type, training_timestamp, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                metrics['f1'],
+                metrics['roc_auc'],
+                metrics['precision'],
+                metrics['recall'],
+                metrics['train_size'],
+                metrics['test_size'],
+                'RandomForest',
+                metrics['timestamp'],
+                datetime.now().isoformat()
+            ))
 
-        self.conn.commit()
+            self.conn.commit()
         logger.info("Métricas salvas no RL_TRAINING_METRICS")
 
     def run(self):

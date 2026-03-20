@@ -31,6 +31,7 @@ if str(ROOT_DIR) not in sys.path:
 
 from config.settings import get_config
 from src.infrastructure.database.schema import create_database
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
 
 
 @dataclass
@@ -465,22 +466,25 @@ def main() -> int:
         deals_f = [d for d in deals if any(str(d.symbol).upper().startswith(px) for px in prefixes)]
         positions = _build_position_summaries(deals_f)
 
-        conn = sqlite3.connect(str(db_path))
-        try:
-            _ensure_tables(conn)
-            _persist_raw(conn, report_date, orders_f, deals_f)
-            sqlite_trades = _load_sqlite_trades(conn, report_date, prefixes)
+        with sqlite_write_lock(db_path):
+            conn = sqlite3.connect(str(db_path))
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA busy_timeout=30000")
+            try:
+                _ensure_tables(conn)
+                _persist_raw(conn, report_date, orders_f, deals_f)
+                sqlite_trades = _load_sqlite_trades(conn, report_date, prefixes)
 
-            report = _build_report(report_date, orders_f, deals_f, positions, sqlite_trades)
+                report = _build_report(report_date, orders_f, deals_f, positions, sqlite_trades)
 
-            out_dir = ROOT_DIR / "data" / "auditoria"
-            out_dir.mkdir(parents=True, exist_ok=True)
-            report_file = out_dir / f"trade_audit_{report_date.replace('-', '')}_{datetime.now().strftime('%H%M%S')}.json"
-            report_file.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+                out_dir = ROOT_DIR / "data" / "auditoria"
+                out_dir.mkdir(parents=True, exist_ok=True)
+                report_file = out_dir / f"trade_audit_{report_date.replace('-', '')}_{datetime.now().strftime('%H%M%S')}.json"
+                report_file.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
-            _persist_report(conn, report, report_file)
-        finally:
-            conn.close()
+                _persist_report(conn, report, report_file)
+            finally:
+                conn.close()
 
     except Exception as exc:
         print(f"[ERRO] Auditoria falhou: {exc}")

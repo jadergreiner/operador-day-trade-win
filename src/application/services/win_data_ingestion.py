@@ -16,6 +16,8 @@ import sqlite3
 from typing import Any, Optional
 import csv
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 
 WIN_CONTRACT_RE = re.compile(r"^WIN[A-Z]\d{2}$", re.IGNORECASE)
 
@@ -72,25 +74,26 @@ def _load_mt5_credentials() -> tuple[Optional[int], Optional[str], Optional[str]
 
 
 def _ensure_market_data_table(db_path: str) -> None:
-    with sqlite3.connect(db_path) as conn:
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS market_data (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                symbol TEXT NOT NULL,
-                timestamp DATETIME NOT NULL,
-                timeframe TEXT NOT NULL,
-                open REAL NOT NULL,
-                high REAL NOT NULL,
-                low REAL NOT NULL,
-                close REAL NOT NULL,
-                volume INTEGER NOT NULL,
-                spread REAL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    with sqlite_write_lock(db_path):
+        with sqlite3.connect(db_path) as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS market_data (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    symbol TEXT NOT NULL,
+                    timestamp DATETIME NOT NULL,
+                    timeframe TEXT NOT NULL,
+                    open REAL NOT NULL,
+                    high REAL NOT NULL,
+                    low REAL NOT NULL,
+                    close REAL NOT NULL,
+                    volume INTEGER NOT NULL,
+                    spread REAL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+                """
             )
-            """
-        )
-        conn.commit()
+            conn.commit()
 
 
 def _insert_market_rows(
@@ -106,48 +109,49 @@ def _insert_market_rows(
     ts_min = rows[0]["timestamp"].strftime("%Y-%m-%d %H:%M:%S")
     ts_max = rows[-1]["timestamp"].strftime("%Y-%m-%d %H:%M:%S")
 
-    with sqlite3.connect(db_path) as conn:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT timestamp FROM market_data
-            WHERE symbol=? AND timeframe=? AND timestamp BETWEEN ? AND ?
-            """,
-            (symbol, timeframe, ts_min, ts_max),
-        )
-        existing = {row[0] for row in cur.fetchall()}
-
-        to_insert = []
-        skipped = 0
-        for row in rows:
-            ts = row["timestamp"].strftime("%Y-%m-%d %H:%M:%S")
-            if ts in existing:
-                skipped += 1
-                continue
-            to_insert.append(
-                (
-                    symbol,
-                    ts,
-                    timeframe,
-                    float(row["open"]),
-                    float(row["high"]),
-                    float(row["low"]),
-                    float(row["close"]),
-                    int(row.get("volume", 0)),
-                    0.0,
-                )
-            )
-
-        if to_insert:
-            cur.executemany(
+    with sqlite_write_lock(db_path):
+        with sqlite3.connect(db_path) as conn:
+            cur = conn.cursor()
+            cur.execute(
                 """
-                INSERT INTO market_data
-                (symbol, timestamp, timeframe, open, high, low, close, volume, spread, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                SELECT timestamp FROM market_data
+                WHERE symbol=? AND timeframe=? AND timestamp BETWEEN ? AND ?
                 """,
-                to_insert,
+                (symbol, timeframe, ts_min, ts_max),
             )
-        conn.commit()
+            existing = {row[0] for row in cur.fetchall()}
+
+            to_insert = []
+            skipped = 0
+            for row in rows:
+                ts = row["timestamp"].strftime("%Y-%m-%d %H:%M:%S")
+                if ts in existing:
+                    skipped += 1
+                    continue
+                to_insert.append(
+                    (
+                        symbol,
+                        ts,
+                        timeframe,
+                        float(row["open"]),
+                        float(row["high"]),
+                        float(row["low"]),
+                        float(row["close"]),
+                        int(row.get("volume", 0)),
+                        0.0,
+                    )
+                )
+
+            if to_insert:
+                cur.executemany(
+                    """
+                    INSERT INTO market_data
+                    (symbol, timestamp, timeframe, open, high, low, close, volume, spread, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                    """,
+                    to_insert,
+                )
+            conn.commit()
     return len(to_insert), skipped
 
 

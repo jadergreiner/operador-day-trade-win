@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -13,6 +14,7 @@ from src.application.opening_context_policy import (
     normalize_action,
     normalize_opening_context,
 )
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
 
 TABLE_NAME = "diario_market_features"
 DEFAULT_STALE_AFTER_SECONDS = 90
@@ -121,11 +123,37 @@ def _ensure_parent(path: str | Path) -> None:
     Path(path).parent.mkdir(parents=True, exist_ok=True)
 
 
+def _is_sqlite_lock_error(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    return "database is locked" in msg or "database is busy" in msg
+
+
 def _get_connection(db_path: str | Path) -> sqlite3.Connection:
     _ensure_parent(db_path)
-    conn = sqlite3.connect(str(db_path), timeout=10.0, check_same_thread=False)
+    conn = sqlite3.connect(str(db_path), timeout=30.0, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        conn.execute("PRAGMA busy_timeout=30000")
+    except Exception:
+        pass
     return conn
+
+
+def _run_with_lock_retry(fn, attempts: int = 5):
+    last_exc: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            return fn()
+        except Exception as exc:
+            last_exc = exc
+            if not _is_sqlite_lock_error(exc) or attempt >= attempts - 1:
+                raise
+            time.sleep(0.15 * (attempt + 1))
+    if last_exc is not None:
+        raise last_exc
+    raise RuntimeError("SQLite retry exhausted")
 
 
 def _json_dumps(payload: Any) -> str:
@@ -249,8 +277,7 @@ class DiarioSoftFeatureInfluence:
         return _serialize_value(payload)
 
 
-def ensure_diario_market_features_table(db_path: str | Path) -> None:
-    """Cria a tabela append-only do Diario para features intraday."""
+def _ensure_diario_market_features_table_unlocked(db_path: str | Path) -> None:
     conn = _get_connection(db_path)
     try:
         conn.execute(
@@ -290,6 +317,12 @@ def ensure_diario_market_features_table(db_path: str | Path) -> None:
         )
     finally:
         conn.close()
+
+
+def ensure_diario_market_features_table(db_path: str | Path) -> None:
+    """Cria a tabela append-only do Diario para features intraday."""
+    with sqlite_write_lock(db_path):
+        _run_with_lock_retry(lambda: _ensure_diario_market_features_table_unlocked(db_path))
 
 
 def calculate_reversal_score(
@@ -695,7 +728,6 @@ def persist_diario_market_features_snapshot(
     latest_json_path: str | Path = DEFAULT_LATEST_JSON_PATH,
 ) -> int:
     """Persiste snapshot no SQLite e atualiza espelho latest JSON."""
-    ensure_diario_market_features_table(db_path)
     payload = snapshot.to_dict() if hasattr(snapshot, "to_dict") else dict(snapshot)
     timestamp = _safe_text(payload.get("timestamp")) or datetime.now().isoformat(
         timespec="seconds"
@@ -727,26 +759,31 @@ def persist_diario_market_features_snapshot(
         _json_dumps(payload),
     )
 
-    conn = _get_connection(db_path)
-    try:
-        cursor = conn.cursor()
-        cursor.execute(
-            f"""
-            INSERT INTO {TABLE_NAME} (
-                date, timestamp, session_id, symbol, direction_hint, confidence,
-                macro_regime, vies_intraday, reversal_score, exhaustion_score,
-                usd_flow_state, usd_flow_delta_pct, usd_above_reference,
-                heavyweights_confirmation, ibov_confirmation, ewz_confirmation,
-                guardian_state_json, tags_json, explanations_json,
-                source_metrics_json, snapshot_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            row,
-        )
-        conn.commit()
-        row_id = int(cursor.lastrowid or 0)
-    finally:
-        conn.close()
+    def _persist() -> int:
+        conn = _get_connection(db_path)
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                f"""
+                INSERT INTO {TABLE_NAME} (
+                    date, timestamp, session_id, symbol, direction_hint, confidence,
+                    macro_regime, vies_intraday, reversal_score, exhaustion_score,
+                    usd_flow_state, usd_flow_delta_pct, usd_above_reference,
+                    heavyweights_confirmation, ibov_confirmation, ewz_confirmation,
+                    guardian_state_json, tags_json, explanations_json,
+                    source_metrics_json, snapshot_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                row,
+            )
+            conn.commit()
+            return int(cursor.lastrowid or 0)
+        finally:
+            conn.close()
+
+    with sqlite_write_lock(db_path):
+        _run_with_lock_retry(lambda: _ensure_diario_market_features_table_unlocked(db_path))
+        row_id = _run_with_lock_retry(_persist)
 
     latest_path = Path(latest_json_path)
     latest_path.parent.mkdir(parents=True, exist_ok=True)

@@ -14,6 +14,8 @@ import sqlite3
 from datetime import datetime, timedelta
 import os
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 def cleanup_old_data(db_path, days_to_keep=7):
     """
     Remove registros antigos do banco de dados.
@@ -23,9 +25,6 @@ def cleanup_old_data(db_path, days_to_keep=7):
         days_to_keep: Numero de dias de dados a manter (padrao: 7)
     """
     try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-
         cutoff_date = (datetime.now() - timedelta(days=days_to_keep)).isoformat()
 
         # Definir mapeamento de tabelas e coluna de data
@@ -42,27 +41,37 @@ def cleanup_old_data(db_path, days_to_keep=7):
 
         total_deleted = 0
 
-        for table, date_col in table_cleanup.items():
+        with sqlite_write_lock(db_path):
+            conn = sqlite3.connect(db_path)
             try:
-                cursor.execute(f"DELETE FROM [{table}] WHERE {date_col} < ?", (cutoff_date,))
-                deleted = cursor.rowcount
-                total_deleted += deleted
+                cursor = conn.cursor()
 
-                if deleted > 0:
-                    print(f"  {table}: -{deleted} registros")
-            except Exception as e:
-                print(f"  {table}: ERRO - {e}")
+                for table, date_col in table_cleanup.items():
+                    try:
+                        cursor.execute(
+                            f"DELETE FROM [{table}] WHERE {date_col} < ?",
+                            (cutoff_date,),
+                        )
+                        deleted = cursor.rowcount
+                        total_deleted += deleted
 
-        # VACUUM para recuperar espaco
-        print("\n  Compactando banco com VACUUM...")
-        conn.commit()
-        cursor.close()
-        conn.close()
+                        if deleted > 0:
+                            print(f"  {table}: -{deleted} registros")
+                    except Exception as e:
+                        print(f"  {table}: ERRO - {e}")
 
-        # Fazer VACUUM
-        conn = sqlite3.connect(db_path)
-        conn.execute("VACUUM")
-        conn.close()
+                # VACUUM para recuperar espaco
+                print("\n  Compactando banco com VACUUM...")
+                conn.commit()
+            finally:
+                conn.close()
+
+            # Fazer VACUUM sob a mesma trava
+            conn = sqlite3.connect(db_path)
+            try:
+                conn.execute("VACUUM")
+            finally:
+                conn.close()
 
         size_mb = os.path.getsize(db_path) / (1024*1024)
         print(f"\n  Limpeza completa!")

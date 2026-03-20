@@ -201,7 +201,7 @@ if errorlevel 1 (
 echo   [OK] Health check aprovado
 
 echo   [SYNC] Sincronizando trades MT5 para SQLite...
-python scripts\sync_mt5_trades_to_db.py --days-back 3 >nul 2>&1
+python scripts\sync_mt5_trades_to_db.py --days-back 3
 if errorlevel 1 (
     echo   [ERRO] Falha na sincronizacao MT5 -> SQLite.
     exit /b 1

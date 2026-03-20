@@ -41,6 +41,7 @@ from src.application.services.processador_bdi import get_processador_bdi, Proces
 from src.domain.entities import Order
 from src.domain.enums.trading_enums import OrderSide as DomainOrderSide, OrderType as DomainOrderType
 from src.domain.value_objects import Symbol, Quantity, Price
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -171,6 +172,12 @@ class TradeExecutor:
         try:
             self.connection = sqlite3.connect(self.db_path)
             self.connection.row_factory = sqlite3.Row
+            try:
+                self.connection.execute("PRAGMA journal_mode=WAL")
+                self.connection.execute("PRAGMA synchronous=NORMAL")
+                self.connection.execute("PRAGMA busy_timeout=30000")
+            except sqlite3.Error:
+                pass
             logger.info(f"[AC5-DB] Connected to {self.db_path}")
         except sqlite3.Error as e:
             logger.error(f"[AC5-DB-ERROR] Connection failed: {e}")
@@ -450,34 +457,34 @@ class TradeExecutor:
                     return float(value)
                 return value
 
-            cursor = self.connection.cursor()
-
             if execution_result.status == OrderStatus.FILLED:
-                cursor.execute("""
-                    INSERT INTO trades (
-                        order_id, signal_id, trade_id,
-                        entry_price, execution_time,
-                        volume, status, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    execution_result.order_id,
-                    execution_result.signal_id,
-                    execution_result.trade_id,
-                    _to_sql_number(execution_result.execution_price),
-                    execution_result.execution_time,
-                    _to_sql_number(execution_result.volume_filled),
-                    "OPEN",
-                    datetime.now(),
-                ))
+                with sqlite_write_lock(self.db_path):
+                    cursor = self.connection.cursor()
+                    cursor.execute("""
+                        INSERT INTO trades (
+                            order_id, signal_id, trade_id,
+                            entry_price, execution_time,
+                            volume, status, created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        execution_result.order_id,
+                        execution_result.signal_id,
+                        execution_result.trade_id,
+                        _to_sql_number(execution_result.execution_price),
+                        execution_result.execution_time,
+                        _to_sql_number(execution_result.volume_filled),
+                        "OPEN",
+                        datetime.now(),
+                    ))
 
-                # Atualizar signal com trade_id (AC3 linkage)
-                cursor.execute("""
-                    UPDATE signals
-                    SET outcome_trade_id = ?
-                    WHERE signal_id = ?
-                """, (execution_result.trade_id, execution_result.signal_id))
+                    # Atualizar signal com trade_id (AC3 linkage)
+                    cursor.execute("""
+                        UPDATE signals
+                        SET outcome_trade_id = ?
+                        WHERE signal_id = ?
+                    """, (execution_result.trade_id, execution_result.signal_id))
 
-                self._commit_with_retry()
+                    self._commit_with_retry()
                 logger.info(
                     f"[AC5-REGISTER] Registered trade {execution_result.trade_id} "
                     f"for signal {execution_result.signal_id}"

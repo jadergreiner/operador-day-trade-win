@@ -15,6 +15,7 @@ from config import get_config
 from src.domain.enums.trading_enums import TimeFrame
 from src.domain.value_objects import Symbol
 from src.infrastructure.adapters.mt5_adapter import MT5Adapter
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
 
 
 def _insert_market_data(db_path: Path, symbol: str, rows: list[dict]) -> int:
@@ -23,32 +24,33 @@ def _insert_market_data(db_path: Path, symbol: str, rows: list[dict]) -> int:
     if not rows:
         return 0
 
-    with sqlite3.connect(str(db_path)) as con:
-        cur = con.cursor()
-        cur.execute(
-            "DELETE FROM market_data WHERE symbol=? AND timeframe='M1' AND timestamp BETWEEN ? AND ?",
-            (symbol, rows[0]["timestamp"], rows[-1]["timestamp"]),
-        )
-        cur.executemany(
-            """
-            INSERT INTO market_data
-            (symbol, timestamp, timeframe, open, high, low, close, volume, spread, created_at)
-            VALUES (?, ?, 'M1', ?, ?, ?, ?, ?, 0, datetime('now'))
-            """,
-            [
-                (
-                    symbol,
-                    r["timestamp"].strftime("%Y-%m-%d %H:%M:%S"),
-                    r["open"],
-                    r["high"],
-                    r["low"],
-                    r["close"],
-                    r["volume"],
-                )
-                for r in rows
-            ],
-        )
-        con.commit()
+    with sqlite_write_lock(db_path):
+        with sqlite3.connect(str(db_path)) as con:
+            cur = con.cursor()
+            cur.execute(
+                "DELETE FROM market_data WHERE symbol=? AND timeframe='M1' AND timestamp BETWEEN ? AND ?",
+                (symbol, rows[0]["timestamp"], rows[-1]["timestamp"]),
+            )
+            cur.executemany(
+                """
+                INSERT INTO market_data
+                (symbol, timestamp, timeframe, open, high, low, close, volume, spread, created_at)
+                VALUES (?, ?, 'M1', ?, ?, ?, ?, ?, 0, datetime('now'))
+                """,
+                [
+                    (
+                        symbol,
+                        r["timestamp"].strftime("%Y-%m-%d %H:%M:%S"),
+                        r["open"],
+                        r["high"],
+                        r["low"],
+                        r["close"],
+                        r["volume"],
+                    )
+                    for r in rows
+                ],
+            )
+            con.commit()
 
     return len(rows)
 

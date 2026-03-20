@@ -29,9 +29,18 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import time
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, date
 from typing import Optional
+
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
+
+_CONNECT_TIMEOUT_SECONDS = 30.0
+_BUSY_TIMEOUT_MS = 30000
+_WRITE_RETRY_ATTEMPTS = 5
+_WRITE_RETRY_BASE_DELAY = 0.15
 
 
 def _sanitizar_encoding(texto: str) -> str:
@@ -51,6 +60,37 @@ def _sanitizar_encoding(texto: str) -> str:
     # Remover caracter de substituicao Unicode (U+FFFD) gerado por
     # conversao incorreta cp1252 -> UTF-8
     return texto.replace("\ufffd", "?")
+
+
+def _is_sqlite_lock_error(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    return "database is locked" in msg or "database is busy" in msg
+
+
+def _connect_sqlite(db_path: str) -> sqlite3.Connection:
+    conn = sqlite3.connect(db_path, timeout=_CONNECT_TIMEOUT_SECONDS)
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        conn.execute(f"PRAGMA busy_timeout={_BUSY_TIMEOUT_MS}")
+    except Exception:
+        pass
+    return conn
+
+
+def _run_with_lock_retry(fn):
+    last_exc: Exception | None = None
+    for attempt in range(_WRITE_RETRY_ATTEMPTS):
+        try:
+            return fn()
+        except Exception as exc:
+            last_exc = exc
+            if not _is_sqlite_lock_error(exc) or attempt >= _WRITE_RETRY_ATTEMPTS - 1:
+                raise
+            time.sleep(_WRITE_RETRY_BASE_DELAY * (attempt + 1))
+    if last_exc is not None:
+        raise last_exc
+    raise RuntimeError("SQLite retry exhausted")
 
 
 @dataclass
@@ -237,10 +277,9 @@ CREATE INDEX IF NOT EXISTS ix_diary_feedback_active ON diary_feedback(active, da
 """
 
 
-def create_diary_feedback_table(db_path: str) -> None:
-    """Cria a tabela diary_feedback se não existir."""
+def _create_diary_feedback_table_unlocked(db_path: str) -> None:
+    conn = _connect_sqlite(db_path)
     try:
-        conn = sqlite3.connect(db_path)
         conn.executescript(_CREATE_TABLE_SQL)
         # Migrar tabelas existentes — adicionar colunas novas se não existem
         _alter_table_migrations = [
@@ -263,11 +302,21 @@ def create_diary_feedback_table(db_path: str) -> None:
         cursor = conn.cursor()
         for col_name, col_def in _alter_table_migrations:
             try:
-                cursor.execute(f"ALTER TABLE diary_feedback ADD COLUMN {col_name} {col_def}")
+                cursor.execute(
+                    f"ALTER TABLE diary_feedback ADD COLUMN {col_name} {col_def}"
+                )
             except Exception:
                 pass  # Coluna já existe
         conn.commit()
+    finally:
         conn.close()
+
+
+def create_diary_feedback_table(db_path: str) -> None:
+    """Cria a tabela diary_feedback se não existir."""
+    try:
+        with sqlite_write_lock(db_path):
+            _run_with_lock_retry(lambda: _create_diary_feedback_table_unlocked(db_path))
     except Exception as e:
         print(f"[AVISO] Erro ao criar tabela diary_feedback: {e}")
 
@@ -277,8 +326,6 @@ def save_diary_feedback(db_path: str, feedback: DiaryFeedback) -> int:
 
     Retorna o ID do registro inserido.
     """
-    create_diary_feedback_table(db_path)
-
     d = feedback.to_dict()
 
     # BUG-DIARIOS-03: Sanitizar encoding antes de persistir no SQLite.
@@ -298,88 +345,94 @@ def save_diary_feedback(db_path: str, feedback: DiaryFeedback) -> int:
         if campo in d and isinstance(d[campo], str):
             d[campo] = _sanitizar_encoding(d[campo])
 
+    def _persist() -> int:
+        conn = _connect_sqlite(db_path)
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO diary_feedback (
+                    date, timestamp, source,
+                    nota_agente,
+                    alertas_criticos, incoerencias, filtros_bloqueantes,
+                    parametros_questionados, sugestoes,
+                    custo_oportunidade_pts, eficiencia_pct,
+                    hold_pct, win_rate_pct, market_range_pts,
+                    n_opportunities, n_episodes,
+                    threshold_sugerido_buy, threshold_sugerido_sell,
+                    smc_bypass_recomendado, trend_following_recomendado,
+                    max_adx_para_trend, confianca_minima_sugerida,
+                    regioes_fortes, regioes_armadilhas, veredicto_regioes,
+                    direcional_vieses, direcional_contradicoes,
+                    direcional_questionamentos, veredicto_direcional,
+                    confianca_direcional_ajustada,
+                    guardian_kill_switch, guardian_kill_reason,
+                    guardian_reduced_exposure, guardian_confidence_penalty,
+                    guardian_bias_override, guardian_scenario_changes,
+                    guardian_alertas,
+                    macro_signal_dominante, smc_equilibrium_dominante,
+                    adx_medio, micro_score_medio,
+                    active
+                ) VALUES (
+                    ?, ?, ?,
+                    ?,
+                    ?, ?, ?,
+                    ?, ?,
+                    ?, ?,
+                    ?, ?, ?,
+                    ?, ?,
+                    ?, ?,
+                    ?, ?,
+                    ?, ?,
+                    ?, ?, ?,
+                    ?, ?,
+                    ?, ?,
+                    ?,
+                    ?, ?,
+                    ?, ?,
+                    ?, ?,
+                    ?,
+                    ?, ?,
+                    ?, ?,
+                    ?
+                )
+            """, (
+                d["date"], d["timestamp"], d["source"],
+                d["nota_agente"],
+                d["alertas_criticos"], d["incoerencias"], d["filtros_bloqueantes"],
+                d["parametros_questionados"], d["sugestoes"],
+                d["custo_oportunidade_pts"], d["eficiencia_pct"],
+                d["hold_pct"], d["win_rate_pct"], d["market_range_pts"],
+                d["n_opportunities"], d["n_episodes"],
+                d["threshold_sugerido_buy"], d["threshold_sugerido_sell"],
+                1 if d["smc_bypass_recomendado"] else 0,
+                1 if d["trend_following_recomendado"] else 0,
+                d["max_adx_para_trend"], d["confianca_minima_sugerida"],
+                d["regioes_fortes"], d["regioes_armadilhas"], d["veredicto_regioes"],
+                d["direcional_vieses"], d["direcional_contradicoes"],
+                d["direcional_questionamentos"], d["veredicto_direcional"],
+                d["confianca_direcional_ajustada"],
+                1 if d["guardian_kill_switch"] else 0,
+                d["guardian_kill_reason"],
+                1 if d["guardian_reduced_exposure"] else 0,
+                d["guardian_confidence_penalty"],
+                d["guardian_bias_override"],
+                d["guardian_scenario_changes"],
+                d["guardian_alertas"],
+                d["macro_signal_dominante"], d["smc_equilibrium_dominante"],
+                d["adx_medio"], d["micro_score_medio"],
+                1 if d["active"] else 0,
+            ))
+
+            feedback_id = cursor.lastrowid
+            conn.commit()
+            return feedback_id or 0
+        finally:
+            conn.close()
+
     try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO diary_feedback (
-                date, timestamp, source,
-                nota_agente,
-                alertas_criticos, incoerencias, filtros_bloqueantes,
-                parametros_questionados, sugestoes,
-                custo_oportunidade_pts, eficiencia_pct,
-                hold_pct, win_rate_pct, market_range_pts,
-                n_opportunities, n_episodes,
-                threshold_sugerido_buy, threshold_sugerido_sell,
-                smc_bypass_recomendado, trend_following_recomendado,
-                max_adx_para_trend, confianca_minima_sugerida,
-                regioes_fortes, regioes_armadilhas, veredicto_regioes,
-                direcional_vieses, direcional_contradicoes,
-                direcional_questionamentos, veredicto_direcional,
-                confianca_direcional_ajustada,
-                guardian_kill_switch, guardian_kill_reason,
-                guardian_reduced_exposure, guardian_confidence_penalty,
-                guardian_bias_override, guardian_scenario_changes,
-                guardian_alertas,
-                macro_signal_dominante, smc_equilibrium_dominante,
-                adx_medio, micro_score_medio,
-                active
-            ) VALUES (
-                ?, ?, ?,
-                ?,
-                ?, ?, ?,
-                ?, ?,
-                ?, ?,
-                ?, ?, ?,
-                ?, ?,
-                ?, ?,
-                ?, ?,
-                ?, ?,
-                ?, ?, ?,
-                ?, ?,
-                ?, ?,
-                ?,
-                ?, ?,
-                ?, ?,
-                ?, ?,
-                ?,
-                ?, ?,
-                ?, ?,
-                ?
-            )
-        """, (
-            d["date"], d["timestamp"], d["source"],
-            d["nota_agente"],
-            d["alertas_criticos"], d["incoerencias"], d["filtros_bloqueantes"],
-            d["parametros_questionados"], d["sugestoes"],
-            d["custo_oportunidade_pts"], d["eficiencia_pct"],
-            d["hold_pct"], d["win_rate_pct"], d["market_range_pts"],
-            d["n_opportunities"], d["n_episodes"],
-            d["threshold_sugerido_buy"], d["threshold_sugerido_sell"],
-            1 if d["smc_bypass_recomendado"] else 0,
-            1 if d["trend_following_recomendado"] else 0,
-            d["max_adx_para_trend"], d["confianca_minima_sugerida"],
-            d["regioes_fortes"], d["regioes_armadilhas"], d["veredicto_regioes"],
-            d["direcional_vieses"], d["direcional_contradicoes"],
-            d["direcional_questionamentos"], d["veredicto_direcional"],
-            d["confianca_direcional_ajustada"],
-            1 if d["guardian_kill_switch"] else 0,
-            d["guardian_kill_reason"],
-            1 if d["guardian_reduced_exposure"] else 0,
-            d["guardian_confidence_penalty"],
-            d["guardian_bias_override"],
-            d["guardian_scenario_changes"],
-            d["guardian_alertas"],
-            d["macro_signal_dominante"], d["smc_equilibrium_dominante"],
-            d["adx_medio"], d["micro_score_medio"],
-            1 if d["active"] else 0,
-        ))
-
-        feedback_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
-        return feedback_id or 0
-
+        with sqlite_write_lock(db_path):
+            _create_diary_feedback_table_unlocked(db_path)
+            return int(_run_with_lock_retry(_persist))
     except Exception as e:
         print(f"[ERRO] Falha ao salvar diary_feedback: {e}")
         return 0
@@ -396,7 +449,7 @@ def load_latest_feedback(db_path: str, today_only: bool = True) -> Optional[Diar
         DiaryFeedback mais recente ou None
     """
     try:
-        conn = sqlite3.connect(db_path)
+        conn = _connect_sqlite(db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
@@ -433,7 +486,7 @@ def load_feedback_history(db_path: str, days: int = 5) -> list[DiaryFeedback]:
     Útil para o agente aprender padrões de feedback ao longo do tempo.
     """
     try:
-        conn = sqlite3.connect(db_path)
+        conn = _connect_sqlite(db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
@@ -460,7 +513,7 @@ def get_feedback_trend(db_path: str) -> dict:
     Útil para verificar se o agente está melhorando.
     """
     try:
-        conn = sqlite3.connect(db_path)
+        conn = _connect_sqlite(db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 

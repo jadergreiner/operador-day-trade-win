@@ -4,6 +4,8 @@ import sqlite3
 import os
 import time
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 print("=" * 70)
 print("RECUPERACAO DE ESPACO DO BANCO DE DADOS (VACUUM)")
 print("=" * 70)
@@ -16,9 +18,11 @@ print(f"   Tamanho ANTES: {db_size_before:.2f} MB")
 
 try:
     print("\n2. EXECUTANDO VACUUM (pode levar alguns minutos)...")
-    conn = sqlite3.connect(db_path)
-    conn.execute("VACUUM")
-    conn.close()
+    with sqlite_write_lock(db_path):
+        conn = sqlite3.connect(db_path)
+        conn.execute("PRAGMA busy_timeout=30000")
+        conn.execute("VACUUM")
+        conn.close()
     print("   VACUUM executado com sucesso!")
 
     time.sleep(1)

@@ -9,6 +9,8 @@ import os
 import sqlite3
 import sys
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
@@ -59,25 +61,26 @@ def resolve_timeframe(mt5: object, timeframe: str) -> int:
 
 
 def ensure_market_data_table(db_path: Path) -> None:
-    with sqlite3.connect(str(db_path)) as conn:
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS market_data (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                symbol TEXT NOT NULL,
-                timestamp DATETIME NOT NULL,
-                timeframe TEXT NOT NULL,
-                open REAL NOT NULL,
-                high REAL NOT NULL,
-                low REAL NOT NULL,
-                close REAL NOT NULL,
-                volume INTEGER NOT NULL,
-                spread REAL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    with sqlite_write_lock(db_path):
+        with sqlite3.connect(str(db_path)) as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS market_data (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    symbol TEXT NOT NULL,
+                    timestamp DATETIME NOT NULL,
+                    timeframe TEXT NOT NULL,
+                    open REAL NOT NULL,
+                    high REAL NOT NULL,
+                    low REAL NOT NULL,
+                    close REAL NOT NULL,
+                    volume INTEGER NOT NULL,
+                    spread REAL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+                """
             )
-            """
-        )
-        conn.commit()
+            conn.commit()
 
 
 def import_history(symbol: str, timeframe: str, db_path: Path, chunk_size: int) -> None:
@@ -145,21 +148,22 @@ def import_history(symbol: str, timeframe: str, db_path: Path, chunk_size: int) 
     all_rows.sort(key=lambda x: x[1])
 
     ensure_market_data_table(db_path)
-    with sqlite3.connect(str(db_path)) as conn:
-        cur = conn.cursor()
-        cur.execute(
-            "DELETE FROM market_data WHERE symbol=? AND timeframe=?",
-            (symbol, timeframe.upper()),
-        )
-        cur.executemany(
-            """
-            INSERT INTO market_data
-            (symbol, timestamp, timeframe, open, high, low, close, volume, spread, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-            """,
-            all_rows,
-        )
-        conn.commit()
+    with sqlite_write_lock(db_path):
+        with sqlite3.connect(str(db_path)) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "DELETE FROM market_data WHERE symbol=? AND timeframe=?",
+                (symbol, timeframe.upper()),
+            )
+            cur.executemany(
+                """
+                INSERT INTO market_data
+                (symbol, timestamp, timeframe, open, high, low, close, volume, spread, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                """,
+                all_rows,
+            )
+            conn.commit()
 
     print(
         f"[OK] Importação concluída: {symbol} {timeframe.upper()} | "

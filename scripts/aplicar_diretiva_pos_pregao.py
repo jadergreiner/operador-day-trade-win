@@ -21,6 +21,8 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
@@ -96,61 +98,62 @@ def _next_business_day(base_date: str, holidays: set[str]) -> str:
 
 
 def _fetch_metrics(db_path: Path, base_date: str) -> DayMetrics:
-    conn = sqlite3.connect(str(db_path))
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
+    with sqlite_write_lock(db_path):
+        conn = sqlite3.connect(str(db_path))
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
 
-    cur.execute(
-        """
-        SELECT
-            MIN(timestamp) as t0,
-            MAX(timestamp) as t1,
-            COALESCE((SELECT price_open FROM micro_trend_decisions WHERE substr(timestamp,1,10)=? ORDER BY timestamp ASC LIMIT 1), 0) as open_price,
-            COALESCE((SELECT price_current FROM micro_trend_decisions WHERE substr(timestamp,1,10)=? ORDER BY timestamp DESC LIMIT 1), 0) as last_price,
-            COALESCE(MIN(price_current), 0) as pmin,
-            COALESCE(MAX(price_current), 0) as pmax,
-            COALESCE(AVG(macro_score), 0) as macro_avg,
-            COALESCE(MIN(macro_score), 0) as macro_min,
-            COALESCE(MAX(macro_score), 0) as macro_max,
-            COALESCE(AVG(micro_score), 0) as micro_avg,
-            COUNT(*) as episodes,
-            COALESCE(SUM(num_opportunities), 0) as opportunities
-        FROM micro_trend_decisions
-        WHERE substr(timestamp,1,10)=?
-        """,
-        (base_date, base_date, base_date),
-    )
-    m = cur.fetchone()
+        cur.execute(
+            """
+            SELECT
+                MIN(timestamp) as t0,
+                MAX(timestamp) as t1,
+                COALESCE((SELECT price_open FROM micro_trend_decisions WHERE substr(timestamp,1,10)=? ORDER BY timestamp ASC LIMIT 1), 0) as open_price,
+                COALESCE((SELECT price_current FROM micro_trend_decisions WHERE substr(timestamp,1,10)=? ORDER BY timestamp DESC LIMIT 1), 0) as last_price,
+                COALESCE(MIN(price_current), 0) as pmin,
+                COALESCE(MAX(price_current), 0) as pmax,
+                COALESCE(AVG(macro_score), 0) as macro_avg,
+                COALESCE(MIN(macro_score), 0) as macro_min,
+                COALESCE(MAX(macro_score), 0) as macro_max,
+                COALESCE(AVG(micro_score), 0) as micro_avg,
+                COUNT(*) as episodes,
+                COALESCE(SUM(num_opportunities), 0) as opportunities
+            FROM micro_trend_decisions
+            WHERE substr(timestamp,1,10)=?
+            """,
+            (base_date, base_date, base_date),
+        )
+        m = cur.fetchone()
 
-    cur.execute(
-        """
-        SELECT
-            COALESCE(SUM(CASE WHEN macro_signal='VENDA' THEN 1 ELSE 0 END),0) as sell_count,
-            COALESCE(SUM(CASE WHEN macro_signal='COMPRA' THEN 1 ELSE 0 END),0) as buy_count
-        FROM micro_trend_decisions
-        WHERE substr(timestamp,1,10)=?
-        """,
-        (base_date,),
-    )
-    ms = cur.fetchone()
+        cur.execute(
+            """
+            SELECT
+                COALESCE(SUM(CASE WHEN macro_signal='VENDA' THEN 1 ELSE 0 END),0) as sell_count,
+                COALESCE(SUM(CASE WHEN macro_signal='COMPRA' THEN 1 ELSE 0 END),0) as buy_count
+            FROM micro_trend_decisions
+            WHERE substr(timestamp,1,10)=?
+            """,
+            (base_date,),
+        )
+        ms = cur.fetchone()
 
-    cur.execute(
-        """
-        SELECT
-            COUNT(*) as closed_trades,
-            COALESCE(SUM(CASE WHEN profit_loss > 0 THEN 1 ELSE 0 END),0) as wins,
-            COALESCE(SUM(CASE WHEN profit_loss <= 0 THEN 1 ELSE 0 END),0) as losses,
-            COALESCE(SUM(profit_loss),0) as pnl_total
-        FROM trades
-        WHERE substr(entry_time,1,10)=?
-          AND status='CLOSED'
-          AND symbol LIKE 'WIN%'
-        """,
-        (base_date,),
-    )
-    t = cur.fetchone()
+        cur.execute(
+            """
+            SELECT
+                COUNT(*) as closed_trades,
+                COALESCE(SUM(CASE WHEN profit_loss > 0 THEN 1 ELSE 0 END),0) as wins,
+                COALESCE(SUM(CASE WHEN profit_loss <= 0 THEN 1 ELSE 0 END),0) as losses,
+                COALESCE(SUM(profit_loss),0) as pnl_total
+            FROM trades
+            WHERE substr(entry_time,1,10)=?
+              AND status='CLOSED'
+              AND symbol LIKE 'WIN%'
+            """,
+            (base_date,),
+        )
+        t = cur.fetchone()
 
-    conn.close()
+        conn.close()
 
     return DayMetrics(
         ref_date=base_date,

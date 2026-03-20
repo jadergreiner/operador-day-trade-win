@@ -619,6 +619,20 @@ def calcular_sl_tp(
     return sl, tp
 
 
+def calcular_risk_reward(acao: str, preco_atual: float, sl: float, tp: float) -> float:
+    """Calcula a relacao risco-retorno para compra/venda."""
+    if acao == "Comprar":
+        risk = preco_atual - sl
+        reward = tp - preco_atual
+    else:
+        risk = sl - preco_atual
+        reward = preco_atual - tp
+
+    if risk <= 0:
+        return 0.0
+    return abs(reward / risk)
+
+
 def _executar_pipeline_feedback_rl(trades_fechados: list) -> None:
     """Executa pipeline AC5.9→AC6.7→AC6.8→AC6.9 a cada 10 ciclos.
 

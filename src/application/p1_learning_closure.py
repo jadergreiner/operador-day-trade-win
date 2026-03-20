@@ -62,6 +62,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 
 # ============================================================================
 # ENUMS
@@ -237,46 +239,49 @@ class EpisodeClosureEngine:
         - notas: Texto livre
         - criado_em: Timestamp do registro
         """
-        conn = sqlite3.connect(self._db_path)
-        cursor = conn.cursor()
+        with sqlite_write_lock(self._db_path):
+            conn = sqlite3.connect(self._db_path)
+            try:
+                cursor = conn.cursor()
 
-        cursor.execute(
-            f"""
-            CREATE TABLE IF NOT EXISTS {self._table_name} (
-                closure_id TEXT PRIMARY KEY,
-                episode_id TEXT NOT NULL,
-                trade_id TEXT NOT NULL,
-                timestamp_fechamento TEXT NOT NULL,
-                preco_entrada REAL NOT NULL,
-                preco_saida REAL NOT NULL,
-                outcome TEXT NOT NULL,
-                motivo_fechamento TEXT NOT NULL,
-                pnl_realizado REAL NOT NULL,
-                pnl_realizado_pct REAL NOT NULL,
-                duracao_total_segundos REAL NOT NULL,
-                market_conditions TEXT NOT NULL DEFAULT '{{}}',
-                notas TEXT,
-                criado_em TEXT DEFAULT CURRENT_TIMESTAMP
-            )
-            """
-        )
+                cursor.execute(
+                    f"""
+                    CREATE TABLE IF NOT EXISTS {self._table_name} (
+                        closure_id TEXT PRIMARY KEY,
+                        episode_id TEXT NOT NULL,
+                        trade_id TEXT NOT NULL,
+                        timestamp_fechamento TEXT NOT NULL,
+                        preco_entrada REAL NOT NULL,
+                        preco_saida REAL NOT NULL,
+                        outcome TEXT NOT NULL,
+                        motivo_fechamento TEXT NOT NULL,
+                        pnl_realizado REAL NOT NULL,
+                        pnl_realizado_pct REAL NOT NULL,
+                        duracao_total_segundos REAL NOT NULL,
+                        market_conditions TEXT NOT NULL DEFAULT '{{}}',
+                        notas TEXT,
+                        criado_em TEXT DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """
+                )
 
-        # Indices para performance
-        cursor.execute(
-            f"CREATE INDEX IF NOT EXISTS idx_episode_{self._table_name} "
-            f"ON {self._table_name}(episode_id)"
-        )
-        cursor.execute(
-            f"CREATE INDEX IF NOT EXISTS idx_trade_{self._table_name} "
-            f"ON {self._table_name}(trade_id)"
-        )
-        cursor.execute(
-            f"CREATE INDEX IF NOT EXISTS idx_outcome_{self._table_name} "
-            f"ON {self._table_name}(outcome)"
-        )
+                # Indices para performance
+                cursor.execute(
+                    f"CREATE INDEX IF NOT EXISTS idx_episode_{self._table_name} "
+                    f"ON {self._table_name}(episode_id)"
+                )
+                cursor.execute(
+                    f"CREATE INDEX IF NOT EXISTS idx_trade_{self._table_name} "
+                    f"ON {self._table_name}(trade_id)"
+                )
+                cursor.execute(
+                    f"CREATE INDEX IF NOT EXISTS idx_outcome_{self._table_name} "
+                    f"ON {self._table_name}(outcome)"
+                )
 
-        conn.commit()
-        conn.close()
+                conn.commit()
+            finally:
+                conn.close()
 
     # ========================================================================
     # REGISTRO DE FECHAMENTO
@@ -350,40 +355,43 @@ class EpisodeClosureEngine:
         )
 
         # Persistir
-        conn = sqlite3.connect(self._db_path)
-        cursor = conn.cursor()
+        with sqlite_write_lock(self._db_path):
+            conn = sqlite3.connect(self._db_path)
+            try:
+                cursor = conn.cursor()
 
-        cursor.execute(
-            f"""
-            INSERT INTO {self._table_name} (
-                closure_id, episode_id, trade_id,
-                timestamp_fechamento, preco_entrada, preco_saida,
-                outcome, motivo_fechamento,
-                pnl_realizado, pnl_realizado_pct,
-                duracao_total_segundos, market_conditions, notas,
-                criado_em
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                closure_id,
-                episode_id,
-                trade_id,
-                timestamp_fechamento.isoformat(),
-                preco_entrada,
-                preco_saida,
-                outcome.value,
-                motivo_fechamento.value,
-                pnl_realizado,
-                pnl_realizado_pct,
-                duracao_total_segundos,
-                json.dumps(market_conditions),
-                notas,
-                registro.criado_em.isoformat(),
-            ),
-        )
+                cursor.execute(
+                    f"""
+                    INSERT INTO {self._table_name} (
+                        closure_id, episode_id, trade_id,
+                        timestamp_fechamento, preco_entrada, preco_saida,
+                        outcome, motivo_fechamento,
+                        pnl_realizado, pnl_realizado_pct,
+                        duracao_total_segundos, market_conditions, notas,
+                        criado_em
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        closure_id,
+                        episode_id,
+                        trade_id,
+                        timestamp_fechamento.isoformat(),
+                        preco_entrada,
+                        preco_saida,
+                        outcome.value,
+                        motivo_fechamento.value,
+                        pnl_realizado,
+                        pnl_realizado_pct,
+                        duracao_total_segundos,
+                        json.dumps(market_conditions),
+                        notas,
+                        registro.criado_em.isoformat(),
+                    ),
+                )
 
-        conn.commit()
-        conn.close()
+                conn.commit()
+            finally:
+                conn.close()
 
         return closure_id
 

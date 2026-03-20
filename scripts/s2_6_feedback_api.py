@@ -22,6 +22,8 @@ from pathlib import Path
 from typing import Dict, List
 from dataclasses import dataclass, asdict
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 
 @dataclass
 class FeedbackEntry:
@@ -49,38 +51,41 @@ class FeedbackAPI:
         """Inicializa banco de dados."""
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
 
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        with sqlite_write_lock(self.db_path):
+            conn = sqlite3.connect(self.db_path)
+            try:
+                cursor = conn.cursor()
 
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS feedback (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp TEXT NOT NULL,
-                trader TEXT NOT NULL,
-                signal_id TEXT NOT NULL,
-                action TEXT NOT NULL,
-                reason TEXT,
-                ml_confidence REAL,
-                trader_decision TEXT,
-                result TEXT,
-                created_at TEXT
-            )
-        """)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS feedback (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        timestamp TEXT NOT NULL,
+                        trader TEXT NOT NULL,
+                        signal_id TEXT NOT NULL,
+                        action TEXT NOT NULL,
+                        reason TEXT,
+                        ml_confidence REAL,
+                        trader_decision TEXT,
+                        result TEXT,
+                        created_at TEXT
+                    )
+                """)
 
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS overrides (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp TEXT NOT NULL,
-                trader TEXT NOT NULL,
-                override_type TEXT NOT NULL,
-                description TEXT,
-                pnl REAL,
-                created_at TEXT
-            )
-        """)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS overrides (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        timestamp TEXT NOT NULL,
+                        trader TEXT NOT NULL,
+                        override_type TEXT NOT NULL,
+                        description TEXT,
+                        pnl REAL,
+                        created_at TEXT
+                    )
+                """)
 
-        conn.commit()
-        conn.close()
+                conn.commit()
+            finally:
+                conn.close()
 
     def log_feedback(
         self,
@@ -93,22 +98,25 @@ class FeedbackAPI:
         result: str
     ) -> Dict:
         """Registra feedback do trader."""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        with sqlite_write_lock(self.db_path):
+            conn = sqlite3.connect(self.db_path)
+            try:
+                cursor = conn.cursor()
 
-        now = datetime.now().isoformat()
+                now = datetime.now().isoformat()
 
-        cursor.execute("""
-            INSERT INTO feedback
-            (timestamp, trader, signal_id, action, reason, ml_confidence, trader_decision, result, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (now, trader, signal_id, action, reason, ml_confidence, trader_decision, result, now))
+                cursor.execute("""
+                    INSERT INTO feedback
+                    (timestamp, trader, signal_id, action, reason, ml_confidence, trader_decision, result, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (now, trader, signal_id, action, reason, ml_confidence, trader_decision, result, now))
 
-        id = cursor.lastrowid
-        self.feedback_count += 1
+                id = cursor.lastrowid
+                self.feedback_count += 1
 
-        conn.commit()
-        conn.close()
+                conn.commit()
+            finally:
+                conn.close()
 
         return {
             "id": id,
@@ -127,21 +135,24 @@ class FeedbackAPI:
         pnl: float = None
     ) -> Dict:
         """Registra override manual."""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        with sqlite_write_lock(self.db_path):
+            conn = sqlite3.connect(self.db_path)
+            try:
+                cursor = conn.cursor()
 
-        now = datetime.now().isoformat()
+                now = datetime.now().isoformat()
 
-        cursor.execute("""
-            INSERT INTO overrides
-            (timestamp, trader, override_type, description, pnl, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (now, trader, override_type, description, pnl, now))
+                cursor.execute("""
+                    INSERT INTO overrides
+                    (timestamp, trader, override_type, description, pnl, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (now, trader, override_type, description, pnl, now))
 
-        id = cursor.lastrowid
+                id = cursor.lastrowid
 
-        conn.commit()
-        conn.close()
+                conn.commit()
+            finally:
+                conn.close()
 
         return {
             "id": id,
@@ -153,30 +164,32 @@ class FeedbackAPI:
 
     def get_stats(self) -> Dict:
         """Retorna estatísticas de feedback."""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        with sqlite_write_lock(self.db_path):
+            conn = sqlite3.connect(self.db_path)
+            try:
+                cursor = conn.cursor()
 
-        # Total feedback
-        cursor.execute("SELECT COUNT(*) FROM feedback")
-        total_feedback = cursor.fetchone()[0]
+                # Total feedback
+                cursor.execute("SELECT COUNT(*) FROM feedback")
+                total_feedback = cursor.fetchone()[0]
 
-        # Feedback por ação
-        cursor.execute("""
-            SELECT action, COUNT(*) as count FROM feedback GROUP BY action
-        """)
-        feedback_by_action = {row[0]: row[1] for row in cursor.fetchall()}
+                # Feedback por ação
+                cursor.execute("""
+                    SELECT action, COUNT(*) as count FROM feedback GROUP BY action
+                """)
+                feedback_by_action = {row[0]: row[1] for row in cursor.fetchall()}
 
-        # Overrides por tipo
-        cursor.execute("""
-            SELECT override_type, COUNT(*) as count FROM overrides GROUP BY override_type
-        """)
-        overrides_by_type = {row[0]: row[1] for row in cursor.fetchall()}
+                # Overrides por tipo
+                cursor.execute("""
+                    SELECT override_type, COUNT(*) as count FROM overrides GROUP BY override_type
+                """)
+                overrides_by_type = {row[0]: row[1] for row in cursor.fetchall()}
 
-        # Total overrides
-        cursor.execute("SELECT COUNT(*) FROM overrides")
-        total_overrides = cursor.fetchone()[0]
-
-        conn.close()
+                # Total overrides
+                cursor.execute("SELECT COUNT(*) FROM overrides")
+                total_overrides = cursor.fetchone()[0]
+            finally:
+                conn.close()
 
         return {
             "total_feedback": total_feedback,

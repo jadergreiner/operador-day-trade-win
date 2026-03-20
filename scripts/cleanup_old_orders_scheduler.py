@@ -25,6 +25,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
@@ -53,6 +55,11 @@ class OrderCleanupScheduler:
             raise FileNotFoundError(f"Database not found: {self.db_path}")
 
         conn = sqlite3.connect(self.db_path)
+        try:
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA busy_timeout=30000")
+        except Exception:
+            pass
         conn.row_factory = sqlite3.Row
         return conn
 
@@ -175,64 +182,65 @@ class OrderCleanupScheduler:
                 logger.error(f"Backup failed - aborting cleanup: {e}")
                 return False
 
-        conn = self._get_connection()
-        cursor = conn.cursor()
+        with sqlite_write_lock(self.db_path):
+            conn = self._get_connection()
+            cursor = conn.cursor()
 
-        try:
-            cutoff_date = datetime.now() - timedelta(days=days)
-            cutoff_iso = cutoff_date.isoformat()
-
-            # Delete from 'order_queue' if exists
             try:
-                cursor.execute(
-                    """
-                    DELETE FROM order_queue
-                    WHERE status IN ('EXECUTED', 'FAILED')
-                    AND datetime(executed_at) < datetime(?)
-                    """,
-                    (cutoff_iso,)
-                )
-                deleted = cursor.rowcount
-                self.stats["orders_deleted"] = deleted
-                logger.info(f"✓ Deleted {deleted} orders from 'order_queue' table")
+                cutoff_date = datetime.now() - timedelta(days=days)
+                cutoff_iso = cutoff_date.isoformat()
 
-            except sqlite3.OperationalError:
-                # Try 'orders' table
+                # Delete from 'order_queue' if exists
                 try:
                     cursor.execute(
-                        "DELETE FROM orders WHERE created_at < ?",
+                        """
+                        DELETE FROM order_queue
+                        WHERE status IN ('EXECUTED', 'FAILED')
+                        AND datetime(executed_at) < datetime(?)
+                        """,
                         (cutoff_iso,)
                     )
                     deleted = cursor.rowcount
                     self.stats["orders_deleted"] = deleted
-                    logger.info(
-                        f"✓ Deleted {deleted} orders from 'orders' table"
-                    )
+                    logger.info(f"✓ Deleted {deleted} orders from 'order_queue' table")
 
                 except sqlite3.OperationalError:
-                    error_msg = "Failed to delete orders - table not found"
-                    logger.error(error_msg)
-                    self.stats["errors"].append(error_msg)
-                    return False
+                    # Try 'orders' table
+                    try:
+                        cursor.execute(
+                            "DELETE FROM orders WHERE created_at < ?",
+                            (cutoff_iso,)
+                        )
+                        deleted = cursor.rowcount
+                        self.stats["orders_deleted"] = deleted
+                        logger.info(
+                            f"✓ Deleted {deleted} orders from 'orders' table"
+                        )
 
-            # Commit
-            conn.commit()
-            logger.info("✓ Changes committed")
+                    except sqlite3.OperationalError:
+                        error_msg = "Failed to delete orders - table not found"
+                        logger.error(error_msg)
+                        self.stats["errors"].append(error_msg)
+                        return False
 
-            # Vacuum (compacta database)
-            cursor.execute("VACUUM")
-            logger.info("✓ Database vacuumed")
+                # Commit
+                conn.commit()
+                logger.info("✓ Changes committed")
 
-            return True
+                # Vacuum (compacta database)
+                cursor.execute("VACUUM")
+                logger.info("✓ Database vacuumed")
 
-        except Exception as e:
-            logger.error(f"Error during deletion: {e}")
-            conn.rollback()
-            self.stats["errors"].append(str(e))
-            return False
+                return True
 
-        finally:
-            conn.close()
+            except Exception as e:
+                logger.error(f"Error during deletion: {e}")
+                conn.rollback()
+                self.stats["errors"].append(str(e))
+                return False
+
+            finally:
+                conn.close()
 
     def validate_integrity(self) -> bool:
         """Valida integridade do database após cleanup"""

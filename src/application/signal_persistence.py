@@ -27,6 +27,8 @@ import sqlite3
 import logging
 import json
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 # ============================================================================
 # ENUMS & TYPE DEFINITIONS
 # ============================================================================
@@ -505,55 +507,58 @@ class SignalPersistence:
     def _ensure_table_exists(self) -> None:
         """Cria tabela `signals` se não existir."""
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
+            with sqlite_write_lock(self.db_path):
+                conn = sqlite3.connect(self.db_path)
+                try:
+                    cursor = conn.cursor()
 
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS signals (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    signal_id TEXT UNIQUE NOT NULL,
-                    timestamp DATETIME NOT NULL,
-                    symbol TEXT NOT NULL,
-                    signal_type TEXT NOT NULL,
-                    smc_score REAL NOT NULL,
-                    smc_detector TEXT NOT NULL,
-                    entry_price REAL NOT NULL,
-                    candle_index INTEGER,
-                    market_context_json TEXT,
-                    outcome_trade_id INTEGER,
-                    outcome_pnl REAL,
-                    outcome_days_open REAL,
-                    outcome_type TEXT,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    closed_at DATETIME,
+                    cursor.execute(
+                        """
+                        CREATE TABLE IF NOT EXISTS signals (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            signal_id TEXT UNIQUE NOT NULL,
+                            timestamp DATETIME NOT NULL,
+                            symbol TEXT NOT NULL,
+                            signal_type TEXT NOT NULL,
+                            smc_score REAL NOT NULL,
+                            smc_detector TEXT NOT NULL,
+                            entry_price REAL NOT NULL,
+                            candle_index INTEGER,
+                            market_context_json TEXT,
+                            outcome_trade_id INTEGER,
+                            outcome_pnl REAL,
+                            outcome_days_open REAL,
+                            outcome_type TEXT,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            closed_at DATETIME,
 
-                    FOREIGN KEY(outcome_trade_id) REFERENCES trades(id),
-                    CHECK(signal_type IN ('BUY', 'SELL')),
-                    CHECK(outcome_type IN ('WINNING_SIGNAL', 'WHIPSAW',
-                                          'MISSED_OPPORTUNITY', 'OPEN')),
-                    CHECK(smc_score >= -3.0 AND smc_score <= 3.0),
-                    UNIQUE(timestamp, symbol, signal_type)
-                )
-                """
-            )
+                            FOREIGN KEY(outcome_trade_id) REFERENCES trades(id),
+                            CHECK(signal_type IN ('BUY', 'SELL')),
+                            CHECK(outcome_type IN ('WINNING_SIGNAL', 'WHIPSAW',
+                                                  'MISSED_OPPORTUNITY', 'OPEN')),
+                            CHECK(smc_score >= -3.0 AND smc_score <= 3.0),
+                            UNIQUE(timestamp, symbol, signal_type)
+                        )
+                        """
+                    )
 
-            # Criar índices
-            cursor.execute(
-                "CREATE INDEX IF NOT EXISTS idx_signals_timestamp "
-                "ON signals(timestamp DESC)"
-            )
-            cursor.execute(
-                "CREATE INDEX IF NOT EXISTS idx_signals_symbol_timestamp "
-                "ON signals(symbol, timestamp)"
-            )
-            cursor.execute(
-                "CREATE INDEX IF NOT EXISTS idx_signals_outcome_type "
-                "ON signals(outcome_type)"
-            )
+                    # Criar índices
+                    cursor.execute(
+                        "CREATE INDEX IF NOT EXISTS idx_signals_timestamp "
+                        "ON signals(timestamp DESC)"
+                    )
+                    cursor.execute(
+                        "CREATE INDEX IF NOT EXISTS idx_signals_symbol_timestamp "
+                        "ON signals(symbol, timestamp)"
+                    )
+                    cursor.execute(
+                        "CREATE INDEX IF NOT EXISTS idx_signals_outcome_type "
+                        "ON signals(outcome_type)"
+                    )
 
-            conn.commit()
-            conn.close()
+                    conn.commit()
+                finally:
+                    conn.close()
 
         except sqlite3.Error as e:
             logging.error(f"Erro criando tabela signals: {e}")
@@ -634,37 +639,40 @@ class SignalPersistence:
             True se inserção bem-sucedida, False caso contrário
         """
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
+            with sqlite_write_lock(self.db_path):
+                conn = sqlite3.connect(self.db_path)
+                try:
+                    cursor = conn.cursor()
 
-            # Serializar market_context
-            market_context_json = self._serialize_market_context(signal.market_context)
+                    # Serializar market_context
+                    market_context_json = self._serialize_market_context(signal.market_context)
 
-            cursor.execute(
-                """
-                INSERT INTO signals (
-                    signal_id, timestamp, symbol, signal_type,
-                    smc_score, smc_detector, entry_price, candle_index,
-                    market_context_json, outcome_type, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    signal.signal_id,
-                    signal.timestamp,
-                    signal.symbol,
-                    signal.signal_type.value,
-                    signal.smc_score,
-                    signal.smc_detector.value,
-                    signal.entry_price,
-                    signal.candle_index,
-                    market_context_json,
-                    SignalOutcomeType.OPEN.value,  # Sempre começa OPEN
-                    signal.created_at,
-                ),
-            )
+                    cursor.execute(
+                        """
+                        INSERT INTO signals (
+                            signal_id, timestamp, symbol, signal_type,
+                            smc_score, smc_detector, entry_price, candle_index,
+                            market_context_json, outcome_type, created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            signal.signal_id,
+                            signal.timestamp,
+                            signal.symbol,
+                            signal.signal_type.value,
+                            signal.smc_score,
+                            signal.smc_detector.value,
+                            signal.entry_price,
+                            signal.candle_index,
+                            market_context_json,
+                            SignalOutcomeType.OPEN.value,  # Sempre começa OPEN
+                            signal.created_at,
+                        ),
+                    )
 
-            conn.commit()
-            conn.close()
+                    conn.commit()
+                finally:
+                    conn.close()
 
             logging.info(f"[AC2-PERSISTED] Signal {signal.signal_id} inserido em DB")
             return True
@@ -700,31 +708,34 @@ class SignalPersistence:
             True se atualização bem-sucedida
         """
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
+            with sqlite_write_lock(self.db_path):
+                conn = sqlite3.connect(self.db_path)
+                try:
+                    cursor = conn.cursor()
 
-            cursor.execute(
-                """
-                UPDATE signals
-                SET outcome_trade_id = ?,
-                    outcome_pnl = ?,
-                    outcome_days_open = ?,
-                    outcome_type = ?,
-                    closed_at = ?
-                WHERE signal_id = ?
-                """,
-                (
-                    trade_id,
-                    pnl,
-                    days_open,
-                    outcome_type.value,
-                    datetime.now(),
-                    signal_id,
-                ),
-            )
+                    cursor.execute(
+                        """
+                        UPDATE signals
+                        SET outcome_trade_id = ?,
+                            outcome_pnl = ?,
+                            outcome_days_open = ?,
+                            outcome_type = ?,
+                            closed_at = ?
+                        WHERE signal_id = ?
+                        """,
+                        (
+                            trade_id,
+                            pnl,
+                            days_open,
+                            outcome_type.value,
+                            datetime.now(),
+                            signal_id,
+                        ),
+                    )
 
-            conn.commit()
-            conn.close()
+                    conn.commit()
+                finally:
+                    conn.close()
 
             logging.info(f"Signal {signal_id} outcome atualizado: {outcome_type.value}")
             return True

@@ -50,6 +50,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 
 # ============================================================================
 # DATACLASSES
@@ -178,38 +180,41 @@ class CausalLearningEngine:
 
     def _criar_tabelas(self) -> None:
         """Cria tabelas necessárias no SQLite."""
-        conn = sqlite3.connect(str(self.db_path))
-        cursor = conn.cursor()
+        with sqlite_write_lock(self.db_path):
+            conn = sqlite3.connect(str(self.db_path))
+            try:
+                cursor = conn.cursor()
 
-        # Tabela principal de episódios causais
-        cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS causal_learning_episodes (
-                episode_id TEXT PRIMARY KEY,
-                trade_id TEXT,
+                # Tabela principal de episódios causais
+                cursor.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS causal_learning_episodes (
+                        episode_id TEXT PRIMARY KEY,
+                        trade_id TEXT,
 
-                -- Etapa 1: Signal Detection
-                signal_timestamp TIMESTAMP,
-                signal_technical_factors TEXT,
-                signal_market_conditions TEXT,
-                signal_context_score REAL,
+                        -- Etapa 1: Signal Detection
+                        signal_timestamp TIMESTAMP,
+                        signal_technical_factors TEXT,
+                        signal_market_conditions TEXT,
+                        signal_context_score REAL,
 
-                -- Etapa 2: Decision
-                decision_timestamp TIMESTAMP,
-                decision_action TEXT,
-                decision_confidence REAL,
-                decision_reasoning TEXT,
-                decision_threshold_values TEXT,
+                        -- Etapa 2: Decision
+                        decision_timestamp TIMESTAMP,
+                        decision_action TEXT,
+                        decision_confidence REAL,
+                        decision_reasoning TEXT,
+                        decision_threshold_values TEXT,
 
-                -- Metadata
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP
-            )
-            """
-        )
+                        -- Metadata
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP
+                    )
+                    """
+                )
 
-        conn.commit()
-        conn.close()
+                conn.commit()
+            finally:
+                conn.close()
 
     # ========================================================================
     # ETAPA 1: SIGNAL DETECTION
@@ -252,29 +257,32 @@ class CausalLearningEngine:
         )
 
         # Persistir em banco
-        conn = sqlite3.connect(str(self.db_path))
-        cursor = conn.cursor()
+        with sqlite_write_lock(self.db_path):
+            conn = sqlite3.connect(str(self.db_path))
+            try:
+                cursor = conn.cursor()
 
-        cursor.execute(
-            """
-            INSERT OR REPLACE INTO causal_learning_episodes (
-                episode_id, trade_id,
-                signal_timestamp, signal_technical_factors,
-                signal_market_conditions, signal_context_score
-            ) VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            (
-                episode_id,
-                trade_id,
-                timestamp.isoformat(),
-                json.dumps(technical_factors),
-                json.dumps(market_conditions),
-                context_score,
-            ),
-        )
+                cursor.execute(
+                    """
+                    INSERT OR REPLACE INTO causal_learning_episodes (
+                        episode_id, trade_id,
+                        signal_timestamp, signal_technical_factors,
+                        signal_market_conditions, signal_context_score
+                    ) VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        episode_id,
+                        trade_id,
+                        timestamp.isoformat(),
+                        json.dumps(technical_factors),
+                        json.dumps(market_conditions),
+                        context_score,
+                    ),
+                )
 
-        conn.commit()
-        conn.close()
+                conn.commit()
+            finally:
+                conn.close()
 
         # Cache
         self.episodes[episode_id] = episode
@@ -328,33 +336,36 @@ class CausalLearningEngine:
         episode.decision_record = decision_record
 
         # Persistir em banco
-        conn = sqlite3.connect(str(self.db_path))
-        cursor = conn.cursor()
+        with sqlite_write_lock(self.db_path):
+            conn = sqlite3.connect(str(self.db_path))
+            try:
+                cursor = conn.cursor()
 
-        cursor.execute(
-            """
-            UPDATE causal_learning_episodes SET
-                decision_timestamp = ?,
-                decision_action = ?,
-                decision_confidence = ?,
-                decision_reasoning = ?,
-                decision_threshold_values = ?,
-                updated_at = ?
-            WHERE episode_id = ?
-            """,
-            (
-                timestamp.isoformat(),
-                action,
-                confidence,
-                reasoning,
-                json.dumps(threshold_values),
-                timestamp.isoformat(),
-                episode_id,
-            ),
-        )
+                cursor.execute(
+                    """
+                    UPDATE causal_learning_episodes SET
+                        decision_timestamp = ?,
+                        decision_action = ?,
+                        decision_confidence = ?,
+                        decision_reasoning = ?,
+                        decision_threshold_values = ?,
+                        updated_at = ?
+                    WHERE episode_id = ?
+                    """,
+                    (
+                        timestamp.isoformat(),
+                        action,
+                        confidence,
+                        reasoning,
+                        json.dumps(threshold_values),
+                        timestamp.isoformat(),
+                        episode_id,
+                    ),
+                )
 
-        conn.commit()
-        conn.close()
+                conn.commit()
+            finally:
+                conn.close()
 
         # Atualizar cache
         self.episodes[episode_id] = episode

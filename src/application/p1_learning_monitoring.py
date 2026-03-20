@@ -52,6 +52,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 import statistics as stats_module
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 
 # ============================================================================
 # DATACLASSES
@@ -146,46 +148,49 @@ class PositionMonitor:
         - Timestamps: timestamp
         - Contexto: market_conditions (JSON)
         """
-        conn = sqlite3.connect(self._db_path)
-        cursor = conn.cursor()
+        with sqlite_write_lock(self._db_path):
+            conn = sqlite3.connect(self._db_path)
+            try:
+                cursor = conn.cursor()
 
-        cursor.execute(
-            f"""
-            CREATE TABLE IF NOT EXISTS {self._table_name} (
-                update_id TEXT PRIMARY KEY,
-                timestamp TEXT NOT NULL,
-                episode_id TEXT NOT NULL,
-                trade_id TEXT NOT NULL,
-                current_price REAL NOT NULL,
-                entry_price REAL NOT NULL,
-                unrealized_pnl REAL NOT NULL,
-                unrealized_pnl_pct REAL NOT NULL,
-                position_size REAL NOT NULL,
-                duration_seconds REAL NOT NULL,
-                market_conditions TEXT NOT NULL,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (episode_id)
-                    REFERENCES causal_learning_episodes(episode_id)
-            )
-            """
-        )
+                cursor.execute(
+                    f"""
+                    CREATE TABLE IF NOT EXISTS {self._table_name} (
+                        update_id TEXT PRIMARY KEY,
+                        timestamp TEXT NOT NULL,
+                        episode_id TEXT NOT NULL,
+                        trade_id TEXT NOT NULL,
+                        current_price REAL NOT NULL,
+                        entry_price REAL NOT NULL,
+                        unrealized_pnl REAL NOT NULL,
+                        unrealized_pnl_pct REAL NOT NULL,
+                        position_size REAL NOT NULL,
+                        duration_seconds REAL NOT NULL,
+                        market_conditions TEXT NOT NULL,
+                        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (episode_id)
+                            REFERENCES causal_learning_episodes(episode_id)
+                    )
+                    """
+                )
 
-        # Criar índices para performance
-        cursor.execute(
-            f"CREATE INDEX IF NOT EXISTS idx_episode_{self._table_name} "
-            f"ON {self._table_name}(episode_id)"
-        )
-        cursor.execute(
-            f"CREATE INDEX IF NOT EXISTS idx_trade_{self._table_name} "
-            f"ON {self._table_name}(trade_id)"
-        )
-        cursor.execute(
-            f"CREATE INDEX IF NOT EXISTS idx_timestamp_{self._table_name} "
-            f"ON {self._table_name}(timestamp)"
-        )
+                # Criar índices para performance
+                cursor.execute(
+                    f"CREATE INDEX IF NOT EXISTS idx_episode_{self._table_name} "
+                    f"ON {self._table_name}(episode_id)"
+                )
+                cursor.execute(
+                    f"CREATE INDEX IF NOT EXISTS idx_trade_{self._table_name} "
+                    f"ON {self._table_name}(trade_id)"
+                )
+                cursor.execute(
+                    f"CREATE INDEX IF NOT EXISTS idx_timestamp_{self._table_name} "
+                    f"ON {self._table_name}(timestamp)"
+                )
 
-        conn.commit()
-        conn.close()
+                conn.commit()
+            finally:
+                conn.close()
 
     def registrar_atualizacao_posicao(
         self,
@@ -239,36 +244,39 @@ class PositionMonitor:
         update_id = str(uuid.uuid4())
 
         # Persistir
-        conn = sqlite3.connect(self._db_path)
-        cursor = conn.cursor()
+        with sqlite_write_lock(self._db_path):
+            conn = sqlite3.connect(self._db_path)
+            try:
+                cursor = conn.cursor()
 
-        cursor.execute(
-            f"""
-            INSERT INTO {self._table_name} (
-                update_id, timestamp, episode_id, trade_id,
-                current_price, entry_price,
-                unrealized_pnl, unrealized_pnl_pct,
-                position_size, duration_seconds,
-                market_conditions
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                update_id,
-                update.timestamp.isoformat(),
-                episode_id,
-                trade_id,
-                current_price,
-                entry_price,
-                unrealized_pnl,
-                unrealized_pnl_pct,
-                position_size,
-                duration_seconds,
-                json.dumps(market_conditions),
-            ),
-        )
+                cursor.execute(
+                    f"""
+                    INSERT INTO {self._table_name} (
+                        update_id, timestamp, episode_id, trade_id,
+                        current_price, entry_price,
+                        unrealized_pnl, unrealized_pnl_pct,
+                        position_size, duration_seconds,
+                        market_conditions
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        update_id,
+                        update.timestamp.isoformat(),
+                        episode_id,
+                        trade_id,
+                        current_price,
+                        entry_price,
+                        unrealized_pnl,
+                        unrealized_pnl_pct,
+                        position_size,
+                        duration_seconds,
+                        json.dumps(market_conditions),
+                    ),
+                )
 
-        conn.commit()
-        conn.close()
+                conn.commit()
+            finally:
+                conn.close()
 
         return update_id
 

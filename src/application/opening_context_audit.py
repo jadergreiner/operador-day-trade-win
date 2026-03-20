@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Mapping
+
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
 
 
 @dataclass(slots=True)
@@ -74,15 +77,49 @@ CREATE INDEX IF NOT EXISTS ix_opening_context_audit_agent
 ON opening_context_audit(agent_name, timestamp DESC);
 """
 
+_CONNECT_TIMEOUT_SECONDS = 30.0
+_BUSY_TIMEOUT_MS = 30000
+_MAX_RETRIES_LOCK = 4
+_BASE_BACKOFF_SECONDS = 0.2
+
+
+def _open_connection(db_path: str) -> sqlite3.Connection:
+    """Abre conexão SQLite com pragmas para reduzir lock transitório."""
+    conn = sqlite3.connect(db_path, timeout=_CONNECT_TIMEOUT_SECONDS)
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute(f"PRAGMA busy_timeout={_BUSY_TIMEOUT_MS}")
+    return conn
+
+
+def _is_sqlite_lock_error(exc: sqlite3.OperationalError) -> bool:
+    message = str(exc).lower()
+    return "database is locked" in message or "database is busy" in message
+
+
+def _create_opening_context_audit_table_unlocked(db_path: str) -> None:
+    last_error: sqlite3.OperationalError | None = None
+    for attempt in range(1, _MAX_RETRIES_LOCK + 1):
+        conn = _open_connection(db_path)
+        try:
+            conn.executescript(_CREATE_SQL)
+            conn.commit()
+            return
+        except sqlite3.OperationalError as exc:
+            last_error = exc
+            if not _is_sqlite_lock_error(exc) or attempt == _MAX_RETRIES_LOCK:
+                raise
+            time.sleep(_BASE_BACKOFF_SECONDS * attempt)
+        finally:
+            conn.close()
+
+    if last_error:
+        raise last_error
+
 
 def create_opening_context_audit_table(db_path: str) -> None:
     """Cria a tabela de auditoria se necessario."""
-    conn = sqlite3.connect(db_path)
-    try:
-        conn.executescript(_CREATE_SQL)
-        conn.commit()
-    finally:
-        conn.close()
+    with sqlite_write_lock(db_path):
+        _create_opening_context_audit_table_unlocked(db_path)
 
 
 def persist_opening_context_audit(
@@ -96,7 +133,6 @@ def persist_opening_context_audit(
     mode: str = "",
 ) -> int:
     """Persiste o contexto de abertura para auditoria comparativa."""
-    create_opening_context_audit_table(db_path)
     context = dict(macro_context or {})
     record = OpeningContextAuditRecord(
         agent_name=agent_name,
@@ -118,21 +154,33 @@ def persist_opening_context_audit(
         contexto_json=context,
     )
 
-    conn = sqlite3.connect(db_path)
-    try:
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            INSERT INTO opening_context_audit (
-                date, timestamp, agent_name, session_id, mode, source,
-                prompt_abertura_agentes, regime_macro, vies_intraday,
-                kill_switch_ativo, kill_switch_reason, watchlist_json, contexto_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            record.to_row(),
-        )
-        conn.commit()
-        return int(cursor.lastrowid or 0)
-    finally:
-        conn.close()
+    last_error: sqlite3.OperationalError | None = None
+    with sqlite_write_lock(db_path):
+        _create_opening_context_audit_table_unlocked(db_path)
+        for attempt in range(1, _MAX_RETRIES_LOCK + 1):
+            conn = _open_connection(db_path)
+            try:
+                cursor = conn.cursor()
+                cursor.execute(
+                    """
+                    INSERT INTO opening_context_audit (
+                        date, timestamp, agent_name, session_id, mode, source,
+                        prompt_abertura_agentes, regime_macro, vies_intraday,
+                        kill_switch_ativo, kill_switch_reason, watchlist_json, contexto_json
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    record.to_row(),
+                )
+                conn.commit()
+                return int(cursor.lastrowid or 0)
+            except sqlite3.OperationalError as exc:
+                last_error = exc
+                if not _is_sqlite_lock_error(exc) or attempt == _MAX_RETRIES_LOCK:
+                    raise
+                time.sleep(_BASE_BACKOFF_SECONDS * attempt)
+            finally:
+                conn.close()
 
+    if last_error:
+        raise last_error
+    return 0

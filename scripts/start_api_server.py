@@ -16,6 +16,7 @@ if str(root_dir) not in sys.path:
 import uvicorn
 from src.application.orders_executor import OrdersExecutionOrchestrator
 from src.interfaces.api.fastapi_server import create_app
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
 
 
 def create_database_tables():
@@ -23,46 +24,49 @@ def create_database_tables():
     db_path = root_dir / "data" / "db" / "api_orders.db"
 
     try:
-        conn = sqlite3.connect(str(db_path))
-        cursor = conn.cursor()
+        with sqlite_write_lock(db_path):
+            conn = sqlite3.connect(str(db_path))
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA busy_timeout=30000")
+            cursor = conn.cursor()
 
-        # Tabela api_orders
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS api_orders (
-                order_id TEXT PRIMARY KEY,
-                symbol TEXT NOT NULL,
-                order_type TEXT NOT NULL,
-                volume REAL NOT NULL,
-                entry_price REAL NOT NULL,
-                stop_loss REAL NOT NULL,
-                take_profit REAL NOT NULL,
-                ml_score REAL,
-                detector_spike REAL,
-                trader_approval BOOLEAN DEFAULT 0,
-                status TEXT DEFAULT 'ENQUEUED',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+            # Tabela api_orders
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS api_orders (
+                    order_id TEXT PRIMARY KEY,
+                    symbol TEXT NOT NULL,
+                    order_type TEXT NOT NULL,
+                    volume REAL NOT NULL,
+                    entry_price REAL NOT NULL,
+                    stop_loss REAL NOT NULL,
+                    take_profit REAL NOT NULL,
+                    ml_score REAL,
+                    detector_spike REAL,
+                    trader_approval BOOLEAN DEFAULT 0,
+                    status TEXT DEFAULT 'ENQUEUED',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
 
-        # Tabela api_audit_log
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS api_audit_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                order_id TEXT NOT NULL,
-                state TEXT NOT NULL,
-                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                message TEXT,
-                metadata TEXT,
-                FOREIGN KEY (order_id) REFERENCES api_orders(order_id)
-            )
-        """)
+            # Tabela api_audit_log
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS api_audit_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    order_id TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    message TEXT,
+                    metadata TEXT,
+                    FOREIGN KEY (order_id) REFERENCES api_orders(order_id)
+                )
+            """)
 
-        # Criar índices
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_orders_symbol ON api_orders(symbol)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_audit_order ON api_audit_log(order_id)")
+            # Criar índices
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_orders_symbol ON api_orders(symbol)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_api_audit_order ON api_audit_log(order_id)")
 
-        conn.commit()
-        conn.close()
+            conn.commit()
+            conn.close()
         print("[DB] Tabelas SQLite criadas/validadas com sucesso")
     except Exception as e:
         print(f"[WARN] Erro criando tabelas: {e}")

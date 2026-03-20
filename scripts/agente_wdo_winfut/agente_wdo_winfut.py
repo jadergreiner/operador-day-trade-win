@@ -14,6 +14,7 @@ import json
 import logging
 import math
 import sqlite3
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -24,9 +25,14 @@ import numpy as np
 import pandas as pd
 import requests
 
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 # Provedores de dados integrados
 from scripts.agente_wdo_winfut import api_providers as apis
 from scripts.agente_wdo_winfut import macro_data_provider as macro_api
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
 
 # ---------------------------------------------------------------------------
 # Constantes
@@ -61,73 +67,75 @@ def _salvar_config(cfg: dict) -> None:
 def _inicializar_db() -> sqlite3.Connection:
     """Inicializa banco SQLite e cria tabelas necessarias."""
     DB_DIR.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB_PATH))
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS sinais_wdo_winfut (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ativo TEXT NOT NULL,
-            timeframe TEXT,
-            timestamp_ms INTEGER,
-            tipo_sinal TEXT,
-            score_total REAL,
-            confianca REAL,
-            veredito TEXT,
-            score_commodities REAL DEFAULT 0,
-            score_risco REAL DEFAULT 0,
-            score_carry REAL DEFAULT 0,
-            score_bcb REAL DEFAULT 0,
-            score_fed REAL DEFAULT 0,
-            score_fiscal REAL DEFAULT 0,
-            score_usd_global REAL DEFAULT 0,
-            score_smc REAL DEFAULT 0,
-            score_sazonalidade_intraday REAL DEFAULT 0,
-            score_macro_brl REAL DEFAULT 0,
-            score_macro_usd REAL DEFAULT 0,
-            score_momentum REAL DEFAULT 0,
-            score_sentimento REAL DEFAULT 0,
-            score_sazonalidade_macro REAL DEFAULT 0,
-            score_fluxos REAL DEFAULT 0,
-            score_geopolitica REAL DEFAULT 0,
-            vix_valor REAL,
-            sp500_var_pct REAL,
-            yield_spread_10y REAL,
-            crise_fiscal_alert INTEGER DEFAULT 0,
-            intervencao_bcb_alert INTEGER DEFAULT 0,
-            modelo TEXT,
-            notas TEXT,
-            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS cotacoes_wdo_winfut (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            simbolo TEXT NOT NULL,
-            timeframe TEXT,
-            timestamp_ms INTEGER,
-            preco_abertura REAL,
-            preco_maximo REAL,
-            preco_minimo REAL,
-            preco_fechamento REAL,
-            volume REAL,
-            source TEXT DEFAULT 'yahoo',
-            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS detalhes_score (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            sinal_id INTEGER,
-            capitulo TEXT,
-            componente TEXT,
-            score_wdo REAL DEFAULT 0,
-            score_winfut REAL DEFAULT 0,
-            valor_raw TEXT,
-            descricao TEXT,
-            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    conn.commit()
+    with sqlite_write_lock(DB_PATH):
+        conn = sqlite3.connect(str(DB_PATH))
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=30000")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS sinais_wdo_winfut (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ativo TEXT NOT NULL,
+                timeframe TEXT,
+                timestamp_ms INTEGER,
+                tipo_sinal TEXT,
+                score_total REAL,
+                confianca REAL,
+                veredito TEXT,
+                score_commodities REAL DEFAULT 0,
+                score_risco REAL DEFAULT 0,
+                score_carry REAL DEFAULT 0,
+                score_bcb REAL DEFAULT 0,
+                score_fed REAL DEFAULT 0,
+                score_fiscal REAL DEFAULT 0,
+                score_usd_global REAL DEFAULT 0,
+                score_smc REAL DEFAULT 0,
+                score_sazonalidade_intraday REAL DEFAULT 0,
+                score_macro_brl REAL DEFAULT 0,
+                score_macro_usd REAL DEFAULT 0,
+                score_momentum REAL DEFAULT 0,
+                score_sentimento REAL DEFAULT 0,
+                score_sazonalidade_macro REAL DEFAULT 0,
+                score_fluxos REAL DEFAULT 0,
+                score_geopolitica REAL DEFAULT 0,
+                vix_valor REAL,
+                sp500_var_pct REAL,
+                yield_spread_10y REAL,
+                crise_fiscal_alert INTEGER DEFAULT 0,
+                intervencao_bcb_alert INTEGER DEFAULT 0,
+                modelo TEXT,
+                notas TEXT,
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS cotacoes_wdo_winfut (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                simbolo TEXT NOT NULL,
+                timeframe TEXT,
+                timestamp_ms INTEGER,
+                preco_abertura REAL,
+                preco_maximo REAL,
+                preco_minimo REAL,
+                preco_fechamento REAL,
+                volume REAL,
+                source TEXT DEFAULT 'yahoo',
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS detalhes_score (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sinal_id INTEGER,
+                capitulo TEXT,
+                componente TEXT,
+                score_wdo REAL DEFAULT 0,
+                score_winfut REAL DEFAULT 0,
+                valor_raw TEXT,
+                descricao TEXT,
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.commit()
     return conn
 
 
@@ -1855,107 +1863,108 @@ class AgenteWdoWinfut:
     def _persistir_resultado(self, resultado: dict):
         """Persiste resultado no banco SQLite."""
         try:
-            ts = resultado["timestamp_ms"]
-            # WDO
-            self.conn.execute("""
-                INSERT INTO sinais_wdo_winfut (
-                    ativo, timeframe, timestamp_ms, tipo_sinal,
-                    score_total, confianca, veredito,
-                    score_commodities, score_risco, score_carry,
-                    score_bcb, score_fed, score_fiscal,
-                    score_usd_global, score_smc, score_sazonalidade_intraday,
-                    score_macro_brl, score_macro_usd,
-                    score_momentum, score_sentimento,
-                    score_sazonalidade_macro, score_fluxos,
-                    score_geopolitica,
-                    vix_valor, sp500_var_pct,
-                    modelo, notas
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                "WDO", "D1", ts, "macro_score",
-                resultado["wdo"]["score_ajustado"],
-                resultado["wdo"]["confianca"],
-                resultado["wdo"]["veredito"],
-                self.scores_wdo.get("commodities", 0),
-                self.scores_wdo.get("risco", 0),
-                self.scores_wdo.get("carry", 0),
-                self.scores_wdo.get("bcb", 0),
-                self.scores_wdo.get("fed", 0),
-                self.scores_wdo.get("fiscal", 0),
-                self.scores_wdo.get("usd_global", 0),
-                self.scores_wdo.get("smc", 0),
-                resultado["wdo"]["multiplicador_sessao"],
-                self.scores_wdo.get("macro_brl", 0),
-                self.scores_wdo.get("macro_usd", 0),
-                self.scores_wdo.get("momentum", 0),
-                self.scores_wdo.get("sentimento", 0),
-                self.scores_wdo.get("sazonalidade_macro", 0),
-                self.scores_wdo.get("fluxos", 0),
-                self.scores_wdo.get("geopolitica", 0),
-                self.vix_valor,
-                self.sp500_var_pct,
-                "agente_wdo_winfut_v1",
-                resultado.get("veto_msg", ""),
-            ))
-
-            # WINFUT
-            self.conn.execute("""
-                INSERT INTO sinais_wdo_winfut (
-                    ativo, timeframe, timestamp_ms, tipo_sinal,
-                    score_total, confianca, veredito,
-                    score_commodities, score_risco, score_carry,
-                    score_bcb, score_fed, score_fiscal,
-                    score_usd_global, score_smc, score_sazonalidade_intraday,
-                    score_macro_brl, score_macro_usd,
-                    score_momentum, score_sentimento,
-                    score_sazonalidade_macro, score_fluxos,
-                    score_geopolitica,
-                    vix_valor, sp500_var_pct,
-                    modelo, notas
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                "WINFUT", "D1", ts, "macro_score",
-                resultado["winfut"]["score_ajustado"],
-                resultado["winfut"]["confianca"],
-                resultado["winfut"]["veredito"],
-                self.scores_winfut.get("commodities", 0),
-                self.scores_winfut.get("risco", 0),
-                self.scores_winfut.get("carry", 0),
-                self.scores_winfut.get("bcb", 0),
-                self.scores_winfut.get("fed", 0),
-                self.scores_winfut.get("fiscal", 0),
-                self.scores_winfut.get("usd_global", 0),
-                self.scores_winfut.get("smc", 0),
-                resultado["winfut"]["multiplicador_sessao"],
-                self.scores_winfut.get("macro_brl", 0),
-                self.scores_winfut.get("macro_usd", 0),
-                self.scores_winfut.get("momentum", 0),
-                self.scores_winfut.get("sentimento", 0),
-                self.scores_winfut.get("sazonalidade_macro", 0),
-                self.scores_winfut.get("fluxos", 0),
-                self.scores_winfut.get("geopolitica", 0),
-                self.vix_valor,
-                self.sp500_var_pct,
-                "agente_wdo_winfut_v1",
-                resultado.get("veto_msg", ""),
-            ))
-
-            # Detalhes
-            sinal_id_wdo = self.conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-            for det in self.detalhes:
+            with sqlite_write_lock(DB_PATH):
+                ts = resultado["timestamp_ms"]
+                # WDO
                 self.conn.execute("""
-                    INSERT INTO detalhes_score (
-                        sinal_id, capitulo, componente,
-                        score_wdo, score_winfut, valor_raw, descricao
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO sinais_wdo_winfut (
+                        ativo, timeframe, timestamp_ms, tipo_sinal,
+                        score_total, confianca, veredito,
+                        score_commodities, score_risco, score_carry,
+                        score_bcb, score_fed, score_fiscal,
+                        score_usd_global, score_smc, score_sazonalidade_intraday,
+                        score_macro_brl, score_macro_usd,
+                        score_momentum, score_sentimento,
+                        score_sazonalidade_macro, score_fluxos,
+                        score_geopolitica,
+                        vix_valor, sp500_var_pct,
+                        modelo, notas
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
-                    sinal_id_wdo, det["capitulo"], det["componente"],
-                    det["score_wdo"], det["score_winfut"],
-                    det["valor_raw"], det["descricao"],
+                    "WDO", "D1", ts, "macro_score",
+                    resultado["wdo"]["score_ajustado"],
+                    resultado["wdo"]["confianca"],
+                    resultado["wdo"]["veredito"],
+                    self.scores_wdo.get("commodities", 0),
+                    self.scores_wdo.get("risco", 0),
+                    self.scores_wdo.get("carry", 0),
+                    self.scores_wdo.get("bcb", 0),
+                    self.scores_wdo.get("fed", 0),
+                    self.scores_wdo.get("fiscal", 0),
+                    self.scores_wdo.get("usd_global", 0),
+                    self.scores_wdo.get("smc", 0),
+                    resultado["wdo"]["multiplicador_sessao"],
+                    self.scores_wdo.get("macro_brl", 0),
+                    self.scores_wdo.get("macro_usd", 0),
+                    self.scores_wdo.get("momentum", 0),
+                    self.scores_wdo.get("sentimento", 0),
+                    self.scores_wdo.get("sazonalidade_macro", 0),
+                    self.scores_wdo.get("fluxos", 0),
+                    self.scores_wdo.get("geopolitica", 0),
+                    self.vix_valor,
+                    self.sp500_var_pct,
+                    "agente_wdo_winfut_v1",
+                    resultado.get("veto_msg", ""),
                 ))
 
-            self.conn.commit()
-            logger.info("Resultado persistido no SQLite: %s", DB_PATH)
+                # WINFUT
+                self.conn.execute("""
+                    INSERT INTO sinais_wdo_winfut (
+                        ativo, timeframe, timestamp_ms, tipo_sinal,
+                        score_total, confianca, veredito,
+                        score_commodities, score_risco, score_carry,
+                        score_bcb, score_fed, score_fiscal,
+                        score_usd_global, score_smc, score_sazonalidade_intraday,
+                        score_macro_brl, score_macro_usd,
+                        score_momentum, score_sentimento,
+                        score_sazonalidade_macro, score_fluxos,
+                        score_geopolitica,
+                        vix_valor, sp500_var_pct,
+                        modelo, notas
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    "WINFUT", "D1", ts, "macro_score",
+                    resultado["winfut"]["score_ajustado"],
+                    resultado["winfut"]["confianca"],
+                    resultado["winfut"]["veredito"],
+                    self.scores_winfut.get("commodities", 0),
+                    self.scores_winfut.get("risco", 0),
+                    self.scores_winfut.get("carry", 0),
+                    self.scores_winfut.get("bcb", 0),
+                    self.scores_winfut.get("fed", 0),
+                    self.scores_winfut.get("fiscal", 0),
+                    self.scores_winfut.get("usd_global", 0),
+                    self.scores_winfut.get("smc", 0),
+                    resultado["winfut"]["multiplicador_sessao"],
+                    self.scores_winfut.get("macro_brl", 0),
+                    self.scores_winfut.get("macro_usd", 0),
+                    self.scores_winfut.get("momentum", 0),
+                    self.scores_winfut.get("sentimento", 0),
+                    self.scores_winfut.get("sazonalidade_macro", 0),
+                    self.scores_winfut.get("fluxos", 0),
+                    self.scores_winfut.get("geopolitica", 0),
+                    self.vix_valor,
+                    self.sp500_var_pct,
+                    "agente_wdo_winfut_v1",
+                    resultado.get("veto_msg", ""),
+                ))
+
+                # Detalhes
+                sinal_id_wdo = self.conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+                for det in self.detalhes:
+                    self.conn.execute("""
+                        INSERT INTO detalhes_score (
+                            sinal_id, capitulo, componente,
+                            score_wdo, score_winfut, valor_raw, descricao
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """, (
+                        sinal_id_wdo, det["capitulo"], det["componente"],
+                        det["score_wdo"], det["score_winfut"],
+                        det["valor_raw"], det["descricao"],
+                    ))
+
+                self.conn.commit()
+                logger.info("Resultado persistido no SQLite: %s", DB_PATH)
         except Exception as e:
             logger.error("Erro ao persistir resultado: %s", e)
 

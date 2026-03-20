@@ -12,6 +12,8 @@ from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass, asdict
 import logging
 
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
 # Configurar logging
 logger = logging.getLogger(__name__)
 
@@ -82,37 +84,40 @@ class FeedbackCollector:
     def _init_db(self) -> None:
         """Inicializa tabela intervencoes_manuais se não existir."""
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
+            with sqlite_write_lock(self.db_path):
+                conn = sqlite3.connect(self.db_path)
+                try:
+                    cursor = conn.cursor()
 
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS intervencoes_manuais (
-                    id_intervencao INTEGER PRIMARY KEY AUTOINCREMENT,
-                    timestamp TEXT NOT NULL,
-                    codigo_intervencao INTEGER
-                        CHECK (codigo_intervencao BETWEEN 1 AND 8),
-                    descricao_codigo TEXT,
-                    contexto_json TEXT,
-                    resultado_operacao TEXT,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS intervencoes_manuais (
+                            id_intervencao INTEGER PRIMARY KEY AUTOINCREMENT,
+                            timestamp TEXT NOT NULL,
+                            codigo_intervencao INTEGER
+                                CHECK (codigo_intervencao BETWEEN 1 AND 8),
+                            descricao_codigo TEXT,
+                            contexto_json TEXT,
+                            resultado_operacao TEXT,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """)
 
-            # Criar índices
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS
-                    idx_timestamp_intervencoes
-                ON intervencoes_manuais(timestamp DESC)
-            """)
-            cursor.execute("""
-                CREATE INDEX IF NOT EXISTS
-                    idx_codigo_intervencoes
-                ON intervencoes_manuais(codigo_intervencao)
-            """)
+                    # Criar índices
+                    cursor.execute("""
+                        CREATE INDEX IF NOT EXISTS
+                            idx_timestamp_intervencoes
+                        ON intervencoes_manuais(timestamp DESC)
+                    """)
+                    cursor.execute("""
+                        CREATE INDEX IF NOT EXISTS
+                            idx_codigo_intervencoes
+                        ON intervencoes_manuais(codigo_intervencao)
+                    """)
 
-            conn.commit()
-            conn.close()
-            logger.info("Tabela intervencoes_manuais verificada/criada")
+                    conn.commit()
+                    logger.info("Tabela intervencoes_manuais verificada/criada")
+                finally:
+                    conn.close()
 
         except sqlite3.Error as e:
             logger.error(f"Erro ao inicializar BD: {e}")
@@ -198,32 +203,35 @@ class FeedbackCollector:
             sqlite3.Error: Se erro ao escrever BD.
         """
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
+            with sqlite_write_lock(self.db_path):
+                conn = sqlite3.connect(self.db_path)
+                try:
+                    cursor = conn.cursor()
 
-            contexto_json = json.dumps(feedback.contexto)
+                    contexto_json = json.dumps(feedback.contexto)
 
-            cursor.execute("""
-                INSERT INTO intervencoes_manuais
-                (
-                    timestamp,
-                    codigo_intervencao,
-                    descricao_codigo,
-                    contexto_json,
-                    resultado_operacao
-                )
-                VALUES (?, ?, ?, ?, ?)
-            """, (
-                feedback.timestamp,
-                feedback.codigo_intervencao,
-                self.CODIGOS_INTERVENCAO[feedback.codigo_intervencao],
-                contexto_json,
-                resultado,
-            ))
+                    cursor.execute("""
+                        INSERT INTO intervencoes_manuais
+                        (
+                            timestamp,
+                            codigo_intervencao,
+                            descricao_codigo,
+                            contexto_json,
+                            resultado_operacao
+                        )
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (
+                        feedback.timestamp,
+                        feedback.codigo_intervencao,
+                        self.CODIGOS_INTERVENCAO[feedback.codigo_intervencao],
+                        contexto_json,
+                        resultado,
+                    ))
 
-            conn.commit()
-            id_new = cursor.lastrowid
-            conn.close()
+                    conn.commit()
+                    id_new = cursor.lastrowid
+                finally:
+                    conn.close()
 
             logger.info(
                 f"Intervenção registrada: "
