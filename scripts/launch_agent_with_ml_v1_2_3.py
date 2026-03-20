@@ -74,6 +74,7 @@ except ImportError:
 import agente_micro_tendencia_s2_6_integrated as s2_6_module
 from src.application.opening_context_report import generate_opening_context_vs_result_report
 from src.application.opening_context_runtime import initialize_opening_context_runtime
+from src.application.log_labels import OPENING_CONTEXT_LABEL
 
 # ─ P0-1 API Integration ─
 try:
@@ -679,6 +680,7 @@ def main():
     print("  " + "=" * 60)
     print(f"  Release: INTEGRATION-ML-001 Phase 3 (25/02/2026)")
     print(f"  Status: 14/14 tests PASSING | 94% coverage")
+    print(f"  DB em uso: {AGENT_DB_PATH}")
     print(f"  Terminal Isolation: HARD STOP Mode (v1.0)")
     print("  " + "=" * 60)
 
@@ -732,11 +734,13 @@ def main():
                 outputs_root=root_dir / "outputs",
             )
             print(
-                "\n  [PRE-ABERTURA] Relatorio contexto x resultado gerado: "
+                f"\n  {OPENING_CONTEXT_LABEL} Relatorio contexto x resultado gerado: "
                 f"{relatorio.markdown_path}"
             )
         except Exception as exc:
-            print(f"\n  [PRE-ABERTURA] Falha ao gerar relatorio final: {exc}")
+            print(
+                f"\n  {OPENING_CONTEXT_LABEL} Falha ao gerar relatorio final: {exc}"
+            )
 
 
 if __name__ == "__main__":

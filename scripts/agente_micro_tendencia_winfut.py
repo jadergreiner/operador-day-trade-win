@@ -15,7 +15,7 @@ Funcionalidades:
   - Geração de oportunidades com entrada, SL, TP e R/R
 """
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, time as dtime
 from decimal import Decimal, ROUND_HALF_UP
@@ -2808,6 +2808,8 @@ class IntraDayLearner:
         self.validation_results = {}  # pattern → (hits, total)
         self.confidence_adjustments = {}  # pattern → delta
         self.last_adjustment_time = {}  # pattern → timestamp (evita spam)
+        self.rejection_reason_counts = defaultdict(int)
+        self.rejection_outcome_counts = defaultdict(int)
         self.adjustment_cooldown = timedelta(minutes=5)  # Não ajusta 2x em 5min
         self._audit_log = []  # Log interno para auditoria
 
@@ -2843,6 +2845,29 @@ class IntraDayLearner:
         self.rejection_patterns[pattern] += 1
         self._log_audit(f"REJECTION: {pattern}")
         return pattern
+
+    def record_rejection_learning(
+        self,
+        rejection_reasons: list[str],
+        has_opportunities: bool,
+    ) -> tuple[str, str]:
+        """Registra o aprendizado provisório de uma rodada de rejeição.
+
+        Returns:
+            (outcome_label, dominant_reason)
+        """
+        dominant_reason, dominant_count = get_dominant_rejection_reason(rejection_reasons)
+        outcome_label, note = _classify_rejection_learning(rejection_reasons, has_opportunities)
+
+        if dominant_reason != "N/A":
+            self.rejection_reason_counts[dominant_reason] += 1
+        self.rejection_outcome_counts[outcome_label] += 1
+        self._log_audit(
+            "REJECTION_LEARNING: "
+            f"outcome={outcome_label} | dominant={dominant_reason} "
+            f"| count={dominant_count} | note={note}"
+        )
+        return outcome_label, dominant_reason
 
     def validate_hold(self, pattern: tuple, acertou: bool) -> tuple[Optional[float], str]:
         """Valida se um HOLD foi acertado e retorna ajuste de confiança.
@@ -3053,6 +3078,18 @@ class IntraDayLearner:
             total_adjustment = self.get_current_adjustments()
             if total_adjustment != 0:
                 lines.append(f"  ⚡ Ajuste total de confiança: {total_adjustment:+.0f}%")
+
+        if self.rejection_outcome_counts:
+            rejection_total = sum(self.rejection_outcome_counts.values())
+            outcome_parts = []
+            for label in ("CORRETA", "PENDENTE", "PERDA", "INDEFINIDA"):
+                if self.rejection_outcome_counts.get(label, 0):
+                    outcome_parts.append(f"{label}={self.rejection_outcome_counts[label]}")
+            if outcome_parts:
+                lines.append(
+                    "  🧠 Rejeições em aprendizado: "
+                    f"{rejection_total} | " + " | ".join(outcome_parts)
+                )
 
         return "\n".join(lines) if lines else "  (Sem dados intraday)"
 
@@ -3306,11 +3343,22 @@ class MicroTradingManager:
         """Avalia se uma oportunidade deve ser executada (técnicas + ML)."""
         global _active_directive, _lgbm_integrator
 
+        def _to_float(value, default: float = 0.0) -> float:
+            try:
+                if value is None:
+                    return default
+                return float(value)
+            except (TypeError, ValueError):
+                return default
+
         # ── Validação Básica ──
-        if opp.confidence < MIN_CONFIDENCE_TRADE:
+        opp_confidence = _to_float(opp.confidence)
+        opp_risk_reward = _to_float(opp.risk_reward)
+
+        if opp_confidence < MIN_CONFIDENCE_TRADE:
             return False, f"Confiança {opp.confidence:.0f}% < mínimo {MIN_CONFIDENCE_TRADE}%"
 
-        if opp.risk_reward < MIN_RR_TRADE:
+        if opp_risk_reward < float(MIN_RR_TRADE):
             return False, f"R/R {opp.risk_reward} < mínimo {MIN_RR_TRADE}"
 
         # ── Score do Modelo LightGBM (26/02/2026) ──
@@ -3321,14 +3369,14 @@ class MicroTradingManager:
             try:
                 lgbm_score, lgbm_reasoning = _lgbm_integrator.score_opportunity(cycle_result, opp)
                 # Mistura score LGBM com confiança técnica (60% técnico, 40% ML)
-                weighted_confidence = (opp.confidence * 0.6) + (lgbm_score * 100 * 0.4)
+                weighted_confidence = (opp_confidence * 0.6) + (float(lgbm_score) * 100.0 * 0.4)
                 print(f"     🤖 LGBM: {lgbm_score:.1%} | Score misto: {weighted_confidence:.0f}%")
             except Exception as e:
                 # Se falhar, usa apenas técnicas
-                weighted_confidence = opp.confidence
+                weighted_confidence = opp_confidence
                 lgbm_reasoning = f"(LGBM erro: {str(e)[:30]})"
         else:
-            weighted_confidence = opp.confidence
+            weighted_confidence = opp_confidence
 
         # P0-URGENT-1: Aplica ajuste de confiança (patterns + inactividade)
         global _intraday_learner
@@ -3336,7 +3384,7 @@ class MicroTradingManager:
             total_adjustment = _intraday_learner.get_total_confidence_adjustment()
             if total_adjustment != 0:
                 # Converte adjustment em percentual
-                adjustment_pct = total_adjustment * 100
+                adjustment_pct = float(total_adjustment) * 100.0
                 weighted_confidence += adjustment_pct
                 extra_detail = ""
                 if _intraday_learner.inactivity_penalty < 0:
@@ -3369,7 +3417,7 @@ class MicroTradingManager:
                 diario_payload,
             )
             if diario_influence.confidence_adjustment != 0:
-                diario_adjustment_pct = diario_influence.confidence_adjustment * 100.0
+                diario_adjustment_pct = float(diario_influence.confidence_adjustment) * 100.0
                 weighted_confidence += diario_adjustment_pct
                 print(
                     f"     📓 Diario: {diario_influence.alignment} | "
@@ -3382,7 +3430,7 @@ class MicroTradingManager:
 
         # Reavalia com score misto + ajustes intraday
         if weighted_confidence < MIN_CONFIDENCE_TRADE:
-            return False, f"Score ajustado {weighted_confidence:.0f}% < {MIN_CONFIDENCE_TRADE}% (base={opp.confidence:.0f}%)"
+            return False, f"Score ajustado {weighted_confidence:.0f}% < {MIN_CONFIDENCE_TRADE}% (base={opp_confidence:.0f}%)"
 
         # FIX 12/02/2026: Cooling-off anti-TILT — bloqueia reentrada na mesma
         # direção por COOLING_OFF_MINUTES minutos após stop loss.
@@ -3445,7 +3493,6 @@ class MicroTradingManager:
         if not opp.stop_loss or opp.stop_loss <= Decimal("0"):
             print(f"  ✗ ERRO: stop_loss inválido ou zero: {opp.stop_loss}")
             return None
-
         if not opp.take_profit or opp.take_profit <= Decimal("0"):
             print(f"  ✗ ERRO: take_profit inválido ou zero: {opp.take_profit}")
             return None
@@ -4645,6 +4692,76 @@ def _display_smc_multi_tf(result: CycleResult):
                   f"SH: {sh:.0f} │ SL: {sl_val:.0f}")
 
 
+def _normalize_rejection_reason(reason: str) -> str:
+    """Normaliza motivo de rejeição para exibição e contagem."""
+    cleaned = " ".join(str(reason).split()).strip()
+    return cleaned or "N/A"
+
+
+def get_dominant_rejection_reason(
+    rejection_reasons: list[str],
+) -> tuple[str, int]:
+    """Retorna motivo dominante e contagem."""
+    if not rejection_reasons:
+        return "N/A", 0
+
+    counts = Counter(_normalize_rejection_reason(reason) for reason in rejection_reasons)
+    dominant_reason, dominant_count = counts.most_common(1)[0]
+    return dominant_reason, dominant_count
+
+
+def _classify_rejection_learning(
+    rejection_reasons: list[str],
+    has_opportunities: bool,
+) -> tuple[str, str]:
+    """Classifica a rejeição em termos de aprendizado provisório."""
+    if not rejection_reasons:
+        return "INDEFINIDA", "Sem motivo capturado"
+
+    normalized = " | ".join(_normalize_rejection_reason(reason) for reason in rejection_reasons).upper()
+
+    protective_markers = (
+        "LIMITE DIÁRIO",
+        "LOSS DIÁRIO",
+        "COOLING-OFF",
+        "POSIÇÃO",
+        "HORÁRIO",
+        "PREGÃO",
+        "HARD STOP",
+        "ISOLAMENTO",
+        "TERMINAL",
+        "MAX POSI",
+        "CONFLITO",
+    )
+    quality_markers = (
+        "CONFIAN",
+        "R/R",
+        "SCORE AJUSTADO",
+        "EXPOSIÇÃO REDUZIDA",
+        "SMC",
+        "DIARY",
+        "HEAD:",
+        "MACRO",
+        "ADX",
+        "RSI",
+        "LGBM",
+        "FILTRO",
+    )
+
+    if any(marker in normalized for marker in protective_markers):
+        return "CORRETA", "Bloqueio protetivo ou operacional"
+
+    if any(marker in normalized for marker in quality_markers):
+        if has_opportunities:
+            return "PENDENTE", "Filtro de qualidade; aguardando validação dos rewards"
+        return "CORRETA", "Sem setup válido no ciclo"
+
+    if has_opportunities:
+        return "PERDA", "Havia oportunidade, mas a decisão final foi conservadora"
+
+    return "INDEFINIDA", "Sem setup acionável"
+
+
 def _display_cycle(result: CycleResult):
     """Exibe resultado do ciclo no console."""
     now = result.timestamp.strftime("%d/%m/%Y %H:%M:%S")
@@ -4771,6 +4888,8 @@ def _display_cycle(result: CycleResult):
     # ── Vol legend ──
     print(f"║  🔥=vol explosão  📊=vol acima média  ·=vol normal")
     print(f"╠{'─' * 68}╣")
+    rejection_reasons = getattr(result, '_rejection_reasons', []) or []
+    dominant_reason, dominant_count = get_dominant_rejection_reason(rejection_reasons)
     # Oportunidades
     if result.opportunities:
         print("║  OPORTUNIDADES IDENTIFICADAS:")
@@ -4779,13 +4898,19 @@ def _display_cycle(result: CycleResult):
             print(f"║    {direction_icon} │ Entrada: {opp.entry} │ SL: {opp.stop_loss} │ "
                   f"TP: {opp.take_profit}")
             print(f"║    R/R: {opp.risk_reward}:1 │ Conf: {opp.confidence:.0f}% │ {opp.reason}")
+        if dominant_reason != "N/A":
+            rejection_label, _ = _classify_rejection_learning(
+                rejection_reasons,
+                has_opportunities=True,
+            )
+            print(f"║  Rejeição: {rejection_label} | dominante: {dominant_reason} | {len(rejection_reasons)} motivos")
     else:
         print("║  SEM OPORTUNIDADES no momento — aguardando setup")
-        # Diagnóstico: mostra por que não há oportunidades
-        reasons = getattr(result, '_rejection_reasons', [])
-        if reasons:
-            for reason in reasons:
-                print(f"║    └─ {reason}")
+        if rejection_reasons:
+            rejection_label, _ = _classify_rejection_learning(rejection_reasons, has_opportunities=False)
+            print(f"║  Rejeição: {rejection_label} | dominante: {dominant_reason} | {len(rejection_reasons)} motivos")
+        else:
+            print("║  Rejeição: INDEFINIDA | dominante: N/A | 0 motivos")
     # ── Resumo Macro no rodapé ──
     print(f"╠{'═' * 68}╣")
     print(f"║  {now}  │  WIN$N: {result.price_current}  "
@@ -5668,7 +5793,11 @@ def main():
             # ⚡ IntraDayLearner: Registra motivos de rejeição de HOLDs
             if _intraday_learner and result._rejection_reasons:
                 pattern = _intraday_learner.record_rejection(result._rejection_reasons)
-                # (Registra silenciosamente - sem print)
+                outcome_label, dominant_reason = _intraday_learner.record_rejection_learning(
+                    result._rejection_reasons,
+                    has_opportunities=bool(result.opportunities),
+                )
+                print(f"  🧠 Rejeição: {outcome_label} | dominante: {dominant_reason} | pattern={pattern}")
 
             # ⚙️ Calibração Dinâmica ATR (S2-2)
             if result.atr_15 > 0:

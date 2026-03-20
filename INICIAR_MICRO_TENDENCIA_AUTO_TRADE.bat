@@ -63,6 +63,8 @@ if errorlevel 1 (
 
 REM Display header
 call :display_header
+echo   [JANELA_OPERACIONAL] Contexto operacional de mercado pronto para inicializacao
+echo.
 
 REM Menu selection
 call :get_mode
@@ -99,10 +101,13 @@ REM =========================================================================
 echo.
 echo   [P50-A] Verificando saude de confidence...
 python scripts/check_confidence_health.py >nul 2>&1
-if errorlevel 0 (
+set "P50A_HEALTH_ERRORLEVEL=!ERRORLEVEL!"
+if !P50A_HEALTH_ERRORLEVEL! geq 1 (
     echo   [P50-A] Pessimismo detectado - Auto-reset em acao...
     python scripts/reset_pessimism_mode.py
     echo   [P50-A] OK - Operacoes reativadas
+) else (
+    echo   [P50-A] OK - Saude de confidence normal
 )
 echo.
 
