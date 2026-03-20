@@ -41,6 +41,7 @@ env/
 *.sqlite3
 *.db-shm
 *.db-wal
+data/db/*.sqlite.lock
 
 # Logs
 *.log
