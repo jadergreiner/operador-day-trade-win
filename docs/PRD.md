@@ -655,6 +655,52 @@ Artefatos obrigatorios em `data/backtest/`:
 | Order Manager Learner | Impl. | Sim |
 | **Total testes** | **2.237** | **350+** |
 
+### 11.8 Backlog de Evolução do Micro Tendência (Capturado 19/03/2026)
+
+> Itens capturados em reunião estratégica com Head de Finanças.
+> Origem: Reflexões IA do diário + análise de operações do dia.
+> Governança: Nenhuma evolução é executada sem priorização formal.
+
+#### 11.8.1 Itens de Alta Prioridade
+
+| ID | Evolução | Justificativa | Seção Impactada |
+|----|----------|---------------|-----------------|
+| EV-MT-01 | **Calibrar threshold confidence de 50% para 35%** em regime CAUTELOSO | Sistema manteve 30% de confidence e não executou; 62 oportunidades perdidas | RN-01 (8.1) |
+| EV-MT-02 | **Integrar Macro Score ao decision gate** — Score >=30 deve forçar pelo menos 1 avaliação/hora | Macro Score 33.6 (excelente) foi ignorado pelo motor de decisão | Guardian (8.6) + Pipeline (4.1) |
+
+#### 11.8.2 Itens de Média Prioridade
+
+| ID | Evolução | Justificativa | Seção Impactada |
+|----|----------|---------------|-----------------|
+| EV-MT-03 | **Revisar cascata dos 7 filtros Anti-OT** — Possível bloqueio excessivo em série | Reflexão IA: "Estou só gerando ruído"; filtros podem estar sobrepostos | R-09 (13) |
+| EV-MT-04 | **Criar detector de "oportunidade óbvia"** — Range >3000 pts + ADX >30 = não ficar 100% HOLD | Dia com 4.165 pts de range e nenhuma execução pelo micro | RF novo (4.2) |
+
+#### 11.8.3 Itens de Baixa Prioridade
+
+| ID | Evolução | Justificativa | Seção Impactada |
+|----|----------|---------------|-----------------|
+| EV-MT-05 | **Reduzir dependência de indicadores atrasados** | Reflexão IA: "Meus dados não estão capturando o que move o preço" | Pipeline (4.1) |
+| EV-MT-06 | **Adicionar price action puro ao modelo LightGBM** | Correlação fraca entre features atuais e movimento de preço | Governança (7.1.1) |
+
+#### 11.8.4 Métricas de Referência (19/03/2026)
+
+| Métrica | Valor Atual | Observação |
+|---------|-------------|------------|
+| Oportunidades detectadas | 62 | Pelo micro tendência |
+| Oportunidades executadas | 0 | 0% taxa de execução |
+| Movimento perdido | 19.885 pts | ~R$ 99 em rewards |
+| Confidence médio | 30% | Abaixo do threshold 50% |
+| Macro Score médio | 33.6 | Acima do limiar 15 |
+| Status final | INATIVIDADE_INJUSTA | Excesso de conservadorismo |
+
+#### 11.8.5 Governança de Implementação
+
+1. Cada item deve passar por **deliberação técnica** antes de desenvolvimento
+2. Alterações em regras de negócio (Seção 8) exigem **aprovação do Head de Finanças**
+3. Novos RFs (Seção 4) devem ter **AC testáveis** definidos antes da implementação
+4. Toda evolução deve ser **versionada** no changelog do micro tendência
+5. Rollback automático se **win rate cair >5%** após implementação
+
 ---
 
 ## 12. Criterios de Aceitacao
