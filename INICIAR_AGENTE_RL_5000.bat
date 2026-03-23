@@ -64,75 +64,85 @@ echo.
 
 set /p CHOICE="Escolha (1-4): "
 
-if "%CHOICE%"=="1" (
-    echo.
-    echo   Iniciando avaliacao do modelo...
-    python scripts\treinar_novo_agente_rl.py --dados-reais --apenas-avaliar
-    if errorlevel 1 echo. & echo   [ERRO] Avaliacao falhou. & pause
-    goto :MENU
-)
-
-if "%CHOICE%"=="2" (
-    echo.
-    call :get_confirmation
-    if errorlevel 1 (
-        echo.
-        echo   [CANCELADO] Operacao real cancelada pelo operador.
-        echo.
-        goto :MENU
-    )
-
-    call :real_preflight
-    if errorlevel 1 (
-        echo.
-        echo   [ERRO] Pre-flight reprovado. Operacao nao iniciada.
-        echo.
-        pause
-        goto :MENU
-    )
-
-    echo.
-    echo   [START] OPERACAO REAL COM WRAPPER CANONICO
-    echo   Objetivo: Lucro R$ 140,00 ou Prejuizo -R$ 250,00
-    echo   Modo SL/TP: DINAMICO
-    echo   Logs esperados: %AGENTE_RL_5000_LOG_DIR%\agente_*.log
-    echo   Logs debug: %AGENTE_RL_5000_LOG_DIR%\agente_debug_*.log
-    echo   Artefato GO LIVE: outputs\release_gates\go_live_decision.json
-    echo   Persistencia extra: diario_episodios / execution_feedback com contexto enriquecido
-    echo.
-    python scripts\agente_com_supervision.py --sl-tp-mode dinamico
-    echo.
-    echo   [INFO] Operacao encerrada.
-    pause
-    goto :MENU
-)
-
-if "%CHOICE%"=="3" (
-    echo.
-    echo   [GATE] Executando BL-01, BL-07 e BL-08...
-    python scripts\validate_go_live_gates.py
-    if errorlevel 1 (
-        echo.
-        echo   [GATE] Reprovado - corrigir pendencias antes de operar.
-    ) else (
-        echo.
-        echo   [GATE] Aprovado - ambiente pronto para GO LIVE.
-    )
-    echo.
-    pause
-    goto :MENU
-)
-
-if "%CHOICE%"=="4" (
-    echo.
-    echo   Encerrando...
-    exit /b 0
-)
-
+if /i "%CHOICE%"=="1" goto :opcao1
+if /i "%CHOICE%"=="2" goto :opcao2
+if /i "%CHOICE%"=="3" goto :opcao3
+if /i "%CHOICE%"=="4" goto :opcao4
 echo.
 echo   [ERRO] Opcao invalida. Digite 1, 2, 3 ou 4.
 echo.
 goto :MENU
+
+:opcao1
+echo.
+echo   Iniciando avaliacao do modelo...
+python scripts\treinar_novo_agente_rl.py --dados-reais --apenas-avaliar
+if errorlevel 1 (
+    echo.
+    echo   [ERRO] Avaliacao falhou.
+    pause
+)
+goto :MENU
+
+:opcao2
+echo.
+call :get_confirmation
+if errorlevel 1 goto :opcao2_cancelado
+
+call :real_preflight
+if errorlevel 1 goto :opcao2_preflight_erro
+
+echo.
+echo   [START] OPERACAO REAL COM WRAPPER CANONICO
+echo   Objetivo: Lucro R$ 140,00 ou Prejuizo -R$ 250,00
+echo   Modo SL/TP: DINAMICO
+echo   Logs esperados: %AGENTE_RL_5000_LOG_DIR%\agente_*.log
+echo   Logs debug: %AGENTE_RL_5000_LOG_DIR%\agente_debug_*.log
+echo   Artefato GO LIVE: outputs\release_gates\go_live_decision.json
+echo   Persistencia extra: diario_episodios / execution_feedback com contexto enriquecido
+echo.
+python scripts\agente_com_supervision.py --sl-tp-mode dinamico
+set "RL_EXIT=%errorlevel%"
+echo.
+echo   [INFO] Operacao encerrada. Codigo: !RL_EXIT!
+pause
+goto :MENU
+
+:opcao2_cancelado
+echo.
+echo   [CANCELADO] Operacao real cancelada pelo operador.
+echo.
+goto :MENU
+
+:opcao2_preflight_erro
+echo.
+echo   [ERRO] Pre-flight reprovado. Operacao nao iniciada.
+echo.
+pause
+goto :MENU
+
+:opcao3
+echo.
+echo   [GATE] Executando BL-01, BL-07 e BL-08...
+python scripts\validate_go_live_gates.py
+if errorlevel 1 goto :opcao3_reprovado
+echo.
+echo   [GATE] Aprovado - ambiente pronto para GO LIVE.
+echo.
+pause
+goto :MENU
+
+:opcao3_reprovado
+echo.
+echo   [GATE] Reprovado - corrigir pendencias antes de operar.
+echo.
+pause
+goto :MENU
+
+:opcao4
+echo.
+echo   Encerrando...
+exit /b 0
 
 :bootstrap_checks
 echo   [CHECK] Validando prerequisitos basicos...
@@ -230,7 +240,7 @@ if errorlevel 1 (
 echo   [OK] Health check aprovado
 
 echo   [SYNC] Sincronizando trades MT5 para SQLite...
-python scripts\sync_mt5_trades_to_db.py --days-back 3 --lock-timeout 0
+python scripts\sync_mt5_trades_to_db.py --days-back 3 --lock-timeout 5
 if errorlevel 1 (
     echo   [ERRO] Falha na sincronizacao MT5 -> SQLite.
     exit /b 1
