@@ -8,7 +8,7 @@ Teste completo de ponta-a-ponta:
     ↓
   Signal Tracking (AC3) - verificado
     ↓
-  BDI Decision Filter (AC4) - decisão
+  Decision Filter (AC4) - decisão
     ↓
   Trade Executor (AC5) - executado
     ↓
@@ -24,7 +24,7 @@ from unittest.mock import Mock
 from dataclasses import dataclass
 
 from src.domain.signal_generator import SignalGenerator, Candle, MarketContext, Signal
-from src.application.ac4_bdi_decision_filter import BDIDecisionFilter, DecisionType
+from src.application.ac4_decision_filter import DecisionFilter, DecisionType
 from src.application.ac5_trade_executor import TradeExecutor, TradeDirection
 from src.application.ac6_ml_feedback_loop import MLFeedbackLoop
 
@@ -66,26 +66,18 @@ class TestFullPipelineIntegration:
             )
         """)
 
-        # AC4: BDI Decisions table
+        # AC4: Decisions table
         cursor.execute("""
-            CREATE TABLE bdi_decisions (
+            CREATE TABLE ac4_decisions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 decision_id TEXT UNIQUE NOT NULL,
                 signal_id TEXT NOT NULL,
                 timestamp DATETIME NOT NULL,
-                volatility_score REAL NOT NULL,
-                macro_score REAL NOT NULL,
-                drawdown_score REAL NOT NULL,
                 decision_type TEXT NOT NULL,
                 confidence REAL NOT NULL,
-                gate1_passed BOOLEAN NOT NULL,
-                gate2_passed BOOLEAN NOT NULL,
-                gate3_passed BOOLEAN NOT NULL,
                 justification TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(signal_id) REFERENCES signals(signal_id),
-                CHECK(decision_type IN ('EXECUTE', 'REJECT', 'HOLD', 'CANCEL')),
-                CHECK(confidence >= 0.0 AND confidence <= 1.0)
+                FOREIGN KEY(signal_id) REFERENCES signals(signal_id)
             )
         """)
 
@@ -222,7 +214,7 @@ class TestFullPipelineIntegration:
         assert result is not None
 
     def test_ac4_decision_filter(self, pipeline_db, tmp_path):
-        """AC4: BDI Decision filter on signals."""
+        """AC4: Decision filter on signals."""
         db_path = str(tmp_path / "pipeline.db")
 
         # Setup: Insert a signal first
@@ -249,7 +241,7 @@ class TestFullPipelineIntegration:
         pipeline_db.commit()
 
         # AC4: Make decision
-        decision_filter = BDIDecisionFilter(db_path)
+        decision_filter = DecisionFilter(db_path)
         decision_filter.connection = pipeline_db
 
         signals_for_decision = decision_filter.get_signals_for_decision()

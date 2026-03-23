@@ -124,11 +124,6 @@ try:
 
     from config.settings import TradingConfig
     from src.application.ac6_bootstrap import build_ac6_components
-    from src.application.diario_market_features import (
-        apply_diario_soft_feature_influence,
-        build_contexto_operacional_com_diario,
-        load_diario_market_features_payload,
-    )
     from src.application.motor_decisao_isolado import (
         DecisaoOperacional,
         MotivoFechamento,
@@ -194,6 +189,45 @@ try:
 except Exception as e:
     logger.error(f"[FATAL] Erro ao importar módulos: {e}", exc_info=True)
     sys.exit(1)
+
+# ============================================================================
+# CANAL DE DIARIO DESATIVADO NESTE AGENTE
+# ============================================================================
+_DIARIO_ATIVO = False
+
+
+def load_diario_market_features_payload(_db_path: str) -> dict[str, Any]:
+    """Retorna payload neutro com canal de diario desativado."""
+    return {
+        "available": False,
+        "snapshot": {},
+        "effective_snapshot": {},
+        "disabled_reason": "diario_desativado",
+    }
+
+
+def apply_diario_soft_feature_influence(
+    _acao: str,
+    _confidence: float,
+    _diario_payload: dict[str, Any],
+) -> None:
+    """Nao aplica influencia de diario neste agente."""
+    return None
+
+
+def build_contexto_operacional_com_diario(
+    _opening_context: object,
+    *,
+    base_payload: Optional[dict[str, Any]] = None,
+    **_kwargs: Any,
+) -> dict[str, Any]:
+    """Mantem contexto base sem enriquecimento de diario."""
+    contexto = dict(base_payload or {})
+    contexto.setdefault("diario_ativo", _DIARIO_ATIVO)
+    return contexto
+
+
+logger.info("[INIT] Canal de diario desativado para RL Direto")
 
 # ============================================================================
 # IMPORTS OPCIONAIS — Grupo 2: Feedback e Aprendizado (AC5.8/AC5.9/AC6)
@@ -1248,10 +1282,7 @@ def enviar_ordem(
         if opening_context is not None
         else None
     )
-    try:
-        diario_payload = load_diario_market_features_payload(TRADING_DB_PATH)
-    except Exception:
-        diario_payload = {"available": False, "snapshot": {}, "effective_snapshot": {}}
+    diario_payload = load_diario_market_features_payload(TRADING_DB_PATH)
 
     def _persist_hold_episode(
         motivo: str,
@@ -1396,15 +1427,11 @@ def enviar_ordem(
     except Exception as e:
         logger.warning(f"[CONTEXT] Falha ao montar confirmacao live: {e}")
 
-    try:
-        diario_influence = apply_diario_soft_feature_influence(
-            acao,
-            confidence,
-            diario_payload,
-        )
-    except Exception as e:
-        logger.warning(f"[CONTEXT] Falha ao aplicar features do Diario: {e}")
-        diario_influence = None
+    diario_influence = apply_diario_soft_feature_influence(
+        acao,
+        confidence,
+        diario_payload,
+    )
 
     try:
         decision_context = build_decision_context(
@@ -1479,17 +1506,6 @@ def enviar_ordem(
         ),
     )
 
-    if (
-        diario_influence
-        and getattr(diario_influence, "reasons", None)
-        and getattr(diario_influence, "confidence_adjustment", 0) != 0
-    ):
-        logger.info(
-            "[DIARIO FEATURES] %s | ajuste_conf=%+.2f | alinhamento=%s",
-            ", ".join(getattr(diario_influence, "reasons", [])),
-            getattr(diario_influence, "confidence_adjustment", 0.0),
-            getattr(diario_influence, "alignment", "NEUTRAL"),
-        )
 
     def _bloquear_por_guard(
         motivo_log: str,

@@ -338,30 +338,24 @@ CREATE TABLE trading_signals (
 
 ---
 
-### AC4: BDI Decision Filter (Decision Outcomes)
+### AC4: Decision Filter (Decision Outcomes)
 
-**AC4 (BDIDecisionFilter):** Avalia contexto BDI + aplica 3 gates de risco
+**AC4 (DecisionFilter):** Avalia e aplica 2 gates de risco
 ↓
 **AC5 (TradeExecutor):** Executa trades em MT5 (NEW - 03/03/2026) ✅ IMPLEMENTED
 
-#### 4.3 Tabela: `bdi_decisions` (AC4 Decision Engine)
+#### 4.3 Tabela: `ac4_decisions` (AC4 Decision Engine)
 
 **Propósito:** Registrar decisões de AC4 com confiança e justificativa dos gates.
 
 ```sql
-CREATE TABLE bdi_decisions (
+CREATE TABLE ac4_decisions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     decision_id TEXT UNIQUE NOT NULL,
     signal_id TEXT NOT NULL,
     timestamp DATETIME NOT NULL,
-    volatility_score REAL NOT NULL,
-    macro_score REAL NOT NULL,
-    drawdown_score REAL NOT NULL,
     decision_type TEXT NOT NULL,  -- EXECUTE, REJECT, HOLD
     confidence REAL NOT NULL,  -- 0.0-1.0
-    gate1_passed BOOLEAN NOT NULL,  -- Volatilidade ≥ 75%
-    gate2_passed BOOLEAN NOT NULL,  -- Macro ≥ 80%
-    gate3_passed BOOLEAN NOT NULL,  -- Drawdown ≥ 85%
     justification TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 
@@ -375,8 +369,7 @@ CREATE TABLE bdi_decisions (
 
 **AC4 Operations:**
 - `get_signals_for_decision()` - Recupera sinais status OPEN/LINKED
-- `evaluate_bdi_context()` - Análise volatilidade/padrões BDI
-- `apply_risk_gates()` - Valida 3 gates (volatilidade, macro, drawdown)
+- `apply_risk_gates()` - Valida 2 gates (macro, drawdown)
 - `make_decision()` - EXECUTE/REJECT com justificativa
 - `get_decision_stats()` - Métricas agregadas (total, executed, rejected, avg_confidence)
 

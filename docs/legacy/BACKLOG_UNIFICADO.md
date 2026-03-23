@@ -39,7 +39,7 @@
 - AC1: SignalGenerator (SMC patterns BOS/CHoCH/FVG)
 - AC2: SignalPersistence (DB persistence)
 - AC3: SignalTracker (Lifecycle management)
-- AC4: BDIDecisionFilter (Risk gates + decision)
+- AC4: DecisionFilter (Risk gates + decision)
 - AC5: TradeExecutor (Order execution)
 - AC6: MLFeedbackLoop (Learning + metrics)
 
@@ -62,7 +62,7 @@
 - ✅ AC1: 449 LOC + 6 test scenarios
 - ✅ AC2: SignalPersistence (947 LOC)
 - ✅ AC3: SignalTracker (665 LOC)
-- ✅ AC4: BDIDecisionFilter (428 LOC + 16 tests)
+- ✅ AC4: DecisionFilter (428 LOC + 16 tests)
 - ✅ AC5: TradeExecutor (520+ LOC + 16 tests)
 - ✅ AC6: MLFeedbackLoop (600+ LOC + 21 tests)
 - **TOTAL: 3.629+ LOC | 6/6 Integration Tests PASSED**
@@ -258,38 +258,32 @@ Cada tarefa é avaliada por **2 personas**:
 
 ---
 
-### AC4: BDI Decision Filter (Decision Engine)
+### AC4: Decision Filter (Decision Engine)
 
 **Status Atual**: ✅ **PRODUCTION READY** (05/03/2026 23:45)
 
-**O quê**: Filtro de decisão que integra sinais (AC1→AC2→AC3) com análise BDI
+**O quê**: Filtro de decisão que integra sinais (AC1→AC2→AC3) com análise de risco
 - Recupera sinais abertos (AC3)
-- Avalia contexto BDI (volatilidade, padrões)
-- Aplica 3 gates de risco (volatilidade, macro, drawdown)
+- Aplica gates de risco (macro, drawdown)
 - Gera decisão ENTRAR vs FICAR_FORA com confiança
 - Fornece feedback para ML training (decisão → outcome)
 
 **Entregáveis**:
-- ✅ src/application/ac4_bdi_decision_filter.py (480 LOC, type hints 100%)
+- ✅ src/application/ac4_decision_filter.py (480 LOC, type hints 100%)
 - ✅ tests/test_ac4_decision_filter.py (16 test cases, 100% PASSED)
 - ✅ Integração AC1→AC2→AC3→AC4 pipeline completo
 
 **Features Implementadas**:
 - ✅ AC4.1: get_signals_for_decision() - Recuperar sinais abertos
-- ✅ AC4.2: evaluate_bdi_context() - Análise de contexto BDI
-- ✅ AC4.3: apply_risk_gates() - 3 gates de risco (volatilidade, macro,
-           drawdown)
-- ✅ AC4.4: make_decision() - Decisão final com justificativa
-- ✅ AC4.5: get_decision_stats() - Estatísticas agregadas
+- ✅ AC4.2: apply_risk_gates() - 2 gates de risco (macro, drawdown)
+- ✅ AC4.3: make_decision() - Decisão final com justificativa
+- ✅ AC4.4: get_decision_stats() - Estatísticas agregadas
 
 **Risk Gates**:
-1. **GATE_1 (Volatilidade):** Validar volatilidade aceitável (BDI analysis)
-   - Threshold: confidence ≥ 75%
-   - Rejeita se EXTREME volatility
-2. **GATE_2 (Correlação Macro):** Validação com economia/índices
+1. **GATE_1 (Correlação Macro):** Validação com economia/índices
    - TODO: Integrar com macro indicators (índice, dólar, taxa)
    - Placeholder: Sempre passa (80% score)
-3. **GATE_3 (Drawdown Protection):** Proteção contra grandes perdas
+2. **GATE_2 (Drawdown Protection):** Proteção contra grandes perdas
    - TODO: Verificar drawdown máximo histórico
    - Placeholder: Sempre passa (85% score)
 
@@ -310,10 +304,9 @@ Cada tarefa é avaliada por **2 personas**:
 1. AC1: SignalGenerator cria Signal com MarketContext
 2. AC2: SignalPersistence serializa e persiste em DB
 3. AC3: SignalTracker rastreia lifecycle e links signal → trade
-4. **AC4 (NEW)**: BDIDecisionFilter
+4. **AC4 (NEW)**: DecisionFilter
    - Recupera sinais abertos
-   - Avalia contexto BDI
-   - Aplica 3 gates de risco
+   - Aplica 2 gates de risco
    - Gera decisão final com confiança
    - Retorna EXECUTE/REJECT/HOLD
 
@@ -426,7 +419,7 @@ UPDATE signals SET outcome_trade_id = trade.trade_id WHERE signal_id = trade.sig
 1. AC1: SignalGenerator cria Signal com MarketContext
 2. AC2: SignalPersistence serializa e persiste em DB
 3. AC3: SignalTracker rastreia lifecycle (OPEN→LINKED→CLOSED)
-4. AC4: BDIDecisionFilter gera decisão EXECUTE/REJECT
+4. AC4: DecisionFilter gera decisão EXECUTE/REJECT
 5. **AC5 (NEW)**: TradeExecutor
    - Prepara ordem com SL/TP (ATR-based)
    - Valida ordem (volume, risk-reward)

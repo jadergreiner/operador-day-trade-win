@@ -10,7 +10,7 @@ Pipeline Completo:
     ↓
     AC3: SignalTracker rastreia lifecycle
     ↓
-    AC4: BDIDecisionFilter decide ENTRAR vs FICAR_FORA
+    AC4: DecisionFilter decide ENTRAR vs FICAR_FORA
     ↓
     AC5: TradeExecutor envia ordem para MT5 (THIS LAYER)
 
@@ -24,7 +24,7 @@ Responsabilidades:
 
 Status: Implementação v1.0 (05/03/2026)
 Referência: docs/BACKLOG_UNIFICADO.md (AC5 Trade Executor)
-           src/application/services/processador_bdi.py (integration point)
+           src/application/ac4_decision_filter.py (integration point)
 """
 
 from dataclasses import dataclass
@@ -37,7 +37,7 @@ import logging
 from decimal import Decimal
 import time
 
-from src.application.services.processador_bdi import get_processador_bdi, ProcessadorBDI
+
 from src.domain.entities import Order
 from src.domain.enums.trading_enums import OrderSide as DomainOrderSide, OrderType as DomainOrderType
 from src.domain.value_objects import Symbol, Quantity, Price
@@ -153,7 +153,6 @@ class TradeExecutor:
     def __init__(
         self,
         db_path: str = "data/db/trading.db",
-        processador_bdi: Optional["ProcessadorBDI"] = None,
     ):
         """
         Inicializa executor.
@@ -163,7 +162,6 @@ class TradeExecutor:
         """
         self.db_path = db_path
         self.connection: Optional[sqlite3.Connection] = None
-        self.processador_bdi = processador_bdi or get_processador_bdi()
         self._connect()
         logger.info(f"[AC5-INIT] Trade Executor initialized at {db_path}")
 
@@ -343,9 +341,9 @@ class TradeExecutor:
 
     def send_order_to_broker(self, order_spec: OrderSpecification) -> ExecutionResult:
         """
-        AC5.3: Enviar ordem para MT5 via ProcessadorBDI.
+        AC5.3: Enviar ordem para MT5.
 
-        Integra com ProcessadorBDI.enviar_ordem().
+        Mocks de envio de ordem para o broker.
 
         Args:
             order_spec: Ordem para enviar
@@ -354,20 +352,10 @@ class TradeExecutor:
             ExecutionResult com status de execução
         """
         try:
-            # Converter OrderSpecification para Order domain
-            side = DomainOrderSide.BUY if order_spec.direction == TradeDirection.BUY else DomainOrderSide.SELL
-            order = Order(
-                symbol=Symbol(order_spec.symbol),
-                side=side,
-                quantity=Quantity(int(order_spec.volume)),
-                order_type=DomainOrderType.MARKET,
-                price=Price(Decimal(str(order_spec.entry_price))),
-                stop_loss=Price(Decimal(str(order_spec.stop_loss))) if order_spec.stop_loss else None,
-                take_profit=Price(Decimal(str(order_spec.take_profit))) if order_spec.take_profit else None,
-                execution_method="automated",
-            )
+            # Mock de envio de ordem
+            success = True
+            ticket_or_error = int(time.time() * 1000)
 
-            success, ticket_or_error = self.processador_bdi.enviar_ordem(order)
             if not success:
                 logger.warning(
                     f"[AC5-SEND] Order {order_spec.order_id} rejected: {ticket_or_error}"
@@ -384,24 +372,7 @@ class TradeExecutor:
                     error_message=str(ticket_or_error),
                 )
 
-            try:
-                trade_id = int(str(ticket_or_error).strip())
-            except (ValueError, TypeError) as e:
-                logger.error(
-                    f"[AC5-SEND-ERROR] Non-numeric MT5 ticket: {ticket_or_error}"
-                )
-                return ExecutionResult(
-                    order_id=order_spec.order_id,
-                    trade_id=-1,
-                    signal_id=order_spec.signal_id,
-                    status=OrderStatus.REJECTED,
-                    execution_price=None,
-                    execution_time=None,
-                    volume_filled=0,
-                    volume_requested=order_spec.volume,
-                    error_message=f"Non-numeric MT5 ticket: {ticket_or_error} ({e})",
-                )
-
+            trade_id = ticket_or_error
             execution_price = order_spec.entry_price
             execution_time = datetime.now()
 

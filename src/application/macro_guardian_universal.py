@@ -24,7 +24,7 @@ from src.application.universal_kill_switch import UniversalKillSwitch
 DEFAULT_TABLE_LOOKBACK_MINUTES = 30
 DEFAULT_EVENT_LIMIT = 100
 DEFAULT_REGIME = "ESTAVEL"
-DEFAULT_OPERATIONAL_CONTEXT_GLOB = "BDI_CONTEXTO_AGENTES_*.json"
+DEFAULT_OPERATIONAL_CONTEXT_GLOB = "CONTEXTO_AGENTES_*.json"
 DEFAULT_HEAVYWEIGHTS = ("PETR4", "VALE3")
 
 ALLOWED_SEVERITIES = ("INFO", "WARNING", "CRITICAL")
@@ -334,7 +334,7 @@ class MacroGuardianUniversal:
         *,
         reference_date: datetime | str | None = None,
     ) -> dict[str, Any]:
-        """Carrega o contexto operacional BDI usado na abertura do pregao."""
+        """Carrega o contexto operacional usado na abertura do pregao."""
         context_path = self._resolve_operational_context_path(reference_date=reference_date)
         if context_path is None:
             return {}

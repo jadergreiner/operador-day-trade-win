@@ -23,10 +23,9 @@ REM       └─ AC1.DEDUP: Wave pattern deduplication activated (min_distance=5
 REM       └─ Deduplication validation: PASSED (6/6 integration tests)
 REM    ✅ AC2: Signal Persistence (872 LOC - Production Ready)
 REM    ✅ AC3: Signal Tracking (665 LOC - Production Ready)
-REM    ✅ AC4: BDI Decision Filter (428 LOC - Production Ready)
+REM    ✅ AC4: Decision Filter (428 LOC - Production Ready)
 REM    ✅ AC5: Trade Executor (520+ LOC - Production Ready)
 REM    ✅ AC6: ML Feedback Loop (600+ LOC - Production Ready)
-REM    ✅ BDI Detection (v1.2.0)
 REM    ✅ SMC Confluence (M1/M5 validation)
 REM    ✅ ML Classifier (v1.2.3 - 94% coverage)
 REM    ✅ P0-1 REST API (Auto-startup no launcher)
@@ -41,7 +40,6 @@ REM    - AC1-AC6 Pipeline Validation - 6/6 testes PASSED
 REM    - Health check pre-flight validation
 REM    - ML data synchronization (v1.2.3)
 REM    - MT5 trade synchronization
-REM    - BDI lessons application
 REM    - Journal logging initialization
 REM    - P0-1 REST API auto-startup (transparente)
 REM    - Agent execution with ML + Risk framework + P0-1 API
@@ -154,18 +152,6 @@ python scripts/sync_mt5_trades_to_db.py --days-back 3 >nul 2>&1
 echo   [OK] MT5 trades sincronizados
 echo.
 
-REM Get trading dates
-for /f "tokens=1,2 delims=," %%A in ('python -c "from datetime import datetime, timedelta; t=datetime.now().date(); print(t.strftime('%%Y%%m%%d')+(chr(44))+t.strftime('%%Y-%%m-%%d'))"') do (
-    set "BDI_DATE=%%A"
-    set "TARGET_DATE=%%B"
-)
-
-REM Apply BDI lessons
-echo   [BDI] Aplicando licoes BDI: BDI=%BDI_DATE% - Pregao=%TARGET_DATE%...
-python scripts/aplicar_licoes_bdi.py --bdi-date %BDI_DATE% --target-date %TARGET_DATE% >nul 2>&1
-echo   [OK] Licoes BDI aplicadas
-echo.
-
 REM Sync ML data (v1.2.3)
 echo   [ML-SYNC] Carregando dataset ML v1.2.3 data_loader...
 python -c "from src.application.data_loader import load_and_label; df = load_and_label('data/backtest_results.json', 'data/ml'); print(f'   [OK] Carregados {len(df)} samples com 24 features')" >nul 2>&1
@@ -258,7 +244,6 @@ echo.
 echo   [ INFRAESTRUTURA v1.2.0 - TASK-CRITICA-0 ]
 echo     [OK] ORM SQLAlchemy integrado
 echo     [OK] Data persistence layer completo
-echo     [OK] BDI analytics + reflection logging
 echo.
 echo   [ ML PIPELINE v1.2.3 - INTEGRATION-ML-001 ]
 echo     [OK] Dataset loading (load_and_label function)
@@ -268,7 +253,7 @@ echo     [OK] Feature persistence (feature_names.json + statistics.json)
 echo     [OK] 14/14 tests PASSING ^| 94%% code coverage
 echo.
 echo   [ OPERACIONAL ]
-echo     - BDI Detection, SMC Confluence (M1/M5 validation)
+echo     - SMC Confluence (M1/M5 validation)
 echo     - Health check pre-flight, Journal logging
 echo     - Risk framework (3 validation gates)
 echo     - WebSocket monitor (Sprint 1 - incoming 27/02)
@@ -298,7 +283,7 @@ echo         - Com validacao ML v1.2.3 + Risk framework
 echo         - Voce pode GANHAR ou PERDER dinheiro
 echo.
 echo     [3] MONITOR-ONLY (Pregao 0 Operacoes)
-echo         - Analisa mercado completamente (ML + macro + BDI)
+echo         - Analisa mercado completamente (ML + macro)
 echo         - SEM execucao de ordens
 echo         - Uso: estudar mercado sem risco
 echo.
