@@ -8,6 +8,15 @@ Args:
 """
 
 import sys
+# TRACE PRECOCE: escreve antes de qualquer otra importacao
+import os as _os, time as _time
+try:
+    _trace_dir = _os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), 'outputs')
+    _os.makedirs(_trace_dir, exist_ok=True)
+    with open(_os.path.join(_trace_dir, 'startup_trace.txt'), 'a', encoding='utf-8') as _tf:
+        _tf.write(f"[STARTUP] {_time.strftime('%Y-%m-%d %H:%M:%S')} PID={_os.getpid()} argv={sys.argv}\n")
+except Exception:
+    pass
 import os
 import threading
 import time
@@ -65,6 +74,7 @@ os.environ['AGENTE_SL_TP_MODE'] = SL_TP_MODE
 HEARTBEAT_CHECK_INTERVAL_SECONDS = 5
 HEARTBEAT_TIMEOUT_SECONDS = 360
 heartbeat_monitor = HeartbeatMonitor(timeout_seconds=HEARTBEAT_TIMEOUT_SECONDS)
+monitor_stop_event = threading.Event()
 
 # Redirecionar stderr para capturar tudo
 class DualWriter:
@@ -85,8 +95,12 @@ class DualWriter:
         self.console.flush()
         self.file_handle.flush()
 
-# Abrir arquivo de log
-log_file = open(os.path.join(ROOT_DIR, 'outputs', 'agente_supervision.log'), 'w', encoding='utf-8')
+# Abrir arquivo de log (modo append para preservar histórico entre sessões)
+log_file = open(os.path.join(ROOT_DIR, 'outputs', 'agente_supervision.log'), 'a', encoding='utf-8')
+log_file.write(f"\n{'='*80}\n")
+log_file.write(f"NOVA SESSAO: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+log_file.write(f"{'='*80}\n")
+log_file.flush()
 sys.stdout = DualWriter(sys.__stdout__, log_file, heartbeat_monitor)
 sys.stderr = DualWriter(sys.__stderr__, log_file, heartbeat_monitor)
 
@@ -95,7 +109,7 @@ logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
     handlers=[
-        logging.FileHandler(os.path.join(ROOT_DIR, 'outputs', 'agente_debug.log'), encoding='utf-8'),
+        logging.FileHandler(os.path.join(ROOT_DIR, 'outputs', 'agente_debug.log'), mode='a', encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
@@ -112,8 +126,7 @@ logger.info(f"Time: {time.time()}")
 
 def monitor_thread():
     """Thread de monitoramento que checa se processo está vivo."""
-    while True:
-        time.sleep(HEARTBEAT_CHECK_INTERVAL_SECONDS)
+    while not monitor_stop_event.wait(HEARTBEAT_CHECK_INTERVAL_SECONDS):
         elapsed = heartbeat_monitor.elapsed()
 
         if elapsed > HEARTBEAT_TIMEOUT_SECONDS:
@@ -152,6 +165,8 @@ signal.signal(signal.SIGTERM, signal_handler)
 
 logger.info("[INIT] Handlers de sinal configurados")
 
+OPERATIONAL_EXIT_CODES = {0, 10, 11}
+
 try:
     logger.info("[INIT] Importando agente...")
 
@@ -169,11 +184,18 @@ try:
     # Executar loop principal com supervisão
     try:
         exit_code = main()
-        if exit_code == 0:
-            logger.info("[MAIN] Runtime RL 5000 encerrado normalmente")
+        if exit_code in OPERATIONAL_EXIT_CODES:
+            if exit_code == 0:
+                logger.info("[MAIN] Runtime RL 5000 encerrado normalmente")
+            elif exit_code == 10:
+                logger.info("[MAIN] Runtime RL 5000 encerrado por meta diaria atingida")
+            elif exit_code == 11:
+                logger.warning("[MAIN] Runtime RL 5000 encerrado por stop loss diario")
+            if exit_code != 0:
+                raise SystemExit(exit_code)
         else:
             logger.error(f"[MAIN] Runtime RL 5000 encerrou com código {exit_code}")
-            sys.exit(exit_code)
+            raise SystemExit(exit_code)
     except KeyboardInterrupt:
         logger.info("[MAIN] Interrompido pelo usuário (Ctrl+C)")
     except Exception as e:
@@ -185,7 +207,22 @@ except Exception as e:
     sys.exit(1)
 
 finally:
+    monitor_stop_event.set()
+    monitor.join(timeout=2)
+
     logger.info("=" * 80)
     logger.info("ENCERRANDO AGENTE COM SUPERVISAO")
     logger.info("=" * 80)
+
+    root_logger = logging.getLogger()
+    for handler in list(root_logger.handlers):
+        root_logger.removeHandler(handler)
+        try:
+            handler.flush()
+            handler.close()
+        except Exception:
+            pass
+
+    sys.stdout = sys.__stdout__
+    sys.stderr = sys.__stderr__
     log_file.close()

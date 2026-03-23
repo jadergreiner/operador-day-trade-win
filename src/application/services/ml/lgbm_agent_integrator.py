@@ -228,13 +228,22 @@ class LGBMAgentIntegrator:
             # ─ PIVÔS ─
             if hasattr(cycle_result, "pivots") and cycle_result.pivots:
                 pivots = cycle_result.pivots
-                features["pivot_pp"] = pivots.get("PP", 0.0)
-                features["pivot_r1"] = pivots.get("R1", 0.0)
-                features["pivot_r2"] = pivots.get("R2", 0.0)
-                features["pivot_r3"] = pivots.get("R3", 0.0)
-                features["pivot_s1"] = pivots.get("S1", 0.0)
-                features["pivot_s2"] = pivots.get("S2", 0.0)
-                features["pivot_s3"] = pivots.get("S3", 0.0)
+                if isinstance(pivots, dict):
+                    features["pivot_pp"] = _as_float(pivots.get("PP", pivots.get("pp", 0.0)))
+                    features["pivot_r1"] = _as_float(pivots.get("R1", pivots.get("r1", 0.0)))
+                    features["pivot_r2"] = _as_float(pivots.get("R2", pivots.get("r2", 0.0)))
+                    features["pivot_r3"] = _as_float(pivots.get("R3", pivots.get("r3", 0.0)))
+                    features["pivot_s1"] = _as_float(pivots.get("S1", pivots.get("s1", 0.0)))
+                    features["pivot_s2"] = _as_float(pivots.get("S2", pivots.get("s2", 0.0)))
+                    features["pivot_s3"] = _as_float(pivots.get("S3", pivots.get("s3", 0.0)))
+                else:
+                    features["pivot_pp"] = _as_float(getattr(pivots, "pp", 0.0))
+                    features["pivot_r1"] = _as_float(getattr(pivots, "r1", 0.0))
+                    features["pivot_r2"] = _as_float(getattr(pivots, "r2", 0.0))
+                    features["pivot_r3"] = _as_float(getattr(pivots, "r3", 0.0))
+                    features["pivot_s1"] = _as_float(getattr(pivots, "s1", 0.0))
+                    features["pivot_s2"] = _as_float(getattr(pivots, "s2", 0.0))
+                    features["pivot_s3"] = _as_float(getattr(pivots, "s3", 0.0))
             else:
                 for level in ["pp", "r1", "r2", "r3", "s1", "s2", "s3"]:
                     features[f"pivot_{level}"] = 0.0

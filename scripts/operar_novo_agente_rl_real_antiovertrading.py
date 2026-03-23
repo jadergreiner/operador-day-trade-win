@@ -41,6 +41,10 @@ os.environ["RL5000_DB_PATH"] = TRADING_DB_PATH
 os.environ["DB_PATH"] = TRADING_DB_PATH
 os.environ["TRADING_DB_PATH"] = TRADING_DB_PATH
 
+EXIT_CODE_OK = 0
+EXIT_CODE_TARGET_ATINGIDO = 10
+EXIT_CODE_STOP_LOSS = 11
+
 from src.infrastructure.adapters.mt5_adapter import MT5Adapter
 from src.infrastructure.database.rl_schema import ensure_rl_database
 from src.domain.value_objects.financial import Symbol, Price, Quantity
@@ -321,7 +325,7 @@ CLOSURE_TOLERANCE_POINTS = 20.0
 
 SIMBOLO = "WIN$N"
 TARGET_LUCRO_DIARIO = 140.00
-STOP_PERDA_DIARIA = -250.00
+STOP_PERDA_DIARIA = -600.00
 STOP_LOSS_PONTOS = 150
 TAKE_PROFIT_PONTOS = 300
 MAGIC_NUMBER = 234500
@@ -1976,7 +1980,7 @@ def print_status():
     logger.info("=" * 70 + "\n")
 
 
-def loop_operacao():
+def loop_operacao() -> str:
     """Loop principal com proteções anti-overtrading."""
     global last_signal, trades_executed_today
 
@@ -2041,12 +2045,12 @@ def loop_operacao():
         logger.debug(f"[CICLO {ciclo}] Verificando lucro vs TARGET...")
         if lucro_sessao >= TARGET_LUCRO_DIARIO:
             logger.info(f"[TARGET] ATINGIDO: R${lucro_sessao:.2f}")
-            break
+            return "TARGET_ATINGIDO"
 
         logger.debug(f"[CICLO {ciclo}] Verificando stop loss...")
         if lucro_sessao <= STOP_PERDA_DIARIA:
             logger.warning(f"[STOP] STOP LOSS ACIONADO: R${lucro_sessao:.2f}")
-            break
+            return "STOP_LOSS"
 
         logger.debug(f"[CICLO {ciclo}] Monitorando posições abertas...")
         if monitorar_posicoes():
@@ -2166,6 +2170,10 @@ def loop_operacao():
             time.sleep(30)
             logger.debug(f"[CICLO {ciclo}] Retornando ao início do loop após erro.")
 
+    # Ponto de saída defensivo: while True nunca deveria chegar aqui
+    logger.warning("[LOOP] while True encerrado de forma inesperada.")
+    return "ENCERRADO_NORMAL"
+
 
 def inicializar_componentes_auxiliares() -> None:
     """Inicializa módulos auxiliares somente no bootstrap real."""
@@ -2249,13 +2257,23 @@ def main() -> int:
         inicializar_agente_rl()
         inicializar_rl_repo()
         inicializar_componentes_auxiliares()
-        loop_operacao()
-        return 0
+        motivo_encerramento = loop_operacao()
+
+        if motivo_encerramento == "TARGET_ATINGIDO":
+            logger.info("[EXIT] Encerrado por meta diaria atingida.")
+            return EXIT_CODE_TARGET_ATINGIDO
+
+        if motivo_encerramento == "STOP_LOSS":
+            logger.warning("[EXIT] Encerrado por stop loss diario acionado.")
+            return EXIT_CODE_STOP_LOSS
+
+        logger.info("[EXIT] Encerrado sem motivo operacional especifico.")
+        return EXIT_CODE_OK
 
     except KeyboardInterrupt:
         logger.info("\n[STOP] Operacao interrompida pelo usuario.")
         print_status()
-        return 0
+        return EXIT_CODE_OK
     except Exception as e:
         logger.error(f"[ERRO] Erro fatal: {e}")
         import traceback

@@ -740,6 +740,117 @@ class DiarioOrderManager:
 
     # ── Verificar posicao no MT5 ─────────────────────────────────
 
+    @staticmethod
+    def _extrair_campo_posicao(pos: Any, campo: str, padrao: Any = None) -> Any:
+        """Le campo de posicao suportando dict ou objeto do MT5."""
+        if isinstance(pos, dict):
+            return pos.get(campo, padrao)
+        return getattr(pos, campo, padrao)
+
+    def _normalizar_direcao_posicao(self, pos: Any) -> str:
+        """Normaliza direcao da posicao para BUY/SELL."""
+        valor_tipo = self._extrair_campo_posicao(pos, "type", "")
+        if isinstance(valor_tipo, str):
+            tipo_texto = valor_tipo.upper()
+            if "BUY" in tipo_texto:
+                return "BUY"
+            if "SELL" in tipo_texto:
+                return "SELL"
+
+        try:
+            tipo_int = int(valor_tipo)
+            # Convencao MT5: BUY=0, SELL=1
+            return "BUY" if tipo_int == 0 else "SELL"
+        except Exception:
+            return "BUY"
+
+    def _listar_posicoes_abertas_agente_mt5(self) -> list[dict[str, Any]]:
+        """Lista posicoes abertas no MT5 apenas do proprio agente (magic)."""
+        try:
+            from src.domain.value_objects import Symbol
+
+            posicoes = self._mt5.get_positions(Symbol(SIMBOLO))
+            abertas: list[dict[str, Any]] = []
+
+            for pos in posicoes:
+                magic = self._extrair_campo_posicao(pos, "magic")
+                if magic != MAGIC_NUMBER:
+                    continue
+
+                ticket = int(self._extrair_campo_posicao(pos, "ticket", 0) or 0)
+                preco_entrada = float(
+                    self._extrair_campo_posicao(pos, "price_open", 0.0) or 0.0
+                )
+                preco_atual = float(
+                    self._extrair_campo_posicao(pos, "price_current", 0.0) or 0.0
+                )
+                sl = float(self._extrair_campo_posicao(pos, "sl", 0.0) or 0.0)
+                tp = float(self._extrair_campo_posicao(pos, "tp", 0.0) or 0.0)
+
+                abertas.append(
+                    {
+                        "ticket": ticket,
+                        "direcao": self._normalizar_direcao_posicao(pos),
+                        "preco_entrada": preco_entrada,
+                        "preco_atual": preco_atual,
+                        "sl": sl,
+                        "tp": tp,
+                    }
+                )
+
+            return abertas
+        except Exception as e:
+            logger.error("Erro ao listar posicoes do agente no MT5: %s", e)
+            return []
+
+    def _sincronizar_posicao_local_com_mt5(self) -> tuple[bool, str]:
+        """Sincroniza estado local com MT5 e aplica trava de multi-posicao.
+
+        Retorna (bloquear_entrada, detalhe).
+        """
+        posicoes_abertas = self._listar_posicoes_abertas_agente_mt5()
+        if not posicoes_abertas:
+            return False, ""
+
+        if len(posicoes_abertas) > 1:
+            tickets = [str(p["ticket"]) for p in posicoes_abertas]
+            detalhe = (
+                "multiposicao_detectada_mt5: "
+                f"{len(posicoes_abertas)} abertas (tickets={','.join(tickets)})"
+            )
+            logger.error(
+                "Trava de seguranca ativada: %s. Nao abrira novas ordens.",
+                detalhe,
+            )
+            return True, detalhe
+
+        pos_mt5 = posicoes_abertas[0]
+        pos_local = self._posicao.posicao
+        precisa_sincronizar = (
+            (not pos_local.aberta)
+            or (pos_local.ticket is None)
+            or (int(pos_local.ticket) != int(pos_mt5["ticket"]))
+        )
+        if precisa_sincronizar:
+            preco_referencia = pos_mt5["preco_entrada"] or pos_mt5["preco_atual"]
+            self._posicao.registrar_abertura(
+                ticket=pos_mt5["ticket"],
+                direcao=pos_mt5["direcao"],
+                preco_entrada=preco_referencia,
+                sl=pos_mt5["sl"],
+                tp=pos_mt5["tp"],
+                atr_entrada=pos_local.atr_entrada,
+            )
+            if pos_mt5["preco_atual"] > 0:
+                self._posicao.atualizar_preco(pos_mt5["preco_atual"])
+            logger.warning(
+                "Sincronizacao de posicao aplicada: ticket=%s dir=%s",
+                pos_mt5["ticket"],
+                pos_mt5["direcao"],
+            )
+
+        return False, ""
+
     def _posicao_existe_no_mt5(self, ticket: int) -> tuple[bool, float]:
         try:
             from src.domain.value_objects import Symbol
@@ -913,6 +1024,13 @@ class DiarioOrderManager:
             candles,
             guardian_state,
         )
+
+        bloquear_entrada, detalhe_bloqueio = self._sincronizar_posicao_local_com_mt5()
+        if bloquear_entrada:
+            resultado["acao"] = "BLOQUEADO"
+            resultado["posicao_aberta"] = True
+            resultado["detalhe"] = detalhe_bloqueio
+            return resultado
 
         # ── Posicao aberta: monitorar ──
         if self._posicao.tem_posicao_aberta():

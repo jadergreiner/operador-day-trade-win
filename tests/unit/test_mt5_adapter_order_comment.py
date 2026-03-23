@@ -25,7 +25,7 @@ def test_build_order_comment_usa_nome_do_agente_rl_5000() -> None:
 
     comment = MT5Adapter._build_order_comment(order)
 
-    assert comment == "RL 5000|EA234500|MA12345678"
+    assert comment == "RL5000_EA234500_MA12345678"
 
 
 def test_build_order_comment_limita_tamanho_para_mt5() -> None:
@@ -34,3 +34,12 @@ def test_build_order_comment_limita_tamanho_para_mt5() -> None:
     comment = MT5Adapter._build_order_comment(order)
 
     assert len(comment) <= 31
+
+
+def test_build_order_comment_remove_caracteres_invalidos() -> None:
+    order = _build_order(234700)
+
+    comment = MT5Adapter._build_order_comment(order)
+
+    assert "|" not in comment
+    assert " " not in comment

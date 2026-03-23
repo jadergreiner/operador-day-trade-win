@@ -8,6 +8,7 @@ from typing import Any, Optional
 import json
 import logging
 import os
+import re
 import time
 from pathlib import Path
 
@@ -228,8 +229,10 @@ class MT5Adapter(IBrokerAdapter):
         """Monta comentario curto e legivel para o ticket no MT5."""
         agent_name = AGENT_LABELS_BY_MAGIC.get(order.magic_number, "Agente")
         order_prefix = str(order.order_id)[:8]
-        comment = f"{agent_name}|EA{order.magic_number}|MA{order_prefix}"
-        return comment[:31]
+        comment = f"{agent_name}_EA{order.magic_number}_MA{order_prefix}"
+        # Alguns servidores MT5 rejeitam separadores como "|" e caracteres especiais.
+        safe_comment = re.sub(r"[^A-Za-z0-9_\-]", "", comment)
+        return safe_comment[:31]
 
     def _get_mt5_terminal_pid(self) -> Optional[int]:
         """

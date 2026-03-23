@@ -921,3 +921,66 @@ class TestCiclo:
             mgr.ciclo(decisao, candles, guardian)
 
         assert mgr._n_ciclos == 2
+
+    def test_ciclo_nao_abre_nova_ordem_quando_mt5_ja_tem_posicao_do_agente(
+        self, tmp_path
+    ):
+        mgr = _make_manager(tmp_path)
+        mgr._mt5.get_positions.return_value = [
+            {
+                "ticket": 42001,
+                "magic": MAGIC_NUMBER,
+                "type": 0,
+                "price_open": 100000.0,
+                "price_current": 100050.0,
+                "sl": 99700.0,
+                "tp": 100500.0,
+            }
+        ]
+        candles = _candles_simples(n=20, atr_pts=200.0)
+        decisao = _fake_decisao("BUY", confidence=0.80, alignment=0.75)
+        guardian = _fake_guardian()
+
+        with patch.object(mgr, "_no_pregao", return_value=True):
+            resultado = mgr.ciclo(decisao, candles, guardian)
+
+        assert resultado["acao"] == "MONITORANDO"
+        assert resultado["posicao_aberta"] is True
+        assert mgr._posicao.posicao.ticket == 42001
+        mgr._mt5.send_order.assert_not_called()
+
+    def test_ciclo_bloqueia_novas_entradas_com_multiplas_posicoes_no_mt5(
+        self, tmp_path
+    ):
+        mgr = _make_manager(tmp_path)
+        mgr._mt5.get_positions.return_value = [
+            {
+                "ticket": 43001,
+                "magic": MAGIC_NUMBER,
+                "type": 0,
+                "price_open": 100000.0,
+                "price_current": 100020.0,
+                "sl": 99700.0,
+                "tp": 100500.0,
+            },
+            {
+                "ticket": 43002,
+                "magic": MAGIC_NUMBER,
+                "type": 1,
+                "price_open": 100100.0,
+                "price_current": 100060.0,
+                "sl": 100400.0,
+                "tp": 99500.0,
+            },
+        ]
+        candles = _candles_simples(n=20, atr_pts=200.0)
+        decisao = _fake_decisao("BUY", confidence=0.85, alignment=0.80)
+        guardian = _fake_guardian()
+
+        with patch.object(mgr, "_no_pregao", return_value=True):
+            resultado = mgr.ciclo(decisao, candles, guardian)
+
+        assert resultado["acao"] == "BLOQUEADO"
+        assert resultado["posicao_aberta"] is True
+        assert "multiposicao_detectada_mt5" in resultado["detalhe"]
+        mgr._mt5.send_order.assert_not_called()
