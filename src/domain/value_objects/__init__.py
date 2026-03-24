@@ -8,6 +8,14 @@ from src.domain.value_objects.financial import (
     Symbol,
 )
 from src.domain.value_objects.macro_score import Score, Weight, WeightedScore
+from src.domain.value_objects.risco_externo import (
+    ConfiguracaoCooldown,
+    ConfiguracaoGanhoDiario,
+    ConfiguracaoHorario,
+    ConfiguracaoSLMaximo,
+    EventoCalendario,
+    ResultadoGateRisco,
+)
 
 __all__ = [
     "Price",
@@ -18,4 +26,10 @@ __all__ = [
     "Score",
     "Weight",
     "WeightedScore",
+    "ConfiguracaoCooldown",
+    "ConfiguracaoSLMaximo",
+    "ConfiguracaoHorario",
+    "ConfiguracaoGanhoDiario",
+    "EventoCalendario",
+    "ResultadoGateRisco",
 ]

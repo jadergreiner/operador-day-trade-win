@@ -25,9 +25,14 @@ Referência: docs/BACKLOG_UNIFICADO.md (AC4 Decision Filter)
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, TYPE_CHECKING
 import sqlite3
 import logging
+
+if TYPE_CHECKING:
+    from src.application.gerenciamento_risco.gerenciador_risco_externo import (
+        GerenciadorRiscoExterno,
+    )
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -100,14 +105,24 @@ class DecisionFilter:
     4. Fornecer feedback para ML training
     """
 
-    def __init__(self, db_path: str = "data/db/trading.db"):
+    def __init__(
+        self,
+        db_path: str = "data/db/trading.db",
+        gerenciador_risco: Optional["GerenciadorRiscoExterno"] = None,
+        agent_id: str = "default",
+    ):
         """
-        Inicializa filtro de decisão.
+        Inicializa filtro de decisao.
 
         Args:
             db_path: Caminho do banco SQLite
+            gerenciador_risco: Facade de risco externo (opcional).
+                Se fornecido, e avaliado antes dos gates internos.
+            agent_id: Identificador do agente dono deste filtro.
         """
         self.db_path = db_path
+        self.gerenciador_risco = gerenciador_risco
+        self.agent_id = agent_id
         self.connection: Optional[sqlite3.Connection] = None
         self._connect()
         logger.info(f"[AC4-INIT] Decision Filter initialized at {db_path}")
@@ -200,7 +215,33 @@ class DecisionFilter:
         try:
             signal_id = signal.get("signal_id")
 
-            # Aplicar gates
+            # Avaliar gates de risco externo (se configurado)
+            if self.gerenciador_risco is not None:
+                resultado_risco = self.gerenciador_risco.avaliar_todos(
+                    agent_id=self.agent_id,
+                    sinal=signal,
+                )
+                if not resultado_risco.aprovado:
+                    logger.info(
+                        "[AC4-RISCO-EXT] %s REJEITADO por gate externo %s: %s",
+                        signal_id,
+                        resultado_risco.primeiro_gate_reprovado,
+                        resultado_risco.motivo,
+                    )
+                    return Decision(
+                        signal_id=signal_id,
+                        decision_type=DecisionType.REJECT,
+                        trade_id=signal.get("outcome_trade_id"),
+                        risk_gates=[],
+                        confidence=0.0,
+                        justification=(
+                            f"Gate externo [{resultado_risco.primeiro_gate_reprovado}]: "
+                            f"{resultado_risco.motivo}"
+                        ),
+                        created_at=datetime.now(),
+                    )
+
+            # Aplicar gates internos
             gates = self.apply_risk_gates(signal)
 
             # Todos os gates devem passar

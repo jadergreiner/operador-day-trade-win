@@ -26,6 +26,15 @@ from src.domain.exceptions.macro_score_exceptions import (
     MacroScoreError,
     SymbolNotAvailableError,
 )
+from src.domain.exceptions.risco_externo_exceptions import (
+    ErroRiscoExterno,
+    EventoCalendarioProximoError,
+    LimiteGanhoDiarioError,
+    ViolacaoCooldownError,
+    ViolacaoHorarioOperacaoError,
+    ViolacaoSLMaximoError,
+    ViolacaoUnicaOrdemError,
+)
 
 __all__ = [
     "DomainError",
@@ -50,4 +59,11 @@ __all__ = [
     "SymbolNotAvailableError",
     "ContractResolutionError",
     "InsufficientDataError",
+    "ErroRiscoExterno",
+    "ViolacaoCooldownError",
+    "ViolacaoSLMaximoError",
+    "ViolacaoUnicaOrdemError",
+    "LimiteGanhoDiarioError",
+    "ViolacaoHorarioOperacaoError",
+    "EventoCalendarioProximoError",
 ]
