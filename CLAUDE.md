@@ -41,19 +41,19 @@ python -m pymarkdown scan docs/        # Lint de markdown
 ## Arquitetura
 
 Sistema de trading automático para Mini Índice (WIN$N) no MetaTrader 5,
-composto por **4 agentes paralelos** orquestrados por scripts `.bat`:
+composto por **4 agentes paralelos** orquestrados por `.bat` na raiz:
 
-| Agente | Script | Função |
-| ------ | ------ | ------ |
-| Diários | `scripts/start_journals_full_display.py` | Logging e reflection IA |
-| Micro Tendência | `scripts/agente_micro_tendencia_winfut.py` | Sinais ML (LightGBM) |
-| RL 5000 | `scripts/operar_novo_agente_rl_real_antiovertrading.py` | RL com supervisão |
-| RL Direto | `scripts/agente_rl_direto_independente.py` | RL autônomo isolado |
+| Agente | .bat (raiz) | Script Python |
+| ------ | ----------- | ------------- |
+| Diários | `INICIAR_DIARIOS.bat` | `scripts/start_journals_full_display.py` |
+| Micro Tendência | `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | `scripts/agente_micro_tendencia_winfut.py` |
+| RL 5000 | `INICIAR_AGENTE_RL_5000.bat` | `scripts/operar_novo_agente_rl_real_antiovertrading.py` |
+| RL Direto | `INICIAR_AGENTE_RL_DIRETO.bat` | `scripts/agente_rl_direto_independente.py` |
 
 ### Camadas
 
 ```text
-scripts/*.bat             → Orquestração Windows (entrypoints operacionais)
+*.bat (raiz)              → Entrypoints operacionais Windows (INICIAR_*.bat)
 scripts/*.py              → Scripts executáveis de análise e operação
 src/domain/               → Entities (UUID), Value Objects, Enums,
                             Exceptions, Interfaces ABC
@@ -69,6 +69,26 @@ data/db/trading.db        → Persistência SQLite principal
 data/models/              → Modelos ML/RL versionados
 outputs/                  → Arquivos gerados em runtime (logs, JSON posição)
 ```
+
+### Pipeline de Decisão (AC1→AC6)
+
+```text
+AC1: SignalGenerator    → Gera sinais (padrões SMC em M5)
+AC2: SignalPersistence  → Persiste sinais no SQLite
+AC3: SignalTracker      → Rastreia ciclo de vida do sinal
+AC4: DecisionFilter     → Decide EXECUTE/HOLD/REJECT (gates de risco)
+AC5: TradeExecutor      → Executa ordem no MT5
+AC5.8: PositionMonitor  → Monitora posição aberta (SL/TP em tempo real)
+AC5.9: FeedbackValidator → Valida outcome da operação
+AC6: FeedbackLoop       → Atualiza modelos ML/RL com resultado
+```
+
+`macro_guardian_universal.py` — snapshot de contexto macro consumido por
+todos os agentes como gate transversal (regimes: FAVORAVEL/ESTAVEL/
+CAUTELOSO/ALERTA/CRITICO).
+
+`universal_kill_switch.py` — kill switch global; bloqueia operações de
+todos os agentes quando acionado.
 
 ### Componentes Principais em `src/application/`
 
@@ -103,11 +123,17 @@ outputs/                  → Arquivos gerados em runtime (logs, JSON posição)
 - `persistence/` — Persistência resiliente com transaction log e sincronização
 - `providers/` — Provedores de fila de alertas, forex API, MT5
 - `backtests/` — Engine de backtest com auditoria e visualização
+- `database/sqlite_write_lock.py` — Lock de escrita SQLite (múltiplos agentes)
+- `monitoring/` — Heartbeat e health checker por agente
 
 `src/interfaces/` expõe dois servidores concorrentes:
 
 - `api/fastapi_server.py` — REST API com OAuth/JWT (porta configurável)
 - `websocket_server.py` — WebSocket para streaming de posições em tempo real
+
+`src/ml/` contém pipeline ML standalone com nomenclatura `ati5`/`ati8`
+(feature engineering e XGBoost/LightGBM para sinais do agente Micro
+Tendência, independente do `src/application/ml_classifier.py`).
 
 ### Isolamento entre Agentes RL
 
