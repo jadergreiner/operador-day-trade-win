@@ -72,16 +72,19 @@ CONFIANCA_MINIMA_CAUTELOSA = 0.35
 # Alinhamento minimo entre macro/tecnico/sentimento (0-1)
 ALINHAMENTO_MINIMO = 0.55
 # Multiplicadores de ATR para SL e TP
-SL_ATR_MULT = 1.5  # SL = preco +/- 1.5 * ATR
-TP_ATR_MULT = 2.5  # TP = preco +/- 2.5 * ATR (R:R ~1.67)
+# Historico: SL era 1.5x ATR (max 1.200 pts). Analise de 23-24/03/2026
+# mostrou R:R efetivo de 0.44 (ganho medio=327pts, perda media=739pts).
+# Recalibrado em 24/03/2026 para reduzir risco por operacao.
+SL_ATR_MULT = 0.75  # SL = preco +/- 0.75 * ATR (era 1.5x)
+TP_ATR_MULT = 1.5   # TP = preco +/- 1.5 * ATR  (era 2.5x) — R:R teorico=2.0
 # ATR minimo em pontos (proteção contra mercado parado)
 ATR_MINIMO = 80
 # ATR maximo em pontos (proteção contra volatilidade extrema)
 ATR_MAXIMO = 800
 # Reversao: pontos contra a posicao para fechar antecipado
-REVERSAO_ATR_MULT = 1.2  # fecha se preco reverteu 1.2*ATR desde o ultimo tick
+REVERSAO_ATR_MULT = 0.8  # fecha se preco reverteu 0.8*ATR (era 1.2x)
 # Devolucao de ganho: % do ganho maximo que aciona fechamento
-REVERSAO_PCT_GANHO = 0.60
+REVERSAO_PCT_GANHO = 0.50  # protege 50% do ganho maximo (era 60%)
 # Horario de pregao
 HORA_INICIO = (9, 0)
 HORA_FIM = (17, 30)

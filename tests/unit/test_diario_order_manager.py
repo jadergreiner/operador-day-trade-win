@@ -922,6 +922,99 @@ class TestCiclo:
 
         assert mgr._n_ciclos == 2
 
+
+# ────────────────────────────────────────────────────────────────
+# Recalibracao de stops (issue: SL 1.5x ATR estava caro)
+# ────────────────────────────────────────────────────────────────
+
+
+class TestRecalibracaoStops:
+    """
+    Valida que os parametros de SL/TP foram recalibrados para
+    reduzir o risco por operacao mantendo R:R viavel.
+
+    Contexto: analise de 23/03 e 24/03 mostrou que SL=1.5x ATR
+    gerava perdas de ate 1.200 pts por op, enquanto o ganho medio
+    real foi de apenas 327 pts (R:R efetivo = 0.44).
+    """
+
+    def test_sl_atr_mult_reducao(self):
+        """SL deve ser no maximo 0.75x ATR (era 1.5x)."""
+        assert SL_ATR_MULT <= 0.75, (
+            f"SL_ATR_MULT={SL_ATR_MULT} ainda esta caro (esperado <= 0.75)"
+        )
+
+    def test_tp_atr_mult_ajustado(self):
+        """TP deve ser no maximo 1.5x ATR para ser atingivel (era 2.5x)."""
+        assert TP_ATR_MULT <= 1.5, (
+            f"TP_ATR_MULT={TP_ATR_MULT} muito distante (esperado <= 1.5)"
+        )
+
+    def test_rr_teorico_minimo(self):
+        """R:R teorico minimo = TP_ATR_MULT / SL_ATR_MULT >= 1.5."""
+        rr = TP_ATR_MULT / SL_ATR_MULT
+        assert rr >= 1.5, (
+            f"R:R teorico={rr:.2f} abaixo do minimo de 1.5"
+        )
+
+    def test_reversao_atr_mult_mais_rapido(self):
+        """Fechamento por reversao deve ser ativado mais cedo (era 1.2x)."""
+        assert REVERSAO_ATR_MULT <= 0.8, (
+            f"REVERSAO_ATR_MULT={REVERSAO_ATR_MULT} muito largo (esperado <= 0.8)"
+        )
+
+    def test_reversao_pct_ganho_mais_conservador(self):
+        """Protecao de ganho deve ser ativada com menos devolucao (era 60%)."""
+        assert REVERSAO_PCT_GANHO <= 0.50, (
+            f"REVERSAO_PCT_GANHO={REVERSAO_PCT_GANHO} muito alto (esperado <= 0.50)"
+        )
+
+    def test_sl_maximo_efetivo_em_pontos(self):
+        """
+        Com ATR_MAXIMO=800 e SL_ATR_MULT novo, a perda maxima deve
+        ser inferior a 700 pts (era 1.200 pts).
+        """
+        from src.application.diario_order_manager import ATR_MAXIMO
+        sl_maximo = SL_ATR_MULT * ATR_MAXIMO
+        assert sl_maximo < 700, (
+            f"SL maximo efetivo={sl_maximo:.0f}pts ainda acima de 700pts"
+        )
+
+    def test_sl_calculado_com_novo_mult_buy(self, tmp_path):
+        """SL calculado para BUY deve usar o novo multiplicador."""
+        mgr = _make_manager(tmp_path)
+        candles = _candles_simples(n=20, atr_pts=200.0)
+        decisao = _fake_decisao("BUY", confidence=0.80, alignment=0.72)
+        guardian = _fake_guardian()
+
+        with patch.object(mgr, "_no_pregao", return_value=True):
+            sinal = mgr.consolidar_sinal(decisao, candles, guardian)
+
+        atr = sinal.atr
+        dist_sl = sinal.preco_atual - sinal.sl
+        assert abs(dist_sl - atr * SL_ATR_MULT) < 10, (
+            f"SL calculado={dist_sl:.0f}pts, esperado={atr * SL_ATR_MULT:.0f}pts"
+        )
+
+    def test_reversao_mais_rapida_com_novo_mult(self, tmp_path):
+        """Reversao com novo multiplicador deve fechar antes."""
+        mgr = _make_manager(tmp_path)
+        atr = 200.0
+        mgr._posicao.registrar_abertura(
+            ticket=20001,
+            direcao="BUY",
+            preco_entrada=100000.0,
+            sl=99850.0,  # SL novo: 0.75 * 200 = 150 abaixo
+            tp=100300.0,  # TP novo: 1.5 * 200 = 300 acima
+            atr_entrada=atr,
+        )
+        mgr._posicao.atualizar_preco(100200.0)
+        # Reversao de REVERSAO_ATR_MULT * 200 = 160 pts desde ultimo (100200)
+        preco_reversao = 100200.0 - atr * REVERSAO_ATR_MULT - 1
+        deve, motivo = mgr._deve_fechar_por_reversao(preco_reversao)
+        assert deve is True
+        assert "reversao" in motivo
+
     def test_ciclo_nao_abre_nova_ordem_quando_mt5_ja_tem_posicao_do_agente(
         self, tmp_path
     ):
