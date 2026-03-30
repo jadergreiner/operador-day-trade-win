@@ -5,16 +5,19 @@ Agente RL Direto - Posição Independente
 
 Script de operação autônoma com estado completamente isolado do agente RL 5000.
 Cada agente tem:
-  - Session ID único (agente_direto_TIMESTAMP)
-  - Logs separados em outputs/agente_direto_*.log
-  - Configuração própria via environment variables
-  - Isolamento de posições/trades no banco de dados
+    - Session ID único (agente_direto_TIMESTAMP)
+    - Logs separados em outputs/agente_direto_*.log
+    - Configuração própria via environment variables
+    - Isolamento de posições/trades no banco de dados
+
+Regra operacional:
+    - O agente OBRIGATORIAMENTE aguarda 15 minutos (900 segundos) entre o fechamento de um trade e a análise de uma nova operação.
 
 Uso:
-  python scripts/agente_rl_direto_independente.py [--mode dinamico|fixo]
+    python scripts/agente_rl_direto_independente.py [--mode dinamico|fixo]
 
 Argumentos:
-  --mode: define SL/TP como 'dinamico' (padrão) ou 'fixo'
+    --mode: define SL/TP como 'dinamico' (padrão) ou 'fixo'
 """
 
 import json
@@ -305,8 +308,8 @@ ATR_MULT_SL = 0.8  # SL >= 80% do ATR — nunca menor que o ruído
 RR_MINIMO = 1.5  # TP sempre >= SL * 1.5
 RR_TOLERANCIA = 1e-6  # margem para ponto flutuante
 MIN_CONFIDENCE_SCORE = 0.45  # PRD: confiança mínima para entrada
-MAX_TRADES_PER_SESSION = 6  # PRD: máximo de 6 trades/dia por agente
-COOLDOWN_SECONDS = 300  # PRD: cooldown base de 5 min
+MAX_TRADES_PER_SESSION = 20  # PRD: máximo de 20 trades/dia por agente
+COOLDOWN_SECONDS = 900  # PRD: cooldown base de 15 min (15 minutos obrigatórios entre trades)
 STOP_LOSS_COOLDOWN_SECONDS = 1800  # PRD: cooldown de 30 min após LOSS/SL
 MONITORAMENTO_INICIO = dtime(9, 0)
 NOVAS_ENTRADAS_FIM = dtime(17, 25)
