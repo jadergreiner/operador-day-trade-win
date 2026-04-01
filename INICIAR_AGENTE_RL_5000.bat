@@ -16,6 +16,14 @@ set "DB_PATH=%RL_5000_DB_PATH%"
 set "TRADING_DB_PATH=%RL_5000_DB_PATH%"
 set "AGENTE_RL_5000_LOG_DIR=%cd%\outputs"
 
+REM =========================================================================
+REM P50-CHECK: Verificar operacoes pendentes do pregao anterior
+REM =========================================================================
+echo [STARTUP] Verificando pendencias do pregao anterior...
+python scripts\check_pending_sync.py --db "%RL_5000_DB_PATH%" --quiet
+echo [STARTUP] Verificacao de pendencias concluida
+echo.
+
 echo.
 echo   ============================================================
 echo   OPERADOR RL v5000 - PRODUCAO ESTRITA

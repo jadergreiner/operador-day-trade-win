@@ -49,6 +49,18 @@ REM
 setlocal
 cd /d "%~dp0"
 
+set "MICRO_TENDENCIA_DB_PATH=%cd%\data\db\trading_micro_tendencia.db"
+set "DB_PATH=%MICRO_TENDENCIA_DB_PATH%"
+set "TRADING_DB_PATH=%MICRO_TENDENCIA_DB_PATH%"
+
+REM =========================================================================
+REM P50-CHECK: Verificar operacoes pendentes do pregao anterior
+REM =========================================================================
+echo [STARTUP] Verificando pendencias do pregao anterior...
+python scripts\check_pending_sync.py --db "%MICRO_TENDENCIA_DB_PATH%" --quiet
+echo [STARTUP] Verificacao de pendencias concluida
+echo.
+
 REM Check Python availability
 python --version >nul 2>&1
 if errorlevel 1 (

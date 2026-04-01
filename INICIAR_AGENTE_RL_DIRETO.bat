@@ -20,6 +20,14 @@ set "DB_PATH=%RL_DIRETO_DB_PATH%"
 set "TRADING_DB_PATH=%RL_DIRETO_DB_PATH%"
 set "AGENTE_DIRETO_LOG_DIR=%cd%\outputs"
 
+REM =========================================================================
+REM P50-CHECK: Verificar operacoes pendentes do pregao anterior
+REM =========================================================================
+echo [STARTUP] Verificando pendencias do pregao anterior...
+python scripts\check_pending_sync.py --db "%RL_DIRETO_DB_PATH%" --quiet
+echo [STARTUP] Verificacao de pendencias concluida
+echo.
+
 echo.
 echo   ============================================================
 echo   OPERADOR RL DIRETO - PRODUCAO ESTRITA
@@ -133,6 +141,43 @@ if "%CHOICE%"=="2" (
         echo   [OK] AGENTE DIRETO ENCERROU SEM ERRO DE LAUNCHER
         echo   Estado isolado e logs separados permaneceram ativos.
     )
+
+    REM =========================================================================
+    REM P50-SYNC: Sincronizar trades do pregao para SQLite (pos-encerramento)
+    REM Garante que o daily_confidence_retraining.py encontre os trades do dia.
+    REM =========================================================================
+    echo.
+    echo   [SYNC-POS] Sincronizando trades do pregao para SQLite...
+    python scripts\sync_mt5_trades_to_db.py --db "%RL_DIRETO_DB_PATH%" --days-back 1 --lock-timeout 10
+    if errorlevel 1 (
+        echo   [WARN] Sync pos-encerramento falhou. Trades podem nao aparecer no retraining amanha.
+    ) else (
+        echo   [OK] Sync pos-encerramento concluido. Trades do dia gravados no SQLite.
+    )
+
+    REM Espelhar trades do rl_direto para trading_diarios.db (usado pelo P50-B retraining)
+    echo   [SYNC-DIARIOS] Espelhando trades para trading_diarios.db...
+    python -c "
+import sqlite3, sys
+from datetime import datetime, timedelta
+src = sqlite3.connect(r'%RL_DIRETO_DB_PATH%')
+dst = sqlite3.connect(r'%DIARIOS_DB_PATH%')
+src_cur = src.cursor()
+dst_cur = dst.cursor()
+today = datetime.now().date().isoformat()
+src_cur.execute('''SELECT trade_id, symbol, side, quantity, entry_price, entry_time, exit_price, exit_time, stop_loss, take_profit, status, broker_trade_id, commission, profit_loss, return_percentage, notes, created_at, updated_at, execution_method FROM trades WHERE DATE(entry_time) = ? AND status = 'CLOSED' ''', (today,))
+rows = src_cur.fetchall()
+inserted = 0
+for r in rows:
+    dst_cur.execute('SELECT id FROM trades WHERE trade_id = ?', (r[0],))
+    if not dst_cur.fetchone():
+        dst_cur.execute('INSERT INTO trades (trade_id,symbol,side,quantity,entry_price,entry_time,exit_price,exit_time,stop_loss,take_profit,status,broker_trade_id,commission,profit_loss,return_percentage,notes,created_at,updated_at,execution_method) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', r)
+        inserted += 1
+dst.commit()
+src.close()
+dst.close()
+print(f'[OK] {inserted} trades espelhados para trading_diarios.db')
+"
     echo.
     pause
     goto :MENU
