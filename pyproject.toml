@@ -77,3 +77,11 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "talib.*"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "yfinance.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tradingview_ta.*"
+ignore_missing_imports = true
