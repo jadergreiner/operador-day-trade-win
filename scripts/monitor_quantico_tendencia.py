@@ -425,7 +425,7 @@ def _conectar_mt5() -> Optional[Any]:
         return None
 
 
-def _cotacao_mt5(mt5_mod: Any, simbolo: str) -> Optional[dict]:
+def _cotacao_mt5(mt5_mod: Any, simbolo: str) -> Optional[dict[str, Any]]:
     """Retorna cotacao atual de um simbolo no MT5."""
     try:
         mt5_mod.symbol_select(simbolo, True)
@@ -512,7 +512,7 @@ def _sinal_variacao(variacao_pct: float) -> str:
     return "NEUTRO"
 
 
-def _calcular_score_tendencia(ativos: dict, mt5_dados: dict) -> dict[str, Any]:
+def _calcular_score_tendencia(ativos: dict[str, Any], mt5_dados: dict[str, Any]) -> dict[str, Any]:
     """
     Calcula o score de tendencia do dia para o Mini Indice.
 
@@ -672,7 +672,7 @@ def _calcular_score_tendencia(ativos: dict, mt5_dados: dict) -> dict[str, Any]:
 # Analise de contexto narrativo
 # ---------------------------------------------------------------------------
 
-def _contexto_narrativo(ativos: dict, tendencia_dados: dict) -> str:
+def _contexto_narrativo(ativos: dict[str, Any], tendencia_dados: dict[str, Any]) -> str:
     """Gera resumo narrativo do contexto de mercado."""
     partes = []
 
