@@ -160,7 +160,7 @@ _carregar_dotenv()
 # Agora tenta TradingConfig (se pydantic estiver no venv correto)
 # Fallback limpo para os.getenv — que agora ja tem o .env carregado
 try:
-    from config import get_config as _get_config  # type: ignore[import]
+    from config import get_config as _get_config
     _cfg = _get_config()
     TWELVEDATA_API_KEY: str = getattr(_cfg, "twelvedata_api_key", "") or os.getenv("TWELVEDATA_API_KEY", "")
     ALPHAVANTAGE_API_KEY: str = getattr(_cfg, "alphavantage_api_key", "") or os.getenv("ALPHAVANTAGE_API_KEY", "")
@@ -176,8 +176,8 @@ except Exception as _cfg_exc:
     ALPHAVANTAGE_API_KEY = os.getenv("ALPHAVANTAGE_API_KEY", "")
     FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
     MT5_LOGIN = int(os.getenv("MT5_LOGIN") or os.getenv("MT5_WINFUT_ACCOUNT", "0") or "0")
-    MT5_PASSWORD = os.getenv("MT5_PASSWORD") or os.getenv("MT5_WINFUT_PASSWORD", "")
-    MT5_SERVER = os.getenv("MT5_SERVER") or os.getenv("MT5_WINFUT_SERVER", "")
+    MT5_PASSWORD = os.getenv("MT5_PASSWORD") or os.getenv("MT5_WINFUT_PASSWORD") or ""
+    MT5_SERVER = os.getenv("MT5_SERVER") or os.getenv("MT5_WINFUT_SERVER") or ""
     MT5_TERMINAL_PATH = os.getenv("MT5_TERMINAL_PATH", "")
 
 # Simbolos a monitorar no MT5
