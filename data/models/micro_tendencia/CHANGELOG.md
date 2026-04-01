@@ -135,3 +135,23 @@
 - versao_anterior_ativa: v1.0.0_20260330
 - data_ultima_versao_ativa: 2026-03-30T11:34:19.314698
 - notas: Retreino normal: 500 episodios
+## v1.0.0_20260331
+- data_treino: 2026-03-31T11:44:14.527492
+- episodios_usados: 500
+- win_rate_treino: 0.284
+- win_rate_validacao: 0.064
+- delta_vs_anterior: -1.5pp
+- rollback_realizado: False
+- versao_anterior_ativa: v1.0.0_20260330
+- data_ultima_versao_ativa: 2026-03-30T11:34:19.395757
+- notas: Retreino normal: 500 episodios
+## v1.0.0_20260331
+- data_treino: 2026-03-31T16:13:48.365037
+- episodios_usados: 500
+- win_rate_treino: 0.361
+- win_rate_validacao: 0.067
+- delta_vs_anterior: 0.2pp
+- rollback_realizado: False
+- versao_anterior_ativa: v1.0.0_20260331
+- data_ultima_versao_ativa: 2026-03-31T11:44:14.527492
+- notas: Retreino normal: 500 episodios

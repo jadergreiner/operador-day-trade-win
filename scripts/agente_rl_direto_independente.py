@@ -312,7 +312,7 @@ MAX_TRADES_PER_SESSION = 20  # PRD: máximo de 20 trades/dia por agente
 COOLDOWN_SECONDS = 900  # PRD: cooldown base de 15 min (15 minutos obrigatórios entre trades)
 STOP_LOSS_COOLDOWN_SECONDS = 1800  # PRD: cooldown de 30 min após LOSS/SL
 MONITORAMENTO_INICIO = dtime(9, 0)
-NOVAS_ENTRADAS_FIM = dtime(17, 25)
+NOVAS_ENTRADAS_FIM = dtime(17, 50)
 MONITORAMENTO_FIM = dtime(17, 55)
 
 CONFIRM_SIGNAL_BARS = 2  # Confirmação em N velas
