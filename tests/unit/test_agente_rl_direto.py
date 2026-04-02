@@ -1,15 +1,17 @@
 """
-Testes unitarios para correcoes TECH-001, TECH-002 e TECH-003
+Testes unitarios para correcoes TECH-001, TECH-002, TECH-003 e ML-2
 no agente RL Direto (scripts/agente_rl_direto_independente.py).
 
 TECH-001: preco_saida=0.0 no historico_fechamentos
 TECH-002: Resultado DESCONHECIDO em trades de sessao divergente
 TECH-003: retcode 10006 nao capturado em todos os formatos
+ML-2:     Gate de pausa pos-sequencia de TPs consecutivos
 """
 
 from __future__ import annotations
 
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -225,3 +227,111 @@ class TestTech003Backoff10006:
         retry_mgr.registrar_falha_10006.return_value = retry_resultado
         resultado = enviar_ordem_com_backoff(adapter, MagicMock(), retry_mgr=retry_mgr)
         assert resultado is None
+
+
+# ---------------------------------------------------------------------------
+# ML-2 — Gate de pausa pos-sequencia de TPs consecutivos
+# ---------------------------------------------------------------------------
+
+class TestMl2GatePausaTps:
+    """ML-2: pausa apos 3 TPs consecutivos em janela de 45 minutos."""
+
+    def _criar_protection(self) -> Any:
+        from scripts.agente_rl_direto_independente import (  # type: ignore[import]
+            AntiOvertradingProtection,
+        )
+        return AntiOvertradingProtection(
+            gate_pausa_tps=3,
+            gate_pausa_janela_minutos=45,
+            gate_pausa_cooldown_seconds=900,
+        )
+
+    def test_gate_nao_ativa_antes_de_3_tps(self) -> None:
+        """Com 2 TPs na janela, gate nao deve ser ativado."""
+        prot = self._criar_protection()
+        agora = datetime(2026, 4, 1, 10, 0, 0)
+        prot.registrar_ganho(agora=agora)
+        prot.registrar_ganho(agora=agora + timedelta(minutes=10))
+        assert not prot.gate_pausa_ativo
+
+    def test_gate_ativa_no_terceiro_tp(self) -> None:
+        """Terceiro TP dentro de 45min deve ativar o gate."""
+        prot = self._criar_protection()
+        agora = datetime(2026, 4, 1, 10, 0, 0)
+        prot.registrar_ganho(agora=agora)
+        prot.registrar_ganho(agora=agora + timedelta(minutes=10))
+        prot.registrar_ganho(agora=agora + timedelta(minutes=20))
+        assert prot.gate_pausa_ativo
+        assert prot.gate_pausa_ate == agora + timedelta(minutes=20, seconds=900)
+
+    def test_gate_bloqueia_nova_entrada(self) -> None:
+        """Enquanto gate ativo, pode_tradear deve retornar False."""
+        from scripts.agente_rl_direto_independente import (  # type: ignore[import]
+            AntiOvertradingProtection,
+        )
+        prot = AntiOvertradingProtection(
+            gate_pausa_tps=3,
+            gate_pausa_janela_minutos=45,
+            gate_pausa_cooldown_seconds=900,
+            trading_hours_start=9,
+            trading_hours_end=17,
+        )
+        agora = datetime(2026, 4, 1, 10, 0, 0)
+        prot.registrar_ganho(agora=agora)
+        prot.registrar_ganho(agora=agora + timedelta(minutes=10))
+        prot.registrar_ganho(agora=agora + timedelta(minutes=20))
+
+        permitido, motivo = prot.pode_tradear(agora=agora + timedelta(minutes=21))
+        assert not permitido
+        assert "GATE-PAUSA" in motivo
+        assert "TPs consecutivos" in motivo
+
+    def test_gate_libera_apos_cooldown(self) -> None:
+        """Apos expirar o cooldown, pode_tradear deve liberar operacoes."""
+        from scripts.agente_rl_direto_independente import (  # type: ignore[import]
+            AntiOvertradingProtection,
+        )
+        prot = AntiOvertradingProtection(
+            gate_pausa_tps=3,
+            gate_pausa_janela_minutos=45,
+            gate_pausa_cooldown_seconds=300,  # 5 min para o teste
+            trading_hours_start=9,
+            trading_hours_end=17,
+        )
+        agora = datetime(2026, 4, 1, 10, 0, 0)
+        prot.registrar_ganho(agora=agora)
+        prot.registrar_ganho(agora=agora + timedelta(minutes=10))
+        prot.registrar_ganho(agora=agora + timedelta(minutes=20))
+
+        # Ainda em pausa (1 min depois)
+        bloqueado, _ = prot.pode_tradear(agora=agora + timedelta(minutes=21))
+        assert not bloqueado
+
+        # Apos 5 min de pausa — gate deve ter expirado
+        permitido, motivo = prot.pode_tradear(agora=agora + timedelta(minutes=26))
+        assert permitido
+        assert not prot.gate_pausa_ativo
+
+    def test_perda_reseta_janela_de_wins(self) -> None:
+        """Perda apos 2 TPs deve zerar wins_recentes."""
+        prot = self._criar_protection()
+        agora = datetime(2026, 4, 1, 10, 0, 0)
+        prot.registrar_ganho(agora=agora)
+        prot.registrar_ganho(agora=agora + timedelta(minutes=10))
+        assert len(prot.wins_recentes) == 2
+
+        prot.registrar_perda(agora=agora + timedelta(minutes=15))
+        assert len(prot.wins_recentes) == 0
+        assert not prot.gate_pausa_ativo
+
+    def test_tps_fora_da_janela_nao_contam(self) -> None:
+        """TPs ocorridos ha mais de 45min nao devem acionar o gate."""
+        prot = self._criar_protection()
+        agora = datetime(2026, 4, 1, 10, 0, 0)
+        # Dois TPs antigos (fora da janela de 45min)
+        prot.registrar_ganho(agora=agora)
+        prot.registrar_ganho(agora=agora + timedelta(minutes=5))
+        # Terceiro TP 50min depois — os anteriores ja saem da janela
+        prot.registrar_ganho(agora=agora + timedelta(minutes=50))
+        assert not prot.gate_pausa_ativo
+        assert len(prot.wins_recentes) == 1

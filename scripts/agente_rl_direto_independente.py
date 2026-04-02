@@ -311,6 +311,10 @@ MIN_CONFIDENCE_SCORE = 0.45  # PRD: confiança mínima para entrada
 MAX_TRADES_PER_SESSION = 20  # PRD: máximo de 20 trades/dia por agente
 COOLDOWN_SECONDS = 900  # PRD: cooldown base de 15 min (15 minutos obrigatórios entre trades)
 STOP_LOSS_COOLDOWN_SECONDS = 1800  # PRD: cooldown de 30 min após LOSS/SL
+# ML-2: gate de pausa após sequência de TPs consecutivos em janela curta
+GATE_PAUSA_TPS_CONSECUTIVOS = 3       # nº de TPs para acionar o gate
+GATE_PAUSA_JANELA_MINUTOS = 45        # janela de tempo observada (minutos)
+GATE_PAUSA_COOLDOWN_SECONDS = 900     # pausa após acionar o gate (15 min)
 MONITORAMENTO_INICIO = dtime(9, 0)
 NOVAS_ENTRADAS_FIM = dtime(17, 50)
 MONITORAMENTO_FIM = dtime(17, 55)
@@ -1899,6 +1903,9 @@ class AntiOvertradingProtection:
         monitoring_hours_end: dtime = MONITORAMENTO_FIM,
         max_trades_per_day: int = MAX_TRADES_PER_SESSION,
         stop_loss_cooldown_seconds: int = STOP_LOSS_COOLDOWN_SECONDS,
+        gate_pausa_tps: int = GATE_PAUSA_TPS_CONSECUTIVOS,
+        gate_pausa_janela_minutos: int = GATE_PAUSA_JANELA_MINUTOS,
+        gate_pausa_cooldown_seconds: int = GATE_PAUSA_COOLDOWN_SECONDS,
     ):
         self.max_trades_per_hour = max_trades_per_hour
         self.min_cooldown_seconds = min_cooldown_seconds
@@ -1908,14 +1915,22 @@ class AntiOvertradingProtection:
         self.monitoring_hours_end = monitoring_hours_end
         self.max_trades_per_day = max_trades_per_day
         self.stop_loss_cooldown_seconds = stop_loss_cooldown_seconds
+        # ML-2: configuracao do gate de pausa pos-TPs consecutivos
+        self.gate_pausa_tps = gate_pausa_tps
+        self.gate_pausa_janela_minutos = gate_pausa_janela_minutos
+        self.gate_pausa_cooldown_seconds = gate_pausa_cooldown_seconds
 
-        self.trades_this_hour = []
-        self.last_trade_time = None
+        self.trades_this_hour: list[datetime] = []
+        self.last_trade_time: Optional[datetime] = None
         self.consecutive_losses = 0
         self.is_in_cooldown = False
-        self.cooldown_until = None
+        self.cooldown_until: Optional[datetime] = None
         self.daily_trade_count = 0
-        self.daily_reference = None
+        self.daily_reference: Optional[object] = None
+        # ML-2: estado do gate de pausa pos-TPs
+        self.wins_recentes: list[datetime] = []   # timestamps dos TPs na janela
+        self.gate_pausa_ativo: bool = False
+        self.gate_pausa_ate: Optional[datetime] = None
 
     @staticmethod
     def _normalizar_horario(valor: int | dtime) -> dtime:
@@ -1934,6 +1949,10 @@ class AntiOvertradingProtection:
         self.consecutive_losses = 0
         self.is_in_cooldown = False
         self.cooldown_until = None
+        # ML-2: reset diario do gate de pausa
+        self.wins_recentes = []
+        self.gate_pausa_ativo = False
+        self.gate_pausa_ate = None
 
     def _liberar_cooldown_expirado(self, now: datetime) -> None:
         """Normaliza o estado quando o cooldown já venceu."""
@@ -2013,6 +2032,21 @@ class AntiOvertradingProtection:
                 f"❌ {self.max_consecutive_losses} perdas consecutivas - pausando operações",
             )
 
+        # 7. ML-2: gate de pausa pós-sequência de TPs consecutivos
+        if self.gate_pausa_ativo and self.gate_pausa_ate:
+            if now < self.gate_pausa_ate:
+                restante = int((self.gate_pausa_ate - now).total_seconds() // 60)
+                return (
+                    False,
+                    f"[GATE-PAUSA] {self.gate_pausa_tps} TPs consecutivos em "
+                    f"{self.gate_pausa_janela_minutos}min — aguardando {restante}min",
+                )
+            # gate expirou
+            self.gate_pausa_ativo = False
+            self.gate_pausa_ate = None
+            self.wins_recentes = []
+            logger.info("[GATE-PAUSA] Gate de pausa pós-TPs expirado — operacoes liberadas")
+
         return True, "✅ Permitido tradear"
 
     def registrar_trade(self, agora: Optional[datetime] = None):
@@ -2029,29 +2063,61 @@ class AntiOvertradingProtection:
             self.max_trades_per_day,
         )
 
-    def registrar_perda(self, agora: Optional[datetime] = None):
-        """Registra uma perda e incrementa contador consecutivo."""
+    def registrar_perda(self, agora: Optional[datetime] = None) -> None:
+        """Registra uma perda, incrementa contador consecutivo e reseta wins ML-2."""
         now = agora or datetime.now()
         self._sincronizar_janela_diaria(now)
         self.consecutive_losses += 1
         logger.warning(
-            f"[ANTIOVERTRADING] ⚠️  Perda registrada ({self.consecutive_losses}/{self.max_consecutive_losses})"
+            "[ANTIOVERTRADING] Perda registrada (%d/%d)",
+            self.consecutive_losses,
+            self.max_consecutive_losses,
         )
+
+        # ML-2: perda confirma reversao — zerar janela de TPs
+        if self.wins_recentes:
+            logger.info("[ML-2] Perda apos sequencia de TPs — janela de wins resetada")
+            self.wins_recentes = []
 
         # PRD: respiro operacional após perda/SL antes de nova entrada.
         self.is_in_cooldown = True
         self.cooldown_until = now + timedelta(seconds=self.stop_loss_cooldown_seconds)
         logger.warning(
-            "[ANTIOVERTRADING] 🛑 Cooldown de %d min ativado apos LOSS/SL",
+            "[ANTIOVERTRADING] Cooldown de %d min ativado apos LOSS/SL",
             self.stop_loss_cooldown_seconds // 60,
         )
 
-    def registrar_ganho(self):
-        """Registra um ganho e reseta contador de perdas consecutivas."""
+    def registrar_ganho(self, agora: Optional[datetime] = None) -> None:
+        """Registra um ganho, reseta perdas consecutivas e avalia gate ML-2."""
+        now = agora or datetime.now()
+        self._sincronizar_janela_diaria(now)
         self.consecutive_losses = 0
+        logger.info("[ANTIOVERTRADING] Ganho registrado - contador de perdas resetado")
+
+        # ML-2: registrar TP na janela deslizante e verificar gate de pausa
+        janela_inicio = now - timedelta(minutes=self.gate_pausa_janela_minutos)
+        self.wins_recentes.append(now)
+        self.wins_recentes = [t for t in self.wins_recentes if t >= janela_inicio]
+
+        tps_na_janela = len(self.wins_recentes)
         logger.info(
-            f"[ANTIOVERTRADING] ✅ Ganho registrado - contador de perdas resetado"
+            "[ML-2] TPs na janela de %dmin: %d/%d",
+            self.gate_pausa_janela_minutos,
+            tps_na_janela,
+            self.gate_pausa_tps,
         )
+
+        if tps_na_janela >= self.gate_pausa_tps and not self.gate_pausa_ativo:
+            self.gate_pausa_ativo = True
+            self.gate_pausa_ate = now + timedelta(seconds=self.gate_pausa_cooldown_seconds)
+            minutos_pausa = self.gate_pausa_cooldown_seconds // 60
+            logger.warning(
+                "[GATE-PAUSA] %d TPs consecutivos em %dmin — pausando %dmin ate %s",
+                tps_na_janela,
+                self.gate_pausa_janela_minutos,
+                minutos_pausa,
+                self.gate_pausa_ate.strftime("%H:%M"),
+            )
 
 
 def registrar_bloqueio_anti_overtrading(ciclo: int, acao_str: str, motivo: str) -> None:

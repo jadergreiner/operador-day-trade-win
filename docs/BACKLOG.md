@@ -3610,7 +3610,7 @@ latencia extra ou comportamento imprevisivel.
 
 #### 1. TECH-001 — Bug preco_saida=0.0 no historico_fechamentos agente dinamico
 
-**Status:** PENDENTE
+**Status:** CONCLUIDO (01/04/2026)
 
 **Origem:** Fechamento diario 18/03/2026 — todos os fechamentos do
 agente_dinamico (sessoes 124946 e 162018) gravaram `preco_saida=0.0`
@@ -3657,7 +3657,7 @@ de fechamento do agente dinamico)
 
 #### 2. TECH-002 — Sessao matinal com resultado DESCONHECIDO em todos os trades
 
-**Status:** PENDENTE
+**Status:** CONCLUIDO (01/04/2026)
 
 **Origem:** Fechamento diario 18/03/2026 — sessao agente_direto_090357
 executou multiplas ordens mas todos os resultados retornaram `DESCONHECIDO`
@@ -3699,7 +3699,7 @@ rastreamento nao diferencia tickets de sessoes distintas.
 
 #### 3. TECH-003 — Retcode 10006 em loop sem sucesso na sessao 120332
 
-**Status:** PENDENTE
+**Status:** CONCLUIDO (01/04/2026)
 
 **Origem:** Fechamento diario 18/03/2026 — sessao agente_direto_120332
 (agente dinamico) falhou repetidamente com retcode 10006 entre 12:03 e
@@ -3995,20 +3995,17 @@ imediatamente sem avaliar exaustao do movimento.
 
 #### INFRA-1 / MEDIA — Terminal mismatch Clear vs FBS no MT5Adapter
 
-**Status:** PENDENTE
+**Status:** NAO-PROBLEMA (01/04/2026)
 
 **Arquivo:** `.env` (`MT5_TERMINAL_PATH`)
 
-**Impacto:** log poluido a cada reconexao
-
-**Risco:** dificulta triagem de erros reais
-
-**Owner:** Arquiteto | **Deadline:** 17/03/2026 EOD | **Estimativa:** 0.5h
-
-**Criterios de aceite:**
-
-- `MT5_TERMINAL_PATH` no `.env` aponta para terminal FBS ativo;
-- zero logs de `Terminal mismatch` durante sessao normal.
+**Analise (01/04/2026):** Configuracao ja estava correta para o uso atual.
+`MT5_LOGIN=1000346516`, `MT5_SERVER=ClearInvestimentos-CLEAR` e
+`MT5_TERMINAL_PATH` apontando para o terminal Clear — que e o broker correto
+para Indice (WIN$). Os logs de `Terminal mismatch` sao nivel DEBUG e ocorrem
+apenas quando `psutil` itera outros processos MT5 abertos no sistema, o que e
+comportamento intencional de protecao contra conexao acidental a broker errado.
+Nenhuma acao necessaria.
 
 ### Backlog Medio Prazo (nao bloqueia proxima sessao)
 
