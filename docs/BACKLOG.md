@@ -527,7 +527,11 @@ outcome (WIN/LOSS/BREAKEVEN), motivo de saida, P&L realizado e duracao.
 
 #### 8.2 P1-LEARNING Etapas 5-7: L1 Analysis + L2 Causal + Learning Rules
 
-**Status:** 🔍 EM ANALISE (01/04/2026)
+**Status:** 🔝 TOPO P1 — PROXIMA ENTREGA (02/04/2026)
+**Repriorizado por:** PO — gatilho: Gate 2 continua FAIL
+(Sharpe -1.86, Win Rate 55.1%, alvo 59%). Modelo nao aprende entre
+sessoes. Sem L1/L2/Learning Rules o loop de aprendizado permanece em
+vacuo. Prioridade: implementar na proxima sessao de desenvolvimento.
 
 **PO:** Implementar L1/L2 analise de decisao e geracao de regras
 (P1-LEARNING Etapas 5-7). Ao fim deste desenvolvimento estarei feliz se
