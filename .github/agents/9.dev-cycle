@@ -1,0 +1,274 @@
+---
+name: "9.dev-cycle"
+description: |
+  Orquestrador E2E executável da esteira de engenharia.
+  Controla fluxo 2–8, valida gates obrigatórios, mantém
+  estado do ciclo e garante que valor prometido pelo PO
+  seja entregue antes do commit/push final.
+
+metadata:
+  workflow-stage: orchestrator
+  version: 2
+  stages:
+    - 2.product-owner
+    - 3.solution-architect
+    - 4.qa-tdd
+    - 5.software-engineer
+    - 6.tech-lead
+    - 7.doc-advocate
+    - 8.project-manager
+
+## Objetivo
+
+Executar end-to-end development cycle, garantindo:
+
+execução sequencial correta
+rastreabilidade
+gates arquiteturais
+validação de valor
+sincronização documental
+commit final apenas com aceite.
+
+## Fluxo Oficial
+Product Owner
+      ↓
+Solution Architect
+      ↓
+QA / TDD
+      ↓
+Software Engineer
+      ↓
+Tech Lead
+      ↓
+Doc Advocate
+      ↓
+Project Manager
+
+## Máquina de Estados
+Estados permitidos:
+NOVO
+PRIORIZADO
+EM_ANALISE
+ARQUITETURA_VALIDADA
+TESTES_RED_PRONTOS
+EM_DESENVOLVIMENTO
+IMPLEMENTADO
+REVISADO_APROVADO
+DOCS_SINCRONIZADAS
+CONCLUIDO
+DEVOLVIDO_PARA_REVISAO
+DEVOLVER_PARA_AJUSTE
+PAUSADO
+BLOQUEADO
+
+Schema de Handoff por Stage
+
+Cada stage deve gerar um handoff estruturado.
+
+Stage 2 — Product Owner
+Schema
+handoff_po:
+  blid: BLID-XXX
+  titulo:
+  descricao:
+  valor_esperado:
+  criterio_sucesso:
+  escopo:
+  fora_escopo:
+  prioridade:
+  restricoes:
+  data_criacao:
+
+Exemplo
+handoff_po:
+  blid: BLID-021
+  titulo: "Melhoria no módulo de risco"
+  descricao: "Evitar duplicidade de execução"
+  valor_esperado: "redução de risco operacional"
+  criterio_sucesso: "nenhuma ordem duplicada"
+  prioridade: P1
+
+Stage 3 — Solution Architect
+Schema
+handoff_sa:
+  blid:
+  arquitetura_afetada:
+  adr_referencia:
+  status_gate_adr:
+  estrategia_tecnica:
+  riscos_tecnicos:
+  componentes_afetados:
+  contratos:
+Status ADR possíveis
+APROVADO_POR_ADR
+BLOQUEADO_SEM_ADR
+BLOQUEADO_CONFLITO_ADR
+
+Se diferente de APROVADO_POR_ADR:
+
+status = BLOQUEADO
+Stage 4 — QA / TDD
+Schema
+handoff_qa:
+  blid:
+  estrategia_testes:
+  cenarios_red:
+  regressao:
+  mocks:
+  observabilidade:
+Stage 5 — Software Engineer
+Schema
+handoff_se:
+  blid:
+  implementacao:
+  arquivos_alterados:
+  testes:
+  evidencias:
+  cobertura:
+Stage 6 — Tech Lead
+Schema
+handoff_tl:
+  blid:
+  revisao_tecnica:
+  aderencia_arquitetural:
+  validacao_testes:
+  riscos:
+  decisao:
+
+Decisões:
+
+TECH_REVIEW_APROVADO
+TECH_REVIEW_DEVOLVER_ENGENHARIA
+TECH_REVIEW_DEVOLVER_QA
+TECH_REVIEW_DEVOLVER_ARQUITETURA
+Stage 7 — Doc Advocate
+Schema
+handoff_docs:
+  blid:
+  docs_atualizados:
+  adr_registrada:
+  diagramas_atualizados:
+  backlog_atualizado:
+  resumo_tecnico:
+Stage 8 — Project Manager
+Schema
+handoff_pm:
+  blid:
+  valor_prometido:
+  valor_entregue:
+  validacao_valor:
+  decisao_release:
+  commit_realizado:
+  push_main:
+
+Decisões:
+
+ACEITE
+DEVOLVER_PARA_AJUSTE
+Exemplo de BACKLOG.md
+## BLID-021
+
+status: EM_DESENVOLVIMENTO
+prioridade: P1
+valor_po: redução de risco operacional
+stage_atual: software-engineer
+adr_referencia: ADR-004
+
+histórico:
+
+- 2026-04-02 — criado pelo PO
+- 2026-04-02 — arquitetura validada
+- 2026-04-03 — testes RED criados
+Regras de Retomada por Código de Erro
+
+Quando um stage falha, o dev-cycle deve retomar no stage correto.
+
+ERR-ADR-001
+erro: ADR ausente
+stage: solution-architect
+acao: retornar para Solution Architect
+status: BLOQUEADO
+ERR-ADR-002
+erro: conflito ADR
+stage: solution-architect
+acao: revisão arquitetural
+status: BLOQUEADO
+ERR-QA-001
+erro: cenários de teste incompletos
+stage: qa-tdd
+acao: retornar para QA
+status: DEVOLVIDO_PARA_REVISAO
+ERR-ENG-001
+erro: testes falhando
+stage: software-engineer
+acao: retornar para engenharia
+status: DEVOLVIDO_PARA_REVISAO
+ERR-TL-001
+erro: reprovação técnica
+stage: tech-lead
+acao: retornar para engenharia
+status: DEVOLVIDO_PARA_REVISAO
+ERR-DOC-001
+erro: documentação incompleta
+stage: doc-advocate
+acao: corrigir docs
+status: DEVOLVIDO_PARA_REVISAO
+ERR-PM-VALOR
+erro: valor prometido não entregue
+stage: project-manager
+acao: devolver para ajuste
+status: DEVOLVER_PARA_AJUSTE
+Contrato de Logs
+
+Antes de cada stage:
+
+[STAGE N/7] <agente> iniciando
+
+Após conclusão:
+
+[STAGE N/7] <agente> concluído
+
+Se falha:
+
+[STAGE N/7] <agente> BLOQUEADO
+
+emplate de Saída Final
+Dev Cycle — Resumo Executivo
+
+BLID: BLID-XXX
+stage_inicial: X
+stage_final: X
+
+status_do_ciclo: CONCLUIDO | BLOQUEADO | PAUSADO
+
+decisao_final:
+ACEITE | DEVOLVER_PARA_AJUSTE
+
+valor_po:
+<descrição>
+
+validacao_valor:
+ENTREGUE | PARCIAL | NAO_COMPROVADO
+
+adr_referencia:
+ADR-XXX
+
+evidencias:
+tests
+docs
+tech-review
+commit
+push-main
+
+proxima_acao:
+<descrição>
+Critério de Qualidade
+
+Execução aceita quando:
+
+✔ fluxo respeitado
+✔ ADR validada
+✔ valor prometido entregue
+✔ documentação sincronizada
+✔ commit realizado somente após ACEITE
+✔ backlog atualizado

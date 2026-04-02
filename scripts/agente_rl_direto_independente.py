@@ -2784,11 +2784,122 @@ def main():
         except Exception:
             pass
 
+        # P1-LEARNING: Analise pos-sessao (Etapas 5-7) — nao bloqueia shutdown
+        try:
+            _encerrar_sessao_learning(
+                sessao_id=AGENT_SESSION_ID,
+                db_path=Path("data/db/causal_learning.db"),
+                output_dir=OUTPUTS_DIR,
+                timeout_segundos=30,
+            )
+        except Exception as _e_learning:
+            logger.warning("[P1-LEARNING] Falha ao iniciar analise: %s", _e_learning)
+
         logger.info("=" * 80)
         logger.info(f"AGENTE DIRETO ENCERRADO - Session: {AGENT_SESSION_ID}")
         logger.info(f"Total de ciclos: {ciclo}")
         logger.info(f"Tempo total: {time.time() - start_time:.1f}s")
         logger.info("=" * 80)
+
+
+# ============================================================================
+# P1-LEARNING: ENCERRAMENTO DE SESSAO (ETAPAS 5-7)
+# ============================================================================
+
+
+def _encerrar_sessao_learning(
+    sessao_id: str,
+    db_path: Path,
+    output_dir: Path,
+    timeout_segundos: int = 30,
+) -> None:
+    """Executa analise P1-LEARNING Etapas 5-7 no encerramento de sessao.
+
+    Roda em thread separada com timeout para nao atrasar o shutdown.
+    Erros sao logados mas nunca propagados.
+
+    Args:
+        sessao_id: ID da sessao de trading
+        db_path: Caminho para o banco SQLite com episode_closures
+        output_dir: Diretorio raiz para salvar os artefatos
+        timeout_segundos: Tempo maximo para a analise completar
+    """
+    import threading
+
+    def _executar() -> None:
+        try:
+            from src.application.ac6_7_drift_detector import DriftDetector
+            from src.application.p1_learning_l1_analysis import AnalisadorDecisaoL1
+            from src.application.p1_learning_l2_causal import DetectorCausalL2
+            from src.application.p1_learning_regras import GeradorRegraAprendizado
+            from src.application.p1_learning_relatorio import RelatorioSessao
+
+            logger.info("[P1-LEARNING] Iniciando analise pos-sessao Etapas 5-7...")
+
+            # Etapa 5: L1 Analysis
+            l1 = AnalisadorDecisaoL1(db_path=db_path, sessao_id=sessao_id)
+            resultados_l1 = l1.analisar_sessao()
+            models_dir = output_dir / "models"
+            caminho_l1 = l1.persistir_analise(resultados_l1, models_dir)
+            logger.info(
+                "[P1-LEARNING][L1] %d episodios analisados → %s",
+                len(resultados_l1),
+                caminho_l1.name,
+            )
+
+            # Etapa 6: L2 Causal
+            drift_detector = DriftDetector(
+                baseline_win_rate=0.59,
+                baseline_sharpe=1.0,
+            )
+            l2 = DetectorCausalL2(
+                detector=drift_detector,
+                min_episodios=5,
+                sessao_id=sessao_id,
+            )
+            registros_l1_src = l1.obter_episodios_sessao()
+            resultado_l2 = l2.detectar(registros_l1_src)
+            logger.info(
+                "[P1-LEARNING][L2] Causa dominante: %s (confianca %.0f%%)",
+                resultado_l2.causa_dominante,
+                resultado_l2.confianca * 100,
+            )
+
+            # Etapa 7: Learning Rules
+            gerador = GeradorRegraAprendizado()
+            regras = gerador.sintetizar_padroes(resultados_l1, resultado_l2)
+            caminho_regras = gerador.persistir_regras(
+                regras, resultado_l2, models_dir
+            )
+            logger.info(
+                "[P1-LEARNING][L7] %d regra(s) gerada(s) → %s",
+                len(regras),
+                caminho_regras.name,
+            )
+
+            # Relatorio de sessao
+            caminho_relatorio = RelatorioSessao().gerar_relatorio_md(
+                resultados_l1, resultado_l2, regras, output_dir
+            )
+            logger.info(
+                "[P1-LEARNING] Relatorio gerado: %s",
+                caminho_relatorio.name,
+            )
+
+        except Exception as exc:
+            logger.error(
+                "[P1-LEARNING] Falha nas Etapas 5-7 — analise abortada: %s",
+                exc,
+            )
+
+    t = threading.Thread(target=_executar, daemon=True, name="p1-learning-etapas-5-7")
+    t.start()
+    t.join(timeout=timeout_segundos)
+    if t.is_alive():
+        logger.warning(
+            "[P1-LEARNING] Timeout %ds atingido — analise pos-sessao abortada",
+            timeout_segundos,
+        )
 
 
 # ============================================================================

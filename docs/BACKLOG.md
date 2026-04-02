@@ -525,6 +525,53 @@ outcome (WIN/LOSS/BREAKEVEN), motivo de saida, P&L realizado e duracao.
 
 - **Commit:** feat: Implementar P1-LEARNING Etapa 4 (Closure) com testes 27/27
 
+#### 8.2 P1-LEARNING Etapas 5-7: L1 Analysis + L2 Causal + Learning Rules
+
+**Status:** 🔍 EM ANALISE (01/04/2026)
+
+**PO:** Implementar L1/L2 analise de decisao e geracao de regras
+(P1-LEARNING Etapas 5-7). Ao fim deste desenvolvimento estarei feliz se
+cada sessao gerar relatorio de padroes de erro e learning_rules com regras
+observaveis persistidas.
+
+**Problema Resolvido:**
+
+- Gate 2 FAIL (Sharpe -1.86, alvo 1.0; Win Rate 55.1%, alvo 59%) desde
+  19/03/2026 — modelo nao aprende com os proprios erros entre sessoes
+- Resultado DESCONHECIDO (TECH-002, agora resolvido) impedia feedback loop
+- Sem L1 Analysis: nao ha diagnostico de QUANDO a decisao foi errada
+- Sem L2 Causal: nao ha deteccao de regime de mercado adverso
+- Sem Learning Rules: nao ha mecanismo para corrigir comportamento futuro
+
+**Entregar:**
+
+- Etapa 5: L1 Decision Correctness Analysis
+  - Analisa cada episodio fechado: decisao estava correta dado o contexto?
+  - Gera `data/models/l1_analysis_YYYYMMDD.jsonl` por sessao
+- Etapa 6: L2 Causal Drift Detection
+  - Detecta mudancas de regime que explicam degradacao do modelo
+  - Integra com `ac6_7_drift_detector.py` existente
+- Etapa 7: Learning Rule Generation
+  - Sintetiza padroes de erro em regras observaveis
+  - Persiste `data/models/learning_rules_YYYYMMDD.json`
+- Relatorio de sessao (`outputs/p1_learning_report_YYYYMMDD.md`)
+- Type hints 100% (mypy --strict OK)
+- Testes >=85% cobertura
+
+**Criterios de Sucesso:**
+
+1. Ao encerrar sessao, arquivo `l1_analysis_*.jsonl` gerado com >= 1 entrada
+2. Arquivo `learning_rules_*.json` contem >= 1 regra observavel
+3. `outputs/p1_learning_report_*.md` gerado e legivel pelo operador
+4. Gate 2: Sharpe >= 0.0 (melhora mensuravel em 5 sessoes pos-deploy)
+5. Zero erros mypy --strict no(s) novo(s) modulo(s)
+6. pytest >= 85% cobertura nos novos modulos
+
+**Restricao PO:**
+
+- `p0_2_status.json` com UNHANDLED_EXCEPTION no pipeline Gate 2 — corrigir
+  em paralelo ou antes do deploy para nao mascarar resultados de aprendizado
+
 #### 8. P1-PROFIT_PROTECTION Protecao de Lucros em Tempo Real
 
 **Status:** ✅ DONE (16/03/2026)
