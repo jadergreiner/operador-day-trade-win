@@ -2460,6 +2460,7 @@ class PriceTracker:
 _painel_obs: ObservabilidadeDiarios = ObservabilidadeDiarios(
     limite_inatividade_min=20,
     report_dir=project_root / "outputs" / "analysis",
+    caminho_banco=project_root / "data" / "db" / "trading_diarios.db",
 )
 
 
@@ -2493,6 +2494,7 @@ def run_trading_journal():
         while True:
             count += 1
             now = datetime.now()
+            _painel_obs.registrar_heartbeat("TradingJournal")
 
             print("\n" + "=" * 80)
             print(f"TRADING JOURNAL - ENTRADA #{count} - {now.strftime('%H:%M:%S')}")
@@ -2553,6 +2555,7 @@ def run_trading_journal():
             )
 
             entry = journal.save_entry(narrative, decision_data)
+            _painel_obs.registrar_gravacao("TradingJournal")
 
             # Display FULL narrative
             print()
@@ -2586,6 +2589,8 @@ def run_trading_journal():
             time.sleep(300)
 
     except Exception as e:
+        import traceback
+        _painel_obs.registrar_falha("TradingJournal", e, traceback.format_exc())
         print(f"[TRADING JOURNAL] Erro: {e}")
     finally:
         mt5.disconnect()
@@ -2632,6 +2637,7 @@ def run_ai_reflection():
         while True:
             count += 1
             now = datetime.now()
+            _painel_obs.registrar_heartbeat("AIReflection")
 
             print("\n" + "=" * 80)
             print(f"AI REFLECTION - REFLEXAO #{count} - {now.strftime('%H:%M:%S')}")
@@ -2691,6 +2697,7 @@ def run_ai_reflection():
             )
 
             entry = journal.save_entry(reflection)
+            _painel_obs.registrar_gravacao("AIReflection")
 
             # Display reflection
             print()
@@ -2879,6 +2886,8 @@ def run_ai_reflection():
             time.sleep(600)
 
     except Exception as e:
+        import traceback as _tb
+        _painel_obs.registrar_falha("AIReflection", e, _tb.format_exc())
         print(f"[AI REFLECTION] Erro: {e}")
         import traceback
 
@@ -3695,7 +3704,7 @@ def run_rl_performance_diary():
                         f"SMC_bypass={'SIM' if smc_bypass else 'NÃO'}, "
                         f"trend_follow={'SIM' if trend_follow else 'NÃO'}"
                     )
-                    _painel_obs.registrar_gravacao("DIARIOS")
+                    _painel_obs.registrar_gravacao("RLDiary")
                 else:
                     print("  ⚠ Falha ao salvar feedback no SQLite")
             except Exception as fb_err:
@@ -3750,6 +3759,8 @@ def run_rl_performance_diary():
             time.sleep(900)
 
     except Exception as e:
+        import traceback as _tb
+        _painel_obs.registrar_falha("RLDiary", e, _tb.format_exc())
         print(f"[RL DIARY] Erro: {e}")
         import traceback
 
@@ -3798,6 +3809,7 @@ def run_macro_guardian():
     try:
         while True:
             now = datetime.now()
+            _painel_obs.registrar_heartbeat("MacroGuardian")
 
             # Verificar se estamos no horário de pregão (8:55-18:10)
             hora = now.hour * 100 + now.minute
@@ -3855,7 +3867,7 @@ def run_macro_guardian():
                             print(f"  🛡️ Guardian: feedback URGENTE salvo (ID={fb_id})")
                             if _guardian_state.active_kill_switch:
                                 print(f"  🚨 KILL SWITCH ATIVO — agente deve pausar!")
-                            _painel_obs.registrar_gravacao("DIARIOS")
+                            _painel_obs.registrar_gravacao("MacroGuardian")
                     except Exception as fb_err:
                         print(f"  ⚠ Guardian: erro ao salvar feedback: {fb_err}")
 
@@ -3866,6 +3878,8 @@ def run_macro_guardian():
             time.sleep(GUARDIAN_INTERVAL_SEC)
 
     except Exception as e:
+        import traceback as _tb
+        _painel_obs.registrar_falha("MacroGuardian", e, _tb.format_exc())
         print(f"[MACRO GUARDIAN] Erro fatal: {e}")
         import traceback
 
@@ -3933,6 +3947,7 @@ def run_diario_order_manager():
     try:
         while True:
             agora = datetime.now()
+            _painel_obs.registrar_heartbeat("DiarioExecucao")
 
             try:
                 # ── Obter candles e decisao macro ──
@@ -4037,6 +4052,8 @@ def run_diario_order_manager():
             time.sleep(EXECUCAO_INTERVAL_SEC)
 
     except Exception as e:
+        import traceback as _tb
+        _painel_obs.registrar_falha("DiarioExecucao", e, _tb.format_exc())
         print(f"[DIARIO EXECUCAO] Erro fatal: {e}")
         import traceback
 
@@ -4095,6 +4112,7 @@ def main():
     _painel_obs = ObservabilidadeDiarios(
         limite_inatividade_min=20,
         report_dir=project_root / "outputs" / "analysis",
+        caminho_banco=project_root / "data" / "db" / "trading_diarios.db",
     )
 
     # Watchdog monitora e reinicia threads mortas automaticamente
@@ -4159,6 +4177,7 @@ def main():
                 )
             # Exibe painel de observabilidade (ROADMAP-DIARIOS-01)
             print(_painel_obs.exibir_painel_terminal())
+            _painel_obs.exportar_snapshot_json()
             try:
                 print(_format_learning_block(_get_db_path()))
             except Exception as exc:

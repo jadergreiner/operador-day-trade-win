@@ -185,3 +185,13 @@
 - versao_anterior_ativa: v1.0.0_20260401
 - data_ultima_versao_ativa: 2026-04-01T14:51:16.933676
 - notas: Retreino normal: 500 episodios
+## v1.0.0_20260402
+- data_treino: 2026-04-02T14:24:17.547335
+- episodios_usados: 500
+- win_rate_treino: 0.193
+- win_rate_validacao: 0.316
+- delta_vs_anterior: -22.4pp
+- rollback_realizado: True
+- versao_anterior_ativa: v1.0.0_20260402
+- data_ultima_versao_ativa: 2026-04-02T09:45:33.597348
+- notas: ROLLBACK: win_rate caiu 22.4pp vs versao anterior (threshold: 5.0pp)
