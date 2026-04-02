@@ -1615,9 +1615,46 @@ persiste 3 arquivos JSON por agente:
   "preco_saida": 131700.0,
   "motivo": "TAKE_PROFIT",
   "pnl_pontos": 200.0,
-  "pnl_financeiro": 20000.0
+  "pnl_financeiro": 20000.0,
+  "resultado": "WIN"
 }
 ```
+
+### Entidade: HistoricoFechamento
+
+> Adicionada em ROADMAP-MICRO-03 (02/04/2026) com
+> campo `resultado: Optional[str]` para suportar o
+> pipeline de reconciliacao pos-sessao.
+
+Classe `HistoricoFechamento` em
+`src/application/reconciliadores/`:
+
+| Campo | Tipo | Valores | Semantica |
+|-------|------|---------|-----------|
+| `agent_id` | `str` | livre | ID do agente que realizou o trade |
+| `tipo` | `str` | COMPRA / VENDA | Direcao da operacao |
+| `preco_entrada` | `float` | positivo | Preco de abertura da posicao |
+| `preco_saida` | `float` | positivo | Preco de fechamento da posicao |
+| `motivo` | `str` | TAKE_PROFIT / STOP_LOSS / MANUAL | Razao do fechamento |
+| `pnl_pontos` | `float` | positivo ou negativo | Variacao em pontos |
+| `pnl_financeiro` | `float` | positivo ou negativo | Variacao em R$ |
+| `resultado` | `Optional[str]` | WIN / LOSS / BREAKEVEN / null | Classificacao do outcome |
+
+**Semantica do campo `resultado`:**
+
+- `WIN` — `pnl_pct > +0.05%` (PnL positivo acima de tolerancia)
+- `LOSS` — `pnl_pct < -0.05%` (PnL negativo abaixo de tolerancia)
+- `BREAKEVEN` — `|pnl_pct| <= 0.05%` (PnL dentro da tolerancia)
+- `null` — Resultado ainda nao determinado; aciona pipeline de
+  reconciliacao no pos-sessao
+
+**Retrocompatibilidade:** campo foi adicionado como `Optional[str]`
+com default `None`. Codigo legado que nao passa `resultado` continua
+funcionando — o valor `null` e tratado pelo pipeline de reconciliacao.
+
+**Implementacao:** `src/application/reconciliadores/`
+— `UnknownResultDetector`, `TradeOutcomeReconciler`,
+`MT5SyncValidator`. Veja ADR-017.
 
 ### PosicaoIsoladaManager (JSON por session)
 

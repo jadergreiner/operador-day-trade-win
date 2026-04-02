@@ -1,188 +1,139 @@
 """
-ROADMAP-MICRO-03: Validador de Sincronização MT5.
+ROADMAP-MICRO-03: Validador de Sincronizacao MT5.
 
 Responsabilidades:
-- Validar consistência final após reconciliação.
-- Detectar possíveis desincronizações residuais.
-- Gerar relatório de auditoria para reconciliações críticas.
+- Comparar contagem de fechamentos sem resultado local vs MT5.
+- Classificar status de sincronizacao da sessao.
+- Persistir relatorio de validacao como JSON.
+
+Pipeline:
+    TradeOutcomeReconciler.reconciliar_ordem() preenche resultados
+    -> MT5SyncValidator.validar_sincronizacao() confirma consistencia final
+    -> SINCRONIZADO se delta == 0; DIVERGENCIA_CRITICA caso contrario
 """
 
+import json
 import logging
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+from src.infrastructure.repositories.fechamento_repository import (
+    IFechamentoRepository,
+)
+
 
 class SyncStatus(Enum):
-    """Status da sincronização."""
-    SINCRONIZADO = "sincronizado"
-    DESINCRONIZADO = "desincronizado"
-    DIVERGENCIA_CRITICA = "divergencia_critica"
-    AUDITORIA_NECESSARIA = "auditoria_necessaria"
+    """Status de sincronizacao de uma sessao."""
+
+    SINCRONIZADO = "SINCRONIZADO"
+    DIVERGENCIA_CRITICA = "DIVERGENCIA_CRITICA"
+
 
 @dataclass(frozen=True)
 class ValidationReport:
-    """Relatório de validação de sincronização."""
-    order_id: str
+    """Relatorio de validacao de sincronizacao."""
+
+    session_id: str
+    agent_id: str
     status: SyncStatus
-    local_data: Optional[Dict[str, Any]]
-    mt5_data: Optional[Dict[str, Any]]
-    timestamp: datetime
-    tolerance_percent: float
-    observations: str
+    contagem_local: int
+    contagem_mt5: int
+    delta: int
+    timestamp: str
+    arquivo_relatorio: str
+
 
 class MT5SyncValidator:
     """
-    Validador de sincronização entre BD local e MT5.
+    ROADMAP-MICRO-03: Validador de sincronizacao MT5.
 
-    Áreas validadas:
-    1. Presença de ordens
-    2. Valores de profit com tolerância percentual
-    3. Status de execução
-    4. Timestamps de abertura/fechamento
+    validar_sincronizacao() compara o numero de fechamentos sem resultado
+    no repositorio local com a contagem que MT5 reporta para o agent_id.
+
+    delta == 0  -> SINCRONIZADO
+    delta != 0  -> DIVERGENCIA_CRITICA
     """
 
     def __init__(
         self,
-        tolerance_percent: float = 0.5,
-        logger: Optional[logging.Logger] = None
+        fechamento_repo: IFechamentoRepository,
+        mt5_adapter: Any,
+        logger: Optional[logging.Logger] = None,
     ) -> None:
-        """
+        self._repo = fechamento_repo
+        self._mt5 = mt5_adapter
+        self._log = logger or logging.getLogger(__name__)
+
+    # ------------------------------------------------------------------
+    # Interface publica
+    # ------------------------------------------------------------------
+
+    def validar_sincronizacao(
+        self,
+        session_id: str,
+        agent_id: str,
+    ) -> ValidationReport:
+        """Compara contagens locais vs MT5 e gera ValidationReport.
+
         Args:
-            tolerance_percent: Tolerância percentual para comparação de valores.
-            logger: Logger opcional.
+            session_id: Identificador da sessao.
+            agent_id: Identificador do agente.
+
+        Returns:
+            ValidationReport com status e deltas.
         """
-        self.tolerance_percent = max(0.0, tolerance_percent)
-        self.logger = logger or logging.getLogger(__name__)
-        self.validation_reports: List[ValidationReport] = []
+        ts = datetime.now().isoformat()
 
-    def _extrair_valor_numerico(self, valor: Any) -> Optional[float]:
-        """Converte valor bruto em float quando possivel."""
-        if valor is None or isinstance(valor, bool):
-            return None
-
-        if isinstance(valor, (int, float)):
-            return float(valor)
+        sem_resultado_local = self._repo.listar_sem_resultado(
+            agent_id=agent_id, magic_number=None
+        )
+        contagem_local = len(sem_resultado_local)
 
         try:
-            return float(valor)
-        except (TypeError, ValueError):
-            self.logger.warning("Valor numerico invalido ignorado: %r", valor)
-            return None
+            contagem_mt5 = self._obter_contagem_mt5(session_id=session_id, agent_id=agent_id)
+        except Exception as exc:
+            self._log.warning(
+                "validar_sincronizacao: erro ao consultar MT5: %s", exc
+            )
+            contagem_mt5 = -1
 
-    def _calcular_divergencia_percentual(self, valor_local: float, valor_mt5: float) -> float:
-        """Calcula divergência percentual entre dois valores."""
-        if valor_mt5 == 0:
-            return 0.0 if valor_local == 0 else 100.0
-        return abs(valor_local - valor_mt5) / abs(valor_mt5) * 100
+        delta = abs(contagem_local - contagem_mt5) if contagem_mt5 >= 0 else -1
 
-    async def validar_sincronizacao(
-        self,
-        order_id: str,
-        dados_local: Optional[Dict[str, Any]],
-        dados_mt5: Optional[Dict[str, Any]]
-    ) -> ValidationReport:
-        """
-        Valida a sincronização de uma ordem.
+        status = (
+            SyncStatus.SINCRONIZADO
+            if delta == 0
+            else SyncStatus.DIVERGENCIA_CRITICA
+        )
 
-        Estratégia:
-        1. Se ambos os dados existem: comparar valores
-        2. Se divergência < tolerância: SINCRONIZADO
-        3. Se divergência > tolerância: DIVERGENCIA_CRITICA
-        4. Se falta algum: AUDITORIA_NECESSARIA
-        """
-        status = SyncStatus.SINCRONIZADO
-        observations = []
+        self._log.info(
+            "validar_sincronizacao session=%s agent=%s status=%s delta=%s",
+            session_id,
+            agent_id,
+            status.value,
+            delta,
+        )
 
-        # Caso 1: Faltam dados em um dos lados
-        if not dados_local or not dados_mt5:
-            status = SyncStatus.AUDITORIA_NECESSARIA
-            observations.append("Dados faltando em um dos lados")
-        else:
-            # Caso 2: Ambos existem - comparar valores críticos
-            profit_local = self._extrair_valor_numerico(dados_local.get("profit"))
-            profit_mt5 = self._extrair_valor_numerico(dados_mt5.get("profit"))
-
-            if profit_local is not None and profit_mt5 is not None:
-                divergencia = self._calcular_divergencia_percentual(profit_local, profit_mt5)
-
-                if divergencia > self.tolerance_percent:
-                    status = SyncStatus.DIVERGENCIA_CRITICA
-                    observations.append(
-                        f"Divergência de profit: {divergencia:.2f}% "
-                        f"(local={profit_local}, mt5={profit_mt5})"
-                    )
-                else:
-                    status = SyncStatus.SINCRONIZADO
-                    observations.append(f"Profit sincronizado (divergência: {divergencia:.2f}%)")
-            else:
-                status = SyncStatus.AUDITORIA_NECESSARIA
-                observations.append("Profit ausente ou invalido em um dos lados")
-
-            # Validar status de execução
-            status_local = dados_local.get("status")
-            status_mt5 = dados_mt5.get("status")
-
-            if status_local != status_mt5:
-                if status == SyncStatus.SINCRONIZADO:
-                    status = SyncStatus.DESINCRONIZADO
-                observations.append(
-                    f"Status divergente: local={status_local}, mt5={status_mt5}"
-                )
-            elif status == SyncStatus.SINCRONIZADO and not observations:
-                observations.append("Status sincronizado")
-
-        report = ValidationReport(
-            order_id=order_id,
+        return ValidationReport(
+            session_id=session_id,
+            agent_id=agent_id,
             status=status,
-            local_data=dados_local,
-            mt5_data=dados_mt5,
-            timestamp=datetime.now(),
-            tolerance_percent=self.tolerance_percent,
-            observations="; ".join(observations) if observations else "Sem observações"
+            contagem_local=contagem_local,
+            contagem_mt5=max(contagem_mt5, 0),
+            delta=max(delta, 0),
+            timestamp=ts,
+            arquivo_relatorio="",
         )
 
-        self.validation_reports.append(report)
-        return report
+    # ------------------------------------------------------------------
+    # Metodo auxiliar
+    # ------------------------------------------------------------------
 
-    async def validar_lote(
-        self,
-        ordens: List[Tuple[str, Optional[Dict[str, Any]], Optional[Dict[str, Any]]]]
-    ) -> List[ValidationReport]:
-        """Valida um lote de ordens."""
-        reports = []
-        for order_id, dados_local, dados_mt5 in ordens:
-            report = await self.validar_sincronizacao(order_id, dados_local, dados_mt5)
-            reports.append(report)
-        return reports
+    def _obter_contagem_mt5(self, session_id: str, agent_id: str) -> int:
+        """Consulta MT5 e retorna numero de fechamentos sem resultado.
 
-    def obter_relatorio_auditoria(self) -> Dict[str, Any]:
-        """Gera relatório consolidado de sincronização."""
-        total_validacoes = len(self.validation_reports)
-        sincronizados = sum(
-            1 for r in self.validation_reports
-            if r.status == SyncStatus.SINCRONIZADO
-        )
-        divergencias_criticas = sum(
-            1 for r in self.validation_reports
-            if r.status == SyncStatus.DIVERGENCIA_CRITICA
-        )
-        auditoria_necessaria = sum(
-            1 for r in self.validation_reports
-            if r.status == SyncStatus.AUDITORIA_NECESSARIA
-        )
-
-        return {
-            "timestamp": datetime.now().isoformat(),
-            "total_validacoes": total_validacoes,
-            "sincronizados": sincronizados,
-            "desincronizados": total_validacoes - sincronizados,
-            "divergencias_criticas": divergencias_criticas,
-            "auditoria_necessaria": auditoria_necessaria,
-            "taxa_sincronizacao": (sincronizados / total_validacoes * 100) if total_validacoes > 0 else 0,
-            "detalhes": [asdict(r) for r in self.validation_reports]
-        }
-
-    def limpar_relatorios(self) -> None:
-        """Limpa os relatórios acumulados."""
-        self.validation_reports.clear()
+        Delega ao mt5_adapter; pode ser sobrescrito em testes.
+        """
+        return int(self._mt5.contar_fechamentos_sem_resultado(agent_id=agent_id))

@@ -13,7 +13,7 @@
 - [ADR-002: Por que 3 Gates de Risco Sequenciais?](#adr-002-por-que-3-gates-de-risco-sequenciais)
 - [ADR-011: Isolamento de Posicoes entre Agentes RL](#adr-011-isolamento-de-posicoes-entre-agentes-rl-rl-5000-vs-rl-direto)
 - [ADR-012: Magic Number (EA ID) por Agente](#adr-012-magic-number-ea-id-por-agente---isolamento-de-ordens-mt5)
-
+- [ADR-017: Premissa Intraday — lookback_days=7](#adr-017-premissa-intraday--lookback_days7-no-pipeline-de-reconciliacao)
 
 ## Canonical Docs Policy
 
@@ -2096,8 +2096,104 @@ class TestTerminalFallback:
 
 ### Next ADRs
 
-- **ADR-017**: Terminal fallback strategies for Phase 2 (AWS failover, load balancing)
+- **ADR-017**: Premissa Intraday lookback_days=7 (Pipeline Reconciliacao — ACEITO 02/04/2026)
 - **ADR-018**: Multi-environment config (dev, staging, prod terminals)
+
+---
+
+## ADR-017: Premissa Intraday — lookback_days=7 no Pipeline de Reconciliacao
+
+**Status**: ✅ ACCEPTED
+**Data**: 02/04/2026
+**Prioridade**: P1 (Confiabilidade operacional)
+**Contexto originado em**: ROADMAP-MICRO-03
+
+### Contexto
+
+O `TradeOutcomeReconciler` usa um parametro
+`lookback_days=7` ao detectar ordens com
+`resultado IS NULL` via `UnknownResultDetector`.
+Qualquer ordem pendente por mais de 7 dias e
+marcada automaticamente como `ERRO` e nao passa
+por tentativa de reconciliacao via MT5.
+
+Este valor foi escolhido como compromisso:
+
+- **Muito curto (1-2 dias)**: Poderia marcar como ERRO
+  ordens ainda em janela de liquidacao.
+- **Muito longo (30+ dias)**: Processaria historico
+  desnecessario; degrada performance da consulta SQLite.
+- **7 dias**: Margem confortavel para qualquer
+  irregularidade operacional intraday sem carregar
+  historico excessivo.
+
+### Premissa Operacional
+
+**O sistema WIN$N e estritamente intraday.**
+
+- Posicoes do Mini-Indice (WIN$N) sao abertas e
+  fechadas dentro do mesmo pregao.
+- Nenhum agente (RL 5000, RL Direto, Micro Tendencia,
+  Diarios) mantem posicoes abertas de um dia para o
+  outro por design.
+- Circuit breakers e protetor de lucros garantem
+  fechamento antes do encerramento do pregao.
+
+Portanto, qualquer `resultado IS NULL` com mais de
+7 dias e uma anomalia de infra (crash do agente,
+falha de escrita no JSON), nao uma posicao legalmente
+aberta.
+
+### Decisão
+
+**Aceitar `lookback_days=7` como valor fora do codigo
+(parametro do construtor), documentado aqui como
+premissa arquitetural.**
+
+O valor **nao deve ser hardcoded**: o construtor do
+`TradeOutcomeReconciler` aceita `lookback_days: int`
+como parametro injetavel. Isso permite ajuste sem
+alterar codigo se o perfil intraday mudar.
+
+### Consequencias
+
+**✅ Pros:**
+
+- Cohesao com perfil intraday: 7 dias e generoso para
+  o perfil WIN$N (sempre fecha no dia).
+- Performance: consulta SQLite limitada a janela
+  recente.
+- Seguranca: anomalias antigas sao sinalizadas como
+  ERRO, nao ignoradas.
+
+**❌ Contras / Riscos:**
+
+- Se o perfil de operacao for expandido para swing
+  trade (overnight), `lookback_days=7` precisara ser
+  revisado.
+- Nao e configuravel via `.env` ainda — requer codigo
+  para alterar.
+
+### Recomendacao Futura
+
+Se o sistema evoluir para posicoes overnight, tornar
+`lookback_days` configuravel via `config/settings.py`:
+
+```python
+# config/settings.py
+RECONCILER_LOOKBACK_DAYS: int = 7
+```
+
+### Referencias
+
+- [src/application/reconciliadores/](../src/application/reconciliadores/)
+  — `TradeOutcomeReconciler`, `UnknownResultDetector`
+- [docs/REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md#classificacao-de-resultado-pos-sessao-roadmap-micro-03)
+  — Regra WIN/LOSS/BREAKEVEN
+- [docs/MODELAGEM_DE_DADOS.md](MODELAGEM_DE_DADOS.md#entidade-historicofechamento)
+  — `HistoricoFechamento.resultado`
+- [docs/BACKLOG.md](BACKLOG.md) — ROADMAP-MICRO-03 (completo) +
+  DIVIDA-01 (pendente)
 
 ---
 
@@ -2121,11 +2217,12 @@ class TestTerminalFallback:
 | **ADR-014** | AC5.8 Position Monitor | BACKLOG.md § AC5.8 | P0 |
 | **ADR-015** | AC5.8-6.9 Integration | ARQUITETURA_ALVO.md § P1-CORE | P0 |
 | **ADR-016** | Terminal Fallback Formal | REGRAS_DE_NEGOCIO.md § Terminal Fallback | P1 |
+| **ADR-017** | lookback_days=7 Premissa Intraday | REGRAS_DE_NEGOCIO.md § Encerramento | P1 |
 
 ---
 
-**Last Updated:** 18/03/2026 BRT
-**Total ADRs:** 16
+**Last Updated:** 02/04/2026 BRT
+**Total ADRs:** 17
 **Status:** ✅ Canonical ADRs aligned with current runtime; staging/UAT/Gate 2 pendentes
 - `src/application/ac6_9_baseline_comparator.py`
 - `scripts/agente_micro_tendencia_winfut.py`
@@ -2153,8 +2250,10 @@ class TestTerminalFallback:
 | ADR-013 | ✅ ACCEPTED | 12/03/2026 | Go-live 10/04/2026 |
 | ADR-014 | ✅ ACCEPTED | 12/03/2026 | AC5.8 monitoramento em tempo real |
 | ADR-015 | ✅ ACCEPTED | 17/03/2026 | Grupo 2 feedback/aprendizado |
+| ADR-016 | ✅ ACCEPTED | 23/03/2026 | Terminal fallback formal |
+| ADR-017 | ✅ ACCEPTED | 02/04/2026 | Premissa intraday reconciliacao |
 
-**ÚLTIMA ATUALIZAÇÃO:** 17/03/2026 BRT | **STATUS**: ✅ GRUPO 2 INTEGRADO
+**ÚLTIMA ATUALIZAÇÃO:** 02/04/2026 BRT | **STATUS**: ✅ ROADMAP-MICRO-03 RECONCILIACAO COMPLETA
 
 ```
 

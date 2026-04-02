@@ -1,173 +1,249 @@
 """
-Testes para TradeOutcomeReconciler.
+Testes para TradeOutcomeReconciler (ROADMAP-MICRO-03).
 
-Cobertura de cenários:
-1. Ambos existem com valores iguais ✓
-2. Ambos existem com valores divergentes ✓
-3. Falta no local (importar do MT5) ✓
-4. Falta no MT5 (auditoria necessária) ✓
-5. Não existe em lugar nenhum ✓
-6. Reconciliação em lote ✓
-7. Histórico e limpeza ✓
+Grupos cobertos:
+    Grupo 5a: _classificar_resultado (4 testes)
+    Grupo 5b: reconciliar_ordem - local (3 testes)
+    Grupo 5c: reconciliar_ordem - MT5 fallback (3 testes)
+    Grupo 5d: reconciliar_ordem - idempotencia e isolamento (3 testes)
+    Grupo 5e: gerar_relatorio_sessao (2 testes)
 """
 
 import pytest
-from datetime import datetime
+from pathlib import Path
+from unittest.mock import MagicMock
 from src.application.reconciliadores.trade_outcome_reconciler import (
     TradeOutcomeReconciler,
-    ReconciliationResult
+    ReconcileStatus,
+    ReconciliationResult,
+)
+from src.infrastructure.repositories.fechamento_repository import (
+    IFechamentoRepository,
 )
 
-@pytest.mark.asyncio
-async def test_reconciliar_ordem_ambos_valores_iguais():
-    reconciler = TradeOutcomeReconciler()
-    resultado_local = {"profit": 50.0, "price": 120500}
-    resultado_mt5 = {"profit": 50.0, "price": 120500}
 
-    resultado = await reconciler.reconciliar_ordem("101", resultado_local, resultado_mt5)
+def _make_reconciler(
+    mock_repo: MagicMock | None = None,
+    mock_mt5: MagicMock | None = None,
+) -> TradeOutcomeReconciler:
+    if mock_repo is None:
+        repo = MagicMock(spec=IFechamentoRepository)
+        repo.obter_resultado_local.return_value = None
+        repo.listar_sem_resultado.return_value = []
+        repo.atualizar_resultado_fechamento.return_value = True
+    else:
+        repo = mock_repo
+    mt5 = mock_mt5 if mock_mt5 is not None else MagicMock()
+    return TradeOutcomeReconciler(fechamento_repo=repo, mt5_adapter=mt5)
 
-    assert resultado.reconciled is True
-    assert resultado.order_id == "101"
-    assert "consistent" in resultado.message.lower()
 
-@pytest.mark.asyncio
-async def test_reconciliar_ordem_ambos_valores_divergentes():
-    reconciler = TradeOutcomeReconciler()
-    resultado_local = {"profit": 50.0}
-    resultado_mt5 = {"profit": 49.5}
+# ==================================================================
+# Grupo 5a: _classificar_resultado
+# ==================================================================
 
-    resultado = await reconciler.reconciliar_ordem("102", resultado_local, resultado_mt5)
 
-    assert resultado.reconciled is True  # MT5 é autoridade
-    assert resultado.mt5_result == 49.5
+def test_classificar_resultado_win():
+    rec = _make_reconciler()
+    assert rec._classificar_resultado(0.10) == "WIN"
 
-@pytest.mark.asyncio
-async def test_reconciliar_ordem_falta_no_local():
-    reconciler = TradeOutcomeReconciler()
-    resultado_local = None
-    resultado_mt5 = {"profit": 75.0}
 
-    resultado = await reconciler.reconciliar_ordem("103", resultado_local, resultado_mt5)
+def test_classificar_resultado_loss():
+    rec = _make_reconciler()
+    assert rec._classificar_resultado(-0.10) == "LOSS"
 
-    assert resultado.reconciled is True
-    assert resultado.local_result == 75.0  # Importado do MT5
-    assert resultado.mt5_result == 75.0
-    assert "importado" in resultado.message.lower()
 
-@pytest.mark.asyncio
-async def test_reconciliar_ordem_converte_profit_em_string():
-    reconciler = TradeOutcomeReconciler()
-    resultado_local = {"profit": "50.25"}
-    resultado_mt5 = {"profit": 50.25}
+def test_classificar_resultado_breakeven_zero():
+    rec = _make_reconciler()
+    assert rec._classificar_resultado(0.0) == "BREAKEVEN"
 
-    resultado = await reconciler.reconciliar_ordem("103a", resultado_local, resultado_mt5)
 
-    assert resultado.reconciled is True
-    assert resultado.local_result == 50.25
-    assert resultado.mt5_result == 50.25
-    assert "consistentes" in resultado.message.lower()
+def test_classificar_resultado_none_retorna_breakeven():
+    rec = _make_reconciler()
+    assert rec._classificar_resultado(None) == "BREAKEVEN"
 
-@pytest.mark.asyncio
-async def test_reconciliar_ordem_ignora_profit_invalido():
-    reconciler = TradeOutcomeReconciler()
-    resultado_local = {"profit": "abc"}
-    resultado_mt5 = {"profit": 10.0}
 
-    resultado = await reconciler.reconciliar_ordem("103b", resultado_local, resultado_mt5)
+# ==================================================================
+# Grupo 5b: reconciliar_ordem - caminho local
+# ==================================================================
 
-    assert resultado.reconciled is True
-    assert resultado.local_result == 10.0
-    assert resultado.mt5_result == 10.0
-    assert "importado" in resultado.message.lower()
 
-@pytest.mark.asyncio
-async def test_reconciliar_ordem_falta_no_mt5():
-    reconciler = TradeOutcomeReconciler()
-    resultado_local = {"profit": 100.0}
-    resultado_mt5 = None
-
-    resultado = await reconciler.reconciliar_ordem("104", resultado_local, resultado_mt5)
-
-    assert resultado.reconciled is False
-    assert resultado.local_result == 100.0
-    assert resultado.mt5_result is None
-    assert "auditoria" in resultado.message.lower()
-
-@pytest.mark.asyncio
-async def test_reconciliar_ordem_nao_existe():
-    reconciler = TradeOutcomeReconciler()
-
-    resultado = await reconciler.reconciliar_ordem("105", None, None)
-
-    assert resultado.reconciled is False
-    assert resultado.local_result is None
-    assert resultado.mt5_result is None
-
-@pytest.mark.asyncio
-async def test_reconciliar_lote():
-    reconciler = TradeOutcomeReconciler()
-    ordens = [
-        ("201", {"profit": 50.0}, {"profit": 50.0}),
-        ("202", None, {"profit": 75.0}),
-        ("203", {"profit": 100.0}, None),
+def test_reconciliar_ordem_via_dado_local():
+    repo = MagicMock(spec=IFechamentoRepository)
+    repo.obter_resultado_local.return_value = None
+    repo.listar_sem_resultado.return_value = [
+        {"ticket": 1001, "pnl_pct": 0.08, "pnl_reais": 120.0}
     ]
+    repo.atualizar_resultado_fechamento.return_value = True
 
-    resultados = await reconciler.reconciliar_lote(ordens)
+    rec = _make_reconciler(mock_repo=repo)
+    result = rec.reconciliar_ordem(ticket=1001, agent_id="rl_5000")
 
-    assert len(resultados) == 3
-    assert resultados[0].reconciled is True
-    assert resultados[1].reconciled is True
-    assert resultados[2].reconciled is False
+    assert result.status == ReconcileStatus.RECONCILIADO_LOCAL
+    assert result.resultado == "WIN"
+    assert result.reconciled is True
+    repo.atualizar_resultado_fechamento.assert_called_once_with(
+        ticket=1001, resultado="WIN", pnl=120.0
+    )
 
-def test_obter_historico():
-    reconciler = TradeOutcomeReconciler()
 
-    # Simular reconciliação (usando método auxiliar)
-    reconciler.reconciliation_history = [
-        ReconciliationResult(
-            order_id="301",
-            local_result=50.0,
-            mt5_result=50.0,
-            reconciled=True,
-            timestamp=datetime.now(),
-            message="Reconciliado"
-        )
+def test_reconciliar_ordem_local_pnl_pct_negativo():
+    repo = MagicMock(spec=IFechamentoRepository)
+    repo.obter_resultado_local.return_value = None
+    repo.listar_sem_resultado.return_value = [
+        {"ticket": 1002, "pnl_pct": -0.07, "pnl_reais": -80.0}
     ]
+    repo.atualizar_resultado_fechamento.return_value = True
 
-    historico = reconciler.obter_historico()
+    rec = _make_reconciler(mock_repo=repo)
+    result = rec.reconciliar_ordem(ticket=1002, agent_id="rl_5000")
 
-    assert len(historico) == 1
-    assert historico[0]["order_id"] == "301"
-    assert historico[0]["reconciled"] is True
+    assert result.status == ReconcileStatus.RECONCILIADO_LOCAL
+    assert result.resultado == "LOSS"
 
-def test_limpar_historico():
-    reconciler = TradeOutcomeReconciler()
 
-    reconciler.reconciliation_history = [
-        ReconciliationResult(
-            order_id="401",
-            local_result=50.0,
-            mt5_result=50.0,
-            reconciled=True,
-            timestamp=datetime.now(),
-            message="Teste"
-        )
+def test_reconciliar_ordem_local_pnl_pct_inexistente_cai_para_mt5():
+    repo = MagicMock(spec=IFechamentoRepository)
+    repo.obter_resultado_local.return_value = None
+    repo.listar_sem_resultado.return_value = [
+        {"ticket": 1003}  # sem pnl_pct
     ]
+    repo.atualizar_resultado_fechamento.return_value = True
+    mt5 = MagicMock()
+    mt5.obter_pnl_fechado.return_value = 60.0
 
-    assert len(reconciler.reconciliation_history) == 1
+    rec = _make_reconciler(mock_repo=repo, mock_mt5=mt5)
+    result = rec.reconciliar_ordem(ticket=1003, agent_id="rl_5000")
 
-    reconciler.limpar_historico()
+    assert result.status == ReconcileStatus.RECONCILIADO_MT5
 
-    assert len(reconciler.reconciliation_history) == 0
 
-@pytest.mark.asyncio
-async def test_reconciliar_lote_preserva_ordem_dos_resultados():
-    reconciler = TradeOutcomeReconciler()
-    ordens = [
-        ("301", {"profit": 10.0}, {"profit": 10.0}),
-        ("302", {"profit": 11.0}, None),
+# ==================================================================
+# Grupo 5c: reconciliar_ordem - fallback MT5
+# ==================================================================
+
+
+def test_reconciliar_ordem_mt5_retorna_profit_positivo():
+    repo = MagicMock(spec=IFechamentoRepository)
+    repo.obter_resultado_local.return_value = None
+    repo.listar_sem_resultado.return_value = []
+    repo.atualizar_resultado_fechamento.return_value = True
+    mt5 = MagicMock()
+    mt5.obter_pnl_fechado.return_value = 50.0
+
+    rec = _make_reconciler(mock_repo=repo, mock_mt5=mt5)
+    result = rec.reconciliar_ordem(ticket=2001, agent_id="rl_5000")
+
+    assert result.status == ReconcileStatus.RECONCILIADO_MT5
+    assert result.resultado == "WIN"
+    assert result.reconciled is True
+
+
+def test_reconciliar_ordem_mt5_retorna_none_gera_erro():
+    repo = MagicMock(spec=IFechamentoRepository)
+    repo.obter_resultado_local.return_value = None
+    repo.listar_sem_resultado.return_value = []
+    mt5 = MagicMock()
+    mt5.obter_pnl_fechado.return_value = None
+
+    rec = _make_reconciler(mock_repo=repo, mock_mt5=mt5)
+    result = rec.reconciliar_ordem(ticket=2002, agent_id="rl_5000")
+
+    assert result.status == ReconcileStatus.ERRO
+    assert result.reconciled is False
+    assert result.resultado is None
+
+
+def test_reconciliar_ordem_mt5_lanca_excecao_gera_erro():
+    repo = MagicMock(spec=IFechamentoRepository)
+    repo.obter_resultado_local.return_value = None
+    repo.listar_sem_resultado.return_value = []
+    mt5 = MagicMock()
+    mt5.obter_pnl_fechado.side_effect = RuntimeError("timeout")
+
+    rec = _make_reconciler(mock_repo=repo, mock_mt5=mt5)
+    result = rec.reconciliar_ordem(ticket=2003, agent_id="rl_5000")
+
+    assert result.status == ReconcileStatus.ERRO
+    assert result.reconciled is False
+
+
+# ==================================================================
+# Grupo 5d: idempotencia e isolamento
+# ==================================================================
+
+
+def test_reconciliar_ordem_idempotente_retorna_pendente():
+    repo = MagicMock(spec=IFechamentoRepository)
+    repo.obter_resultado_local.return_value = "WIN"
+
+    rec = _make_reconciler(mock_repo=repo)
+    result = rec.reconciliar_ordem(ticket=3001, agent_id="rl_5000")
+
+    assert result.status == ReconcileStatus.PENDENTE
+    assert result.resultado == "WIN"
+    assert result.reconciled is True
+    repo.atualizar_resultado_fechamento.assert_not_called()
+
+
+def test_reconciliar_ordem_agent_id_desconhecido_gera_erro():
+    repo = MagicMock(spec=IFechamentoRepository)
+    repo.obter_resultado_local.return_value = None
+    repo.listar_sem_resultado.return_value = []
+    mt5 = MagicMock()
+    mt5.obter_pnl_fechado.side_effect = ValueError("agent_id desconhecido")
+
+    rec = _make_reconciler(mock_repo=repo, mock_mt5=mt5)
+    result = rec.reconciliar_ordem(ticket=3002, agent_id="agente_invalido")
+
+    assert result.status == ReconcileStatus.ERRO
+
+
+def test_reconciliar_ordem_nao_chama_mt5_quando_pnl_pct_disponivel():
+    repo = MagicMock(spec=IFechamentoRepository)
+    repo.obter_resultado_local.return_value = None
+    repo.listar_sem_resultado.return_value = [
+        {"ticket": 3003, "pnl_pct": 0.06, "pnl_reais": 50.0}
     ]
+    repo.atualizar_resultado_fechamento.return_value = True
+    mt5 = MagicMock()
 
-    resultados = await reconciler.reconciliar_lote(ordens)
+    rec = _make_reconciler(mock_repo=repo, mock_mt5=mt5)
+    rec.reconciliar_ordem(ticket=3003, agent_id="rl_5000")
 
-    assert [resultado.order_id for resultado in resultados] == ["301", "302"]
+    mt5.obter_pnl_fechado.assert_not_called()
+
+
+# ==================================================================
+# Grupo 5e: gerar_relatorio_sessao
+# ==================================================================
+
+
+def test_gerar_relatorio_sessao_cria_arquivo(tmp_path: Path):
+    repo = MagicMock(spec=IFechamentoRepository)
+    repo.obter_resultado_local.return_value = None
+    repo.listar_sem_resultado.return_value = []
+    mt5 = MagicMock()
+    mt5.obter_pnl_fechado.return_value = 40.0
+    repo.atualizar_resultado_fechamento.return_value = True
+
+    rec = _make_reconciler(mock_repo=repo, mock_mt5=mt5)
+    rec.reconciliar_ordem(ticket=9001, agent_id="rl_5000")
+
+    caminho = rec.gerar_relatorio_sessao("sessao-abc", tmp_path)
+
+    assert caminho.exists()
+    import json
+    dados = json.loads(caminho.read_text())
+    assert dados["session_id"] == "sessao-abc"
+    assert dados["n_total"] == 1
+    assert "pct_desconhecido_sessao" in dados
+
+
+def test_gerar_relatorio_sessao_sem_historico(tmp_path: Path):
+    rec = _make_reconciler()
+    caminho = rec.gerar_relatorio_sessao("sessao-vazia", tmp_path)
+
+    import json
+    dados = json.loads(caminho.read_text())
+    assert dados["n_total"] == 0
+    assert dados["pct_desconhecido_sessao"] == 0.0

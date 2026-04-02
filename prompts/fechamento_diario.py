@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 
 try:
-    import yaml  # type: ignore[import]
+    import yaml
 
     _TEM_YAML = True
 except ImportError:
@@ -359,7 +359,7 @@ def _extrair_numero(valor: Any) -> float | None:
 
 def _obter_caminho_data_evento(dados: dict[str, Any]) -> str:
     """Tenta identificar a data de referência do snapshot."""
-    candidatos = (
+    candidatos: tuple[Any | None, ...] = (
         dados.get("timestamp"),
         dados.get("close_time"),
         dados.get("open_time"),

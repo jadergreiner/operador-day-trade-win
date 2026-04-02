@@ -2,144 +2,249 @@
 ROADMAP-MICRO-03: Reconciliador de Resultados de Trade.
 
 Responsabilidades:
-- Reconciliar resultados entre banco local (SQLite) e MT5.
-- Corrigir inconsistências e atualizar registros lacunosos.
-- Auditoria de reconciliações realizadas.
+- Classificar resultado (WIN/LOSS/BREAKEVEN) a partir de pnl_pct.
+- Reconciliar resultado via dado local ou consulta MT5 como fallback.
+- Persistir resultado preenchido via IFechamentoRepository.
+- Gerar relatorio JSON de sessao.
 
 Pipeline:
-    UnknownResultDetector identifica lacunas
-    -> TradeOutcomeReconciler busca no MT5 e atualiza BD local
-    -> MT5SyncValidator valida consistência final
+    UnknownResultDetector.detectar_lacunas() identifica tickets sem resultado
+    -> TradeOutcomeReconciler.reconciliar_ordem() preenche resultado
+    -> MT5SyncValidator.validar_sincronizacao() confirma consistencia
 """
 
+import json
 import logging
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from src.application.p1_learning_closure import EpisodeClosureEngine
+from src.infrastructure.repositories.fechamento_repository import (
+    IFechamentoRepository,
+)
+
+_BREAKEVEN_THRESHOLD = EpisodeClosureEngine.BREAKEVEN_THRESHOLD_PCT
+
+
+class ReconcileStatus(Enum):
+    """Status de uma reconciliacao individual."""
+
+    RECONCILIADO_LOCAL = "RECONCILIADO_LOCAL"
+    RECONCILIADO_MT5 = "RECONCILIADO_MT5"
+    ERRO = "ERRO"
+    PENDENTE = "PENDENTE"
+
 
 @dataclass(frozen=True)
 class ReconciliationResult:
-    """Resultado de uma reconciliação de trade."""
-    order_id: str
-    local_result: Optional[float]
-    mt5_result: Optional[float]
+    """Resultado de uma reconciliacao de trade."""
+
+    ticket: int
+    agent_id: str
+    resultado: Optional[str]
+    status: ReconcileStatus
+    fonte: str
+    timestamp: str
+    mensagem: str
     reconciled: bool
-    timestamp: datetime
-    message: str
+
 
 class TradeOutcomeReconciler:
     """
-    Reconciliador de resultados de trade entre BD local e MT5.
+    ROADMAP-MICRO-03: Reconciliador de resultados de trade.
 
-    Utiliza Chain of Responsibility para resolver conflitos:
-    1. Se existe em ambos: compara valores
-    2. Se falta no local: copia do MT5
-    3. Se falta no MT5: marca para investigação manual
+    Fluxo de reconciliar_ordem():
+        1. Verificar idempotencia (resultado ja preenchido -> PENDENTE).
+        2. Se local pnl_pct disponivel: classificar sem chamar MT5.
+        3. Caso contrario: consultar obter_pnl_fechado() do mt5_adapter.
+        4. Se MT5 retorna None: status ERRO.
+        5. Persistir via fechamento_repo.atualizar_resultado_fechamento().
     """
 
-    def __init__(self, logger: Optional[logging.Logger] = None) -> None:
-        self.logger = logger or logging.getLogger(__name__)
-        self.reconciliation_history: List[ReconciliationResult] = []
-
-    def _extrair_profit(self, resultado: Optional[Dict[str, Any]]) -> Optional[float]:
-        """Extrai profit como float quando o valor e valido."""
-        if not resultado:
-            return None
-
-        profit = resultado.get("profit")
-        if profit is None:
-            return None
-
-        if isinstance(profit, bool):
-            return None
-
-        if isinstance(profit, (int, float)):
-            return float(profit)
-
-        try:
-            return float(profit)
-        except (TypeError, ValueError):
-            self.logger.warning("Profit invalido ignorado: %r", profit)
-            return None
-
-    async def reconciliar_ordem(
+    def __init__(
         self,
-        order_id: str,
-        resultado_local: Optional[Dict[str, Any]],
-        resultado_mt5: Optional[Dict[str, Any]]
+        fechamento_repo: IFechamentoRepository,
+        mt5_adapter: Any,
+        logger: Optional[logging.Logger] = None,
+    ) -> None:
+        self._repo = fechamento_repo
+        self._mt5 = mt5_adapter
+        self._log = logger or logging.getLogger(__name__)
+        self._historico: List[ReconciliationResult] = []
+
+    # ------------------------------------------------------------------
+    # Classificacao de resultado
+    # ------------------------------------------------------------------
+
+    def _classificar_resultado(self, pnl_pct: Optional[float]) -> str:
+        """Classifica resultado com base em pnl_pct.
+
+        Regras:
+          - None ou abs(pnl_pct) <= BREAKEVEN_THRESHOLD -> BREAKEVEN
+          - pnl_pct > 0 -> WIN
+          - pnl_pct < 0 -> LOSS
+        """
+        if pnl_pct is None:
+            return "BREAKEVEN"
+        if abs(pnl_pct) <= _BREAKEVEN_THRESHOLD:
+            return "BREAKEVEN"
+        return "WIN" if pnl_pct > 0 else "LOSS"
+
+    # ------------------------------------------------------------------
+    # Reconciliacao de ordem individual
+    # ------------------------------------------------------------------
+
+    def reconciliar_ordem(
+        self,
+        ticket: int,
+        agent_id: str,
     ) -> ReconciliationResult:
-        """
-        Reconcilia uma única ordem entre local e MT5.
+        """Reconcilia resultado de um ticket para o agente informado."""
+        ts = datetime.now().isoformat()
 
-        Estratégia:
-        - Se ambos existem: valida compatibilidade
-        - Se só existe em MT5: importa para local
-        - Se só existe localmente: marca para auditoria
-        """
-        local_profit = self._extrair_profit(resultado_local)
-        mt5_profit = self._extrair_profit(resultado_mt5)
-
-        reconciled = False
-        message = ""
-
-        if local_profit is not None and mt5_profit is not None:
-            # Ambos existem: validar consistência
-            if abs(local_profit - mt5_profit) < 0.01:
-                reconciled = True
-                message = "Resultados consistentes."
-            else:
-                # Divergência detectada
-                message = f"Divergência: local={local_profit}, mt5={mt5_profit}"
-                # Usar resultado MT5 como autoridade
-                reconciled = True
-        elif mt5_profit is not None and local_profit is None:
-            # Falta no local: importar do MT5
-            reconciled = True
-            message = f"Importado do MT5: {mt5_profit}"
-            local_profit = mt5_profit
-        elif local_profit is not None and mt5_profit is None:
-            # Falta no MT5: investigação necessária
-            reconciled = False
-            message = "Ordem não encontrada em MT5; auditoria necessária."
-        else:
-            # Não existe em lugar nenhum
-            reconciled = False
-            message = "Ordem não encontrada localmente nem em MT5."
-
-        if reconciled and mt5_profit is not None and local_profit is None:
-            self.logger.info(
-                "Ordem %s reconciliada a partir do MT5 com profit %.2f",
-                order_id,
-                mt5_profit,
+        # Idempotencia: ja reconciliado?
+        resultado_existente = self._repo.obter_resultado_local(ticket)
+        if resultado_existente is not None:
+            return ReconciliationResult(
+                ticket=ticket,
+                agent_id=agent_id,
+                resultado=resultado_existente,
+                status=ReconcileStatus.PENDENTE,
+                fonte="local_cache",
+                timestamp=ts,
+                mensagem="Resultado ja preenchido; idempotencia aplicada.",
+                reconciled=True,
             )
 
-        result = ReconciliationResult(
-            order_id=order_id,
-            local_result=local_profit,
-            mt5_result=mt5_profit,
-            reconciled=reconciled,
-            timestamp=datetime.now(),
-            message=message
+        # Tentativa 1: dado local (sem chamar MT5)
+        sem_resultado = self._repo.listar_sem_resultado(
+            agent_id=agent_id, magic_number=None
         )
+        ordem_local: Optional[Dict[str, Any]] = None
+        for item in sem_resultado:
+            if int(item.get("ticket", -1)) == ticket:
+                ordem_local = item
+                break
 
-        self.reconciliation_history.append(result)
-        return result
+        if ordem_local is not None and ordem_local.get("pnl_pct") is not None:
+            resultado = self._classificar_resultado(float(ordem_local["pnl_pct"]))
+            sucesso = self._repo.atualizar_resultado_fechamento(
+                ticket=ticket,
+                resultado=resultado,
+                pnl=float(ordem_local.get("pnl_reais", 0.0)),
+            )
+            if sucesso:
+                self._log.info("reconciliar_ordem ticket=%s -> %s (LOCAL)", ticket, resultado)
+                r = ReconciliationResult(
+                    ticket=ticket,
+                    agent_id=agent_id,
+                    resultado=resultado,
+                    status=ReconcileStatus.RECONCILIADO_LOCAL,
+                    fonte="local",
+                    timestamp=ts,
+                    mensagem="Classificado por dado local.",
+                    reconciled=True,
+                )
+                self._historico.append(r)
+                return r
 
-    async def reconciliar_lote(
+        # Tentativa 2: consultar MT5
+        try:
+            magic_number = _magic_por_agent_id(agent_id)
+            pnl_mt5 = self._mt5.obter_pnl_fechado(ticket=ticket, magic_number=magic_number)
+        except Exception as exc:
+            self._log.warning("reconciliar_ordem ticket=%s: erro MT5: %s", ticket, exc)
+            pnl_mt5 = None
+
+        if pnl_mt5 is None:
+            r = ReconciliationResult(
+                ticket=ticket,
+                agent_id=agent_id,
+                resultado=None,
+                status=ReconcileStatus.ERRO,
+                fonte="mt5",
+                timestamp=ts,
+                mensagem="MT5 nao retornou PnL para o ticket.",
+                reconciled=False,
+            )
+            self._historico.append(r)
+            return r
+
+        resultado = self._classificar_resultado(pnl_mt5)
+        self._repo.atualizar_resultado_fechamento(ticket=ticket, resultado=resultado, pnl=pnl_mt5)
+
+        self._log.info("reconciliar_ordem ticket=%s -> %s (MT5)", ticket, resultado)
+        r = ReconciliationResult(
+            ticket=ticket,
+            agent_id=agent_id,
+            resultado=resultado,
+            status=ReconcileStatus.RECONCILIADO_MT5,
+            fonte="mt5",
+            timestamp=ts,
+            mensagem="Classificado por dado MT5.",
+            reconciled=True,
+        )
+        self._historico.append(r)
+        return r
+
+    # ------------------------------------------------------------------
+    # Relatorio de sessao
+    # ------------------------------------------------------------------
+
+    def gerar_relatorio_sessao(
         self,
-        ordens: List[Tuple[str, Optional[Dict[str, Any]], Optional[Dict[str, Any]]]]
-    ) -> List[ReconciliationResult]:
-        """Reconcilia um lote de ordens."""
-        resultados: List[ReconciliationResult] = []
-        for order_id, local, mt5 in ordens:
-            resultado = await self.reconciliar_ordem(order_id, local, mt5)
-            resultados.append(resultado)
-        return resultados
+        session_id: str,
+        outputs_path: Path,
+    ) -> Path:
+        """Gera relatorio JSON de reconciliacao da sessao."""
+        outputs_path = Path(outputs_path)
+        outputs_path.mkdir(parents=True, exist_ok=True)
 
-    def obter_historico(self) -> List[Dict[str, Any]]:
-        """Retorna histórico acumulado de reconciliações."""
-        return [asdict(r) for r in self.reconciliation_history]
+        hoje = datetime.now().strftime("%Y%m%d")
+        caminho = outputs_path / f"reconciliacao_{hoje}.json"
 
-    def limpar_historico(self) -> None:
-        """Limpa o histórico de reconciliações."""
-        self.reconciliation_history.clear()
+        n_total = len(self._historico)
+        n_local = sum(1 for r in self._historico if r.status == ReconcileStatus.RECONCILIADO_LOCAL)
+        n_mt5 = sum(1 for r in self._historico if r.status == ReconcileStatus.RECONCILIADO_MT5)
+        n_erro = sum(1 for r in self._historico if r.status == ReconcileStatus.ERRO)
+        pct_desconhecido = (n_erro / n_total * 100.0) if n_total > 0 else 0.0
+
+        agent_id = self._historico[0].agent_id if self._historico else "desconhecido"
+
+        relatorio: Dict[str, Any] = {
+            "session_id": session_id,
+            "agent_id": agent_id,
+            "n_total": n_total,
+            "n_reconciliados_local": n_local,
+            "n_reconciliados_mt5": n_mt5,
+            "n_erro": n_erro,
+            "pct_desconhecido_sessao": round(pct_desconhecido, 2),
+            "timestamp_geracao": datetime.now().isoformat(),
+        }
+
+        caminho.write_text(json.dumps(relatorio, indent=2, ensure_ascii=False))
+        self._log.info("Relatorio de sessao gravado em %s", caminho)
+        return caminho
+
+
+# ------------------------------------------------------------------
+# Utilitario de mapeamento agent_id -> magic_number
+# ------------------------------------------------------------------
+
+_MAGIC_POR_AGENT: Dict[str, int] = {
+    "rl_5000": 234500,
+    "rl_direto": 234600,
+    "micro_tendencia": 234700,
+    "diarios": 234800,
+}
+
+
+def _magic_por_agent_id(agent_id: str) -> int:
+    """Retorna magic_number para um agent_id conhecido."""
+    magic = _MAGIC_POR_AGENT.get(agent_id)
+    if magic is None:
+        raise ValueError(f"agent_id desconhecido: {agent_id!r}")
+    return magic

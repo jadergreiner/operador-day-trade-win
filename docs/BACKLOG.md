@@ -2310,7 +2310,20 @@ git commit -m "feat: Implementar ROADMAP-MICRO-02 ADR-016 Terminal fallback com 
 
 #### 9. ROADMAP-MICRO-03 Resultado DESCONHECIDO — eliminar do vocabulario operacional
 
-**Status:** PENDENTE — depende do BUG-DIARIOS-04
+**Status:** ✅ DONE (02/04/2026)
+
+**Priorizacao formal do PO (02/04/2026):**
+
+- **Decisao:** `APROVAR_E_PRIORIZAR`
+- **Categoria:** `RISK`
+- **Prioridade:** `ALTA`
+- **Valor esperado:** `ALTO`
+- **Urgencia:** `ALTA`
+- **Confianca da evidencia:** `TIER 1`
+- **Tamanho estimado:** `M`
+- **Justificativa:** `BUG-DIARIOS-04` ja foi resolvido e este item reduz
+  ambiguidade no fechamento dos trades, melhora a confiabilidade do PnL
+  e fortalece o ciclo AC5.9/AC6 para aprendizado com dados reais.
 
 **Origem:** Reuniao Product Board 17/03/2026.
 
@@ -2322,11 +2335,58 @@ o bug tecnico, evoluir o sistema para que resultado nunca seja
 **Entregar:**
 
 - Mecanismo de reconciliacao: se `resultado == DESCONHECIDO` no fechamento,
-  consultar o MT5 diretamente para determinar PnL real;
-- Alerta ao operador quando reconciliacao for necessaria;
+  consultar o MT5 diretamente para determinar PnL real; ✅
+- Alerta ao operador quando reconciliacao for necessaria; ✅
 - Metrica de monitoramento: percentual de trades com resultado
-  `DESCONHECIDO` por sessao (alvo: 0%);
-- Relatorio de reconciliacao persistido em `outputs/`.
+  `DESCONHECIDO` por sessao (alvo: 0%); ✅
+- Relatorio de reconciliacao persistido em `outputs/`. ✅
+
+**Implementacao Concluida (02/04/2026):**
+
+- Pipeline de 3 etapas:
+  `UnknownResultDetector` → `TradeOutcomeReconciler` → `MT5SyncValidator`
+- Posicao na arquitetura: `src/application/reconciliadores/`
+  — camada de aplicacao, sem vazamento para infraestrutura
+- 44 novos testes + 77 testes de regressao (motor, p1_closure, ac5_9)
+  — todos PASS
+- Relatorio de sessao: `outputs/reconciliacao_{YYYYMMDD}.json` com campo
+  `pct_desconhecido_sessao` (metrica alvo: 0%)
+- `HistoricoFechamento.resultado: Optional[str]` — retrocompativel;
+  valores possiveis: `WIN | LOSS | BREAKEVEN | null`
+- Tech Lead: APROVADO COM RESSALVAS (DIVIDA-01 registrada — ver item abaixo)
+
+---
+
+#### 10. DIVIDA-01 Consolidar magic numbers em `config/settings.py`
+
+**Status:** PENDENTE — TECH DEBT CONTROLADA (02/04/2026)
+
+**Origem:** Revisao tecnica ROADMAP-MICRO-03 (02/04/2026).
+
+**Contexto:** O dicionario `_MAGIC_POR_AGENT` em
+`src/application/reconciliadores/trade_outcome_reconciler.py` e o
+terceiro ponto de definicao dos magic numbers no codebase:
+
+- Ponto 1: `src/infrastructure/adapters/mt5_adapter.py:24-27`
+- Ponto 2: constante `MAGIC_NUMBER` em cada script de agente
+- Ponto 3: `_MAGIC_POR_AGENT` em `trade_outcome_reconciler.py` (novo)
+
+**Risco:** adicao de novo agente exige atualizacao em 3+ locais, sem
+garantia de consistencia. Hoje nao causa bug, mas cria risco de
+dessincronizacao silenciosa.
+
+**Entregar:**
+
+- Dict canonico `AGENT_MAGIC_NUMBERS: dict[str, int]` em `config/settings.py`;
+- Substituicao dos 3 pontos hardcoded por import da constante canonica;
+- Testes que garantam que todos os pontos usam o mesmo valor;
+- Nenhuma regressao nos 44 testes de ROADMAP-MICRO-03.
+
+**Pronto quando:**
+
+- `grep -r "234500\|234600\|234700\|234800" src/ scripts/` retornar apenas
+  declaracao em `settings.py` e testes;
+- mypy --strict OK em todos os arquivos modificados.
 
 ---
 
@@ -3414,7 +3474,7 @@ posicao.
 
 #### 1. Redesenhar fechamento_diario para avaliar cada agente individualmente
 
-**Status:** PENDENTE
+**Status:** ✅ DONE (02/04/2026)
 
 **Origem:** Decisao operacional 17/03/2026 — o fechamento diario atual
 agrega resultado de todos os agentes em uma unica metrica, ocultando
@@ -3494,6 +3554,15 @@ consecutivos entra automaticamente em revisao de estrategia (novo item P1).
 - nenhum campo `agente_impactado` fica vazio em `melhorias`;
 - testes unitarios cobrem `ResultadoAgente.veredicto` e
   `SinteseFechamento.para_dict()` com multiplos agentes.
+
+**Evidencias (02/04/2026):**
+
+- `prompts/fechamento_diario.py`: `ResultadoAgente`, `SinteseFechamento`,
+  `agentes_em_alerta`, `_coletar_resultados_agente()` implementados
+- `tests/unit/test_fechamento_diario.py`: 55/55 PASSING, 87% cobertura
+- mypy --strict: zero erros
+- Criterios de aceite verificados: `resultado_por_agente`, `DEFICITARIO`
+  em `agentes_em_alerta`, `agente_impactado` nao-vazio, testes unitarios
 
 ---
 
@@ -3826,7 +3895,7 @@ Implementado em `scripts/agente_rl_direto_independente.py` com
 
 #### 2. Suprimir ERROR de protecao_lucros fora do horario operacional no RL 5000
 
-**Status:** PENDENTE
+**Status:** ✅ DONE (18/03/2026) — ver BUG-4 no SAR Board
 
 **Origem:** Fechamento diario 17/03/2026 — log
 `operar_agente_rl_antiovertrading.log` registrou ~380 linhas ERROR

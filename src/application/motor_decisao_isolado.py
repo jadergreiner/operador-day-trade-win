@@ -113,6 +113,7 @@ class HistoricoFechamento:
     duracao_minutos: float
     timestamp_abertura: str
     timestamp_fechamento: str
+    resultado: Optional[str] = None  # "WIN", "LOSS" ou "BREAKEVEN"
 
     def para_dict(self) -> Dict[str, Any]:
         """Converte para dicionário."""

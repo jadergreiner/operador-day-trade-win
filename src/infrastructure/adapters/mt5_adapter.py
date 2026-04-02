@@ -1038,6 +1038,65 @@ class MT5Adapter(IBrokerAdapter):
 
         return None
 
+    def obter_pnl_fechado(
+        self,
+        ticket: int,
+        magic_number: int,
+        lookback_days: int = 7,
+    ) -> Optional[float]:
+        """Obtém o profit de um deal fechado pelo ticket e magic_number.
+
+        Retorna o campo ``profit`` do deal cujo ``position_id`` bate com
+        ``ticket`` e cujo ``magic`` bate com ``magic_number``.
+        Retorna ``None`` quando nao encontrado ou em caso de excecao.
+
+        Args:
+            ticket: ID da posicao a localizar no historico de deals.
+            magic_number: Numero magico do agente — usado para filtrar
+                deals e garantir isolamento entre agentes.
+            lookback_days: Janela de busca retroativa em dias.
+        """
+        self._ensure_connected()
+
+        ticket_int = int(ticket)
+        try:
+            if not hasattr(self._mt5, "history_deals_get"):
+                return None
+
+            end_dt = datetime.utcnow()
+            start_dt = end_dt - timedelta(days=max(1, int(lookback_days)))
+            deals = self._mt5.history_deals_get(start_dt, end_dt)
+            if not deals:
+                return None
+
+            for deal in deals:
+                deal_position_id = int(
+                    getattr(deal, "position_id", 0)
+                    or getattr(deal, "position", 0)
+                    or 0
+                )
+                if deal_position_id != ticket_int:
+                    continue
+
+                deal_magic = int(getattr(deal, "magic", 0) or 0)
+                if deal_magic != int(magic_number):
+                    continue
+
+                profit = getattr(deal, "profit", None)
+                if profit is None:
+                    return None
+                return float(profit)
+
+        except Exception as e:
+            logger.debug(
+                "obter_pnl_fechado: excecao ao buscar ticket=%s magic=%s: %s",
+                ticket_int,
+                magic_number,
+                e,
+            )
+
+        return None
+
     def close_position_by_ticket(self, position_ticket: int) -> bool:
         """Fecha uma posição específica pelo ticket (seguro para conta hedge)."""
         self._ensure_connected()

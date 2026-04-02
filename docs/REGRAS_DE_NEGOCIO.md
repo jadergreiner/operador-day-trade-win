@@ -542,6 +542,29 @@ No encerramento, o runtime pode:
 
 Isso preserva rastreabilidade do inicio ao fim da operacao.
 
+### Classificacao de resultado pos-sessao (ROADMAP-MICRO-03)
+
+Ao encerrar uma posicao, o sistema classifica o resultado
+em tres categorias exclusivas, com base em `pnl_pct`:
+
+| Resultado | Condicao | Referencia |
+|-----------|----------|------------|
+| `WIN` | `pnl_pct > +0.05%` | PnL positivo acima da tolerancia |
+| `LOSS` | `pnl_pct < -0.05%` | PnL negativo abaixo da tolerancia |
+| `BREAKEVEN` | `|pnl_pct| <= 0.05%` | PnL dentro da faixa de tolerancia |
+
+Constante: `EpisodeClosureEngine.BREAKEVEN_THRESHOLD_PCT = 0.0005`
+(0.05% de variacao em relacao ao preco de entrada).
+
+Se o `MotorDecisaoIsolado` nao consegue classificar o resultado no
+momento do fechamento, o campo `resultado` fica `null`. O pipeline de
+reconciliacao pos-sessao (`UnknownResultDetector` → `TradeOutcomeReconciler`
+→ `MT5SyncValidator`) e responsavel por determinar o resultado real
+consultando o MT5 diretamente. O alvo operacional e **0% de resultados
+nao classificados** ao final de cada sessao.
+
+Veja tambem: `docs/ADRS.md` — ADR-017 (premissa `lookback_days=7`).
+
 ## Regras Operacionais que Devem Permanecer Visiveis
 
 Para leitura rapida de negocio, estas regras merecem destaque permanente:

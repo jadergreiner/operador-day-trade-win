@@ -116,6 +116,81 @@ class TestDataClasses:
         assert hist.pnl_reais == 200.0
         assert hist.motivo == MotivoFechamento.TP_ATINGIDO
 
+    def test_historico_fechamento_resultado_none_por_padrao(self):
+        """Resultado deve ser None por padrao (campo nao obrigatorio)."""
+        hist = HistoricoFechamento(
+            ticket=1001,
+            agent_id='agente_5000',
+            tipo=TipoPosicao.COMPRADA,
+            preco_entrada=120000.0,
+            preco_saida=120500.0,
+            volume=1.0,
+            pnl_reais=25.0,
+            pnl_pct=0.42,
+            motivo=MotivoFechamento.TP_ATINGIDO,
+            duracao_minutos=12.0,
+            timestamp_abertura='2026-04-02T09:00:00',
+            timestamp_fechamento='2026-04-02T09:12:00',
+        )
+        assert hist.resultado is None
+
+    def test_historico_fechamento_aceita_resultado_win(self):
+        """Resultado aceita literal WIN."""
+        hist = HistoricoFechamento(
+            ticket=1002,
+            agent_id='agente_5000',
+            tipo=TipoPosicao.COMPRADA,
+            preco_entrada=120000.0,
+            preco_saida=120600.0,
+            volume=1.0,
+            pnl_reais=60.0,
+            pnl_pct=0.50,
+            motivo=MotivoFechamento.TP_ATINGIDO,
+            duracao_minutos=10.0,
+            timestamp_abertura='2026-04-02T09:00:00',
+            timestamp_fechamento='2026-04-02T09:10:00',
+            resultado='WIN',
+        )
+        assert hist.resultado == 'WIN'
+
+    def test_historico_fechamento_aceita_resultado_loss(self):
+        """Resultado aceita literal LOSS."""
+        hist = HistoricoFechamento(
+            ticket=1003,
+            agent_id='agente_5000',
+            tipo=TipoPosicao.COMPRADA,
+            preco_entrada=120000.0,
+            preco_saida=119700.0,
+            volume=1.0,
+            pnl_reais=-30.0,
+            pnl_pct=-0.25,
+            motivo=MotivoFechamento.SL_ATINGIDO,
+            duracao_minutos=5.0,
+            timestamp_abertura='2026-04-02T09:00:00',
+            timestamp_fechamento='2026-04-02T09:05:00',
+            resultado='LOSS',
+        )
+        assert hist.resultado == 'LOSS'
+
+    def test_historico_fechamento_aceita_resultado_breakeven(self):
+        """Resultado aceita literal BREAKEVEN."""
+        hist = HistoricoFechamento(
+            ticket=1004,
+            agent_id='agente_5000',
+            tipo=TipoPosicao.COMPRADA,
+            preco_entrada=120000.0,
+            preco_saida=120040.0,
+            volume=1.0,
+            pnl_reais=4.0,
+            pnl_pct=0.03,
+            motivo=MotivoFechamento.MANUAL,
+            duracao_minutos=8.0,
+            timestamp_abertura='2026-04-02T09:00:00',
+            timestamp_fechamento='2026-04-02T09:08:00',
+            resultado='BREAKEVEN',
+        )
+        assert hist.resultado == 'BREAKEVEN'
+
 
 class TestMotorIsolamento:
     """Testes de isolamento entre agentes."""

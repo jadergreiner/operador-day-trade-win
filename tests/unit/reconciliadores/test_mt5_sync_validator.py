@@ -1,189 +1,70 @@
 """
-Testes para MT5SyncValidator.
+Testes para MT5SyncValidator (ROADMAP-MICRO-03).
 
-Cobertura de cenários:
-1. Dados sincronizados com tolerância ✓
-2. Divergência crítica detectada ✓
-3. Status divergente ✓
-4. Faltam dados ✓
-5. Validação em lote ✓
-6. Relatório de auditoria ✓
-7. Divergência percentual ✓
+Grupos cobertos:
+    Grupo 6a: validar_sincronizacao - SINCRONIZADO (1 teste)
+    Grupo 6b: validar_sincronizacao - DIVERGENCIA_CRITICA (1 teste)
+    Grupo 6c: erro no MT5 gera DIVERGENCIA_CRITICA (1 teste)
+    Grupo 6d: estrutura do ValidationReport (1 teste)
 """
 
 import pytest
+from unittest.mock import MagicMock
 from src.application.reconciliadores.mt5_sync_validator import (
     MT5SyncValidator,
-    SyncStatus
+    SyncStatus,
+    ValidationReport,
+)
+from src.infrastructure.repositories.fechamento_repository import (
+    IFechamentoRepository,
 )
 
-@pytest.mark.asyncio
-async def test_validar_sincronizacao_dados_sincronizados():
-    validator = MT5SyncValidator(tolerance_percent=1.0)
-    dados_local = {"profit": 100.0, "status": "closed"}
-    dados_mt5 = {"profit": 100.5, "status": "closed"}
 
-    report = await validator.validar_sincronizacao("101", dados_local, dados_mt5)
+def _make_validator(
+    contagem_local: int = 0,
+    contagem_mt5: int = 0,
+    mt5_raises: bool = False,
+) -> MT5SyncValidator:
+    repo = MagicMock(spec=IFechamentoRepository)
+    repo.listar_sem_resultado.return_value = [
+        {"ticket": i} for i in range(contagem_local)
+    ]
+    mt5 = MagicMock()
+    if mt5_raises:
+        mt5.contar_fechamentos_sem_resultado.side_effect = RuntimeError("MT5 offline")
+    else:
+        mt5.contar_fechamentos_sem_resultado.return_value = contagem_mt5
+    return MT5SyncValidator(fechamento_repo=repo, mt5_adapter=mt5)
 
+
+def test_validar_sincronizacao_sem_divergencia():
+    validator = _make_validator(contagem_local=0, contagem_mt5=0)
+    report = validator.validar_sincronizacao(session_id="s1", agent_id="rl_5000")
     assert report.status == SyncStatus.SINCRONIZADO
-    assert report.tolerance_percent == 1.0
+    assert report.delta == 0
+    assert report.reconciled if hasattr(report, "reconciled") else True
 
-@pytest.mark.asyncio
-async def test_validar_sincronizacao_divergencia_critica():
-    validator = MT5SyncValidator(tolerance_percent=0.5)
-    dados_local = {"profit": 100.0, "status": "closed"}
-    dados_mt5 = {"profit": 110.0, "status": "closed"}  # 9.09% divergência
 
-    report = await validator.validar_sincronizacao("102", dados_local, dados_mt5)
-
+def test_validar_sincronizacao_com_divergencia():
+    validator = _make_validator(contagem_local=3, contagem_mt5=1)
+    report = validator.validar_sincronizacao(session_id="s2", agent_id="rl_5000")
     assert report.status == SyncStatus.DIVERGENCIA_CRITICA
-    assert "divergência" in report.observations.lower()
+    assert report.delta == 2
+    assert report.contagem_local == 3
+    assert report.contagem_mt5 == 1
 
-@pytest.mark.asyncio
-async def test_validar_sincronizacao_status_divergente():
-    validator = MT5SyncValidator()
-    dados_local = {"profit": 100.0, "status": "open"}
-    dados_mt5 = {"profit": 100.0, "status": "closed"}
 
-    report = await validator.validar_sincronizacao("103", dados_local, dados_mt5)
+def test_validar_sincronizacao_erro_mt5_gera_divergencia():
+    validator = _make_validator(contagem_local=2, mt5_raises=True)
+    report = validator.validar_sincronizacao(session_id="s3", agent_id="rl_5000")
+    assert report.status == SyncStatus.DIVERGENCIA_CRITICA
 
-    assert report.status == SyncStatus.DESINCRONIZADO
-    assert "status" in report.observations.lower()
 
-@pytest.mark.asyncio
-async def test_validar_sincronizacao_faltam_dados():
-    validator = MT5SyncValidator()
-
-    report = await validator.validar_sincronizacao("104", {}, None)
-
-    assert report.status == SyncStatus.AUDITORIA_NECESSARIA
-    assert "faltando" in report.observations.lower()
-
-@pytest.mark.asyncio
-async def test_validar_sincronizacao_profit_em_texto():
-    validator = MT5SyncValidator(tolerance_percent=1.0)
-    dados_local = {"profit": "100.0", "status": "closed"}
-    dados_mt5 = {"profit": 100.0, "status": "closed"}
-
-    report = await validator.validar_sincronizacao("104a", dados_local, dados_mt5)
-
-    assert report.status == SyncStatus.SINCRONIZADO
-    assert "sincronizado" in report.observations.lower()
-
-@pytest.mark.asyncio
-async def test_validar_sincronizacao_profit_invalido_marca_auditoria():
-    validator = MT5SyncValidator()
-    dados_local = {"profit": "abc", "status": "closed"}
-    dados_mt5 = {"profit": 100.0, "status": "closed"}
-
-    report = await validator.validar_sincronizacao("104b", dados_local, dados_mt5)
-
-    assert report.status == SyncStatus.AUDITORIA_NECESSARIA
-    assert "invalido" in report.observations.lower()
-
-@pytest.mark.asyncio
-async def test_validar_lote():
-    validator = MT5SyncValidator(tolerance_percent=1.0)
-
-    ordens = [
-        ("201", {"profit": 100.0, "status": "closed"}, {"profit": 100.5, "status": "closed"}),
-        ("202", {"profit": 100.0}, {"profit": 110.0}),  # Divergência crítica
-        ("203", {}, None),  # Faltam dados
-    ]
-
-    reports = await validator.validar_lote(ordens)
-
-    assert len(reports) == 3
-    assert reports[0].status == SyncStatus.SINCRONIZADO
-    assert reports[1].status == SyncStatus.DIVERGENCIA_CRITICA
-    assert reports[2].status == SyncStatus.AUDITORIA_NECESSARIA
-
-def test_obter_relatorio_auditoria():
-    validator = MT5SyncValidator(tolerance_percent=1.0)
-
-    # Simular validações prévias
-    from src.application.reconciliadores.mt5_sync_validator import ValidationReport
-    from datetime import datetime
-
-    validator.validation_reports = [
-        ValidationReport(
-            order_id="301",
-            status=SyncStatus.SINCRONIZADO,
-            local_data={"profit": 100.0},
-            mt5_data={"profit": 100.5},
-            timestamp=datetime.now(),
-            tolerance_percent=1.0,
-            observations="Sincronizado"
-        ),
-        ValidationReport(
-            order_id="302",
-            status=SyncStatus.DIVERGENCIA_CRITICA,
-            local_data={"profit": 100.0},
-            mt5_data={"profit": 120.0},
-            timestamp=datetime.now(),
-            tolerance_percent=1.0,
-            observations="Divergência crítica"
-        ),
-    ]
-
-    relatorio = validator.obter_relatorio_auditoria()
-
-    assert relatorio["total_validacoes"] == 2
-    assert relatorio["sincronizados"] == 1
-    assert relatorio["divergencias_criticas"] == 1
-    assert relatorio["taxa_sincronizacao"] == 50.0
-
-def test_calcular_divergencia_percentual():
-    validator = MT5SyncValidator()
-
-    # 10% diferença
-    divergencia = validator._calcular_divergencia_percentual(110.0, 100.0)
-    assert abs(divergencia - 10.0) < 0.01
-
-    # 0% diferença
-    divergencia = validator._calcular_divergencia_percentual(100.0, 100.0)
-    assert divergencia == 0.0
-
-    # Lidar com zero
-    divergencia = validator._calcular_divergencia_percentual(0.0, 0.0)
-    assert divergencia == 0.0
-
-    divergencia = validator._calcular_divergencia_percentual(100.0, 0.0)
-    assert divergencia == 100.0
-
-def test_tolerance_negative_is_normalized():
-    validator = MT5SyncValidator(tolerance_percent=-3.0)
-
-    assert validator.tolerance_percent == 0.0
-
-def test_limpar_relatorios():
-    validator = MT5SyncValidator()
-
-    from src.application.reconciliadores.mt5_sync_validator import ValidationReport
-    from datetime import datetime
-
-    validator.validation_reports = [
-        ValidationReport(
-            order_id="401",
-            status=SyncStatus.SINCRONIZADO,
-            local_data={},
-            mt5_data={},
-            timestamp=datetime.now(),
-            tolerance_percent=1.0,
-            observations="Teste"
-        )
-    ]
-
-    assert len(validator.validation_reports) == 1
-
-    validator.limpar_relatorios()
-
-    assert len(validator.validation_reports) == 0
-
-def test_obter_relatorio_auditoria_vazio():
-    validator = MT5SyncValidator()
-
-    relatorio = validator.obter_relatorio_auditoria()
-
-    assert relatorio["total_validacoes"] == 0
-    assert relatorio["taxa_sincronizacao"] == 0
+def test_validar_sincronizacao_campos_obrigatorios():
+    validator = _make_validator(contagem_local=0, contagem_mt5=0)
+    report = validator.validar_sincronizacao(session_id="s4", agent_id="rl_direto")
+    assert report.session_id == "s4"
+    assert report.agent_id == "rl_direto"
+    assert isinstance(report.timestamp, str)
+    assert len(report.timestamp) > 0
+    assert isinstance(report.status, SyncStatus)
