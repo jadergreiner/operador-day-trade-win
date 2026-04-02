@@ -328,10 +328,11 @@ class TestMl2GatePausaTps:
         """TPs ocorridos ha mais de 45min nao devem acionar o gate."""
         prot = self._criar_protection()
         agora = datetime(2026, 4, 1, 10, 0, 0)
-        # Dois TPs antigos (fora da janela de 45min)
+        # Dois TPs antigos em t+0 e t+1 (claramente fora da janela ao checar em t+50)
+        # Em t+50: janela_inicio = t+5, entao t+0 e t+1 ficam fora
         prot.registrar_ganho(agora=agora)
-        prot.registrar_ganho(agora=agora + timedelta(minutes=5))
-        # Terceiro TP 50min depois — os anteriores ja saem da janela
+        prot.registrar_ganho(agora=agora + timedelta(minutes=1))
+        # Terceiro TP 50min depois — os dois anteriores saem da janela de 45min
         prot.registrar_ganho(agora=agora + timedelta(minutes=50))
         assert not prot.gate_pausa_ativo
         assert len(prot.wins_recentes) == 1

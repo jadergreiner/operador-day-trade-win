@@ -3935,7 +3935,7 @@ File "scripts/agente_rl_direto_independente.py", line 331, in enviar_ordem
 
 #### ML-2 / BAIXA — Gate de pausa pos-sequencia de TPs consecutivos
 
-**Status:** PENDENTE
+**Status:** CONCLUIDO (02/04/2026)
 
 **Arquivo:** `scripts/agente_rl_direto_independente.py`
 
