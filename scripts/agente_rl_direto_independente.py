@@ -861,7 +861,11 @@ def resolver_preco_saida_real(
     tipo_posicao: TipoPosicao,
     simbolo: str = SIMBOLO,
 ) -> Optional[float]:
-    """Tenta obter o preço real de saída do MT5 para o ticket informado."""
+    """Tenta obter o preço real de saída do MT5 para o ticket informado.
+
+    TECH-001: garante que nunca retorna 0.0 — retorna None quando nao ha
+    preco disponivel para que o chamador aplique fallback seguro.
+    """
     try:
         if hasattr(mt5_adapter_local, "obter_preco_saida_por_ticket"):
             side = (
@@ -874,8 +878,13 @@ def resolver_preco_saida_real(
                 symbol=Symbol(simbolo) if Symbol else simbolo,
                 side=side,
             )
-            if preco is not None:
+            if preco is not None and float(preco) > 0:
                 return float(preco)
+            if preco is not None:
+                logger.warning(
+                    f"[TECH-001] obter_preco_saida_por_ticket retornou "
+                    f"preco={preco} para ticket={ticket} — descartado"
+                )
     except Exception as e:
         logger.warning(
             f"[MT5-CHECK] Falha ao obter preço real de saída do ticket {ticket}: {e}"
@@ -903,10 +912,20 @@ def enviar_ordem_com_backoff(
             return ticket
         except Exception as e:
             mensagem = str(e)
-            if "10006" not in mensagem:
+            # TECH-003: detectar retcode 10006 em todos os formatos possíveis
+            # (string na mensagem, atributo .retcode, args da excecao)
+            _e_retcode_10006: bool = (
+                "10006" in mensagem
+                or (hasattr(e, "retcode") and getattr(e, "retcode", None) == 10006)
+                or any("10006" in str(a) for a in getattr(e, "args", ()))
+            )
+            if not _e_retcode_10006:
                 raise
 
-            logger.warning(f"[BACKOFF] Rejeição MT5 10006 detectada: {mensagem}")
+            logger.warning(
+                f"[BACKOFF][TECH-003] Rejeição MT5 10006 capturada "
+                f"(tipo={type(e).__name__}): {mensagem}"
+            )
             resultado_retry = retry_mgr_local.registrar_falha_10006(
                 RETCODE_ORDER_FAILED
             )
@@ -2217,6 +2236,7 @@ def main():
     ciclo = 0
     start_time = time.time()
     trades_fechados_rl: list = []  # Acumulador para pipeline AC5.9/AC6
+    _contagem_desconhecido: int = 0  # TECH-002: contador de trades DESCONHECIDO consecutivos
 
     try:
         while True:
@@ -2301,30 +2321,99 @@ def main():
                         )
 
                         if contexto_fechamento is None:
-                            ticket_local = None
+                            # TECH-002: tentar recuperar contexto via metadados do
+                            # arquivo de posicao (ticket, preco_entrada, lado),
+                            # mesmo que session_id diverge. Evita DESCONHECIDO.
+                            ticket_local: Optional[int] = None
+                            preco_entrada_recuperado: Optional[float] = None
+                            lado_recuperado: Optional[str] = None
+                            volume_recuperado: float = 1.0
+                            contexto_recuperado = False
+
                             try:
-                                metadados_local = (
-                                    posicao_tracker.obter_metadados_posicao()
+                                meta_raw = posicao_tracker.metadados_posicao
+                                ticket_local = int(meta_raw.get("ticket", 0) or 0) or None
+                                preco_entrada_recuperado = (
+                                    float(meta_raw.get("preco_entrada", 0) or 0) or None
                                 )
-                                ticket_local = int(
-                                    metadados_local.get("ticket", 0) or 0
+                                lado_recuperado = str(meta_raw.get("lado", "") or "")
+                                volume_recuperado = float(meta_raw.get("quantidade", 1) or 1)
+                            except Exception as _e_meta:
+                                logger.debug(
+                                    f"[TECH-002] Falha ao ler metadados brutos: {_e_meta}"
                                 )
-                            except Exception:
-                                ticket_local = None
 
-                            logger.warning(
-                                f"[CICLO {ciclo}] Posição sem contexto válido da sessão atual. "
-                                f"Registrando como DESCONHECIDO para evitar contaminação."
-                            )
+                            if (
+                                ticket_local
+                                and preco_entrada_recuperado
+                                and preco_entrada_recuperado > 0
+                                and lado_recuperado in ("BUY", "SELL")
+                            ):
+                                tipo_recuperado = (
+                                    TipoPosicao.COMPRADA
+                                    if lado_recuperado == "BUY"
+                                    else TipoPosicao.VENDIDA
+                                )
+                                preco_saida_recuperado = resolver_preco_saida_real(
+                                    mt5_adapter,
+                                    ticket_local,
+                                    tipo_recuperado,
+                                    simbolo=SIMBOLO,
+                                )
+                                if preco_saida_recuperado is None:
+                                    preco_saida_recuperado = (
+                                        preco_atual if preco_atual > 0
+                                        else preco_entrada_recuperado
+                                    )
 
-                            trades_fechados_rl.append(
-                                {
-                                    "ticket": ticket_local,
-                                    "resultado": "DESCONHECIDO",
-                                    "pnl": 0.0,
-                                    "direcao": "DESCONHECIDO",
-                                }
-                            )
+                                resultado_rec, pnl_rec = classificar_fechamento_trade(
+                                    preco_entrada=preco_entrada_recuperado,
+                                    preco_saida=preco_saida_recuperado,
+                                    tipo_posicao=tipo_recuperado,
+                                    volume=volume_recuperado,
+                                )
+                                logger.warning(
+                                    f"[TECH-002][CICLO {ciclo}] Contexto recuperado via "
+                                    f"metadados: ticket={ticket_local} "
+                                    f"entrada={preco_entrada_recuperado} "
+                                    f"saida={preco_saida_recuperado} "
+                                    f"resultado={resultado_rec} pnl={pnl_rec:.2f}"
+                                )
+                                trades_fechados_rl.append(
+                                    {
+                                        "ticket": ticket_local,
+                                        "resultado": resultado_rec,
+                                        "pnl": pnl_rec,
+                                        "direcao": lado_recuperado,
+                                        "preco_saida": preco_saida_recuperado,
+                                        "recuperado_tech002": True,
+                                    }
+                                )
+                                _contagem_desconhecido = 0  # reset ao recuperar
+                                contexto_recuperado = True
+
+                            if not contexto_recuperado:
+                                # Incrementar contador para alerta de rastreamento perdido
+                                _contagem_desconhecido += 1
+                                logger.warning(
+                                    f"[CICLO {ciclo}] Posição sem contexto válido da sessão "
+                                    f"atual. Registrando como DESCONHECIDO para evitar "
+                                    f"contaminação. (#{_contagem_desconhecido})"
+                                )
+                                if _contagem_desconhecido >= 2:
+                                    logger.error(
+                                        f"[TECH-002][ALERTA] {_contagem_desconhecido} trades "
+                                        f"DESCONHECIDO consecutivos — rastreamento perdido. "
+                                        f"Verifique posição aberta no MT5."
+                                    )
+                                trades_fechados_rl.append(
+                                    {
+                                        "ticket": ticket_local,
+                                        "resultado": "DESCONHECIDO",
+                                        "pnl": 0.0,
+                                        "direcao": "DESCONHECIDO",
+                                    }
+                                )
 
                             posicoes_motor_ativas = (
                                 motor_decisao.obter_posicoes_abertas()
@@ -2370,11 +2459,21 @@ def main():
                             simbolo=SIMBOLO,
                         )
                         if preco_saida_real is None:
-                            logger.warning(
-                                f"[CICLO {ciclo}] Preço real de saída indisponível para "
-                                f"ticket={ticket_aberto}. Usando preço do candle como fallback."
-                            )
-                            preco_saida_real = preco_atual
+                            # TECH-001: preco_atual pode ser 0.0 se MT5 desconectado;
+                            # nesse caso usar preco_entrada para evitar PnL absurdo.
+                            if preco_atual > 0:
+                                logger.warning(
+                                    f"[CICLO {ciclo}] Preço real de saída indisponível para "
+                                    f"ticket={ticket_aberto}. Usando preço do candle como fallback."
+                                )
+                                preco_saida_real = preco_atual
+                            else:
+                                logger.error(
+                                    f"[TECH-001][CICLO {ciclo}] preco_atual=0 ao fechar "
+                                    f"ticket={ticket_aberto} — usando preco_entrada "
+                                    f"({preco_entrada_reg}) como fallback de seguranca."
+                                )
+                                preco_saida_real = preco_entrada_reg
 
                         resultado, pnl_estimado = classificar_fechamento_trade(
                             preco_entrada=preco_entrada_reg,
