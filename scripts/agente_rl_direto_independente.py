@@ -2790,6 +2790,7 @@ def main():
                 sessao_id=AGENT_SESSION_ID,
                 db_path=Path("data/db/causal_learning.db"),
                 output_dir=OUTPUTS_DIR,
+                models_output_dir=ROOT_DIR / "data" / "models",
                 timeout_segundos=30,
             )
         except Exception as _e_learning:
@@ -2811,6 +2812,7 @@ def _encerrar_sessao_learning(
     sessao_id: str,
     db_path: Path,
     output_dir: Path,
+    models_output_dir: Optional[Path] = None,
     timeout_segundos: int = 30,
 ) -> None:
     """Executa analise P1-LEARNING Etapas 5-7 no encerramento de sessao.
@@ -2821,7 +2823,9 @@ def _encerrar_sessao_learning(
     Args:
         sessao_id: ID da sessao de trading
         db_path: Caminho para o banco SQLite com episode_closures
-        output_dir: Diretorio raiz para salvar os artefatos
+        output_dir: Diretorio do relatorio operacional (`outputs/`)
+        models_output_dir: Diretorio dos artefatos de aprendizado
+            (`data/models/`). Quando omitido, usa o padrao do projeto.
         timeout_segundos: Tempo maximo para a analise completar
     """
     import threading
@@ -2836,10 +2840,13 @@ def _encerrar_sessao_learning(
 
             logger.info("[P1-LEARNING] Iniciando analise pos-sessao Etapas 5-7...")
 
+            models_dir = models_output_dir or (ROOT_DIR / "data" / "models")
+            models_dir.mkdir(parents=True, exist_ok=True)
+            output_dir.mkdir(parents=True, exist_ok=True)
+
             # Etapa 5: L1 Analysis
             l1 = AnalisadorDecisaoL1(db_path=db_path, sessao_id=sessao_id)
             resultados_l1 = l1.analisar_sessao()
-            models_dir = output_dir / "models"
             caminho_l1 = l1.persistir_analise(resultados_l1, models_dir)
             logger.info(
                 "[P1-LEARNING][L1] %d episodios analisados → %s",

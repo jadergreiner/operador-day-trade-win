@@ -527,11 +527,18 @@ outcome (WIN/LOSS/BREAKEVEN), motivo de saida, P&L realizado e duracao.
 
 #### 8.2 P1-LEARNING Etapas 5-7: L1 Analysis + L2 Causal + Learning Rules
 
-**Status:** 🔝 TOPO P1 — PROXIMA ENTREGA (02/04/2026)
+**Status:** ✅ DONE (02/04/2026) | INTEGRADO (02/04/2026)
 **Repriorizado por:** PO — gatilho: Gate 2 continua FAIL
 (Sharpe -1.86, Win Rate 55.1%, alvo 59%). Modelo nao aprende entre
 sessoes. Sem L1/L2/Learning Rules o loop de aprendizado permanece em
-vacuo. Prioridade: implementar na proxima sessao de desenvolvimento.
+vacuo.
+
+**Validacao inicial desta sessao:**
+- `pytest tests/unit/test_p1_learning_etapas_5_7.py -q` → 28/28 PASSING
+  em 1.13s;
+- base das Etapas 5-7 ja existe em `src/application/`;
+- proximo foco: integrar o pipeline no encerramento real de sessao e
+  gerar artefatos operacionais em `data/models/` e `outputs/`.
 
 **PO:** Implementar L1/L2 analise de decisao e geracao de regras
 (P1-LEARNING Etapas 5-7). Ao fim deste desenvolvimento estarei feliz se
@@ -575,6 +582,18 @@ observaveis persistidas.
 
 - `p0_2_status.json` com UNHANDLED_EXCEPTION no pipeline Gate 2 — corrigir
   em paralelo ou antes do deploy para nao mascarar resultados de aprendizado
+
+**Evidencias (02/04/2026):**
+
+- `_encerrar_sessao_learning()` integrada ao shutdown do agente RL Direto
+  (`scripts/agente_rl_direto_independente.py`, linhas 2811-2910)
+- Pipeline L1 → L2 → LearningRules → Relatorio em thread daemon (timeout 30s)
+- Fallback silencioso por etapa — nenhuma excecao vaza para o loop principal
+- `tests/unit/test_p1_learning_etapas_5_7.py`: 28/28 PASSING
+- `tests/integration/test_p1_learning_pipeline_runtime.py`: 2/2 PASSING
+- Cobertura: l1=95%, l2=93%, regras=100%, relatorio=96% (media 96% > alvo 85%)
+- mypy --strict: zero erros nos modulos p1_learning_*.py
+- ADR-015 referenciada (ACCEPTED 17/03/2026)
 
 #### 8. P1-PROFIT_PROTECTION Protecao de Lucros em Tempo Real
 
