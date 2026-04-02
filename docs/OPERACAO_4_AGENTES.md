@@ -1,7 +1,8 @@
-# 🤖 Operação dos 4 Agentes Executores
+# 🤖 Operação dos 5 Launchers Operacionais
 
-**Versão:** 3.0 | **Data:** 17 de março de 2026 |
-**Status:** Execução principal concluída em código e testes; validação operacional em staging/UAT/Gate 2
+**Versão:** 3.1 | **Data:** 2 de abril de 2026 |
+**Status:** Execução principal concluída em código e testes; validação
+operacional em staging/UAT/Gate 2
 
 ## Índice
 
@@ -10,6 +11,7 @@
 - [Agente 2: Micro Tendência](#agente-2-iniciar_micro_tendencia_auto_tradebat)
 - [Agente 3: RL 5000](#agente-3-iniciar_agente_rl_5000bat)
 - [Agente 4: RL Direto](#agente-4-iniciar_agente_rl_diretobat)
+- [Agente 5: Monitor Quântico](#agente-5-iniciar_monitor_quanticobat)
 - [Fluxo de Operação](#fluxo-de-operação)
 - [Isolamento por Magic Number](#isolamento-por-magic-number)
 - [Troubleshooting](#troubleshooting)
@@ -18,8 +20,8 @@
 
 ## Visão Geral
 
-O projeto operacionaliza **4 agentes paralelos** para trading de Mini Índice
-(WIN$N no MetaTrader 5):
+O projeto operacionaliza **5 launchers prioritários** para trading e
+monitoramento do Mini Índice (WIN$N no MetaTrader 5):
 
 ### Governança de versão do Micro Tendência
 
@@ -42,6 +44,7 @@ O histórico de evolução do micro é documentado em:
 | Micro Tendência | Sinais ML | `agente_micro_*.py` | 234700 |
 | RL 5000 | Trades RL | `operar_*_rl_*.py` | 234500 |
 | RL Direto | Trades paralelo | `agente_rl_direto_*.py` | 234600 |
+| Monitor Quântico | Dashboard web + API local | `monitor_quantico_tendencia.py` | — |
 
 Cada agente envia ordens com **Magic Number** (EA ID)
 único no MT5, garantindo isolamento total.
@@ -56,14 +59,15 @@ Isso facilita auditoria e triagem visual por agente.
 **Fluxo Lógico:**
 
 ```
-MT5 (Dados de Mercado)
+MT5 + Dados Globais
     ↓
-[Micro Tendência] → Gera ~29 sinais/dia (magic=234700)
-[Diários] → Opera, publica features intraday e registra auditoria (magic=234800)
-[RL 5000] → Trades com proteção lucro (magic=234500)
-[RL Direto] → Alternativa paralela (magic=234600)
+[Micro Tendência]  → Gera ~29 sinais/dia (magic=234700)
+[Diários]          → Contexto, features intraday e auditoria (magic=234800)
+[RL 5000]          → Trades com proteção de lucro (magic=234500)
+[RL Direto]        → Alternativa paralela e isolada (magic=234600)
+[Monitor Quântico] → Dashboard local + JSON em `localhost:8765`
     ↓
-SQLite (trading.db) → trades.magic_number filtra por agente
+SQLite (trading.db) + outputs → filtragem por agente e suporte à decisão
 ```
 
 ---
@@ -430,6 +434,46 @@ data/db/
 
 ---
 
+## Agente 5: INICIAR_MONITOR_QUANTICO.bat
+
+### 📋 Propósito
+
+Camada transversal de **observabilidade do dia**. Ele não envia ordens,
+mas consolida o contexto macro e técnico em um painel local para apoiar as
+decisões dos demais agentes.
+
+Principais entregas:
+
+- Dados globais como S&P 500, DXY, ouro, petróleo e juros EUA
+- Consulta de WIN$N e DOL$N via MT5 quando disponível
+- API JSON local em `http://localhost:8765/dados`
+- Dashboard web local em `http://localhost:8765/`
+
+### 🚀 Como Usar
+
+```bash
+# Na raiz do projeto:
+double-click INICIAR_MONITOR_QUANTICO.bat
+
+# Ou via terminal:
+cd c:\repo\operador-day-trade-win
+python scripts/monitor_quantico_tendencia.py
+```
+
+### 📁 Saídas / Acesso
+
+- `http://localhost:8765/` → monitor visual
+- `http://localhost:8765/dados` → payload JSON atualizado
+
+### ✅ Quando usar
+
+- ✅ Junto com `INICIAR_DIARIOS.bat` e
+  `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
+- ✅ Antes de ligar RL em produção, para validar contexto do dia
+- ✅ Como apoio visual para operador humano e troubleshooting rápido
+
+---
+
 ## Fluxo de Operação
 
 ### 📅 Dia Típico (Horário BRT)
@@ -441,9 +485,15 @@ data/db/
 08:15 → Segunda janela/terminal: INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
          └─ Gera sinais durante o pregão (até 17:55)
 
-08:30 → Terceira janela/terminal: INICIAR_AGENTE_RL_5000.bat
+08:20 → Terceira janela/terminal: INICIAR_MONITOR_QUANTICO.bat
+         └─ Abre dashboard web local com tendência e contexto global
+
+08:30 → Quarta janela/terminal: INICIAR_AGENTE_RL_5000.bat
          └─ Operador escolhe: [2] OPERAR MERCADO REAL
          └─ Executa trades com RL até target (R$ 140) ou SL (R$-250)
+
+08:35 → Quinta janela/terminal: INICIAR_AGENTE_RL_DIRETO.bat (opcional)
+         └─ Usar apenas para validação paralela ou contingência controlada
 
 17:55 → Pregão encerra
          └─ Encerrar todos os agentes (Ctrl+C)

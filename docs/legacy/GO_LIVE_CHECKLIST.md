@@ -6,7 +6,7 @@
 
 ## 📦 O QUE VOCÊ TEM
 
-```
+```text
 ✅ INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
    └─ Inicia: ML classifier v1.2.3 + Risk framework
    └─ Menu: [1] Simulado [2] Auto-Trade [3] Cancel
@@ -62,10 +62,9 @@ TARDE (14:00):
   ☐ Sistema volta a usar API
 ```
 
-
-
 ### **Máquina Local (Windows)**
-```
+
+```text
 ✅ Windows 10/11 Pro (ou Server 2019+)
 ✅ Python 3.10+ instalado
 ✅ PostgreSQL rodando localmente (ou SQLite)
@@ -76,7 +75,8 @@ TARDE (14:00):
 ```
 
 ### **Contas & Credenciais**
-```
+
+```text
 ✅ MT5 Account: 1000346516 (ou sua conta)
 ✅ MT5 Password: [criada]
 ✅ API Credentials: [criadas]
@@ -84,7 +84,8 @@ TARDE (14:00):
 ```
 
 ### **Capital**
-```
+
+```text
 ✅ R$ 50.000 transferido para conta MT5
 ✅ Broker account ativado
 ✅ Orders habilitadas
@@ -240,7 +241,8 @@ Exemplo output esperado:
 ## ⚠️ SE ALGO DER ERRADO
 
 ### **Sistema não inicia**
-```
+
+```text
 Erro: "Python 3.10+ not found"
 Solução:
   1. Abrir Command Prompt como Admin
@@ -251,37 +253,41 @@ Solução:
 ```
 
 ### **MT5 não conecta**
-```
+
+```text
 Erro: "MT5 connection failed"
 Solução:
   1. Abrir MetaTrader 5 manualmente
-  2. Verify login credenciais
-  3. Check internet connectivity
-  4. Se falha persiste: reiniciar MT5
+  2. Verificar credenciais de login
+  3. Checar conectividade com a internet
+  4. Se a falha persistir: reiniciar MT5
   5. Reiniciar .bat
 ```
 
 ### **Database connection error**
-```
+
+```text
 Erro: "PostgreSQL connection refused"
 Solução:
   1. Abrir Services (services.msc)
-  2. Verificar se "PostgreSQL 12" está running
-  3. Se não, clique Start
+  2. Verificar se "PostgreSQL 12" está em execução
+  3. Se não, clique em Start
   4. Reiniciar .bat
 ```
 
 ### **ML data sync failing**
-```
+
+```text
 Erro: "Could not load_and_label data"
 Solução:
-  1. Verificar arquivo: data/backtest_results.json existe?
-  2. Se não existe: recuperar de backup
+  1. Verificar se o arquivo `data/backtest_results.json` existe
+  2. Se não existir: recuperar de backup
   3. Sistema continua (warning é normal)
 ```
 
 ### **Trader quer pausar o sistema**
-```
+
+```text
 Ação: Pressione CTRL+C
 Status: Sistema pausa imediatamente
 Próximo: Double-click .bat novamente para retomar
@@ -291,12 +297,12 @@ Próximo: Double-click .bat novamente para retomar
 
 ## 📊 MÉTRICAS ESPERADAS (Primeiro Dia)
 
-```
+```text
 Win Rate:       60-65% (Target: ≥59%)
 Sharpe Ratio:   1.0+ (Target: ≥1.0)
 Drawdown:       < 15% (Hard stop)
 P&L:            +R$ 1k-5k (90 dias esperado: +R$ 50k)
-latência P95:   < 500ms
+Latência P95:   < 500ms
 Uptime:         > 95%
 ```
 
@@ -305,7 +311,8 @@ Uptime:         > 95%
 ## 🎯 DEPOIS DE GO-LIVE
 
 ### **Semanas 1-2 (10-24 Abril)**
-```
+
+```text
 Fase 1 Beta: Validação com R$ 50k
 - Monitor 24/5
 - Trader pode fazer override
@@ -314,18 +321,20 @@ Fase 1 Beta: Validação com R$ 50k
 ```
 
 ### **Semanas 3-4 (25-30 Abril)**
-```
+
+```text
 Se P&L > 0:
   → Autorizar Fase 2 (+ R$ 50k capital)
   → Total: R$ 100k
-If P&L < -15%:
+Se P&L < -15%:
   → Halt automático (circuit breaker)
   → Review + ajustes
   → Restart Fase 1
 ```
 
 ### **Mês 2-3 (Maio-Junho)**
-```
+
+```text
 Fase 2 Scale-Up:
 - Se Fase 1 positiva
 - Autorizar R$ 100k adicional
@@ -338,13 +347,13 @@ Fase 2 Scale-Up:
 
 **Se erro não está em "IF ALGO DER ERRADO":**
 
-```
+```text
 1. Email para: [seu-email]@trading.com
    Subject: "GO-LIVE ERROR - [data/hora]"
    Body:
-     - Exact error message (copiar do console)
-     - Que você já tentou fazer
-     - Sistema status (up/down/paused)
+     - Mensagem exata de erro (copiar do console)
+     - O que você já tentou fazer
+     - Status do sistema (up/down/paused)
 
 2. Slack: #operador-support
    Message: "ERROR: [description]"
@@ -358,7 +367,7 @@ Response time: < 1 hora (business hours)
 
 ## ✅ FINAL CHECKLIST (10 Abril, 09:00)
 
-```
+```text
 ANTES DE CLICAR:
 
 ☐ Capital R$ 50k em MT5?
@@ -378,11 +387,12 @@ Se TODOS ✅:
 
 ---
 
-## 🎉 SUCESSO!
+## 🎉 SUCESSO
 
 Se você chegou aqui: **PARABÉNS!**
 
 Você tem:
+
 - ✅ 2 executáveis prontos para produção
 - ✅ 27 dias de aprovações + validação
 - ✅ R$ 50k capital ativado

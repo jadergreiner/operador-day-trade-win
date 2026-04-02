@@ -208,11 +208,21 @@ pip install MetaTrader5
 
 ### Documentação CORE
 
-- **Arquitetura & Design:** [ARCHITECTURE.md](ARCHITECTURE.md) | [ADRs.md](ADRs.md) | [DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md)
-- **Dados & Modelos:** [DATA_MODELS.md](DATA_MODELS.md) | [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md) | [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md)
-- **Regras & Padrões:** [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) | [CODING_STANDARDS.md](CODING_STANDARDS.md)
+- **Arquitetura & Design:**
+  [ARCHITECTURE.md](ARCHITECTURE.md),
+  [ADRs.md](ADRs.md) e
+  [DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md)
+- **Dados & Modelos:**
+  [DATA_MODELS.md](DATA_MODELS.md),
+  [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md) e
+  [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md)
+- **Regras & Padrões:**
+  [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) e
+  [CODING_STANDARDS.md](CODING_STANDARDS.md)
 - **Contribuição:** [CONTRIBUTING.md](CONTRIBUTING.md)
-- **Status & Tarefas:** [BACKLOG_UNIFICADO.md](BACKLOG_UNIFICADO.md) | [STATUS_ENTREGAS.md](STATUS_ENTREGAS.md)
+- **Status & Tarefas:**
+  [BACKLOG_UNIFICADO.md](BACKLOG_UNIFICADO.md) e
+  [STATUS_ENTREGAS.md](STATUS_ENTREGAS.md)
 
 ### Scripts & Exemplos
 

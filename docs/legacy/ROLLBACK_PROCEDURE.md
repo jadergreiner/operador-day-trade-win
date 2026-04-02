@@ -12,6 +12,7 @@
 ### Cenário 1: Dados Corrompidos (CRÍTICO)
 
 **Sintomas:**
+
 - Database access denied
 - Corrupt SQLite file
 - Transação incompleta
@@ -52,6 +53,7 @@ print(f'✅ Database restored: {tables} tables found')
 - ❌ **Se Still Corrupt:** Goto Cenário 3 (Rollback Completo)
 
 **Documentar:**
+
 ```bash
 git log --oneline -5 > data/logs/rollback_backup_restore_20260310.log
 echo "Rollback: Database restored from prelaunch backup" >> data/logs/rollback_backup_restore_20260310.log
@@ -159,7 +161,11 @@ sqlite3 data/db/trading.db "PRAGMA integrity_check;" | grep "ok"
 if [ $? -eq 0 ]; then echo "✅ DB valid"; else echo "❌ DB still broken"; fi
 
 # 3B: Test model
-python -c "from src.ml.backtest_server_xgboost import load_model; load_model('data/models/xgboost_v1.0.pkl'); print('✅ Model OK')" || echo "❌ Model broken"
+python -c "
+from src.ml.backtest_server_xgboost import load_model
+load_model('data/models/xgboost_v1.0.pkl')
+print('✅ Model OK')
+" || echo "❌ Model broken"
 
 # 3C: Test basic imports
 python -c "from src import *; print('✅ Imports OK')" || echo "❌ Import error"
@@ -168,11 +174,14 @@ python -c "from src import *; print('✅ Imports OK')" || echo "❌ Import error
 echo "Validation complete. Awaiting CTO decision..." >> data/logs/EMERGENCY_ROLLBACK.log
 
 # Check all three tests passed
-if [ "$db_ok" == "✅ DB valid" ] && [ "$model_ok" == "✅ Model OK" ] && [ "$imports_ok" == "✅ Imports OK" ]; then
-  echo "✅ ROLLBACK SUCCESSFUL - System ready for retest" >> data/logs/EMERGENCY_ROLLBACK.log
+if [ "$db_ok" == "✅ DB valid" ] && [ "$model_ok" == "✅ Model OK" ] \
+  && [ "$imports_ok" == "✅ Imports OK" ]; then
+  echo "✅ ROLLBACK SUCCESSFUL" >> data/logs/EMERGENCY_ROLLBACK.log
+  echo "System ready for retest" >> data/logs/EMERGENCY_ROLLBACK.log
 else
-  echo "❌ ROLLBACK INCOMPLETE - Multiple systems still broken" >> data/logs/EMERGENCY_ROLLBACK.log
-  echo "⚠️  MAJOR INCIDENT - Escalate to CIO" >> data/logs/EMERGENCY_ROLLBACK.log
+  echo "❌ ROLLBACK INCOMPLETE" >> data/logs/EMERGENCY_ROLLBACK.log
+  echo "Multiple systems still broken" >> data/logs/EMERGENCY_ROLLBACK.log
+  echo "⚠️ MAJOR INCIDENT - Escalate to CIO" >> data/logs/EMERGENCY_ROLLBACK.log
   exit 1
 fi
 ```
@@ -199,29 +208,30 @@ fi
    - [ ] Reschedule go-live (11/03 or later)
 
 4. **Communication Template:**
-   ```
-   Subject: INCIDENT REPORT - Emergency Rollback 10/03 14:30
 
-   SUMMARY:
-   - Time: 10/03 14:30 BRT
-   - System: Trading engine (production)
-   - Status: ROLLED BACK to 07/03 stable snapshot
-   - Impact: Go-live POSTPONED to 11/03
+```text
+Subject: INCIDENT REPORT - Emergency Rollback 10/03 14:30
 
-   ROOT CAUSE: [To be determined in post-mortem]
+SUMMARY:
+- Time: 10/03 14:30 BRT
+- System: Trading engine (production)
+- Status: ROLLED BACK to 07/03 stable snapshot
+- Impact: Go-live POSTPONED to 11/03
 
-   ACTIONS TAKEN:
-   - Stopped all trading activity
-   - Restored database from 07/03
-   - Validated all systems passing
-   - Escalated to CIO
+ROOT CAUSE: [To be determined in post-mortem]
 
-   NEXT STEPS:
-   - Post-mortem meeting: 10/03 16:00
-   - Root cause analysis: 10/03 16:00-17:30
-   - Retest plan: 09/03 morning
-   - New approval gate: 10/03 18:00
-   ```
+ACTIONS TAKEN:
+- Stopped all trading activity
+- Restored database from 07/03
+- Validated all systems passing
+- Escalated to CIO
+
+NEXT STEPS:
+- Post-mortem meeting: 10/03 16:00
+- Root cause analysis: 10/03 16:00-17:30
+- Retest plan: 09/03 morning
+- New approval gate: 10/03 18:00
+```
 
 ---
 
@@ -232,7 +242,11 @@ fi
 ```bash
 # If model is OK but database is corrupted:
 copy data\db\backups\trading_clean.db data\db\trading.db /Y
-python -c "import sqlite3; conn = sqlite3.connect('data/db/trading.db'); print('✅ DB restored')"
+python -c "
+import sqlite3
+conn = sqlite3.connect('data/db/trading.db')
+print('✅ DB restored')
+"
 ```
 
 ### Rollback Only Model (Keep Database)

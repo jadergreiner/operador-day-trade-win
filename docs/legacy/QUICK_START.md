@@ -4,41 +4,50 @@
 **Resultado:** Sistema de trading automático ativo
 
 ---
+
 ## 🔐 CONFIGURAÇÃO DE ISOLAMENTO DE TERMINAL (IMPORTANTE!)
 
 **ANTES de qualquer coisa, configure o isolamento de terminal MT5:**
 
 ### 1. Abra arquivo `.env` (na raiz do projeto)
+
 ```bash
 C:\repo\operador-day-trade-win\.env
 ```
 
-### 2. Adicione a linha (exemplo):
+### 2. Adicione a linha (exemplo)
+
 ```bash
 MT5_TERMINAL_PATH=C:\Program Files\Clear Investimentos MT5 Terminal\terminal64.exe
 ```
 
 ### 3. Salve o arquivo
 
-### 4. Feche TODOS os outros MetaTraders:
-```bash
+### 4. Feche TODOS os outros MetaTraders
+
+```powershell
 # PowerShell (como administrador):
 Get-Process terminal64 -ErrorAction SilentlyContinue | Stop-Process -Force
 ```
 
 ### 5. Abra APENAS Clear Investimentos MT5
 
-**Por quê?** O sistema agora valida ANTES de cada operação que você está usando APENAS o terminal Clear. Se FBS, XP, Zero ou outro MT5 estiver aberto:
+**Por quê?** O sistema agora valida ANTES de cada operação que você está
+usando APENAS o terminal Clear. Se FBS, XP, Zero ou outro MT5 estiver
+aberto:
+
 - ❌ Sistema **NÃO INICIA** (EXIT 1)
 - ❌ Ordens são **REJEITADAS** se tentam durante execução
 - ❌ Trading **PARA IMEDIATAMENTE** se detectado outro terminal
 
-**Status:** 🟢 Com isolamento ativado e configurado, você está 100% protegido contra acidentes!
+**Status:** 🟢 Com isolamento ativado e configurado, você está 100%
+protegido contra acidentes.
 
 ---
+
 ## ✅ PRÉ-REQUISITOS (10 minutos)
 
-```
+```text
 [ ] Windows 10/11 Pro + 16GB RAM + 50GB disco livre
 [ ] Python 3.10+ instalado (python --version)
 [ ] PostgreSQL rodando (ou SQLite local)
@@ -48,11 +57,12 @@ Get-Process terminal64 -ErrorAction SilentlyContinue | Stop-Process -Force
 ```
 
 **Não tem Python?**
-```
+
+```text
 Download: https://www.python.org/downloads/
 Versão: 3.10 ou superior
 Instalação: Add Python to PATH (checkbox importante!)
-Verificar: Abrir CMD, digitar: python --version
+Verificar: Abrir CMD e digitar: python --version
 ```
 
 ---
@@ -60,23 +70,26 @@ Verificar: Abrir CMD, digitar: python --version
 ## 🚀 3 PASSOS PARA INICIAR
 
 ### **Passo 1: Validar Isolamento de Terminal (30 segundos)**
-```bash
+
+```text
 Verifique:
   [ ] .env contém MT5_TERMINAL_PATH? ✅
   [ ] APENAS Clear Investimentos MT5 aberto? ✅
   [ ] Outros MTs fechados (FBS/XP/Zero)? ✅
 
 Se sim em todos → Continue
-Se não → Siga instrução "🔐 CONFIGURAÇÃO" acima
+Se não → Siga a instrução "🔐 CONFIGURAÇÃO" acima
 ```
 
 ### **Passo 2: Navegar para pasta (30 segundos)**
+
 ```bash
 Abrir File Explorer
 Vá para: c:\repo\operador-day-trade-win
 ```
 
 ### **Passo 3: Executar o sistema (10 segundos)**
+
 ```bash
 Double-click (2x clique rápido):
 INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
@@ -85,6 +98,7 @@ Aguarde 5 segundos (carregamento)
 ```
 
 ### **Passo 4: Escolher modo (20 segundos)**
+
 ```bash
 Menu aparece:
 [1] SIMULADO (testes, sem ordens reais)
@@ -96,7 +110,8 @@ Pressione: ENTER
 ```
 
 ### **Passo 5: Validação de Isolamento Automática (5-10 segundos)**
-```bash
+
+```text
 🔐 TERMINAL ISOLATION ENFORCEMENT (HARD STOP MODE)
 ===============================================================
 ✅ Terminal isolado: True
@@ -106,13 +121,15 @@ Pressione: ENTER
 ```
 
 **Se mensagem acima NÃO aparecer:**
+
 ```bash
 ❌ FALHA: Outro terminal MT5 detectado!
 Feche TODOS os outros MetaTraders e tente novamente.
 ```
 
 ### **Passo 6: Confirmar (10 segundos)**
-```bash
+
+```text
 Aviso aparece:
 "ORDENS REAIS serao executadas. Tem certeza? (S/N)"
 
@@ -126,7 +143,7 @@ Sistema inicia! 🚀
 
 ## 🎯 O QUE ESPERAR
 
-```
+```text
 [PRE-FLIGHT] Verificando saude... ✅
 [TERMINAL-ISOLATION] Validando isolamento CLEAR... ✅
 [SYNC] Sincronizando MT5... ✅
@@ -142,7 +159,7 @@ Sistema inicia! 🚀
 
 ## 📊 PRIMEIRO DIA
 
-```
+```text
 Sistema vai:
 ✅ Analisar mercado (ML classifier)
 ✅ Detectar oportunidades (3 gates validation)
@@ -154,18 +171,18 @@ Você:
 ✅ Monitor em tempo real (opcional)
 ✅ Pode pausar (CTRL+C) se algo errado
 ✅ Pode override manual no MT5 (trader control)
-✅ Check resultado final (P&L ao final do dia)
+✅ Checar resultado final (P&L ao final do dia)
 ```
 
 ---
 
 ## 💰 NÚMEROS (Expectativa)
 
-```
+```text
 Ordens/dia:       10-15 automáticas
 Win rate:         62-65%
 P&L/dia:          +R$ 1.500-5.000
-Risco máximo:     15% (automático, never worse)
+Risco máximo:     15% (automático, nunca pior que o limite)
 Payback:          35-45 dias
 ```
 
@@ -174,14 +191,16 @@ Payback:          35-45 dias
 ## ⚠️ PROBLEMAS COMUNS
 
 ### **"Python not found"**
-```
+
+```text
 Solução: Instalar Python 3.10+
          Adicionar ao PATH (importante!)
          Reiniciar PC
 ```
 
 ### **"MT5 connection error"**
-```
+
+```text
 Solução: Abrir MetaTrader 5 manualmente
          Login com credenciais
          Confirmar conexão
@@ -189,7 +208,8 @@ Solução: Abrir MetaTrader 5 manualmente
 ```
 
 ### **"Database connection refused"**
-```
+
+```text
 Solução: Services (Win + R → services.msc)
          Procura: PostgreSQL
          Clica: Start
@@ -197,7 +217,8 @@ Solução: Services (Win + R → services.msc)
 ```
 
 ### **Quer pausar?**
-```
+
+```text
 Pressione: CTRL+C
 Sistema para imediatamente
 Próximo: Double-click .bat novamente
@@ -209,7 +230,7 @@ Próximo: Double-click .bat novamente
 
 Se este quick start não é suficiente:
 
-```
+```text
 Documento completo:
 → docs/GO_LIVE_CHECKLIST.md
 
@@ -219,9 +240,9 @@ Entrega de valor:
 
 ---
 
-## ✅ PRONTO!
+## ✅ PRONTO
 
-```
+```text
 Pré-requisitos OK?
 → Double-click INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
 

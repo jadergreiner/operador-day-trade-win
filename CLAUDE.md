@@ -42,14 +42,16 @@ python -m pymarkdown scan docs/        # Lint de markdown
 ## Arquitetura
 
 Sistema de trading automatico para Mini Indice (WIN$N) no MetaTrader 5,
-composto por **4 agentes paralelos** orquestrados por `.bat` na raiz:
+composto por **5 launchers operacionais prioritarios** orquestrados por
+`.bat` na raiz (**4 executores + 1 camada de observabilidade web**):
 
 | Agente | .bat (raiz) | Script Python |
 | ------ | ----------- | ------------- |
 | Diarios | `INICIAR_DIARIOS.bat` | `scripts/start_journals_full_display.py` |
 | Micro Tendencia | `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | `scripts/agente_micro_tendencia_winfut.py` |
-| RL 5000 | `INICIAR_AGENTE_RL_5000.bat` | `scripts/operar_novo_agente_rl_real_antiovertrading.py` |
+| RL 5000 | `INICIAR_AGENTE_RL_5000.bat` | `scripts/agente_com_supervision.py` |
 | RL Direto | `INICIAR_AGENTE_RL_DIRETO.bat` | `scripts/agente_rl_direto_independente.py` |
+| Monitor Quantico | `INICIAR_MONITOR_QUANTICO.bat` | `scripts/monitor_quantico_tendencia.py` |
 
 ### Camadas
 

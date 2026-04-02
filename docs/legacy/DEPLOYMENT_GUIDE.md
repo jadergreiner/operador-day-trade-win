@@ -34,6 +34,7 @@ If all green → Proceed to deployment
 ## Pre-Deployment Checklist (15 min)
 
 ### Infrastructure
+
 - [ ] Database `data/db/trading.db` exists
 - [ ] Backup directory `data/db/backups/` ready
 - [ ] Logging configured (check `data/logs/`)
@@ -41,27 +42,33 @@ If all green → Proceed to deployment
 - [ ] Disk space >10GB available
 
 ### Code
-- [ ] All tests passing: `pytest tests/test_etapa4_load_and_cleanup.py -v`
+
+- [ ] All tests passing:
+  `pytest tests/test_etapa4_load_and_cleanup.py -v`
   - Expected: 14/14 PASS (18.23 seconds)
-- [ ] Load test runs: `python scripts/load_test_order_queue.py --duration 10 --rate 50`
-  - Expected: P95 <500ms, Memory <50MB
+- [ ] Load test runs:
+  `python scripts/load_test_order_queue.py --duration 10 --rate 50`
+  - Expected: P95 <500ms, memory <50MB
 - [ ] No encoding errors in scripts
-- [ ] All commits pushed to main
+- [ ] All commits pushed to `main`
 
 ### Model
+
 - [ ] Model artifacts loaded: `data/models/xgboost_v1.0.pkl` exists
 - [ ] Features ready: `data/feature_names.json` present
 - [ ] Threshold configured: `sigma = 1.0`
 - [ ] Backtest results: `backtest_optimized_results.json` shows PASS
 
 ### Operations
+
 - [ ] Trader trained on dashboard
 - [ ] Manual override tested
 - [ ] On-call schedule confirmed
-- [ ] Communication channels verified (Teams, Slack, etc)
+- [ ] Communication channels verified (`Teams`, `Slack`, etc.)
 
 ### Governance
-- [ ] All 4 gatekeepers approved (git log shows approvals)
+
+- [ ] All 4 gatekeepers approved (`git log` shows approvals)
 - [ ] Capital R$ 50k allocated
 - [ ] Compliance checklist signed
 
@@ -86,13 +93,18 @@ python -c "import os; print(f'PYTHONPATH={os.environ.get(\"PYTHONPATH\")}')"
 
 ```bash
 # 2A. Test connectivity
-python -c "import sqlite3; conn = sqlite3.connect('data/db/trading.db'); print(f'✅ DB connected')"
+python -c "
+import sqlite3
+conn = sqlite3.connect('data/db/trading.db')
+print('✅ DB connected')
+"
 
 # 2B. Create backup
 copy data\db\trading.db data\db\backups\trading_20260310_prelaunch.db
 
 # 2C. Verify backup
-sqlite3 data/db/backups/trading_20260310_prelaunch.db "PRAGMA integrity_check;"
+sqlite3 data/db/backups/trading_20260310_prelaunch.db \
+  "PRAGMA integrity_check;"
 ```
 
 ### Step 3: Model Loading (5 min)
@@ -174,7 +186,7 @@ python -m src.application.services.trading_orchestrator \
 
 ### Dashboard Access
 
-```
+```text
 Local: http://localhost:8000/dashboard
 Reference: See KICKOFF_FINAL_PRE_LAUNCH.txt for trader training
 ```
@@ -210,27 +222,31 @@ See [ROLLBACK_PROCEDURE.md](ROLLBACK_PROCEDURE.md) for:
 
 ### Common Issues
 
-1. **Database locked**
-   - Symptom: `sqlite3.OperationalError: database is locked`
-   - Fix: Restart application, check for hanging connections
-   - Prevention: Use backup-before-delete pattern
+#### Database locked
 
-2. **Model loading fails**
-   - Symptom: `FileNotFoundError: No such file or directory: model.pkl`
-   - Fix: Verify file exists, check permissions, rebuild if needed
-   - Prevention: Always backup model artifacts before deploy
+- Symptom: `sqlite3.OperationalError: database is locked`
+- Fix: restart application and check for hanging connections
+- Prevention: use the backup-before-delete pattern
 
-3. **Network timeout**
-   - Symptom: `Timeout connecting to MT5`
-   - Fix: Check firewall, verify MT5 running, restart connection
-   - Prevention: Monitor network latency in real-time
+#### Model loading fails
 
-4. **Memory leak**
-   - Symptom: Memory usage grows >100MB over time
-   - Fix: Restart service, check for circular references
-   - Prevention: Run memory profiler before deploy
+- Symptom: `FileNotFoundError: No such file or directory: model.pkl`
+- Fix: verify the file exists, check permissions and rebuild if needed
+- Prevention: always backup model artifacts before deploy
 
-See [RUNBOOK_COMMON_ISSUES.md](RUNBOOK_COMMON_ISSUES.md) for 15+ scenarios
+#### Network timeout
+
+- Symptom: `Timeout connecting to MT5`
+- Fix: check firewall, verify MT5 is running and restart connection
+- Prevention: monitor network latency in real time
+
+#### Memory leak
+
+- Symptom: memory usage grows above 100MB over time
+- Fix: restart the service and check for circular references
+- Prevention: run a memory profiler before deploy
+
+See [RUNBOOK_COMMON_ISSUES.md](RUNBOOK_COMMON_ISSUES.md) for 15+ scenarios.
 
 ---
 

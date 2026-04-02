@@ -11,23 +11,31 @@
 ### 🟡 ALERTA: Nenhuma ordem sendo gerada
 
 **Sintomas:**
+
 - Mercado aberto, nenhuma alerta gerada em 30 min
 - Dashboard mostra "0 alertas gerados"
 - Logs não contêm signal generation
 
 **Causas Possíveis:**
+
 1. Modelo não está carregando (100% prob)
-2. Threshold muito alto (sigma=2.0+)
-3. Dados não chegando (datafeed offline)
+2. Threshold muito alto (`sigma=2.0+`)
+3. Dados não chegando (`datafeed` offline)
 4. Filtro de volatilidade bloqueando (20+ volatilidade)
 
 **Diagnóstico (5 min):**
+
 ```bash
 # 1. Verificar modelo carregado
-python -c "from src.ml.backtest_server_xgboost import load_model; m=load_model('data/models/xgboost_v1.0.pkl'); print('✅ Modelo OK')"
+python -c "
+from src.ml.backtest_server_xgboost import load_model
+load_model('data/models/xgboost_v1.0.pkl')
+print('✅ Modelo OK')
+"
 
 # 2. Verificar dados chegando
-sqlite3 data/db/trading.db "SELECT COUNT(*) FROM price_history WHERE symbol='WIN' AND date='2026-03-10';"
+sqlite3 data/db/trading.db \
+  "SELECT COUNT(*) FROM price_history WHERE symbol='WIN' AND date='2026-03-10';"
 
 # 3. Verificar threshold
 grep -r "threshold" config/ | grep -i sigma
@@ -37,12 +45,17 @@ tail -50 data/logs/errors.log
 ```
 
 **Ações Corretivas:**
-- ❌ **NÃO ativar modo de risco** - sistema está funcionando corretamente, apenas sem oportunidades
-- ✅ **Aguarde próxima oportunidade** - backtest mostrou 1-3 alertas/hora, é normal
-- ✅ **Monitore volatilidade** - se VIX > 25, sistema está correto em não gerar sinais
-- ❌ **NÃO ajuste threshold** - procedimento só com aprovação CTO + ML Expert
+- ❌ **NÃO ativar modo de risco** - o sistema está funcionando,
+  apenas sem oportunidades
+- ✅ **Aguarde a próxima oportunidade** - o backtest mostrou
+  1-3 alertas/hora; isso é normal
+- ✅ **Monitore a volatilidade** - se `VIX > 25`, o sistema pode estar
+  corretamente sem gerar sinais
+- ❌ **NÃO ajuste threshold** - procedimento só com aprovação do CTO
+  e do ML Expert
 
-**Escalação se persistir >2h:** Contactar ML Expert (verificar calibração modelo)
+**Escalação se persistir >2h:**
+Contactar ML Expert para verificar a calibração do modelo.
 
 **Tempo SLA:** 30 min diagnóstico, decision tree até resolução
 
@@ -69,13 +82,17 @@ tail -50 data/logs/errors.log
 **Ações Operacionais (0 min - IMEDIATO):**
 1. ✅ **Notifique Trader:** "Alerta -3% ativado, continue monitorando"
 2. ✅ **Notifique CTO:** Envie log para análise de root cause
-3. ✅ **Monitore P&L:** Se próximos sinais revertem loss, OK. Se continua caindo → escalação
+3. ✅ **Monitore P&L:** Se os próximos sinais reverterem a perda, OK.
+   Se continuar caindo, faça a escalação.
 4. ✅ **Mantenha transparência:** Comunique status para CFO
 
 **Análise de Root Cause (15 min):**
+
 ```bash
 # Ver últimas 10 ordens
-sqlite3 data/db/trading.db "SELECT timestamp, type, price, sl, tp, exit_price, pnl FROM orders ORDER BY timestamp DESC LIMIT 10;"
+sqlite3 data/db/trading.db \
+  "SELECT timestamp, type, price, sl, tp, exit_price, pnl FROM orders \
+   ORDER BY timestamp DESC LIMIT 10;"
 
 # Verificar volatilidade no period
 python -c "
@@ -123,19 +140,23 @@ tail -30 data/logs/model.log | grep "score="
 4. **ML Expert consultado:** Avaliar se modelo está degraded
 
 **Checkpoint (15 min):**
+
 ```bash
 # Quantificar impacto exato
 echo "Recent trades:"
-sqlite3 data/db/trading.db "SELECT COUNT(*), AVG(pnl) FROM orders WHERE date='2026-03-10' AND timestamp > datetime('now', '-30 minutes');"
+sqlite3 data/db/trading.db \
+  "SELECT COUNT(*), AVG(pnl) FROM orders WHERE date='2026-03-10' \
+   AND timestamp > datetime('now', '-30 minutes');"
 
-# Verificar se loss é reverting
+# Verificar se a perda está revertendo
 python -c "
 import sqlite3
 conn = sqlite3.connect('data/db/trading.db')
 cursor = conn.execute('SELECT SUM(pnl) FROM orders WHERE date=date(\"now\")')
 cumulative_pnl = cursor.fetchone()[0] or 0
 print(f'Cumulative P&L today: R$ {cumulative_pnl:,.2f}')
-print(f'Status: {\"🟡 Loss\" if cumulative_pnl < -2500 else \"🟢 Profit/Breakeven\"}')
+status = '🟡 Loss' if cumulative_pnl < -2500 else '🟢 Profit/Breakeven'
+print(f'Status: {status}')
 "
 ```
 
@@ -171,10 +192,13 @@ print(f'Status: {\"🟡 Loss\" if cumulative_pnl < -2500 else \"🟢 Profit/Brea
    - Mantém vencedoras para continuar
 
 **Análise de Root Cause (IMEDIATO - 10 min):**
+
 ```bash
 # Ver EXATAMENTE o que aconteceu
 echo "=== ORDER LOG (últimas 20 transações) ==="
-sqlite3 data/db/trading.db "SELECT timestamp, type, symbol, price, exit_price, pnl FROM orders ORDER BY timestamp DESC LIMIT 20;"
+sqlite3 data/db/trading.db \
+  "SELECT timestamp, type, symbol, price, exit_price, pnl FROM orders \
+   ORDER BY timestamp DESC LIMIT 20;"
 
 echo "=== CUMULATIVE P&L (intraday) ==="
 sqlite3 data/db/trading.db "SELECT SUM(pnl) as total_loss FROM orders WHERE date='2026-03-10';"
@@ -193,17 +217,20 @@ tail -50 data/logs/model.log | grep -E "score=|error|exception"
 
 **Decisão de Recuperação:**
 Requer aprovação de AMBOS:
+
 - ✅ **CTO:** "Código operacional, recuperação segura"
 - ✅ **CFO:** "Aceita risco, capital protegido"
 
 **Recuperação (CTO autoriza):**
+
 ```bash
 # Resetar circuit breaker
 python -c "
 from src.domain.models.risk_system import CircuitBreaker
 cb = CircuitBreaker()
 cb.reset_level_3()
-print('Circuit breaker resetado - autorização CTO + CFO obrigatória')
+print('Circuit breaker resetado')
+print('Autorização CTO + CFO obrigatória')
 "
 
 # Reiniciar motor de trading
@@ -233,6 +260,7 @@ python -m src.application.services.trading_orchestrator --resume --capital-check
 4. Market regime change (modelo desatualizado)
 
 **Diagnóstico (10 min):**
+
 ```bash
 # Calcular FP rate atual
 sqlite3 data/db/trading.db "
@@ -264,6 +292,7 @@ print(f'StdDev: R$ {statistics.stdev(pnls) if len(pnls) > 1 else 0:.2f}')
 4. ✅ **Trader pode elevar threshold manualmente** (CTO approval)
 
 **ML Expert análise (se continua):**
+
 ```bash
 # Fazer backtest com dados atualizados
 python scripts/backtest_optimizado.py --recent 50 --resample
@@ -288,6 +317,7 @@ python scripts/backtest_optimizado.py --recent 50 --resample
 4. Memory pressure (swap ativado)
 
 **Diagnóstico Rápido (3 min):**
+
 ```bash
 # Ver CPU/Memory real-time
 tasklist /v | find "python"
@@ -323,7 +353,7 @@ sqlite3 data/db/trading.db "PRAGMA page_count;"
 
 ## Contatos de Escalação
 
-```
+```text
 TIER 1 (5-15 min response):
 - CTO/Eng Sr: <TELEFONE> | Teams: @cto_name
 - ML Expert: <TELEFONE> | Teams: @ml_name

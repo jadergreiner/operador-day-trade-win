@@ -338,64 +338,73 @@ rm c:\repo\projeto\analisa_gap_precificacao.py
 
 ---
 
-### 5. 🤖 Escopo de Execução - 4 Agentes Operacionais (16/03/2026)
+### 5. 🤖 Escopo de Execução - 5 Launchers Prioritários (02/04/2026)
 
-**FUNDAMENTAL:** Todas as decisões arquiteturais e operacionais devem ter como
-alvo **um destes 4 agentes executores**:
+**FUNDAMENTAL:** Todas as decisões arquiteturais e operacionais devem gerar
+valor direto em **um destes 5 launchers prioritários** — **4 agentes
+executores + 1 camada transversal de observabilidade**.
 
-#### Agentes Operacionais:
+#### Launchers Prioritários:
 
 1. **INICIAR_DIARIOS.bat** 📝
    - Script: `start_journals_full_display.py`
-   - Propósito: Captura operacional em 3 streams (Trading Journal, AI
-     Reflection, RL Performance)
-   - Frequência: Contínuo (durante horário de operação)
+   - Propósito: bootstrap diário, journaling, retraining P50 e contexto
+     macro para os demais agentes
+   - Frequência: contínuo durante o pregão
    - Saída: `data/diarios/consolidated_[DATA].json`
    - Status: ✅ Production Ready
 
 2. **INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat** 📊
    - Script: `agente_micro_tendencia_winfut.py`
-   - Propósito: Geração de sinais intraday (~29/dia) com Score Macro + ML
-   - Componentes: MacroScoreEngine, LightGBM Filter, Anti-OT (7 filtros)
+   - Propósito: geração de sinais intraday (~29/dia) com Score Macro + ML
+   - Componentes: MacroScoreEngine, LightGBM Filter e Anti-OT (7 filtros)
    - Saída: `data/diarios/micro_trend_decisions_[DATA].json`
    - Gate: ✅ AC1-AC6 aprovado (06/03/2026)
    - Status: ✅ Production Ready
 
 3. **INICIAR_AGENTE_RL_5000.bat** 🤖
-   - Script: `operar_novo_agente_rl_real_antiovertrading.py`
-   - Propósito: Execução automática com Q-Learning (5000 episódios)
-   - Proteção: SL/TP dinâmicos, Anti-OT (7 filtros), Profit Protection
+   - Script principal: `scripts/agente_com_supervision.py`
+   - Propósito: execução RL em produção estrita com wrapper canônico
+   - Proteção: SL/TP dinâmicos, Anti-OT e Profit Protection
    - Modelo: `data/models/novo_agente_rl/modelo_final/q_network.pkl`
-   - Win Rate: 65-68% (histórico)
-   - Status: ✅ v3.0 Production Ready
+   - Status: ✅ v4.0 Production Ready
 
 4. **INICIAR_AGENTE_RL_DIRETO.bat** 🚀
    - Script: `agente_rl_direto_independente.py`
-   - Propósito: Execução paralela isolada (alternativa ao RL_5000)
-   - Isolamento: Session ID próprio, posições independentes
-   - Uso: Teste/validação multípla do mesmo modelo RL
-   - Status: ✅ v3.0 Production Ready (paralelo sem conflitos)
+   - Propósito: execução paralela isolada como alternativa ao RL 5000
+   - Isolamento: session ID próprio e logs separados
+   - Uso: validação, contingência e operação paralela controlada
+   - Status: ✅ v4.0 Production Ready
+
+5. **INICIAR_MONITOR_QUANTICO.bat** 🧭
+   - Script: `monitor_quantico_tendencia.py`
+   - Propósito: observabilidade web do dia com contexto global e tendência
+     do WIN$N
+   - Endpoints: `http://localhost:8765/` e `http://localhost:8765/dados`
+   - Uso: suporte visual para Diários, Micro Tendência e agentes RL
+   - Status: ✅ Production Ready
 
 #### Arquitetura Operacional:
 
 ```
-MT5 (WIN$N)
-    ├─ [Agente Diários]       → Logs (5 min)
-    ├─ [Micro Tendência]      → Sinais (~29/dia)
-    ├─ [RL 5000]              → Trades (automático)
-    └─ [RL Direto] (paralelo) → Trades isolado
+MT5 + Dados Globais
+    ├─ [Diários]          → contexto + journaling + retraining
+    ├─ [Micro Tendência]  → sinais (~29/dia)
+    ├─ [RL 5000]          → execução em produção estrita
+    ├─ [RL Direto]        → execução isolada paralela
+    └─ [Monitor Quântico] → dashboard web + API JSON local
             ↓
-        trading.db (SQLite)
-            ↓
-    [Feedback RL] para próximo dia
+    SQLite + outputs + monitoramento operacional
 ```
 
-#### Documentação Operacional:
+#### Documentação Operacional Canônica:
 
-- 📖 **INIT_DO_PROJETO.md** (raiz) - Quick Start (5 min)
-- 📖 **docs/OPERACAO_4_AGENTES.md** - Guia detalhado por agente
-- 📖 **ARQUITETURA_ALVO.md** - Contrato arquitetural
-- 📖 **REGRAS_DE_NEGOCIO.md** - Regras operacionais
+- 📖 **`START_HERE.md`** - quick start rápido
+- 📖 **`docs/sessoes/INIT_DO_PROJETO.md`** - init detalhado
+- 📖 **`docs/OPERACAO_4_AGENTES.md`** - guia operacional dos 5 launchers
+- 📖 **`docs/ARQUITETURA_ALVO.md`** - contrato arquitetural
+- 📖 **`docs/REGRAS_DE_NEGOCIO.md`** - regras operacionais
+- 📖 **`docs/STATUS_ENTREGAS.md`** - status e checkpoints
 
 #### Checklist Pré-Operação:
 
@@ -403,7 +412,7 @@ MT5 (WIN$N)
 □ MT5 aberto e logado
 □ Modelo RL existe: data/models/novo_agente_rl/modelo_final/q_network.pkl
 □ BD inicializado: python scripts/diagnostico_modelo_rl.py
-□ Saldo > R$ 1.000 (mínimo recomendado)
+□ Monitor local acessível quando necessário: http://localhost:8765/
 □ Network estável (ping google.com OK)
 □ Timeframe servidor = BRT
 □ Nenhum processo Python anterior rodando
@@ -411,12 +420,13 @@ MT5 (WIN$N)
 
 #### Referência Rápida:
 
-| **Agente** | **Função** | **Launcher** | **Executável** |
-|---|---|---|---|
-| Diários | Auditoria | `INICIAR_DIARIOS.bat` | Python script |
-| Micro Tendência | Sinais | `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | Python script |
-| RL 5000 | Trades | `INICIAR_AGENTE_RL_5000.bat` | Python script |
-| RL Direto | Trades (paralelo) | `INICIAR_AGENTE_RL_DIRETO.bat` | Python script |
+| **Launcher** | **Valor principal** | **Papel** |
+|---|---|---|
+| `INICIAR_DIARIOS.bat` | Journaling + contexto + retraining | Core |
+| `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | Sinais intraday com ML | Core |
+| `INICIAR_AGENTE_RL_5000.bat` | Execução RL em produção | Execução |
+| `INICIAR_AGENTE_RL_DIRETO.bat` | Execução paralela isolada | Contingência |
+| `INICIAR_MONITOR_QUANTICO.bat` | Dashboard e API local de tendência | Observabilidade |
 
 ---
 

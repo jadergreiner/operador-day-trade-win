@@ -2,7 +2,7 @@
 
 **Operador Day Trade Win - Sistema de Execução Automática para Mini Índice**
 
-**Versão:** 2.0 | **Data:** 16 de março de 2026 | **Status:** ✅ Production Ready
+**Versão:** 2.1 | **Data:** 2 de abril de 2026 | **Status:** ✅ Production Ready
 
 ---
 
@@ -31,27 +31,33 @@ python scripts/diagnostico_modelo_rl.py
 # Se falhar: 💬 Ver troubleshooting abaixo
 ```
 
-### 3️⃣ Iniciar Agentes
+### 3️⃣ Iniciar Launchers Prioritários
 
 ```bash
-# Opção A: Interface Gráfica (recomendado)
-double-click INICIAR_DIARIOS.bat                        # Terminal 1
-double-click INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat    # Terminal 2
-double-click INICIAR_AGENTE_RL_5000.bat                # Terminal 3
+# Opção A: Ordem recomendada (5 launchers prioritários)
+double-click INICIAR_DIARIOS.bat                     # Terminal 1 - contexto
+double-click INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat # Terminal 2 - sinais
+double-click INICIAR_MONITOR_QUANTICO.bat           # Terminal 3 - dashboard
+double-click INICIAR_AGENTE_RL_5000.bat             # Terminal 4 - produção
+double-click INICIAR_AGENTE_RL_DIRETO.bat           # Terminal 5 - opcional
 
 # Opção B: Via Terminal (advanced)
-python scripts/start_journals_full_display.py           # Terminal 1
-python scripts/agente_micro_tendencia_winfut.py         # Terminal 2
-python scripts/operar_novo_agente_rl_real_antiovertrading.py  # Terminal 3
+python scripts/start_journals_full_display.py                  # Terminal 1
+python scripts/agente_micro_tendencia_winfut.py                # Terminal 2
+python scripts/monitor_quantico_tendencia.py                   # Terminal 3
+python scripts/agente_com_supervision.py --sl-tp-mode dinamico # Terminal 4
+python scripts/agente_rl_direto_independente.py --mode dinamico # Terminal 5
 ```
 
 ### 4️⃣ Monitorar Operação
 
 ```bash
 # Em tempo real nos terminais abertos:
-        Terminal 1 (Diários)        →  Registra eventos a cada 5 min
+        Terminal 1 (Diários)        →  Registra eventos e journaling
         Terminal 2 (Micro)          →  Novos sinais aparecem aqui
-        Terminal 3 (RL)             →  Trades executados [COMPRA/VENDA]
+        Terminal 3 (Monitor)        →  Dashboard web em localhost:8765
+        Terminal 4 (RL 5000)        →  Trades executados [COMPRA/VENDA]
+        Terminal 5 (RL Direto)      →  Paralelo opcional / contingência
 
 # Desempenho:
         Arquivos gerados em:        →  data/diarios/ + outputs/ + data/db/
@@ -62,7 +68,9 @@ python scripts/operar_novo_agente_rl_real_antiovertrading.py  # Terminal 3
 
 ```bash
 # Pressione Ctrl+C em cada terminal (na sequência reversa):
-Terminal 3 (RL)         → Ctrl+C  (encerra posição aberta se houver)
+Terminal 5 (RL Direto)  → Ctrl+C  (se estiver ativo)
+Terminal 4 (RL 5000)    → Ctrl+C  (encerra posição aberta se houver)
+Terminal 3 (Monitor)    → Ctrl+C
 Terminal 2 (Micro)      → Ctrl+C
 Terminal 1 (Diários)    → Ctrl+C
 
@@ -75,10 +83,10 @@ Todos os terminais devem exibir "[OK] Agente encerrado" ou similar
 ## 📋 Arquitetura (3 camadas)
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  CAMADA DE APRESENTAÇÃO                                │
-│  [INICIAR_DIARIOS.bat] [INICIAR_MICRO...] [RL_5000.bat]│
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│  CAMADA DE APRESENTAÇÃO                                             │
+│  [DIARIOS] [MICRO] [MONITOR] [RL_5000] [RL_DIRETO(opcional)]        │
+└──────────────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────┐
 │  CAMADA DE NEGÓCIO (src/ + scripts/)                   │
@@ -103,7 +111,7 @@ Todos os terminais devem exibir "[OK] Agente encerrado" ou similar
 
 ---
 
-## 🎯 Os 4 Agentes
+## 🎯 Os 5 Launchers Prioritários
 
 ### **Agente 1: INICIAR_DIARIOS.bat** 📝
 
@@ -145,10 +153,10 @@ Execução automática com Q-Learning (modelo treinado 5000 eps)
 
 ```
 INICIAR_AGENTE_RL_5000.bat
-├─ operar_novo_agente_rl_real_antiovertrading.py
+├─ agente_com_supervision.py --sl-tp-mode dinamico
 ├─ Q-Network (5000 estados × 3 ações)
 ├─ ProfitProtectionEngine (SL/TP dinâmicos)
-├─ Modo: [1] Avaliar  [2] Mercado Real  [3] Original
+├─ Modo: [1] Avaliar  [2] Mercado Real  [3] Validar Go Live
 └─ Saída: outputs/agente_rl_real_[TIMESTAMP].log
 ```
 
@@ -178,21 +186,40 @@ INICIAR_AGENTE_RL_DIRETO.bat
 
 ---
 
+### **Agente 5: INICIAR_MONITOR_QUANTICO.bat** 🧭
+
+Camada transversal de observabilidade para contexto do dia.
+
+```
+INICIAR_MONITOR_QUANTICO.bat
+├─ monitor_quantico_tendencia.py
+├─ yfinance + tradingview_ta + MT5 (quando disponível)
+├─ API JSON: http://localhost:8765/dados
+└─ Dashboard local: http://localhost:8765/
+```
+
+**Quando usar:** ✅ Junto com Diários/Micro para leitura visual do contexto,
+confirmação macro e apoio à decisão.
+
+---
+
 ## 📁 Estrutura de Pastas
 
 ```
 c:\repo\operador-day-trade-win\
 │
-├─ BAT/                            ← Scripts launcher (futura consolidação)
+├─ launchers atuais na raiz              ← Entrypoints .bat em uso hoje
 │  ├─ INICIAR_DIARIOS.bat
 │  ├─ INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
+│  ├─ INICIAR_MONITOR_QUANTICO.bat
 │  ├─ INICIAR_AGENTE_RL_5000.bat
 │  └─ INICIAR_AGENTE_RL_DIRETO.bat
 │
 ├─ scripts/                         ← Python scripts principal
 │  ├─ start_journals_full_display.py      (Diários)
 │  ├─ agente_micro_tendencia_winfut.py    (Micro Tendência)
-│  ├─ operar_novo_agente_rl_real_antiovertrading.py  (RL 5000)
+│  ├─ monitor_quantico_tendencia.py       (Monitor Quântico)
+│  ├─ agente_com_supervision.py           (RL 5000)
 │  ├─ agente_rl_direto_independente.py    (RL Direto)
 │  ├─ diagnostico_modelo_rl.py            (Health Check)
 │  └─ ... outros scripts
@@ -408,7 +435,7 @@ sqlite3 data/db/trading.db \
 
 ### "Como mudo target lucro/stop loss?"
 
-```
+```text
 src/application/services/novo_agente/pipeline_treinamento.py
   LINE 50: TARGET_PROFIT = 140.00    # Altere aqui
   LINE 51: STOP_LOSS = -250.00       # E aqui
@@ -417,9 +444,9 @@ src/application/services/novo_agente/pipeline_treinamento.py
 
 ### "Como aumento min volatilidade para evitar fakes?"
 
-```
-scripts/operar_novo_agente_rl_real_antiovertrading.py
-  LINE 60: MIN_VOLATILIDADE = 0.05    # Aumente para 0.10
+```text
+scripts/agente_com_supervision.py
+  Ajuste a constante/configuração de volatilidade mínima do runtime ativo
 # Depois reinicie
 ```
 

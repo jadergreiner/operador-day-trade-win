@@ -1,4 +1,4 @@
-# 🚀 Operador Day Trade WIN - Comece Aqui!
+# 🚀 Operador Day Trade WIN - Comece Aqui
 
 **Bem-vindo ao sistema de trading automatizado!**
 
@@ -7,37 +7,43 @@
 ## ⚡ Quick Start (5 minutos)
 
 ### Passo 1: Abra o Terminal/CMD
-```
+
+```text
 Windows Key + R
 cmd
 Enter
 ```
 
-### Passo 2: Vá para a pasta BAT
-```
-cd BAT
+### Passo 2: Vá para a raiz do projeto
+
+```bash
+cd /d c:\Users\Usuario\Documents\03_Trade\operador-day-trade-win
 ```
 
-### Passo 3: Execute os dois operadores (pela manhã)
+### Passo 3: Execute os launchers na ordem recomendada
 
-**Primeiro operador:**
-```
-INICIAR_DIARIOS.bat
-```
-Aguarde 2-3 minutos até ver ✅ "Sistema Pronto"
-O bootstrap do terminal agora também mostra o `daily_confidence_gate` antes do Python iniciar.
+**Core obrigatório:**
 
-**Segundo operador (em outra janela de CMD):**
-```
-INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat
-```
-Aguarde ✅ "Auto Trading Ativado"
+1. `INICIAR_DIARIOS.bat`
+   Aguarde 2-3 minutos até ver o bootstrap completo e o
+   `daily_confidence_gate`.
+2. `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
+   Aguarde a confirmação do auto trade e dos filtros ML.
+
+**Complementares com valor real:**
+3. `INICIAR_MONITOR_QUANTICO.bat`
+   Abre o painel web em `http://localhost:8765/` com contexto global do dia.
+4. `INICIAR_AGENTE_RL_5000.bat`
+   Execução RL em produção estrita quando o mercado estiver pronto.
+5. `INICIAR_AGENTE_RL_DIRETO.bat`
+   Alternativa paralela e isolada para validação ou contingência.
 
 ---
 
-## ✅ Você Está Pronto!
+## ✅ Você Está Pronto
 
 O sistema agora:
+
 - ✅ Monitora continuamente o mercado
 - ✅ Analisa setups de entrada automaticamente
 - ✅ Envia ordens quando critérios confirmados
@@ -46,14 +52,19 @@ O sistema agora:
 
 ---
 
-## 📋 Operadores Core
+## 📋 Launchers Prioritários
 
-| Arquivo | Função | Quando | Status |
-|---------|--------|--------|--------|
-| **INICIAR_DIARIOS.bat** | Startup diário | 09:30 BRT | **CRÍTICO** ⭐ |
-| **INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat** | Engine automático | Após sistema pronto | **CRÍTICO** ⭐ |
+| Arquivo | Valor entregue | Quando usar | Papel |
+| ------- | -------------- | ----------- | ----- |
+| **INICIAR_DIARIOS.bat** | Journaling, contexto e retraining diário | Antes do pregão | **CORE** ⭐ |
+| **INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat** | Geração de sinais com filtros ML | Após Diários | **CORE** ⭐ |
+| **INICIAR_MONITOR_QUANTICO.bat** | Dashboard web e tendência do dia | Paralelo à operação | Observabilidade |
+| **INICIAR_AGENTE_RL_5000.bat** | Execução RL em produção estrita | Quando houver janela operacional | Execução |
+| **INICIAR_AGENTE_RL_DIRETO.bat** | Operação paralela isolada | Validação/contingência | Execução paralela |
 
-Estes dois arquivos são o **CORE** do produto. Todo o sistema é construído para que você execute esses dois no começo do dia e feche no fim do pregão.
+`INICIAR_DIARIOS.bat` e `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat`
+continuam sendo o núcleo mínimo. Os outros 3 launchers ampliam execução,
+observabilidade e contingência.
 
 ---
 
@@ -77,39 +88,44 @@ Quando o pregão fecha (17:00 BRT):
 
 ---
 
-## 🎯 ENTREGA DE VALOR & BACKLOG
+## 🎯 ENTREGA DE VALOR & INIT OPERACIONAL
 
 Pronto para ativar o sistema em produção?
 
-**Documentação Essential (Backlog Refatorado - v5.0):**
-1. **`docs/BACKLOG_UNIFICADO.md`** ← SINGLE SOURCE OF TRUTH (sem datas, avaliação dual PO+CFO)
-2. **`docs/QUICK_START.md`** ← Quick start rápido (3 minutos)
-3. **`docs/ENTREGA_DE_VALOR.md`** ← Financeiro + ROI
-4. **`docs/GO_LIVE_CHECKLIST.md`** ← Dia da execução
+**Documentação canônica para onboarding rápido:**
 
-**Documentação Completa:**
-- **`docs/PACOTE_ENTREGA_VALOR.md`** - Tudo em detalhes
-- **`docs/APRESENTACAO_BOARD_GOLIVE.md`** - Para reuniões
-- **`docs/INDEX_FINAL_ENTREGA.md`** - Mapa de navegação
-- **`outputs/ENTREGA_RESUMO.txt`** ← 1 minuto de resumo
+1. **`docs/sessoes/INIT_DO_PROJETO.md`** ← init detalhado dos launchers
+2. **`docs/OPERACAO_4_AGENTES.md`** ← operação dos 5 launchers
+3. **`docs/ARQUITETURA_ALVO.md`** ← contrato arquitetural e isolamento
+4. **`docs/REGRAS_DE_NEGOCIO.md`** ← regras operacionais e limites
+5. **`docs/STATUS_ENTREGAS.md`** ← status atual e entregas
+
+**Referências complementares:**
+
+- **`docs/AGENTES_RL_PARALELOS.md`** - isolamento entre RL 5000 e RL Direto
+- **`docs/MODELAGEM_DE_DADOS.md`** - bancos SQLite e artefatos
+- **`scripts/README.md`** - padrões dos scripts operacionais
 
 ---
 
 ## 📞 Referência Rápida
 
 **Sistema não inicia?**
-- Execute `BAT/DIAGNOSTICO_INSTALACAO.bat` para verificar dependências
+
+- Execute `python scripts/diagnostico_modelo_rl.py` para validar ambiente
 
 **Erro de conexão?**
+
 - Verifique internet: `ping google.com`
 - Verifique conta MT5 em `config/.env`
 
 **Dúvidas?**
-- Revise `BAT/README.md` para fluxo completo
-- Monitore logs da execução na linha de comando
+
+- Revise `docs/OPERACAO_4_AGENTES.md` para fluxo completo
+- Use `INICIAR_MONITOR_QUANTICO.bat` para acompanhar o contexto visual
 
 ---
 
 **Status:** ✅ Production-Ready
-**Última Atualização:** 03/03/2026
+**Última Atualização:** 02/04/2026
 **Contato:** Documentação em `docs/`
