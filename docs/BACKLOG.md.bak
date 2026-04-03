@@ -39,105 +39,25 @@ respectivo. Itens comuns foram atribuídos ao agente principal impactado.
 
 ### P1 - Entregas de execucao e aprendizado
 
-#### P1-PROFIT_PROTECTION — calibracao priorizada (02/04/2026)
+#### Proximos Passos Opcionais (P1-PROFIT_PROTECTION)
 
-**1. Ajustar Thresholds - Modificar `profit_protection_engine` config**
-
-**Status:** APROVADO_E_PRIORIZADO (02/04/2026)
-
-**Categoria:** RISK
-**Decisao PO:** APROVAR_E_PRIORIZAR
-**Prioridade PO:** ALTA no bloco `P1-PROFIT_PROTECTION`
-**Evidencia:** TIER 1 — uso em live trading, com bug de break-even ja
-corrigido em 18/03/2026, mas thresholds ainda hardcoded em
-`src/application/profit_protection_engine.py`,
-`scripts/operar_novo_agente_rl_real_antiovertrading.py` e
-`scripts/agente_rl_direto_independente.py`.
+**1. Ajustar Thresholds - Modificar profit_protection_engine config**
 
 - **Objetivo:** Fine-tuning dos parametros de protecao baseado em
   resultados de live trading.
-- **Valor esperado:** preservar lucro capturado, reduzir devolucao em
-  reversoes rapidas e baixar drawdown sem piorar o win rate.
-- **Inclui:**
-  - Externalizar os thresholds para configuracao canonica
+- **Atividades:**
   - Coletar dados de operacoes reais (P&L, reversoes detectadas)
   - Analisar distribuicao de ganhos e reversoes
-  - Testar 2-3 combinacoes novas de parametros
-  - Validar impacto em win rate e drawdown com baseline comparativo
-- **Nao inclui:**
-  - Novos alertas webhook/email
-  - Redesenho do motor de protecao
-  - Mudanca da logica de entrada dos agentes
-
----
-
-#### P1-PROFIT_PROTECTION-THRESHOLDS-20260402 — Externalizar thresholds e corrigir lacuna RL Direto
-
-**Status:** PENDENTE
-
-**ID:** P1-PROFIT_PROTECTION-THRESHOLDS-20260402
-
-**Objetivo:** Externalizar thresholds do `ProfitProtectionEngine` para
-`config/profit_protection.yaml`, habilitar `shadow_mode` por perfil e criar
-script de calibracao A/B (`scripts/calibrar_profit_protection.py`) para
-testar combos em staging antes de forcar deploy em producao (RL Direto).
-
-**Principais entregaveis:**
-- `config/profit_protection.yaml` (perfil default + perfis de calibracao)
-- `src/application/profit_protection_profile.py` (Pydantic model)
-- loader singleton `src/application/config_loader.py` (cache + reload)
-- `scripts/calibrar_profit_protection.py` (backtest + relatorio)
-- atualizar `scripts/agente_rl_direto_independente.py` para garantir
-  chamada periodica a `processar_protecao()` (fix event-loop gap)
-
-**Impacto operacional:** ALTO — afeta `INICIAR_AGENTE_RL_DIRETO.bat` e
-`INICIAR_AGENTE_RL_5000.bat` (tipo: DIRETO). Acoes recomendadas: reiniciar
-agentes apos deploy e monitorar `outputs/profit_protection_*`.
-
-**Pronto quando:**
-- `config/profit_protection.yaml` criado e validado em staging
-- script de calibracao executa e gera `outputs/backtest_profit_protection_*`
-- agentes em staging rodando com `shadow_mode` e sem efeitos em ordens
-- dependencias adicionadas ao ambiente (`pydantic`, `pyyaml`)
-
----
-
-#### DEV-DEP-PROFIT-PROTECTION-20260402 — Dependencias de runtime
-
-**Status:** PENDENTE
-
-**Objetivo:** Adicionar `pydantic` e `pyyaml` ao ambiente de execucao e
-documentar instrucoes de restart para os launchers Windows.
-
-**Acoes:**
-- criar `requirements.txt` com `pydantic>=2.0` e `pyyaml>=6.0` (ou pinar versões)
-- documentar em README root e em `docs/REGRAS_DE_NEGOCIO.md` as instrucoes
-  de restart: `INICIAR_AGENTE_RL_5000.bat` e `INICIAR_AGENTE_RL_DIRETO.bat`
-- atualizar pipeline Docker/CI se existir (notificar DevOps)
-
-**Pronto quando:**
-- `requirements.txt` presente no repositório
-- instrucoes de deploy/restart adicionadas nos docs
-- validação em staging com `pip install -r requirements.txt` OK
-- **Parametros-alvo para ajuste:**
-  - `profit_target_pct`: atualmente 2.0%
-  - `stop_loss_pct`: atualmente 1.0%
-  - `reversao_threshold_pct`: atualmente 0.75%
-  - `break_even_offset_pct`: atualmente 0.10%
+  - Testar novos valores para:
+    - `profit_target_pct`: Atualmente 2.0%
+    - `stop_loss_pct`: Atualmente 1.0%
+    - `reversao_threshold_pct`: Atualmente 0.75%
+    - `break_even_offset_pct`: Atualmente 0.10%
+  - Validar impacto em win rate e drawdown
 - **Entregar:**
-  - Configuracao canonica de thresholds, sem hardcode nos launchers
   - Analise de threshold effectiveness (JSON + Markdown)
-  - Parametros recomendados baseados em dados
-  - Validacao de impacto com backtest comparativo dos novos valores
-- **Dependencias:**
-  - `BUG-MICRO-01` concluido em 18/03/2026
-  - Minimo de 5 pregoes ou amostra equivalente de operacoes reais
-  - Rollback simples para os valores atuais
-- **Pronto quando:**
-  - Thresholds ficarem ajustaveis sem editar codigo-fonte
-  - Relatorio mostrar comparacao `baseline vs calibrado`
-  - Drawdown nao piorar e win rate nao cair alem do limite acordado
-  - Rollout e rollback ficarem documentados
+  - Parametros otimizados baseados em dados
+  - Validacao de impacto com backtest dos novos valores
 - **Estimativa:** 4-6 horas (coleta + teste + validacao)
 
 **2. Adicionar Alertas - Webhook/Email quando reversao detectada**
@@ -183,9 +103,8 @@ documentar instrucoes de restart para os launchers Windows.
 - **Estimativa:** 8-10 horas (desenvolvimento + parametrizacao +
   validacao)
 
-**Prioridade do bloco:** item 1 promovido para **P1-ALTA** em
-02/04/2026. Itens 2 e 3 permanecem opcionais apos estabilizacao da
-Fase 1 com dados reais suficientes.
+**Prioridade:** OPCIONAL - Execucao recomendada apos Fase 1 live data
+disponivel (primeira semana de operacao ao vivo).
 
 #### Proximos Passos Opcionais (P1-AGENTES_PARALELOS)
 

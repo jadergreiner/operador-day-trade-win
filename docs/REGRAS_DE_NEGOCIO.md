@@ -398,6 +398,37 @@ Essa regra existe para evitar reacao impulsiva e repeticao imediata do erro.
 
 - drawdown <= -15% deve gerar RISK_VIOLATION imediato via WebSocket ATI-1.
 
+## Profit Protection v2 — Configuracao YAML e Operacao
+
+Esta secao documenta a chegada do `profit_protection.yaml` (Profit Protection
+v2) e orientacoes operacionais.
+
+- Local padrao: `config/profit_protection.yaml` (pode ser overriden via env)
+- Modelo tipado: `ProfitProtectionProfile` (implementado com `pydantic`)
+- Funcionalidades:
+  - perfis configuraveis por ambiente/perfil (ex: `default`, `strict`, `shadow`)
+  - `shadow_mode`: aplica telemetria sem alterar outcomes (A/B testing)
+  - calibração via script: `scripts/calibrar_profit_protection.py`
+
+Regras operacionais:
+
+- Quando `shadow_mode` estiver ativo, os logs e metricas sao enviados, mas
+  a decisao real de fechar/ajustar posicao fica com a logica atual; util para
+  validar novas estrategias sem impactar P&L.
+- Se `profit_protection.yaml` faltar ou for invalido, o sistema entra em
+  fallback com valores padrao (compatibilidade retroativa) e registra
+  `CRITICAL` no log para suporte.
+- Operador/CFO pode intervir trocando o perfil via arquivo ou comando de
+  override; a mudanca eh aplicada no proximo ciclo de reload (cacheado
+  em memoria para O(1) de leitura apos boot).
+
+Recomendacao de monitoramento:
+
+- Verificar logs "fingerprint" no arranque para confirmar perfil carregado.
+- Monitorar telemetria `shadow_mode` nas primeiras 48h e checar delta de
+  performance antes de promover perfil para `strict`.
+
+
 ### Modo degradado
 
 - se o monitor nao estiver ativo, a sessao segue operando, mas registra alerta

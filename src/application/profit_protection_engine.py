@@ -18,7 +18,10 @@ import logging
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
+if TYPE_CHECKING:
+    from src.infrastructure.config.profit_protection_config import ProfitProtectionProfile
 
 logger = logging.getLogger(__name__)
 
@@ -114,9 +117,17 @@ class ProfitProtectionEngine:
         break_even_offset_pct: float = 0.10,
         reversao_threshold_pct: float = 0.75,
         cooldown_seconds: int = 5,
+        # Injeção de dependência canônica (ADR-018).
+        # Quando fornecido, substitui todos os parâmetros acima.
+        profile: Optional["ProfitProtectionProfile"] = None,
+        profile_nome: str = "baseline",
+        shadow_mode: bool = False,
     ) -> None:
         """
         Inicializa motor de proteção com configuração.
+
+        Prioridade:
+            profile (objeto ProfitProtectionProfile) > kwargs individuais.
 
         Args:
             profit_target_pct: Target de lucro em % (default 2.0%)
@@ -125,16 +136,34 @@ class ProfitProtectionEngine:
             break_even_offset_pct: Offset para break-even em % (default 0.1%)
             reversao_threshold_pct: % de reversão para alerta (default 75%)
             cooldown_seconds: Segundos entre sinais (default 5s)
+            profile: ProfitProtectionProfile resolvido pelo loader canônico.
+            profile_nome: Nome do perfil ativo (para telemetria/log).
+            shadow_mode: Se True, loga ações candidatas sem executar.
         """
-        self.config: Dict[str, float] = {
-            "profit_target_pct": profit_target_pct,
-            "stop_loss_pct": stop_loss_pct,
-            "partial_close_pct": partial_close_pct,
-            "break_even_offset_pct": break_even_offset_pct,
-            "reversao_threshold_pct": reversao_threshold_pct,
-            "cooldown_seconds": cooldown_seconds,
-        }
+        if profile is not None:
+            self.config: Dict[str, Any] = profile.as_engine_kwargs()
+        else:
+            self.config = {
+                "profit_target_pct": profit_target_pct,
+                "stop_loss_pct": stop_loss_pct,
+                "partial_close_pct": partial_close_pct,
+                "break_even_offset_pct": break_even_offset_pct,
+                "reversao_threshold_pct": reversao_threshold_pct,
+                "cooldown_seconds": cooldown_seconds,
+            }
+
+        self.profile_nome: str = profile_nome
+        self.shadow_mode: bool = shadow_mode
         self.historico_processamento: Dict[str, datetime] = {}  # Cooldown
+
+        logger.info(
+            "[ProfitProtectionEngine] Inicializado | profile=%s | "
+            "profit_target=%.2f%% | break_even=%.2f%% | shadow=%s",
+            self.profile_nome,
+            self.config["profit_target_pct"],
+            self.config["break_even_offset_pct"],
+            self.shadow_mode,
+        )
 
     def processar_protecao(
         self,
@@ -299,7 +328,7 @@ class ProfitProtectionEngine:
         # ============================================================
         # ETAPA 8: Retornar Resultado
         # ============================================================
-        return ProfitProtectionResult(
+        resultado = ProfitProtectionResult(
             trade_id=trade_id,
             status=status,
             profit_atual=profit_pct,
@@ -309,6 +338,19 @@ class ProfitProtectionEngine:
             lucro_maximo_sessao=lucro_maximo_sessao,
             deviance_reversao=deviance_reversao,
         )
+
+        if self.shadow_mode and acao_sugerida not in ("AGUARDAR", "COOLDOWN_ATIVO"):
+            logger.info(
+                "[SHADOW MODE] profile=%s | trade=%s | acao_candidata=%s | "
+                "profit_atual=%.2f%% | lucro_max=%.2f%%",
+                self.profile_nome,
+                trade_id,
+                acao_sugerida,
+                profit_pct,
+                lucro_maximo_sessao or 0.0,
+            )
+
+        return resultado
 
     def gerar_relatorio_json(
         self, resultados: list[ProfitProtectionResult]

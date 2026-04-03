@@ -1,0 +1,68 @@
+# ============================================================
+# Profit Protection - Configuração Canônica
+# Fonte: config/profit_protection.yaml
+# ADR: ADR-018
+# Versão: 1.0.0
+#
+# Formato dos valores: porcentagem ABSOLUTA
+#   2.0 = 2%   |   0.10 = 0.10%   |   NUNCA usar 0.02 para 2%
+#
+# Precedência de resolução:
+#   defaults -> profiles[profile_ativo] -> agent_overrides[agent_id]
+# ============================================================
+
+version: "1.0.0"
+
+# Perfil ativo (pode ser sobrescrito pela variável de ambiente
+# PROFIT_PROTECTION_PROFILE ou pelo campo em settings.py)
+profile_ativo: "baseline"
+
+# Shadow mode: quando true, o motor candidato loga a ação
+# sugerida mas NÃO executa mudanças reais no SL/TP.
+shadow_mode: false
+
+# ============================================================
+# PERFIS
+# ============================================================
+profiles:
+
+  # Perfil base — espelha os defaults do motor original.
+  # NUNCA remover; usado como fallback e como baseline A/B.
+  baseline:
+    nome: "Baseline (defaults históricos)"
+    profit_target_pct: 2.0
+    stop_loss_pct: 1.0
+    partial_close_pct: 0.75
+    break_even_offset_pct: 0.10
+    reversao_threshold_pct: 0.75
+    cooldown_seconds: 5
+
+  # Perfil conservador: break-even mais cedo, alvo menor.
+  conservador:
+    nome: "Conservador"
+    profit_target_pct: 1.5
+    stop_loss_pct: 1.0
+    partial_close_pct: 0.70
+    break_even_offset_pct: 0.15
+    reversao_threshold_pct: 0.65
+    cooldown_seconds: 5
+
+  # Perfil agressivo: deixa o lucro correr mais.
+  agressivo:
+    nome: "Agressivo"
+    profit_target_pct: 3.0
+    stop_loss_pct: 1.0
+    partial_close_pct: 0.80
+    break_even_offset_pct: 0.08
+    reversao_threshold_pct: 0.85
+    cooldown_seconds: 5
+
+# ============================================================
+# OVERRIDES POR AGENTE (opcional)
+# Sobrescrevem o perfil ativo para um agente específico.
+# Usar apenas quando houver evidência de calibração.
+# ============================================================
+agent_overrides: {}
+# Exemplo:
+#   agente_direto_20260402_143000:
+#     profile: conservador

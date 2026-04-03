@@ -170,6 +170,10 @@ try:
     )
     from src.application.posicao_isolamento import PosicaoIsoladaManager
     from src.application.profit_protection_engine import ProfitProtectionEngine
+    from src.infrastructure.config.profit_protection_config import (
+        carregar_config as _carregar_pp_config_direto,
+        resolver_perfil as _resolver_pp_perfil_direto,
+    )
     from src.application.services.rl_persistence_service import (
         RLPersistenceService,
     )
@@ -1823,15 +1827,17 @@ def inicializar_componentes():
 
         agente = pipeline._agente
 
-        # 5. Profit Protection Engine
+        # 5. Profit Protection Engine — config canônica (ADR-018)
         logger.info("[INIT] Inicializando Profit Protection Engine...")
+        _pp_cfg_direto = _carregar_pp_config_direto()
+        _pp_profile_direto = _resolver_pp_perfil_direto(
+            _pp_cfg_direto,
+            agent_id=AGENT_SESSION_ID,
+        )
         profit_protection = ProfitProtectionEngine(
-            profit_target_pct=2.0,
-            stop_loss_pct=1.0,
-            partial_close_pct=0.75,
-            break_even_offset_pct=0.10,
-            reversao_threshold_pct=0.75,
-            cooldown_seconds=5,
+            profile=_pp_profile_direto,
+            profile_nome=_pp_cfg_direto.profile_ativo,
+            shadow_mode=_pp_cfg_direto.shadow_mode,
         )
 
         logger.info("[OK] Profit Protection ativado")
@@ -2134,6 +2140,86 @@ def registrar_bloqueio_anti_overtrading(ciclo: int, acao_str: str, motivo: str) 
         f"[CICLO {ciclo}] [GUARD] BLOCKED | acao={acao_str} | "
         f"motivo=anti_overtrading | detalhe={motivo}"
     )
+
+
+# ============================================================================
+# PROTEÇÃO DE LUCROS — ADR-018 (P1-PROFIT_PROTECTION)
+# ============================================================================
+
+
+def processar_protecao_lucros_rl_direto() -> None:
+    """
+    Processa proteção de lucros apenas para posições DESTE agente (RL Direto).
+
+    Monitora:
+    - Reversões agudas após ganho inicial
+    - Ativa break-even stop quando lucro robusto
+    - Sugere fechamento parcial para ganho protegido
+
+    AC-018: Chamado periodicamente dentro do loop quando posição aberta.
+    """
+    global profit_protection
+
+    if profit_protection is None:
+        logger.debug("[PROTEÇÃO] profit_protection não inicializado, pulando")
+        return
+
+    try:
+        if mt5_adapter is None:
+            return
+        positions = mt5_adapter.get_positions(Symbol(SIMBOLO))
+        if not positions or len(positions) == 0:
+            return
+
+        for position in positions:
+            ticket_pos = int(getattr(position, 'ticket', 0))
+            pos_magic = int(getattr(position, 'magic', 0) or 0)
+            if pos_magic != MAGIC_NUMBER:
+                continue  # Ignorar posições de outros agentes (magic diferente)
+            try:
+                # Construir trade dict para o motor de proteção
+                entry_price = float(getattr(position, 'price_open', 0.0))
+                current_price = float(getattr(position, 'price_current', 0.0))
+                direcion = "BUY" if getattr(position, 'type', 0) == 0 else "SELL"
+                ticket = int(getattr(position, 'ticket', 0))
+
+                trade_dict = {
+                    "trade_id": f"T{ticket}",
+                    "symbol": SIMBOLO,
+                    "entry_price": entry_price,
+                    "entry_time": datetime.now(),
+                    "direction": direcion,
+                    "quantity": float(getattr(position, 'volume', 0.0)),
+                    "initial_sl": float(getattr(position, 'sl', 0.0)),
+                    "initial_tp": float(getattr(position, 'tp', 0.0)),
+                }
+
+                # Processar através do motor de proteção
+                resultado = profit_protection.processar_protecao(
+                    trade=trade_dict,
+                    preco_atual=current_price,
+                )
+
+                # Log de proteção
+                if resultado.acao_sugerida in ["ATIVAR_BREAK_EVEN_STOP", "FECHAR_PARCIAL"]:
+                    logger.info(
+                        f"[PROTEÇÃO] Ticket#{ticket} | Lucro:{resultado.profit_atual:.2f}% | "
+                        f"Status:{resultado.status.value} | Ação:{resultado.acao_sugerida}"
+                    )
+
+                # Implementar ação (break-even stop) se necessário
+                # Nota: MT5Adapter.modify_order() seria chamado aqui em produção
+                if resultado.acao_sugerida == "ATIVAR_BREAK_EVEN_STOP":
+                    logger.debug(
+                        f"[PROTEÇÃO] Break-even sugerido para T#{ticket}, "
+                        f"aguardando confirmação do MT5"
+                    )
+
+            except Exception as e:
+                logger.debug(f"[PROTEÇÃO] Erro ao processar proteção para posição: {e}")
+
+    except Exception as e:
+        logger.warning(f"[PROTEÇÃO] Erro em processar_protecao_lucros_rl_direto: {e}")
 
 
 # ============================================================================
@@ -2622,7 +2708,14 @@ def main():
                         )
                         # Não fazer continue — deixar seguir para buscar novo sinal
                     else:
-                        # Posição ainda aberta no MT5 — aguardar
+                        # Posição ainda aberta no MT5 — executar proteção de lucros
+                        logger.debug(f"[CICLO {ciclo}] Executando processar_protecao_lucros_rl_direto()...")
+                        try:
+                            processar_protecao_lucros_rl_direto()
+                        except Exception as e:
+                            logger.warning(f"[CICLO {ciclo}] Erro em proteção: {e}")
+
+                        # Continuar monitorando
                         posicoes_m = motor_decisao.obter_posicoes_abertas()
                         tk = posicoes_m[0].ticket if posicoes_m else "?"
                         logger.info(

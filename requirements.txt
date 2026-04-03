@@ -1,0 +1,5 @@
+pydantic>=2.0
+pyyaml>=6.0
+# Recomendado: instalar em venv usado pelos launchers Windows
+# Exemplo:
+# python -m pip install -r requirements.txt

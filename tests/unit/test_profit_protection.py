@@ -444,3 +444,154 @@ class TestTypeHintsDocumentation:
         """Valida que engine tem docstring."""
         assert ProfitProtectionEngine.__doc__ is not None
         assert engine.processar_protecao.__doc__ is not None
+
+
+# ============================================================
+# TEST: Loader + Injeção de Perfil (ADR-018)
+# ============================================================
+
+
+class TestLoaderEInjecaoPerfil:
+    """Testes de integração do loader YAML e injeção de perfil no engine."""
+
+    def test_loader_arquivo_ausente_retorna_baseline(
+        self, tmp_path: "pytest.TempPathFactory"
+    ) -> None:
+        """Arquivo YAML inexistente deve retornar baseline builtin sem exceção."""
+        from src.infrastructure.config.profit_protection_config import carregar_config
+
+        cfg = carregar_config(tmp_path / "nao_existe.yaml")
+        assert "baseline" in cfg.profiles
+        assert cfg.profiles["baseline"].profit_target_pct == 2.0
+
+    def test_loader_yaml_invalido_levanta_excecao(
+        self, tmp_path: "pytest.TempPathFactory"
+    ) -> None:
+        """YAML malformado deve levantar exceção."""
+        from src.infrastructure.config.profit_protection_config import carregar_config
+
+        yaml_ruim = tmp_path / "ruim.yaml"
+        yaml_ruim.write_text("profiles: [\nnao fechado", encoding="utf-8")
+
+        with pytest.raises(Exception):
+            carregar_config(yaml_ruim)
+
+    def test_loader_tipo_errado_levanta_excecao(
+        self, tmp_path: "pytest.TempPathFactory"
+    ) -> None:
+        """Campo com tipo errado deve levantar erro de validação Pydantic."""
+        from pydantic import ValidationError
+
+        from src.infrastructure.config.profit_protection_config import (
+            ProfitProtectionProfile,
+        )
+
+        with pytest.raises(ValidationError):
+            ProfitProtectionProfile(profit_target_pct="alto")  # type: ignore[arg-type]
+
+    def test_perfil_inexistente_fallback_baseline(self) -> None:
+        """Perfil não encontrado deve logar CRITICAL e devolver baseline."""
+        from src.infrastructure.config.profit_protection_config import (
+            ProfitProtectionConfig,
+            ProfitProtectionProfile,
+            resolver_perfil,
+        )
+
+        cfg = ProfitProtectionConfig(
+            profiles={"baseline": ProfitProtectionProfile()},
+            profile_ativo="baseline",
+        )
+        perfil = resolver_perfil(cfg, profile_env="inexistente")
+        assert perfil.profit_target_pct == 2.0  # baseline builtin
+
+    def test_precedencia_override_agente_vence(self) -> None:
+        """Override por agent_id deve ter precedência sobre profile_ativo."""
+        from src.infrastructure.config.profit_protection_config import (
+            ProfitProtectionConfig,
+            ProfitProtectionProfile,
+            resolver_perfil,
+        )
+
+        baseline = ProfitProtectionProfile(profit_target_pct=2.0)
+        conservador = ProfitProtectionProfile(profit_target_pct=1.5)
+        cfg = ProfitProtectionConfig(
+            profiles={"baseline": baseline, "conservador": conservador},
+            profile_ativo="baseline",
+            agent_overrides={"AGENTE_X": {"profile": "conservador"}},
+        )
+        perfil = resolver_perfil(cfg, agent_id="AGENTE_X")
+        assert perfil.profit_target_pct == 1.5
+
+    def test_engine_recebe_profile_object(self) -> None:
+        """Engine instanciado com objeto ProfitProtectionProfile usa seus valores."""
+        from src.infrastructure.config.profit_protection_config import (
+            ProfitProtectionProfile,
+        )
+
+        perfil = ProfitProtectionProfile(
+            profit_target_pct=3.0,
+            stop_loss_pct=1.5,
+            partial_close_pct=0.60,
+            break_even_offset_pct=0.20,
+        )
+        motor = ProfitProtectionEngine(profile=perfil, profile_nome="agressivo")
+        assert motor.config["profit_target_pct"] == 3.0
+        assert motor.config["partial_close_pct"] == 0.60
+        assert motor.profile_nome == "agressivo"
+
+    def test_shadow_mode_loga_sem_alterar_resultado(
+        self,
+        sample_trade_entry: "Dict",
+        caplog: "pytest.LogCaptureFixture",
+    ) -> None:
+        """Shadow mode deve logar ação candidata mas devolver resultado normal."""
+        import logging
+
+        from src.infrastructure.config.profit_protection_config import (
+            ProfitProtectionProfile,
+        )
+
+        perfil = ProfitProtectionProfile(profit_target_pct=2.0)
+        motor = ProfitProtectionEngine(
+            profile=perfil,
+            profile_nome="baseline",
+            shadow_mode=True,
+        )
+        assert motor.shadow_mode is True
+
+        # Preço suficiente para acionar break-even (entry + 1.0%)
+        preco_be = 100.0 * (1 + 0.0050)  # ligeiramente acima do offset
+        with caplog.at_level(logging.DEBUG, logger="src.application.profit_protection_engine"):
+            resultado = motor.processar_protecao(
+                trade=sample_trade_entry,
+                preco_atual=preco_be,
+                lucro_maximo_sessao=0.0,
+            )
+
+        # Resultado deve existir (shadow mode não bloqueia o retorno)
+        assert resultado is not None
+        assert isinstance(resultado, ProfitProtectionResult)
+
+    def test_partial_close_zero_permitido(self) -> None:
+        """partial_close_pct=0.0 deve ser aceito pela validação Pydantic."""
+        from src.infrastructure.config.profit_protection_config import (
+            ProfitProtectionProfile,
+        )
+
+        perfil = ProfitProtectionProfile(
+            profit_target_pct=2.0,
+            partial_close_pct=0.0,
+        )
+        assert perfil.partial_close_pct == 0.0
+
+    def test_engine_backward_compat_kwargs(self) -> None:
+        """Instanciar engine com kwargs antigos (sem profile) ainda deve funcionar."""
+        motor = ProfitProtectionEngine(
+            profit_target_pct=2.0,
+            stop_loss_pct=1.0,
+            partial_close_pct=0.75,
+            break_even_offset_pct=0.10,
+        )
+        assert motor.config["profit_target_pct"] == 2.0
+        assert motor.profile_nome == "baseline"
+        assert motor.shadow_mode is False

@@ -14,6 +14,7 @@
 - [ADR-011: Isolamento de Posicoes entre Agentes RL](#adr-011-isolamento-de-posicoes-entre-agentes-rl-rl-5000-vs-rl-direto)
 - [ADR-012: Magic Number (EA ID) por Agente](#adr-012-magic-number-ea-id-por-agente---isolamento-de-ordens-mt5)
 - [ADR-017: Premissa Intraday — lookback_days=7](#adr-017-premissa-intraday--lookback_days7-no-pipeline-de-reconciliacao)
+- [ADR-018: Governanca de Thresholds do Profit Protection por Perfil](#adr-018-governanca-de-thresholds-do-profit-protection-por-perfil-com-rollout-canario)
 
 ## Canonical Docs Policy
 
@@ -2197,6 +2198,126 @@ RECONCILER_LOOKBACK_DAYS: int = 7
 
 ---
 
+## ADR-018: Governanca de Thresholds do Profit Protection por Perfil com Rollout Canario
+
+**Status**: ✅ ACCEPTED
+**Data**: 02/04/2026
+**Prioridade**: P1 (Adaptabilidade operacional + segurança de capital)
+**Contexto originado em**: P1-PROFIT_PROTECTION-THRESHOLDS-20260402
+
+### Contexto
+
+O `ProfitProtectionEngine` possuia todos os seis
+thresholds operacionais hardcoded nos runtimes
+`operar_novo_agente_rl_real_antiovertrading.py` e
+`agente_rl_direto_independente.py`:
+
+```python
+ProfitProtectionEngine(
+    profit_target_pct=2.0,
+    stop_loss_pct=1.0,
+    partial_close_pct=0.75,
+    break_even_offset_pct=0.10,
+    reversao_threshold_pct=0.75,
+    cooldown_seconds=5,
+)
+```
+
+Isso impedia:
+
+- Ajuste sem deploy de codigo.
+- Testes A/B entre perfis (conservador, agressivo).
+- Rollout canario com coleta de evidencias.
+- Override por agent_id para cenarios de validacao.
+- Shadow mode para comparacao sem risco real.
+
+### Decisao
+
+**Externalizar thresholds para `config/profit_protection.yaml`
+com perfis nomeados e injecao tipada via Pydantic.**
+
+Estrutura de precedencia (do menos para o mais especifico):
+
+```
+defaults builtin
+  → profiles[profile_ativo]
+    → agent_overrides[agent_id]
+      → env var PROFIT_PROTECTION_PROFILE
+```
+
+Componentes criados:
+
+- `config/profit_protection.yaml` — fonte canonica
+  de verdade; versao `1.0.0`; 3 perfis: `baseline`,
+  `conservador`, `agressivo`.
+- `src/infrastructure/config/profit_protection_config.py`
+  — loader Pydantic tipado; `carregar_config()`,
+  `resolver_perfil()`, fallback seguro a baseline builtin
+  com log CRITICAL se perfil nao encontrado.
+- `src/application/profit_protection_engine.py` —
+  aceita `profile: Optional[ProfitProtectionProfile]`
+  no `__init__`; backward-compat total com kwargs antigos.
+- `src/application/services/profit_protection_calibration_service.py`
+  — calibracao A/B com guards: minimo 5 pregoes e
+  30 trades; degradacao maxima de win rate de 2 p.p.
+- `scripts/calibrar_profit_protection.py` — CLI
+  entrypoint para calibracao sobre trades do SQLite.
+
+### Consequencias
+
+**Pros:**
+
+- Mudanca de threshold sem deploy de codigo.
+- 3 perfis testaveis (baseline / conservador /
+  agressivo) com rollout canario controlado.
+- Shadow mode: coleta de evidencias sem risco de
+  capital antes de ativar perfil.
+- Backward-compat: runtimes antigos e testes
+  existentes nao quebram.
+- Override por agent_id: validacao cirurgica em
+  agente isolado.
+
+**Contras / Riscos:**
+
+- Arquivo YAML ausente faz fallback silencioso ao
+  baseline builtin (intencional; log WARNING emitido).
+- `stop_loss_pct` no perfil nao esta conectado ao
+  Gate 2 de risco (ADR-002); placeholder para evolucao.
+- `processar_protecao()` nao e chamado no loop
+  principal do RL Direto (gap pre-existente, fora do
+  escopo desta ADR).
+
+### Invariantes Preservados
+
+- ADR-001 (SQLite): persistencia de telemetria de
+  calibracao em `.jsonl` append-only.
+- ADR-002 (3 Gates): nao alterados; profit protection
+  e pos-execucao, nao substitui gates de risco.
+- ADR-011/ADR-012 (session_id + magic number):
+  `agent_id` passado ao resolver para overrides
+  cirurgicos, sem interferir no isolamento.
+
+### Rollout Recomendado
+
+```
+1. shadow_mode: true  — coletar 5+ pregoes evidencia
+2. profile_ativo: conservador  — rollout canario
+3. profile_ativo: baseline  — retornar se degradacao >2 p.p.
+4. profile_ativo: agressivo  — somente apos gate A/B
+```
+
+### Referencias
+
+- `config/profit_protection.yaml`
+- `src/infrastructure/config/profit_protection_config.py`
+- `src/application/profit_protection_engine.py`
+- `src/application/services/profit_protection_calibration_service.py`
+- `scripts/calibrar_profit_protection.py`
+- `tests/unit/test_profit_protection.py` (classe
+  `TestLoaderEInjecaoPerfil`)
+
+---
+
 ## Cross-Reference Index
 
 | ADR | Assunto | Documento Relacionado | Priority |
@@ -2218,11 +2339,12 @@ RECONCILER_LOOKBACK_DAYS: int = 7
 | **ADR-015** | AC5.8-6.9 Integration | ARQUITETURA_ALVO.md § P1-CORE | P0 |
 | **ADR-016** | Terminal Fallback Formal | REGRAS_DE_NEGOCIO.md § Terminal Fallback | P1 |
 | **ADR-017** | lookback_days=7 Premissa Intraday | REGRAS_DE_NEGOCIO.md § Encerramento | P1 |
+| **ADR-018** | Profit Protection por Perfil YAML | config/profit_protection.yaml | P1 |
 
 ---
 
 **Last Updated:** 02/04/2026 BRT
-**Total ADRs:** 17
+**Total ADRs:** 18
 **Status:** ✅ Canonical ADRs aligned with current runtime; staging/UAT/Gate 2 pendentes
 - `src/application/ac6_9_baseline_comparator.py`
 - `scripts/agente_micro_tendencia_winfut.py`

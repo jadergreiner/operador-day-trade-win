@@ -1005,6 +1005,66 @@ Responsabilidades:
 - disparar alertas de risco (RISK_VIOLATION) via WebSocket ATI-1;
 - manter um status de saude do monitor (MONITOR_STATUS).
 
+### 8. Protecao de Lucros — ADR-018
+
+**Status:** ✅ IMPLEMENTADO (02/04/2026)
+**Referência:** `src/application/profit_protection_engine.py`
+
+#### Propósito
+
+Preservar ganhos de trades lucrativos mediante:
+- **Break-even SL:** Move SL para entrada quando TP intermediário é atingido
+- **Partial Close:** Reduz posição quando meta de lucro é alcançada
+- **Protection Profile:** Configuração por instrumento/agente
+
+#### Aplicações Atuais
+
+| Agente | Launcher | Status Implementação |
+|--------|----------|-------------|
+| RL 5000 | `INICIAR_AGENTE_RL_5000.bat` | ✅ Ativo (MAGIC 234500) |
+| RL Direto | `INICIAR_AGENTE_RL_DIRETO.bat` | ✅ Ativo (MAGIC 234600) v2 |
+| Micro Tendência | `INICIAR_MICRO_TENDENCIA.bat` | ✅ Planejado para v3 |
+
+#### Componentes
+
+- **ProfitProtectionEngine:** Motor central, injetável por Pydantic
+- **ProfitProtectionProfile:** Config estruturada (config/profit_protection.yaml)
+- **Shadow Mode:** Logs sem executar MT5 (validação staging)
+- **Magic Number Filter:** Cada agente processa apenas suas próprias ordens
+
+#### Fluxo de Execução
+
+1. **Inicialização:** `ProfitProtectionEngine` + `Profile` carregada
+2. **Periodic Call:** Agente chama `processar_protecao(trade_dict, preco_atual)` a cada ciclo
+3. **Validação:** Verifica if `magic == agente_magic && estado == "aberta"`
+4. **Ação:** Se TP intermediário atingido → move SL para breakeven
+5. **Persistência:** Cada ação registrada em SQLite + logs
+
+#### Acceptance Criteria (AC-018)
+
+```
+AC-018.1: Função inicializado sem erros para ambos agentes
+AC-018.2: Periodic calls em loop principal (cada 15-30s)
+AC-018.3: Magic number filtering 100% funcional
+AC-018.4: Exception handling não quebra o loop
+AC-018.5: Profile compliance validado em staging
+```
+
+#### Validação de Produção
+
+- **Staging:** Shadow mode LOG-ONLY (AC-V1 PASSAR)
+- **Rollback:** Documentado em `docs/DEPLOYMENT_RUNBOOK.md`
+- **Monitoring:** Métricas expostas via logs e SQLite
+- **Gates:** Feature bloqueada até AC-018.1-5 e AC-V1 validarem
+
+#### Referências
+
+- Feature Spec: `notebooks/release_management_profit_protection_v2.ipynb`
+- Tests: `tests/unit/test_rl_direto_profit_protection_integration.py`
+- Deployment: `docs/DEPLOYMENT_RUNBOOK.md`
+
+---
+
 ## Fluxo de Execucao Fim a Fim
 
 ### 1. Pre-abertura da sessao

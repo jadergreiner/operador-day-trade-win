@@ -228,6 +228,29 @@ class TradingConfig(BaseSettings):
         description="Timeframe para indicadores tecnicos (M1, M5, M15)",
     )
 
+    # Profit Protection Configuration (ADR-018)
+    profit_protection_config_path: Optional[str] = Field(
+        default=None,
+        description=(
+            "Caminho do YAML de perfis de proteção de lucro. "
+            "Se None, usa config/profit_protection.yaml relativo à raiz do projeto."
+        ),
+    )
+    profit_protection_profile: str = Field(
+        default="baseline",
+        description=(
+            "Perfil ativo de proteção de lucro. "
+            "Pode ser sobrescrito pela env var PROFIT_PROTECTION_PROFILE."
+        ),
+    )
+    profit_protection_shadow_mode: bool = Field(
+        default=False,
+        description=(
+            "Ativa shadow mode: o motor candidato loga ações sugeridas "
+            "sem alterar SL/TP real. Obrigatório antes do canário ativo."
+        ),
+    )
+
     # Application Configuration
     env: str = Field(
         default="development",

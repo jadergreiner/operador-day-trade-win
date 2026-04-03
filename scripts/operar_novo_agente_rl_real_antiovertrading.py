@@ -57,6 +57,10 @@ from src.application.profit_protection_engine import (
     ProfitProtectionEngine,
     ProfitProtectionResult,
 )
+from src.infrastructure.config.profit_protection_config import (
+    carregar_config as _carregar_pp_config,
+    resolver_perfil as _resolver_pp_perfil,
+)
 from src.application.sl_breakeven_validator import (
     ValidadorSLBreakEven,
     StatusValidacaoSL,
@@ -376,14 +380,17 @@ rl_repo: Optional[SqliteRLRepository] = None
 motor_isolado: Optional[MotorDecisaoIsolado] = None
 _monitor_posicao_rl = None
 
-# Profit Protection Engine (proteção dinâmica de lucros)
+# Profit Protection Engine — carregado via config canônica (ADR-018).
+# Fallback automático para perfil baseline se o YAML estiver ausente.
+_pp_cfg = _carregar_pp_config()
+_pp_profile = _resolver_pp_perfil(
+    _pp_cfg,
+    profile_env=_pp_cfg.profile_ativo,
+)
 profit_protection_engine = ProfitProtectionEngine(
-    profit_target_pct=2.0,
-    stop_loss_pct=1.0,
-    partial_close_pct=0.75,
-    break_even_offset_pct=0.10,
-    reversao_threshold_pct=0.75,
-    cooldown_seconds=5,
+    profile=_pp_profile,
+    profile_nome=_pp_cfg.profile_ativo,
+    shadow_mode=_pp_cfg.shadow_mode,
 )
 
 # Anti-overtrading state
