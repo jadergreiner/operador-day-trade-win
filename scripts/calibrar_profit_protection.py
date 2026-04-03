@@ -26,7 +26,7 @@ sys.path.insert(0, str(_ROOT))
 from src.application.services.profit_protection_calibration_service import (
     calibrar_perfis,
 )
-from src.infrastructure.config.profit_protection_config import carregar_config
+from src.infrastructure.config.config_loader import ConfigLoader
 
 logging.basicConfig(
     level=logging.INFO,
@@ -72,19 +72,19 @@ def _carregar_trades_sqlite(db_path: Path) -> list:
         cursor.execute(
             """
             SELECT
-                trade_id,
+                id as trade_id,
                 symbol,
-                direction,
+                side as direction,
                 entry_price,
                 exit_price,
                 quantity,
-                initial_sl,
-                initial_tp,
-                resultado_pct,
+                stop_loss as initial_sl,
+                take_profit as initial_tp,
+                return_percentage as resultado_pct,
                 entry_time
             FROM trades
-            WHERE status = 'FECHADO'
-              AND resultado_pct IS NOT NULL
+            WHERE status = 'CLOSED'
+              AND return_percentage IS NOT NULL
             ORDER BY entry_time ASC
             """
         )
@@ -189,7 +189,8 @@ def main() -> None:
     args = parser.parse_args()
 
     # 1. Carregar config
-    cfg = carregar_config(Path(args.config))
+    loader = ConfigLoader.get_instance(yaml_path=Path(args.config))
+    cfg = loader._get_config()  # Acesso direto para obter o objeto de config
     logger.info(
         "Config carregado | perfil_ativo=%s | shadow_mode=%s | versao=%s",
         cfg.profile_ativo,
