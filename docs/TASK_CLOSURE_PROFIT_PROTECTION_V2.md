@@ -12,7 +12,7 @@
 All minimum items completed and validated:
 
 ✅ **T1:** RL Direto protection loop fixed (83 LOC + 5/5 AC validated)
-✅ **T2:** Staging validation executed (3/3 AC PASSED)  
+✅ **T2:** Staging validation executed (3/3 AC PASSED)
 ✅ **T3:** Governance complete (runbook + rollback + docs)
 
 ## Impact Assessment (per launcher)
@@ -37,7 +37,7 @@ Overall Status:                     PRODUCTION READY ✅
 ## Artifacts Generated
 
 - ✅ `scripts/agente_rl_direto_independente.py` (updated)
-- ✅ `scripts/staging_validation_profit_protection_v2.py` 
+- ✅ `scripts/staging_validation_profit_protection_v2.py`
 - ✅ `docs/DEPLOYMENT_RUNBOOK.md` (250+ LOC)
 - ✅ `docs/TEST_ROLLBACK_PROCEDURE.md`
 - ✅ `docs/ARQUITETURA_ALVO.md` (updated with ADR-018)
