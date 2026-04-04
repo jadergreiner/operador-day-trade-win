@@ -80,6 +80,7 @@ statistics.json
 training_dataset.csv
 
 # Temporary files and system artifacts
+temp/
 tmpclaude-*
 trading.pid
 nul
