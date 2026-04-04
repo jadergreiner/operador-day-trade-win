@@ -104,6 +104,81 @@ Toda consulta de posições filtra pelo magic do agente corrente.
 Nenhum agente pode operar sobre posições de outro agente.
 Ordens sem magic correto sao rejeitadas ou ignoradas.
 
+## Infrastructure Layer — Config Governance
+
+### src/infrastructure/config/profit_protection_config.py
+
+**Status:** Implementado (04/04/2026)
+**Referência:** ADR-018
+
+Loader Pydantic type-safe para configuração externalizada do `ProfitProtectionEngine`.
+
+**Responsabilidades:**
+
+- Carregar e validar `config/profit_protection.yaml` com Pydantic v2
+- Resolver perfil ativo com precedência de 4 níveis:
+  1. `agent_overrides[agent_id]` (maior precedência)
+  2. `PROFIT_PROTECTION_PROFILE` (ENV var)
+  3. `profile_ativo` (YAML)
+  4. `baseline builtin` (fallback hardcoded)
+- Thread safety via lock global `_config_lock`
+- Fallback determinístico a baseline quando YAML ausente/corrompido
+
+**Componentes:**
+
+```python
+# Pydantic models
+class ProfitProtectionProfile(BaseModel):
+    """Perfil de thresholds do motor de proteção"""
+    profit_target_pct: float = Field(gt=0, le=100)
+    stop_loss_pct: float = Field(gt=0, le=100)
+    partial_close_pct: float = Field(ge=0, le=1)
+    break_even_offset_pct: float = Field(ge=0, le=100)
+    reversao_threshold_pct: float = Field(ge=0, le=1)
+    cooldown_seconds: int = Field(ge=0, le=3600)
+    # + validações cross-field
+
+class ProfitProtectionConfig(BaseModel):
+    """Config canônica do YAML"""
+    version: str
+    profile_ativo: str
+    shadow_mode: bool
+    profiles: dict[str, ProfitProtectionProfile]
+    agent_overrides: dict[str, dict[str, Any]]
+    # + model_validator para baseline obrigatório
+
+# Funções públicas
+def carregar_config(yaml_path: Optional[Path] = None) -> ProfitProtectionConfig
+def resolver_perfil(...) -> ProfitProtectionProfile
+```
+
+**Perfis disponíveis (v1.0.0):**
+
+- **baseline:** Defaults históricos (`profit_target=2.0%`, `stop_loss=1.0%`)
+- **conservador:** Proteção antecipada (`profit_target=1.5%`)
+- **agressivo:** Deixa lucro correr (`profit_target=3.0%`)
+
+**Observabilidade:**
+
+- Log INFO: Config carregada (version, profile_ativo, shadow_mode)
+- Log WARNING: YAML ausente → fallback a baseline builtin
+- Log ERROR: YAML malformado → exception propagada
+- Log CRITICAL: Perfil não encontrado → fallback a baseline
+- Log DEBUG: Precedência (ENV var, agent override)
+
+**Impacto operacional:**
+
+- Launcher afetado: `INICIAR_AGENTE_RL_DIRETO.bat` (impacto DIRETO)
+- Ação requerida: Reiniciar após mudança de perfil + monitorar 2h
+- Rollback: Restaurar `config/profit_protection.yaml` anterior
+
+**Calibração:**
+
+Use `scripts/calibrar_profit_protection.py` para comparar perfis sobre trades históricos:
+- Calibration service: `src/application/services/profit_protection_calibration_service.py`
+- Guards de rollback automático: degradação win rate > 2 p.p. OU drawdown > 15 p.p.
+- Shadow mode: validação sem risco de capital
+
 ## Arquitetura Alvo e Contrato
 
 ### Objetivo
