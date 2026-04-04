@@ -21,6 +21,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from config.settings import AGENT_MAGIC_NUMBERS
 from src.application.p1_learning_closure import EpisodeClosureEngine
 from src.infrastructure.repositories.fechamento_repository import (
     IFechamentoRepository,
@@ -234,12 +235,7 @@ class TradeOutcomeReconciler:
 # Utilitario de mapeamento agent_id -> magic_number
 # ------------------------------------------------------------------
 
-_MAGIC_POR_AGENT: Dict[str, int] = {
-    "rl_5000": 234500,
-    "rl_direto": 234600,
-    "micro_tendencia": 234700,
-    "diarios": 234800,
-}
+_MAGIC_POR_AGENT: Dict[str, int] = AGENT_MAGIC_NUMBERS
 
 
 def _magic_por_agent_id(agent_id: str) -> int:

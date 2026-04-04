@@ -23,7 +23,7 @@ import time
 from decimal import Decimal
 from datetime import datetime, timedelta, date
 from typing import Any
-from config import get_config
+from config import get_config, AGENT_MAGIC_NUMBERS
 from src.infrastructure.database.db_paths import resolve_operational_db_path
 from src.application.services.trading_journal import TradingJournalService
 from src.application.services.quantum_operator import QuantumOperatorEngine
@@ -179,10 +179,9 @@ def _fetch_live_macro() -> dict:
 # ────────────────────────────────────────────────────────────────
 # EA ID (Magic Number) reservado para Agente Diários
 # Hoje este agente NÃO envia ordens. Se no futuro enviar,
-# usar este magic para isolar das demais:
-#   RL 5000=234500 | Direto=234600 | Micro Tendência=234700
+# usar este magic para isolar das demais (importado de config/settings.py)
 # ────────────────────────────────────────────────────────────────
-MAGIC_NUMBER = 234800
+MAGIC_NUMBER: int = AGENT_MAGIC_NUMBERS["diarios"]
 
 
 # ────────────────────────────────────────────────────────────────
@@ -3934,7 +3933,7 @@ def run_diario_order_manager():
     )
     confianca_minima_efetiva = manager._confidence_gate_minima()
 
-    print(f"\n[DIARIO EXECUCAO] Iniciado | session={session_id} | magic=234800")
+    print(f"\n[DIARIO EXECUCAO] Iniciado | session={session_id} | magic={MAGIC_NUMBER}")
     print(
         f"[DIARIO EXECUCAO] Ciclo: {EXECUCAO_INTERVAL_SEC}s | "
         f"Confianca minima: {confianca_minima_efetiva:.0%} | "
@@ -4088,7 +4087,7 @@ def main():
     print(
         f"  Macro Provider: {'LIVE' if HAS_MACRO_PROVIDER else 'FALLBACK (hardcoded)'}"
     )
-    print(f"  Magic Number (Diarios): 234800")
+    print(f"  Magic Number (Diarios): {MAGIC_NUMBER}")
     print()
     _opening_context_runtime = initialize_opening_context_runtime(
         db_path=_get_db_path(),

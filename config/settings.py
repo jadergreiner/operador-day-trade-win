@@ -368,3 +368,16 @@ def reset_config() -> None:
     """Reset global configuration (useful for testing)."""
     global _config
     _config = None
+
+
+# ---------------------------------------------------------------------------
+# Identificadores exclusivos de agente para isolamento MT5 (Magic Numbers)
+# DIVIDA-01: ponto canônico único — importar daqui, nunca hardcodar.
+# Cada agente possui um EA ID exclusivo que o MT5 usa para filtrar ordens.
+# ---------------------------------------------------------------------------
+AGENT_MAGIC_NUMBERS: dict[str, int] = {
+    "rl_5000": 234500,
+    "rl_direto": 234600,
+    "micro_tendencia": 234700,
+    "diarios": 234800,
+}
