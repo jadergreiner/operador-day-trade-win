@@ -2628,3 +2628,44 @@ fechar_diario_por_agente.py
 - ADR-012: magic_number por agente
 - ADR-019: schema_version em outputs
 - BLID-029: implementacao completa (06/04/2026)
+
+## ADR-024: ATRDynamicCalibrator — Calibracao Adaptativa de ATR por Clustering
+
+**Status:** ACCEPTED
+**Data:** 04/04/2026
+**Origem:** BLID-030 (S2-2)
+
+### Contexto
+
+O ATR fixo de 14 periodos nao se adapta a mudancas rapidas de volatilidade.
+Em periodos pre-noticia o ATR e artificialmente baixo; em gaps de abertura, o ATR
+pula e o take-profit fica apertado. O impacto estimado e -2% a -5% de drawdown.
+
+### Decisao
+
+Implementar `ATRDynamicCalibrator` em `src/application/atr_calibrator.py` com:
+
+- Suporte a 5 periodos: 5, 10, 14, 20, 28
+- Algoritmo: K-means (k=3) para clusterizar volatilidade em low/mid/high
+- Fator de ajuste: razao entre media do cluster atual e media global
+- Bounds obrigatorios: [0.5x, 2.0x] do ATR padrao
+- Minimo de 50 velas historicas para calibracao
+
+**Integracao com FeatureEngineer:**
+
+- `FeatureVector` ganha 5 novos campos (`atr_dynamic_5` ... `atr_dynamic_28`)
+- `FeatureEngineer._atr_calibrator` reutilizado (instancia unica por engineer)
+- Total features: 24 -> 29 (retrocompativel — campos com default 0.0)
+- Metadados persistidos em `src/domain/entities/metadata.json`
+
+### Consequencias
+
+- Win rate esperado: +2-5% (62% -> 64-67%)
+- Sharpe ratio: nao cai abaixo de v1.1 (>1.0)
+- Performance: extracao 29 features em <150ms (K-means overhead aceito)
+- Retrocompatibilidade: default 0.0 quando historico < 50 velas
+
+### Referencias
+
+- BLID-030: implementacao completa (04/04/2026)
+- Issue: https://github.com/jadergreiner/operador-day-trade-win/issues/21

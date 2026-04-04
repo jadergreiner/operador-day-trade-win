@@ -7,7 +7,9 @@ para treinar classifier que detecta oportunidades com alta probabilidade de ganh
 Padrão: Feature Store + Lazy Loading
 Pipeline: Raw Candles → Indicators → Features → Dataset → Training
 
-Status: SPRINT 1 - ML Expert
+Status: SPRINT 2 - ML Expert
+Atualização S2-2: Integração ATRDynamicCalibrator (+5 features atr_dynamic_*)
+Total features: 26 → 31
 """
 
 from typing import Tuple, List, Dict, Optional
@@ -18,6 +20,8 @@ import pandas as pd
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
+
+from src.application.atr_calibrator import ATRDynamicCalibrator
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +106,13 @@ class FeatureVector:
     is_market_open: bool  # Horário de abertura
     is_lunch_time: bool  # 11:30-13:00
 
+    # ATR Dinâmico — S2-2 Calibrador Adaptativo (5 períodos)
+    atr_dynamic_5: float = 0.0    # ATR calibrado período 5
+    atr_dynamic_10: float = 0.0   # ATR calibrado período 10
+    atr_dynamic_14: float = 0.0   # ATR calibrado período 14
+    atr_dynamic_20: float = 0.0   # ATR calibrado período 20
+    atr_dynamic_28: float = 0.0   # ATR calibrado período 28
+
     # Label (apenas para dados históricos com resultado conhecido)
     label: Optional[float] = None  # 1.0 (ganho), 0.0 (perda), None (unknown)
     label_pnl: Optional[float] = None  # P&L real da operação
@@ -128,13 +139,16 @@ class FeatureEngineer:
         self.lookback_window = lookback_window
         self.spike_threshold = spike_threshold
         self.feature_columns = self._get_feature_columns()
+        # S2-2: Calibrador ATR Dinâmico (instância reutilizada para performance)
+        self._atr_calibrator = ATRDynamicCalibrator(periods=[5, 10, 14, 20, 28])
 
     def create_feature_vector(
         self,
         candles: List[Candle],
         candle_index: int,
         spike_detector_output: Optional[Dict] = None,
-        correlation_data: Optional[Dict] = None
+        correlation_data: Optional[Dict] = None,
+        ohlc_df: Optional[pd.DataFrame] = None,
     ) -> Optional[FeatureVector]:
         """
         Cria feature vector para uma vela específica.
@@ -144,6 +158,9 @@ class FeatureEngineer:
             candle_index: Índice da vela para a qual criar features
             spike_detector_output: Output do ProcessadorBDI (spike info)
             correlation_data: Correlações calculadas externamente
+            ohlc_df: DataFrame OHLC pré-construído (opcional). Quando fornecido,
+                evita rebuild a cada chamada em processamento em lote (O(n) → O(1)).
+                Deve conter colunas 'High', 'Low', 'Close' com índice alinhado.
 
         Returns:
             FeatureVector ou None (se dados insuficientes)
@@ -199,6 +216,31 @@ class FeatureEngineer:
         is_open = 9 <= hour < 18  # 09:00 - 18:00
         is_lunch = 11 <= hour <= 13  # 11:00 - 13:00
 
+        # 9. ATR Dinâmico — S2-2 (calibração adaptativa multi-período)
+        atr_dynamic: Dict[str, float] = {
+            "atr_dynamic_5": 0.0,
+            "atr_dynamic_10": 0.0,
+            "atr_dynamic_14": 0.0,
+            "atr_dynamic_20": 0.0,
+            "atr_dynamic_28": 0.0,
+        }
+        if candle_index >= self._atr_calibrator.min_history:
+            try:
+                if ohlc_df is not None:
+                    # DataFrame pré-construído: reutilizar com close_idx para O(1)
+                    atr_dynamic = self._atr_calibrator.calibrate(
+                        ohlc_df, close_idx=candle_index
+                    )
+                else:
+                    # Construção sob demanda (menos eficiente em batch)
+                    _ohlc = pd.DataFrame([
+                        {"High": c.high, "Low": c.low, "Close": c.close}
+                        for c in candles[: candle_index + 1]
+                    ])
+                    atr_dynamic = self._atr_calibrator.calibrate(_ohlc)
+            except Exception as exc:  # pragma: no cover
+                logger.warning(f"ATR calibration falhou: {exc}")
+
         return FeatureVector(
             candle_index=candle_index,
             timestamp=candle.timestamp,
@@ -227,7 +269,12 @@ class FeatureEngineer:
             hour_of_day=hour,
             day_of_week=day,
             is_market_open=is_open,
-            is_lunch_time=is_lunch
+            is_lunch_time=is_lunch,
+            atr_dynamic_5=atr_dynamic.get("atr_dynamic_5", 0.0),
+            atr_dynamic_10=atr_dynamic.get("atr_dynamic_10", 0.0),
+            atr_dynamic_14=atr_dynamic.get("atr_dynamic_14", 0.0),
+            atr_dynamic_20=atr_dynamic.get("atr_dynamic_20", 0.0),
+            atr_dynamic_28=atr_dynamic.get("atr_dynamic_28", 0.0),
         )
 
     def dataframe_from_features(self, features: List[FeatureVector]) -> pd.DataFrame:
@@ -235,7 +282,7 @@ class FeatureEngineer:
         Converte lista de FeatureVector em DataFrame (pronto para treino).
 
         Returns:
-            pd.DataFrame com todas as features como colunas
+            pd.DataFrame com todas as features como colunas (31 features desde S2-2)
         """
         data = []
         for f in features:
@@ -267,6 +314,12 @@ class FeatureEngineer:
                 'day_of_week': f.day_of_week,
                 'is_market_open': f.is_market_open,
                 'is_lunch_time': f.is_lunch_time,
+                # S2-2: ATR Dinâmico (5 novos campos)
+                'atr_dynamic_5': f.atr_dynamic_5,
+                'atr_dynamic_10': f.atr_dynamic_10,
+                'atr_dynamic_14': f.atr_dynamic_14,
+                'atr_dynamic_20': f.atr_dynamic_20,
+                'atr_dynamic_28': f.atr_dynamic_28,
                 'label': f.label
             })
 
@@ -387,7 +440,7 @@ class FeatureEngineer:
 
     @staticmethod
     def _get_feature_columns() -> List[str]:
-        """Lista de nomes de colunas de features"""
+        """Lista de nomes de colunas de features (31 desde S2-2: 26 originais + 5 ATR)"""
         return [
             'close', 'high', 'low', 'volume',
             'ret_1', 'ret_5',
@@ -398,7 +451,10 @@ class FeatureEngineer:
             'is_spike', 'spike_magnitude',
             'correlation_win_n', 'correlation_petr4',
             'hour_of_day', 'day_of_week',
-            'is_market_open', 'is_lunch_time'
+            'is_market_open', 'is_lunch_time',
+            # S2-2: ATR Dinâmico (5 novos)
+            'atr_dynamic_5', 'atr_dynamic_10', 'atr_dynamic_14',
+            'atr_dynamic_20', 'atr_dynamic_28',
         ]
 
     # ==================== TODO-5: DETECT_PATTERNS START (GitHub Issue #8) ====================
