@@ -652,11 +652,102 @@ de episodio → resultado → retreinamento deve ser fechado e automatizado.
 
 ---
 
-### P2 - Capacidade futura
+#### 13. ROADMAP-DIARIOS-07 — Consolidador de Fechamento de Pipeline dos Diarios
 
-### P0 - Bloqueadores criticos
+**Status:** ✅ IMPLEMENTADO — BLID-027 (05/04/2026, branch copilot/implementar-tarefas-desenvolvimento)
 
-### P2 - Capacidade futura
+**Origem:** Dev Cycle — Top 3 Tarefas (05/04/2026).
+
+**Objetivo:** Os 5 servicos de diarios (BLID-022 a 026) geram saidas isoladas.
+Este servico consolida tudo num unico relatorio markdown de fechamento de pregao,
+oferecendo visibilidade operacional unificada ao operador.
+
+**Entregar:**
+
+- `src/application/services/pipeline_diarios_consolidator.py` com
+  `PipelineDiariosConsolidator`:
+  - `consolidar_fechamento_pregao(data, db_path) -> dict` — agrega dados dos 5 diarios
+  - `gerar_relatorio_markdown(data, db_path) -> Path` — gera `outputs/diarios/fechamento_diario_YYYYMMDD.md`
+  - `obter_resumo_estatisticas(data, db_path) -> dict` — retorna metricas consolidadas
+- Testes: `tests/unit/test_pipeline_diarios_consolidator.py` — 14 testes TDD (14/14 PASSING)
+- mypy --strict: zero erros no modulo novo
+- ADR: segue ADR-019 (banco trading_diarios.db)
+
+**Pronto quando:**
+
+- Relatorio inclui secoes: Journal Correlacoes, AI Reflection, RL Diary, Macro Guardian, Order Manager Regime;
+- Banco inexistente levanta FileNotFoundError;
+- Banco vazio retorna metricas zeradas sem excecao;
+- 14/14 testes PASSING.
+
+**Evidencias:**
+
+- Codigo: `src/application/services/pipeline_diarios_consolidator.py`
+- Testes: `tests/unit/test_pipeline_diarios_consolidator.py` (14/14 PASSING)
+- mypy: zero erros nos modulos novos
+
+---
+
+#### 14. ROADMAP-DIARIOS-08 — Diagnostico de Saude Pre-Sessao dos Diarios
+
+**Status:** ✅ IMPLEMENTADO — BLID-028 (05/04/2026, branch copilot/implementar-tarefas-desenvolvimento)
+
+**Origem:** Dev Cycle — Top 3 Tarefas (05/04/2026).
+
+**Objetivo:** Falhas silenciosas nos bancos de dados impedem aprendizado
+sem aviso. Este servico detecta problemas antes de iniciar a sessao.
+
+**Entregar:**
+
+- `src/application/services/diarios_health_check_service.py` com
+  `DiariosHealthCheckService`:
+  - `verificar_bancos(db_path) -> dict[str, bool]`
+  - `verificar_tabelas(db_path) -> dict[str, bool]`
+  - `verificar_ultimo_registro(db_path, tabela, horas=24) -> bool`
+  - `executar_diagnostico_completo(db_path) -> dict`
+  - `gerar_relatorio_diagnostico(db_path) -> str`
+- Script CLI: `scripts/diagnosticar_saude_diarios.py`
+- Testes: `tests/unit/test_diarios_health_check_service.py` — 16 testes TDD (16/16 PASSING)
+- mypy --strict: zero erros nos modulos novos
+
+**Pronto quando:**
+
+- Banco ausente -> status CRITICAL;
+- Tabela ausente -> status WARNING;
+- 16/16 testes PASSING.
+
+**Evidencias:**
+
+- Codigo: `src/application/services/diarios_health_check_service.py`
+- CLI: `scripts/diagnosticar_saude_diarios.py`
+- Testes: `tests/unit/test_diarios_health_check_service.py` (16/16 PASSING)
+- mypy: zero erros nos modulos novos
+
+---
+
+#### DT-BLID022-02 — Testes de Caminhos de Degradacao do TradingJournal
+
+**Status:** ✅ IMPLEMENTADO (05/04/2026, branch copilot/implementar-tarefas-desenvolvimento)
+
+**Origem:** Dev Cycle — Top 3 Tarefas (05/04/2026).
+
+**Objetivo:** Caminhos de erro nao testados podem causar falhas silenciosas
+em producao (banco vazio, coluna ausente, CLI main()).
+
+**Entregar:**
+
+- Adicionar a `tests/unit/test_trading_journal_persistencia.py`:
+  - `test_correlacionar_sessao_banco_vazio`
+  - `test_correlacionar_sessao_coluna_side_ausente`
+  - `test_cli_main_sem_argumentos_imprime_sem_excecao`
+  - `test_exportar_features_banco_sem_dados`
+
+**Evidencias:**
+
+- Testes: `tests/unit/test_trading_journal_persistencia.py` (9/9 PASSING, incluindo 4 novos)
+
+---
+
 
 ### P2 - Capacidade futura
 
