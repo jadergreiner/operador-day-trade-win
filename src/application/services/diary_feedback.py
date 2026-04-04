@@ -158,6 +158,7 @@ class DiaryFeedback:
 
     # Estado
     active: bool = True                         # Feedback ativo?
+    retreinamento_necessario: bool = False       # Gatilho de retreinamento para AC6.8
 
     # Acao sugerida pelo diario (texto livre)
     acao_sugerida: str = ""
@@ -200,9 +201,14 @@ class DiaryFeedback:
                 else:
                     filtered[k] = v if v else []
             else:
-                filtered[k] = v
+                # Converter INTEGER SQLite (0/1) para bool quando necessário
+                if k in ("active", "smc_bypass_recomendado", "trend_following_recomendado",
+                         "guardian_kill_switch", "guardian_reduced_exposure",
+                         "retreinamento_necessario"):
+                    filtered[k] = bool(v) if v is not None else False
+                else:
+                    filtered[k] = v
         return cls(**filtered)
-
 
 # ────────────────────────────────────────────────────────────────
 # Persistência SQLite
@@ -271,6 +277,7 @@ CREATE TABLE IF NOT EXISTS diary_feedback (
 
     -- Estado
     active INTEGER DEFAULT 1,
+    retreinamento_necessario INTEGER DEFAULT 0,
 
     -- Acao sugerida pelo diario (BLID-023)
     acao_sugerida TEXT DEFAULT '',
@@ -306,6 +313,7 @@ def _create_diary_feedback_table_unlocked(db_path: str) -> None:
             ("guardian_scenario_changes", "INTEGER DEFAULT 0"),
             ("guardian_alertas", "TEXT DEFAULT '[]'"),
             ("acao_sugerida", "TEXT DEFAULT ''"),
+            ("retreinamento_necessario", "INTEGER DEFAULT 0"),
         ]
         cursor = conn.cursor()
         for col_name, col_def in _alter_table_migrations:
@@ -381,7 +389,7 @@ def save_diary_feedback(db_path: str, feedback: DiaryFeedback) -> int:
                     macro_signal_dominante, smc_equilibrium_dominante,
                     adx_medio, micro_score_medio,
                     active,
-                    acao_sugerida
+                    acao_sugerida, retreinamento_necessario
                 ) VALUES (
                     ?, ?, ?,
                     ?,
@@ -404,7 +412,7 @@ def save_diary_feedback(db_path: str, feedback: DiaryFeedback) -> int:
                     ?, ?,
                     ?, ?,
                     ?,
-                    ?
+                    ?, ?
                 )
             """, (
                 d["date"], d["timestamp"], d["source"],
@@ -433,6 +441,7 @@ def save_diary_feedback(db_path: str, feedback: DiaryFeedback) -> int:
                 d["adx_medio"], d["micro_score_medio"],
                 1 if d["active"] else 0,
                 d["acao_sugerida"],
+                1 if d["retreinamento_necessario"] else 0,
             ))
 
             feedback_id = cursor.lastrowid
