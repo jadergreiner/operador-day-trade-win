@@ -2395,8 +2395,9 @@ Componentes criados:
 | ADR-017 | ✅ ACCEPTED | 02/04/2026 | Premissa intraday reconciliacao |
 | ADR-018 | ✅ ACCEPTED | 02/04/2026 | Profit Protection por Perfil YAML |
 | ADR-019 | ✅ ACCEPTED | 04/04/2026 | Segregacao banco diarios + schema_version |
+| ADR-020 | ✅ ACCEPTED | 04/04/2026 | Score de relevancia de perguntas por correlacao WIN/LOSS |
 
-**ÚLTIMA ATUALIZAÇÃO:** 04/04/2026 BRT | **STATUS**: ✅ BLID-022 ROADMAP-DIARIOS-02 IMPLEMENTADO
+**ÚLTIMA ATUALIZAÇÃO:** 04/04/2026 BRT | **STATUS**: ✅ BLID-023 ROADMAP-DIARIOS-03 IMPLEMENTADO
 
 ---
 
@@ -2437,3 +2438,54 @@ incrementar versao.
 
 ```
 
+
+---
+
+## ADR-020: Score de Relevancia de Perguntas por Correlacao WIN/LOSS
+
+**Status:** ACCEPTED
+**Data:** 04/04/2026
+**Origem:** BLID-023 / ROADMAP-DIARIOS-03
+
+### Contexto
+
+Implementacao do ROADMAP-DIARIOS-03: motor de evolucao de perguntas
+para o AI Reflection. Perguntas estaticas nao evoluem com o contexto
+do mercado e perdem relevancia ao longo do tempo.
+
+### Decisoes
+
+**Decisao 1 — Score de relevancia = respostas_win / total_respostas**
+
+Uma pergunta e relevante se suas respostas correlacionam com outcomes
+WIN. Score calculado como proporcao de respostas registradas em sessoes
+de WIN sobre o total de respostas.
+
+Razoes: metrica simples, auditavel, alinhada com objetivo do sistema
+(maximizar WIN rate). Score abaixo de 0.3 com pelo menos 5 respostas
+indica pergunta que nao discrimina resultados positivos.
+
+**Decisao 2 — Obsolescencia dupla: por score E por tempo**
+
+Pergunta marcada como obsoleta se:
+- score_relevancia < 0.3 E total_respostas >= 5 (nao discrimina),
+  OU
+- data_criacao > 30 dias E total_respostas == 0 (nunca foi respondida).
+
+**Decisao 3 — Tabelas em trading_diarios.db (segue ADR-019)**
+
+As tabelas `ai_reflection_logs` e `reflection_questions` residem em
+`data/db/trading_diarios.db`, mantendo o isolamento por agente.
+
+### Consequencias
+
+- `ai_reflection_schema.py` e responsavel pelo DDL dessas tabelas
+- `AIReflectionPersistenceService` gerencia o ciclo de vida completo
+- `AIReflectionWeeklyReport` consome os dados para relatorio semanal
+- Campo `acao_sugerida` adicionado ao `DiaryFeedback` com migration
+  retrocompativel (ALTER TABLE IF NOT EXISTS)
+
+### Referencias
+
+- ADR-019: banco exclusivo trading_diarios.db
+- BLID-023: implementacao completa
