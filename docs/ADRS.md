@@ -15,6 +15,7 @@
 - [ADR-012: Magic Number (EA ID) por Agente](#adr-012-magic-number-ea-id-por-agente---isolamento-de-ordens-mt5)
 - [ADR-017: Premissa Intraday — lookback_days=7](#adr-017-premissa-intraday--lookback_days7-no-pipeline-de-reconciliacao)
 - [ADR-018: Governanca de Thresholds do Profit Protection por Perfil](#adr-018-governanca-de-thresholds-do-profit-protection-por-perfil-com-rollout-canario)
+- [ADR-019: Segregacao do Banco dos Diarios e Padrao schema_version](#adr-019-segregacao-do-banco-dos-diarios-e-padrao-schema_version)
 
 ## Canonical Docs Policy
 
@@ -2392,8 +2393,47 @@ Componentes criados:
 | ADR-015 | ✅ ACCEPTED | 17/03/2026 | Grupo 2 feedback/aprendizado |
 | ADR-016 | ✅ ACCEPTED | 23/03/2026 | Terminal fallback formal |
 | ADR-017 | ✅ ACCEPTED | 02/04/2026 | Premissa intraday reconciliacao |
+| ADR-018 | ✅ ACCEPTED | 02/04/2026 | Profit Protection por Perfil YAML |
+| ADR-019 | ✅ ACCEPTED | 04/04/2026 | Segregacao banco diarios + schema_version |
 
-**ÚLTIMA ATUALIZAÇÃO:** 02/04/2026 BRT | **STATUS**: ✅ ROADMAP-MICRO-03 RECONCILIACAO COMPLETA
+**ÚLTIMA ATUALIZAÇÃO:** 04/04/2026 BRT | **STATUS**: ✅ BLID-022 ROADMAP-DIARIOS-02 IMPLEMENTADO
+
+---
+
+## ADR-019: Segregacao do Banco dos Diarios e Padrao schema_version
+
+**Status:** ✅ ACCEPTED
+**Data:** 04/04/2026
+**Origem:** BLID-022 / ROADMAP-DIARIOS-02
+
+### Contexto
+
+Implementacao do BLID-022: tabelas `trading_journal_logs` e
+`journal_trade_correlation` com exportador JSON para treinamento ML/RL.
+Duas decisoes de design foram tomadas de forma explicita.
+
+### Decisoes
+
+**Decisao 1 — Banco exclusivo para o agente Diarios**
+
+Toda tabela criada pelo pipeline de diarios vai em
+`data/db/trading_diarios.db` (magic_number=234800).
+Razoes: isolamento de lock WAL por agente; consistencia com ADR-012.
+
+**Decisao 2 — campo schema_version em exports JSON**
+
+Todo arquivo JSON gerado como dataset de treinamento
+(`data/training/*.json`) deve conter `schema_version` na raiz.
+Versao inicial: `"1.0"`. Mudancas de schema = breaking change =
+incrementar versao.
+
+### Consequencias
+
+- `diario_journal_schema.py` e responsavel pelo DDL em
+  `trading_diarios.db` (nao em `schema.py` SQLAlchemy)
+- `TradingJournalLogModel` em `schema.py` permanece como definicao
+  legada para PostgreSQL (DT-BLID022-01)
+- Novos exportadores de dataset devem incluir `schema_version`
 
 ```
 

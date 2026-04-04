@@ -1804,6 +1804,82 @@ CREATE TABLE IF NOT EXISTS eventos_monitoramento (
 
 ---
 
-**ULTIMA ATUALIZACAO:** 18/03/2026 BRT |
-**STATUS**: Completo (23 tabelas SQL + P50 JSON +
-Magic Number isolation + AC5.8 monitor) | staging/UAT/Gate 2 pendentes
+## BLID-022 — Tabelas do Diario 1 (trading_diarios.db)
+
+Banco exclusivo do agente Diarios (`magic_number=234800`):
+`data/db/trading_diarios.db` (conforme ADR-019).
+
+### trading_journal_logs (sqlite3 — diario_journal_schema.py)
+
+Persistencia das narrativas do Trading Storytelling (Diario 1).
+Definicao ativa em producao (sqlite3 direto).
+Existe definicao legada em `schema.py` (SQLAlchemy) com colunas
+adicionais para uso futuro com PostgreSQL (ver DT-BLID022-01).
+
+```sql
+CREATE TABLE IF NOT EXISTS trading_journal_logs (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    entry_id        TEXT    NOT NULL UNIQUE,
+    timestamp       TEXT    NOT NULL,
+    symbol          TEXT    NOT NULL,
+    headline        TEXT    NOT NULL,
+    market_feeling  TEXT    NOT NULL,
+    decision        TEXT    NOT NULL,
+    confidence      REAL    NOT NULL,
+    macro_bias      TEXT    NOT NULL,
+    technical_bias  TEXT    NOT NULL,
+    alignment_score REAL    NOT NULL,
+    outcome_trade   TEXT    DEFAULT 'SEM_TRADE',
+    created_at      TEXT    NOT NULL
+);
+```
+
+- `entry_id`: uuid4[:8] + timestamp (unicidade em concorrencia)
+- `decision`: BUY/SELL/HOLD (decisao sugerida pela narrativa)
+- `outcome_trade`: preenchido pelo correlacionador
+- `alignment_score`: alinhamento entre analises (0.0–1.0)
+
+### journal_trade_correlation
+
+Correlacao post-hoc entre narrativas e trades fechados
+(magic_number=234800, janela 30 min).
+
+```sql
+CREATE TABLE IF NOT EXISTS journal_trade_correlation (
+    id                        INTEGER PRIMARY KEY AUTOINCREMENT,
+    journal_entry_id          TEXT    NOT NULL,
+    trade_ticket              INTEGER,
+    outcome                   TEXT    NOT NULL
+        CHECK(outcome IN ('WIN','LOSS','BREAKEVEN','SEM_TRADE')),
+    pnl_reais                 REAL,
+    narrativa_estava_alinhada INTEGER,
+    created_at                TEXT    NOT NULL,
+    UNIQUE(journal_entry_id)
+);
+```
+
+- `narrativa_estava_alinhada`: 1 se decision == side do trade; NULL
+  quando outcome=SEM_TRADE
+- **Invariante SEM_TRADE**: trade_ticket, pnl_reais e
+  narrativa_estava_alinhada sao NULL quando outcome='SEM_TRADE'
+
+### diary_orders — Contrato de integracao com MT5 Sync
+
+Tabela criada externamente (sync MT5). O correlacionador depende de:
+
+| Coluna | Tipo | Descricao |
+| ------ | ---- | --------- |
+| `ticket` | INTEGER | Ticket da ordem no MT5 |
+| `magic_number` | INTEGER | Magic number EA (234800) |
+| `close_time` | TEXT | Timestamp ISO de fechamento |
+| `profit` | REAL | Lucro/prejuizo em reais |
+| `side` | TEXT | BUY ou SELL |
+
+Se `diary_orders` nao existir ou `side` estiver ausente, o
+correlador aplica fallback `SEM_TRADE` com log WARNING.
+
+---
+
+**ULTIMA ATUALIZACAO:** 04/04/2026 BRT |
+**STATUS**: Completo (23+ tabelas SQL + P50 JSON +
+Magic Number isolation + AC5.8 monitor + BLID-022 journal correlation)

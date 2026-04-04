@@ -5,13 +5,21 @@ Narrates market conditions, decisions, and reasoning in natural language
 for later reinforcement learning analysis.
 """
 
-from dataclasses import dataclass
+import logging
+import sqlite3
+import uuid
+from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
+from pathlib import Path
+from typing import Any, Optional
 
 from src.domain.enums.trading_enums import TradeSignal
 from src.domain.value_objects import Symbol
+from src.infrastructure.database.diario_journal_schema import criar_tabelas_diario
+from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
+_logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -43,11 +51,7 @@ class MarketNarrative:
     price_after_1h: Optional[Decimal] = None
 
     # Tags for learning
-    tags: list[str] = None  # ["high_volatility", "bearish_sentiment", etc.]
-
-    def __post_init__(self):
-        if self.tags is None:
-            self.tags = []
+    tags: list[str] = field(default_factory=list)  # ["high_volatility", "bearish_sentiment", etc.]
 
 
 @dataclass
@@ -83,8 +87,18 @@ class TradingJournalService:
     Captures market observations in storytelling format for learning.
     """
 
-    def __init__(self):
+    def __init__(self, db_path: Optional[Path] = None) -> None:
+        """Inicializa o servico de journal.
+
+        Args:
+            db_path: Caminho para o banco SQLite onde as entradas serao
+                     persistidas. Se None, mantém comportamento original
+                     (apenas em memoria — retrocompativel).
+        """
         self.entries: list[TradingJournalEntry] = []
+        self._db_path: Optional[Path] = db_path
+        if db_path is not None:
+            criar_tabelas_diario(db_path)
 
     def create_narrative(
         self,
@@ -499,14 +513,26 @@ class TradingJournalService:
     def save_entry(
         self,
         narrative: MarketNarrative,
-        decision_data: dict,
+        decision_data: dict[str, Any],
     ) -> TradingJournalEntry:
-        """Save journal entry for later analysis."""
+        """Persiste entrada narrativa em memoria e opcionalmente no SQLite.
 
+        O entry_id e gerado com uuid4[:8] + timestamp para garantir
+        unicidade mesmo em chamadas concorrentes no mesmo segundo.
+
+        Args:
+            narrative: Narrativa de mercado gerada pelo Diario 1.
+            decision_data: Dicionario com macro_bias, technical_bias,
+                           alignment_score e demais metadados da decisao.
+
+        Returns:
+            TradingJournalEntry com todos os campos preenchidos.
+        """
         now = datetime.now()
+        entry_id = f"{uuid.uuid4().hex[:8]}_{now.strftime('%Y%m%d_%H%M%S')}"
 
         entry = TradingJournalEntry(
-            entry_id=f"{now.strftime('%Y%m%d_%H%M%S')}",
+            entry_id=entry_id,
             date=now.strftime("%Y-%m-%d"),
             time=now.strftime("%H:%M:%S"),
             narrative=narrative,
@@ -522,7 +548,70 @@ class TradingJournalService:
 
         self.entries.append(entry)
 
+        if self._db_path is not None:
+            self._persistir_sqlite(entry, now)
+
         return entry
+
+    def _persistir_sqlite(
+        self, entry: TradingJournalEntry, now: datetime
+    ) -> None:
+        """Persiste uma entrada em trading_journal_logs via sqlite3.
+
+        Usa sqlite_write_lock para serializar escritas concorrentes.
+        Falhas de I/O sao logadas sem interromper o fluxo principal.
+
+        Args:
+            entry: Entrada de journal a persistir.
+            now: Timestamp atual (reutilizado do save_entry).
+        """
+        if self._db_path is None:
+            raise RuntimeError(
+                "_persistir_sqlite chamado sem db_path configurado"
+            )
+
+        try:
+            with sqlite_write_lock(self._db_path):
+                conn = sqlite3.connect(str(self._db_path))
+                try:
+                    conn.execute(
+                        """
+                        INSERT OR IGNORE INTO trading_journal_logs (
+                            entry_id, timestamp, symbol, headline,
+                            market_feeling, decision, confidence,
+                            macro_bias, technical_bias, alignment_score,
+                            outcome_trade, created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            entry.entry_id,
+                            now.isoformat(),
+                            str(entry.narrative.symbol),
+                            entry.narrative.headline,
+                            entry.narrative.market_feeling,
+                            entry.narrative.decision.value,
+                            float(entry.narrative.confidence),
+                            entry.macro_bias,
+                            entry.technical_bias,
+                            float(entry.alignment_score),
+                            "SEM_TRADE",
+                            now.isoformat(),
+                        ),
+                    )
+                    conn.commit()
+                    _logger.debug(
+                        "Journal persistido: entry_id=%s db=%s",
+                        entry.entry_id,
+                        self._db_path,
+                    )
+                finally:
+                    conn.close()
+        except Exception as exc:
+            _logger.error(
+                "Falha ao persistir journal entry_id=%s: %s",
+                entry.entry_id,
+                exc,
+            )
 
     def _determine_session_phase(self) -> str:
         """Determine current session phase."""
