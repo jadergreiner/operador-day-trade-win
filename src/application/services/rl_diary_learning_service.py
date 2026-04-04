@@ -12,8 +12,9 @@ Executor: INICIAR_DIARIOS.bat
 from __future__ import annotations
 
 import json
+import logging
 import sqlite3
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Optional
 
@@ -21,6 +22,8 @@ from src.application.services.diary_feedback import (
     DiaryFeedback,
     save_diary_feedback,
 )
+
+logger = logging.getLogger("rl_diary_learning_service")
 
 
 class RLDiaryLearningService:
@@ -76,7 +79,7 @@ class RLDiaryLearningService:
             rows = cursor.fetchall()
             conn.close()
         except Exception as exc:
-            print(f"[AVISO] RLDiaryLearningService.avaliar_gatilho_retreinamento: {exc}")
+            logger.warning("avaliar_gatilho_retreinamento: %s", exc)
             return False
 
         if len(rows) < n_ciclos:
@@ -89,7 +92,7 @@ class RLDiaryLearningService:
         # Persistir sinal de retreinamento
         feedback_gatilho = DiaryFeedback(
             date=date.today().isoformat(),
-            timestamp=date.today().isoformat() + "T00:00:00",
+            timestamp=datetime.now().isoformat(),
             source="rl_diary",
             nota_agente=rows[0]["nota_agente"],
             retreinamento_necessario=True,
@@ -140,7 +143,7 @@ class RLDiaryLearningService:
             conn.close()
             episodios = [dict(r) for r in rows]
         except Exception as exc:
-            print(f"[AVISO] RLDiaryLearningService.exportar_episodios_enriquecidos: {exc}")
+            logger.warning("exportar_episodios_enriquecidos: %s", exc)
             episodios = []
 
         payload: dict[str, Any] = {
@@ -262,7 +265,7 @@ class RLDiaryLearningService:
 
             conn.close()
         except Exception as exc:
-            print(f"[AVISO] RLDiaryLearningService.gerar_relatorio_fechamento: {exc}")
+            logger.warning("gerar_relatorio_fechamento: %s", exc)
 
         conteudo = (
             f"# Relatorio de Fechamento RL Diary — {data_alvo}\n\n"

@@ -487,7 +487,7 @@ agentes operacionais.
 
 #### 10. ROADMAP-DIARIOS-04 Diario 3 — RL Performance Diary como motor de aprendizado
 
-**Status:** PENDENTE — depende de BUG-DIARIOS-02 (eficiencia_pct zerado)
+**Status:** IMPLEMENTADO — BLID-024 concluido em 04/04/2026 (PR #28)
 
 **Origem:** Reuniao Product Board 17/03/2026 — diretriz do Head de Financas.
 

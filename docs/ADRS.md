@@ -2396,7 +2396,9 @@ Componentes criados:
 | ADR-018 | ✅ ACCEPTED | 02/04/2026 | Profit Protection por Perfil YAML |
 | ADR-019 | ✅ ACCEPTED | 04/04/2026 | Segregacao banco diarios + schema_version |
 
-**ÚLTIMA ATUALIZAÇÃO:** 04/04/2026 BRT | **STATUS**: ✅ BLID-022 ROADMAP-DIARIOS-02 IMPLEMENTADO
+**ÚLTIMA ATUALIZAÇÃO:** 04/04/2026 BRT | **STATUS**: ✅ BLID-024 ROADMAP-DIARIOS-04 IMPLEMENTADO
+
+> **BLID-024 / ROADMAP-DIARIOS-04:** ADR-019 cobre o padrao schema_version="1.0" para exports JSON de treinamento (diario_episodios). Nenhuma nova ADR necessaria — RLDiaryLearningService segue os padroes estabelecidos (SQLite WAL, schema_version, data/training/, outputs/).
 
 ---
 
