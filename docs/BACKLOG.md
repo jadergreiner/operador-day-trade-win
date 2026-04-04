@@ -589,7 +589,7 @@ variavel de treinamento.
 
 #### 12. ROADMAP-DIARIOS-06 Diario 5 — Order Manager com retreinamento e antienviesamento
 
-**Status:** PENDENTE — depende de BUG-DIARIOS-04 (NameError motor_decisao)
+**Status:** ✅ IMPLEMENTADO — BLID-026 (04/04/2026, branch copilot/proximo-item-backlog)
 
 **Origem:** Reuniao Product Board 17/03/2026 — diretriz do Head de Financas.
 

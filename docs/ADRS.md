@@ -2396,8 +2396,11 @@ Componentes criados:
 | ADR-018 | ✅ ACCEPTED | 02/04/2026 | Profit Protection por Perfil YAML |
 | ADR-019 | ✅ ACCEPTED | 04/04/2026 | Segregacao banco diarios + schema_version |
 | ADR-021 | ✅ ACCEPTED | 04/04/2026 | MacroGuardianReaderService canal universal de leitura |
+| ADR-022 | ✅ ACCEPTED | 04/04/2026 | OrderManagerAdaptiveService pipeline retreinamento e antienviesamento |
 
-**ÚLTIMA ATUALIZAÇÃO:** 04/04/2026 BRT | **STATUS**: ✅ BLID-025 ROADMAP-DIARIOS-05 IMPLEMENTADO
+**ÚLTIMA ATUALIZAÇÃO:** 04/04/2026 BRT | **STATUS**: ✅ BLID-026 ROADMAP-DIARIOS-06 IMPLEMENTADO
+
+> **BLID-026 / ROADMAP-DIARIOS-06:** ADR-022 formaliza OrderManagerAdaptiveService como pipeline fechado de retreinamento e antienviesamento. Servico separado do DiarioOrderManager (SRP) identifica regime de mercado via ADX simplificado, detecta vies direcional e exporta features JSON para retreinamento incremental.
 
 > **BLID-025 / ROADMAP-DIARIOS-05:** ADR-021 formaliza MacroGuardianReaderService como canal universal de leitura do Guardian para os 4 agentes operacionais. Servico encapsula fetch_latest_guardian_snapshot(), expoe kill switch universal e enriquece episodios de treinamento com features macro.
 
@@ -2482,4 +2485,73 @@ incrementar versao.
 - Novos exportadores de dataset devem incluir `schema_version`
 
 ```
+
+---
+
+## ADR-022: OrderManagerAdaptiveService como Pipeline Fechado de Retreinamento e Antienviesamento
+
+**Status:** ✅ ACCEPTED
+**Data:** 04/04/2026
+**Origem:** BLID-026 / ROADMAP-DIARIOS-06
+
+### Contexto
+
+Implementacao do BLID-026: Diario Order Manager evoluindo de executor
+de ordens para agente adaptativo sem vies direcional. O ciclo completo
+episodio → resultado → retreinamento deve ser fechado e automatizado.
+
+Problemas que motivaram a ADR:
+- Episodios gerados mas nao usados para retreinamento;
+- Sem detector de vies direcional (agente pode entrar 100% BUY por dias);
+- Sem adaptacao a mudancas de regime (tendencia → lateral → reversao).
+
+### Decisoes
+
+**Decisao 1 — Servico separado do DiarioOrderManager (SRP)**
+
+Criar `OrderManagerAdaptiveService` em
+`src/application/services/order_manager_adaptive_service.py`,
+separado do `DiarioOrderManager`. Razao: manter responsabilidade unica
+— o DiarioOrderManager orquestra o ciclo operacional; o servico
+adaptativo cuida da evolucao do modelo e da deteccao de anomalias.
+
+**Decisao 2 — ADX simplificado sem biblioteca externa**
+
+Identificacao de regime via ADX proxy calculado a partir do range total
+vs range medio dos candles. Sem dependencia de talib ou pandas_ta.
+Regimes: TENDENCIA_ALTA, TENDENCIA_BAIXA, LATERAL, VOLATIL.
+Multiplicadores ATR: LATERAL=0.8, TENDENCIA=1.5, VOLATIL=1.2.
+
+**Decisao 3 — Retreinamento via exportacao de features JSON**
+
+O retreinamento incremental nao executa modelo ML em runtime.
+Exporta features enriquecidas dos episodios do dia em
+`data/models/diario_order_manager/modelo_YYYYMMDD_HHmmss.json`
+com `schema_version="1.0"` (ADR-019) para consumo posterior pelo
+pipeline ML. Historico em `historico_versoes.json`.
+Aciona se >= 10 episodios com resultado conhecido no dia.
+
+**Decisao 4 — Detector de vies com feedback automatico**
+
+Ratio BUY/SELL nos ultimos 20 episodios. Se ratio > 0.75 por
+2 pregoes consecutivos: persiste `DiaryFeedback` com
+`source='vies_detector'` e `retreinamento_necessario=True`.
+
+### Interfaces exportadas
+
+- `OrderManagerAdaptiveService.identificar_regime(candles)` → `ParametrosRegime`
+- `OrderManagerAdaptiveService.detectar_vies_direcional(db_path)` → `AlertaVies`
+- `OrderManagerAdaptiveService.executar_retreinamento(db_path, modelo_dir)` → `ResultadoRetreino`
+- `OrderManagerAdaptiveService.gerar_relatorio_diario(db_path, modelo_dir, outputs_dir)` → `Path`
+
+### Consequencias
+
+- `DiarioOrderManager` permanece sem alteracoes;
+- Relatorio diario `outputs/order_manager_relatorio_YYYYMMDD.md`
+  gerado automaticamente ao encerramento do pregao;
+- `data/models/diario_order_manager/historico_versoes.json` com
+  historico de retreinamentos e win rate por versao;
+- `schema_version="1.0"` em todos os exports JSON (ADR-019);
+- 15 testes TDD cobrindo regime, vies, retreinamento e relatorio.
+
 
