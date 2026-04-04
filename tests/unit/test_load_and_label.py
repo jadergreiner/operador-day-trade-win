@@ -287,25 +287,26 @@ class TestLoadAndLabelIntegration:
     def test_ac6_statistics_computation(self, sample_csv_file):
         """
         AC-6: Statistics must be computed and persisted.
-        
+
         Given: Valid dataset
         When: load_and_label() executed
-        Then: data/statistics.json created with mean/std/skewness
+        Then: data/statistics.json created with mean/std/skewness/kurtosis
         """
         stats_file = Path('data/statistics.json')
         if stats_file.exists():
             stats_file.unlink()
-        
+
         df = load_and_label(sample_csv_file)
-        
+
         assert stats_file.exists(), "Statistics file not created"
-        
+
         with open(stats_file, 'r') as f:
             stats = json.load(f)
-        
+
         assert 'mean' in stats
         assert 'std' in stats
         assert 'skewness' in stats
+        assert 'kurtosis' in stats
         assert len(stats['mean']) == 24
         print("✅ AC-6: Statistics Computed (data/statistics.json)")
 

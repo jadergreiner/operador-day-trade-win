@@ -82,8 +82,13 @@ def load_and_label(
             elif isinstance(raw.get("results"), list):
                 df = pd.DataFrame(raw["results"])
             else:
-                # Fallback: wrap dict as single-row dataframe
-                df = pd.DataFrame([raw])
+                # Verificar se é um dict de arrays (colunas → listas de valores)
+                valores = list(raw.values())
+                if valores and all(isinstance(v, list) for v in valores):
+                    df = pd.DataFrame(raw)
+                else:
+                    # Dict de scalars: encapsular como linha única
+                    df = pd.DataFrame([raw])
         else:
             raise ValueError("Formato JSON nao suportado para dataset ML")
     elif results_path.endswith('.csv'):
@@ -192,28 +197,27 @@ def load_and_label(
 
     print(f"[AC-6] Persistindo feature names...")
 
-    # Resolve output directory
-    output_dir = Path(output_path).resolve() if output_path else Path("data").resolve()
-    if output_dir.suffix:
-        output_dir = output_dir.parent
-    output_dir.mkdir(parents=True, exist_ok=True)
+    # AC-6: feature_names.json e statistics.json sempre em data/
+    data_dir = Path("data")
+    data_dir.mkdir(parents=True, exist_ok=True)
 
-    # AC-6: Save feature names
+    # AC-6: Salvar nomes das features
     feature_names_dict = {'features': feature_cols}
-    feature_names_path = output_dir / "feature_names.json"
+    feature_names_path = data_dir / "feature_names.json"
 
     with open(feature_names_path, 'w') as f:
         json.dump(feature_names_dict, f, indent=2)
     logger.info(f"✓ Feature names salvos em {feature_names_path}")
 
-    # AC-5: Save statistics
+    # AC-5: Computar e salvar estatísticas
     print(f"[AC-5] Computando estatísticas...")
     statistics = {
         'mean': df[feature_cols].mean().to_dict(),
         'std': df[feature_cols].std().to_dict(),
         'skewness': df[feature_cols].skew().to_dict(),
+        'kurtosis': df[feature_cols].kurt().to_dict(),
     }
-    stats_path = output_dir / "statistics.json"
+    stats_path = data_dir / "statistics.json"
     with open(stats_path, 'w') as f:
         json.dump(statistics, f, indent=2)
     logger.info(f"✓ Estatísticas salvas em {stats_path}")

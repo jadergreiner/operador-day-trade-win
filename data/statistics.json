@@ -76,5 +76,31 @@
     "lag_volume_2": -0.033945473114698664,
     "correlation_20d": 0.062318374198989994,
     "correlation_trend": -0.013383222301501605
+  },
+  "kurtosis": {
+    "volatility_bollinger_upper": -1.2569737393923934,
+    "volatility_bollinger_lower": -1.210944678825391,
+    "volatility_atr": -1.281246640570572,
+    "volatility_historical": -1.1819322116642823,
+    "momentum_rsi": -1.2091712062750473,
+    "momentum_macd": -1.1472198492194143,
+    "momentum_roc": -1.205792914879083,
+    "momentum_obv": -1.181116982619008,
+    "ma_sma_50": -1.2165721481850298,
+    "ma_ema_9": -1.1609379699292262,
+    "ma_ema_21": -1.176322923068901,
+    "ma_slope_short": -1.2360627067137941,
+    "ma_slope_long": -1.1258899791755945,
+    "pattern_mean_reversion": -1.2465088205342323,
+    "pattern_volume_spike": -1.2174639381558219,
+    "pattern_impulse": -1.2308949005819105,
+    "lag_return_1": -1.155462815484114,
+    "lag_return_2": -1.1198834610281312,
+    "lag_close_1": -1.1985022071752063,
+    "lag_close_2": -1.1118420322334752,
+    "lag_volume_1": -1.0915877466996842,
+    "lag_volume_2": -1.1341109279658823,
+    "correlation_20d": -1.1803616494969567,
+    "correlation_trend": -1.215683501932128
   }
 }
