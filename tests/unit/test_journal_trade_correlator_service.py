@@ -177,7 +177,7 @@ class TestJournalTradeCorrelatorService:
             _inserir_journal_entry(db, eid, ts, decision="BUY")
             # close_time 15min depois do timestamp da entrada (dentro da janela)
             ts_dt = datetime.fromisoformat(ts)
-            close_time = (ts_dt + __import__("datetime").timedelta(minutes=15)).isoformat()
+            close_time = (ts_dt + timedelta(minutes=15)).isoformat()
             _inserir_diary_order(
                 db, hash(eid) % 9999 + 1000, 234800,
                 close_time,

@@ -277,7 +277,7 @@ class JournalTradeCorrelatorService:
         decision_upper = decision.upper()
         side_upper = side.upper()
         if decision_upper not in _LADOS_VALIDOS or side_upper not in _LADOS_VALIDOS:
-            logger.debug(
+            logger.warning(
                 "Alinhamento indefinido: decision=%r side=%r — registrando 0",
                 decision,
                 side,

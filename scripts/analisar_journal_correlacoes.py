@@ -102,6 +102,7 @@ def _buscar_correlacoes(
         if not tabela_existe:
             return []
 
+        # Seguro: placeholders sao apenas '?' repetidos (sem interpolacao de dados)
         placeholders = ",".join("?" * len(entry_ids))
         cursor = conn.execute(
             f"""

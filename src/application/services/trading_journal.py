@@ -5,6 +5,7 @@ Narrates market conditions, decisions, and reasoning in natural language
 for later reinforcement learning analysis.
 """
 
+import logging
 import sqlite3
 import uuid
 from dataclasses import dataclass, field
@@ -17,6 +18,8 @@ from src.domain.enums.trading_enums import TradeSignal
 from src.domain.value_objects import Symbol
 from src.infrastructure.database.diario_journal_schema import criar_tabelas_diario
 from src.infrastructure.database.sqlite_write_lock import sqlite_write_lock
+
+_logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -562,10 +565,6 @@ class TradingJournalService:
             entry: Entrada de journal a persistir.
             now: Timestamp atual (reutilizado do save_entry).
         """
-        import logging
-
-        _logger = logging.getLogger(__name__)
-
         if self._db_path is None:
             raise RuntimeError(
                 "_persistir_sqlite chamado sem db_path configurado"
