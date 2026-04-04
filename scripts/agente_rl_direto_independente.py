@@ -43,6 +43,9 @@ ROOT_DIR = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 os.chdir(ROOT_DIR)
 
+# config.settings não depende de MT5 — importar no nível de módulo
+from config.settings import AGENT_MAGIC_NUMBERS  # noqa: E402
+
 
 def _resolve_trading_db_path(default_name: str = "trading_rl_direto.db") -> str:
     """Resolve o SQLite do RL direto com override explícito opcional."""
@@ -125,7 +128,7 @@ logger.info("")
 try:
     logger.info("[INIT] Importando módulos core...")
 
-    from config.settings import TradingConfig
+    from config.settings import AGENT_MAGIC_NUMBERS, TradingConfig
     from src.application.ac6_bootstrap import build_ac6_components
     from src.application.motor_decisao_isolado import (
         DecisaoOperacional,
@@ -300,7 +303,7 @@ except Exception as e:
 # CONSTANTES DE TRADING
 # ============================================================================
 SIMBOLO = "WINJ26"
-MAGIC_NUMBER = 234600  # EA ID exclusivo do agente direto (isolamento)
+MAGIC_NUMBER: int = AGENT_MAGIC_NUMBERS["rl_direto"]  # EA ID exclusivo do agente direto (isolamento)
 
 # SL/TP fixos — mas nunca abaixo do ATR minimo calculado em tempo real.
 # Regra: SL = max(SL_FIXO, ATR_14 * ATR_MULT_SL)

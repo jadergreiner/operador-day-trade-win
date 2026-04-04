@@ -289,7 +289,7 @@ except ImportError as _e:
     DriftDetector = None  # type: ignore[assignment,misc]
     OnlineLearningController = None  # type: ignore[assignment,misc]
     BaselineComparator = None  # type: ignore[assignment,misc]
-from config.settings import TradingConfig
+from config.settings import AGENT_MAGIC_NUMBERS, TradingConfig
 import uuid
 
 logger = logging.getLogger(__name__)
@@ -332,7 +332,7 @@ TARGET_LUCRO_DIARIO = 140.00
 STOP_PERDA_DIARIA = -600.00
 STOP_LOSS_PONTOS = 150
 TAKE_PROFIT_PONTOS = 300
-MAGIC_NUMBER = 234500
+MAGIC_NUMBER: int = AGENT_MAGIC_NUMBERS["rl_5000"]
 
 def resolver_sl_tp_mode(mode: Optional[str] = None) -> str:
     """Normaliza o modo de cálculo de SL/TP."""

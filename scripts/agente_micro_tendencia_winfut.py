@@ -35,7 +35,7 @@ if ROOT_DIR not in sys.path:
 # extras no .env sem alterar o config/settings.py original.
 from pathlib import Path as _Path
 from pydantic_settings import SettingsConfigDict
-from config.settings import TradingConfig as _BaseTradingConfig
+from config.settings import AGENT_MAGIC_NUMBERS, TradingConfig as _BaseTradingConfig
 
 
 class _MicroTrendConfig(_BaseTradingConfig):
@@ -403,8 +403,8 @@ WATCHDOG_HEDGE_ENABLED = True
 WATCHDOG_AUTO_CLOSE_HEDGE_ORPHAN = True
 
 # EA ID (Magic Number) exclusivo do Agente Micro Tendência
-# Isola ordens deste agente dos demais (RL 5000=234500, Direto=234600)
-MAGIC_NUMBER = 234700
+# Isola ordens deste agente dos demais (importado de config/settings.py)
+MAGIC_NUMBER: int = AGENT_MAGIC_NUMBERS["micro_tendencia"]
 
 # Plano de lições aprendidas — execução operacional
 REVERSAL_BLOCK_ADX = Decimal("24")
@@ -4425,7 +4425,7 @@ def _ensure_micro_episode_columns(cursor) -> None:
             ("motivo_saida", "TEXT"),
             ("outcome", "TEXT"),
             ("duracao_s", "INTEGER"),
-            ("magic_number", "INTEGER DEFAULT 234700"),
+            ("magic_number", f"INTEGER DEFAULT {MAGIC_NUMBER}"),
         ],
         "execution_feedback": [
             ("episode_id", "TEXT"),
@@ -4436,7 +4436,7 @@ def _ensure_micro_episode_columns(cursor) -> None:
             ("confianca_entrada", "REAL"),
             ("macro_score", "INTEGER"),
             ("motivo_saida", "TEXT"),
-            ("magic_number", "INTEGER DEFAULT 234700"),
+            ("magic_number", f"INTEGER DEFAULT {MAGIC_NUMBER}"),
         ],
     }
 

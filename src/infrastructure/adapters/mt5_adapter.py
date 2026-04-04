@@ -12,6 +12,7 @@ import re
 import time
 from pathlib import Path
 
+from config.settings import AGENT_MAGIC_NUMBERS
 from src.domain.entities import Order
 from src.domain.enums.trading_enums import OrderSide, TimeFrame
 from src.domain.exceptions import BrokerConnectionError, OrderExecutionError
@@ -21,10 +22,10 @@ logger = logging.getLogger(__name__)
 
 
 AGENT_LABELS_BY_MAGIC: dict[int, str] = {
-    234500: "RL 5000",
-    234600: "RL Direto",
-    234700: "Micro Tend",
-    234800: "Diarios",
+    AGENT_MAGIC_NUMBERS["rl_5000"]: "RL 5000",
+    AGENT_MAGIC_NUMBERS["rl_direto"]: "RL Direto",
+    AGENT_MAGIC_NUMBERS["micro_tendencia"]: "Micro Tend",
+    AGENT_MAGIC_NUMBERS["diarios"]: "Diarios",
 }
 
 

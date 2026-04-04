@@ -123,7 +123,7 @@ agentes apos deploy e monitorar `outputs/profit_protection_*`.
 
 #### DEV-DEP-PROFIT-PROTECTION-20260402 — Dependencias de runtime
 
-**Status:** PENDENTE
+**Status:** ✅ DONE (04/04/2026)
 
 **Objetivo:** Adicionar `pydantic` e `pyyaml` ao ambiente de execucao e
 documentar instrucoes de restart para os launchers Windows.
@@ -278,7 +278,25 @@ Fase 1 com dados reais suficientes.
 
 #### 10. DIVIDA-01 Consolidar magic numbers em `config/settings.py`
 
-**Status:** PENDENTE — TECH DEBT CONTROLADA (02/04/2026)
+**Status:** ✅ DONE (04/04/2026)
+
+**Entregue:**
+
+- Dict canônico `AGENT_MAGIC_NUMBERS: dict[str, int]` adicionado em
+  `config/settings.py` (e exportado via `config/__init__.py`).
+- Ponto 1: `src/infrastructure/adapters/mt5_adapter.py` —
+  `AGENT_LABELS_BY_MAGIC` constrói chaves via `AGENT_MAGIC_NUMBERS`.
+- Ponto 2: todos os scripts de agente importam de `config.settings`:
+  `operar_novo_agente_rl_real_antiovertrading.py`,
+  `operar_novo_agente_rl_real.py`, `agente_rl_direto_independente.py`,
+  `agente_micro_tendencia_winfut.py`, `start_journals_full_display.py`.
+- Ponto 3: `src/application/reconciliadores/trade_outcome_reconciler.py` —
+  `_MAGIC_POR_AGENT = AGENT_MAGIC_NUMBERS`.
+- Outros em `src/`: `diario_order_manager.py` e `pipeline_episodios_micro.py`
+  (incluindo SQL DEFAULT strings).
+- Testes: `tests/unit/test_divida01_magic_numbers.py` — 11/11 PASSING.
+- `grep -r "234500\|234600\|234700\|234800" src/ scripts/` retorna zero
+  resultados (apenas testes e declaracao canônica em `config/settings.py`).
 
 **Origem:** Revisao tecnica ROADMAP-MICRO-03 (02/04/2026).
 
@@ -663,7 +681,7 @@ posicao.
 
 #### 3. Tratar erros code 10006 com backoff, verificacao de simbolo e deteccao de rollover
 
-**Status:** PENDENTE
+**Status:** ✅ DONE — ver BUG-3 (DONE 18/03/2026) e TECH-003 (CONCLUIDO 01/04/2026)
 
 **Origem:** Fechamento diario 17/03/2026 — agente_direto_151302 entrou em loop
 de rejeicoes (20+ tentativas consecutivas) com `Order execution failed: code
@@ -721,7 +739,7 @@ WINFUT sem halt automatico.
 
 #### 3. Resolver terminal mismatch Clear vs FBS no MT5Adapter
 
-**Status:** PENDENTE
+**Status:** NAO-PROBLEMA — ver INFRA-1 (NAO-PROBLEMA 01/04/2026)
 
 **Origem:** Fechamento diario 17/03/2026 — logs mostram `Terminal mismatch:
 expected C:\Program Files\Clear Investimentos MT5 Terminal\terminal64.exe,

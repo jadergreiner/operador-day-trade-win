@@ -18,7 +18,7 @@ Pipeline (ciclo de 30s):
     → monitorar_posicao() ou abrir_posicao()
     → registrar_episodio() → aprendizado proprio
 
-Magic Number: 234800
+Magic Number: AGENT_MAGIC_NUMBERS["diarios"]
 Status: v3.0 (17/03/2026) — head de tesouraria, aprende com episodios
 """
 
@@ -32,6 +32,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
+from config.settings import AGENT_MAGIC_NUMBERS
 from src.application.diario_leitura_operador import LeituraDeOperador, LeituraOperador
 from src.application.diario_episodio_operador import (
     EpisodioOperadorRepo,
@@ -60,7 +61,7 @@ from src.application.confidence_utils import (
 logger = logging.getLogger("diario_order_manager")
 
 # ── Identidade ──────────────────────────────────────────────────
-MAGIC_NUMBER = 234800
+MAGIC_NUMBER: int = AGENT_MAGIC_NUMBERS["diarios"]
 SIMBOLO = "WIN$N"
 VOLUME = 1
 
@@ -440,7 +441,7 @@ class DiarioOrderManager:
         fim = agora.replace(hour=HORA_FIM[0], minute=HORA_FIM[1], second=0)
         return inicio <= agora <= fim
 
-    # ── Win rate dos episodios proprios (magic=234800) ───────────
+    # ── Win rate dos episodios proprios (magic=AGENT_MAGIC_NUMBERS["diarios"]) ───
 
     def _win_rate_propria(self) -> tuple[float, int]:
         """

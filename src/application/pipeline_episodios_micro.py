@@ -2,7 +2,7 @@
 CALIBRACAO-MICRO-03: Pipeline de Aprendizado com Episodios Reais.
 
 Responsabilidades:
-- Persistir cada trade do Micro Tendencia (magic 234700) nos tres destinos:
+- Persistir cada trade do Micro Tendencia (magic AGENT_MAGIC_NUMBERS["micro_tendencia"]) nos tres destinos:
     1. rl_episodes — contexto completo da entrada (estado, acao, setup)
     2. diario_episodios — resultado final (WIN/LOSS/BREAKEVEN, pts, motivo)
     3. execution_feedback — ciclo de feedback via AC5.9
@@ -32,7 +32,12 @@ import uuid
 from datetime import datetime
 from typing import Any, Optional
 
+from config.settings import AGENT_MAGIC_NUMBERS
+
 logger = logging.getLogger("pipeline_episodios_micro")
+
+# Magic number canônico do Micro Tendência (importado de config/settings.py)
+_MAGIC_MICRO: int = AGENT_MAGIC_NUMBERS["micro_tendencia"]
 
 # Minimo de episodios para acionar cada modulo
 THRESHOLD_DRIFT = 10
@@ -88,7 +93,7 @@ class PipelineEpisodiosMicro:
         try:
             conn = sqlite3.connect(self.db_path)
             cur = conn.cursor()
-            cur.execute("""
+            cur.execute(f"""
                 CREATE TABLE IF NOT EXISTS micro_episodios (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     episode_id TEXT NOT NULL UNIQUE,
@@ -114,7 +119,7 @@ class PipelineEpisodiosMicro:
                     motivo_saida TEXT,
                     outcome TEXT,
                     duracao_s INTEGER,
-                    magic_number INTEGER DEFAULT 234700,
+                    magic_number INTEGER DEFAULT {_MAGIC_MICRO},
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -129,7 +134,7 @@ class PipelineEpisodiosMicro:
                     ON micro_episodios(outcome)
             """)
             # Tabela execution_feedback para AC5.9
-            cur.execute("""
+            cur.execute(f"""
                 CREATE TABLE IF NOT EXISTS execution_feedback (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     episode_id TEXT NOT NULL,
@@ -143,7 +148,7 @@ class PipelineEpisodiosMicro:
                     motivos_entrada TEXT,
                     veredicto_pos_resultado TEXT,
                     aprendizado_extra TEXT,
-                    magic_number INTEGER DEFAULT 234700,
+                    magic_number INTEGER DEFAULT {_MAGIC_MICRO},
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -202,7 +207,7 @@ class PipelineEpisodiosMicro:
                 ("aprendizado_extra", "TEXT"),
                 ("outcome", "TEXT"),
                 ("duracao_s", "INTEGER"),
-                ("magic_number", "INTEGER DEFAULT 234700"),
+                ("magic_number", f"INTEGER DEFAULT {_MAGIC_MICRO}"),
             ],
             "execution_feedback": [
                 ("episode_id", "TEXT"),
@@ -216,7 +221,7 @@ class PipelineEpisodiosMicro:
                 ("motivos_entrada", "TEXT"),
                 ("veredicto_pos_resultado", "TEXT"),
                 ("aprendizado_extra", "TEXT"),
-                ("magic_number", "INTEGER DEFAULT 234700"),
+                ("magic_number", f"INTEGER DEFAULT {_MAGIC_MICRO}"),
             ],
         }
 
