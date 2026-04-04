@@ -814,6 +814,51 @@ dificultando auditoria e aprendizado individual.
 
 ---
 
+#### 16. BLID-030 — S2-2 Calibrador ATR Dinamico
+
+**Status:** ✅ IMPLEMENTADO — BLID-030 (04/04/2026)
+
+**BLID:** BLID-030
+**Branch:** copilot/sprint-2-calibrador-dinamico-atr
+**Origem:** Sprint 2 — Issue #21 (S2-2 Calibrador ATR Dinamico)
+**ADR:** ADR-024
+
+**Problema:** ATR fixo (14 periodos) nao se adapta a mudancas rapidas de
+volatilidade. Impacto financeiro: -2% a -5% de drawdown por stops incorretos.
+
+**Entregavel:**
+
+- `src/application/atr_calibrator.py` — `ATRDynamicCalibrator` (novo)
+  - Periodos: [5, 10, 14, 20, 28]
+  - Algoritmo: K-means k=3 (low/mid/high volatilidade)
+  - Bounds: [0.5x, 2.0x] ATR padrao
+  - Minimo: 50 velas historicas
+  - Factory: `create_atr_calibrator(periods)`
+- `src/application/ml_feature_engineer.py` — integracao (+5 features)
+  - `FeatureVector` +5 campos: `atr_dynamic_5/10/14/20/28`
+  - `FeatureEngineer._atr_calibrator` (instancia reutilizada)
+  - `dataframe_from_features` atualizado (31 colunas)
+  - `_get_feature_columns` atualizado (26 -> 31 features)
+- `src/domain/entities/metadata.json` — metadados das 31 features (novo)
+- `tests/test_atr_calibrator.py` — 13 testes (AC#4 completo)
+- `tests/unit/test_atr_calibrator.py` — 19 testes (ATRCalibrator domain)
+
+**Metricas esperadas:**
+
+- Win rate: +2-5% (62% -> 64-67%)
+- Total features: 26 -> 31 (retrocompativel)
+- Performance: <150ms para extracao de 5 features
+- Cobertura testes: >85%
+
+**Avaliacao de Impacto por Agente:**
+- `INICIAR_AGENTE_RL_5000.bat` — BAIXO | INDIRETO | features novas alimentam ML
+- `INICIAR_AGENTE_RL_DIRETO.bat` — BAIXO | INDIRETO | features novas alimentam ML
+- `INICIAR_DIARIOS.bat` — BAIXO | INDIRETO | journaling nao alterado
+- `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` — MEDIO | DIRETO | SL/TP mais preciso
+- `INICIAR_MONITOR_QUANTICO.bat` — NENHUM | SEM IMPACTO | nenhuma acao
+
+---
+
 ### Modulo 3 — Grupo 1: Isolamento (motor_decisao_isolado + posicao_isolamento)
 
 **Status:** ✅ DONE (17/03/2026 — integracao confirmada nos 2 agentes RL)
