@@ -4557,6 +4557,51 @@ imediatamente sem avaliar exaustao do movimento.
 
 ---
 
+#### BLID-032 — S2-3 Detector SMC no Backtest com Confluencia M1/M5
+
+**Status:** ✅ IMPLEMENTADO — BLID-032 (04/04/2026)
+
+**BLID:** BLID-032
+**Titulo:** S2-3 Backtest SMC com Confluencia M1/M5
+**Prioridade:** P1
+**ADR:** ADR-026
+
+### Descricao
+
+Criar BacktestSMCEngine para validar que padroes SMC melhoram o win rate no backtest historico.
+Inclui deteccao de Swing High/Low reais, confluencia M1/M5 e comparacao de 4 modos de backtest.
+
+### Criterios de Aceite (5 AC)
+
+- [x] **AC-1:** Swing High/Low real detectados (nao ficticio) — SwingHighLowDetector com lookback configuravel
+- [x] **AC-2:** Confluencia M1/M5 validada (>=2 timeframes alinhados) — SMCConfluenceFilter com score 1-5
+- [x] **AC-3:** Backtest rodado com padroes nos 4 modos — baseline, smc_m1_only, smc_m5_only, smc_confluence
+- [x] **AC-4:** Win rate comparado — delta calculado (confluence - baseline), meta >= 3%
+- [x] **AC-5:** Documentacao atualizada — ADR-026 + BACKLOG.md
+
+### Arquivos Alterados
+
+- `src/application/services/backtest_smc_engine.py` — CRIADO
+- `tests/unit/test_backtest_smc_s2_3.py` — CRIADO (42 testes, 100% passando)
+- `docs/ADRS.md` — ADR-026 adicionada
+- `docs/BACKLOG.md` — BLID-032 registrado
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Severidade |
+|----------|---------|-----------|
+| INICIAR_AGENTE_RL_5000.bat | NENHUM | — |
+| INICIAR_AGENTE_RL_DIRETO.bat | NENHUM | — |
+| INICIAR_DIARIOS.bat | NENHUM | — |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | — |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | — |
+
+### Historico
+
+- 04/04/2026 — criado e implementado (BLID-032)
+
+---
+
 #### BLID-031 — S2-4 Integracao Detector de Padroes SMC ao Pipeline de Alertas
 
 **Status:** ✅ IMPLEMENTADO — BLID-031 (04/04/2026)
