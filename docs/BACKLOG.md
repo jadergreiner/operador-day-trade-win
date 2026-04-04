@@ -359,9 +359,36 @@ de cada diario (rodando, pausado, com erro).
 
 #### 8. ROADMAP-DIARIOS-02 Diario 1 — Trading Storytelling como insumo de inteligencia
 
-**Status:** PENDENTE — depende de BUG-DIARIOS-01 (thread morta)
+**Status:** ✅ IMPLEMENTADO — 04/04/2026
 
 **Origem:** Reuniao Product Board 17/03/2026 — diretriz do Head de Financas.
+
+**Entregue (04/04/2026):**
+
+- Persistencia confiavel em `trading_journal_logs` via
+  `TradingJournalService(db_path=...)` + `save_entry()` (retrocompativel)
+- Schema DDL idempotente:
+  `src/infrastructure/database/diario_journal_schema.py`
+  (tabelas: `trading_journal_logs` + `journal_trade_correlation`)
+- Banco exclusivo: `data/db/trading_diarios.db` (ADR-019)
+- Correlacionador: `JournalTradeCorrelatorService.correlacionar_sessao()`
+  (magic_number=234800, janela 30min, desempate |profit|,
+  fallback SEM_TRADE, UPSERT idempotente)
+- Script CLI: `scripts/analisar_journal_correlacoes.py` com argparse +
+  `exportar_features()` → `data/training/journal_features_YYYYMMDD.json`
+  (schema_version="1.0", ADR-019)
+- 16/16 testes TDD passando
+- mypy --strict: 0 erros nos novos modulos
+- Retrocompatibilidade total: scripts existentes sem impacto
+
+**Dividas tecnicas (Tech Lead — 04/04/2026):**
+
+- **DT-BLID022-01** (MEDIO): Reconciliar schemas duplicados de
+  `trading_journal_logs` (`schema.py` SQLAlchemy vs
+  `diario_journal_schema.py` sqlite3) antes da migracao Phase 3/4
+- **DT-BLID022-02** (BAIXO): Adicionar testes para caminhos de
+  degradacao (coluna `diary_orders.side` ausente, banco vazio, CLI main())
+
 
 **Objetivo:** Transformar o Trading Storytelling de um diario de exibicao em
 terminal para um **insumo estruturado de inteligencia e treinamento**. Cada
