@@ -252,20 +252,17 @@ class AIReflectionPersistenceService:
             candidatos = [row[0] for row in cursor.fetchall()]
 
             if candidatos:
-                # Construir parametros de forma segura: apenas "?" por candidato,
-                # sem interpolacao de valores do usuario na query SQL.
-                # Os candidatos vem de SELECT interno na mesma transacao (valores
-                # de question_id do banco), nunca de entrada externa direta.
-                placeholders = ",".join("?" for _ in candidatos)
-                conn.execute(
-                    f"""
+                # Atualizar cada pergunta individualmente para evitar
+                # interpolacao de valores em f-string SQL.
+                conn.executemany(
+                    """
                     UPDATE reflection_questions
                     SET obsoleta = 1,
                         data_obsoleta = ?,
                         ativa = 0
-                    WHERE question_id IN ({placeholders})
+                    WHERE question_id = ?
                     """,
-                    [agora_iso] + candidatos,
+                    [(agora_iso, qid) for qid in candidatos],
                 )
                 conn.commit()
 

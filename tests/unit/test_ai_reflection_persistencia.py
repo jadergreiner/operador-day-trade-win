@@ -315,8 +315,8 @@ def test_detectar_padrao_mood_frustrado(tmp_path: Path) -> None:
 
     padroes = servico.detectar_padroes_recorrentes(janela_dias=5)
 
-    assert any("FRUSTRADO" in p for p in padroes), (
-        f"Padrao de mood Frustrado nao detectado. Padroes: {padroes}"
+    assert any("PADRAO_MOOD_FRUSTRADO" in p for p in padroes), (
+        f"Padrao PADRAO_MOOD_FRUSTRADO nao detectado. Padroes: {padroes}"
     )
 
 
