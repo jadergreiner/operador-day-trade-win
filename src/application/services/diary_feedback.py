@@ -160,6 +160,9 @@ class DiaryFeedback:
     active: bool = True                         # Feedback ativo?
     retreinamento_necessario: bool = False       # Gatilho de retreinamento para AC6.8
 
+    # Acao sugerida pelo diario (texto livre)
+    acao_sugerida: str = ""
+
     def to_dict(self) -> dict:
         """Converte para dicionário serializável."""
         d = asdict(self)
@@ -169,7 +172,8 @@ class DiaryFeedback:
                      "regioes_fortes", "regioes_armadilhas",
                      "direcional_vieses", "direcional_contradicoes",
                      "direcional_questionamentos",
-                     "guardian_alertas"):
+                     "guardian_alertas",
+                     "acao_sugerida"):
             if isinstance(d[key], list):
                 d[key] = json.dumps(d[key], ensure_ascii=False)
         return d
@@ -275,6 +279,9 @@ CREATE TABLE IF NOT EXISTS diary_feedback (
     active INTEGER DEFAULT 1,
     retreinamento_necessario INTEGER DEFAULT 0,
 
+    -- Acao sugerida pelo diario (BLID-023)
+    acao_sugerida TEXT DEFAULT '',
+
     -- Índices
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -305,6 +312,7 @@ def _create_diary_feedback_table_unlocked(db_path: str) -> None:
             ("guardian_bias_override", "TEXT DEFAULT ''"),
             ("guardian_scenario_changes", "INTEGER DEFAULT 0"),
             ("guardian_alertas", "TEXT DEFAULT '[]'"),
+            ("acao_sugerida", "TEXT DEFAULT ''"),
             ("retreinamento_necessario", "INTEGER DEFAULT 0"),
         ]
         cursor = conn.cursor()
@@ -348,6 +356,7 @@ def save_diary_feedback(db_path: str, feedback: DiaryFeedback) -> int:
         "guardian_kill_reason", "guardian_bias_override",
         "guardian_alertas",
         "macro_signal_dominante", "smc_equilibrium_dominante",
+        "acao_sugerida",
     )
     for campo in _campos_texto:
         if campo in d and isinstance(d[campo], str):
@@ -379,7 +388,8 @@ def save_diary_feedback(db_path: str, feedback: DiaryFeedback) -> int:
                     guardian_alertas,
                     macro_signal_dominante, smc_equilibrium_dominante,
                     adx_medio, micro_score_medio,
-                    active, retreinamento_necessario
+                    active,
+                    acao_sugerida, retreinamento_necessario
                 ) VALUES (
                     ?, ?, ?,
                     ?,
@@ -401,6 +411,7 @@ def save_diary_feedback(db_path: str, feedback: DiaryFeedback) -> int:
                     ?,
                     ?, ?,
                     ?, ?,
+                    ?,
                     ?, ?
                 )
             """, (
@@ -429,6 +440,7 @@ def save_diary_feedback(db_path: str, feedback: DiaryFeedback) -> int:
                 d["macro_signal_dominante"], d["smc_equilibrium_dominante"],
                 d["adx_medio"], d["micro_score_medio"],
                 1 if d["active"] else 0,
+                d["acao_sugerida"],
                 1 if d["retreinamento_necessario"] else 0,
             ))
 

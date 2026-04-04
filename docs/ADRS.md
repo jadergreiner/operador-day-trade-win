@@ -2395,6 +2395,7 @@ Componentes criados:
 | ADR-017 | ✅ ACCEPTED | 02/04/2026 | Premissa intraday reconciliacao |
 | ADR-018 | ✅ ACCEPTED | 02/04/2026 | Profit Protection por Perfil YAML |
 | ADR-019 | ✅ ACCEPTED | 04/04/2026 | Segregacao banco diarios + schema_version |
+| ADR-020 | ✅ ACCEPTED | 04/04/2026 | Score de relevancia de perguntas por correlacao WIN/LOSS |
 | ADR-021 | ✅ ACCEPTED | 04/04/2026 | MacroGuardianReaderService canal universal de leitura |
 | ADR-022 | ✅ ACCEPTED | 04/04/2026 | OrderManagerAdaptiveService pipeline retreinamento e antienviesamento |
 
@@ -2403,6 +2404,8 @@ Componentes criados:
 > **BLID-026 / ROADMAP-DIARIOS-06:** ADR-022 formaliza OrderManagerAdaptiveService como pipeline fechado de retreinamento e antienviesamento. Servico separado do DiarioOrderManager (SRP) identifica regime de mercado via ADX simplificado, detecta vies direcional e exporta features JSON para retreinamento incremental.
 
 > **BLID-025 / ROADMAP-DIARIOS-05:** ADR-021 formaliza MacroGuardianReaderService como canal universal de leitura do Guardian para os 4 agentes operacionais. Servico encapsula fetch_latest_guardian_snapshot(), expoe kill switch universal e enriquece episodios de treinamento com features macro.
+
+> **BLID-023 / ROADMAP-DIARIOS-03:** ADR-020 formaliza score de relevancia de perguntas por correlacao WIN/LOSS e obsolescencia dupla.
 
 ---
 
@@ -2488,6 +2491,57 @@ incrementar versao.
 
 ---
 
+## ADR-020: Score de Relevancia de Perguntas por Correlacao WIN/LOSS
+
+**Status:** ✅ ACCEPTED
+**Data:** 04/04/2026
+**Origem:** BLID-023 / ROADMAP-DIARIOS-03
+
+### Contexto
+
+Implementacao do ROADMAP-DIARIOS-03: motor de evolucao de perguntas
+para o AI Reflection. Perguntas estaticas nao evoluem com o contexto
+do mercado e perdem relevancia ao longo do tempo.
+
+### Decisoes
+
+**Decisao 1 — Score de relevancia = respostas_win / total_respostas**
+
+Uma pergunta e relevante se suas respostas correlacionam com outcomes
+WIN. Score calculado como proporcao de respostas registradas em sessoes
+de WIN sobre o total de respostas.
+
+Razoes: metrica simples, auditavel, alinhada com objetivo do sistema
+(maximizar WIN rate). Score abaixo de 0.3 com pelo menos 5 respostas
+indica pergunta que nao discrimina resultados positivos.
+
+**Decisao 2 — Obsolescencia dupla: por score E por tempo**
+
+Pergunta marcada como obsoleta se:
+- score_relevancia < 0.3 E total_respostas >= 5 (nao discrimina),
+  OU
+- data_criacao > 30 dias E total_respostas == 0 (nunca foi respondida).
+
+**Decisao 3 — Tabelas em trading_diarios.db (segue ADR-019)**
+
+As tabelas `ai_reflection_logs` e `reflection_questions` residem em
+`data/db/trading_diarios.db`, mantendo o isolamento por agente.
+
+### Consequencias
+
+- `ai_reflection_schema.py` e responsavel pelo DDL dessas tabelas
+- `AIReflectionPersistenceService` gerencia o ciclo de vida completo
+- `AIReflectionWeeklyReport` consome os dados para relatorio semanal
+- Campo `acao_sugerida` adicionado ao `DiaryFeedback` com migration
+  retrocompativel (ALTER TABLE IF NOT EXISTS)
+
+### Referencias
+
+- ADR-019: banco exclusivo trading_diarios.db
+- BLID-023: implementacao completa
+
+---
+
 ## ADR-022: OrderManagerAdaptiveService como Pipeline Fechado de Retreinamento e Antienviesamento
 
 **Status:** ✅ ACCEPTED
@@ -2553,5 +2607,3 @@ Ratio BUY/SELL nos ultimos 20 episodios. Se ratio > 0.75 por
   historico de retreinamentos e win rate por versao;
 - `schema_version="1.0"` em todos os exports JSON (ADR-019);
 - 15 testes TDD cobrindo regime, vies, retreinamento e relatorio.
-
-
