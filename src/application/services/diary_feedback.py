@@ -158,6 +158,10 @@ class DiaryFeedback:
 
     # Estado
     active: bool = True                         # Feedback ativo?
+    retreinamento_necessario: bool = False       # Gatilho de retreinamento para AC6.8
+
+    # Acao sugerida pelo diario (texto livre)
+    acao_sugerida: str = ""
 
     # Acao sugerida pelo diario (texto livre)
     acao_sugerida: str = ""
@@ -200,9 +204,14 @@ class DiaryFeedback:
                 else:
                     filtered[k] = v if v else []
             else:
-                filtered[k] = v
+                # Converter INTEGER SQLite (0/1) para bool quando necessário
+                if k in ("active", "smc_bypass_recomendado", "trend_following_recomendado",
+                         "guardian_kill_switch", "guardian_reduced_exposure",
+                         "retreinamento_necessario"):
+                    filtered[k] = bool(v) if v is not None else False
+                else:
+                    filtered[k] = v
         return cls(**filtered)
-
 
 # ────────────────────────────────────────────────────────────────
 # Persistência SQLite
@@ -271,6 +280,10 @@ CREATE TABLE IF NOT EXISTS diary_feedback (
 
     -- Estado
     active INTEGER DEFAULT 1,
+    retreinamento_necessario INTEGER DEFAULT 0,
+
+    -- Acao sugerida pelo diario (BLID-023)
+    acao_sugerida TEXT DEFAULT '',
 
     -- Acao sugerida pelo diario (BLID-023)
     acao_sugerida TEXT DEFAULT '',
