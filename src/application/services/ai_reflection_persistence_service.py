@@ -252,6 +252,10 @@ class AIReflectionPersistenceService:
             candidatos = [row[0] for row in cursor.fetchall()]
 
             if candidatos:
+                # Construir parametros de forma segura: apenas "?" por candidato,
+                # sem interpolacao de valores do usuario na query SQL.
+                # Os candidatos vem de SELECT interno na mesma transacao (valores
+                # de question_id do banco), nunca de entrada externa direta.
                 placeholders = ",".join("?" for _ in candidatos)
                 conn.execute(
                     f"""

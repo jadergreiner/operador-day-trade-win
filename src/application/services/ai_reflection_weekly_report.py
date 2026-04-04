@@ -15,6 +15,9 @@ from src.application.services.ai_reflection_persistence_service import (
 )
 
 
+_PROMPT_MAX_LEN = 60  # comprimento maximo do prompt na tabela Markdown
+
+
 class AIReflectionWeeklyReport:
     """Gerador de relatorio semanal de AI Reflection.
 
@@ -107,7 +110,12 @@ class AIReflectionWeeklyReport:
             "|----------|-------|-----------|",
         ]
         for p in mais_relevantes:
-            prompt = str(p.get("prompt", ""))[:60]
+            texto_prompt = str(p.get("prompt", ""))
+            prompt = (
+                texto_prompt[:_PROMPT_MAX_LEN - 3] + "..."
+                if len(texto_prompt) > _PROMPT_MAX_LEN
+                else texto_prompt
+            )
             score = f"{float(p.get('score_relevancia', 0.0)):.2f}"
             categoria = str(p.get("category", ""))
             linhas.append(f"| {prompt} | {score} | {categoria} |")
@@ -122,7 +130,12 @@ class AIReflectionWeeklyReport:
             "|----------|-------|-----------|",
         ]
         for p in menos_relevantes:
-            prompt = str(p.get("prompt", ""))[:60]
+            texto_prompt = str(p.get("prompt", ""))
+            prompt = (
+                texto_prompt[:_PROMPT_MAX_LEN - 3] + "..."
+                if len(texto_prompt) > _PROMPT_MAX_LEN
+                else texto_prompt
+            )
             score = f"{float(p.get('score_relevancia', 0.0)):.2f}"
             categoria = str(p.get("category", ""))
             linhas.append(f"| {prompt} | {score} | {categoria} |")
