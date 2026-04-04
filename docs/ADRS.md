@@ -16,6 +16,11 @@
 - [ADR-017: Premissa Intraday — lookback_days=7](#adr-017-premissa-intraday--lookback_days7-no-pipeline-de-reconciliacao)
 - [ADR-018: Governanca de Thresholds do Profit Protection por Perfil](#adr-018-governanca-de-thresholds-do-profit-protection-por-perfil-com-rollout-canario)
 - [ADR-019: Segregacao do Banco dos Diarios e Padrao schema_version](#adr-019-segregacao-do-banco-dos-diarios-e-padrao-schema_version)
+- [ADR-020: Score de Relevancia de Perguntas por Correlacao WIN/LOSS](#adr-020-score-de-relevancia-de-perguntas-por-correlacao-winloss)
+- [ADR-021: MacroGuardianReaderService como Canal Universal de Leitura](#adr-021-macroguardianreaderservice-como-canal-universal-de-leitura)
+- [ADR-022: OrderManagerAdaptiveService e RegimeMercado](#adr-022-ordermanageradaptiveservice-e-regimemercado)
+- [ADR-023: FechamentoDiarioAgenteService — Fechamento Individualizado por Agente RL](#adr-023-fechamentodiariorageenteservice--fechamento-individualizado-por-agente-rl)
+
 
 ## Canonical Docs Policy
 
@@ -2362,8 +2367,8 @@ Componentes criados:
 
 ---
 
-**Last Updated:** 02/04/2026 BRT
-**Total ADRs:** 18
+**Last Updated:** 06/04/2026 BRT
+**Total ADRs:** 23
 **Status:** ✅ Canonical ADRs aligned with current runtime; staging/UAT/Gate 2 pendentes
 - `src/application/ac6_9_baseline_comparator.py`
 - `scripts/agente_micro_tendencia_winfut.py`
@@ -2396,8 +2401,11 @@ Componentes criados:
 | ADR-018 | ✅ ACCEPTED | 02/04/2026 | Profit Protection por Perfil YAML |
 | ADR-019 | ✅ ACCEPTED | 04/04/2026 | Segregacao banco diarios + schema_version |
 | ADR-020 | ✅ ACCEPTED | 04/04/2026 | Score de relevancia de perguntas por correlacao WIN/LOSS |
+| ADR-021 | ✅ ACCEPTED | 04/04/2026 | MacroGuardianReaderService canal universal de leitura |
+| ADR-022 | ✅ ACCEPTED | 04/04/2026 | OrderManagerAdaptiveService e RegimeMercado |
+| ADR-023 | ✅ ACCEPTED | 06/04/2026 | FechamentoDiarioAgenteService por agente RL |
 
-**ÚLTIMA ATUALIZAÇÃO:** 04/04/2026 BRT | **STATUS**: ✅ BLID-023 ROADMAP-DIARIOS-03 IMPLEMENTADO
+**ÚLTIMA ATUALIZAÇÃO:** 06/04/2026 BRT | **STATUS**: ✅ BLID-029 ROADMAP-DIARIOS-01 FECHAMENTO DIARIO IMPLEMENTADO
 
 ---
 
@@ -2489,3 +2497,134 @@ As tabelas `ai_reflection_logs` e `reflection_questions` residem em
 
 - ADR-019: banco exclusivo trading_diarios.db
 - BLID-023: implementacao completa
+
+---
+
+## ADR-021: MacroGuardianReaderService como Canal Universal de Leitura
+
+**Status:** ACCEPTED
+**Data:** 04/04/2026
+**Origem:** BLID-025
+
+### Contexto
+
+Multiplos agentes precisavam ler snapshots do Guardian de forma consistente,
+gerando duplicacao de logica e acoplamento direto com a estrutura de arquivos.
+
+### Decisao
+
+Canal unico `MacroGuardianReaderService` para leitura de snapshots do Guardian
+por todos os agentes. Nenhum agente deve ler diretamente os arquivos de snapshot.
+
+**Arquivo:** `src/application/services/macro_guardian_reader_service.py`
+
+**Metodos publicos:**
+- `ler_snapshot()` — le snapshot mais recente do Guardian
+- `verificar_kill_switch()` — verifica estado do kill switch
+- `enriquecer_episodio()` — enriquece episodio de RL com dados macro
+- `gerar_relatorio_semanal()` — gera relatorio semanal de macro
+
+### Consequencias
+
+- Leitura do Guardian centralizada e testavel
+- Agentes RL e micro tendencia consomem via service, nunca via arquivo direto
+- Facilita mock em testes unitarios
+
+### Referencias
+
+- BLID-025: implementacao completa
+
+---
+
+## ADR-022: OrderManagerAdaptiveService e RegimeMercado
+
+**Status:** ACCEPTED
+**Data:** 04/04/2026
+**Origem:** BLID-026
+
+### Contexto
+
+O `DiarioOrderManager` acumulou responsabilidades de gestao de ordens E
+adaptacao ao regime de mercado, violando o principio de responsabilidade unica (SRP).
+
+### Decisao
+
+Separar em service dedicado `OrderManagerAdaptiveService` com enum `RegimeMercado`
+para encapsular a logica de adaptacao ao regime sem poluir o order manager principal.
+
+**Arquivo:** `src/application/services/order_manager_adaptive_service.py`
+
+**Classes:**
+- `RegimeMercado` (enum) — TENDENCIA, LATERAL, VOLATIL, INDEFINIDO
+- `OrderManagerAdaptiveService` — gestao adaptativa de ordens por regime
+
+### Consequencias
+
+- SRP preservado: DiarioOrderManager foca em execucao; service novo foca em adaptacao
+- RegimeMercado reutilizavel por outros componentes
+- Testabilidade melhorada via injecao de dependencia
+
+### Referencias
+
+- BLID-026: implementacao completa
+
+---
+
+## ADR-023: FechamentoDiarioAgenteService — Fechamento Individualizado por Agente RL
+
+**Status:** ✅ ACCEPTED
+**Data:** 06/04/2026
+**Origem:** BLID-029 / ROADMAP-DIARIOS-01 (componente de fechamento diario)
+
+### Contexto
+
+O fechamento diario das sessoes de trading nao distinguia os resultados por
+agente RL individualmente. RL 5000 (magic=234500) e RL Direto (magic=234600)
+operavam em paralelo mas seus resultados de PnL, win_rate e drawdown nao eram
+separados, dificultando a auditoria e o aprendizado por agente.
+
+### Decisao
+
+Servico dedicado `FechamentoDiarioAgenteService` com pipeline:
+
+```
+fechar_diario_por_agente.py
+  -> FechamentoDiarioAgenteService.gerar_relatorio(agent_name, magic, data, db_path)
+  -> FechamentoDiarioAgenteService.gerar_markdown(relatorio, outputs_dir)
+  -> outputs/diarios/fechamento_{agent}_{YYYYMMDD}.md
+```
+
+**Arquivo:** `src/application/services/fechamento_diario_agente_service.py`
+**Script CLI:** `scripts/fechar_diario_por_agente.py`
+
+**Metricas calculadas por agente:**
+- `win_rate` — proporcao de trades lucrativas sobre total
+- `pnl_total_reais` — lucro/prejuizo liquido em R$
+- `drawdown_max_sessao` — maior drawdown da equity curve da sessao (>= 0)
+- `status` — LUCRATIVO | DEFICITARIO | NEUTRO
+- `horario_primeiro_trade` / `horario_ultimo_trade` — janela operacional
+
+**Isolamento por magic_number:**
+- RL 5000: magic=234500 (constante em `config/settings.py` via `AGENT_MAGIC_NUMBERS`)
+- RL Direto: magic=234600
+- Filtro SQL: `WHERE magic_number = ? AND date(entry_time) = ?`
+
+**Saidas:**
+- `outputs/diarios/fechamento_rl_5000_YYYYMMDD.md`
+- `outputs/diarios/fechamento_rl_direto_YYYYMMDD.md`
+
+### Consequencias
+
+- Fechamento diario auditavel por agente com rastreabilidade completa
+- `session_id` unico no formato `{agent_name}_{data}_{magic_number}` garante idempotencia
+- `schema_version="1.0"` presente no relatorio (segue ADR-019)
+- Bug corrigido: validacao de data futura usa `data_date > date.today()` (nao apenas `.year`)
+- 29 testes unitarios cobrindo casos: banco vazio, data futura, trades WIN/LOSS/NEUTRO,
+  drawdown, markdown gerado, argparse CLI
+
+### Referencias
+
+- ADR-001: SQLite direto (sem ORM)
+- ADR-012: magic_number por agente
+- ADR-019: schema_version em outputs
+- BLID-029: implementacao completa (06/04/2026)
