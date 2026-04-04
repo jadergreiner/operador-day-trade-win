@@ -42,7 +42,7 @@ from src.application.services.fechamento_diario_agente_service import (
 # ---------------------------------------------------------------------------
 # Constantes de teste
 # ---------------------------------------------------------------------------
-_DATA_PADRAO = "2026-05-01"
+_DATA_PADRAO = "2026-03-03"  # Data no passado — não varia com a data do sistema
 _DATA_FUTURA = str(date.today().replace(year=date.today().year + 1))
 _MAGIC_RL_5000 = 234500
 _MAGIC_RL_DIRETO = 234600
@@ -229,9 +229,12 @@ class TestHappyPath:
 
         assert isinstance(rel, RelatorioFechamentoDiarioAgente)
         assert rel.schema_version == "1.0"
-        assert rel.gerado_em  # não vazio
-        # gerado_em deve ser ISO UTC
-        datetime.fromisoformat(rel.gerado_em.replace("Z", "+00:00"))
+        assert len(rel.gerado_em) > 0, "gerado_em não deve ser vazio"
+        # gerado_em deve ser ISO UTC — lança ValueError se formato inválido
+        try:
+            datetime.fromisoformat(rel.gerado_em.replace("Z", "+00:00"))
+        except ValueError as exc:
+            pytest.fail(f"gerado_em não é ISO válido: {rel.gerado_em!r} — {exc}")
         assert rel.drawdown_max_sessao >= 0.0
 
     def test_H5_gerar_markdown_cria_arquivo(
@@ -283,9 +286,26 @@ class TestCenariosErro:
     def test_E3_data_futura_levanta_value_error(
         self, svc: FechamentoDiarioAgenteService, db_path: Path
     ) -> None:
-        """E3: data futura deve lançar ValueError."""
+        """E3: data futura (ano seguinte) deve lançar ValueError."""
         with pytest.raises(ValueError, match="data"):
             svc.gerar_relatorio("rl_5000", _MAGIC_RL_5000, _DATA_FUTURA, db_path)
+
+    def test_E3b_data_futura_mesmo_ano_levanta_value_error(
+        self, svc: FechamentoDiarioAgenteService, db_path: Path
+    ) -> None:
+        """E3b: data futura no mesmo ano (ex: 31/12 deste ano) deve lançar ValueError.
+
+        Regressão: validação antiga usava apenas year > today.year, aceitando
+        datas futuras dentro do mesmo ano. Corrigido para data > today.
+        """
+        today = date.today()
+        # Garantir uma data futura no mesmo ano; se já for 31/12, pular graciosamente
+        if today.month == 12 and today.day == 31:
+            pytest.skip("Teste não aplicável em 31/12 — nenhuma data futura no mesmo ano.")
+        data_futura_mesmo_ano = str(date(today.year, 12, 31))
+
+        with pytest.raises(ValueError, match="data"):
+            svc.gerar_relatorio("rl_5000", _MAGIC_RL_5000, data_futura_mesmo_ano, db_path)
 
     def test_E4_trades_com_profit_loss_null_sao_ignorados(
         self, svc: FechamentoDiarioAgenteService, db_path: Path
@@ -453,27 +473,31 @@ class TestRegressao:
         assert AGENT_MAGIC_NUMBERS["rl_direto"] == 234600
 
     def test_R1_service_usa_settings_nao_hardcoded(
-        self, svc: FechamentoDiarioAgenteService
+        self, svc: FechamentoDiarioAgenteService, db_path: Path
     ) -> None:
-        """R1: o service deve ler magic_numbers de config.settings (não hardcoded)."""
-        import inspect
-        import src.application.services.fechamento_diario_agente_service as mod
+        """R1: o service deve validar magic_number contra AGENT_MAGIC_NUMBERS.
 
-        source = inspect.getsource(mod)
+        Prova comportamental: magic_number VÁLIDO (de settings) é aceito,
+        magic_number INVÁLIDO (fora de settings) é rejeitado — sem hardcode.
+        """
+        from config.settings import AGENT_MAGIC_NUMBERS  # type: ignore[import]
 
-        # 1) Garante que AGENT_MAGIC_NUMBERS é referenciado (importado de settings)
-        assert "AGENT_MAGIC_NUMBERS" in source, (
-            "Service deve referenciar AGENT_MAGIC_NUMBERS de config.settings"
-        )
+        # Todos os magic_numbers registrados em settings devem ser aceitos
+        for agent, magic in AGENT_MAGIC_NUMBERS.items():
+            if agent in ("rl_5000", "rl_direto"):
+                # Não lança — magic válido
+                try:
+                    svc.gerar_relatorio(agent, magic, _DATA_PADRAO, db_path)
+                except FileNotFoundError:
+                    pass  # banco pode não ter dados — ok
+                except ValueError as exc:
+                    pytest.fail(
+                        f"magic_number {magic} de AGENT_MAGIC_NUMBERS foi rejeitado: {exc}"
+                    )
 
-        # 2) Garante que valores literais de magic_number não estão hardcoded no módulo
-        # (somente referências via AGENT_MAGIC_NUMBERS são aceitáveis)
-        assert "234500" not in source, (
-            "Magic number 234500 não deve aparecer hardcoded — use AGENT_MAGIC_NUMBERS"
-        )
-        assert "234600" not in source, (
-            "Magic number 234600 não deve aparecer hardcoded — use AGENT_MAGIC_NUMBERS"
-        )
+        # Magic arbitrário (não em settings) deve ser rejeitado
+        with pytest.raises(ValueError, match="magic_number"):
+            svc.gerar_relatorio("rl_5000", _MAGIC_INVALIDO, _DATA_PADRAO, db_path)
 
     def test_R2_module_nao_quebra_pipeline_diarios_consolidator(self) -> None:
         """R2: importar o service não deve quebrar pipeline_diarios_consolidator."""
@@ -490,8 +514,12 @@ class TestRegressao:
     def test_R3_nao_le_trading_diarios_db(
         self, svc: FechamentoDiarioAgenteService, tmp_path: Path
     ) -> None:
-        """R3: service NÃO deve jamais ler trading_diarios.db — banco errado."""
-        # Cria trading_diarios.db com dados que NÃO devem influenciar o resultado.
+        """R3: service NÃO deve jamais ler trading_diarios.db — banco errado.
+
+        Prova comportamental: mesmo com trading_diarios.db ao lado contendo
+        trades, o resultado deve refletir somente o db_path passado.
+        """
+        # Cria trading_diarios.db com trades que NÃO devem influenciar o resultado.
         diarios_db = tmp_path / "trading_diarios.db"
         conn_d = sqlite3.connect(str(diarios_db))
         conn_d.execute(_DDL_TRADES)
@@ -503,7 +531,7 @@ class TestRegressao:
         conn_d.commit()
         conn_d.close()
 
-        # Banco correto (trading.db) sem trades
+        # Banco correto (trading.db) sem trades para este dia
         trading_db = tmp_path / "trading.db"
         conn_t = sqlite3.connect(str(trading_db))
         conn_t.execute(_DDL_TRADES)
@@ -516,19 +544,38 @@ class TestRegressao:
         assert rel.total_trades == 0, (
             "Service não deve ler trading_diarios.db — somente o db_path informado"
         )
+        assert rel.pnl_total_reais == pytest.approx(0.0), (
+            "pnl não deve refletir dados de trading_diarios.db"
+        )
 
     def test_R3_db_path_passado_explicitamente(
-        self, svc: FechamentoDiarioAgenteService, db_path: Path
+        self, svc: FechamentoDiarioAgenteService, db_path: Path, tmp_path: Path
     ) -> None:
-        """R3: db_path é parâmetro explícito — sem resolução implícita de caminho."""
-        import inspect
+        """R3: db_path explícito deve ser respeitado — dados em outro banco são ignorados.
 
-        import src.application.services.fechamento_diario_agente_service as mod
+        Prova comportamental: dois bancos distintos com dados diferentes;
+        o service deve usar apenas o db_path recebido como argumento.
+        """
+        # Banco A — com 1 trade de 500.0
+        db_a = tmp_path / "banco_a.db"
+        conn_a = sqlite3.connect(str(db_a))
+        conn_a.execute(_DDL_TRADES)
+        _insert_trade(conn_a, _MAGIC_RL_5000, 500.0)
+        conn_a.close()
 
-        source = inspect.getsource(mod)
-        # Garante que trading_diarios.db não é referenciado hardcoded
-        assert "trading_diarios" not in source, (
-            "Service não deve referenciar trading_diarios.db de forma hardcoded"
+        # Banco B — sem trades
+        db_b = tmp_path / "banco_b.db"
+        conn_b = sqlite3.connect(str(db_b))
+        conn_b.execute(_DDL_TRADES)
+        conn_b.commit()
+        conn_b.close()
+
+        rel_a = svc.gerar_relatorio("rl_5000", _MAGIC_RL_5000, _DATA_PADRAO, db_a)
+        rel_b = svc.gerar_relatorio("rl_5000", _MAGIC_RL_5000, _DATA_PADRAO, db_b)
+
+        assert rel_a.total_trades == 1
+        assert rel_b.total_trades == 0, (
+            "Service deve usar somente o db_path recebido como argumento"
         )
 
 

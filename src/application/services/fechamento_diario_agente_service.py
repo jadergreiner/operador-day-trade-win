@@ -144,9 +144,9 @@ class FechamentoDiarioAgenteService:
             )
 
         data_date = date.fromisoformat(data)
-        if data_date.year > date.today().year:
+        if data_date > date.today():
             raise ValueError(
-                f"data {data!r} invalida — data em ano futuro nao permitida (hoje: {date.today()})"
+                f"data {data!r} invalida — data futura nao permitida (hoje: {date.today()})"
             )
 
         # --- Consulta ao banco ---
