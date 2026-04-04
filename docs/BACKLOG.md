@@ -339,7 +339,13 @@ dessincronizacao silenciosa.
 
 #### 7. ROADMAP-DIARIOS-01 Watchdog de threads e observabilidade dos diarios
 
-**Status:** PENDENTE — aguarda resolucao do BUG-DIARIOS-01
+**Status:** ✅ IMPLEMENTADO — BLID-029 (06/04/2026)
+
+**Evidencias:**
+- `src/application/services/fechamento_diario_agente_service.py` (v1.0, 28 testes PASSING)
+- `src/application/diario_observability_panel.py` (v1.1, 66 testes PASSING)
+- `src/application/diarios_health_monitor.py`
+- `src/application/diarios_runtime_mlops_bridge.py`
 
 **Origem:** Reuniao Product Board 17/03/2026.
 

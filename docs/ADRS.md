@@ -2489,3 +2489,73 @@ As tabelas `ai_reflection_logs` e `reflection_questions` residem em
 
 - ADR-019: banco exclusivo trading_diarios.db
 - BLID-023: implementacao completa
+
+---
+
+## ADR-021: MacroGuardianReaderService como Canal Universal de Leitura
+
+**Status:** ACCEPTED
+**Data:** 04/04/2026
+**Origem:** BLID-025
+
+### Contexto
+
+Multiplos agentes precisavam ler snapshots do Guardian de forma consistente,
+gerando duplicacao de logica e acoplamento direto com a estrutura de arquivos.
+
+### Decisao
+
+Canal unico `MacroGuardianReaderService` para leitura de snapshots do Guardian
+por todos os agentes. Nenhum agente deve ler diretamente os arquivos de snapshot.
+
+**Arquivo:** `src/application/services/macro_guardian_reader_service.py`
+
+**Metodos publicos:**
+- `ler_snapshot()` — le snapshot mais recente do Guardian
+- `verificar_kill_switch()` — verifica estado do kill switch
+- `enriquecer_episodio()` — enriquece episodio de RL com dados macro
+- `gerar_relatorio_semanal()` — gera relatorio semanal de macro
+
+### Consequencias
+
+- Leitura do Guardian centralizada e testavel
+- Agentes RL e micro tendencia consomem via service, nunca via arquivo direto
+- Facilita mock em testes unitarios
+
+### Referencias
+
+- BLID-025: implementacao completa
+
+---
+
+## ADR-022: OrderManagerAdaptiveService e RegimeMercado
+
+**Status:** ACCEPTED
+**Data:** 04/04/2026
+**Origem:** BLID-026
+
+### Contexto
+
+O `DiarioOrderManager` acumulou responsabilidades de gestao de ordens E
+adaptacao ao regime de mercado, violando o principio de responsabilidade unica (SRP).
+
+### Decisao
+
+Separar em service dedicado `OrderManagerAdaptiveService` com enum `RegimeMercado`
+para encapsular a logica de adaptacao ao regime sem poluir o order manager principal.
+
+**Arquivo:** `src/application/services/order_manager_adaptive_service.py`
+
+**Classes:**
+- `RegimeMercado` (enum) — TENDENCIA, LATERAL, VOLATIL, INDEFINIDO
+- `OrderManagerAdaptiveService` — gestao adaptativa de ordens por regime
+
+### Consequencias
+
+- SRP preservado: DiarioOrderManager foca em execucao; service novo foca em adaptacao
+- RegimeMercado reutilizavel por outros componentes
+- Testabilidade melhorada via injecao de dependencia
+
+### Referencias
+
+- BLID-026: implementacao completa
