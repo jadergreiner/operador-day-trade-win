@@ -161,6 +161,74 @@ que causava deteccao tardia de SL/TP.
 
 ## Diarios e Treinamento de Modelos
 
+## Configuração de Sistema
+
+### R-CONFIG-001: Precedência de Configuração Profit Protection
+
+**Status:** Implementado (04/04/2026)
+**Referência:** ADR-018, `src/infrastructure/config/profit_protection_config.py`
+
+O sistema de proteção de lucros (`ProfitProtectionEngine`) utiliza configuração externalizada em `config/profit_protection.yaml` com resolução de perfil baseada em precedência de 4 níveis:
+
+**Ordem de precedência (do mais específico ao mais geral):**
+
+1. **agent_overrides[agent_id]** (Nível 1 - MAIOR PRECEDÊNCIA)
+   - Override cirúrgico por agente específico via YAML
+   - Exemplo: `agent_overrides: { "agente_direto_20260405_090000": { "profile": "conservador" } }`
+   - Uso: Validação isolada de novo perfil em um único agente
+
+2. **PROFIT_PROTECTION_PROFILE** (Nível 2 - ENV VAR)
+   - Variável de ambiente sobrescreve profile_ativo do YAML
+   - Exemplo: `SET PROFIT_PROTECTION_PROFILE=agressivo`
+   - Uso: Mudança temporária sem editar YAML (staging/testes)
+
+3. **profile_ativo** (Nível 3 - YAML)
+   - Perfil padrão definido no `config/profit_protection.yaml`
+   - Exemplo: `profile_ativo: "baseline"`
+   - Uso: Configuração canônica de produção
+
+4. **baseline builtin** (Nível 4 - FALLBACK)
+   - Defaults hardcoded no loader quando YAML ausente ou corrompido
+   - Valores: `profit_target_pct=2.0`, `stop_loss_pct=1.0`, etc
+   - Uso: Degradação graceful do sistema (log CRITICAL emitido)
+
+**Implementação:**
+
+A resolução é realizada pela função `resolver_perfil()` em `src/infrastructure/config/profit_protection_config.py`:
+
+```python
+def resolver_perfil(
+    cfg: ProfitProtectionConfig,
+    agent_id: Optional[str] = None,
+    profile_env: Optional[str] = None,
+) -> ProfitProtectionProfile:
+    """Resolve perfil ativo por precedência (agent_override > ENV > profile_ativo > baseline)"""
+```
+
+**Perfis disponíveis (v1.0.0):**
+
+- **baseline:** Defaults históricos (profit_target=2.0%, stop_loss=1.0%)
+- **conservador:** Proteção antecipada (profit_target=1.5%, break_even mais cedo)
+- **agressivo:** Deixa lucro correr (profit_target=3.0%, reversão tolerante)
+
+**Shadow mode:**
+
+Cada perfil suporta `shadow_mode: true` para validação sem risco de capital (apenas logging de ações sugeridas).
+
+**Calibração A/B:**
+
+Use `scripts/calibrar_profit_protection.py` para comparar perfis sobre trades históricos do SQLite. Guards de rollback automático:
+- Degradação win rate > 2 p.p. → rollback para baseline
+- Aumento drawdown > 15 p.p. → rollback para baseline
+
+**Impacto operacional:**
+
+- Launcher afetado: `INICIAR_AGENTE_RL_DIRETO.bat` (IMPACTO DIRETO)
+- Ação requerida: Reiniciar após mudança de perfil + monitorar 2h
+- Rollback: Restaurar `config/profit_protection.yaml` anterior
+
+## Diarios e Treinamento de Modelos
+
 Os diarios operacionais sao obrigatorios e devem alimentar o ciclo de ML/RL.
 Sem diarios, o treinamento e a auditoria ficam incompletos.
 
