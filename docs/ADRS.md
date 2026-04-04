@@ -2395,8 +2395,57 @@ Componentes criados:
 | ADR-017 | ✅ ACCEPTED | 02/04/2026 | Premissa intraday reconciliacao |
 | ADR-018 | ✅ ACCEPTED | 02/04/2026 | Profit Protection por Perfil YAML |
 | ADR-019 | ✅ ACCEPTED | 04/04/2026 | Segregacao banco diarios + schema_version |
+| ADR-021 | ✅ ACCEPTED | 04/04/2026 | MacroGuardianReaderService canal universal de leitura |
+| ADR-022 | ✅ ACCEPTED | 04/04/2026 | OrderManagerAdaptiveService pipeline retreinamento e antienviesamento |
 
-**ÚLTIMA ATUALIZAÇÃO:** 04/04/2026 BRT | **STATUS**: ✅ BLID-022 ROADMAP-DIARIOS-02 IMPLEMENTADO
+**ÚLTIMA ATUALIZAÇÃO:** 04/04/2026 BRT | **STATUS**: ✅ BLID-026 ROADMAP-DIARIOS-06 IMPLEMENTADO
+
+> **BLID-026 / ROADMAP-DIARIOS-06:** ADR-022 formaliza OrderManagerAdaptiveService como pipeline fechado de retreinamento e antienviesamento. Servico separado do DiarioOrderManager (SRP) identifica regime de mercado via ADX simplificado, detecta vies direcional e exporta features JSON para retreinamento incremental.
+
+> **BLID-025 / ROADMAP-DIARIOS-05:** ADR-021 formaliza MacroGuardianReaderService como canal universal de leitura do Guardian para os 4 agentes operacionais. Servico encapsula fetch_latest_guardian_snapshot(), expoe kill switch universal e enriquece episodios de treinamento com features macro.
+
+---
+
+## ADR-021: MacroGuardianReaderService como Canal Universal de Leitura do Guardian
+
+**Status:** ✅ ACCEPTED
+**Data:** 04/04/2026
+**Origem:** BLID-025 / ROADMAP-DIARIOS-05
+
+### Contexto
+
+Antes do BLID-025, cada agente precisava conhecer a estrutura da tabela
+`macro_guardian_log` e implementar sua propria logica de leitura do SQLite.
+O Guardian persistia dados mas nao havia um servico unificado de leitura.
+O kill switch era respeitado apenas pelo Diario Order Manager.
+
+### Decisao
+
+Criar `MacroGuardianReaderService` em
+`src/application/services/macro_guardian_reader_service.py` como fachada
+exclusiva de leitura do Guardian para todos os agentes operacionais.
+
+**Contrato publico:**
+- `ler_snapshot(db_path, lookback_minutes=30)` → `MacroGuardianSnapshotResult`
+- `verificar_kill_switch(db_path)` → `tuple[bool, str]`
+- `enriquecer_episodio(episodio_dict, db_path)` → `dict` com 4 campos macro
+- `gerar_relatorio_semanal(db_path, diary_db_path, semana, outputs_dir)` → `Path`
+
+**MacroGuardianSnapshotResult** campos:
+`score_guardian`, `alertas_ativos`, `regime_macro`,
+`kill_switch_ativo`, `kill_switch_motivo`, `total_eventos`
+
+### Consequencias
+
+- Os 4 agentes (Micro Tendencia, RL 5000, RL Direto, Diarios) chamam apenas
+  `ler_snapshot()` ou `verificar_kill_switch()` — sem conhecer o schema SQLite.
+- `enriquecer_episodio()` adiciona features macro ao dataset de treinamento,
+  formando dataset multimodal (tecnico + macro).
+- Relatorio semanal `outputs/guardian_semana_NN.md` com distribuicao de
+  alertas e correlacao macro x trades.
+- Nao modifica `macro_guardian_universal_log.py` nem `macro_guardian_universal.py`.
+- Padrao SQLite: `timeout=30 + WAL + synchronous=NORMAL + busy_timeout=30000`.
+- `schema_version="1.0"` em reports (padrao ADR-019).
 
 ---
 
@@ -2436,4 +2485,73 @@ incrementar versao.
 - Novos exportadores de dataset devem incluir `schema_version`
 
 ```
+
+---
+
+## ADR-022: OrderManagerAdaptiveService como Pipeline Fechado de Retreinamento e Antienviesamento
+
+**Status:** ✅ ACCEPTED
+**Data:** 04/04/2026
+**Origem:** BLID-026 / ROADMAP-DIARIOS-06
+
+### Contexto
+
+Implementacao do BLID-026: Diario Order Manager evoluindo de executor
+de ordens para agente adaptativo sem vies direcional. O ciclo completo
+episodio → resultado → retreinamento deve ser fechado e automatizado.
+
+Problemas que motivaram a ADR:
+- Episodios gerados mas nao usados para retreinamento;
+- Sem detector de vies direcional (agente pode entrar 100% BUY por dias);
+- Sem adaptacao a mudancas de regime (tendencia → lateral → reversao).
+
+### Decisoes
+
+**Decisao 1 — Servico separado do DiarioOrderManager (SRP)**
+
+Criar `OrderManagerAdaptiveService` em
+`src/application/services/order_manager_adaptive_service.py`,
+separado do `DiarioOrderManager`. Razao: manter responsabilidade unica
+— o DiarioOrderManager orquestra o ciclo operacional; o servico
+adaptativo cuida da evolucao do modelo e da deteccao de anomalias.
+
+**Decisao 2 — ADX simplificado sem biblioteca externa**
+
+Identificacao de regime via ADX proxy calculado a partir do range total
+vs range medio dos candles. Sem dependencia de talib ou pandas_ta.
+Regimes: TENDENCIA_ALTA, TENDENCIA_BAIXA, LATERAL, VOLATIL.
+Multiplicadores ATR: LATERAL=0.8, TENDENCIA=1.5, VOLATIL=1.2.
+
+**Decisao 3 — Retreinamento via exportacao de features JSON**
+
+O retreinamento incremental nao executa modelo ML em runtime.
+Exporta features enriquecidas dos episodios do dia em
+`data/models/diario_order_manager/modelo_YYYYMMDD_HHmmss.json`
+com `schema_version="1.0"` (ADR-019) para consumo posterior pelo
+pipeline ML. Historico em `historico_versoes.json`.
+Aciona se >= 10 episodios com resultado conhecido no dia.
+
+**Decisao 4 — Detector de vies com feedback automatico**
+
+Ratio BUY/SELL nos ultimos 20 episodios. Se ratio > 0.75 por
+2 pregoes consecutivos: persiste `DiaryFeedback` com
+`source='vies_detector'` e `retreinamento_necessario=True`.
+
+### Interfaces exportadas
+
+- `OrderManagerAdaptiveService.identificar_regime(candles)` → `ParametrosRegime`
+- `OrderManagerAdaptiveService.detectar_vies_direcional(db_path)` → `AlertaVies`
+- `OrderManagerAdaptiveService.executar_retreinamento(db_path, modelo_dir)` → `ResultadoRetreino`
+- `OrderManagerAdaptiveService.gerar_relatorio_diario(db_path, modelo_dir, outputs_dir)` → `Path`
+
+### Consequencias
+
+- `DiarioOrderManager` permanece sem alteracoes;
+- Relatorio diario `outputs/order_manager_relatorio_YYYYMMDD.md`
+  gerado automaticamente ao encerramento do pregao;
+- `data/models/diario_order_manager/historico_versoes.json` com
+  historico de retreinamentos e win rate por versao;
+- `schema_version="1.0"` em todos os exports JSON (ADR-019);
+- 15 testes TDD cobrindo regime, vies, retreinamento e relatorio.
+
 

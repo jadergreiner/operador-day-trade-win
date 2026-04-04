@@ -487,7 +487,7 @@ agentes operacionais.
 
 #### 10. ROADMAP-DIARIOS-04 Diario 3 — RL Performance Diary como motor de aprendizado
 
-**Status:** PENDENTE — depende de BUG-DIARIOS-02 (eficiencia_pct zerado)
+**Status:** IMPLEMENTADO — BLID-024 concluido em 04/04/2026 (PR #28)
 
 **Origem:** Reuniao Product Board 17/03/2026 — diretriz do Head de Financas.
 
@@ -535,7 +535,7 @@ degrada, e exportar episodios enriquecidos para o pipeline ML/RL.
 
 #### 11. ROADMAP-DIARIOS-05 Diario 4 — Macro Guardian expandido a todos os agentes
 
-**Status:** PENDENTE
+**Status:** IMPLEMENTADO ✅ (BLID-025 — 04/04/2026)
 
 **Origem:** Reuniao Product Board 17/03/2026 — diretriz do Head de Financas.
 
@@ -589,7 +589,7 @@ variavel de treinamento.
 
 #### 12. ROADMAP-DIARIOS-06 Diario 5 — Order Manager com retreinamento e antienviesamento
 
-**Status:** PENDENTE — depende de BUG-DIARIOS-04 (NameError motor_decisao)
+**Status:** ✅ IMPLEMENTADO — BLID-026 (04/04/2026, branch copilot/proximo-item-backlog)
 
 **Origem:** Reuniao Product Board 17/03/2026 — diretriz do Head de Financas.
 
