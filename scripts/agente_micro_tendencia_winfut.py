@@ -4425,7 +4425,7 @@ def _ensure_micro_episode_columns(cursor) -> None:
             ("motivo_saida", "TEXT"),
             ("outcome", "TEXT"),
             ("duracao_s", "INTEGER"),
-            ("magic_number", f"INTEGER DEFAULT {MAGIC_NUMBER}"),
+            ("magic_number", f"INTEGER DEFAULT {int(MAGIC_NUMBER)}"),
         ],
         "execution_feedback": [
             ("episode_id", "TEXT"),
@@ -4436,7 +4436,7 @@ def _ensure_micro_episode_columns(cursor) -> None:
             ("confianca_entrada", "REAL"),
             ("macro_score", "INTEGER"),
             ("motivo_saida", "TEXT"),
-            ("magic_number", f"INTEGER DEFAULT {MAGIC_NUMBER}"),
+            ("magic_number", f"INTEGER DEFAULT {int(MAGIC_NUMBER)}"),
         ],
     }
 

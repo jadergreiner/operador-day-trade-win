@@ -37,7 +37,9 @@ from config.settings import AGENT_MAGIC_NUMBERS
 logger = logging.getLogger("pipeline_episodios_micro")
 
 # Magic number canônico do Micro Tendência (importado de config/settings.py)
-_MAGIC_MICRO: int = AGENT_MAGIC_NUMBERS["micro_tendencia"]
+# Validação explícita de tipo: garante que o valor é inteiro antes de interpolar
+# em strings SQL (proteção contra injeção caso a fonte do dict mude no futuro)
+_MAGIC_MICRO: int = int(AGENT_MAGIC_NUMBERS["micro_tendencia"])
 
 # Minimo de episodios para acionar cada modulo
 THRESHOLD_DRIFT = 10
