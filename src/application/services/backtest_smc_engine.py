@@ -206,6 +206,10 @@ class _GeradorSinaisSMC:
     """
 
     # Confiancas padrao por tipo de sinal
+    # Valores calibrados empiricamente para SMC:
+    # BOS (0.70): rompimento de estrutura com continuidade — confianca alta
+    # CHoCH (0.80): reversao de estrutura — sinal mais forte, maior confianca
+    # FVG (0.65): gap de fair value — sinal de desequilibrio, menor confianca
     CONFIANCA_BOS: float = 0.70
     CONFIANCA_CHOCH: float = 0.80
     CONFIANCA_FVG: float = 0.65
@@ -360,6 +364,10 @@ class SMCConfluenceFilter:
     - +1 se ambos tem CHoCH (maior confianca)
     """
 
+    # Constantes da engine de confluencia
+    # Score maximo possivel (2 TFs alinhados + bonus CHoCH)
+    MAX_CONFLUENCE_SCORE: int = 5
+
     def filtrar(
         self,
         sinais_m1: List[SMCSignal],
@@ -439,7 +447,7 @@ class SMCConfluenceFilter:
         if sinal_m5.tipo == "CHoCH" and sinal_m1.tipo == "CHoCH":
             score += 1  # bonus CHoCH duplo
 
-        return min(score, 5)
+        return min(score, self.MAX_CONFLUENCE_SCORE)
 
 
 # ---------------------------------------------------------------------------
@@ -458,6 +466,11 @@ class _SimuladorTrades:
     - Avaliacao: nos proximos avaliacao_candles candles
     - Saida no primeiro candle que toca SL ou TP
     """
+
+    # Percentual do preco de entrada usado como ATR minimo quando sem historico
+    _ATR_FALLBACK_PERCENTUAL: float = 0.001
+    # Valor absoluto minimo de ATR para evitar divisao por zero
+    _ATR_MINIMO_ABSOLUTO: float = 1.0
 
     def __init__(
         self,
@@ -518,7 +531,11 @@ class _SimuladorTrades:
 
         # Garantir ATR minimo para evitar divisao por zero
         if atr <= 0:
-            atr = abs(preco_entrada) * 0.001 if preco_entrada != 0 else 1.0
+            atr = (
+                abs(preco_entrada) * self._ATR_FALLBACK_PERCENTUAL
+                if preco_entrada != 0
+                else self._ATR_MINIMO_ABSOLUTO
+            )
 
         sl_pts = self.sl_mult * atr
         tp_pts = self.tp_mult * atr

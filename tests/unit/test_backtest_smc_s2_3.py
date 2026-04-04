@@ -16,6 +16,7 @@ Convencoes:
 """
 
 import importlib.util
+import math
 import sys
 from pathlib import Path
 from typing import List
@@ -232,8 +233,6 @@ def _criar_dataset_backtest_completo(
 
     Usa sequencia pseudo-aleatoria deterministica para reproducibilidade.
     """
-    import math
-
     candles_m5: List[CandleData] = []
     preco_base = 110000.0
 
@@ -416,8 +415,6 @@ class TestSwingHighLowDetector:
         ENTAO a lista deve estar ordenada crescentemente por indice.
         """
         # DADO
-        import math
-
         candles: List[CandleData] = []
         for i in range(50):
             preco = 100.0 + math.sin(i * 0.5) * 5.0
@@ -459,7 +456,7 @@ class TestSwingHighLowDetector:
         """
         # DADO — todos os candles com mesmo preco
         candles = [
-            CandleData(open=100.0, high=101.0, low=99.0, close=100.0)
+            CandleData(open=100.0, high=101.0, low=99.0, close=100.0, volume=100.0)
             for _ in range(15)
         ]
         detector = SwingHighLowDetector(lookback=3)
@@ -968,7 +965,6 @@ class TestWinRateDelta:
         contanto que o engine funcione corretamente.
         """
         # DADO
-        import math
 
         # Criar dataset com tendencia clara de alta para maximizar sinais alinhados
         total_m5 = 300
