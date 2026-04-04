@@ -159,7 +159,8 @@ class DiariosHealthCheckService:
 
         Args:
             db_path: Caminho para o banco SQLite.
-            tabela: Nome da tabela a verificar.
+            tabela: Nome da tabela a verificar (deve conter apenas letras,
+                numeros e underscores).
             horas: Janela de tempo em horas (padrao: 24h).
 
         Returns:
@@ -167,6 +168,15 @@ class DiariosHealthCheckService:
             False caso contrario (banco ausente, tabela ausente ou sem dados).
         """
         if not db_path.exists():
+            return False
+
+        # Validar nome de tabela: apenas letras, numeros e underscores
+        # para prevenir injecao de SQL via interpolacao de f-string.
+        if not tabela.replace("_", "").isalnum():
+            logger.error(
+                "Nome de tabela invalido (caracteres nao permitidos): %r",
+                tabela,
+            )
             return False
 
         limite_iso = (
@@ -179,7 +189,7 @@ class DiariosHealthCheckService:
         try:
             conn = self._conectar(db_path)
 
-            # Verificar se tabela existe
+            # Verificar se tabela existe via query parametrizada (seguro)
             existe = conn.execute(
                 "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
                 (tabela,),
@@ -188,9 +198,9 @@ class DiariosHealthCheckService:
                 conn.close()
                 return False
 
-            # Descobrir colunas da tabela
+            # Descobrir colunas da tabela (nome de tabela ja validado acima)
             colunas_info = conn.execute(
-                f"PRAGMA table_info({tabela})"
+                f"PRAGMA table_info({tabela})"  # noqa: S608 — tabela validada
             ).fetchall()
             colunas_tabela = {row[1] for row in colunas_info}
 
@@ -202,14 +212,16 @@ class DiariosHealthCheckService:
 
             if coluna_ts is None:
                 # Sem coluna de timestamp: apenas verifica se ha dados
+                # (nome da tabela ja foi validado e confirmado via sqlite_master)
                 row = conn.execute(
-                    f"SELECT COUNT(*) FROM {tabela}"
+                    f"SELECT COUNT(*) FROM {tabela}"  # noqa: S608 — validado
                 ).fetchone()
                 conn.close()
                 return bool(row and row[0] > 0)
 
+            # coluna_ts vem de colunas_candidatas (lista interna controlada)
             row = conn.execute(
-                f"SELECT 1 FROM {tabela} WHERE {coluna_ts} >= ? LIMIT 1",
+                f"SELECT 1 FROM {tabela} WHERE {coluna_ts} >= ? LIMIT 1",  # noqa: S608 — validado
                 (limite_iso,),
             ).fetchone()
             conn.close()

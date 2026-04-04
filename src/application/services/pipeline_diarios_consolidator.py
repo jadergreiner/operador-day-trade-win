@@ -332,8 +332,11 @@ def _coletar_metricas_macro_guardian(
         "score_medio": 0.0,
     }
 
-    # Tentar ler de tabelas macro disponiveis
-    for tabela in ("macro_guardian_log", "macro_guardian_events"):
+    # Tentar ler de tabelas macro disponiveis.
+    # SEGURANCA: os nomes de tabela sao literais de uma tupla interna — nao
+    # vem de entrada do usuario — eliminando risco de injecao SQL.
+    _TABELAS_MACRO_PERMITIDAS = ("macro_guardian_log", "macro_guardian_events")
+    for tabela in _TABELAS_MACRO_PERMITIDAS:
         if _tabela_existe(conn, tabela):
             try:
                 rows = conn.execute(

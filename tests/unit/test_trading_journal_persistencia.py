@@ -228,7 +228,7 @@ class TestCaminhosDegradacao:
             resultado = svc.correlacionar_sessao("2026-04-05")
             # Se nao levantou excecao, o teste passou
             assert isinstance(resultado, int)
-        except Exception as exc:  # noqa: BLE001
+        except (sqlite3.OperationalError, sqlite3.DatabaseError, AttributeError) as exc:
             pytest.fail(
                 f"correlacionar_sessao levantou excecao inesperada: {exc}"
             )
