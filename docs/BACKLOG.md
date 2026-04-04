@@ -339,13 +339,21 @@ dessincronizacao silenciosa.
 
 #### 7. ROADMAP-DIARIOS-01 Watchdog de threads e observabilidade dos diarios
 
-**Status:** ✅ IMPLEMENTADO — BLID-029 (06/04/2026)
+**Status:** ✅ IMPLEMENTADO — BLID-029 (06/04/2026) + anteriores (BLID-023)
 
 **Evidencias:**
-- `src/application/services/fechamento_diario_agente_service.py` (v1.0, 28 testes PASSING)
-- `src/application/diario_observability_panel.py` (v1.1, 66 testes PASSING)
-- `src/application/diarios_health_monitor.py`
-- `src/application/diarios_runtime_mlops_bridge.py`
+- `src/application/services/fechamento_diario_agente_service.py` (v1.0, **29 testes PASSING** — BLID-029)
+- `scripts/fechar_diario_por_agente.py` (CLI, BLID-029)
+- `src/application/diario_observability_panel.py` (v1.1, 66 testes PASSING — BLID-023)
+- `src/application/diarios_health_monitor.py` (BLID-023)
+- `src/application/diarios_runtime_mlops_bridge.py` (BLID-023)
+
+**Nota de escopo:** Os componentes de painel de status, watchdog de threads,
+alertas e historico de restarts (`diario_observability_panel.py`,
+`diarios_health_monitor.py`, `diarios_runtime_mlops_bridge.py`) foram
+entregues em BLID-023. O componente de fechamento diario individualizado por
+agente RL (`FechamentoDiarioAgenteService`) foi entregue em BLID-029.
+O ROADMAP-DIARIOS-01 esta **integralmente concluido** com a soma dessas entregas.
 
 **Origem:** Reuniao Product Board 17/03/2026.
 
@@ -754,8 +762,57 @@ em producao (banco vazio, coluna ausente, CLI main()).
 
 ---
 
+#### 15. BLID-029 — Fechamento Diario Individualizado por Agente RL (ROADMAP-DIARIOS-01 — componente final)
 
-### P2 - Capacidade futura
+**Status:** ✅ IMPLEMENTADO — BLID-029 (06/04/2026)
+
+**BLID:** BLID-029
+**Branch:** copilot/blid-029-fechamento-diario-por-agente (ou equivalente)
+**Origem:** ROADMAP-DIARIOS-01 — componente de fechamento diario por agente RL.
+
+**Problema:** O fechamento diario das sessoes de trading nao distinguia resultados
+por agente RL individualmente. RL 5000 (magic=234500) e RL Direto (magic=234600)
+operavam em paralelo, mas PnL, win_rate e drawdown nao eram segregados por agente,
+dificultando auditoria e aprendizado individual.
+
+**Bug corrigido:**
+- Validacao de data futura incorreta: `data_date.year > today.year` substituida
+  por `data_date > date.today()` (falha em datas no mesmo ano calendario mas no futuro)
+
+**Entregar:**
+
+- `src/application/services/fechamento_diario_agente_service.py`:
+  - `FechamentoDiarioAgenteService.gerar_relatorio(agent_name, magic, data, db_path)`
+  - `FechamentoDiarioAgenteService.gerar_markdown(relatorio, outputs_dir)`
+  - `RelatorioFechamentoDiarioAgente` (dataclass com schema_version="1.0")
+  - Metricas: win_rate, pnl_total_reais, drawdown_max_sessao, status (LUCRATIVO/DEFICITARIO/NEUTRO)
+- `scripts/fechar_diario_por_agente.py` — CLI com argparse (`--data`, `--db-path`)
+- `tests/unit/test_fechamento_diario_agente_service.py` — 29 testes TDD (29/29 PASSING)
+
+**Saidas geradas:**
+- `outputs/diarios/fechamento_rl_5000_YYYYMMDD.md`
+- `outputs/diarios/fechamento_rl_direto_YYYYMMDD.md`
+
+**ADRs referenciados:**
+- ADR-001: SQLite direto (sem ORM)
+- ADR-012: magic_number por agente (234500=rl_5000, 234600=rl_direto)
+- ADR-019: schema_version="1.0" nos outputs
+- ADR-023: decisao arquitetural do FechamentoDiarioAgenteService
+
+**Evidencias:**
+- Codigo: `src/application/services/fechamento_diario_agente_service.py` (v1.0)
+- CLI: `scripts/fechar_diario_por_agente.py`
+- Testes: `tests/unit/test_fechamento_diario_agente_service.py` (29/29 PASSING)
+- mypy: zero erros nos modulos novos
+
+**Avaliacao de Impacto por Agente:**
+- `INICIAR_AGENTE_RL_5000.bat` — MEDIO | INDIRETO | monitorar (relatorio gerado ao fim da sessao)
+- `INICIAR_AGENTE_RL_DIRETO.bat` — MEDIO | INDIRETO | monitorar (relatorio gerado ao fim da sessao)
+- `INICIAR_DIARIOS.bat` — ALTO | DIRETO | script `fechar_diario_por_agente.py` adicionado ao pipeline
+- `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` — NENHUM | SEM IMPACTO | nenhuma acao
+- `INICIAR_MONITOR_QUANTICO.bat` — NENHUM | SEM IMPACTO | nenhuma acao
+
+---
 
 ### Modulo 3 — Grupo 1: Isolamento (motor_decisao_isolado + posicao_isolamento)
 
