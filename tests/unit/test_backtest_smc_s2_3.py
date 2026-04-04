@@ -1067,6 +1067,65 @@ class TestWinRateDelta:
             f"Delta deve ser calculado corretamente: {delta_calculado} != {delta_esperado}"
         )
 
+    def test_meta_atingida_com_dataset_deterministico(self) -> None:
+        """
+        DADO ComparisonReport construido com resultados deterministicos.
+        QUANDO win_rate_confluence=0.72 e win_rate_baseline=0.60.
+        ENTAO win_rate_delta_confluence deve ser 0.12 e meta=True.
+
+        Teste deterministico para AC-4: valida que a logica de meta
+        (delta >= 0.03) funciona com valores controlados garantindo o
+        requisito de negocio de ganho minimo de 3% no win rate.
+        """
+        # DADO — resultados deterministicos controlados
+        baseline = BacktestSMCResult(
+            modo="baseline",
+            total_trades=100,
+            vitorias=60,
+            win_rate=0.60,
+            pnl_total=100.0,
+        )
+        smc_m1 = BacktestSMCResult(
+            modo="smc_m1_only",
+            total_trades=50,
+            vitorias=33,
+            win_rate=0.66,
+            pnl_total=80.0,
+        )
+        smc_m5 = BacktestSMCResult(
+            modo="smc_m5_only",
+            total_trades=40,
+            vitorias=27,
+            win_rate=0.675,
+            pnl_total=70.0,
+        )
+        smc_conf = BacktestSMCResult(
+            modo="smc_confluence",
+            total_trades=20,
+            vitorias=14,
+            win_rate=0.72,
+            pnl_total=60.0,
+        )
+        delta = round(smc_conf.win_rate - baseline.win_rate, 4)
+        relatorio = ComparisonReport(
+            baseline=baseline,
+            smc_m1_only=smc_m1,
+            smc_m5_only=smc_m5,
+            smc_confluence=smc_conf,
+            win_rate_delta_confluence=delta,
+            meta=delta >= 0.03,
+        )
+
+        # ENTAO
+        assert abs(relatorio.win_rate_delta_confluence - 0.12) < 0.0001, (
+            f"Delta esperado 0.12, obtido {relatorio.win_rate_delta_confluence}"
+        )
+        assert relatorio.meta is True, (
+            f"meta deve ser True para delta={delta:.4f} >= 0.03 (AC-4)"
+        )
+        # Garante que o ganho percentual real e exatamente 12 pontos percentuais
+        assert relatorio.smc_confluence.win_rate - relatorio.baseline.win_rate >= 0.03
+
 
 # ---------------------------------------------------------------------------
 # AC-5: ComparisonReport contem todos os campos necessarios

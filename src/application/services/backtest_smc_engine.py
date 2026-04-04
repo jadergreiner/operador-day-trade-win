@@ -205,11 +205,13 @@ class _GeradorSinaisSMC:
     Uso interno pelo BacktestSMCEngine.
     """
 
-    # Confiancas padrao por tipo de sinal
-    # Valores calibrados empiricamente para SMC:
-    # BOS (0.70): rompimento de estrutura com continuidade — confianca alta
-    # CHoCH (0.80): reversao de estrutura — sinal mais forte, maior confianca
-    # FVG (0.65): gap de fair value — sinal de desequilibrio, menor confianca
+    # Confiancas padrao por tipo de sinal.
+    # Valores alinhados com ADR-025 / BLID-031 (DetectorSMC tempo real):
+    #   BOS (0.70): rompimento de estrutura com close validado — confianca base alta.
+    #   CHoCH (0.80): mudanca de carater de mercado — sinal de reversao, maior certeza.
+    #   FVG (0.65): gap de fair value sem vela oposta — sinal de desequilibrio,
+    #               confianca menor pois nao requer rompimento de swing.
+    # Ref: docs/ADRS.md ADR-025 (DetectorSMC) e ADR-026 (BacktestSMCEngine).
     CONFIANCA_BOS: float = 0.70
     CONFIANCA_CHOCH: float = 0.80
     CONFIANCA_FVG: float = 0.65
@@ -467,7 +469,10 @@ class _SimuladorTrades:
     - Saida no primeiro candle que toca SL ou TP
     """
 
-    # Percentual do preco de entrada usado como ATR minimo quando sem historico
+    # Percentual do preco de entrada usado como ATR minimo quando sem historico.
+    # 0.001 = 0.1% do preco de entrada. Para WIN$N (~110.000 pts) isso equivale
+    # a ~110 pontos — compativel com o range minimo intraday do mini-indice.
+    # Garante que SL e TP nao colapsum para zero em series sem historico suficiente.
     _ATR_FALLBACK_PERCENTUAL: float = 0.001
     # Valor absoluto minimo de ATR para evitar divisao por zero
     _ATR_MINIMO_ABSOLUTO: float = 1.0
