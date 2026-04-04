@@ -23,6 +23,10 @@ class PatraoAlerta(str, Enum):
     DIVERGENCIA_RSI = "divergencia_rsi"
     BREAK_SUPORTE = "break_suporte"
     BREAK_RESISTENCIA = "break_resistencia"
+    # Padroes SMC (S2-4)
+    SMC_BOS = "smc_bos"
+    SMC_CHOCH = "smc_choch"
+    SMC_FVG = "smc_fvg"
 
     def __str__(self) -> str:
         return self.value

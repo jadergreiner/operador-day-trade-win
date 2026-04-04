@@ -4554,3 +4554,49 @@ imediatamente sem avaliar exaustao do movimento.
 - Type hints: 100% (novas linhas sem erros mypy)
 - Portugues: 100%
 
+
+---
+
+#### BLID-031 — S2-4 Integracao Detector de Padroes SMC ao Pipeline de Alertas
+
+**Status:** ✅ IMPLEMENTADO — BLID-031 (04/04/2026)
+
+**BLID:** BLID-031
+**Titulo:** S2-4 Integracao Detector SMC (BOS/CHoCH/FVG) ao pipeline em tempo real
+**Prioridade:** P1
+**ADR:** ADR-025
+
+### Descricao
+
+Integrar detector de padroes SMC ao pipeline de alertas em tempo real.
+Estender WebSocket para enviar sinais de confluencia ao trader.
+
+### Criterios de Aceite (4 AC)
+
+- [x] **AC-1:** Detector padroes integrado no loop principal (ProcessadorBDI)
+- [x] **AC-2:** WebSocket alerts incluem sinal_smc_nome + sinal_smc_confianca
+  + confluencia_strength + trader_pode_ver_sinal
+- [x] **AC-3:** E2E test (deteccao -> alert -> trader) passando
+- [x] **AC-4:** Performance validada (<500ms latencia P95)
+
+### Arquivos Alterados
+
+- `src/domain/enums/alerta_enums.py` — 3 novos PatraoAlerta (SMC_BOS/CHOCH/FVG)
+- `src/domain/entities/alerta.py` — 4 campos SMC opcionais
+- `src/application/services/detector_smc.py` — CRIADO (DetectorSMC)
+- `src/application/services/processador_bdi.py` — DetectorSMC integrado ao loop
+- `src/application/services/alerta_formatter.py` — formatar_json SMC enriquecido
+- `tests/unit/test_detector_smc_s2_4.py` — CRIADO (18 testes unitarios)
+- `tests/integration/test_s2_4_smc_pipeline.py` — CRIADO (13 testes E2E)
+- `docs/ADRS.md` — ADR-025 registrado
+
+### Evidencias
+
+- 31 testes: 31/31 PASSING (100%)
+- Performance P95: < 500ms (validado com 100 velas)
+- Retrocompatibilidade: campos SMC opcionais (default None)
+- Bug corrigido: Price.value em formatar_json (alerta_formatter.py)
+
+### Historico
+
+- 04/04/2026 — criado e implementado (BLID-031)

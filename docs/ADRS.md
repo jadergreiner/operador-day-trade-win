@@ -2404,8 +2404,10 @@ Componentes criados:
 | ADR-021 | ✅ ACCEPTED | 04/04/2026 | MacroGuardianReaderService canal universal de leitura |
 | ADR-022 | ✅ ACCEPTED | 04/04/2026 | OrderManagerAdaptiveService e RegimeMercado |
 | ADR-023 | ✅ ACCEPTED | 06/04/2026 | FechamentoDiarioAgenteService por agente RL |
+| ADR-024 | ✅ ACCEPTED | 04/04/2026 | ATRDynamicCalibrator calibracao adaptativa ATR por clustering |
+| ADR-025 | ✅ ACCEPTED | 04/04/2026 | DetectorSMC integrado ao pipeline de alertas (S2-4) |
 
-**ÚLTIMA ATUALIZAÇÃO:** 06/04/2026 BRT | **STATUS**: ✅ BLID-029 ROADMAP-DIARIOS-01 FECHAMENTO DIARIO IMPLEMENTADO
+**ÚLTIMA ATUALIZAÇÃO:** 04/04/2026 BRT | **STATUS**: ✅ BLID-031 S2-4 DETECTOR SMC IMPLEMENTADO
 
 ---
 
@@ -2669,3 +2671,69 @@ Implementar `ATRDynamicCalibrator` em `src/application/atr_calibrator.py` com:
 
 - BLID-030: implementacao completa (04/04/2026)
 - Issue: https://github.com/jadergreiner/operador-day-trade-win/issues/21
+
+## ADR-025: DetectorSMC — Integracao ao Pipeline de Alertas (S2-4)
+
+**Status:** ACCEPTED
+**Data:** 04/04/2026
+**Origem:** BLID-031 (S2-4 — Sprint 2)
+
+### Contexto
+
+O pipeline de alertas existente detectava apenas volatilidade extrema
+(DetectorVolatilidade) e padroes classicos (DetectorPadroesTecnico).
+A issue S2-4 exige integracao de padroes SMC (Smart Money Concepts) em
+tempo real, com sinais de confluencia enviados ao trader via WebSocket.
+
+### Decisao
+
+Implementar `DetectorSMC` em `src/application/services/detector_smc.py`
+com deteccao de 3 padroes:
+
+- **BOS** (Break of Structure): rompimento de high/low anterior
+  — confianca 0.70, nivel ALTO
+- **CHoCH** (Change of Character): reversao de estrutura estabelecida
+  — confianca 0.80, nivel CRITICO (prioridade sobre BOS)
+- **FVG** (Fair Value Gap): gap entre 3 candles consecutivos
+  — confianca 0.65, nivel MEDIO (preco_atual = mid_gap)
+
+**Ordem de prioridade no detectar_smc():**
+1. CHoCH (quando estrutura historica existe — sinal mais forte)
+2. BOS (quando sem estrutura ou continuidade)
+3. FVG (avaliado apenas com historico >= 3 velas)
+
+**Campos SMC em AlertaOportunidade (opcionais — retrocompativeis):**
+- `sinal_smc_nome: Optional[str]` — "BOS", "CHoCH" ou "FVG"
+- `sinal_smc_confianca: Optional[Decimal]` — 0.0 a 1.0
+- `confluencia_strength: Optional[int]` — 1 a 5 (proporcional ao peso do padrao)
+- `trader_pode_ver_sinal: bool` — default True
+
+**Payload WebSocket enriquecido (formatar_json):**
+```json
+{
+  "padrao": "smc_bos",
+  "sinal_smc": {
+    "nome": "BOS",
+    "confianca": 0.70,
+    "confluencia_strength": 2,
+    "trader_pode_ver_sinal": true
+  }
+}
+```
+
+**Integracao no ProcessadorBDI:**
+- `detector_smc: DetectorSMC` instanciado no `__init__`
+- Cache `_vela_anterior` e `_candles_hist` mantidos por ativo
+- SMC executado a partir da 2a vela de cada ativo
+
+### Consequencias
+
+- Tres novos valores em `PatraoAlerta`: SMC_BOS, SMC_CHOCH, SMC_FVG
+- `formatar_json` usa `Price.value` (correcao de bug pre-existente)
+- 31 testes cobrindo BOS/CHoCH/FVG/campos/performance/E2E (100% passando)
+- Performance validada: P95 < 500ms (AC-4)
+
+### Referencias
+
+- BLID-031: implementacao completa (04/04/2026)
+- Issue: https://github.com/jadergreiner/operador-day-trade-win/issues/

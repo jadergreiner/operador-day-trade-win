@@ -13,6 +13,7 @@ from typing import Dict, Optional, Tuple
 
 from src.application.services.detector_volatilidade import DetectorVolatilidade
 from src.application.services.detector_padroes_tecnico import DetectorPadroesTecnico
+from src.application.services.detector_smc import DetectorSMC
 from src.infrastructure.providers.fila_alertas import FilaAlertas
 from src.infrastructure.config.alerta_config import get_config
 from src.domain.entities.alerta import AlertaOportunidade
@@ -41,9 +42,13 @@ class ProcessadorBDI:
             lookback_bars=100,
         )
         self.detector_padroes = DetectorPadroesTecnico()
+        self.detector_smc = DetectorSMC()
         self.fila = FilaAlertas()
         self._mt5_adapter: Optional[MT5Adapter] = None
         self._mt5_proxy: Optional[MT5AdapterProxy] = None
+        # Cache de velas anteriores por ativo para SMC e padroes tecnicos
+        self._vela_anterior: Dict[str, Dict] = {}
+        self._candles_hist: Dict[str, list] = {}
         logger.info("ProcessadorBDI inicializado")
 
     async def processar_vela(
@@ -74,7 +79,9 @@ class ProcessadorBDI:
 
             logger.debug(f"Processando vela {ativo} - close: {close}")
 
-            # Detector de volatilidade
+            # ----------------------------------------------------------------
+            # AC-1: Detector de volatilidade
+            # ----------------------------------------------------------------
             alerta_vol = self.detector_vol.analisar_vela(
                 symbol=ativo,
                 close=close,
@@ -84,16 +91,34 @@ class ProcessadorBDI:
                 logger.info(f"[ALERTA VOL] {ativo} - Volatilidade detectada")
                 await self.fila.enfileirar(alerta_vol)
 
-            # TODO: Detector de padroes tecnicos (após ML-002 validar gates)
-            # alerta_padroes = self.detector_padroes.detectar_padroes(
-            #     close=float(close),
-            #     high=float(vela.get("high", 0)),
-            #     low=float(vela.get("low", 0)),
-            #     volume=float(vela.get("volume", 0)),
-            # )
-            # if alerta_padroes:
-            #     logger.info(f"[ALERTA PADRAO] {ativo} - Padrao detectado")
-            #     await self.fila.enfileirar(alerta_padroes)
+            # ----------------------------------------------------------------
+            # AC-1: Detector SMC (BOS / CHoCH / FVG) — integrado ao loop
+            # ----------------------------------------------------------------
+            vela_anterior = self._vela_anterior.get(ativo)
+            if vela_anterior is not None:
+                # Atualiza historico de candles (mantém os 20 ultimos)
+                hist = self._candles_hist.setdefault(ativo, [])
+                hist.append(vela)
+                if len(hist) > 20:
+                    hist.pop(0)
+
+                alerta_smc = self.detector_smc.detectar_smc(
+                    symbol=ativo,
+                    vela_atual=vela,
+                    vela_anterior=vela_anterior,
+                    timestamp=ts,
+                    candles_hist=hist,
+                )
+                if alerta_smc:
+                    logger.info(
+                        f"[ALERTA SMC] {ativo} - "
+                        f"padrao={alerta_smc.sinal_smc_nome} "
+                        f"confianca={float(alerta_smc.confianca):.0%}"
+                    )
+                    await self.fila.enfileirar(alerta_smc)
+
+            # Armazena vela atual como anterior para proxima iteracao
+            self._vela_anterior[ativo] = dict(vela)
 
         except Exception as e:
             logger.error(f"Erro ao processar vela {ativo}: {e}", exc_info=True)
