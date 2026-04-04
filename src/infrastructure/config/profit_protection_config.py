@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import yaml
 from pydantic import BaseModel, Field, model_validator
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 # DEFAULTS BUILTIN — espelham o motor original pré-governança.
 # Usados quando o YAML está ausente ou inválido.
 # ============================================================
-_DEFAULTS_BUILTIN: Dict[str, Any] = {
+_DEFAULTS_BUILTIN: dict[str, Any] = {
     "profit_target_pct": 2.0,
     "stop_loss_pct": 1.0,
     "partial_close_pct": 0.75,
@@ -105,7 +105,7 @@ class ProfitProtectionProfile(BaseModel):
                 )
         return self
 
-    def as_engine_kwargs(self) -> Dict[str, Any]:
+    def as_engine_kwargs(self) -> dict[str, Any]:
         """Retorna dict pronto para passar ao ProfitProtectionEngine.__init__."""
         return {
             "profit_target_pct": self.profit_target_pct,
@@ -123,8 +123,8 @@ class ProfitProtectionConfig(BaseModel):
     version: str = Field(default="1.0.0")
     profile_ativo: str = Field(default="baseline")
     shadow_mode: bool = Field(default=False)
-    profiles: Dict[str, ProfitProtectionProfile] = Field(default_factory=dict)
-    agent_overrides: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    profiles: dict[str, ProfitProtectionProfile] = Field(default_factory=dict)
+    agent_overrides: dict[str, dict[str, Any]] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def garantir_baseline(self) -> "ProfitProtectionConfig":
@@ -134,6 +134,10 @@ class ProfitProtectionConfig(BaseModel):
                 **_DEFAULTS_BUILTIN, nome="Baseline (builtin)"
             )
         return self
+
+
+# Rebuild Pydantic models para resolver referências forward
+ProfitProtectionConfig.model_rebuild()
 
 
 # ============================================================
@@ -213,19 +217,10 @@ def resolver_perfil(
                   e não houver fallback disponível. (Não deve acontecer,
                   pois baseline é sempre garantido.)
     """
-    # 1. Override por agente
-    nome_perfil = cfg.profile_ativo
-    if agent_id and agent_id in cfg.agent_overrides:
-        override = cfg.agent_overrides[agent_id]
-        if "profile" in override:
-            nome_perfil = str(override["profile"])
-            logger.debug(
-                "[ProfitProtectionConfig] Override de agente '%s' → profile '%s'",
-                agent_id,
-                nome_perfil,
-            )
+    # Resolver precedência do nome do perfil
+    nome_perfil = cfg.profile_ativo  # Nível 3: default do YAML
 
-    # 2. Override por env var
+    # Nível 2: Override por env var
     env_profile = profile_env or os.environ.get("PROFIT_PROTECTION_PROFILE", "")
     if env_profile:
         nome_perfil = env_profile
@@ -234,7 +229,18 @@ def resolver_perfil(
             nome_perfil,
         )
 
-    # 3. Resolver perfil — fallback para baseline se inexistente
+    # Nível 1: Override por agente (maior precedência - vence ENV)
+    if agent_id and agent_id in cfg.agent_overrides:
+        override = cfg.agent_overrides[agent_id]
+        if "profile" in override:
+            nome_perfil = str(override["profile"])
+            logger.debug(
+                "[ProfitProtectionConfig] Override de agente '%s' → profile '%s' (maior precedência)",
+                agent_id,
+                nome_perfil,
+            )
+
+    # Resolver perfil — fallback para baseline se inexistente
     if nome_perfil not in cfg.profiles:
         logger.critical(
             "[ProfitProtectionConfig] Perfil '%s' não encontrado em profiles. "
