@@ -2737,3 +2737,62 @@ com deteccao de 3 padroes:
 
 - BLID-031: implementacao completa (04/04/2026)
 - Issue: https://github.com/jadergreiner/operador-day-trade-win/issues/
+
+---
+
+## ADR-026: BacktestSMCEngine — Validacao de Padroes SMC no Backtest com Confluencia M1/M5
+
+**Data:** 04/04/2026
+**Status:** APROVADO
+
+### Contexto
+
+Issue [SPRINT-2]: necessidade de validar que padroes SMC melhoram win rate no backtest.
+BLID-031 cobre deteccao real-time; ADR-026 cobre validacao historica.
+
+### Decisao
+
+Criar BacktestSMCEngine em `src/application/services/backtest_smc_engine.py`.
+Separado do DetectorSMC (real-time) para Single Responsibility.
+Swing High/Low detectados via comparacao de janela [i-lookback, i+lookback].
+Confluencia: M1 + M5 devem apontar mesma direcao (ALTA ou BAIXA).
+Meta de ganho: win_rate_confluence - win_rate_baseline >= 3%.
+
+### Estrutura do Modulo
+
+- `SwingHighLowDetector`: detecta pontos de swing reais por comparacao de janela
+- `SMCConfluenceFilter`: valida alinhamento M1/M5 com score 1-5
+- `_GeradorSinaisSMC`: gera sinais BOS/CHoCH/FVG a partir de swing points
+- `_SimuladorTrades`: simula trades com SL=2*ATR, TP=3*ATR
+- `BacktestSMCEngine`: orquestra 4 modos (baseline, smc_m1_only, smc_m5_only, smc_confluence)
+- `ComparisonReport`: relatorio final com win_rate_delta e meta (>=3%)
+
+### 4 Modos de Backtest
+
+| Modo | Descricao |
+|------|-----------|
+| baseline | Todos os sinais SMC de M5 |
+| smc_m1_only | Apenas sinais confirmados em M1 |
+| smc_m5_only | Sinais BOS/CHoCH confirmados em M5 |
+| smc_confluence | M1+M5 alinhados (filtro mais restritivo) |
+
+### Consequencias
+
+- **Impacto nos agentes:** NENHUM (modulo somente de analise/validacao offline)
+- **Retrocompativel:** nao altera DetectorSMC nem AlertaOportunidade
+- **Testes:** 42 testes unitarios, 100% passando (DADO/QUANDO/ENTAO em portugues)
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | NENHUM | — | Nenhuma |
+| INICIAR_AGENTE_RL_DIRETO.bat | NENHUM | — | Nenhuma |
+| INICIAR_DIARIOS.bat | NENHUM | — | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | — | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | — | Nenhuma |
+
+### Referencias
+
+- BLID-032: implementacao completa (04/04/2026)
+- ADR-025: DetectorSMC real-time (antecessor)
