@@ -75,7 +75,8 @@ class RLDiaryLearningService:
             )
             rows = cursor.fetchall()
             conn.close()
-        except Exception:
+        except Exception as exc:
+            print(f"[AVISO] RLDiaryLearningService.avaliar_gatilho_retreinamento: {exc}")
             return False
 
         if len(rows) < n_ciclos:
@@ -138,7 +139,8 @@ class RLDiaryLearningService:
             rows = cursor.fetchall()
             conn.close()
             episodios = [dict(r) for r in rows]
-        except Exception:
+        except Exception as exc:
+            print(f"[AVISO] RLDiaryLearningService.exportar_episodios_enriquecidos: {exc}")
             episodios = []
 
         payload: dict[str, Any] = {
@@ -259,8 +261,8 @@ class RLDiaryLearningService:
                 retreinamentos = int(row_ret["total"] or 0)
 
             conn.close()
-        except Exception:
-            pass
+        except Exception as exc:
+            print(f"[AVISO] RLDiaryLearningService.gerar_relatorio_fechamento: {exc}")
 
         conteudo = (
             f"# Relatorio de Fechamento RL Diary — {data_alvo}\n\n"
