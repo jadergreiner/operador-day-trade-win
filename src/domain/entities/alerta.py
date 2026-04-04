@@ -59,6 +59,12 @@ class AlertaOportunidade:
     pnl: Optional[Decimal] = None
     timestamp_fechamento: Optional[datetime] = None
 
+    # Sinal SMC enriquecido (S2-4 — opcional para retrocompatibilidade)
+    sinal_smc_nome: Optional[str] = None          # "BOS", "CHoCH", "FVG"
+    sinal_smc_confianca: Optional[Decimal] = None  # 0.0 a 1.0
+    confluencia_strength: Optional[int] = None     # 1 a 5
+    trader_pode_ver_sinal: bool = True             # visibilidade no dashboard
+
     def __post_init__(self) -> None:
         """Valida dados após inicialização."""
         if self.entrada_minima >= self.entrada_maxima:

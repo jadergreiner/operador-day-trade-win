@@ -168,20 +168,30 @@ class AlertaFormatter:
         Returns:
             Dict pronto para serialização JSON
         """
-        return {
+        payload: Dict = {
             "id": str(alerta.id),
             "nivel": alerta.nivel.value,
             "ativo": str(alerta.ativo),
             "padrao": alerta.padrao.value,
-            "preco_atual": float(alerta.preco_atual),
-            "entrada_min": float(alerta.entrada_minima),
-            "entrada_max": float(alerta.entrada_maxima),
-            "stop_loss": float(alerta.stop_loss),
-            "take_profit": float(alerta.take_profit) if alerta.take_profit else None,
+            "preco_atual": float(alerta.preco_atual.value),
+            "entrada_min": float(alerta.entrada_minima.value),
+            "entrada_max": float(alerta.entrada_maxima.value),
+            "stop_loss": float(alerta.stop_loss.value),
+            "take_profit": float(alerta.take_profit.value) if alerta.take_profit else None,
             "confianca": float(alerta.confianca),
             "risk_reward": float(alerta.risk_reward),
             "timestamp_deteccao": alerta.timestamp_deteccao.isoformat(),
         }
+
+        # Campos SMC enriquecidos (S2-4) — presentes apenas quando padrao SMC
+        payload["sinal_smc"] = {
+            "nome": alerta.sinal_smc_nome,
+            "confianca": float(alerta.sinal_smc_confianca) if alerta.sinal_smc_confianca is not None else None,
+            "confluencia_strength": alerta.confluencia_strength,
+            "trader_pode_ver_sinal": alerta.trader_pode_ver_sinal,
+        }
+
+        return payload
 
     @staticmethod
     def formatar_sms(alerta: AlertaOportunidade) -> str:
