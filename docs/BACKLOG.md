@@ -73,9 +73,24 @@ corrigido em 18/03/2026, mas thresholds ainda hardcoded em
 
 #### P1-PROFIT_PROTECTION-THRESHOLDS-20260402 — Externalizar thresholds e corrigir lacuna RL Direto
 
-**Status:** PENDENTE
+**Status:** IMPLEMENTADO_EM_CODIGO_AGUARDANDO_STAGING (04/04/2026)
 
 **ID:** P1-PROFIT_PROTECTION-THRESHOLDS-20260402
+
+**Diretiva PO (04/04/2026):** item promovido para primeira execucao do ciclo
+atual. Iniciar pelo ajuste/calibracao de thresholds no
+`profit_protection_engine` e concluir os gaps de rollout em RL Direto antes de
+qualquer novo item do bloco P1-PROFIT_PROTECTION.
+
+**Atualizacao Engenharia/Tech Lead (04/04/2026):**
+- wiring duplicado do RL Direto removido; fluxo unico de inicializacao/uso do
+  `profit_protection` consolidado em `scripts/agente_rl_direto_independente.py`;
+- gate de rollback no calibration service formalizado para baseline quando:
+  degradacao de win_rate > 2 p.p. ou aumento de drawdown > 15 p.p.;
+- testes alvo passando localmente (50/50), incluindo regressao de wiring unico
+  e teste de rollback automatizado;
+- pendente: smoke em staging com `shadow_mode=true` e coleta de artefatos em
+  `outputs/profit_protection/`.
 
 **Objetivo:** Externalizar thresholds do `ProfitProtectionEngine` para
 `config/profit_protection.yaml`, habilitar `shadow_mode` por perfil e criar

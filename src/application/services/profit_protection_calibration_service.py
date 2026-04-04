@@ -34,6 +34,8 @@ MIN_TRADES = 30
 
 # Degradação máxima tolerada de win rate vs baseline (em p.p.)
 MAX_DEGRADACAO_WIN_RATE_PP = 2.0
+# Aumento máximo tolerado de drawdown vs baseline (em p.p. absolutos)
+MAX_AUMENTO_DRAWDOWN_PCT = 15.0
 
 
 # ============================================================
@@ -294,11 +296,28 @@ def calibrar_perfis(
     # Seleção da recomendação
     perfil_recomendado = "baseline"
     motivo = "Baseline mantido como referência segura (sem candidato melhor)."
+    rollback_acionado = False
+    motivo_rollback = ""
 
     for cand in metricas_candidatos:
         degradacao_wr = (metricas_baseline.win_rate - cand.win_rate) * 100
+        aumento_dd = cand.max_drawdown_pct - metricas_baseline.max_drawdown_pct
+
         if degradacao_wr > MAX_DEGRADACAO_WIN_RATE_PP:
-            continue  # Degrada demais o win rate
+            rollback_acionado = True
+            motivo_rollback = (
+                f"Rollback para baseline: '{cand.nome}' degradou win rate em "
+                f"{degradacao_wr:.1f} p.p. (> {MAX_DEGRADACAO_WIN_RATE_PP:.1f} p.p.)."
+            )
+            continue
+
+        if aumento_dd > MAX_AUMENTO_DRAWDOWN_PCT:
+            rollback_acionado = True
+            motivo_rollback = (
+                f"Rollback para baseline: '{cand.nome}' aumentou drawdown em "
+                f"{aumento_dd:.2f} p.p. (> {MAX_AUMENTO_DRAWDOWN_PCT:.2f} p.p.)."
+            )
+            continue
 
         if (
             cand.max_drawdown_pct < metricas_baseline.max_drawdown_pct
@@ -311,6 +330,9 @@ def calibrar_perfis(
                 f"de {degradacao_wr:.1f} p.p. (dentro do limite de {MAX_DEGRADACAO_WIN_RATE_PP} p.p.)."
             )
             break
+
+    if perfil_recomendado == "baseline" and rollback_acionado:
+        motivo = motivo_rollback
 
     return RelatorioCalibracaoPP(
         baseline=metricas_baseline,

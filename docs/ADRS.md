@@ -53,7 +53,7 @@ estao implementados; a validacao operacional final segue em staging, UAT e Gate 
 
 ## ADR-001: Por que SQLite vs PostgreSQL como BD Primário?
 
-**Status**: ✅ ACCEPTED
+**Status**: ✅ ACCEPTED (atualizado em 04/04/2026)
 **Data**: 27/02/2026
 
 ### Contexto
@@ -2286,6 +2286,24 @@ Componentes criados:
 - `processar_protecao()` nao e chamado no loop
   principal do RL Direto (gap pre-existente, fora do
   escopo desta ADR).
+
+### Atualizacao de Implementacao (04/04/2026)
+
+- Gap operacional do RL Direto fechado:
+  - removida duplicidade de wiring/funcao de protecao em
+    `scripts/agente_rl_direto_independente.py`;
+  - mantida chamada periodica de protecao no loop principal com tratamento
+    de excecao.
+- Guard rails de rollback reforcados no calibration service:
+  - rollback para `baseline` quando degradacao de win rate for maior que
+    2 p.p.;
+  - rollback para `baseline` quando aumento de drawdown for maior que
+    15 p.p.
+- Cobertura adicionada:
+  - `tests/unit/test_rl_direto_profit_protection_integration.py`
+    (wiring unico);
+  - `tests/unit/test_profit_protection_calibration_service.py`
+    (rollback automatico para baseline).
 
 ### Invariantes Preservados
 

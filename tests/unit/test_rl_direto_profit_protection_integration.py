@@ -59,16 +59,16 @@ class TestRLDiretoProtectionIntegration(unittest.TestCase):
 
         # Deve conter a função processar_protecao_lucros
         self.assertIn(
-            "def processar_protecao_lucros",
+            "def processar_protecao_lucros_rl_direto(",
             content,
-            "RL Direto deve definir processar_protecao_lucros()",
+            "RL Direto deve definir processar_protecao_lucros_rl_direto()",
         )
 
         # Deve conter chamada dentro do loop principal
         self.assertIn(
-            "processar_protecao_lucros()",
+            "processar_protecao_lucros_rl_direto(",
             content,
-            "RL Direto deve CHAMAR processar_protecao_lucros() no loop",
+            "RL Direto deve CHAMAR processar_protecao_lucros_rl_direto() no loop",
         )
 
     def test_profit_protection_executes_in_position_open_block(self):
@@ -93,9 +93,10 @@ class TestRLDiretoProtectionIntegration(unittest.TestCase):
             # Encontrar bloco de posição aberta
             if "posicao_tracker.tem_posicao_aberta()" in line:
                 position_open_block = True
-                # Procurar por processar_protecao_lucros nos próximos 200 linhas
-                for j in range(i, min(i + 200, len(lines))):
-                    if "processar_protecao_lucros()" in lines[j]:
+                # Procurar por processar_protecao_lucros nos próximos 320 linhas
+                # (loop principal do agente é extenso e inclui blocos de validação)
+                for j in range(i, min(i + 320, len(lines))):
+                    if "processar_protecao_lucros_rl_direto(" in lines[j]:
                         protection_in_right_place = True
                         break
                 if protection_in_right_place:
@@ -103,8 +104,25 @@ class TestRLDiretoProtectionIntegration(unittest.TestCase):
 
         self.assertTrue(
             protection_in_right_place,
-            "processar_protecao_lucros() deve estar dentro "
+            "processar_protecao_lucros_rl_direto() deve estar dentro "
             "do bloco 'if posicao_tracker.tem_posicao_aberta()'",
+        )
+
+    def test_profit_protection_wiring_is_unique(self):
+        """Evita regressão de wiring duplicado no RL Direto."""
+        rl_direto_path = (
+            Path(__file__).parent.parent.parent
+            / "scripts"
+            / "agente_rl_direto_independente.py"
+        )
+
+        with open(rl_direto_path, encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertEqual(
+            content.count("def processar_protecao_lucros_rl_direto("),
+            1,
+            "Deve existir apenas uma definição de processar_protecao_lucros_rl_direto",
         )
 
     def test_profit_protection_exception_handled(self):

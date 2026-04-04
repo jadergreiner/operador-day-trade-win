@@ -1057,6 +1057,15 @@ AC-018.5: Profile compliance validado em staging
 - **Monitoring:** Métricas expostas via logs e SQLite
 - **Gates:** Feature bloqueada até AC-018.1-5 e AC-V1 validarem
 
+#### Atualizacao de Runtime (04/04/2026)
+
+- RL Direto com wiring unico do Profit Protection (removida duplicidade
+  historica de inicializacao/funcao);
+- Loop principal mantendo chamada periodica para protecao quando houver
+  posicao aberta;
+- Calibration service com rollback explicito para baseline por gates:
+  degradacao de win rate > 2 p.p. ou aumento de drawdown > 15 p.p.
+
 #### Referências
 
 - Feature Spec: `notebooks/release_management_profit_protection_v2.ipynb`

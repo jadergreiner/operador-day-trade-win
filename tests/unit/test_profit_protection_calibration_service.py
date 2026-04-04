@@ -110,3 +110,62 @@ def test_calibrar_perfis_recomendacao_candidato():
     # Vamos verificar se a evidência é suficiente
     assert relatorio.evidencia_suficiente is True
     assert relatorio.baseline.n_trades == 40
+
+
+def test_calibrar_perfis_aciona_rollback_para_baseline(monkeypatch):
+    """Deve acionar rollback para baseline quando candidato degrada gates."""
+    cfg = ProfitProtectionConfig(
+        version="1.0.0",
+        profile_ativo="baseline",
+        profiles={
+            "baseline": ProfitProtectionProfile(profit_target_pct=2.0),
+            "conservador": ProfitProtectionProfile(profit_target_pct=1.5),
+        },
+    )
+
+    trades = [
+        {
+            "trade_id": "T1",
+            "entry_price": 100.0,
+            "direction": "BUY",
+            "precos": [101.0, 102.0, 101.0],
+            "resultado_final_pct": 1.0,
+            "quantity": 1,
+        }
+    ] * 40
+
+    metricas_baseline = MetricasPerfil(
+        nome="baseline",
+        n_trades=40,
+        win_rate=0.60,
+        profit_factor=1.5,
+        max_drawdown_pct=8.0,
+        sharpe=1.0,
+        taxa_reversao_protegida=0.10,
+        taxa_break_even_acionado=0.20,
+    )
+    metricas_candidato_pior = MetricasPerfil(
+        nome="conservador",
+        n_trades=40,
+        win_rate=0.55,  # degrada 5 p.p.
+        profit_factor=1.2,
+        max_drawdown_pct=30.0,  # aumenta 22 p.p.
+        sharpe=0.7,
+        taxa_reversao_protegida=0.12,
+        taxa_break_even_acionado=0.22,
+    )
+
+    fila = [metricas_baseline, metricas_candidato_pior]
+
+    def _fake_calcular_metricas(nome, resultados_pct, acoes):
+        return fila.pop(0)
+
+    monkeypatch.setattr(
+        "src.application.services.profit_protection_calibration_service._calcular_metricas",
+        _fake_calcular_metricas,
+    )
+
+    relatorio = calibrar_perfis(trades, cfg, n_pregoes=10)
+
+    assert relatorio.perfil_recomendado == "baseline"
+    assert "Rollback para baseline" in relatorio.motivo_recomendacao

@@ -421,6 +421,11 @@ Regras operacionais:
 - Operador/CFO pode intervir trocando o perfil via arquivo ou comando de
   override; a mudanca eh aplicada no proximo ciclo de reload (cacheado
   em memoria para O(1) de leitura apos boot).
+- Regra de rollback da calibracao (04/04/2026):
+  - manter/reverter para `baseline` se degradacao de win rate for maior que
+    2 p.p. versus baseline;
+  - manter/reverter para `baseline` se aumento de drawdown for maior que
+    15 p.p. versus baseline.
 
 Recomendacao de monitoramento:
 
