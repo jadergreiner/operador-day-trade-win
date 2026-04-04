@@ -2395,10 +2395,54 @@ Componentes criados:
 | ADR-017 | ✅ ACCEPTED | 02/04/2026 | Premissa intraday reconciliacao |
 | ADR-018 | ✅ ACCEPTED | 02/04/2026 | Profit Protection por Perfil YAML |
 | ADR-019 | ✅ ACCEPTED | 04/04/2026 | Segregacao banco diarios + schema_version |
+| ADR-021 | ✅ ACCEPTED | 04/04/2026 | MacroGuardianReaderService canal universal de leitura |
 
-**ÚLTIMA ATUALIZAÇÃO:** 04/04/2026 BRT | **STATUS**: ✅ BLID-024 ROADMAP-DIARIOS-04 IMPLEMENTADO
+**ÚLTIMA ATUALIZAÇÃO:** 04/04/2026 BRT | **STATUS**: ✅ BLID-025 ROADMAP-DIARIOS-05 IMPLEMENTADO
 
-> **BLID-024 / ROADMAP-DIARIOS-04:** ADR-019 cobre o padrao schema_version="1.0" para exports JSON de treinamento (diario_episodios). Nenhuma nova ADR necessaria — RLDiaryLearningService segue os padroes estabelecidos (SQLite WAL, schema_version, data/training/, outputs/).
+> **BLID-025 / ROADMAP-DIARIOS-05:** ADR-021 formaliza MacroGuardianReaderService como canal universal de leitura do Guardian para os 4 agentes operacionais. Servico encapsula fetch_latest_guardian_snapshot(), expoe kill switch universal e enriquece episodios de treinamento com features macro.
+
+---
+
+## ADR-021: MacroGuardianReaderService como Canal Universal de Leitura do Guardian
+
+**Status:** ✅ ACCEPTED
+**Data:** 04/04/2026
+**Origem:** BLID-025 / ROADMAP-DIARIOS-05
+
+### Contexto
+
+Antes do BLID-025, cada agente precisava conhecer a estrutura da tabela
+`macro_guardian_log` e implementar sua propria logica de leitura do SQLite.
+O Guardian persistia dados mas nao havia um servico unificado de leitura.
+O kill switch era respeitado apenas pelo Diario Order Manager.
+
+### Decisao
+
+Criar `MacroGuardianReaderService` em
+`src/application/services/macro_guardian_reader_service.py` como fachada
+exclusiva de leitura do Guardian para todos os agentes operacionais.
+
+**Contrato publico:**
+- `ler_snapshot(db_path, lookback_minutes=30)` → `MacroGuardianSnapshotResult`
+- `verificar_kill_switch(db_path)` → `tuple[bool, str]`
+- `enriquecer_episodio(episodio_dict, db_path)` → `dict` com 4 campos macro
+- `gerar_relatorio_semanal(db_path, diary_db_path, semana, outputs_dir)` → `Path`
+
+**MacroGuardianSnapshotResult** campos:
+`score_guardian`, `alertas_ativos`, `regime_macro`,
+`kill_switch_ativo`, `kill_switch_motivo`, `total_eventos`
+
+### Consequencias
+
+- Os 4 agentes (Micro Tendencia, RL 5000, RL Direto, Diarios) chamam apenas
+  `ler_snapshot()` ou `verificar_kill_switch()` — sem conhecer o schema SQLite.
+- `enriquecer_episodio()` adiciona features macro ao dataset de treinamento,
+  formando dataset multimodal (tecnico + macro).
+- Relatorio semanal `outputs/guardian_semana_NN.md` com distribuicao de
+  alertas e correlacao macro x trades.
+- Nao modifica `macro_guardian_universal_log.py` nem `macro_guardian_universal.py`.
+- Padrao SQLite: `timeout=30 + WAL + synchronous=NORMAL + busy_timeout=30000`.
+- `schema_version="1.0"` em reports (padrao ADR-019).
 
 ---
 

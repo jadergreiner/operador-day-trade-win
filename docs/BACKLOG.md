@@ -535,7 +535,7 @@ degrada, e exportar episodios enriquecidos para o pipeline ML/RL.
 
 #### 11. ROADMAP-DIARIOS-05 Diario 4 — Macro Guardian expandido a todos os agentes
 
-**Status:** PENDENTE
+**Status:** IMPLEMENTADO ✅ (BLID-025 — 04/04/2026)
 
 **Origem:** Reuniao Product Board 17/03/2026 — diretriz do Head de Financas.
 
