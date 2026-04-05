@@ -35,6 +35,10 @@
                 .status-green { color: #4caf50; }
                 .status-yellow { color: #ff9800; }
                 .status-red { color: #f44336; }
+                .pnl-positivo { color: #4caf50; font-weight: bold; }
+                .pnl-negativo { color: #f44336; font-weight: bold; }
+                .pnl-neutro { color: #9e9e9e; font-weight: bold; }
+                .atualizacao { font-size: 0.75em; color: #9e9e9e; margin-top: 8px; }
             </style>
         </head>
         <body>
@@ -91,8 +95,114 @@
                             <span class="metric-value status-green">✅ SAFE</span>
                         </div>
                     </div>
+
+                    <!-- View 4: P&L Nao Realizado (TODO-6) -->
+                    <div class="card" id="card-pnl-nao-realizado">
+                        <h2>💰 P&amp;L Não Realizado</h2>
+                        <div class="metric">
+                            <span class="metric-label">P&amp;L Não Realizado:</span>
+                            <span
+                                class="metric-value pnl-neutro"
+                                id="pnl-nao-realizado-valor"
+                            >R$ 0,00</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Posições Abertas:</span>
+                            <span
+                                class="metric-value"
+                                id="posicoes-abertas-total"
+                            >0</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Status Dados:</span>
+                            <span
+                                class="metric-value pnl-neutro"
+                                id="pnl-status-dados"
+                            >Aguardando MT5</span>
+                        </div>
+                        <p class="atualizacao" id="pnl-ultima-atualizacao">
+                            Última atualização: —
+                        </p>
+                    </div>
                 </div>
             </div>
+
+            <script>
+                /**
+                 * Widget P&L Nao Realizado — TODO-6
+                 *
+                 * Consome GET /api/v1/stats/snapshot e exibe
+                 * pnl_nao_realizado_reais na tela.
+                 * Atualiza a cada 5 segundos enquanto a pagina estiver aberta.
+                 */
+                const API_SNAPSHOT = "/api/v1/stats/snapshot";
+                const INTERVALO_MS = 5000;
+
+                function formatarReais(valor) {
+                    const num = parseFloat(valor) || 0;
+                    const cls = num > 0
+                        ? "pnl-positivo"
+                        : num < 0 ? "pnl-negativo" : "pnl-neutro";
+                    const formatado = num.toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL"
+                    });
+                    return { texto: formatado, classe: cls };
+                }
+
+                function atualizarWidgetPnl(dados) {
+                    const pnl = dados.pnl_nao_realizado_reais || 0;
+                    const { texto, classe } = formatarReais(pnl);
+
+                    const elValor = document.getElementById(
+                        "pnl-nao-realizado-valor"
+                    );
+                    elValor.textContent = texto;
+                    elValor.className = "metric-value " + classe;
+
+                    const posicoes = (dados.trade_stats || {}).total_trades || 0;
+                    document.getElementById(
+                        "posicoes-abertas-total"
+                    ).textContent = posicoes;
+
+                    const ultimaAtualizacao = dados.ultima_atualizacao_precos;
+                    const elStatus = document.getElementById("pnl-status-dados");
+                    if (ultimaAtualizacao) {
+                        elStatus.textContent = "✅ Preços MT5 ativos";
+                        elStatus.className = "metric-value pnl-positivo";
+                    } else {
+                        elStatus.textContent = "⏳ Aguardando MT5";
+                        elStatus.className = "metric-value pnl-neutro";
+                    }
+
+                    const agora = new Date().toLocaleTimeString("pt-BR");
+                    document.getElementById(
+                        "pnl-ultima-atualizacao"
+                    ).textContent = "Última atualização: " + agora;
+                }
+
+                async function buscarEAtualizar() {
+                    try {
+                        const resp = await fetch(API_SNAPSHOT);
+                        if (resp.ok) {
+                            const dados = await resp.json();
+                            atualizarWidgetPnl(dados);
+                        } else {
+                            document.getElementById(
+                                "pnl-status-dados"
+                            ).textContent = "❌ Erro API (" + resp.status + ")";
+                        }
+                    } catch (err) {
+                        console.error("Falha ao buscar snapshot de P&L:", err);
+                        document.getElementById(
+                            "pnl-status-dados"
+                        ).textContent = "❌ API indisponivel";
+                    }
+                }
+
+                buscarEAtualizar();
+                setInterval(buscarEAtualizar, INTERVALO_MS);
+            </script>
         </body>
         </html>
         

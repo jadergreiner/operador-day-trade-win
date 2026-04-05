@@ -4696,11 +4696,12 @@ Estender WebSocket para enviar sinais de confluencia ao trader.
 
 ---
 
-#### BLID-035 — [POST-LAUNCH] P&L Nao Realizado (portfolio.py)
+#### BLID-035 — [POST-LAUNCH] P&L Nao Realizado (portfolio.py) — TODO-6
 
-**Status:** IMPLEMENTADO — BLID-035 (05/04/2026)
+**Status:** CONCLUIDO — BLID-035 (05/04/2026)
 
 **BLID:** BLID-035
+**Issue:** TODO-6 — P&L Tracker Completion
 **Titulo:** Adicionar calculo de P&L nao realizado quando dados de mercado estiverem disponíveis
 **Prioridade:** Medium (post-launch feature)
 **ADR:** ADR-028
@@ -4725,6 +4726,8 @@ posicoes abertas, com fetch de preco atual via MT5.
 - [x] **AC-10:** `DashboardDataSnapshot` serializa `pnl_nao_realizado_reais`
 - [x] **AC-11:** `obter_snapshot_dashboard` aceita `pnl_nao_realizado_reais` externo
 - [x] **AC-12:** Logs auditaveis (INFO) com simbolo, preco_atual e pl calculado
+- [x] **AC-13:** Endpoint `/stats/snapshot` aceita `pnl_nao_realizado_reais` como query param
+- [x] **AC-14:** Widget de P&L Nao Realizado adicionado ao dashboard HTML (dashboard.html)
 
 ### Arquivos Alterados
 
@@ -4733,19 +4736,30 @@ posicoes abertas, com fetch de preco atual via MT5.
 - `src/application/dashboard_stats_server.py` — campo `pnl_nao_realizado_reais`
   em `TradeStats` e `DashboardDataSnapshot`, parametros opcionais em
   `obter_snapshot_dashboard()`, import logging, campo `ultima_atualizacao_precos`
+- `src/interfaces/api/routes/dashboard.py` — query param `pnl_nao_realizado_reais`
+  no endpoint GET `/stats/snapshot`, propagado para `obter_snapshot_dashboard()`
+- `agente_micro_tendencia_winfut/s2_6_analytics/dashboard.html` — widget
+  "P&L Nao Realizado" adicionado (card-pnl-nao-realizado) com JS de refresh 5s
 - `tests/unit/test_portfolio_unrealized_pnl.py` — CRIADO (12 testes unitarios)
+- `tests/unit/test_dashboard_routes.py` — 5 novos testes AC-13/AC-14 (total: 16 testes)
 - `docs/ADRS.md` — ADR-028 registrado
 
 ### Evidencias
 
-- 12 testes: 12/12 PASSING (100%)
+- 41 testes: 41/41 PASSING (100%)
+  - `test_portfolio_unrealized_pnl.py`: 12/12
+  - `test_dashboard_routes.py`: 16/16 (5 novos para TODO-6)
+  - `test_dashboard_stats_server.py`: 13/13
 - Retrocompatibilidade: `calculate_total_value()` sem argumento = identico ao anterior
+- Retrocompatibilidade: GET `/stats/snapshot` sem param = pnl=0.0 (padrao)
 - Logs auditaveis: `logger.info` com simbolo + preco_atual + pl por posicao
-- Dashboard refresh: campo `ultima_atualizacao_precos` permite validar < 5s no cliente
+- Dashboard HTML: widget auto-refresh a cada 5s via fetch `/api/v1/stats/snapshot`
+- Status MT5: indica "Aguardando MT5" ou "Precos MT5 ativos" conforme disponibilidade
 
 ### Historico
 
-- 05/04/2026 — criado e implementado (BLID-035)
+- 05/04/2026 — criado e implementado (BLID-035): core P&L + 12 testes
+- 05/04/2026 — TODO-6 completado: widget dashboard + endpoint query param + 5 testes
 
 ---
 
