@@ -1,7 +1,7 @@
 """
 Testes unitarios para Dashboard Stats API - Endpoints REST.
 
-Referencia: docs/BACKLOG.md TODO (Fase 2 - Frontend & Integration)
+Referencia: docs/BACKLOG.md BLID-035 (TODO-6 P&L Tracker Completion)
 Pipeline: StatsQueryService -> routes/dashboard.py -> TestClient
 """
 
@@ -139,3 +139,60 @@ def test_periodo_retorna_campos_trade_stats(cliente: TestClient) -> None:
     assert "win_rate" in dados
     assert "pnl_total_reais" in dados
     assert "drawdown_maximo" in dados
+
+
+# ---------------------------------------------------------------------------
+# Testes: pnl_nao_realizado_reais em GET /api/v1/stats/snapshot (TODO-6)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_snapshot_contem_pnl_nao_realizado_reais(cliente: TestClient) -> None:
+    """Snapshot deve conter o campo pnl_nao_realizado_reais (TODO-6 / BLID-035)."""
+    resposta = cliente.get("/api/v1/stats/snapshot")
+    dados = resposta.json()
+    assert "pnl_nao_realizado_reais" in dados
+
+
+@pytest.mark.unit
+def test_snapshot_pnl_padrao_zero(cliente: TestClient) -> None:
+    """Sem query param, pnl_nao_realizado_reais deve ser 0.0."""
+    resposta = cliente.get("/api/v1/stats/snapshot")
+    dados = resposta.json()
+    assert dados["pnl_nao_realizado_reais"] == 0.0
+
+
+@pytest.mark.unit
+def test_snapshot_pnl_positivo_via_query_param(cliente: TestClient) -> None:
+    """Passar pnl_nao_realizado_reais=1500.0 deve refletir no snapshot."""
+    resposta = cliente.get(
+        "/api/v1/stats/snapshot?pnl_nao_realizado_reais=1500.0"
+    )
+    assert resposta.status_code == 200
+    dados = resposta.json()
+    assert dados["pnl_nao_realizado_reais"] == 1500.0
+    assert dados["trade_stats"]["pnl_nao_realizado_reais"] == 1500.0
+
+
+@pytest.mark.unit
+def test_snapshot_pnl_negativo_via_query_param(cliente: TestClient) -> None:
+    """Passar pnl_nao_realizado_reais=-800.0 deve refletir no snapshot."""
+    resposta = cliente.get(
+        "/api/v1/stats/snapshot?pnl_nao_realizado_reais=-800.0"
+    )
+    assert resposta.status_code == 200
+    dados = resposta.json()
+    assert dados["pnl_nao_realizado_reais"] == -800.0
+    assert dados["trade_stats"]["pnl_nao_realizado_reais"] == -800.0
+
+
+@pytest.mark.unit
+def test_snapshot_pnl_propagado_para_trade_stats(cliente: TestClient) -> None:
+    """pnl_nao_realizado_reais deve estar tanto no snapshot raiz quanto em trade_stats."""
+    valor = 2750.50
+    resposta = cliente.get(
+        f"/api/v1/stats/snapshot?pnl_nao_realizado_reais={valor}"
+    )
+    dados = resposta.json()
+    assert dados["pnl_nao_realizado_reais"] == valor
+    assert dados["trade_stats"]["pnl_nao_realizado_reais"] == valor

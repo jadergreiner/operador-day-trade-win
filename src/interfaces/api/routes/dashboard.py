@@ -5,17 +5,18 @@ Responsabilidades:
 - Expor StatsQueryService via endpoints GET
 - Serializar dataclasses para JSON
 - Suportar filtragem por periodo e quantidade
+- Expor P&L nao realizado via query param (TODO-6 / BLID-035)
 
 Pipeline:
     StatsQueryService (backend) -> routes/dashboard.py (REST)
     -> Frontend dashboard HTML/JS (consumidor)
 
-Status: Implementacao v1.0 (16/03/2026)
-Referencia: docs/BACKLOG.md TODO (Fase 2 - Frontend & Integration)
+Status: Implementacao v1.1 (TODO-6 / BLID-035)
+Referencia: docs/BACKLOG.md BLID-035
 Agente impactado: INICIAR_AGENTE_RL_5000_FIXED.bat
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
@@ -31,15 +32,35 @@ _servico: StatsQueryService = StatsQueryService()
     summary="Snapshot completo do dashboard",
     response_description="DashboardDataSnapshot serializado em JSON",
 )
-async def obter_snapshot() -> JSONResponse:
+async def obter_snapshot(
+    pnl_nao_realizado_reais: float = Query(
+        default=0.0,
+        description=(
+            "P&L nao realizado em reais calculado pelo chamador via "
+            "Portfolio.calculate_unrealized_pnl() com precos do MT5. "
+            "Padrao 0.0 quando dados de mercado nao estiverem disponiveis."
+        ),
+    ),
+) -> JSONResponse:
     """
     Retorna snapshot completo com trades, metricas e status de protecoes.
 
+    O campo ``pnl_nao_realizado_reais`` permite que o cliente informe o
+    P&L nao realizado atual das posicoes abertas, calculado com precos
+    obtidos do MT5 via ``Portfolio.calculate_unrealized_pnl()``.
+
+    Args:
+        pnl_nao_realizado_reais: P&L nao realizado em reais (float,
+            padrao=0.0).
+
     Returns:
         JSONResponse com DashboardDataSnapshot (timestamp, trade_stats,
-        metricas_operacionais, protecao_status, trades_recentes)
+        metricas_operacionais, protecao_status, trades_recentes,
+        pnl_nao_realizado_reais, ultima_atualizacao_precos)
     """
-    snapshot: Dict[str, Any] = _servico.obter_snapshot_dashboard().para_dict()
+    snapshot: Dict[str, Any] = _servico.obter_snapshot_dashboard(
+        pnl_nao_realizado_reais=pnl_nao_realizado_reais,
+    ).para_dict()
     return JSONResponse(content=snapshot)
 
 
