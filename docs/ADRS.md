@@ -2796,3 +2796,71 @@ Meta de ganho: win_rate_confluence - win_rate_baseline >= 3%.
 
 - BLID-032: implementacao completa (04/04/2026)
 - ADR-025: DetectorSMC real-time (antecessor)
+
+
+---
+
+## ADR-027: Paralelizacao do Grid Search com joblib.Parallel (BLID-034)
+
+**Data:** 05/04/2026
+**Status:** APROVADO
+
+### Contexto
+
+Issue [SPRINT-2]: grid search de XGBoost levava 30+ minutos para 8 configuracoes
+avaliadas sequencialmente. O objetivo e reduzir para menos de 10 minutos (>3x speedup)
+sem comprometer reprodutibilidade nem introduzir data leakage.
+
+### Decisao
+
+1. **joblib.Parallel(n_jobs=-1)** para execucao paralela em ambos os metodos:
+   - `GridSearchOrchestrator.search()` — paralelo sobre configs de hiperparametros
+   - `BacktestValidator.grid_search()` — paralelo sobre thresholds
+2. **Funcoes de modulo** (`_treinar_config_paralela`, `_avaliar_threshold_paralelo`)
+   em vez de metodos/closures — necessario para pickle do backend loky.
+3. **Split de dados unico fora do loop** em `BacktestValidator.grid_search()`:
+   - Elimina data leakage (split nao deve variar entre thresholds)
+   - Elimina redudancia (8 splits identicos → 1 split)
+4. **random_state fixo** propagado para `XGBClassifier` — reprodutibilidade garantida.
+5. **Log de timing** (inicio/fim com duracao em segundos) e log de n_jobs por chamada.
+6. **n_jobs=-1** como padrao — usa todos os nucleos disponivies; sobrescrevivel.
+
+### Estrutura dos Modulos Afetados
+
+- `GridSearchConfig.n_jobs: int = -1` — novo campo de configuracao
+- `_treinar_config_paralela(config, model_type, X, y)` — funcao de modulo
+- `_avaliar_threshold_paralelo(threshold, X_train, y_train, ...)` — funcao de modulo
+- `GridSearchOrchestrator.search()` — substituido loop sequencial por Parallel
+- `BacktestValidator.grid_search(n_jobs=-1)` — novo parametro; split movido para fora do loop
+
+### Compatibilidade Retroativa
+
+Assinaturas existentes continuam funcionando:
+- `BacktestValidator.grid_search()` — n_jobs com default -1, invisivel ao chamador atual
+- `GridSearchOrchestrator.search()` — n_jobs lido de GridSearchConfig.n_jobs
+- Resultado Dict manteve estrutura identica (mesmas chaves)
+
+### Consequencias
+
+- **Speedup esperado:** >3x em maquinas com 4+ nucleos (8 thresholds em paralelo)
+- **Reproducibilidade:** garantida por random_state fixo
+- **Sem data leakage:** split unico e deterministico para todos os thresholds
+- **Testes:** 12 novos testes (21 total no arquivo), 100% passando
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | NENHUM | — | Nenhuma |
+| INICIAR_AGENTE_RL_DIRETO.bat | NENHUM | — | Nenhuma |
+| INICIAR_DIARIOS.bat | NENHUM | — | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | — | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | — | Nenhuma |
+
+Impacto operacional: NENHUM. Modulo de treinamento/validacao offline;
+nao interfere em nenhum launcher de producao.
+
+### Referencias
+
+- BLID-034: implementacao completa (05/04/2026)
+- Issue: https://github.com/jadergreiner/operador-day-trade-win/issues/

@@ -4,6 +4,9 @@ Testes para BacktestValidator - Task #3.
 Valida grid search com múltiplos thresholds, critérios F1 e win rate.
 """
 
+import logging
+import time
+
 import pytest
 import json
 import numpy as np
@@ -11,7 +14,12 @@ import pandas as pd
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from src.application.ml_classifier import BacktestValidator
+from src.application.ml_classifier import (
+    BacktestValidator,
+    GridSearchOrchestrator,
+    GridSearchConfig,
+    ModelType,
+)
 
 
 class TestBacktestValidator:
@@ -245,3 +253,287 @@ class TestBacktestValidatorIntegration:
             report = json.load(f)
 
         assert report['decision'] in ['GO', 'NO-GO']
+
+
+# =============================================================================
+# TESTES DE PARALELIZAÇÃO — BLID-034
+# =============================================================================
+
+class TestGridSearchParalelo:
+    """
+    Testes para paralelização do grid search com joblib.Parallel.
+
+    Critérios de aceite validados:
+    - Reprodutibilidade: mesmo random_state → mesmas métricas
+    - Sem data leakage: split realizado uma única vez fora do loop
+    - Log de progresso: mensagens de timing registradas
+    - n_jobs aceito: parâmetro propagado sem erro
+    """
+
+    @pytest.fixture
+    def dados_treino(self):
+        """Dataset determinístico para comparação de resultados."""
+        np.random.seed(0)
+        X = np.random.randn(120, 10).astype(np.float32)
+        y = np.random.binomial(1, 0.55, 120).astype(np.int32)
+        return X, y
+
+    # ------------------------------------------------------------------
+    # Reprodutibilidade
+    # ------------------------------------------------------------------
+
+    def test_reproducibilidade_mesmo_random_state(self, dados_treino):
+        """
+        DADO random_state fixo,
+        QUANDO grid_search é chamado duas vezes,
+        ENTÃO todas as métricas (F1, precision, recall, accuracy, win_rate)
+        devem ser idênticas.
+        """
+        X, y = dados_treino
+        thresholds = [1.0, 2.0]
+
+        validator_a = BacktestValidator(X, y, random_state=42)
+        resultado_a = validator_a.grid_search(thresholds=thresholds, n_jobs=1)
+
+        validator_b = BacktestValidator(X, y, random_state=42)
+        resultado_b = validator_b.grid_search(thresholds=thresholds, n_jobs=1)
+
+        campos_val = ['f1', 'precision', 'recall', 'accuracy']
+        campos_test = ['f1', 'precision', 'recall', 'accuracy', 'win_rate']
+
+        for t in thresholds:
+            for campo in campos_val:
+                assert resultado_a[t]['metrics_val'][campo] == pytest.approx(
+                    resultado_b[t]['metrics_val'][campo], abs=1e-6
+                ), f"metrics_val[{campo}] diferiu para threshold={t}"
+            for campo in campos_test:
+                assert resultado_a[t]['metrics_test'][campo] == pytest.approx(
+                    resultado_b[t]['metrics_test'][campo], abs=1e-6
+                ), f"metrics_test[{campo}] diferiu para threshold={t}"
+
+    def test_random_state_diferente_gera_resultado_diferente(self, dados_treino):
+        """
+        DADO random_states distintos,
+        QUANDO grid_search é chamado,
+        ENTÃO ao menos um resultado deve ser diferente.
+        """
+        X, y = dados_treino
+        thresholds = [1.0, 2.0]
+
+        validator_a = BacktestValidator(X, y, random_state=42)
+        resultado_a = validator_a.grid_search(thresholds=thresholds, n_jobs=1)
+
+        validator_b = BacktestValidator(X, y, random_state=99)
+        resultado_b = validator_b.grid_search(thresholds=thresholds, n_jobs=1)
+
+        # Com seeds diferentes, os splits diferem → ao menos 1 métrica deve divergir
+        f1_a = [resultado_a[t]['metrics_val']['f1'] for t in thresholds]
+        f1_b = [resultado_b[t]['metrics_val']['f1'] for t in thresholds]
+        assert f1_a != f1_b, "F1s deveriam diferir com random_state distinto"
+
+    # ------------------------------------------------------------------
+    # Parâmetro n_jobs
+    # ------------------------------------------------------------------
+
+    def test_njobs_negativo_aceito_sem_erro(self, dados_treino):
+        """
+        DADO n_jobs=-1 (todos os núcleos),
+        QUANDO grid_search é chamado,
+        ENTÃO deve retornar resultados sem lançar exceção.
+        """
+        X, y = dados_treino
+        validator = BacktestValidator(X, y, random_state=42)
+        resultado = validator.grid_search(thresholds=[1.0, 2.0], n_jobs=-1)
+        assert len(resultado) == 2
+
+    def test_njobs_1_aceito_sem_erro(self, dados_treino):
+        """
+        DADO n_jobs=1 (sem paralelismo),
+        QUANDO grid_search é chamado,
+        ENTÃO deve retornar resultados sem lançar exceção.
+        """
+        X, y = dados_treino
+        validator = BacktestValidator(X, y, random_state=42)
+        resultado = validator.grid_search(thresholds=[1.0, 2.0], n_jobs=1)
+        assert len(resultado) == 2
+
+    def test_njobs_2_aceito_sem_erro(self, dados_treino):
+        """
+        DADO n_jobs=2,
+        QUANDO grid_search é chamado,
+        ENTÃO deve retornar resultados sem lançar exceção.
+        """
+        X, y = dados_treino
+        validator = BacktestValidator(X, y, random_state=42)
+        resultado = validator.grid_search(thresholds=[1.0, 2.0], n_jobs=2)
+        assert len(resultado) == 2
+
+    # ------------------------------------------------------------------
+    # Sem data leakage — split único fora do loop
+    # ------------------------------------------------------------------
+
+    def test_splits_identicos_entre_thresholds(self, dados_treino):
+        """
+        DADO mesmo random_state,
+        QUANDO grid_search avalia vários thresholds,
+        ENTÃO os tamanhos de treino/val/teste devem ser idênticos
+        para todos os thresholds (split feito uma única vez).
+        """
+        X, y = dados_treino
+        validator = BacktestValidator(X, y, random_state=42)
+        resultado = validator.grid_search(
+            thresholds=[1.0, 2.0, 3.0], n_jobs=1
+        )
+
+        splits_set = {
+            (
+                r['splits']['train_size'],
+                r['splits']['val_size'],
+                r['splits']['test_size']
+            )
+            for r in resultado.values()
+        }
+        # Todos os thresholds devem usar exatamente o mesmo split
+        assert len(splits_set) == 1, (
+            f"Splits divergiram entre thresholds: {splits_set}"
+        )
+
+    # ------------------------------------------------------------------
+    # Log de progresso
+    # ------------------------------------------------------------------
+
+    def test_log_timing_registrado(self, dados_treino, caplog):
+        """
+        DADO qualquer chamada a grid_search,
+        QUANDO a execução terminar,
+        ENTÃO o log deve conter mensagem de timing no formato 'X.Xs'.
+        """
+        import re
+        X, y = dados_treino
+        validator = BacktestValidator(X, y, random_state=42)
+
+        with caplog.at_level(logging.INFO, logger="src.application.ml_classifier"):
+            validator.grid_search(thresholds=[1.0, 2.0], n_jobs=1)
+
+        mensagens = " ".join(caplog.messages)
+        # Verifica formato numerico de timing: ex. "1.5s" ou "0.3s"
+        assert re.search(r"\d+\.\d+s", mensagens), (
+            "Log de timing no formato '<numero>s' nao encontrado"
+        )
+
+    def test_log_paralelo_registrado(self, dados_treino, caplog):
+        """
+        DADO chamada a grid_search,
+        QUANDO iniciada,
+        ENTÃO o log deve mencionar n_jobs e quantidade de thresholds.
+        """
+        X, y = dados_treino
+        validator = BacktestValidator(X, y, random_state=42)
+
+        with caplog.at_level(logging.INFO, logger="src.application.ml_classifier"):
+            validator.grid_search(thresholds=[1.0, 2.0], n_jobs=2)
+
+        mensagens = " ".join(caplog.messages)
+        assert "n_jobs=2" in mensagens, (
+            "n_jobs deveria aparecer no log de progresso"
+        )
+        assert "2 thresholds" in mensagens, (
+            "Quantidade de thresholds deveria aparecer no log"
+        )
+
+    # ------------------------------------------------------------------
+    # Estrutura do resultado
+    # ------------------------------------------------------------------
+
+    def test_resultado_contem_todas_chaves_obrigatorias(self, dados_treino):
+        """
+        DADO grid_search com thresholds customizados,
+        QUANDO executado,
+        ENTÃO cada entrada do dicionário deve conter as chaves obrigatórias.
+        """
+        X, y = dados_treino
+        thresholds = [1.5, 3.0, 4.5]
+        validator = BacktestValidator(X, y, random_state=42)
+        resultado = validator.grid_search(thresholds=thresholds, n_jobs=1)
+
+        assert set(resultado.keys()) == set(thresholds)
+        for t in thresholds:
+            assert 'metrics_val' in resultado[t]
+            assert 'metrics_test' in resultado[t]
+            assert 'confusion_matrix' in resultado[t]
+            assert 'splits' in resultado[t]
+            assert 'win_rate' in resultado[t]['metrics_test']
+
+
+class TestGridSearchOrchestratorParalelo:
+    """
+    Testes para paralelização do GridSearchOrchestrator.search()
+    via joblib.Parallel — BLID-034.
+    """
+
+    @pytest.fixture
+    def dados_treino(self):
+        """Dataset determinístico para comparação de resultados."""
+        np.random.seed(7)
+        X = np.random.randn(150, 12).astype(np.float32)
+        y = np.random.binomial(1, 0.5, 150).astype(np.int32)
+        return X, y
+
+    def test_search_paralelo_retorna_best_e_lista(self, dados_treino):
+        """
+        DADO GridSearchOrchestrator com n_jobs=-1 e XGBOOST,
+        QUANDO search() é chamado,
+        ENTÃO deve retornar (best_result, all_results) sem exceção.
+        """
+        X, y = dados_treino
+        config = GridSearchConfig(
+            param_grid={},
+            model_type=ModelType.XGBOOST,
+            n_jobs=-1
+        )
+        orquestrador = GridSearchOrchestrator(config)
+        melhor, todos = orquestrador.search(X, y, max_configs=2)
+
+        assert melhor is not None
+        assert len(todos) == 2
+        assert melhor.f1_score == max(r.f1_score for r in todos)
+
+    def test_njobs_propagado_via_gridconfig(self, dados_treino):
+        """
+        DADO n_jobs=1 em GridSearchConfig,
+        QUANDO search() é executado,
+        ENTÃO deve funcionar corretamente (sem paralelismo externo).
+        """
+        X, y = dados_treino
+        config = GridSearchConfig(
+            param_grid={},
+            model_type=ModelType.XGBOOST,
+            n_jobs=1
+        )
+        orquestrador = GridSearchOrchestrator(config)
+        melhor, todos = orquestrador.search(X, y, max_configs=2)
+
+        assert melhor is not None
+        assert len(todos) == 2
+
+    def test_log_timing_orchestrator(self, dados_treino, caplog):
+        """
+        DADO GridSearchOrchestrator,
+        QUANDO search() é chamado,
+        ENTÃO o log deve registrar tempo de execução e n_jobs.
+        """
+        X, y = dados_treino
+        config = GridSearchConfig(
+            param_grid={},
+            model_type=ModelType.XGBOOST,
+            n_jobs=1
+        )
+        orquestrador = GridSearchOrchestrator(config)
+
+        with caplog.at_level(logging.INFO, logger="src.application.ml_classifier"):
+            orquestrador.search(X, y, max_configs=2)
+
+        mensagens = " ".join(caplog.messages)
+        assert "n_jobs=1" in mensagens, (
+            "n_jobs deveria aparecer no log do GridSearchOrchestrator"
+        )

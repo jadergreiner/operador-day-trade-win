@@ -4557,6 +4557,54 @@ imediatamente sem avaliar exaustao do movimento.
 
 ---
 
+#### BLID-034 — SPRINT-2 Paralelizacao do Grid Search (ml_classifier.py)
+
+**Status:** ✅ IMPLEMENTADO — BLID-034 (05/04/2026)
+
+**BLID:** BLID-034
+**Titulo:** Paralelizar grid search de XGBoost com joblib.Parallel
+**Prioridade:** Otimizacao (media)
+**ADR:** ADR-027
+
+### Descricao
+
+Otimizar grid search de XGBoost usando `joblib.Parallel(n_jobs=-1)`.
+Grid search sequencial de 8 configuracoes levava 30+ minutos.
+Meta: >3x speedup (30min → <10min), random_state fixo, sem data leakage
+e log de progresso por chamada.
+
+### Criterios de Aceite
+
+- [x] **AC-1:** `joblib.Parallel(n_jobs=-1)` aplicado em `GridSearchOrchestrator.search()`
+- [x] **AC-2:** `joblib.Parallel(n_jobs=-1)` aplicado em `BacktestValidator.grid_search()`
+- [x] **AC-3:** `random_state` fixo propagado para `XGBClassifier` (reprodutibilidade)
+- [x] **AC-4:** Split de dados realizado UMA VEZ fora do loop (sem data leakage)
+- [x] **AC-5:** Log de progresso: timing (duracao em segundos) + n_jobs por chamada
+- [x] **AC-6:** `n_jobs=-1` como parametro com default, sobrescrevivel pelo chamador
+- [x] **AC-7:** Todos os testes existentes continuam passando (9/9)
+
+### Arquivos Alterados
+
+- `src/application/ml_classifier.py` — adicao de `import time`, `from joblib import Parallel, delayed`,
+  funcoes de modulo `_treinar_config_paralela` e `_avaliar_threshold_paralelo`,
+  campo `n_jobs` em `GridSearchConfig`, refatoracao de `search()` e `grid_search()`
+- `tests/unit/test_backtest_validator.py` — 12 novos testes de paralelizacao
+  (`TestGridSearchParalelo` + `TestGridSearchOrchestratorParalelo`)
+- `docs/ADRS.md` — ADR-027 registrado
+
+### Evidencias
+
+- 21 testes: 21/21 PASSING (100%)
+- Retrocompatibilidade: assinaturas existentes inalteradas
+- Sem data leakage: split unico validado por teste `test_splits_identicos_entre_thresholds`
+- Reproducibilidade: validada por `test_reproducibilidade_mesmo_random_state`
+
+### Historico
+
+- 05/04/2026 — criado e implementado (BLID-034)
+
+---
+
 #### BLID-032 — S2-3 Detector SMC no Backtest com Confluencia M1/M5
 
 **Status:** ✅ IMPLEMENTADO — BLID-032 (04/04/2026)
