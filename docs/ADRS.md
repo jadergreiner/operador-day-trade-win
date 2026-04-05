@@ -3146,3 +3146,78 @@ WebSocket. Launchers que nao usam ProcessadorBDI nao sao afetados.
 - BLID-037: implementacao completa (05/04/2026)
 - Issue: ENG-202 — Integrar detector de padroes no BDI
 - ADR relacionada: ADR-025 (DetectorSMC), ADR-029 (OrdersExecutor)
+
+
+---
+
+## ADR-031: Integracao de detector_padroes no Backtest Pipeline — Chamadas Corretas (BLID-038)
+
+**Status:** ACEITO
+**Data:** 05/04/2026
+**BLID:** BLID-038
+**Issue:** TODO-7 / ENG-005
+
+### Contexto
+
+O script `scripts/backtest_detector.py` continha, na linha 145, um bloco
+comentado com chamada incorreta ao `detector_padroes`:
+
+```python
+# alerta_padroes = self.detector_padroes.detectar_padroes(
+#     close=vela["close"],
+#     high=vela["high"],
+#     low=vela["low"],
+#     volume=vela["volume"]
+# )
+```
+
+O metodo `detectar_padroes` nao existe em `DetectorPadroesTecnico`. A classe
+expoe: `detectar_engulfing`, `detectar_divergencia_rsi`, `detectar_break_suporte`
+e `detectar_break_resistencia`, cada um com assinaturas distintas que requerem
+historico de velas (nao apenas a vela corrente).
+
+### Decisao
+
+Corrigir `BacktestValidator.processar_vela` para:
+
+1. Manter `historico_velas: Dict[str, List[dict]]` por simbolo (max 20 velas)
+2. Chamar `detectar_engulfing(symbol, vela_atual, vela_anterior, timestamp)`
+   apenas quando ha vela anterior disponivel
+3. Chamar `detectar_break_suporte` e `detectar_break_resistencia` com
+   `precos_hist` (lista de closes do historico) somente quando ha >= 6 candles
+4. Converter o campo `time` de str para datetime antes das chamadas
+5. Seguir identico padrao ja adotado em `processador_bdi.py` (BLID-037/ADR-030)
+
+### Alternativas Rejeitadas
+
+- **Criar metodo wrapper `detectar_padroes`**: adicionaria indirection
+  desnecessaria e acoplaria o script ao contrato interno do detector.
+- **Usar apenas deteccao de volatilidade**: nao resolve o requisito de
+  reconhecimento de padroes tecnicos (AC-2 do issue).
+
+### Consequencias
+
+- `processar_vela` agora executa os 3 detectores de padroes alem da volatilidade
+- Buffer por simbolo garante isolamento entre ativos diferentes
+- Padrao identico ao `processador_bdi.py` facilita manutencao futura
+- 20 testes unitarios novos validam cada aspecto do fluxo
+- Gate 1 de acuracia do backtest (05/03) agora tem reconhecimento de padroes ativo
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | NENHUM | — | Nenhuma |
+| INICIAR_AGENTE_RL_DIRETO.bat | NENHUM | — | Nenhuma |
+| INICIAR_DIARIOS.bat | NENHUM | — | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | — | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | — | Nenhuma |
+
+`backtest_detector.py` e script standalone de validacao offline.
+Nenhum launcher operacional depende dele diretamente.
+
+### Referencias
+
+- BLID-038: implementacao completa (05/04/2026)
+- Issue: TODO-7 / ENG-005 — Backtest Detector Integration
+- ADR relacionada: ADR-030 (FiltroConfiancaBDI — mesmo padrao de chamada)

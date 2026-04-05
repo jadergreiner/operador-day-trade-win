@@ -8,7 +8,7 @@ e valida taxas de captura, false positives e win rates.
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import List
+from typing import Dict, List, Optional
 import json
 import sys
 from pathlib import Path
@@ -43,9 +43,12 @@ class BacktestValidator:
         )
         self.detector_padroes = DetectorPadroesTecnico()
 
+        # Buffers de histórico por símbolo para detecção de padrões técnicos
+        self.historico_velas: Dict[str, List[dict]] = {}
+
         # Métricas
-        self.alertas_gerados = []
-        self.oportunidades_manuais = []
+        self.alertas_gerados: List[AlertaOportunidade] = []
+        self.oportunidades_manuais: List[int] = []
         self.matches = 0
         self.false_positives = 0
         self.false_negatives = 0
@@ -129,31 +132,87 @@ class BacktestValidator:
         Returns:
             Lista de AlertaOportunidade gerados
         """
-        alertas = []
+        alertas: List[AlertaOportunidade] = []
 
-        # Volatilidade
+        # Validar campos obrigatórios da vela
+        campos_obrigatorios = ("ativo", "time", "open", "high", "low", "close")
+        for campo in campos_obrigatorios:
+            if campo not in vela:
+                logger.warning("Vela ignorada — campo obrigatorio ausente: %s", campo)
+                return alertas
+
+        symbol: str = vela["ativo"]
+
+        # Converter timestamp string para datetime quando necessário
+        ts = vela["time"]
+        if isinstance(ts, str):
+            try:
+                ts = datetime.fromisoformat(ts)
+            except (ValueError, TypeError) as exc:
+                logger.warning(
+                    "Timestamp invalido '%s' para %s — vela ignorada: %s",
+                    vela["time"],
+                    symbol,
+                    exc,
+                )
+                return alertas
+
+        # --- Detector de volatilidade ---
         alerta_vol = self.detector_vol.analisar_vela(
-            symbol=vela["ativo"],
+            symbol=symbol,
             close=vela["close"],
             timestamp=vela["time"]
         )
-
         if alerta_vol:
             alertas.append(alerta_vol)
 
-        # Padrões técnicos
-        # TODO: Implementar chamada correta ao detector_padroes
-        # Por agora, apenas volatilidade é testada
-        alerta_padroes = None
-        # alerta_padroes = self.detector_padroes.detectar_padroes(
-        #     close=vela["close"],
-        #     high=vela["high"],
-        #     low=vela["low"],
-        #     volume=vela["volume"]
-        # )
+        # Inicializar buffer de histórico para o símbolo
+        if symbol not in self.historico_velas:
+            self.historico_velas[symbol] = []
 
-        if alerta_padroes:
-            alertas.append(alerta_padroes)
+        # Capturar vela anterior ANTES de adicionar a atual ao histórico
+        vela_anterior: Optional[dict] = (
+            self.historico_velas[symbol][-1]
+            if self.historico_velas[symbol]
+            else None
+        )
+
+        # Atualizar histórico de candles (mantém os 20 últimos)
+        self.historico_velas[symbol].append(vela)
+        if len(self.historico_velas[symbol]) > 20:
+            self.historico_velas[symbol].pop(0)
+
+        # --- AC-1: Detector de padrões técnicos — Engulfing ---
+        # Requer pelo menos uma vela anterior para comparação
+        if vela_anterior is not None:
+            alerta_eng = self.detector_padroes.detectar_engulfing(
+                symbol=symbol,
+                vela_atual=vela,
+                vela_anterior=vela_anterior,
+                timestamp=ts,
+            )
+            if alerta_eng:
+                alertas.append(alerta_eng)
+
+        # --- AC-1: Detector de padrões técnicos — Break Suporte/Resistência ---
+        # Requer histórico suficiente (window=5 + 1 mínimo = 6 candles)
+        precos_hist = [float(c["close"]) for c in self.historico_velas[symbol]]
+        if len(precos_hist) >= 6:
+            alerta_suporte = self.detector_padroes.detectar_break_suporte(
+                symbol=symbol,
+                precos=precos_hist,
+                timestamp=ts,
+            )
+            if alerta_suporte:
+                alertas.append(alerta_suporte)
+
+            alerta_resistencia = self.detector_padroes.detectar_break_resistencia(
+                symbol=symbol,
+                precos=precos_hist,
+                timestamp=ts,
+            )
+            if alerta_resistencia:
+                alertas.append(alerta_resistencia)
 
         self.velas_processadas += 1
         self.alertas_gerados.extend(alertas)
