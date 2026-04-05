@@ -173,11 +173,27 @@ try:
         GerenciadorRetryOrdem,
     )
     from src.application.posicao_isolamento import PosicaoIsoladaManager
-    from src.application.profit_protection_engine import ProfitProtectionEngine
+    from src.application.profit_protection_engine import (
+        ProfitProtectionEngine,
+        ProtectionStatus,
+    )
     from src.infrastructure.config.profit_protection_config import (
         carregar_config as _carregar_pp_config_direto,
         resolver_perfil as _resolver_pp_perfil_direto,
     )
+
+    # BLID-045: Alertas de reversao de lucro
+    try:
+        from src.application.alert_reversao_handler import (
+            AlertReversaoHandler,
+            AlertReversaoConfig,
+        )
+        from src.application.services.alerta_delivery import AlertaDeliveryManager
+        import yaml
+        _ALERT_REVERSAO_DISPONIVEL_DIRETO = True
+    except ImportError:
+        _ALERT_REVERSAO_DISPONIVEL_DIRETO = False
+
     from src.application.services.rl_persistence_service import (
         RLPersistenceService,
     )
@@ -1926,6 +1942,53 @@ def inicializar_componentes():
                 coordination_manager = None
                 coordination_reader = None
 
+        # 9. BLID-045: Alertas de reversao de lucro
+        alert_reversao_handler = None
+        alerta_delivery_manager = None
+        if _ALERT_REVERSAO_DISPONIVEL_DIRETO and AlertReversaoHandler and AlertaDeliveryManager:
+            logger.info("[INIT] Inicializando AlertReversaoHandler (BLID-045)...")
+            try:
+                # Carregar config de config/alert_reversoes.yaml se existir
+                alert_config = AlertReversaoConfig()
+                config_path = Path("config/alert_reversoes.yaml")
+                if config_path.exists():
+                    with open(config_path, "r", encoding="utf-8") as f:
+                        yaml_config = yaml.safe_load(f)
+                        alert_config = AlertReversaoConfig(
+                            habilitado=yaml_config.get("habilitado", True),
+                            webhook_url=yaml_config.get("webhook_url") or os.getenv("ALERT_WEBHOOK_URL"),
+                            webhook_timeout_sec=yaml_config.get("webhook_timeout_sec", 5.0),
+                            throttle_seconds=yaml_config.get("throttle_seconds", 60),
+                        )
+                else:
+                    # Fallback: env var ou padrao
+                    alert_config.webhook_url = os.getenv("ALERT_WEBHOOK_URL")
+
+                # Inicializar delivery manager (sem WebSocket para evitar dependencias)
+                alerta_delivery_manager = AlertaDeliveryManager(
+                    websocket_client=None,  # Pode ser None (AC7 graceful degradation)
+                    email_config=None,  # Pode ser None
+                )
+
+                alert_reversao_handler = AlertReversaoHandler(
+                    delivery_manager=alerta_delivery_manager,
+                    config=alert_config,
+                )
+                logger.info(
+                    "[OK] AlertReversaoHandler inicializado | webhook=%s | throttle=%ds (BLID-045)",
+                    "SIM" if alert_config.webhook_url else "NAO",
+                    alert_config.throttle_seconds,
+                )
+            except Exception as _e_alert:
+                logger.warning(
+                    "[WARN] AlertReversaoHandler init falhou: %s — alertas desabilitados (BLID-045)",
+                    _e_alert,
+                )
+                alert_reversao_handler = None
+                alerta_delivery_manager = None
+        else:
+            logger.info("[SKIP] AlertReversaoHandler nao disponivel - alertas de reversao desabilitados (BLID-045)")
+
         logger.info("[OK] Todos os componentes inicializados com sucesso!")
         logger.info("")
 
@@ -1941,6 +2004,8 @@ def inicializar_componentes():
             "trade_tracker": trade_tracker,
             "coordination_manager": coordination_manager,
             "coordination_reader": coordination_reader,
+            "alert_reversao_handler": alert_reversao_handler,
+            "alerta_delivery_manager": alerta_delivery_manager,
         }
 
     except Exception as e:
@@ -2207,9 +2272,16 @@ def processar_protecao_lucros_rl_direto(
     profit_protection: Optional[ProfitProtectionEngine],
     posicao_tracker: PosicaoIsoladaManager,
     mt5_adapter: MT5Adapter,
+    alert_reversao_handler: Optional[object] = None,
 ) -> None:
     """
     Verifica a posição aberta e aciona o motor de proteção de lucros.
+
+    Args:
+        profit_protection: Engine de proteção de lucros
+        posicao_tracker: Tracker de posição isolada
+        mt5_adapter: Adapter MT5
+        alert_reversao_handler: Handler de alertas de reversão (BLID-045)
     """
     global lucro_maximo_trade_atual
 
@@ -2248,6 +2320,15 @@ def processar_protecao_lucros_rl_direto(
             preco_atual=preco_atual,
             lucro_maximo_sessao=lucro_maximo_trade_atual
         )
+
+        # BLID-045: Disparar alerta se status=ALERTA
+        if _ALERT_REVERSAO_DISPONIVEL_DIRETO and alert_reversao_handler and resultado_protecao.status == ProtectionStatus.ALERTA:
+            try:
+                import asyncio
+                asyncio.run(alert_reversao_handler.processar_reversao(resultado_protecao))
+                logger.info(f"[BLID-045] Alerta de reversao disparado para ticket#{posicao_aberta.ticket}")
+            except Exception as e_alert:
+                logger.warning(f"[BLID-045] Falha ao enviar alerta de reversao: {e_alert}")
 
         # Atualiza o lucro máximo da sessão se o atual for maior
         if resultado_protecao.profit_atual > (lucro_maximo_trade_atual or -1e9):
@@ -2742,6 +2823,7 @@ def main():
                             profit_protection=profit_protection,
                             posicao_tracker=posicao_tracker,
                             mt5_adapter=mt5_adapter,
+                            alert_reversao_handler=componentes.get("alert_reversao_handler"),
                         )
                     except Exception as e:
                         logger.warning(f"[CICLO {ciclo}] Erro em proteção: {e}")
