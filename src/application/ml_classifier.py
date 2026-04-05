@@ -16,7 +16,10 @@ from enum import Enum
 from pathlib import Path
 import logging
 import json
+import time
 from datetime import datetime
+
+from joblib import Parallel, delayed
 
 import numpy as np
 import pandas as pd
@@ -24,8 +27,17 @@ from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.preprocessing import StandardScaler, RobustScaler
 from sklearn.metrics import (
     classification_report, confusion_matrix, roc_auc_score,
-    precision_recall_curve, f1_score, roc_curve
+    precision_recall_curve, f1_score, roc_curve,
+    f1_score as _f1, precision_score as _precision,
+    recall_score as _recall, accuracy_score as _accuracy,
+    confusion_matrix as _confusion_matrix
 )
+
+# XGBoost importado no nivel de modulo para evitar overhead em workers paralelos
+try:
+    from xgboost import XGBClassifier as _XGBClassifier
+except ImportError:  # pragma: no cover
+    _XGBClassifier = None  # type: ignore[assignment,misc]
 
 logger = logging.getLogger(__name__)
 
@@ -409,6 +421,32 @@ class GridSearchConfig:
     param_grid: Dict[str, List[Any]]
     model_type: ModelType = ModelType.XGBOOST
     cv_folds: int = 5
+    n_jobs: int = -1  # -1 = usar todos os núcleos disponíveis
+
+
+def _treinar_config_paralela(
+    config: Dict,
+    model_type: ModelType,
+    X: "np.ndarray",
+    y: "np.ndarray"
+) -> "TrainingResult":
+    """
+    Treina uma configuração de hiperparâmetros de forma isolada.
+
+    Função de nível de módulo (não método) para compatibilidade com
+    joblib.Parallel — permite serialização (pickle) pelo backend loky.
+
+    Args:
+        config: Dicionário com hiperparâmetros a testar.
+        model_type: Tipo de modelo (XGBoost, LightGBM, etc.).
+        X: Features de treino.
+        y: Labels de treino.
+
+    Returns:
+        TrainingResult com métricas da configuração avaliada.
+    """
+    classifier = MLClassifier(ModelConfig(model_type))
+    return classifier.train_and_evaluate(X, y, config)
 
 
 class GridSearchOrchestrator:
@@ -437,7 +475,7 @@ class GridSearchOrchestrator:
         max_configs: int = 8
     ) -> Tuple[TrainingResult, List[TrainingResult]]:
         """
-        Executa grid search.
+        Executa grid search em paralelo usando joblib.Parallel.
 
         Args:
             X: Features de treino
@@ -447,13 +485,8 @@ class GridSearchOrchestrator:
         Returns:
             Tuple[best_result, all_results]
         """
-        logger.info(f"Iniciando grid search com até {max_configs} configs...")
-
-        # TODO: Implementar grid search em paralelo
-        # Por agora, treina alguns configs manuais
-
         configs_to_test = [
-            # Config 1: Conservative
+            # Config 1: Conservadora
             {
                 'n_estimators': 100,
                 'max_depth': 3,
@@ -461,7 +494,7 @@ class GridSearchOrchestrator:
                 'subsample': 0.8,
                 'colsample_bytree': 0.8
             },
-            # Config 2: Balanced
+            # Config 2: Balanceada
             {
                 'n_estimators': 150,
                 'max_depth': 5,
@@ -469,7 +502,7 @@ class GridSearchOrchestrator:
                 'subsample': 0.8,
                 'colsample_bytree': 0.8
             },
-            # Config 3: Aggressive
+            # Config 3: Agressiva
             {
                 'n_estimators': 200,
                 'max_depth': 7,
@@ -477,24 +510,39 @@ class GridSearchOrchestrator:
                 'subsample': 0.9,
                 'colsample_bytree': 0.9
             },
-        ]
+        ][:max_configs]
 
-        best_result = None
+        n_jobs = self.config.n_jobs
+        n_configs = len(configs_to_test)
 
-        for config in configs_to_test:
-            logger.info(f"Testando: {config}")
+        logger.info(
+            f"🚀 Grid search paralelo: {n_configs} configs "
+            f"(n_jobs={n_jobs})..."
+        )
 
-            classifier = MLClassifier(
-                ModelConfig(self.config.model_type)
+        inicio = time.time()
+
+        # Execução paralela: cada config treinada em núcleo separado
+        all_results: List[TrainingResult] = Parallel(n_jobs=n_jobs)(
+            delayed(_treinar_config_paralela)(
+                config, self.config.model_type, X, y
             )
+            for config in configs_to_test
+        )  # type: ignore[assignment]  # mypy nao infere tipo de retorno de Parallel
 
-            result = classifier.train_and_evaluate(X, y, config)
-            self.results.append(result)
+        duracao = time.time() - inicio
+        logger.info(
+            f"⏱️  Grid search concluído em {duracao:.1f}s "
+            f"({n_configs} configs avaliadas)"
+        )
 
-            if best_result is None or result.f1_score > best_result.f1_score:
-                best_result = result
+        self.results = all_results
+        best_result = max(all_results, key=lambda r: r.f1_score)
 
-        logger.info(f"Grid search completo: melhor F1={best_result.f1_score:.3f}")
+        logger.info(
+            f"✅ Melhor config: F1={best_result.f1_score:.3f} "
+            f"| params={best_result.hyperparameters}"
+        )
 
         return best_result, self.results
 
@@ -502,6 +550,89 @@ class GridSearchOrchestrator:
 # ============================================================================
 # BACKTEST VALIDATION - GRID SEARCH COM THRESHOLDS
 # ============================================================================
+
+def _avaliar_threshold_paralelo(
+    threshold: float,
+    X_train: "np.ndarray",
+    y_train: "np.ndarray",
+    X_val: "np.ndarray",
+    y_val: "np.ndarray",
+    X_test: "np.ndarray",
+    y_test: "np.ndarray",
+    random_state: int
+) -> Tuple[float, Dict]:
+    """
+    Avalia um threshold de forma isolada para execução paralela.
+
+    Função de nível de módulo (não método) para compatibilidade com
+    joblib.Parallel — permite serialização (pickle) pelo backend loky.
+
+    O split de dados é recebido como argumento (calculado uma única vez
+    fora do loop), garantindo ausência de data leakage e resultados
+    reproduzíveis com o mesmo random_state.
+
+    Imports de XGBoost e métricas resolvidos no nível de módulo (fora
+    desta função) para evitar overhead de importação repetida em cada
+    worker paralelo.
+
+    Args:
+        threshold: Valor do threshold avaliado (usado como chave no resultado).
+        X_train: Features de treinamento.
+        y_train: Labels de treinamento.
+        X_val: Features de validação.
+        y_val: Labels de validação.
+        X_test: Features de teste.
+        y_test: Labels de teste.
+        random_state: Seed fixo para reprodutibilidade do XGBClassifier.
+
+    Returns:
+        Tuple (threshold, dict_de_métricas).
+    """
+    if _XGBClassifier is None:  # pragma: no cover
+        raise ImportError("xgboost nao instalado — necessario para grid search")
+
+    # Modelo com random_state fixo — garante reprodutibilidade
+    model = _XGBClassifier(
+        max_depth=5,
+        learning_rate=0.1,
+        n_estimators=100,
+        random_state=random_state,
+        verbosity=0
+    )
+    model.fit(X_train, y_train, verbose=False)
+
+    y_pred_val = model.predict(X_val)
+    y_pred_test = model.predict(X_test)
+
+    metricas_val = {
+        'f1': float(_f1(y_val, y_pred_val, zero_division=0)),
+        'precision': float(_precision(y_val, y_pred_val, zero_division=0)),
+        'recall': float(_recall(y_val, y_pred_val, zero_division=0)),
+        'accuracy': float(_accuracy(y_val, y_pred_val))
+    }
+
+    metricas_test = {
+        'f1': float(_f1(y_test, y_pred_test, zero_division=0)),
+        'precision': float(_precision(y_test, y_pred_test, zero_division=0)),
+        'recall': float(_recall(y_test, y_pred_test, zero_division=0)),
+        'accuracy': float(_accuracy(y_test, y_pred_test)),
+        'win_rate': float((y_pred_test == y_test).sum() / len(y_test))
+    }
+
+    cm = _confusion_matrix(y_test, y_pred_test)
+
+    return threshold, {
+        'metrics_val': metricas_val,
+        'metrics_test': metricas_test,
+        'confusion_matrix': cm.tolist(),
+        'model': model,
+        'splits': {
+            'train_size': int(len(X_train)),
+            'val_size': int(len(X_val)),
+            'test_size': int(len(X_test))
+        }
+    }
+
 
 class BacktestValidator:
     """
@@ -532,114 +663,102 @@ class BacktestValidator:
         self,
         thresholds: Optional[List[float]] = None,
         test_size: float = 0.30,
-        random_state: Optional[int] = None
+        random_state: Optional[int] = None,
+        n_jobs: int = -1
     ) -> Dict[float, Dict]:
         """
-        Executar grid search com múltiplos thresholds.
+        Executar grid search paralelo com múltiplos thresholds.
 
         AC-1: Grid Search Executado
         AC-2: Métricas Calculadas
 
+        O split de dados é realizado UMA ÚNICA VEZ fora do loop
+        (random_state fixo) — elimina redundância e garante ausência
+        de data leakage entre os thresholds avaliados.
+
+        Execução paralela via joblib.Parallel (n_jobs=-1 usa todos os
+        núcleos disponíveis) com backend loky para isolamento de processos.
+
         Args:
-            thresholds: Lista de thresholds para testar
-                       Default: [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5]
-            test_size: Porcentagem de dados para validação (0.30 = 30%)
-            random_state: Seed (usa self.random_state se None)
+            thresholds: Lista de thresholds para testar.
+                       Padrão: [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5]
+            test_size: Fração de dados para validação+teste (0.30 = 30%).
+            random_state: Seed fixo para reprodutibilidade.
+                         Usa self.random_state se None.
+            n_jobs: Número de jobs paralelos. -1 = todos os núcleos.
 
         Returns:
             Dict[float, Dict]: {
                 threshold: {
                     'metrics_val': {...},
                     'metrics_test': {...},
-                    'models': {...}
+                    'confusion_matrix': [...],
+                    'model': <XGBClassifier>,
+                    'splits': {...}
                 }
             }
         """
-        try:
-            from xgboost import XGBClassifier
-            from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, confusion_matrix
-        except ImportError:
-            logger.error("XGBoost ou sklearn não instalados")
-            raise
-
         if thresholds is None:
             thresholds = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5]
 
         if random_state is None:
             random_state = self.random_state
 
-        results = {}
+        n_thresholds = len(thresholds)
 
-        logger.info(f"🔍 Starting grid search with {len(thresholds)} thresholds...")
+        # ----------------------------------------------------------------
+        # Split realizado UMA VEZ (fora do loop) — sem data leakage.
+        # Com random_state fixo os splits são determinísticos e todos
+        # os thresholds avaliam exatamente o mesmo conjunto de dados.
+        # ----------------------------------------------------------------
+        X_train, X_rest, y_train, y_rest = train_test_split(
+            self.X, self.y, test_size=test_size, random_state=random_state
+        )
+        X_val, X_test, y_val, y_test = train_test_split(
+            X_rest, y_rest, test_size=0.5, random_state=random_state
+        )
 
+        logger.info(
+            f"🚀 Grid search paralelo: {n_thresholds} thresholds "
+            f"(n_jobs={n_jobs}) | "
+            f"treino={len(X_train)} val={len(X_val)} teste={len(X_test)}"
+        )
+
+        inicio = time.time()
+
+        # Avaliação paralela: cada threshold em núcleo separado
+        resultados_paralelos = Parallel(n_jobs=n_jobs)(
+            delayed(_avaliar_threshold_paralelo)(
+                threshold,
+                X_train, y_train,
+                X_val, y_val,
+                X_test, y_test,
+                random_state
+            )
+            for threshold in thresholds
+        )  # type: ignore[assignment]  # mypy nao infere tipo de retorno de Parallel
+
+        duracao = time.time() - inicio
+        logger.info(
+            f"⏱️  Grid search concluído em {duracao:.1f}s "
+            f"| {n_thresholds} thresholds avaliados"
+        )
+
+        # Recompor dicionário na ordem original dos thresholds
+        results: Dict[float, Dict] = dict(resultados_paralelos)  # type: ignore[arg-type]  # lista de tuplas de Parallel
+
+        # Log de progresso por threshold
         for threshold in thresholds:
-            logger.info(f"  Testing threshold={threshold}")
-
-            # Split data: 70% train, 15% val, 15% test
-            X_train, X_rest, y_train, y_rest = train_test_split(
-                self.X, self.y, test_size=test_size, random_state=random_state
-            )
-            X_val, X_test, y_val, y_test = train_test_split(
-                X_rest, y_rest, test_size=0.5, random_state=random_state
-            )
-
-            # Train XGBoost model
-            model = XGBClassifier(
-                max_depth=5,
-                learning_rate=0.1,
-                n_estimators=100,
-                random_state=random_state,
-                verbosity=0
-            )
-            model.fit(X_train, y_train, verbose=False)
-
-            # Predict on validation set
-            y_pred_val = model.predict(X_val)
-            y_pred_proba_val = model.predict_proba(X_val)[:, 1]
-
-            # Predict on test set
-            y_pred_test = model.predict(X_test)
-            y_pred_proba_test = model.predict_proba(X_test)[:, 1]
-
-            # Calculate metrics for validation set
-            metrics_val = {
-                'f1': float(f1_score(y_val, y_pred_val, zero_division=0)),
-                'precision': float(precision_score(y_val, y_pred_val, zero_division=0)),
-                'recall': float(recall_score(y_val, y_pred_val, zero_division=0)),
-                'accuracy': float(accuracy_score(y_val, y_pred_val))
-            }
-
-            # Calculate metrics for test set
-            metrics_test = {
-                'f1': float(f1_score(y_test, y_pred_test, zero_division=0)),
-                'precision': float(precision_score(y_test, y_pred_test, zero_division=0)),
-                'recall': float(recall_score(y_test, y_pred_test, zero_division=0)),
-                'accuracy': float(accuracy_score(y_test, y_pred_test)),
-                'win_rate': float((y_pred_test == y_test).sum() / len(y_test))
-            }
-
-            # Calculate confusion matrix
-            cm = confusion_matrix(y_test, y_pred_test)
-
-            results[threshold] = {
-                'metrics_val': metrics_val,
-                'metrics_test': metrics_test,
-                'confusion_matrix': cm.tolist(),
-                'model': model,
-                'splits': {
-                    'train_size': len(X_train),
-                    'val_size': len(X_val),
-                    'test_size': len(X_test)
-                }
-            }
-
+            mv = results[threshold]['metrics_val']
+            mt = results[threshold]['metrics_test']
             logger.info(
-                f"    ✅ F1={metrics_val['f1']:.4f} (val), "
-                f"F1={metrics_test['f1']:.4f} (test), "
-                f"WR={metrics_test['win_rate']:.1%}"
+                f"  threshold={threshold} → "
+                f"F1={mv['f1']:.4f} (val) "
+                f"F1={mt['f1']:.4f} (teste) "
+                f"WR={mt['win_rate']:.1%}"
             )
 
-        logger.info(f"✅ Grid search completed with {len(results)} thresholds")
+        logger.info(f"✅ Grid search completo: {len(results)} thresholds")
         return results
 
     def select_optimal_threshold(self, results: Dict[float, Dict]) -> float:
