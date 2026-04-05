@@ -2934,3 +2934,96 @@ entry_price` para cada posicao aberta, com dados vindos do MT5.
 
 - BLID-035: implementacao completa (05/04/2026)
 - Issue: [POST-LAUNCH] P&L unrealized calculation (portfolio.py)
+
+---
+
+## ADR-029: OrdersExecutor — execute_order, monitor_positions e handle_stop_loss (ENG-201)
+
+**Data:** 05/04/2026
+**Status:** ACEITO
+**BLID:** BLID-036
+**Issue:** ENG-201
+
+### Contexto
+
+A issue ENG-201 solicitou a implementacao dos 3 metodos criticos do
+`OrdersExecutor` para automacao de trading: `execute_order()`,
+`monitor_positions()` e `handle_stop_loss()`. Esses metodos sao o
+nucleo do pipeline de execucao automatica de ordens no Sprint 1.
+
+### Decisao
+
+#### execute_order() — Validacao + Retry + Audit Trail
+
+- **AC-1 (Risk Framework):** Chama `risk_processor.validate_order(context)` com
+  `ValidationContext` construido a partir da ordem. Se rejeitado, retorna
+  `success=False` sem enviar ao MT5.
+- **AC-2 (MT5Adapter):** Chama `mt5_adapter.send_order(order)` via
+  `_maybe_await()` para suportar adapters sincronos e assincronos.
+- **AC-3 (Retry com backoff exponencial):** Utiliza `GerenciadorRetryOrdem`
+  (de `ordem_backoff_retry.py`) com backoff exponencial em falhas com
+  retcode 10006. O loop executa ate 5 tentativas (`range(1, 6)`) com sleeps
+  progressivos: 5s, 15s, 60s, 60s (tabela interna do gerenciador). O
+  `limite_encerrar=5` encerra a sessao apos 5 falhas consecutivas. A issue
+  ENG-201 menciona "3x backoff" como contrato minimo; a implementacao usa
+  o gerenciador canonico do projeto com limite padrao de 5.
+- **AC-4 (Audit Trail):** Cada transicao de estado chama `order.add_audit()`
+  que registra `OrderAuditLog` com timestamp, estado e metadata.
+
+#### monitor_positions() — Polling + Stop-Loss Detection + History
+
+- **AC-5 (Polling):** Chama `mt5_adapter.get_positions()` a cada invocacao
+  (loop externo responsavel pela frequencia de 30s).
+- **AC-6 (Stop-Loss):** Para cada posicao, compara preco atual com `stop_loss`
+  da posicao. BUY: `preco_atual <= stop_loss`; SELL: `preco_atual >= stop_loss`.
+  Fallback: PnL <= -500 tambem aciona stop-loss.
+- **AC-7 (History):** `last_monitoring_snapshot` armazena o resultado do ultimo
+  ciclo no executor (acessivel via atributo).
+- **AC-8 (Performance):** Medicao via `time.time()` antes/apos o loop. Testes
+  validam `monitoring_time_ms < 500`.
+
+#### handle_stop_loss() — Fechamento Atomico + Audit
+
+- **AC-9 (Market price):** Chama `mt5_adapter.close_position_by_id(order_id)`.
+- **AC-10 (Audit log):** Registra evento com `order_id`, `closed_at` e
+  `provider_result` em `self.stop_loss_events` (lista auditavel no executor).
+- **AC-11 (Atomic state update):** Percorre `self.orders` e atualiza a ordem
+  correspondente para `OrderState.CLOSED` via `order.add_audit()`.
+
+### Alternativas Consideradas
+
+- **Retry manual com `asyncio.sleep` direto**: rejeitado — `GerenciadorRetryOrdem`
+  ja implementa logica de rollover de contrato e encapsulamento de retcode 10006,
+  reutilizando codigo existente.
+- **Monitoramento com loop interno + `asyncio.sleep(30)`**: rejeitado — o metodo
+  `monitor_positions()` realiza um ciclo unico; o caller e responsavel pela
+  frequencia, facilitando testes unitarios sem `asyncio.sleep`.
+- **`OrderStatus` importado da infraestrutura**: rejeitado — importaria cascata
+  de dependencias (httpx, sqlalchemy). Enum definido localmente com TODO
+  registrado como divida tecnica (ver comentario em `orders_executor.py` linha 29):
+  mover para `src/domain/value_objects/` em ADR futura dedicada ao consolidamento
+  de enums de dominio.
+
+### Consequencias
+
+- Pipeline de execucao automatica (AC1-AC6 do sistema) pode ser ativado.
+- `OrdersExecutionOrchestrator` alias `OrdersExecutor` e retrocompativel com
+  todos os importadores existentes.
+- 13 testes unitarios + E2E cobrem 100% dos ACs da issue.
+- Desbloqueia Sprint 1 (~95%) e prepara UAT readiness.
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | BAIXO | Novo executor disponivel | Nenhuma (nao usa diretamente) |
+| INICIAR_AGENTE_RL_DIRETO.bat | BAIXO | Novo executor disponivel | Nenhuma (nao usa diretamente) |
+| INICIAR_DIARIOS.bat | NENHUM | — | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | MEDIO | Executor de ordens ativado | Revisar integracao em producao |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | — | Nenhuma |
+
+### Referencias
+
+- BLID-036: implementacao completa (05/04/2026)
+- Issue: ENG-201 — Implementar OrdersExecutor com 3 metodos criticos
+- ADR relacionada: nenhuma precedente direta

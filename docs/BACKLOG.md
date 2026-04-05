@@ -4746,3 +4746,68 @@ posicoes abertas, com fetch de preco atual via MT5.
 ### Historico
 
 - 05/04/2026 — criado e implementado (BLID-035)
+
+---
+
+#### BLID-036 — ENG-201: OrdersExecutor — execute_order, monitor_positions e handle_stop_loss
+
+**Status:** IMPLEMENTADO — BLID-036 (05/04/2026)
+
+**BLID:** BLID-036
+**Titulo:** Implementar OrdersExecutor com 3 metodos criticos (ENG-201)
+**Prioridade:** CRITICA (bloqueia 50% Sprint 1)
+**ADR:** ADR-029
+
+### Descricao
+
+Implementacao dos 3 metodos criticos do `OrdersExecutionOrchestrator`
+(alias `OrdersExecutor`) para automacao de trading: `execute_order()`,
+`monitor_positions()` e `handle_stop_loss()`. Esses metodos formam o
+nucleo do pipeline de execucao automatica no Sprint 1.
+
+### Criterios de Aceite
+
+- [x] **AC-1:** `execute_order()` valida ordem contra Risk Framework antes de
+  enviar (chama `risk_processor.validate_order()`)
+- [x] **AC-2:** `execute_order()` se integra com `MT5Adapter.send_order()` via
+  `_maybe_await()` (suporte a adapters sync/async)
+- [x] **AC-3:** `execute_order()` implementa retry com backoff exponencial via
+  `GerenciadorRetryOrdem` (retcode 10006, ate 5 tentativas)
+- [x] **AC-4:** `execute_order()` registra audit trail com `OrderAuditLog`
+  (timestamp, estado, metadata) em cada transicao
+- [x] **AC-5:** `monitor_positions()` faz polling de posicoes via
+  `mt5_adapter.get_positions()`
+- [x] **AC-6:** `monitor_positions()` detecta stop-loss por comparacao
+  `preco_atual <= stop_loss` (BUY) ou `>= stop_loss` (SELL)
+- [x] **AC-7:** `monitor_positions()` atualiza `last_monitoring_snapshot`
+  com historico do ultimo ciclo
+- [x] **AC-8:** `monitor_positions()` completa em < 500ms por ciclo
+  (validado em testes)
+- [x] **AC-9:** `handle_stop_loss()` fecha posicao via
+  `mt5_adapter.close_position_by_id(order_id)`
+- [x] **AC-10:** `handle_stop_loss()` registra evento em `stop_loss_events`
+  com `order_id`, `closed_at` e `provider_result`
+- [x] **AC-11:** `handle_stop_loss()` atualiza estado da ordem para
+  `OrderState.CLOSED` atomicamente
+- [x] **AC-12:** 13 testes unitarios + E2E com cobertura de 100% dos ACs
+  (4 execute_order, 4 monitor_positions, 3 handle_stop_loss, 2 E2E)
+
+### Arquivos Alterados
+
+- `src/application/orders_executor.py` — implementacao dos 3 metodos
+  (`execute_order`, `monitor_positions`, `handle_stop_loss`) na classe
+  `OrdersExecutionOrchestrator` (alias `OrdersExecutor`)
+- `tests/unit/test_orders_executor.py` — 13 testes unitarios + E2E
+- `docs/ADRS.md` — ADR-029 registrado
+
+### Evidencias
+
+- 13 testes: 13/13 PASSING (100%)
+- execute_order: validacao de risco, retry backoff, audit trail
+- monitor_positions: polling MT5, deteccao SL, snapshot historico, < 500ms
+- handle_stop_loss: fechamento mercado, evento auditavel, update atomico CLOSED
+- Pipeline E2E: execute_order + monitor_positions + handle_stop_loss integrados
+
+### Historico
+
+- 05/04/2026 — criado e implementado (BLID-036)
