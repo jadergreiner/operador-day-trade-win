@@ -31,7 +31,7 @@ _log = logging.getLogger(__name__)
 
 _LOOKBACK_DIAS: int = 7
 _MAX_TRADES_POR_AGENTE: int = 10
-
+_DB_TIMEOUT_SEGUNDOS: int = 10
 # ---------------------------------------------------------------------------
 # Dataclasses de dominio
 # ---------------------------------------------------------------------------
@@ -437,7 +437,7 @@ class DashboardAgentesService:
         try:
             # ADR-001: conexao somente-leitura via URI SQLite
             uri = f"file:{db_path}?mode=ro"
-            conn = sqlite3.connect(uri, uri=True, timeout=10)
+            conn = sqlite3.connect(uri, uri=True, timeout=_DB_TIMEOUT_SEGUNDOS)
             try:
                 # Profits de trades fechados com P&L valido hoje
                 cursor = conn.execute(
@@ -526,7 +526,7 @@ class DashboardAgentesService:
         try:
             # ADR-001: conexao somente-leitura via URI SQLite
             uri = f"file:{db_path}?mode=ro"
-            conn = sqlite3.connect(uri, uri=True, timeout=10)
+            conn = sqlite3.connect(uri, uri=True, timeout=_DB_TIMEOUT_SEGUNDOS)
             try:
                 cursor = conn.execute(
                     """
@@ -596,7 +596,7 @@ class DashboardAgentesService:
         try:
             # ADR-001: conexao somente-leitura via URI SQLite
             uri = f"file:{db_path}?mode=ro"
-            conn = sqlite3.connect(uri, uri=True, timeout=10)
+            conn = sqlite3.connect(uri, uri=True, timeout=_DB_TIMEOUT_SEGUNDOS)
             try:
                 cursor = conn.execute(
                     """
@@ -661,7 +661,7 @@ class DashboardAgentesService:
             try:
                 # ADR-001: conexao somente-leitura via URI SQLite
                 uri = f"file:{db_path}?mode=ro"
-                conn = sqlite3.connect(uri, uri=True, timeout=10)
+                conn = sqlite3.connect(uri, uri=True, timeout=_DB_TIMEOUT_SEGUNDOS)
                 try:
                     cursor = conn.execute(
                         """
