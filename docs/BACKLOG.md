@@ -4882,6 +4882,77 @@ decisoes e exportacao de metricas (precision, recall, F1-score).
 
 ---
 
+#### BLID-038 — ENG-005: Corrigir chamada detector_padroes no Backtest Pipeline (TODO-7)
+
+**Status:** IMPLEMENTADO — BLID-038 (05/04/2026)
+**Prioridade:** P1 (ALTA — Acuracia)
+**Sprint:** Sprint 1 (entrega 02/03)
+**BLID:** BLID-038
+**Issue:** TODO-7 / ENG-005
+
+### Descricao
+
+Corrigir a chamada `detector_padroes` no pipeline de backtest
+(`scripts/backtest_detector.py:145`) para garantir o fluxo correto
+de reconhecimento de padroes.
+
+O codigo original continha um bloco comentado com assinatura incorreta
+(`detectar_padroes(close, high, low, volume)`) que nao corresponde a
+nenhum metodo real de `DetectorPadroesTecnico`. A correcao segue o mesmo
+padrao ja adotado em `processador_bdi.py` (BLID-037).
+
+### Criterios de Aceite
+
+- [x] AC-1: `detector_padroes` chamado corretamente
+- [x] AC-2: Reconhecimento de padroes habilitado
+- [x] AC-3: Acuracia do backtest validada
+- [x] AC-4: Testes unitarios passando
+- [x] AC-5: Resultados correspondem as metricas esperadas
+
+### Arquivos Alterados
+
+- `scripts/backtest_detector.py` — CORRIGIDO:
+  - Import `Dict, Optional` adicionado ao `typing`
+  - `historico_velas: Dict[str, List[dict]]` adicionado ao `__init__`
+  - Type hints adicionados aos atributos de metricas
+  - `processar_vela` reescrito: chamadas corretas a `detectar_engulfing`,
+    `detectar_break_suporte` e `detectar_break_resistencia`
+  - Buffer de historico por simbolo gerenciado (max 20 velas)
+  - Timestamp convertido de str para datetime quando necessario
+- `tests/unit/test_backtest_detector_eng005.py` — CRIADO (20 testes unitarios)
+
+### Evidencias
+
+- 20 testes unitarios: 20/20 PASSING (100%)
+- AC-1: `detectar_engulfing` e `detectar_break_*` chamados com assinaturas corretas
+- AC-1: `detectar_engulfing` nao chamado na primeira vela (sem vela anterior)
+- AC-1: `detectar_break_*` nao chamado com < 6 candles no historico
+- AC-2: Bullish Engulfing detectado e adicionado aos alertas
+- AC-5: Relatorio contem todas as chaves obrigatorias
+
+### Impacto nos Agentes Operacionais
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | NENHUM | — | Nenhuma |
+| INICIAR_AGENTE_RL_DIRETO.bat | NENHUM | — | Nenhuma |
+| INICIAR_DIARIOS.bat | NENHUM | — | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | — | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | — | Nenhuma |
+
+Impacto operacional: NENHUM. `backtest_detector.py` e um script
+standalone de validacao. Nao e usado pelos launchers operacionais.
+
+### ADR
+
+- ADR-031 (registrado em docs/ADRS.md)
+
+### Historico
+
+- 05/04/2026 — criado e implementado (BLID-038)
+
+---
+
 ## BLID-TODO1 — Load Dataset + ML-Based Labeling (ML-001)
 
 **Status:** CONCLUIDO
