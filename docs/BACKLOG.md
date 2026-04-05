@@ -5214,3 +5214,123 @@ unitários atuais. Remoção recomendada na próxima iteração de limpeza.
 ### Historico
 
 - 2026-04-05 — criado e implementado (BLID-040)
+
+## BLID-041
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: protecao automatica de capital real em producao via coordenacao cross-agent
+stage_atual: project-manager
+adr_referencia: ADR-034
+
+### Escopo
+
+CoordinationManager — modulo standalone que monitora drawdowns individuais
+e conjuntos dos agentes RL (rl_5000 e rl_direto), emitindo sinais de
+coordenacao para protecao de capital conjunto.
+
+Sinais: NORMAL | MODO_CONSERVADOR | MODO_DEFENSIVO | STOP_OPERACOES
+
+### Criterios de Aceite
+
+- [x] AC1: CoordinationManager inicializa com config/agent_coordination.yaml
+- [x] AC2: Banco ausente -> EstadoAgente zerado, sinal NORMAL (ADR-023)
+- [x] AC3: Drawdown individual >10% -> MODO_CONSERVADOR com agente_gatilho
+- [x] AC4: Drawdown conjunto >15% -> MODO_DEFENSIVO (prioridade sobre AC3)
+- [x] AC5: Capital <R$500 -> STOP_OPERACOES (prioridade maxima)
+- [x] AC6: Sem threshold violado -> NORMAL, threshold_violado=None
+- [x] AC7: Persistencia atomica em outputs/coordination_signal_current.json com schema_version="1.0"
+- [x] AC8: Callbacks invocados quando sinal != NORMAL
+- [x] AC9: Thread daemon iniciar/parar com idempotencia
+- [x] AC10: Config invalida (drawdown_individual >= drawdown_conjunto) -> ValueError
+
+### Arquivos Alterados
+
+- src/application/coordination_manager.py — novo; 707 LOC
+- tests/unit/test_coordination_manager.py — novo; 38 testes unitarios
+- config/agent_coordination.yaml — novo; thresholds externalizados
+- docs/BACKLOG.md — BLID-041 registrado
+- docs/ADRS.md — ADR-034 registrada
+
+### Evidencias
+
+- 38 testes unitarios: 38/38 PASSING
+- mypy --strict: zero erros
+- schema_version="1.0" em todos os outputs JSON (ADR-019)
+- Thread safety: threading.Lock em _ultimo_sinal, _callbacks, _ativo
+- Escrita atomica: .tmp + replace (ADR-032 padrao)
+- Banco ausente: silencioso, payload zerado (ADR-023)
+
+### Dividas Tecnicas Registradas
+
+DT-BLID041-01 (MEDIO): executar_ciclo e DecisaoCoordinacao hardcoded para
+2 agentes — refatorar para estrutura generica por dicionario na proxima iteracao.
+
+DT-BLID041-02 (BAIXO): Drawdown conjunto usa concatenacao sem interleaving
+temporal — implementar merge por timestamp em iteracao futura.
+
+DT-BLID041-03 (BAIXO): Metricas de ciclo (contagem, latencia) ausentes.
+
+DT-BLID041-04 (BAIXO): _TIMEOUT_ENCERRAMENTO_THREAD hardcoded.
+
+### Historico
+
+- 2026-04-06 — criado e implementado (BLID-041)
+
+## BLID-042
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Permitir que agentes RL verifiquem o sinal de coordenacao antes de abrir posicao, integrando protecao cross-agent ao fluxo de decisao
+stage_atual: project-manager
+adr_referencia: ADR-035
+
+### Escopo
+
+CoordinationSignalReader — modulo stateless (sem thread, sem cache) que le o
+arquivo JSON emitido pelo CoordinationManager e expoe o sinal de coordenacao
+atual para componentes verificarem antes de abrir posicao.
+
+API:
+- pode_abrir_posicao() -> bool
+- obter_sinal_atual() -> CoordinationSignal
+- obter_decisao_completa() -> Optional[DecisaoCoordinacao]
+
+### Criterios de Aceite
+
+- [x] AC1: Arquivo ausente -> sinal NORMAL (fallback seguro, ADR-023)
+- [x] AC2: JSON malformado -> sinal NORMAL (fallback seguro)
+- [x] AC3: schema_version invalida -> sinal NORMAL + log WARNING (ADR-019)
+- [x] AC4: sinal NORMAL -> pode_abrir_posicao() == True
+- [x] AC5: sinal MODO_CONSERVADOR -> pode_abrir_posicao() == True (nao bloqueia)
+- [x] AC6: sinal MODO_DEFENSIVO -> pode_abrir_posicao() == True (nao bloqueia)
+- [x] AC7: sinal STOP_OPERACOES -> pode_abrir_posicao() == False (bloqueia)
+- [x] AC8: Campos obrigatorios presentes -> DecisaoCoordinacao reconstruida corretamente
+- [x] AC9: ciclo_id deve ser UUID4 valido
+- [x] AC10: timestamp_iso deve ser parseable como datetime
+
+### Arquivos Alterados
+
+- src/application/coordination_signal_reader.py — novo; modulo stateless
+- tests/unit/test_coordination_signal_reader.py — novo; 30 testes unitarios
+- docs/BACKLOG.md — BLID-042 registrado
+- docs/ADRS.md — ADR-035 registrada
+
+### Evidencias
+
+- 30 testes unitarios: 30/30 PASSING
+- mypy --strict: zero erros
+- Fallback NORMAL em: arquivo ausente, JSON malformado, schema_version invalida, sinal invalido
+- Leitura fresca: sem estado interno entre chamadas
+- Sem thread, sem cache, sem polling
+
+### Dividas Tecnicas Registradas
+
+DT-BLID042-01 (BAIXO): Integracao efetiva nos loops de decisao dos agentes RL
+(rl_5000 e rl_direto) ainda nao realizada — requer BLID futuro.
+
+DT-BLID042-02 (BAIXO): Metricas de latencia de leitura ausentes.
+
+### Historico
+
+- 2026-04-06 — criado e implementado (BLID-042)
