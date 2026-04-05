@@ -17,11 +17,12 @@ Pipeline:
 """
 
 import json
+import pickle
 import pandas as pd
 import numpy as np
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict, List, Tuple
 import time
 
 logger = logging.getLogger(__name__)
@@ -333,7 +334,7 @@ def prepare_training_dataset(
         raise ValueError(
             f"Numero de features incorreto: {qtd_features} (esperado: 24)"
         )
-    nomes_features: list = colunas_features
+    nomes_features: List[str] = colunas_features
     logger.info(f"[AC3] Features validadas: {qtd_features} features")
 
     # AC4: Criar splits 70/15/15 com seed fixo
@@ -388,7 +389,6 @@ def prepare_training_dataset(
     }
 
     # Salvar dataset_labeled.pkl
-    import pickle
     caminho_pkl = Path(output_pkl)
     caminho_pkl.parent.mkdir(parents=True, exist_ok=True)
     with open(caminho_pkl, "wb") as arq_pkl:

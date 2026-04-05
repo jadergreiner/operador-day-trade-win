@@ -23,7 +23,7 @@ from src.application.data_loader import prepare_training_dataset
 
 
 # ---------------------------------------------------------------------------
-# Fixture: DataFrame falso com 1000 amostras e 24 features
+# Constantes
 # ---------------------------------------------------------------------------
 
 NOMES_FEATURES = [
@@ -53,9 +53,16 @@ NOMES_FEATURES = [
     "correlation_trend",
 ]
 
+CAMINHO_MOCK_LOAD = "src.application.data_loader.load_and_label"
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
 
 def _criar_dataframe_falso(qtd_amostras: int = 1000) -> pd.DataFrame:
-    """Cria DataFrame sintetico com 1000 amostras, 24 features e label valido."""
+    """Cria DataFrame sintetico com amostras, 24 features e label valido."""
     np.random.seed(42)
     dados = {"window_id": list(range(qtd_amostras))}
     for nome in NOMES_FEATURES:
@@ -72,44 +79,47 @@ def _criar_dataframe_falso(qtd_amostras: int = 1000) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def caminhos_saida(tmp_path):
+    """Retorna caminhos temporarios para pkl e feature_names."""
+    return {
+        "pkl": str(tmp_path / "dataset_labeled.pkl"),
+        "feature_names": str(tmp_path / "feature_names.json"),
+    }
+
+
+@pytest.fixture
+def resultado_preparado(caminhos_saida):
+    """Executa prepare_training_dataset com mock e retorna resultado."""
+    dataframe_falso = _criar_dataframe_falso(1000)
+    with patch(CAMINHO_MOCK_LOAD, return_value=dataframe_falso):
+        return prepare_training_dataset(
+            results_path="qualquer/caminho.json",
+            output_pkl=caminhos_saida["pkl"],
+            feature_names_path=caminhos_saida["feature_names"],
+        )
+
+
+# ---------------------------------------------------------------------------
 # Testes
 # ---------------------------------------------------------------------------
 
 
-def test_ac1_dataset_carregado_com_1000_amostras(tmp_path):
+def test_ac1_dataset_carregado_com_1000_amostras(resultado_preparado):
     """AC1: Dataset retornado deve ter pelo menos 1000 linhas."""
-    dataframe_falso = _criar_dataframe_falso(1000)
-    caminho_pkl = str(tmp_path / "dataset_labeled.pkl")
-    caminho_fn = str(tmp_path / "feature_names.json")
-
-    with patch("src.application.data_loader.load_and_label", return_value=dataframe_falso):
-        resultado = prepare_training_dataset(
-            results_path="qualquer/caminho.json",
-            output_pkl=caminho_pkl,
-            feature_names_path=caminho_fn,
-        )
-
-    assert "dataframe" in resultado
-    assert len(resultado["dataframe"]) >= 1000, (
-        f"Esperado >= 1000 amostras, obtido {len(resultado['dataframe'])}"
+    assert "dataframe" in resultado_preparado
+    assert len(resultado_preparado["dataframe"]) >= 1000, (
+        f"Esperado >= 1000 amostras, obtido {len(resultado_preparado['dataframe'])}"
     )
 
 
-def test_ac2_labeling_ml_consistente(tmp_path):
+def test_ac2_labeling_ml_consistente(resultado_preparado):
     """AC2: Labels devem ser apenas 0/1, sem NaN, com imbalance entre 20-80%."""
-    dataframe_falso = _criar_dataframe_falso(1000)
-    caminho_pkl = str(tmp_path / "dataset_labeled.pkl")
-    caminho_fn = str(tmp_path / "feature_names.json")
-
-    with patch("src.application.data_loader.load_and_label", return_value=dataframe_falso):
-        resultado = prepare_training_dataset(
-            results_path="qualquer/caminho.json",
-            output_pkl=caminho_pkl,
-            feature_names_path=caminho_fn,
-        )
-
-    df = resultado["dataframe"]
-    coluna_label = df["label"]
+    coluna_label = resultado_preparado["dataframe"]["label"]
 
     # Sem NaN
     assert not coluna_label.isnull().any(), "Labels contem NaN"
@@ -125,47 +135,24 @@ def test_ac2_labeling_ml_consistente(tmp_path):
     )
 
 
-def test_ac3_24_features_extraidas(tmp_path):
+def test_ac3_24_features_extraidas(resultado_preparado):
     """AC3: DataFrame deve conter exatamente 24 features engineered."""
-    dataframe_falso = _criar_dataframe_falso(1000)
-    caminho_pkl = str(tmp_path / "dataset_labeled.pkl")
-    caminho_fn = str(tmp_path / "feature_names.json")
-
-    with patch("src.application.data_loader.load_and_label", return_value=dataframe_falso):
-        resultado = prepare_training_dataset(
-            results_path="qualquer/caminho.json",
-            output_pkl=caminho_pkl,
-            feature_names_path=caminho_fn,
-        )
-
-    nomes_features = resultado["feature_names"]
+    nomes_features = resultado_preparado["feature_names"]
     assert len(nomes_features) == 24, (
         f"Esperado 24 features, obtido {len(nomes_features)}"
     )
 
-    # Verificar que features existem no DataFrame
-    df = resultado["dataframe"]
+    df = resultado_preparado["dataframe"]
     for nome in nomes_features:
         assert nome in df.columns, f"Feature '{nome}' ausente no DataFrame"
 
 
-def test_ac4_splits_70_15_15(tmp_path):
+def test_ac4_splits_70_15_15(resultado_preparado):
     """AC4: Splits devem ter proporcoes aproximadas de 70/15/15."""
-    dataframe_falso = _criar_dataframe_falso(1000)
-    caminho_pkl = str(tmp_path / "dataset_labeled.pkl")
-    caminho_fn = str(tmp_path / "feature_names.json")
-
-    with patch("src.application.data_loader.load_and_label", return_value=dataframe_falso):
-        resultado = prepare_training_dataset(
-            results_path="qualquer/caminho.json",
-            output_pkl=caminho_pkl,
-            feature_names_path=caminho_fn,
-        )
-
-    splits = resultado["splits"]
+    splits = resultado_preparado["splits"]
     assert "train" in splits and "val" in splits and "test" in splits
 
-    total = len(resultado["dataframe"])
+    total = len(resultado_preparado["dataframe"])
     qtd_treino = len(splits["train"])
     qtd_val = len(splits["val"])
     qtd_teste = len(splits["test"])
@@ -176,28 +163,22 @@ def test_ac4_splits_70_15_15(tmp_path):
     )
 
     # Verificar proporcoes com tolerancia de 2%
-    pct_treino = qtd_treino / total
-    pct_val = qtd_val / total
-    pct_teste = qtd_teste / total
-
-    assert abs(pct_treino - 0.70) <= 0.02, f"Proporcao treino: {pct_treino:.2f} (esperado ~0.70)"
-    assert abs(pct_val - 0.15) <= 0.02, f"Proporcao val: {pct_val:.2f} (esperado ~0.15)"
-    assert abs(pct_teste - 0.15) <= 0.02, f"Proporcao teste: {pct_teste:.2f} (esperado ~0.15)"
+    assert abs(qtd_treino / total - 0.70) <= 0.02, f"Proporcao treino: {qtd_treino / total:.2f}"
+    assert abs(qtd_val / total - 0.15) <= 0.02, f"Proporcao val: {qtd_val / total:.2f}"
+    assert abs(qtd_teste / total - 0.15) <= 0.02, f"Proporcao teste: {qtd_teste / total:.2f}"
 
 
-def test_ac5_feature_names_salvos(tmp_path):
+def test_ac5_feature_names_salvos(caminhos_saida):
     """AC5: feature_names.json deve ser salvo com exatamente 24 nomes de features."""
     dataframe_falso = _criar_dataframe_falso(1000)
-    caminho_pkl = str(tmp_path / "dataset_labeled.pkl")
-    caminho_fn = str(tmp_path / "feature_names.json")
-
-    with patch("src.application.data_loader.load_and_label", return_value=dataframe_falso):
+    with patch(CAMINHO_MOCK_LOAD, return_value=dataframe_falso):
         prepare_training_dataset(
             results_path="qualquer/caminho.json",
-            output_pkl=caminho_pkl,
-            feature_names_path=caminho_fn,
+            output_pkl=caminhos_saida["pkl"],
+            feature_names_path=caminhos_saida["feature_names"],
         )
 
+    caminho_fn = caminhos_saida["feature_names"]
     assert Path(caminho_fn).exists(), "feature_names.json nao foi criado"
 
     with open(caminho_fn, "r", encoding="utf-8") as arq:
@@ -207,24 +188,21 @@ def test_ac5_feature_names_salvos(tmp_path):
     assert len(conteudo["features"]) == 24, (
         f"Esperado 24 features no JSON, obtido {len(conteudo['features'])}"
     )
-    # Todos os itens devem ser strings nao vazias
     for nome in conteudo["features"]:
         assert isinstance(nome, str) and len(nome) > 0, f"Nome invalido: {nome!r}"
 
 
-def test_dataset_labeled_pkl_salvo(tmp_path):
+def test_dataset_labeled_pkl_salvo(caminhos_saida):
     """Verifica que dataset_labeled.pkl foi criado e contem estrutura valida."""
     dataframe_falso = _criar_dataframe_falso(1000)
-    caminho_pkl = str(tmp_path / "dataset_labeled.pkl")
-    caminho_fn = str(tmp_path / "feature_names.json")
-
-    with patch("src.application.data_loader.load_and_label", return_value=dataframe_falso):
+    with patch(CAMINHO_MOCK_LOAD, return_value=dataframe_falso):
         prepare_training_dataset(
             results_path="qualquer/caminho.json",
-            output_pkl=caminho_pkl,
-            feature_names_path=caminho_fn,
+            output_pkl=caminhos_saida["pkl"],
+            feature_names_path=caminhos_saida["feature_names"],
         )
 
+    caminho_pkl = caminhos_saida["pkl"]
     assert Path(caminho_pkl).exists(), "dataset_labeled.pkl nao foi criado"
 
     with open(caminho_pkl, "rb") as arq:
@@ -235,14 +213,12 @@ def test_dataset_labeled_pkl_salvo(tmp_path):
         assert chave in dados_pkl, f"Chave '{chave}' ausente no pickle"
 
 
-def test_erro_arquivo_nao_encontrado(tmp_path):
+def test_erro_arquivo_nao_encontrado(caminhos_saida):
     """Verifica que FileNotFoundError e lancado para path invalido."""
-    caminho_pkl = str(tmp_path / "dataset_labeled.pkl")
-    caminho_fn = str(tmp_path / "feature_names.json")
-
     with pytest.raises(FileNotFoundError):
         prepare_training_dataset(
             results_path="caminho/inexistente/arquivo.json",
-            output_pkl=caminho_pkl,
-            feature_names_path=caminho_fn,
+            output_pkl=caminhos_saida["pkl"],
+            feature_names_path=caminhos_saida["feature_names"],
         )
+
