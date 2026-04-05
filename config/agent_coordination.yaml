@@ -1,0 +1,17 @@
+version: "1.0.0"
+
+thresholds:
+  drawdown_individual_pct: 10.0
+  drawdown_conjunto_pct: 15.0
+  capital_minimo_reais: 500.0
+
+capital_inicial_sessao_reais: 5000.0
+intervalo_polling_segundos: 60.0
+
+agentes_monitorados:
+  - "rl_5000"
+  - "rl_direto"
+
+db_path: "data/db/trading.db"
+sinal_atual_path: "outputs/coordination_signal_current.json"
+log_dir: "outputs"
