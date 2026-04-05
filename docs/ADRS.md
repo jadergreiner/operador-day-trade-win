@@ -2864,3 +2864,73 @@ nao interfere em nenhum launcher de producao.
 
 - BLID-034: implementacao completa (05/04/2026)
 - Issue: https://github.com/jadergreiner/operador-day-trade-win/issues/
+
+
+---
+
+## ADR-028: P&L Nao Realizado em Portfolio — Calculo com Precos do MT5 (BLID-035)
+
+**Status:** ACCEPTED
+**Data:** 05/04/2026
+**Origem:** BLID-035 (Post Go-Live — Issue P&L unrealized)
+
+### Contexto
+
+O metodo `calculate_total_value()` em `src/domain/entities/portfolio.py`
+retornava apenas o capital realizado, ignorando posicoes abertas.
+A issue solicitou calculo de P&L nao realizado usando `current_price -
+entry_price` para cada posicao aberta, com dados vindos do MT5.
+
+### Decisao
+
+1. **`Portfolio.calculate_unrealized_pnl(current_prices)`** — novo metodo
+   que recebe `dict[str, Price]` (simbolo -> preco atual) e retorna `Money`.
+   Posicoes sem preco disponivel sao ignoradas com `logger.warning` auditavel.
+
+2. **`Portfolio.calculate_total_value(current_prices=None)`** — assinatura
+   estendida com parametro opcional. Sem precos, comportamento identico
+   ao anterior (retrocompativel). Com precos, soma unrealized ao capital.
+
+3. **`DashboardDataSnapshot.pnl_nao_realizado_reais`** — campo `float`
+   adicionado ao snapshot. Exposto em `para_dict()`.
+
+4. **`TradeStats.pnl_nao_realizado_reais`** — campo `float` (default=0.0)
+   adicionado para exibicao no dashboard.
+
+5. **`StatsQueryService.obter_snapshot_dashboard(pnl_nao_realizado_reais, ultima_atualizacao_precos)`** —
+   parametros opcionais para injecao do P&L calculado externamente e
+   timestamp de auditoria.
+
+6. **Logging auditavel** — `logger.info` em cada calculo com simbolo,
+   preco_atual e pl_nao_realizado. Suficiente para auditoria < 5s.
+
+### Alternativas Consideradas
+
+- **Chamar MT5 diretamente do Portfolio**: rejeitado — violaria Clean
+  Architecture (dominio nao pode depender de infraestrutura).
+- **Novo service UnrealizedPnlService**: desnecessario para o escopo;
+  a injecao de precos via dict mantem o dominio puro e testavel.
+
+### Consequencias
+
+- Retrocompatibilidade 100%: todos os chamadores existentes sem
+  `current_prices` continuam funcionando sem alteracao.
+- Dashboard pode exibir P&L total (realizado + nao realizado) quando
+  o adapter MT5 estiver disponivel.
+- Timestamp `ultima_atualizacao_precos` permite validar refresh < 5s
+  no cliente.
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | NENHUM | — | Nenhuma |
+| INICIAR_AGENTE_RL_DIRETO.bat | NENHUM | — | Nenhuma |
+| INICIAR_DIARIOS.bat | NENHUM | — | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | — | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | BAIXO | Novo campo JSON | Opcional: exibir pnl_nao_realizado_reais |
+
+### Referencias
+
+- BLID-035: implementacao completa (05/04/2026)
+- Issue: [POST-LAUNCH] P&L unrealized calculation (portfolio.py)
