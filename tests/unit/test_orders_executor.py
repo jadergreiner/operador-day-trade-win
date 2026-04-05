@@ -388,17 +388,20 @@ class TestOrdersExecutor:
         Quando: handle_stop_loss() é chamado com trailing_offset
         Então: executa fechamento imediato como fallback seguro
         """
-        # Garantir que o adapter não tem update_stop_loss
-        if hasattr(mock_mt5_adapter, "update_stop_loss"):
-            del mock_mt5_adapter.update_stop_loss
-        mock_mt5_adapter.close_position_by_id = AsyncMock(
+        # Criar adapter sem suporte a trailing stop
+        from unittest.mock import MagicMock
+        adapter_sem_trailing = MagicMock(spec=["is_connected", "send_order",
+                                               "get_positions", "get_current_price",
+                                               "close_position_by_id"])
+        adapter_sem_trailing.close_position_by_id = AsyncMock(
             return_value={"success": True}
         )
+        executor.mt5_adapter = adapter_sem_trailing
 
         result = await executor.handle_stop_loss("POS-TRAIL-NOSUP-001", trailing_offset=500.0)
 
         assert result["success"] is True
-        mock_mt5_adapter.close_position_by_id.assert_called_once_with(
+        adapter_sem_trailing.close_position_by_id.assert_called_once_with(
             "POS-TRAIL-NOSUP-001"
         )
 

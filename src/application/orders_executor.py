@@ -894,20 +894,26 @@ class OrdersExecutionOrchestrator:
         """
         Fecha posição a preço de mercado quando stop-loss é acionado.
 
-        Quando trailing_offset é fornecido, aplica lógica de trailing stop
-        dinâmico: ajusta o SL para manter distância fixa do preço atual
-        enquanto o preço se move favoravelmente. Fecha a posição apenas
-        quando o SL definitivo é atingido.
+        Quando ``trailing_offset`` é fornecido, aplica lógica de trailing stop
+        dinâmico: tenta ajustar o SL via ``mt5_adapter.update_stop_loss()``
+        para manter distância fixa do preço atual. O fechamento imediato
+        ocorre apenas quando o SL definitivo é atingido.
+
+        Comportamento de fallback: se ``trailing_offset`` for fornecido mas o
+        adapter não possuir o método ``update_stop_loss``, ou se a chamada
+        retornar ``success=False`` ou lançar exceção, o método executa o
+        fechamento imediato da posição como fallback seguro.
 
         Args:
             order_id: Identificador da posição/ordem a ser tratada.
             trailing_offset: Distância em pontos para o trailing stop.
-                Se None, executa fechamento imediato (hard stop).
+                Se ``None``, executa fechamento imediato (hard stop).
 
         Returns:
-            Dict com chaves ``success``, ``message`` e opcionalmente
-            ``trailing_updated`` / ``new_stop_loss`` quando o SL for
-            apenas ajustado sem fechar a posição.
+            Dict com chaves ``success`` e ``message``. Quando o trailing stop
+            for aplicado com sucesso, inclui também ``trailing_updated=True``
+            e ``new_stop_loss``. Quando a posição for fechada, inclui ``event``
+            com ``order_id`` e ``closed_at``.
         """
         logger.info(f"Executando handle_stop_loss para {order_id}")
 
