@@ -352,6 +352,84 @@ class TestOrdersExecutor:
         assert result["success"] is True
         assert ordem.state == OrderState.CLOSED
 
+    @pytest.mark.asyncio
+    async def test_handle_stop_loss_trailing(self, executor, mock_mt5_adapter):
+        """
+        Trailing stop: ajusta SL dinamicamente em vez de fechar imediatamente.
+
+        Dado: posição com trailing_offset configurado e MT5 adapter suporta
+              update_stop_loss
+        Quando: handle_stop_loss() é chamado com trailing_offset
+        Então: atualiza o stop loss dinamicamente sem fechar a posição,
+               retornando trailing_updated=True e o novo SL
+        """
+        mock_mt5_adapter.update_stop_loss = AsyncMock(
+            return_value={"success": True, "new_stop_loss": 99500.0}
+        )
+
+        result = await executor.handle_stop_loss("POS-TRAIL-001", trailing_offset=500.0)
+
+        assert result["success"] is True
+        assert result.get("trailing_updated") is True
+        assert result.get("new_stop_loss") == 99500.0
+        mock_mt5_adapter.update_stop_loss.assert_called_once_with(
+            "POS-TRAIL-001", 500.0
+        )
+        mock_mt5_adapter.close_position_by_id.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_handle_stop_loss_trailing_fallback_sem_suporte(
+        self, executor, mock_mt5_adapter
+    ):
+        """
+        Trailing stop fallback: adapter sem update_stop_loss fecha posição.
+
+        Dado: adapter MT5 NÃO possui método update_stop_loss
+        Quando: handle_stop_loss() é chamado com trailing_offset
+        Então: executa fechamento imediato como fallback seguro
+        """
+        # Criar adapter sem suporte a trailing stop
+        from unittest.mock import MagicMock
+        adapter_sem_trailing = MagicMock(spec=["is_connected", "send_order",
+                                               "get_positions", "get_current_price",
+                                               "close_position_by_id"])
+        adapter_sem_trailing.close_position_by_id = AsyncMock(
+            return_value={"success": True}
+        )
+        executor.mt5_adapter = adapter_sem_trailing
+
+        result = await executor.handle_stop_loss("POS-TRAIL-NOSUP-001", trailing_offset=500.0)
+
+        assert result["success"] is True
+        adapter_sem_trailing.close_position_by_id.assert_called_once_with(
+            "POS-TRAIL-NOSUP-001"
+        )
+
+    @pytest.mark.asyncio
+    async def test_handle_stop_loss_trailing_fallback_update_falha(
+        self, executor, mock_mt5_adapter
+    ):
+        """
+        Trailing stop fallback: update_stop_loss falha → fecha posição.
+
+        Dado: update_stop_loss retorna success=False
+        Quando: handle_stop_loss() é chamado com trailing_offset
+        Então: executa fechamento imediato como fallback seguro
+        """
+        mock_mt5_adapter.update_stop_loss = AsyncMock(
+            return_value={"success": False}
+        )
+        mock_mt5_adapter.close_position_by_id = AsyncMock(
+            return_value={"success": True}
+        )
+
+        result = await executor.handle_stop_loss("POS-TRAIL-FAIL-001", trailing_offset=500.0)
+
+        assert result["success"] is True
+        mock_mt5_adapter.close_position_by_id.assert_called_once_with(
+            "POS-TRAIL-FAIL-001"
+        )
+
     # ==================== TEST AC-8: MESSAGE QUEUE ====================
 
     @pytest.mark.asyncio
