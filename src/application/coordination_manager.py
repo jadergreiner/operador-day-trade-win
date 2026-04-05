@@ -212,6 +212,7 @@ class DecisaoCoordinacao:
     def para_dict(self) -> dict[str, object]:
         """Serializa a decisão para dicionário compatível com JSON."""
         return {
+            "schema_version": "1.0",
             "ciclo_id": self.ciclo_id,
             "timestamp_iso": self.timestamp_iso,
             "sinal": self.sinal.value,
