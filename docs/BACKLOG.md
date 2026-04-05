@@ -5397,3 +5397,93 @@ Documentado em ADR-036 como decisao intencional.
 ### Historico
 
 - 2026-04-06 — criado e implementado (BLID-043)
+
+---
+
+## BLID-044
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Notificacao em tempo real de reversoes de lucro para operador via WebSocket + Email + Webhook
+stage_atual: project-manager
+adr_referencia: ADR-037
+
+### Escopo
+
+Sistema de alertas para reversoes de lucro detectadas pelo ProfitProtectionEngine.
+Quando um trade atinge status=ALERTA (reversao detectada), o operador recebe
+notificacao imediata via:
+- WebSocket (PRIMARY - <500ms)
+- Email SMTP (SECONDARY - async com retry)
+- Webhook Slack/Discord (TERTIARY - fire-and-forget)
+
+Componentes principais:
+- AlertReversaoHandler: converte ProfitProtectionResult em AlertaOportunidade
+- PatraoAlerta.REVERSAO_LUCRO: novo padrao de alerta
+- config/alert_reversoes.yaml: configuracao canonica
+- Throttling: 60s entre alertas do mesmo trade_id
+
+### Criterios de Aceite
+
+- [x] AC1: PatraoAlerta.REVERSAO_LUCRO adicionado aos enums
+- [x] AC2: AlertReversaoHandler converte ProfitProtectionResult em AlertaOportunidade
+- [x] AC3: Integracao com AlertaDeliveryManager existente (WebSocket + Email)
+- [x] AC4: Webhook Slack/Discord com payload estruturado
+- [x] AC5: Throttling de 60s entre alertas do mesmo trade
+- [x] AC6: Configuracao externa em config/alert_reversoes.yaml
+- [x] AC7: 21 testes unitarios: conversao, throttling, webhook, integracao
+- [x] AC8: Type hints 100% com mypy --strict
+- [x] AC9: Payload webhook com trade ID, simbolo, lucro atual/maximo, reversao
+- [x] AC10: Limpeza automatica de historico de alertas >24h
+
+### Arquivos Criados
+
+- src/application/alert_reversao_handler.py — AlertReversaoHandler + AlertReversaoConfig
+- config/alert_reversoes.yaml — configuracao canonica
+- tests/unit/test_alert_reversao_handler.py — 21 testes unitarios
+- docs/ADRS.md — ADR-037 registrada
+
+### Arquivos Alterados
+
+- src/domain/enums/alerta_enums.py — PatraoAlerta.REVERSAO_LUCRO adicionado
+- docs/BACKLOG.md — BLID-044 registrado
+
+### Evidencias
+
+- 21 testes unitarios: conversao (2), throttling (4), webhook (3), integracao (2), edge cases (10)
+- Type hints 100%: mypy --strict sem erros
+- Async/await: processar_reversao e _enviar_webhook
+- Pydantic validation: AlertReversaoConfig
+- Throttling com limpeza automatica: historico_alertas mantido em memoria
+- Webhook fire-and-forget com timeout 5s
+- Integracao com AlertaDeliveryManager preserva retry logic e audit existentes
+
+### Dividas Tecnicas Registradas
+
+DT-BLID044-01 (BAIXA): Webhook e fire-and-forget sem garantia de entrega. Se
+Slack/Discord estiver offline, notificacao e perdida. Mitigacao: WebSocket e Email
+sao canais PRIMARY e SECONDARY com retry.
+
+DT-BLID044-02 (BAIXA): Historico de throttling em memoria e perdido em restart do
+agente. Trade pode receber alerta duplicado apos restart se reversao ocorrer novamente
+dentro de 60s. Impacto aceitavel pois restart e evento raro e operador pode ignorar
+alerta duplicado.
+
+DT-BLID044-03 (MEDIA): Integracao com ProfitProtectionEngine requer modificacao
+manual nos agentes RL (operar_novo_agente_rl_real_antiovertrading.py e
+agente_rl_direto_independente.py) para instanciar AlertReversaoHandler e chamar
+processar_reversao(). Nao foi implementado em BLID-044; requer BLID futura.
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | MEDIO | DIRETO | Configurar env var ALERT_WEBHOOK_URL para habilitar |
+| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | DIRETO | Configurar env var ALERT_WEBHOOK_URL para habilitar |
+| INICIAR_DIARIOS.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | SEM IMPACTO | Nenhuma |
+
+### Historico
+
+- 2026-04-05 — criado e implementado (BLID-044)

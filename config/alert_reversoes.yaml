@@ -1,0 +1,29 @@
+# Configuracao de Alertas de Reversao de Lucro (BLID-044)
+#
+# Configuracao canonica para AlertReversaoHandler.
+# Controla quando e como alertas de reversao sao disparados.
+#
+# Referencias:
+# - BLID-044: P1-PROFIT_PROTECTION item #2
+# - ADR-037: Arquitetura de alertas de reversao
+
+habilitado: true
+
+# Webhook para Slack/Discord
+# Formato: https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+# ou: https://discord.com/api/webhooks/YOUR/WEBHOOK/URL
+webhook_url: null  # Configurar via environment variable ALERT_WEBHOOK_URL
+
+# Timeout de envio de webhook (segundos)
+webhook_timeout_sec: 5.0
+
+# Throttling: minimo entre alertas do mesmo trade (segundos)
+# Evita spam quando o mercado oscila rapidamente
+throttle_seconds: 60
+
+# Nivel de severidade padrao
+# Opcoes: CRITICO, ALTO, MEDIO
+nivel_padrao: "ALTO"
+
+# Se incluir snapshot completo do trade no payload
+incluir_snapshot_trade: true
