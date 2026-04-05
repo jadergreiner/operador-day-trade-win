@@ -29,7 +29,8 @@ from src.application.profit_protection_engine import (
     ProtectionStatus,
 )
 from src.infrastructure.config.profit_protection_config import (
-    carregar_perfil_ativo,
+    carregar_config,
+    resolver_perfil,
 )
 
 logging.basicConfig(
@@ -119,7 +120,8 @@ class BacktestProfitProtection:
         self.seed = seed
 
         # Carregar perfil
-        self.perfil = carregar_perfil_ativo(profile_override=perfil_nome)
+        cfg = carregar_config()
+        self.perfil = resolver_perfil(cfg, profile_env=perfil_nome)
 
         # Engine de proteção
         self.engine = ProfitProtectionEngine(profile=self.perfil)
