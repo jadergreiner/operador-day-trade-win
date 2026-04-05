@@ -3,10 +3,19 @@ BDI Processor com Integration de Detectors (Phase 6)
 
 Integra os detectors de volatilidade e padroes tecnicos
 no fluxo de processamento de velas do BDI.
+
+ENG-202 (BLID-037): Integrar detector de padroes na pipeline BDI
+- AC-1: Hook detector_padroes (engulfing, break s/r) no processar_vela()
+- AC-2: Filtro de confianca > 0.75 via FiltroConfiancaBDI
+- AC-3: Apenas alertas de alta confianca sao enfileirados para WebSocket
+- AC-4: Performance medida por vela; alerta emitido se > 100ms
+- AC-6: Audit log via FiltroConfiancaBDI.historico_audit
+- AC-7: Metricas exportaveis via exportar_metricas()
 """
 
 import asyncio
 import logging
+import time
 from datetime import datetime
 from decimal import Decimal
 from typing import Dict, Optional, Tuple
@@ -17,6 +26,7 @@ from src.application.services.detector_smc import DetectorSMC
 from src.infrastructure.providers.fila_alertas import FilaAlertas
 from src.infrastructure.config.alerta_config import get_config
 from src.domain.entities.alerta import AlertaOportunidade
+from src.domain.bdi_processor_v2 import FiltroConfiancaBDI, LIMIAR_CONFIANCA_PADRAO
 from config.settings import get_config as get_trading_config
 from src.domain.entities import Order
 from src.infrastructure.adapters.mt5_adapter_proxy import MT5AdapterProxy
@@ -27,15 +37,32 @@ logger = logging.getLogger(__name__)
 
 class ProcessadorBDI:
     """
-    BDI Processor com detectors hookados.
+    BDI Processor com detectors hookados e filtro de confianca (ENG-202).
 
-    Processa velas do BDI e dispara detectors de alertas em tempo real.
-    Integra com fila de alertas para entrega multi-canal.
+    Processa velas do BDI, dispara detectors e filtra alertas por
+    confianca antes de enfileirar para o WebSocket.
+
+    Fluxo por vela:
+        processar_vela()
+            -> detector_vol.analisar_vela()          [volatilidade]
+            -> detector_smc.detectar_smc()            [BOS/CHoCH/FVG]
+            -> detector_padroes.detectar_engulfing()  [AC-1: hookado aqui]
+            -> detector_padroes.detectar_break_*()    [AC-1: hookado aqui]
+        Cada alerta gerado passa por FiltroConfiancaBDI.avaliar():
+            -> APROVADO (confianca > 0.75): fila.enfileirar() -> WebSocket
+            -> REJEITADO: apenas audit log, sem enfileiramento
     """
 
-    def __init__(self):
-        """Inicializar processador com detectors e fila."""
+    def __init__(self) -> None:
+        """Inicializar processador com detectors, fila e filtro de confianca."""
         self.config = get_config()
+
+        # Limiar de confianca lido da config (AC-2)
+        limiar = Decimal(
+            str(self.config.detection.padroes.limiar_confianca)
+        )
+        self.filtro_confianca = FiltroConfiancaBDI(limiar=limiar)
+
         self.detector_vol = DetectorVolatilidade(
             window=self.config.detection.volatilidade.window,
             threshold_sigma=self.config.detection.volatilidade.threshold_sigma,
@@ -49,13 +76,21 @@ class ProcessadorBDI:
         # Cache de velas anteriores por ativo para SMC e padroes tecnicos
         self._vela_anterior: Dict[str, Dict] = {}
         self._candles_hist: Dict[str, list] = {}
-        logger.info("ProcessadorBDI inicializado")
+        logger.info(
+            "ProcessadorBDI inicializado | limiar_confianca=%.2f",
+            float(limiar),
+        )
 
     async def processar_vela(
         self, ativo: str, vela: Dict, timestamp: Optional[float] = None
     ) -> None:
         """
-        Processa vela e dispara detectors.
+        Processa vela e dispara detectors com filtro de confianca.
+
+        AC-1: Todos os detectors (vol, smc, padroes) hookados.
+        AC-2/AC-3: Apenas alertas com confianca > limiar sao enfileirados.
+        AC-4: Performance medida — log WARNING se > 100ms por vela.
+        AC-6: Audit log registrado pelo FiltroConfiancaBDI para cada alerta.
 
         Args:
             ativo: Simbolo do ativo (ex: 'WIN$N')
@@ -79,8 +114,11 @@ class ProcessadorBDI:
 
             logger.debug(f"Processando vela {ativo} - close: {close}")
 
+            # Inicio de medicao de performance por vela (AC-4)
+            inicio_vela = time.perf_counter()
+
             # ----------------------------------------------------------------
-            # AC-1: Detector de volatilidade
+            # Detector de volatilidade
             # ----------------------------------------------------------------
             alerta_vol = self.detector_vol.analisar_vela(
                 symbol=ativo,
@@ -88,11 +126,22 @@ class ProcessadorBDI:
                 timestamp=ts,
             )
             if alerta_vol:
-                logger.info(f"[ALERTA VOL] {ativo} - Volatilidade detectada")
-                await self.fila.enfileirar(alerta_vol)
+                if self.filtro_confianca.avaliar(alerta_vol):
+                    logger.info(
+                        "[ALERTA VOL] %s — confianca=%.0f%% APROVADO → fila",
+                        ativo,
+                        float(alerta_vol.confianca) * 100,
+                    )
+                    await self.fila.enfileirar(alerta_vol)
+                else:
+                    logger.debug(
+                        "[ALERTA VOL] %s — confianca=%.0f%% REJEITADO pelo filtro",
+                        ativo,
+                        float(alerta_vol.confianca) * 100,
+                    )
 
             # ----------------------------------------------------------------
-            # AC-1: Detector SMC (BOS / CHoCH / FVG) — integrado ao loop
+            # AC-1: Detectors com vela anterior
             # ----------------------------------------------------------------
             vela_anterior = self._vela_anterior.get(ativo)
             if vela_anterior is not None:
@@ -102,6 +151,7 @@ class ProcessadorBDI:
                 if len(hist) > 20:
                     hist.pop(0)
 
+                # --- Detector SMC (BOS / CHoCH / FVG) ---
                 alerta_smc = self.detector_smc.detectar_smc(
                     symbol=ativo,
                     vela_atual=vela,
@@ -110,18 +160,121 @@ class ProcessadorBDI:
                     candles_hist=hist,
                 )
                 if alerta_smc:
-                    logger.info(
-                        f"[ALERTA SMC] {ativo} - "
-                        f"padrao={alerta_smc.sinal_smc_nome} "
-                        f"confianca={float(alerta_smc.confianca):.0%}"
+                    if self.filtro_confianca.avaliar(alerta_smc):
+                        logger.info(
+                            "[ALERTA SMC] %s — padrao=%s confianca=%.0f%% APROVADO → fila",
+                            ativo,
+                            alerta_smc.sinal_smc_nome,
+                            float(alerta_smc.confianca) * 100,
+                        )
+                        await self.fila.enfileirar(alerta_smc)
+                    else:
+                        logger.debug(
+                            "[ALERTA SMC] %s — padrao=%s confianca=%.0f%% REJEITADO",
+                            ativo,
+                            alerta_smc.sinal_smc_nome,
+                            float(alerta_smc.confianca) * 100,
+                        )
+
+                # --- AC-1: Detector de padroes tecnicos (engulfing) ---
+                if self.config.detection.padroes.engulfing_enabled:
+                    alerta_eng = self.detector_padroes.detectar_engulfing(
+                        symbol=ativo,
+                        vela_atual=vela,
+                        vela_anterior=vela_anterior,
+                        timestamp=ts,
                     )
-                    await self.fila.enfileirar(alerta_smc)
+                    if alerta_eng:
+                        if self.filtro_confianca.avaliar(alerta_eng):
+                            logger.info(
+                                "[ALERTA PADRAO] %s — %s confianca=%.0f%% APROVADO → fila",
+                                ativo,
+                                alerta_eng.padrao.value,
+                                float(alerta_eng.confianca) * 100,
+                            )
+                            await self.fila.enfileirar(alerta_eng)
+                        else:
+                            logger.debug(
+                                "[ALERTA PADRAO] %s — %s confianca=%.0f%% REJEITADO",
+                                ativo,
+                                alerta_eng.padrao.value,
+                                float(alerta_eng.confianca) * 100,
+                            )
+
+                # --- AC-1: Detector de padroes tecnicos (break suporte/resistencia) ---
+                precos_hist = [float(c.get("close", 0)) for c in hist]
+                if precos_hist:
+                    if self.config.detection.padroes.break_suporte_enabled:
+                        alerta_bs = self.detector_padroes.detectar_break_suporte(
+                            symbol=ativo,
+                            precos=precos_hist,
+                            timestamp=ts,
+                        )
+                        if alerta_bs:
+                            if self.filtro_confianca.avaliar(alerta_bs):
+                                logger.info(
+                                    "[ALERTA PADRAO] %s — break_suporte confianca=%.0f%% APROVADO → fila",
+                                    ativo,
+                                    float(alerta_bs.confianca) * 100,
+                                )
+                                await self.fila.enfileirar(alerta_bs)
+                            else:
+                                logger.debug(
+                                    "[ALERTA PADRAO] %s — break_suporte confianca=%.0f%% REJEITADO",
+                                    ativo,
+                                    float(alerta_bs.confianca) * 100,
+                                )
+
+                    if self.config.detection.padroes.break_resistencia_enabled:
+                        alerta_br = self.detector_padroes.detectar_break_resistencia(
+                            symbol=ativo,
+                            precos=precos_hist,
+                            timestamp=ts,
+                        )
+                        if alerta_br:
+                            if self.filtro_confianca.avaliar(alerta_br):
+                                logger.info(
+                                    "[ALERTA PADRAO] %s — break_resistencia confianca=%.0f%% APROVADO → fila",
+                                    ativo,
+                                    float(alerta_br.confianca) * 100,
+                                )
+                                await self.fila.enfileirar(alerta_br)
+                            else:
+                                logger.debug(
+                                    "[ALERTA PADRAO] %s — break_resistencia confianca=%.0f%% REJEITADO",
+                                    ativo,
+                                    float(alerta_br.confianca) * 100,
+                                )
 
             # Armazena vela atual como anterior para proxima iteracao
             self._vela_anterior[ativo] = dict(vela)
 
+            # AC-4: Validacao de performance por vela
+            elapsed_ms = (time.perf_counter() - inicio_vela) * 1000
+            if elapsed_ms > 100:
+                logger.warning(
+                    "[PERFORMANCE] %s — processamento %.1fms excedeu meta de 100ms",
+                    ativo,
+                    elapsed_ms,
+                )
+            else:
+                logger.debug(
+                    "[PERFORMANCE] %s — %.1fms dentro da meta de 100ms",
+                    ativo,
+                    elapsed_ms,
+                )
+
         except Exception as e:
             logger.error(f"Erro ao processar vela {ativo}: {e}", exc_info=True)
+
+    def exportar_metricas(self) -> dict:
+        """
+        AC-7: Exporta metricas da pipeline BDI.
+
+        Returns:
+            Dict com precision, recall, f1_score e contadores de filtro.
+        """
+        return self.filtro_confianca.exportar_metricas()
 
     async def iniciar(self) -> None:
         """Iniciar processador em loop."""
