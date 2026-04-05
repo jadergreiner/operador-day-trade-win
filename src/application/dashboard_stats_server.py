@@ -13,10 +13,13 @@ Usados por:
 - Analises historicas (periodo)
 """
 
+import logging
 from dataclasses import dataclass, asdict, field
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from statistics import mean, stdev
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -32,6 +35,7 @@ class TradeStats:
     pnl_total_pct: float
     drawdown_maximo: float = 0.0
     drawdown_pct: float = 0.0
+    pnl_nao_realizado_reais: float = 0.0
 
     def para_dict(self) -> Dict[str, Any]:
         """Converte para dict estruturado."""
@@ -117,6 +121,8 @@ class DashboardDataSnapshot:
     metricas_operacionais: OperationalMetrics
     protecao_status: ProtectionStatus
     trades_recentes: List[TradeRecente] = field(default_factory=list)
+    pnl_nao_realizado_reais: float = 0.0
+    ultima_atualizacao_precos: Optional[datetime] = None
 
     def para_dict(self) -> Dict[str, Any]:
         """Converte snapshot para dict JSON-serializable."""
@@ -130,6 +136,12 @@ class DashboardDataSnapshot:
             "trades_recentes": [
                 trade.para_dict() for trade in self.trades_recentes
             ],
+            "pnl_nao_realizado_reais": self.pnl_nao_realizado_reais,
+            "ultima_atualizacao_precos": (
+                self.ultima_atualizacao_precos.isoformat()
+                if self.ultima_atualizacao_precos
+                else None
+            ),
         }
 
 
@@ -150,15 +162,27 @@ class StatsQueryService:
         # Para agora, retorno dados estruturados vazio/default
         self.db_path: Optional[str] = None
 
-    def obter_snapshot_dashboard(self) -> DashboardDataSnapshot:
+    def obter_snapshot_dashboard(
+        self,
+        pnl_nao_realizado_reais: float = 0.0,
+        ultima_atualizacao_precos: Optional[datetime] = None,
+    ) -> DashboardDataSnapshot:
         """
         Obtem snapshot completo de dados para dashboard.
+
+        Args:
+            pnl_nao_realizado_reais: P&L nao realizado calculado externamente
+                via Portfolio.calculate_unrealized_pnl() com precos do MT5.
+                Padrao 0.0 quando dados de mercado nao estiverem disponiveis.
+            ultima_atualizacao_precos: Momento da ultima consulta de preco no MT5.
+                Exposto no payload para auditoria (dashboard refresh < 5s).
 
         Returns:
             DashboardDataSnapshot com todos dados agregados
         """
         # Stats de hoje
         stats = self._calcular_stats_hoje()
+        stats.pnl_nao_realizado_reais = pnl_nao_realizado_reais
 
         # Metricas operacionais
         metricas = self._calcular_metricas_hoje()
@@ -169,12 +193,24 @@ class StatsQueryService:
         # Trades recentes (ultimos 10)
         trades = self.obter_trades_recentes(quantidade=10)
 
+        if pnl_nao_realizado_reais != 0.0:
+            logger.info(
+                "dashboard_snapshot | pnl_nao_realizado=%.2f"
+                " | ultima_atualizacao_precos=%s",
+                pnl_nao_realizado_reais,
+                ultima_atualizacao_precos.isoformat()
+                if ultima_atualizacao_precos
+                else "indisponivel",
+            )
+
         return DashboardDataSnapshot(
             timestamp=datetime.now(),
             trade_stats=stats,
             metricas_operacionais=metricas,
             protecao_status=protecao,
             trades_recentes=trades,
+            pnl_nao_realizado_reais=pnl_nao_realizado_reais,
+            ultima_atualizacao_precos=ultima_atualizacao_precos,
         )
 
     def obter_trades_recentes(

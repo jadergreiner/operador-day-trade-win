@@ -1,5 +1,6 @@
 """Entidade Portfolio - raiz agregada para gerenciamento de capital e trades."""
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
@@ -10,6 +11,8 @@ from src.domain.entities.trade import Position, Trade
 from src.domain.enums.trading_enums import OrderSide
 from src.domain.exceptions import InsufficientCapitalError, InvalidOperationError
 from src.domain.value_objects import Money, Percentage, Price, Symbol
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -100,15 +103,83 @@ class Portfolio:
         # Verifica se a posicao deve ser removida
         self._cleanup_closed_positions()
 
-    def calculate_total_value(self) -> Money:
+    def calculate_unrealized_pnl(
+        self,
+        current_prices: dict[str, Price],
+    ) -> Money:
         """
-        Calcula o valor total do portfolio (capital + lucro/prejuizo nao realizado).
+        Calcula o P&L nao realizado de todas as posicoes abertas.
 
-        Isso requer precos de mercado atuais para posicoes abertas.
-        Por enquanto, retorna o capital atual.
+        Para cada posicao aberta, busca o preco atual pelo simbolo.
+        Posicoes sem preco disponivel sao ignoradas com aviso em log.
+
+        Args:
+            current_prices: Mapa de simbolo -> preco atual (ex: {"WIN$N": Price(...)})
+
+        Returns:
+            Money com o P&L nao realizado total (pode ser negativo)
         """
-        # TODO: Adicionar calculo de lucro/prejuizo nao realizado quando dados de mercado estiverem disponiveis
-        return self._current_capital
+        total_unrealized = Decimal("0")
+
+        for position in self.open_positions:
+            symbol_code = position.symbol.code
+            current_price = current_prices.get(symbol_code)
+
+            if current_price is None:
+                logger.warning(
+                    "pnl_nao_realizado | simbolo=%s | preco_atual=indisponivel"
+                    " | posicao ignorada",
+                    symbol_code,
+                )
+                continue
+
+            pl = position.calculate_unrealized_pl(current_price)
+            total_unrealized += pl.amount
+
+            logger.info(
+                "pnl_nao_realizado | simbolo=%s | preco_atual=%.2f"
+                " | pl_nao_realizado=%.2f",
+                symbol_code,
+                float(current_price.value),
+                float(pl.amount),
+            )
+
+        return Money(total_unrealized)
+
+    def calculate_total_value(
+        self,
+        current_prices: Optional[dict[str, Price]] = None,
+    ) -> Money:
+        """
+        Calcula o valor total do portfolio (capital realizado + P&L nao realizado).
+
+        Quando ``current_prices`` e fornecido, soma o P&L nao realizado das
+        posicoes abertas ao capital atual.  Sem precos, retorna apenas o
+        capital realizado (comportamento anterior, retrocompativel).
+
+        Args:
+            current_prices: Mapa de simbolo -> preco atual obtido do MT5.
+                            Exemplo: {"WIN$N": Price(Decimal("128500"))}
+
+        Returns:
+            Money representando o valor total do portfolio
+        """
+        if not current_prices:
+            return self._current_capital
+
+        unrealized = self.calculate_unrealized_pnl(current_prices)
+
+        total = self._current_capital.amount + unrealized.amount
+
+        logger.info(
+            "portfolio_total_value | capital_realizado=%.2f"
+            " | pnl_nao_realizado=%.2f | total=%.2f",
+            float(self._current_capital.amount),
+            float(unrealized.amount),
+            float(total),
+        )
+
+        return Money(total)
 
     def calculate_total_return(self) -> Percentage:
         """Calcula o retorno total em percentual."""

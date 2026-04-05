@@ -4693,3 +4693,56 @@ Estender WebSocket para enviar sinais de confluencia ao trader.
 ### Historico
 
 - 04/04/2026 — criado e implementado (BLID-031)
+
+---
+
+#### BLID-035 — [POST-LAUNCH] P&L Nao Realizado (portfolio.py)
+
+**Status:** IMPLEMENTADO — BLID-035 (05/04/2026)
+
+**BLID:** BLID-035
+**Titulo:** Adicionar calculo de P&L nao realizado quando dados de mercado estiverem disponíveis
+**Prioridade:** Medium (post-launch feature)
+**ADR:** ADR-028
+
+### Descricao
+
+P&L tracker estava incompleto (apenas realized). A issue solicitou adicionar
+calculo de P&L nao realizado usando `current_price - entry_price` para
+posicoes abertas, com fetch de preco atual via MT5.
+
+### Criterios de Aceite
+
+- [x] **AC-1:** `calculate_unrealized_pnl(current_prices)` retorna zero sem posicoes abertas
+- [x] **AC-2:** Calcula corretamente para BUY com lucro (preco atual > entrada)
+- [x] **AC-3:** Calcula corretamente para BUY com perda (preco atual < entrada)
+- [x] **AC-4:** Calcula corretamente para SELL (invertido)
+- [x] **AC-5:** Posicao sem preco disponivel e ignorada sem excecao (log warning)
+- [x] **AC-6:** `calculate_total_value()` sem precos retorna apenas capital (retrocompat.)
+- [x] **AC-7:** `calculate_total_value(current_prices)` inclui unrealized P&L
+- [x] **AC-8:** P&L negativo reduz corretamente o total do portfolio
+- [x] **AC-9:** Multiplas posicoes sao somadas corretamente
+- [x] **AC-10:** `DashboardDataSnapshot` serializa `pnl_nao_realizado_reais`
+- [x] **AC-11:** `obter_snapshot_dashboard` aceita `pnl_nao_realizado_reais` externo
+- [x] **AC-12:** Logs auditaveis (INFO) com simbolo, preco_atual e pl calculado
+
+### Arquivos Alterados
+
+- `src/domain/entities/portfolio.py` — novo metodo `calculate_unrealized_pnl()`,
+  parametro opcional `current_prices` em `calculate_total_value()`, import logging
+- `src/application/dashboard_stats_server.py` — campo `pnl_nao_realizado_reais`
+  em `TradeStats` e `DashboardDataSnapshot`, parametros opcionais em
+  `obter_snapshot_dashboard()`, import logging, campo `ultima_atualizacao_precos`
+- `tests/unit/test_portfolio_unrealized_pnl.py` — CRIADO (12 testes unitarios)
+- `docs/ADRS.md` — ADR-028 registrado
+
+### Evidencias
+
+- 12 testes: 12/12 PASSING (100%)
+- Retrocompatibilidade: `calculate_total_value()` sem argumento = identico ao anterior
+- Logs auditaveis: `logger.info` com simbolo + preco_atual + pl por posicao
+- Dashboard refresh: campo `ultima_atualizacao_precos` permite validar < 5s no cliente
+
+### Historico
+
+- 05/04/2026 — criado e implementado (BLID-035)
