@@ -3374,3 +3374,114 @@ standalone read-only com as seguintes características:
 - ADR-017: lookback de 7 dias
 - ADR-023: banco ausente → payload zerado sem exception
 - ADR-032: ModelSyncManager (padrao de modulo application standalone)
+
+## ADR-034: CoordinationManager — Coordenacao de Risco Multi-Agente via File-Based Signaling (BLID-041)
+
+**Status:** ACEITO
+**Data:** 2026-04-06
+**BLID:** BLID-041
+
+### Contexto
+
+Os agentes RL (rl_5000 e rl_direto) operavam de forma completamente independente
+sem nenhum mecanismo de protecao de capital conjunto. Um drawdown correlacionado
+entre ambos podia passar despercebido ate o fechamento do pregao.
+
+### Decisao
+
+Implementar CoordinationManager como modulo application standalone que:
+- Le P&L intraday dos agentes RL via SQLite read-only
+- Calcula drawdown individual e conjunto por equity curve
+- Emite sinais de coordenacao em arquivo JSON atomico
+- Opera via thread daemon com polling configuravel
+- Nao interfere diretamente com execucao de ordens
+
+Sinais: NORMAL | MODO_CONSERVADOR | MODO_DEFENSIVO | STOP_OPERACOES
+
+### Motivacao
+
+- Complementa ADR-006 (circuit breakers individuais) com visao cross-agent
+- Segue padrao ADR-032 (ModelSyncManager) para modulos standalone com thread daemon
+- Segue ADR-001 (SQLite direto) para leitura de dados
+- Segue ADR-019 (schema_version em outputs JSON)
+- Segue ADR-023 (banco ausente -> payload zerado sem exception)
+
+### Consequencias
+
+- CoordinationManager NAO executa acoes diretas sobre ordens MT5
+- Agentes recebem sinais via arquivo JSON e optam por consumi-los
+- Modulo pode ser iniciado/parado independentemente dos launchers operacionais
+- Configuracao externalizada em config/agent_coordination.yaml
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | MEDIO | INDIRETO | Monitorado via magic=234500; sinal disponivel em outputs/coordination_signal_current.json |
+| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | INDIRETO | Monitorado via magic=234600; sinal disponivel em outputs/coordination_signal_current.json |
+| INICIAR_DIARIOS.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | BAIXO | INDIRETO | outputs/coordination_signal_current.json novo artefato em outputs/ |
+
+### Referencias
+
+- BLID-041: implementacao completa (2026-04-06)
+- ADR-001: SQLite direto sem ORM
+- ADR-012: magic numbers dos agentes RL
+- ADR-019: schema_version em outputs JSON
+- ADR-023: banco ausente -> payload zerado sem exception
+- ADR-032: ModelSyncManager (padrao de modulo application standalone)
+
+## ADR-035: CoordinationSignalReader — Leitura Stateless de Sinal de Coordenacao (BLID-042)
+
+**Status:** ACEITO
+**Data:** 2026-04-06
+**BLID:** BLID-042
+
+### Contexto
+
+O CoordinationManager (ADR-034 / BLID-041) emite sinais de coordenacao em arquivo
+JSON atomico, mas os agentes RL nao tinham mecanismo padronizado para consumir
+esses sinais antes de abrir posicoes.
+
+### Decisao
+
+Implementar CoordinationSignalReader como modulo stateless (sem thread, sem cache)
+que:
+- Le outputs/coordination_signal_current.json a cada chamada (leitura fresca)
+- Valida schema_version="1.0" (ADR-019)
+- Retorna CoordinationSignal.NORMAL se arquivo ausente ou invalido (ADR-023)
+- Expoe pode_abrir_posicao() -> bool como API de alto nivel para agentes
+- Expoe obter_sinal_atual() -> CoordinationSignal para inspecao granular
+- Expoe obter_decisao_completa() -> Optional[DecisaoCoordinacao] para payload completo
+
+### Motivacao
+
+- Sem estado = sem necessidade de lifecycle (iniciar/parar)
+- Leitura fresca garante que agentes sempre verao o sinal mais recente
+- Fallback NORMAL seguro (ADR-023) evita bloqueio operacional por falha de IO
+- Reutiliza CoordinationSignal e DecisaoCoordinacao do coordination_manager — sem duplicacao de tipos
+
+### Consequencias
+
+- Agentes RL podem chamar reader.pode_abrir_posicao() antes de enviar ordem
+- STOP_OPERACOES bloqueia abertura; MODO_CONSERVADOR e MODO_DEFENSIVO sao informativos
+- Modulo nao executa nenhuma acao — apenas le e interpreta
+- Zero dependencias de infra novas
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | MEDIO | DIRETO | Pode integrar reader.pode_abrir_posicao() no loop de decisao |
+| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | DIRETO | Pode integrar reader.pode_abrir_posicao() no loop de decisao |
+| INICIAR_DIARIOS.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | SEM IMPACTO | Nenhuma |
+
+### Referencias
+
+- BLID-042: implementacao completa (2026-04-06)
+- ADR-019: schema_version em outputs JSON
+- ADR-023: arquivo ausente -> fallback seguro sem exception
+- ADR-034: CoordinationManager (produtor do sinal JSON)
