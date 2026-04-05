@@ -1,494 +1,413 @@
-"""AlertReversaoHandler — Disparo de alertas quando reversao e detectada (BLID-044).
+"""
+Handler de Alertas para Reversoes de Lucro (BLID-044)
 
-Converte um ProfitProtectionResult com status=ALERTA em AlertaOportunidade
-e orquestra a entrega multicanal:
+Responsabilidades:
+- Converter ProfitProtectionResult (status=ALERTA) em AlertaOportunidade
+- Disparar alertas via AlertaDeliveryManager (WebSocket + Email)
+- Enviar webhooks para Slack/Discord com detalhes da reversao
+- Aplicar throttling para evitar spam de alertas
 
-1. AlertaDeliveryManager (WebSocket + Email) — entrega sincrona via servico
-   ja existente.
-2. Webhook Slack/Discord — fire-and-forget assíncrono, sem bloquear.
+Integracao:
+    ProfitProtectionEngine (processar_protecao)
+    → AlertReversaoHandler (quando status=ALERTA)
+    → AlertaDeliveryManager (entrega multicanal)
 
-Throttling:
-- Intervalo minimo configuravel por trade_id (padrao: 60s).
-- Alertas repetidos do mesmo trade dentro do intervalo sao descartados
-  silenciosamente (log DEBUG).
-
-Configuracao:
-- ``config/alert_reversoes.yaml`` define throttling, URL do webhook e canais.
-- Ausencia do arquivo: valores padrao sao usados (fallback seguro, ADR-023).
-
-Exemplo de uso::
-
-    handler = AlertReversaoHandler()
-    resultado = ProfitProtectionResult(
-        trade_id="T001",
-        status=ProtectionStatus.ALERTA,
-        profit_atual=-0.4,
-        profit_objetivo=2.0,
-        acao_sugerida="break-even stop recomendado",
-        timestamp=datetime.now(),
-        lucro_maximo_sessao=1.8,
-        deviance_reversao=2.2,
-    )
-    await handler.processar(resultado, simbolo="WINFUT", direcao="BUY")
+Referencias:
+- BLID-044: P1-PROFIT_PROTECTION item #2
+- ADR-037: Arquitetura de alertas de reversao
 """
 
-from __future__ import annotations
-
 import asyncio
-import logging
-import time
-import threading
-from dataclasses import dataclass, field
-from datetime import datetime
-from decimal import Decimal
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
-from urllib.request import Request, urlopen
 import json
+import logging
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from decimal import Decimal
+from typing import Any, Dict, Optional
+from uuid import UUID
 
-import yaml
+import httpx
 
 from src.application.profit_protection_engine import (
-    ProfitProtectionResult,
     ProtectionStatus,
+    ProfitProtectionResult,
 )
+from src.application.services.alerta_delivery import AlertaDeliveryManager
 from src.domain.entities.alerta import AlertaOportunidade
 from src.domain.enums.alerta_enums import NivelAlerta, PatraoAlerta, StatusAlerta
-from src.domain.value_objects.financial import Price, Symbol
+from src.domain.value_objects import Price, Symbol
 
 logger = logging.getLogger(__name__)
 
-# Caminho padrao do arquivo de configuracao
-_CAMINHO_CONFIG_PADRAO = Path("config/alert_reversoes.yaml")
-
-# schema_version do JSON de output (ADR-019)
-_SCHEMA_VERSION = "1.0"
-
-
-# ============================================================
-# PROTOCOL: contrato do delivery_manager
-# ============================================================
-
-
-@runtime_checkable
-class _DeliveryManagerProtocol(Protocol):
-    """Interface minima esperada do AlertaDeliveryManager."""
-
-    async def entregar_alerta(self, alerta: AlertaOportunidade) -> bool:
-        """Entrega alerta multicanal."""
-        ...
-
-
-# ============================================================
-# DATACLASS: Configuracao do handler
-# ============================================================
-
 
 @dataclass
-class ConfiguracaoAlertReversao:
-    """Configuracao carregada de config/alert_reversoes.yaml."""
+class AlertReversaoConfig:
+    """
+    Configuracao de alertas de reversao de lucro.
 
-    throttling_segundos: int = 60
-    webhook_url: str = ""
-    webhook_timeout_segundos: int = 5
-    delivery_manager_ativo: bool = True
-    webhook_ativo: bool = True
-    niveis_por_acao: Dict[str, list[str]] = field(default_factory=lambda: {
-        "critico": ["fechar total", "fechar imediatamente"],
-        "alto": ["break-even", "fechar parcial", "reversao aguda"],
-        "medio": ["monitorar", "aguardar", "_default"],
-    })
+    Atributos:
+        habilitado: Se alertas estao ativos
+        webhook_url: URL do webhook Slack/Discord (optional)
+        webhook_timeout_sec: Timeout de envio de webhook
+        throttle_seconds: Minimo entre alertas do mesmo trade
+        nivel_padrao: Nivel de severidade padrao (ALTO)
+        incluir_snapshot_trade: Se incluir dados completos do trade
+    """
 
-    @classmethod
-    def do_yaml(cls, caminho: Path = _CAMINHO_CONFIG_PADRAO) -> "ConfiguracaoAlertReversao":
-        """
-        Carrega configuracao a partir de arquivo YAML.
-
-        Fallback seguro: retorna defaults se arquivo ausente ou invalido (ADR-023).
-
-        Args:
-            caminho: Caminho do arquivo YAML.
-
-        Returns:
-            ConfiguracaoAlertReversao com valores do arquivo ou defaults.
-        """
-        if not caminho.exists():
-            logger.warning(
-                "config/alert_reversoes.yaml ausente — usando defaults (ADR-023)"
-            )
-            return cls()
-
-        try:
-            with open(caminho, encoding="utf-8") as f:
-                carregado = yaml.safe_load(f)
-            if not isinstance(carregado, dict):
-                logger.warning(
-                    "alert_reversoes.yaml com conteudo invalido — usando defaults"
-                )
-                return cls()
-            dados: Dict[str, Any] = carregado
-        except Exception as exc:
-            logger.warning(
-                "Falha ao ler alert_reversoes.yaml (%s) — usando defaults", exc
-            )
-            return cls()
-
-        webhook = dados.get("webhook", {}) if isinstance(dados.get("webhook"), dict) else {}
-        canais = dados.get("canais", {}) if isinstance(dados.get("canais"), dict) else {}
-        niveis = dados.get("niveis_por_acao", {}) if isinstance(dados.get("niveis_por_acao"), dict) else {}
-
-        try:
-            throttling = int(dados.get("throttling_segundos", 60))
-        except (ValueError, TypeError):
-            throttling = 60
-
-        try:
-            webhook_url = str(webhook.get("url", ""))
-        except (ValueError, TypeError):
-            webhook_url = ""
-
-        try:
-            webhook_timeout = int(webhook.get("timeout_segundos", 5))
-        except (ValueError, TypeError):
-            webhook_timeout = 5
-
-        return cls(
-            throttling_segundos=throttling,
-            webhook_url=webhook_url,
-            webhook_timeout_segundos=webhook_timeout,
-            delivery_manager_ativo=bool(canais.get("delivery_manager", True)),
-            webhook_ativo=bool(canais.get("webhook", True)),
-            niveis_por_acao={
-                "critico": list(niveis.get("critico", ["fechar total", "fechar imediatamente"])),
-                "alto": list(niveis.get("alto", ["break-even", "fechar parcial", "reversao aguda"])),
-                "medio": list(niveis.get("medio", ["monitorar", "aguardar", "_default"])),
-            },
-        )
-
-
-# ============================================================
-# HANDLER PRINCIPAL
-# ============================================================
+    habilitado: bool = True
+    webhook_url: Optional[str] = None
+    webhook_timeout_sec: float = 5.0
+    throttle_seconds: int = 60
+    nivel_padrao: NivelAlerta = NivelAlerta.ALTO
+    incluir_snapshot_trade: bool = True
 
 
 class AlertReversaoHandler:
     """
-    Converte ProfitProtectionResult(status=ALERTA) em AlertaOportunidade
-    e entrega via multicanal com throttling.
+    Handler de alertas de reversao de lucro.
 
-    Responsabilidades:
-    - Filtrar apenas resultados com status=ALERTA.
-    - Aplicar throttling por trade_id (intervalo minimo configuravel).
-    - Converter para AlertaOportunidade (dominio).
-    - Entregar via AlertaDeliveryManager (WebSocket+Email).
-    - Disparar webhook Slack/Discord fire-and-forget.
+    Converte ProfitProtectionResult (status=ALERTA) em AlertaOportunidade
+    e dispara entrega multicanal (WebSocket + Email + Webhook).
 
-    Thread-safety:
-    - _throttle_cache e protegido por _lock (threading.Lock).
+    Funcionalidades:
+    1. Conversao ProfitProtectionResult → AlertaOportunidade
+    2. Webhook para Slack/Discord com payload estruturado
+    3. Throttling para evitar spam (60s entre alertas do mesmo trade)
+    4. Integracao com AlertaDeliveryManager existente
     """
 
     def __init__(
         self,
-        delivery_manager: Optional[_DeliveryManagerProtocol] = None,
-        config: Optional[ConfiguracaoAlertReversao] = None,
-        caminho_config: Path = _CAMINHO_CONFIG_PADRAO,
+        delivery_manager: AlertaDeliveryManager,
+        config: Optional[AlertReversaoConfig] = None,
     ) -> None:
         """
-        Inicializa o handler.
+        Inicializa handler de alertas de reversao.
 
         Args:
-            delivery_manager: Instancia de AlertaDeliveryManager. Opcional;
-                se None, entrega via delivery manager e desativada.
-            config: ConfiguracaoAlertReversao. Se None, carrega do YAML.
-            caminho_config: Caminho alternativo do YAML (util em testes).
+            delivery_manager: Gerenciador de entrega multicanal
+            config: Configuracao de alertas (usa padrao se None)
         """
-        self._config = config if config is not None else ConfiguracaoAlertReversao.do_yaml(caminho_config)
-        self._delivery_manager: Optional[_DeliveryManagerProtocol] = delivery_manager
-        # cache de throttle: trade_id -> timestamp do ultimo alerta (float)
-        self._throttle_cache: Dict[str, float] = {}
-        self._lock = threading.Lock()
+        self.delivery_manager = delivery_manager
+        self.config = config or AlertReversaoConfig()
+        self._historico_alertas: Dict[str, datetime] = {}  # throttling
 
-    # ----------------------------------------------------------
-    # API publica
-    # ----------------------------------------------------------
+        logger.info(
+            "[AlertReversaoHandler] Inicializado | habilitado=%s | webhook=%s | throttle=%ds",
+            self.config.habilitado,
+            "SIM" if self.config.webhook_url else "NAO",
+            self.config.throttle_seconds,
+        )
 
-    async def processar(
+    async def processar_reversao(
         self,
         resultado: ProfitProtectionResult,
-        simbolo: str = "WINFUT",
-        direcao: str = "BUY",
+        trade_data: Dict[str, Any],
     ) -> bool:
         """
-        Processa um ProfitProtectionResult e dispara alertas se status=ALERTA.
+        Processa resultado de protecao e dispara alerta se reversao detectada.
 
         Args:
-            resultado: Resultado da analise de protecao de lucro.
-            simbolo: Simbolo do ativo (ex: "WINFUT").
-            direcao: Direcao da operacao ("BUY" ou "SELL").
+            resultado: ProfitProtectionResult do ProfitProtectionEngine
+            trade_data: Dados completos do trade (symbol, entry, direction, etc)
 
         Returns:
-            True se alerta foi enviado, False se ignorado (status != ALERTA
-            ou throttling ativo).
+            True se alerta disparado com sucesso, False caso contrario
+
+        Raises:
+            ValueError: Se trade_data invalido (missing keys)
         """
+        # ============================================================
+        # ETAPA 1: Validacao e Gate de Throttling
+        # ============================================================
+        if not self.config.habilitado:
+            logger.debug("Alertas de reversao desabilitados")
+            return False
+
         if resultado.status != ProtectionStatus.ALERTA:
             logger.debug(
-                "Resultado ignorado (status=%s, esperado=ALERTA)",
-                resultado.status.value,
+                "Status nao e ALERTA (status=%s), ignorando", resultado.status
             )
             return False
 
-        if not self._pode_enviar(resultado.trade_id):
-            logger.debug(
-                "Throttling ativo para trade_id=%s — alerta descartado",
+        # Throttling: verificar se ja disparamos alerta recente
+        if self._deve_throttle(resultado.trade_id):
+            logger.info(
+                "Throttling ativo para trade_id=%s, ignorando alerta",
                 resultado.trade_id,
             )
             return False
 
-        self._registrar_envio(resultado.trade_id)
+        # ============================================================
+        # ETAPA 2: Validacao de Trade Data
+        # ============================================================
+        required_keys = ["symbol", "entry_price", "direction"]
+        missing = [k for k in required_keys if k not in trade_data]
+        if missing:
+            raise ValueError(f"trade_data faltando keys obrigatorias: {missing}")
 
-        alerta = self._converter_para_alerta(resultado, simbolo, direcao)
+        symbol_str: str = trade_data["symbol"]
+        entry_price: float = trade_data["entry_price"]
+        direction: str = trade_data["direction"]
 
-        await self._entregar_multicanal(alerta, resultado)
+        # ============================================================
+        # ETAPA 3: Construir AlertaOportunidade
+        # ============================================================
+        try:
+            alerta = self._criar_alerta_oportunidade(
+                resultado=resultado,
+                symbol_str=symbol_str,
+                entry_price=entry_price,
+                direction=direction,
+                trade_data=trade_data,
+            )
+        except Exception as e:
+            logger.error("Erro ao criar AlertaOportunidade: %s", e, exc_info=True)
+            return False
 
-        return True
+        # ============================================================
+        # ETAPA 4: Disparar Entrega Multicanal
+        # ============================================================
+        sucesso_entrega = False
+        try:
+            # Entrega via AlertaDeliveryManager (WebSocket + Email)
+            sucesso_entrega = await self.delivery_manager.entregar_alerta(alerta)
 
-    # ----------------------------------------------------------
-    # Throttling
-    # ----------------------------------------------------------
+            # Webhook Slack/Discord em paralelo (fire-and-forget)
+            if self.config.webhook_url:
+                asyncio.create_task(
+                    self._enviar_webhook(resultado, trade_data, alerta.id)
+                )
 
-    def _pode_enviar(self, trade_id: str) -> bool:
-        """Verifica se o throttle permite envio para este trade_id."""
-        with self._lock:
-            ultimo = self._throttle_cache.get(trade_id)
-            if ultimo is None:
-                return True
-            return (time.monotonic() - ultimo) >= self._config.throttling_segundos
+            # Registrar throttling
+            self._registrar_alerta(resultado.trade_id)
 
-    def _registrar_envio(self, trade_id: str) -> None:
-        """Registra timestamp do envio para throttling."""
-        with self._lock:
-            self._throttle_cache[trade_id] = time.monotonic()
+            logger.info(
+                "✅ Alerta de reversao disparado: trade_id=%s alerta_id=%s entrega=%s",
+                resultado.trade_id,
+                alerta.id,
+                "OK" if sucesso_entrega else "FALHOU",
+            )
 
-    def limpar_throttle(self, trade_id: Optional[str] = None) -> None:
-        """
-        Limpa o cache de throttle.
+            return sucesso_entrega
 
-        Args:
-            trade_id: Se fornecido, limpa apenas a entrada deste trade.
-                      Se None, limpa todo o cache.
-        """
-        with self._lock:
-            if trade_id is None:
-                self._throttle_cache.clear()
-            else:
-                self._throttle_cache.pop(trade_id, None)
+        except Exception as e:
+            logger.error(
+                "Erro ao disparar alerta de reversao: %s", e, exc_info=True
+            )
+            return False
 
-    # ----------------------------------------------------------
-    # Conversao de dominio
-    # ----------------------------------------------------------
-
-    def _converter_para_alerta(
+    def _criar_alerta_oportunidade(
         self,
         resultado: ProfitProtectionResult,
-        simbolo: str,
-        direcao: str,
+        symbol_str: str,
+        entry_price: float,
+        direction: str,
+        trade_data: Dict[str, Any],
     ) -> AlertaOportunidade:
         """
         Converte ProfitProtectionResult em AlertaOportunidade.
 
-        A conversao adapta os campos do motor de protecao para o
-        contrato de dominio de alertas, preservando todas as
-        informacoes relevantes.
-
         Args:
-            resultado: ProfitProtectionResult com status=ALERTA.
-            simbolo: Simbolo do ativo.
-            direcao: Direcao da operacao.
+            resultado: Resultado de protecao
+            symbol_str: Simbolo do ativo (ex: "WINFUT")
+            entry_price: Preco de entrada do trade
+            direction: Direcao ("BUY" ou "SELL")
+            trade_data: Dados completos do trade
 
         Returns:
-            AlertaOportunidade pronto para entrega.
+            AlertaOportunidade construida
+
+        Raises:
+            ValueError: Se dados invalidos
         """
-        nivel = self._determinar_nivel(resultado.acao_sugerida)
+        # Calcular preco atual baseado em profit_atual
+        # profit_pct = (preco_atual - entry) / entry * 100  (para BUY)
+        profit_pct = resultado.profit_atual
+        if direction.upper() == "BUY":
+            preco_atual_calculado = entry_price * (1 + profit_pct / 100)
+        else:  # SELL
+            preco_atual_calculado = entry_price * (1 - profit_pct / 100)
 
-        # Preco de referencia ficticio — AlertaOportunidade exige um preco
-        # concreto para satisfazer o contrato do dominio.
-        # Usamos 100.00 como base simbolica; os valores absolutos nao
-        # representam precos reais de mercado neste contexto de reversao.
-        _BASE = Decimal("100.00")
-        preco_ref = Price(_BASE)
-        entrada_min = Price(_BASE - Decimal("0.10"))
-        entrada_max = Price(_BASE + Decimal("0.10"))
-        # stop_loss DEVE ser < entrada_minima (regra do dominio)
-        stop_loss = Price(_BASE - Decimal("0.50"))
+        # Stop loss e take profit (estimados se nao fornecidos)
+        stop_loss_price = trade_data.get(
+            "initial_sl", entry_price * 0.99
+        )  # -1% default
+        take_profit_price = trade_data.get(
+            "initial_tp", entry_price * 1.02
+        )  # +2% default
 
-        # Confianca baseada no deviance de reversao (quanto maior o desvio, mais critico).
-        # Normaliza para [0, 1] usando 5% como deviance maximo considerado relevante:
-        # desvio de 5% representa reversao extrema (perda completa de lucro robusto).
-        desvio = resultado.deviance_reversao or 0.0
-        _DEVIANCE_MAXIMO_PCT = 5.0
-        confianca_raw = min(abs(desvio) / _DEVIANCE_MAXIMO_PCT, 1.0)
-        confianca = Decimal(str(round(max(confianca_raw, 0.10), 2)))
+        # Calcular confianca baseado em deviance_reversao
+        # Maior reversao = maior confianca no alerta
+        deviance = resultado.deviance_reversao or 0.0
+        confianca = min(1.0, abs(deviance) / 2.0)  # 2% reversao = 100% confianca
+
+        # Risk/Reward estimado
+        risk = abs(entry_price - stop_loss_price)
+        reward = abs(take_profit_price - entry_price)
+        risk_reward = reward / risk if risk > 0 else 1.0
 
         alerta = AlertaOportunidade(
-            ativo=Symbol(simbolo),
-            padrao=PatraoAlerta.VOLATILIDADE_EXTREMA,
-            nivel=nivel,
-            preco_atual=preco_ref,
+            ativo=Symbol(symbol_str),
+            padrao=PatraoAlerta.REVERSAO_LUCRO,
+            nivel=self.config.nivel_padrao,
+            preco_atual=Price(Decimal(str(preco_atual_calculado))),
             timestamp_deteccao=resultado.timestamp,
-            entrada_minima=entrada_min,
-            entrada_maxima=entrada_max,
-            stop_loss=stop_loss,
-            confianca=confianca,
-            risk_reward=Decimal("1.0"),
-            sinal_smc_nome="REVERSAO",
-            sinal_smc_confianca=confianca,
+            entrada_minima=Price(Decimal(str(entry_price * 0.995))),  # -0.5%
+            entrada_maxima=Price(Decimal(str(entry_price * 1.005))),  # +0.5%
+            stop_loss=Price(Decimal(str(stop_loss_price))),
+            take_profit=Price(Decimal(str(take_profit_price))),
+            confianca=Decimal(str(confianca)),
+            risk_reward=Decimal(str(risk_reward)),
+            status=StatusAlerta.GERADO,
         )
 
-        logger.info(
-            "AlertaOportunidade criado: id=%s trade_id=%s nivel=%s acao='%s'",
-            alerta.id,
-            resultado.trade_id,
-            nivel.value,
-            resultado.acao_sugerida,
-        )
         return alerta
 
-    def _determinar_nivel(self, acao_sugerida: str) -> NivelAlerta:
+    async def _enviar_webhook(
+        self,
+        resultado: ProfitProtectionResult,
+        trade_data: Dict[str, Any],
+        alerta_id: UUID,
+    ) -> bool:
         """
-        Determina NivelAlerta com base em palavras-chave na acao_sugerida.
+        Envia webhook para Slack/Discord com detalhes da reversao.
+
+        Formato Slack:
+        {
+            "text": "🚨 Reversão de Lucro Detectada",
+            "blocks": [...]
+        }
 
         Args:
-            acao_sugerida: String descritiva da acao recomendada.
+            resultado: ProfitProtectionResult
+            trade_data: Dados do trade
+            alerta_id: UUID do alerta criado
 
         Returns:
-            NivelAlerta correspondente.
+            True se enviado com sucesso, False caso contrario
         """
-        acao_lower = acao_sugerida.lower()
-
-        for palavra in self._config.niveis_por_acao.get("critico", []):
-            if palavra != "_default" and palavra in acao_lower:
-                return NivelAlerta.CRÍTICO
-
-        for palavra in self._config.niveis_por_acao.get("alto", []):
-            if palavra != "_default" and palavra in acao_lower:
-                return NivelAlerta.ALTO
-
-        return NivelAlerta.MÉDIO
-
-    # ----------------------------------------------------------
-    # Entrega multicanal
-    # ----------------------------------------------------------
-
-    async def _entregar_multicanal(
-        self,
-        alerta: AlertaOportunidade,
-        resultado: ProfitProtectionResult,
-    ) -> None:
-        """
-        Orquestra entrega via delivery_manager e webhook.
-
-        Args:
-            alerta: AlertaOportunidade a entregar.
-            resultado: Resultado original para montar payload do webhook.
-        """
-        tarefas = []
-
-        if self._config.delivery_manager_ativo and self._delivery_manager is not None:
-            tarefas.append(self._entregar_via_delivery_manager(alerta))
-
-        if self._config.webhook_ativo and self._config.webhook_url:
-            tarefas.append(self._disparar_webhook(resultado, alerta))
-
-        if tarefas:
-            await asyncio.gather(*tarefas, return_exceptions=True)
-
-    async def _entregar_via_delivery_manager(
-        self, alerta: AlertaOportunidade
-    ) -> None:
-        """Entrega via AlertaDeliveryManager (WebSocket + Email)."""
-        if self._delivery_manager is None:
-            return
-        try:
-            await self._delivery_manager.entregar_alerta(alerta)
-            logger.info("DeliveryManager: alerta %s entregue", alerta.id)
-        except Exception as exc:
-            logger.error("DeliveryManager falhou para %s: %s", alerta.id, exc)
-
-    async def _disparar_webhook(
-        self,
-        resultado: ProfitProtectionResult,
-        alerta: AlertaOportunidade,
-    ) -> None:
-        """
-        Dispara webhook Slack/Discord — fire-and-forget.
-
-        Nao bloqueia o fluxo principal em caso de falha.
-
-        Args:
-            resultado: ProfitProtectionResult original.
-            alerta: AlertaOportunidade criado.
-        """
-        payload = self._montar_payload_webhook(resultado, alerta)
-        payload_json = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        if not self.config.webhook_url:
+            return False
 
         try:
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
-                None,
-                self._enviar_webhook_bloqueante,
-                payload_json,
+            # Construir payload Slack/Discord
+            payload = self._construir_payload_webhook(
+                resultado, trade_data, alerta_id
             )
-            logger.info("Webhook enviado para trade_id=%s", resultado.trade_id)
-        except Exception as exc:
+
+            # Enviar POST com timeout
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    self.config.webhook_url,
+                    json=payload,
+                    timeout=self.config.webhook_timeout_sec,
+                )
+
+                if response.status_code >= 200 and response.status_code < 300:
+                    logger.info(
+                        "✅ Webhook enviado com sucesso: trade_id=%s",
+                        resultado.trade_id,
+                    )
+                    return True
+                else:
+                    logger.warning(
+                        "⚠️ Webhook retornou status %d: %s",
+                        response.status_code,
+                        response.text,
+                    )
+                    return False
+
+        except httpx.TimeoutException:
             logger.warning(
-                "Webhook falhou (fire-and-forget) para trade_id=%s: %s",
-                resultado.trade_id,
-                exc,
+                "⏱️ Webhook timeout apos %.1fs", self.config.webhook_timeout_sec
             )
+            return False
+        except Exception as e:
+            logger.error("❌ Erro ao enviar webhook: %s", e, exc_info=True)
+            return False
 
-    def _enviar_webhook_bloqueante(self, payload_json: bytes) -> None:
-        """Envia requisicao HTTP ao webhook (executada em thread pool)."""
-        req = Request(
-            self._config.webhook_url,
-            data=payload_json,
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-        with urlopen(req, timeout=self._config.webhook_timeout_segundos) as resp:
-            logger.debug("Webhook resposta: status=%d", resp.status)
-
-    def _montar_payload_webhook(
+    def _construir_payload_webhook(
         self,
         resultado: ProfitProtectionResult,
-        alerta: AlertaOportunidade,
+        trade_data: Dict[str, Any],
+        alerta_id: UUID,
     ) -> Dict[str, Any]:
         """
-        Monta payload JSON para o webhook Slack/Discord.
+        Constroi payload formatado para Slack/Discord.
 
         Args:
-            resultado: Resultado de protecao original.
-            alerta: AlertaOportunidade criado.
+            resultado: ProfitProtectionResult
+            trade_data: Dados do trade
+            alerta_id: UUID do alerta
 
         Returns:
-            Dicionario pronto para serializacao JSON.
+            Dict com payload formatado para webhook
         """
-        return {
-            "schema_version": _SCHEMA_VERSION,
-            "tipo": "ALERTA_REVERSAO",
-            "alerta_id": str(alerta.id),
-            "trade_id": resultado.trade_id,
-            "nivel": alerta.nivel.value,
-            "acao_sugerida": resultado.acao_sugerida,
-            "profit_atual_pct": resultado.profit_atual,
-            "profit_objetivo_pct": resultado.profit_objetivo,
-            "lucro_maximo_sessao_pct": resultado.lucro_maximo_sessao,
-            "deviance_reversao_pct": resultado.deviance_reversao,
-            "timestamp": resultado.timestamp.isoformat(),
-            "text": (
-                f"🔴 [{alerta.nivel.value}] ALERTA de Reversão | "
-                f"Trade: {resultado.trade_id} | "
-                f"Ação: {resultado.acao_sugerida} | "
-                f"Profit atual: {resultado.profit_atual:.2f}% | "
-                f"Reversão desde máx: {resultado.deviance_reversao or 0:.2f}%"
-            ),
+        symbol = trade_data.get("symbol", "UNKNOWN")
+        direction = trade_data.get("direction", "UNKNOWN")
+        entry_price = trade_data.get("entry_price", 0.0)
+
+        # Emoji baseado em severidade da reversao
+        deviance = resultado.deviance_reversao or 0.0
+        emoji = "🔴" if abs(deviance) >= 1.0 else "🟠"
+
+        # Texto principal
+        texto = (
+            f"{emoji} **Reversão de Lucro Detectada**\n\n"
+            f"**Trade:** {resultado.trade_id}\n"
+            f"**Símbolo:** {symbol} {direction}\n"
+            f"**Preço Entrada:** {entry_price:.2f}\n"
+            f"**Lucro Atual:** {resultado.profit_atual:.2f}%\n"
+            f"**Lucro Máximo:** {resultado.lucro_maximo_sessao:.2f}%\n"
+            f"**Reversão:** {deviance:.2f}%\n\n"
+            f"**Ação Sugerida:** {resultado.acao_sugerida}\n"
+            f"**Alerta ID:** {alerta_id}"
+        )
+
+        # Payload Slack (compativel com Discord)
+        payload = {
+            "text": f"{emoji} Reversão de Lucro Detectada",
+            "blocks": [
+                {
+                    "type": "section",
+                    "text": {"type": "mrkdwn", "text": texto},
+                }
+            ],
+        }
+
+        return payload
+
+    def _deve_throttle(self, trade_id: str) -> bool:
+        """
+        Verifica se deve fazer throttling do alerta.
+
+        Args:
+            trade_id: ID do trade
+
+        Returns:
+            True se deve throttle (alerta recente), False caso contrario
+        """
+        agora = datetime.now()
+        ultimo_alerta = self._historico_alertas.get(trade_id)
+
+        if ultimo_alerta is None:
+            return False
+
+        delta = (agora - ultimo_alerta).total_seconds()
+        return delta < self.config.throttle_seconds
+
+    def _registrar_alerta(self, trade_id: str) -> None:
+        """
+        Registra timestamp de alerta para throttling.
+
+        Args:
+            trade_id: ID do trade
+        """
+        self._historico_alertas[trade_id] = datetime.now()
+
+        # Limpeza de historico antigo (keep last 24h only)
+        limite = datetime.now() - timedelta(hours=24)
+        self._historico_alertas = {
+            k: v for k, v in self._historico_alertas.items() if v >= limite
         }
