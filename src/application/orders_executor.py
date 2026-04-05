@@ -698,47 +698,59 @@ class OrdersExecutionOrchestrator:
         )
 
         ticket = None
-        for attempt in range(1, 6):
-            try:
-                resultado_envio = await self._maybe_await(
-                    self.mt5_adapter.send_order(order)
-                )
-                if isinstance(resultado_envio, tuple):
-                    sucesso = bool(resultado_envio[0])
-                    ticket = resultado_envio[1] if sucesso else None
-                elif isinstance(resultado_envio, dict):
-                    sucesso = resultado_envio.get("success", True)
-                    ticket = (
-                        (
-                            resultado_envio.get("ticket")
-                            or resultado_envio.get("mt5_ticket")
-                            or resultado_envio.get("order_id")
-                        )
-                        if sucesso
-                        else None
+        erro_envio_mt5: Optional[str] = None
+        try:
+            for attempt in range(1, 6):
+                try:
+                    resultado_envio = await self._maybe_await(
+                        self.mt5_adapter.send_order(order)
                     )
-                else:
-                    ticket = resultado_envio
+                    if isinstance(resultado_envio, tuple):
+                        sucesso = bool(resultado_envio[0])
+                        ticket = resultado_envio[1] if sucesso else None
+                    elif isinstance(resultado_envio, dict):
+                        sucesso = resultado_envio.get("success", True)
+                        ticket = (
+                            (
+                                resultado_envio.get("ticket")
+                                or resultado_envio.get("mt5_ticket")
+                                or resultado_envio.get("order_id")
+                            )
+                            if sucesso
+                            else None
+                        )
+                    else:
+                        ticket = resultado_envio
 
-                if ticket:
-                    retry_mgr.registrar_sucesso()
-                    break
-            except Exception as e:
-                mensagem = str(e)
-                if "10006" not in mensagem:
-                    raise
+                    if ticket:
+                        retry_mgr.registrar_sucesso()
+                        break
+                except Exception as e:
+                    mensagem = str(e)
+                    if "10006" not in mensagem:
+                        # Erro não-recuperável (ex: sem conexão): encerrar loop
+                        erro_envio_mt5 = mensagem
+                        logger.error(
+                            "Tentativa %s falhou com erro não-recuperável: %s",
+                            attempt,
+                            mensagem,
+                        )
+                        break
 
-                resultado_retry = retry_mgr.registrar_falha_10006(RETCODE_ORDER_FAILED)
-                logger.warning(
-                    "Tentativa %s falhou com 10006: %s | backoff=%ss | falhas=%s",
-                    attempt,
-                    mensagem,
-                    resultado_retry.aguardar_segundos,
-                    resultado_retry.falhas_consecutivas,
-                )
-                if resultado_retry.deve_encerrar():
-                    break
-                await asyncio.sleep(resultado_retry.aguardar_segundos)
+                    resultado_retry = retry_mgr.registrar_falha_10006(RETCODE_ORDER_FAILED)
+                    logger.warning(
+                        "Tentativa %s falhou com 10006: %s | backoff=%ss | falhas=%s",
+                        attempt,
+                        mensagem,
+                        resultado_retry.aguardar_segundos,
+                        resultado_retry.falhas_consecutivas,
+                    )
+                    if resultado_retry.deve_encerrar():
+                        break
+                    await asyncio.sleep(resultado_retry.aguardar_segundos)
+        except Exception as e:
+            erro_envio_mt5 = str(e)
+            logger.error("Erro inesperado no loop de envio MT5: %s", e)
 
         execution_time_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
 
@@ -755,11 +767,12 @@ class OrdersExecutionOrchestrator:
                 "execution_time_ms": execution_time_ms,
             }
         else:
-            order.add_audit(OrderState.REJECTED, "Falha no envio ao MT5 após retries")
+            motivo = erro_envio_mt5 or "MT5_SEND_FAILED"
+            order.add_audit(OrderState.REJECTED, f"Falha no envio ao MT5: {motivo}")
             return {
                 "success": False,
                 "order_id": order.order_id,
-                "rejection_reason": "MT5_SEND_FAILED",
+                "rejection_reason": motivo,
                 "gates_passed": gates_passed,
                 "execution_time_ms": execution_time_ms,
             }
