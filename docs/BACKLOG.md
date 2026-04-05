@@ -5326,11 +5326,74 @@ API:
 
 ### Dividas Tecnicas Registradas
 
-DT-BLID042-01 (BAIXO): Integracao efetiva nos loops de decisao dos agentes RL
-(rl_5000 e rl_direto) ainda nao realizada — requer BLID futuro.
+DT-BLID042-01 (BAIXO): ~~Integracao efetiva nos loops de decisao dos agentes RL
+(rl_5000 e rl_direto) ainda nao realizada — requer BLID futuro.~~
+**RESOLVIDA por BLID-043** (2026-04-06): gate implementado em ambos os agentes RL
+com import lazy, thread daemon, signal paths exclusivos e fallback NORMAL (ADR-036).
 
 DT-BLID042-02 (BAIXO): Metricas de latencia de leitura ausentes.
 
 ### Historico
 
 - 2026-04-06 — criado e implementado (BLID-042)
+
+## BLID-043
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Ativar protecao cross-agent de capital conectando CoordinationSignalReader e CoordinationManager aos loops de decisao dos agentes RL
+stage_atual: project-manager
+adr_referencia: ADR-036
+
+### Escopo
+
+Integracao do CoordinationSignalReader (BLID-042) e CoordinationManager (BLID-041)
+nos pontos de abertura de posicao dos dois agentes RL:
+- scripts/agente_rl_direto_independente.py — gate antes de enviar_ordem()
+- scripts/operar_novo_agente_rl_real_antiovertrading.py — gate antes de enviar_ordem_mt5adapter()
+
+Cada agente usa path de sinal exclusivo para evitar race condition:
+- RL Direto  -> outputs/coordination_signal_rl_direto.json
+- RL 5000    -> outputs/coordination_signal_rl_5000.json
+
+### Criterios de Aceite
+
+- [x] AC1: RL Direto checa pode_abrir_posicao() antes de enviar ordem — STOP_OPERACOES bloqueia
+- [x] AC2: RL 5000 checa pode_abrir_posicao() antes de abrir posicao — STOP_OPERACOES bloqueia
+- [x] AC3: NORMAL, MODO_CONSERVADOR, MODO_DEFENSIVO nao bloqueiam abertura
+- [x] AC4: CoordinationManager inicia como thread daemon no startup dos agentes
+- [x] AC5: Arquivo coordination_signal ausente -> fallback NORMAL (ADR-023)
+- [x] AC6: Log WARNING com sinal atual quando bloqueado
+- [x] AC7: mypy --strict: zero erros nos modulos de coordenacao
+- [x] AC8: 26 testes unitarios: todos PASSING
+
+### Arquivos Alterados
+
+- scripts/agente_rl_direto_independente.py — imports lazy + init + gate + parar()
+- scripts/operar_novo_agente_rl_real_antiovertrading.py — imports lazy + init + gate + parar()
+- tests/unit/test_blid043_integration.py — 26 testes unitarios (ja existia; executado)
+- docs/BACKLOG.md — BLID-043 registrado
+- docs/ADRS.md — ADR-036 registrada
+
+### Evidencias
+
+- 26 testes unitarios: 26/26 PASSING
+- mypy --strict: zero erros (src/application/coordination_manager.py + coordination_signal_reader.py)
+- Graceful degradation: import lazy com flag _COORDINATION_DISPONIVEL
+- Signal paths exclusivos: rl_direto.json e rl_5000.json (sem race condition)
+- Thread daemon: coordination_manager.iniciar() + coordination_manager.parar() no finally
+- Fallback NORMAL: arquivo ausente nao bloqueia operacao (ADR-023)
+
+### Dividas Tecnicas Registradas
+
+DT-BLID043-01 (MEDIO): Protecao conjunta real (drawdown_conjunto com vista dos
+dois DBs) nao realizada — cada agente ve apenas seu proprio DB. Requer coordinador
+unificado multi-DB em iteracao futura.
+
+DT-BLID043-02 (BAIXO): agente_com_supervision.py (wrapper) nao foi modificado —
+CoordinationManager e gerenciado dentro de operar_novo_agente_rl_real_antiovertrading.py.
+Documentado em ADR-036 como decisao intencional.
+
+### Historico
+
+- 2026-04-06 — criado e implementado (BLID-043)
