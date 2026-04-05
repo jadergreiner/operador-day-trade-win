@@ -133,14 +133,29 @@ class ConfiguracaoAlertReversao:
             )
             return cls()
 
-        webhook = dados.get("webhook", {})
-        canais = dados.get("canais", {})
-        niveis = dados.get("niveis_por_acao", {})
+        webhook = dados.get("webhook", {}) if isinstance(dados.get("webhook"), dict) else {}
+        canais = dados.get("canais", {}) if isinstance(dados.get("canais"), dict) else {}
+        niveis = dados.get("niveis_por_acao", {}) if isinstance(dados.get("niveis_por_acao"), dict) else {}
+
+        try:
+            throttling = int(dados.get("throttling_segundos", 60))
+        except (ValueError, TypeError):
+            throttling = 60
+
+        try:
+            webhook_url = str(webhook.get("url", ""))
+        except (ValueError, TypeError):
+            webhook_url = ""
+
+        try:
+            webhook_timeout = int(webhook.get("timeout_segundos", 5))
+        except (ValueError, TypeError):
+            webhook_timeout = 5
 
         return cls(
-            throttling_segundos=int(dados.get("throttling_segundos", 60)),
-            webhook_url=str(webhook.get("url", "")),
-            webhook_timeout_segundos=int(webhook.get("timeout_segundos", 5)),
+            throttling_segundos=throttling,
+            webhook_url=webhook_url,
+            webhook_timeout_segundos=webhook_timeout,
             delivery_manager_ativo=bool(canais.get("delivery_manager", True)),
             webhook_ativo=bool(canais.get("webhook", True)),
             niveis_por_acao={
@@ -306,9 +321,12 @@ class AlertReversaoHandler:
         # stop_loss DEVE ser < entrada_minima (regra do dominio)
         stop_loss = Price(_BASE - Decimal("0.50"))
 
-        # Confianca baseada no deviance de reversao (quanto maior o desvio, mais critico)
+        # Confianca baseada no deviance de reversao (quanto maior o desvio, mais critico).
+        # Normaliza para [0, 1] usando 5% como deviance maximo considerado relevante:
+        # desvio de 5% representa reversao extrema (perda completa de lucro robusto).
         desvio = resultado.deviance_reversao or 0.0
-        confianca_raw = min(abs(desvio) / 5.0, 1.0)  # normaliza para 0-1
+        _DEVIANCE_MAXIMO_PCT = 5.0
+        confianca_raw = min(abs(desvio) / _DEVIANCE_MAXIMO_PCT, 1.0)
         confianca = Decimal(str(round(max(confianca_raw, 0.10), 2)))
 
         alerta = AlertaOportunidade(

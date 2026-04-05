@@ -21,8 +21,6 @@ webhook:
   url: ""
   # Timeout HTTP em segundos
   timeout_segundos: 5
-  # Máximo de tentativas (sem retry — fire-and-forget único)
-  tentativas: 1
 
 # ============================================================
 # CANAIS DE ENTREGA
