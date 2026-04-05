@@ -2982,13 +2982,18 @@ nucleo do pipeline de execucao automatica de ordens no Sprint 1.
 - **AC-8 (Performance):** Medicao via `time.time()` antes/apos o loop. Testes
   validam `monitoring_time_ms < 500`.
 
-#### handle_stop_loss() — Fechamento Atomico + Audit
+#### handle_stop_loss() — Fechamento Atomico + Trailing Stop + Audit
 
 - **AC-9 (Market price):** Chama `mt5_adapter.close_position_by_id(order_id)`.
 - **AC-10 (Audit log):** Registra evento com `order_id`, `closed_at` e
   `provider_result` em `self.stop_loss_events` (lista auditavel no executor).
 - **AC-11 (Atomic state update):** Percorre `self.orders` e atualiza a ordem
   correspondente para `OrderState.CLOSED` via `order.add_audit()`.
+- **Trailing Stop Dinamico:** Quando `trailing_offset` e fornecido e o adapter
+  suporta `update_stop_loss(order_id, offset)`, ajusta o SL dinamicamente sem
+  fechar a posicao. Retorna `trailing_updated=True` e `new_stop_loss`. Se o
+  adapter nao suportar ou a atualizacao falhar, executa o fechamento imediato
+  como fallback seguro.
 
 ### Alternativas Consideradas
 
@@ -3009,7 +3014,8 @@ nucleo do pipeline de execucao automatica de ordens no Sprint 1.
 - Pipeline de execucao automatica (AC1-AC6 do sistema) pode ser ativado.
 - `OrdersExecutionOrchestrator` alias `OrdersExecutor` e retrocompativel com
   todos os importadores existentes.
-- 13 testes unitarios + E2E cobrem 100% dos ACs da issue.
+- 13 testes unitarios + E2E + trailing stop e fallbacks cobrem 100% dos
+  ACs da issue (19 testes total).
 - Desbloqueia Sprint 1 (~95%) e prepara UAT readiness.
 
 ### Avaliacao de Impacto nos 5 Launchers

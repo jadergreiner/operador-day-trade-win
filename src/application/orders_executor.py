@@ -888,11 +888,53 @@ class OrdersExecutionOrchestrator:
     # ==================== TODO-3: MONITOR_POSITIONS END ====================
 
     # ==================== TODO-4: HANDLE_STOP_LOSS START (Line 188, GitHub Issue #7) ====================
-    async def handle_stop_loss(self, order_id: str) -> Dict:
+    async def handle_stop_loss(
+        self, order_id: str, trailing_offset: Optional[float] = None
+    ) -> Dict:
         """
         Fecha posição a preço de mercado quando stop-loss é acionado.
+
+        Quando trailing_offset é fornecido, aplica lógica de trailing stop
+        dinâmico: ajusta o SL para manter distância fixa do preço atual
+        enquanto o preço se move favoravelmente. Fecha a posição apenas
+        quando o SL definitivo é atingido.
+
+        Args:
+            order_id: Identificador da posição/ordem a ser tratada.
+            trailing_offset: Distância em pontos para o trailing stop.
+                Se None, executa fechamento imediato (hard stop).
+
+        Returns:
+            Dict com chaves ``success``, ``message`` e opcionalmente
+            ``trailing_updated`` / ``new_stop_loss`` quando o SL for
+            apenas ajustado sem fechar a posição.
         """
         logger.info(f"Executando handle_stop_loss para {order_id}")
+
+        # Lógica de trailing stop dinâmico
+        if trailing_offset is not None and hasattr(
+            self.mt5_adapter, "update_stop_loss"
+        ):
+            try:
+                update_result = await self._maybe_await(
+                    self.mt5_adapter.update_stop_loss(order_id, trailing_offset)
+                )
+                if isinstance(update_result, dict) and update_result.get("success"):
+                    new_sl = update_result.get("new_stop_loss")
+                    logger.info(
+                        "Trailing stop atualizado para %s: SL=%s", order_id, new_sl
+                    )
+                    return {
+                        "success": True,
+                        "trailing_updated": True,
+                        "message": f"Trailing stop ajustado para {order_id}",
+                        "new_stop_loss": new_sl,
+                    }
+            except Exception as exc:
+                logger.warning(
+                    "Falha ao atualizar trailing stop para %s: %s", order_id, exc
+                )
+
         # AC-9: Close at market price
         raw_result = await self._maybe_await(
             self.mt5_adapter.close_position_by_id(order_id)
