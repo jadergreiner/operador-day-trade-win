@@ -352,6 +352,77 @@ class TestOrdersExecutor:
         assert result["success"] is True
         assert ordem.state == OrderState.CLOSED
 
+    # ==================== TEST AC-8: MESSAGE QUEUE ====================
+
+    @pytest.mark.asyncio
+    async def test_message_queue_sem_perda(self, executor, mock_mt5_adapter):
+        """
+        AC-8: Fila de mensagens estável, sem perda de ordens.
+
+        Dado: múltiplas ordens submetidas em sequência
+        Quando: execute_order() é chamado para cada uma
+        Então: todas as ordens são processadas sem perda de estado
+        """
+        ordens = [self._criar_ordem(f"ORD-QUEUE-{i:03d}") for i in range(5)]
+
+        resultados = []
+        for ordem in ordens:
+            result = await executor.execute_order(ordem)
+            resultados.append(result)
+
+        # Todas as ordens devem ter sido processadas com sucesso
+        assert len(resultados) == 5
+        for i, result in enumerate(resultados):
+            assert result["success"] is True, f"Ordem {i} falhou: {result}"
+            assert result["order_id"] == f"ORD-QUEUE-{i:03d}"
+
+        # Nenhuma ordem perdida — audit_log de cada uma tem entradas
+        for ordem in ordens:
+            assert len(ordem.audit_log) >= 1
+
+    # ==================== TEST AC-1: MT5 CONNECTION ====================
+
+    @pytest.mark.asyncio
+    async def test_mt5_connection_heartbeat(self, executor, mock_mt5_adapter):
+        """
+        AC-1: Conexão com MT5 estabelecida e autenticada.
+
+        Dado: adaptador MT5 configurado com is_connected=True
+        Quando: execute_order() é chamado
+        Então: send_order é invocado indicando conexão ativa
+        """
+        assert mock_mt5_adapter.is_connected is True
+
+        order = self._criar_ordem("ORD-CONN-001")
+
+        result = await executor.execute_order(order)
+
+        assert result["success"] is True
+        mock_mt5_adapter.send_order.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_mt5_connection_falha_sem_retry(
+        self, executor, mock_mt5_adapter
+    ):
+        """
+        AC-1: Falha de conexão sem retcode 10006 é propagada imediatamente.
+
+        Dado: MT5 retorna erro de conexão não recuperável (não 10006)
+        Quando: execute_order() é chamado
+        Então: retorna success=False sem retries adicionais
+        """
+        mock_mt5_adapter.send_order.side_effect = Exception(
+            "Not connected to MT5"
+        )
+
+        order = self._criar_ordem("ORD-CONN-FAIL-001")
+
+        result = await executor.execute_order(order)
+
+        assert result["success"] is False
+        # Sem retcode 10006 → não retentar, falha imediata
+        assert mock_mt5_adapter.send_order.call_count == 1
+
     # ==================== E2E TESTS ====================
 
     @pytest.mark.asyncio

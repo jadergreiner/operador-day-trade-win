@@ -4789,28 +4789,35 @@ nucleo do pipeline de execucao automatica no Sprint 1.
   com `order_id`, `closed_at` e `provider_result`
 - [x] **AC-11:** `handle_stop_loss()` atualiza estado da ordem para
   `OrderState.CLOSED` atomicamente
-- [x] **AC-12:** 13 testes unitarios + E2E com cobertura de 100% dos ACs
-  (4 execute_order, 4 monitor_positions, 3 handle_stop_loss, 2 E2E)
+- [x] **AC-12:** 16 testes unitarios + E2E com cobertura de 100% dos ACs
+  (4 execute_order, 4 monitor_positions, 3 handle_stop_loss, 2 E2E,
+  2 message_queue, 2 mt5_connection — GitHub Issue #7)
 
 ### Arquivos Alterados
 
 - `src/application/orders_executor.py` — implementacao dos 3 metodos
   (`execute_order`, `monitor_positions`, `handle_stop_loss`) na classe
-  `OrdersExecutionOrchestrator` (alias `OrdersExecutor`)
-- `tests/unit/test_orders_executor.py` — 13 testes unitarios + E2E
+  `OrdersExecutionOrchestrator` (alias `OrdersExecutor`); erro nao-recuperavel
+  em MT5 tratado graciosamente (sem propagacao de excecao)
+- `tests/unit/test_orders_executor.py` — 16 testes unitarios + E2E
 - `docs/ADRS.md` — ADR-029 registrado
 
 ### Evidencias
 
-- 13 testes: 13/13 PASSING (100%)
+- 16 testes: 16/16 PASSING (100%)
 - execute_order: validacao de risco, retry backoff, audit trail
 - monitor_positions: polling MT5, deteccao SL, snapshot historico, < 500ms
 - handle_stop_loss: fechamento mercado, evento auditavel, update atomico CLOSED
+- message_queue: 5 ordens sem perda de estado (AC-8)
+- mt5_connection: heartbeat + falha nao-recuperavel retorna success=False (AC-1)
 - Pipeline E2E: execute_order + monitor_positions + handle_stop_loss integrados
+- GitHub Issue: #7 — [SPRINT-1] TODO-2,3,4: Orders Executor Framework
 
 ### Historico
 
 - 05/04/2026 — criado e implementado (BLID-036)
+- 05/04/2026 — testes test_mt5_connection + test_message_queue adicionados;
+  erro nao-recuperavel MT5 tratado via retorno success=False (PR #7)
 
 ---
 
