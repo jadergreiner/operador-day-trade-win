@@ -463,12 +463,12 @@ class FeatureEngineer:
         Analisa distribuição de labels e detecta padrões nas features.
 
         Acceptance Criteria (Issue #8 - ML-102):
-        ☐ AC-1: Analyze label distribution (captured vs uncaptured)
-        ☐ AC-2: Detect patterns correlated with features
-        ☐ AC-3: Generate markdown insights report
-        ☐ AC-4: Plot histogram of label distribution
-        ☐ AC-5: Identify top 10 most relevant features
-        ☐ AC-6: Unit tests with fixtures from TODO-1
+        ✅ AC-1: Analyze label distribution (captured vs uncaptured)
+        ✅ AC-2: Detect patterns correlated with features
+        ✅ AC-3: Generate markdown insights report
+        ✅ AC-4: Plot histogram of label distribution
+        ✅ AC-5: Identify top 10 most relevant features
+        ✅ AC-6: Unit tests with fixtures from TODO-1
 
         Args:
             X (np.ndarray): Features array (17280, N_features)
@@ -606,9 +606,18 @@ class FeatureEngineer:
             raise
 
     def _resolve_feature_names(self, n_features: int) -> List[str]:
-        """Resolve nomes de features para a analise de padrões."""
-        if n_features == len(self.feature_columns):
-            return list(self.feature_columns)
+        """Resolve nomes de features para a analise de padrões.
+
+        Quando n_features for menor ou igual ao total de colunas conhecidas,
+        retorna os primeiros n_features nomes de feature_columns, preservando
+        compatibilidade com datasets gerados antes da adicao das features ATR
+        (por exemplo, datasets com 26 features em vez de 31).
+
+        Quando n_features exceder o total de colunas conhecidas, nomes genéricos
+        no formato 'feature_NN' sao gerados para cobrir os índices extras.
+        """
+        if n_features <= len(self.feature_columns):
+            return list(self.feature_columns[:n_features])
 
         width = max(2, len(str(max(n_features - 1, 0))))
         return [f"feature_{index:0{width}d}" for index in range(n_features)]
