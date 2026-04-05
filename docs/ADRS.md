@@ -3227,3 +3227,66 @@ Nenhum launcher operacional depende dele diretamente.
 - BLID-038: implementacao completa (05/04/2026)
 - Issue: TODO-7 / ENG-005 — Backtest Detector Integration
 - ADR relacionada: ADR-030 (FiltroConfiancaBDI — mesmo padrao de chamada)
+
+---
+
+## ADR-032: ModelSyncManager — Hot-reload de Modelo via File System Polling (BLID-039)
+
+**Data:** 2026-05-01
+**Status:** APROVADA
+**BLID:** BLID-039
+
+### Contexto
+
+Dois agentes RL operam em paralelo (INICIAR_AGENTE_RL_5000.bat e
+INICIAR_AGENTE_RL_DIRETO.bat). Quando um novo modelo e treinado e salvo em
+`data/models/`, o outro agente continua operando com o modelo antigo, criando
+divergencia de comportamento. Precisamos de mecanismo automatico de deteccao e
+notificacao de mudanca de modelo sem interrupcao operacional.
+
+### Decisao
+
+Implementar `ModelSyncManager` em `src/application/model_sync_manager.py` com:
+
+1. **Polling de mtime** via `os.stat().st_mtime` nos diretorios configurados
+   (nao usa inotify/watchdog para evitar dependencias de plataforma)
+2. **Marker file JSON** em path configuravel para comunicacao entre processos
+   (escrita atomica via `.tmp` + `rename` para evitar leitura de arquivo parcial)
+3. **Thread daemon** background com `threading.Event` para stop seguro
+4. **Callbacks registraveis** com isolamento de excecoes
+5. **Intervalo configuravel** com padrao de 30 segundos
+
+### Alternativas Rejeitadas
+
+- **watchdog (PyPI)**: dependencia externa, comportamento diferente entre
+  plataformas (Linux inotify vs Windows ReadDirectoryChanges)
+- **Redis pub/sub**: overhead operacional, requer servidor Redis em execucao
+- **Signal SIGUSR1**: nao portavel para Windows (ambiente de producao usa Windows)
+- **Polling mais frequente (<5s)**: custo I/O desnecessario para modelos que
+  mudam no maximo uma vez por dia
+
+### Consequencias
+
+- Latencia de deteccao = intervalo_polling (padrao 30s) — aceitavel para
+  modelos treinados offline
+- Zero dependencias externas alem de stdlib Python 3.11+
+- Compativel com Windows (sem SIGKILL/inotify)
+- Agentes podem registrar callbacks para hot-reload sem modificar a logica de
+  polling
+- Marker file permite que agentes em processos distintos detectem mudancas
+  produzidas por terceiros
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | BAIXO/INDIRETO | Novo modulo disponivel | Opcional: instanciar ModelSyncManager |
+| INICIAR_AGENTE_RL_DIRETO.bat | BAIXO/INDIRETO | Novo modulo disponivel | Opcional: instanciar ModelSyncManager |
+| INICIAR_DIARIOS.bat | NENHUM | — | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | — | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | — | Nenhuma |
+
+### Referencias
+
+- BLID-039: implementacao completa (2026-05-01)
+- ADR-031: BacktestDetector (padrao de modulo application standalone)

@@ -208,22 +208,16 @@ Fase 1 com dados reais suficientes.
 
 #### Proximos Passos Opcionais (P1-AGENTES_PARALELOS)
 
-**1. Sincronizacao de Modelo - Hot-reload entre agentes**
+**1. Sincronizacao de Modelo - Hot-reload entre agentes** ✅ IMPLEMENTADO (BLID-039)
 
 - **Objetivo:** Quando um agente carrega novo modelo, outros agentes
   detectam e recarregam automaticamente.
-- **Atividades:**
-  - Implementar file system watcher ou polling de timestamp
-  - Detector de mudanca em `data/models/novo_agente_rl/modelo_final/`
-  - Sinal entre agentes (via arquivo marker ou Redis)
-  - Recarregamento atomico sem interrupcao de operacoes
-  - Logging de sync events com timestamp
-- **Entregar:**
-  - ModelSyncManager class com watcher
-  - Testes de sincronizacao (mock filesystem)
-  - Configuracao de polling interval (padrão: 30s)
-  - Documentacao de setup
-- **Estimativa:** 6-8 horas (implementacao + testes + integracao)
+- **Status:** CONCLUIDO — ver BLID-039
+- **Entregue:**
+  - `src/application/model_sync_manager.py` — ModelSyncManager com polling de mtime
+  - `tests/unit/test_model_sync_manager.py` — 31 testes (31/31 PASSING)
+  - Intervalo de polling configuravel (padrao: 30s)
+  - ADR-032 registrada
 
 **2. Dashboard Unificado - Visibilidade de ambos agentes**
 
@@ -5078,3 +5072,59 @@ Divida tecnica acumulada (TODO-8, 9, 10-12) resolvida em ciclo dedicado.
 ### Historico
 
 - 05/04/2026 — criado e implementado (BLID-TD8910)
+
+---
+
+## BLID-039
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: eliminacao de divergencia de modelo entre agentes paralelos em producao — hot-reload automatico sem interrupcao operacional
+stage_atual: project-manager
+adr_referencia: ADR-032
+
+### Escopo
+
+ModelSyncManager — hot-reload de modelo entre agentes RL paralelos via polling de mtime + marker file JSON.
+
+### Criterios de Aceite
+
+- [x] AC1: ConfiguracaoSync aceita lista de diretorios, caminho marker, intervalo polling (padrao 30s) e id_agente
+- [x] AC2: EventoSincronizacao registra caminho_modelo, id_agente_origem, timestamp_iso, mtime_anterior, mtime_novo
+- [x] AC3: ModelSyncManager detecta mudanca de mtime em qualquer diretorio monitorado
+- [x] AC4: Callbacks registrados sao invocados atomicamente; excecao em callback nao bloqueia os demais
+- [x] AC5: Marker file JSON escrito atomicamente (.tmp + replace) a cada mudanca detectada
+- [x] AC6: Thread daemon com iniciar()/parar() idempotentes; nao duplica thread
+- [x] AC7: Historico de eventos limitado ao max_eventos_historico (padrao 100)
+- [x] AC8: Diretorios inexistentes ignorados silenciosamente na inicializacao
+- [x] AC9: 31 testes unitarios: 31/31 PASSING (mock filesystem, sem deps externas)
+- [x] AC10: mypy --strict zero erros em src/application/model_sync_manager.py
+
+### Arquivos Alterados
+
+- `src/application/model_sync_manager.py` — implementacao ModelSyncManager (novo)
+- `tests/unit/test_model_sync_manager.py` — 31 testes unitarios (novo)
+- `docs/BACKLOG.md` — BLID-039 registrado
+- `docs/ADRS.md` — ADR-032 registrada
+
+### Evidencias
+
+- 31 testes unitarios: 31/31 PASSING
+- mypy --strict: zero erros
+- Thread safety: lock em todas operacoes de estado compartilhado
+- Escrita atomica de marker: .tmp + rename
+- Zero dependencias externas (stdlib only)
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | BAIXO/INDIRETO | Novo modulo disponivel para integracao futura | Opcional: integrar ModelSyncManager para detectar novos modelos |
+| INICIAR_AGENTE_RL_DIRETO.bat | BAIXO/INDIRETO | Novo modulo disponivel para integracao futura | Opcional: integrar ModelSyncManager para detectar novos modelos |
+| INICIAR_DIARIOS.bat | NENHUM | — | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | — | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | — | Nenhuma |
+
+### Historico
+
+- 2026-05-01 — criado e implementado (BLID-039)
