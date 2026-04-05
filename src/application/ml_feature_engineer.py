@@ -1115,8 +1115,8 @@ def load_and_label(path: str) -> Dict:
     # AC-4: Validar class imbalance < 70%
     total = len(df)
     n_wins = int((df['label'] == 1).sum())
-    imbalance_pct = (n_wins / total) * 100.0 if total > 0 else 0.0
-    max_class_pct = max(imbalance_pct, 100.0 - imbalance_pct)
+    win_rate_pct = (n_wins / total) * 100.0 if total > 0 else 0.0
+    max_class_pct = max(win_rate_pct, 100.0 - win_rate_pct)
     if max_class_pct >= 70.0:
         raise ValueError(
             f"Class imbalance inaceitável: {max_class_pct:.1f}% "
@@ -1126,13 +1126,15 @@ def load_and_label(path: str) -> Dict:
     # AC-6: Medir performance total
     execution_time_ms = (time.perf_counter() - start_time) * 1000
 
+    # Enriquecer metadata com métricas de validação.
+    # execution_time_ms é retornado como chave raiz do dict (fonte de verdade);
+    # aqui é omitido de metadata para evitar duplicidade.
     metadata['nan_count'] = nan_count
-    metadata['imbalance_pct'] = round(imbalance_pct, 2)
-    metadata['execution_time_ms'] = round(execution_time_ms, 2)
+    metadata['imbalance_pct'] = round(win_rate_pct, 2)
 
     logger.info("load_and_label() ML-101 concluido:")
     logger.info("  - Matches: %d", total)
-    logger.info("  - Wins: %d (%.1f%%)", n_wins, imbalance_pct)
+    logger.info("  - Wins: %d (%.1f%%)", n_wins, win_rate_pct)
     logger.info("  - NaN: %d", nan_count)
     logger.info("  - Imbalance: %.1f%%", max_class_pct)
     logger.info("  - Performance: %.1fms", execution_time_ms)

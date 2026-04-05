@@ -339,6 +339,10 @@ class TestLoadAndLabelAC2Retorno:
         metadata = resultado['metadata']
         for campo in [
             'matches', 'win_rate_estimado_pct', 'n_wins', 'n_losses',
-            'nan_count', 'imbalance_pct', 'execution_time_ms',
+            'nan_count', 'imbalance_pct',
         ]:
             assert campo in metadata, f"Campo '{campo}' ausente em metadata"
+        # execution_time_ms e' chave raiz do dict retornado (fonte de verdade)
+        assert 'execution_time_ms' in resultado, (
+            "'execution_time_ms' ausente no dict raiz"
+        )
