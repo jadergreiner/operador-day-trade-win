@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Agentes RL — WIN$N</title>
+  <!-- Chart.js via CDN com crossorigin para mitigacao de risco de CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+          crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --cor-fundo: #0d0f14;
+      --cor-painel: #161b27;
+      --cor-borda: #252d3d;
+      --cor-texto: #e2e8f0;
+      --cor-texto-sutil: #8899aa;
+      --cor-verde: #22c55e;
+      --cor-vermelho: #ef4444;
+      --cor-amarelo: #f59e0b;
+      --cor-azul: #3b82f6;
+      --cor-roxo: #a855f7;
+      --cor-ativo: #22c55e;
+      --cor-aguardando: #f59e0b;
+      --cor-offline: #ef4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--cor-fundo);
+      color: var(--cor-texto);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--cor-painel);
+      border-bottom: 1px solid var(--cor-borda);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    header h1 span {
+      color: var(--cor-azul);
+    }
+
+    #status-banco {
+      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .banco-ok { background: rgba(34,197,94,0.15); color: var(--cor-verde); }
+    .banco-off { background: rgba(239,68,68,0.15); color: var(--cor-vermelho); }
+
+    #ultimo-refresh {
+      font-size: 11px;
+      color: var(--cor-texto-sutil);
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+    /* ---- Cards de status ---- */
+    .secao-titulo {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--cor-texto-sutil);
+      margin-bottom: 12px;
+      margin-top: 28px;
+    }
+
+    .grade-status {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .card-agente {
+      background: var(--cor-painel);
+      border: 1px solid var(--cor-borda);
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .card-agente-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .card-agente-titulo {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .badge-status {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 12px;
+      text-transform: uppercase;
+    }
+
+    .badge-ATIVO { background: rgba(34,197,94,0.15); color: var(--cor-ativo); }
+    .badge-AGUARDANDO { background: rgba(245,158,11,0.15); color: var(--cor-aguardando); }
+    .badge-OFFLINE { background: rgba(239,68,68,0.15); color: var(--cor-offline); }
+
+    .card-metricas-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .metrica-item { text-align: center; }
+
+    .metrica-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--cor-texto-sutil);
+      margin-bottom: 4px;
+    }
+
+    .metrica-valor {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .positivo { color: var(--cor-verde); }
+    .negativo { color: var(--cor-vermelho); }
+    .neutro { color: var(--cor-texto); }
+
+    /* ---- Secao de metricas avancadas ---- */
+    .grade-metricas {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .card-metricas-avancadas {
+      background: var(--cor-painel);
+      border: 1px solid var(--cor-borda);
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .card-metricas-avancadas h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .linha-metrica {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--cor-borda);
+    }
+
+    .linha-metrica:last-child { border-bottom: none; }
+
+    .linha-metrica-nome {
+      color: var(--cor-texto-sutil);
+      font-size: 13px;
+    }
+
+    .linha-metrica-valor {
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    /* ---- Grafico equity ---- */
+    .card-grafico {
+      background: var(--cor-painel);
+      border: 1px solid var(--cor-borda);
+      border-radius: 10px;
+      padding: 24px;
+      margin-top: 8px;
+    }
+
+    .card-grafico h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      height: 280px;
+    }
+
+    /* ---- Tabela de trades ---- */
+    .card-tabela {
+      background: var(--cor-painel);
+      border: 1px solid var(--cor-borda);
+      border-radius: 10px;
+      padding: 20px;
+      overflow-x: auto;
+      margin-top: 8px;
+    }
+
+    .card-tabela h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 8px 12px;
+      color: var(--cor-texto-sutil);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--cor-borda);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid rgba(37,45,61,0.5);
+      transition: background 0.15s;
+    }
+
+    tbody tr:hover { background: rgba(59,130,246,0.06); }
+
+    tbody td {
+      padding: 10px 12px;
+    }
+
+    .side-buy { color: var(--cor-verde); font-weight: 700; }
+    .side-sell { color: var(--cor-vermelho); font-weight: 700; }
+    .status-closed { color: var(--cor-texto-sutil); }
+    .status-open { color: var(--cor-amarelo); font-weight: 700; }
+
+    .sem-dados {
+      text-align: center;
+      color: var(--cor-texto-sutil);
+      padding: 32px;
+      font-size: 13px;
+    }
+
+    /* ---- Rodape ---- */
+    footer {
+      text-align: center;
+      color: var(--cor-texto-sutil);
+      font-size: 11px;
+      padding: 24px;
+      margin-top: 16px;
+      border-top: 1px solid var(--cor-borda);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Dashboard <span>Agentes RL</span> — WIN$N</h1>
+    </div>
+    <div style="text-align:right">
+      <span id="status-banco" class="banco-off">BANCO OFFLINE</span>
+      <div id="ultimo-refresh">Aguardando dados...</div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Status dos Agentes -->
+    <div class="secao-titulo">Status dos Agentes</div>
+    <div class="grade-status" id="grade-status">
+      <div class="sem-dados">Carregando...</div>
+    </div>
+
+    <!-- Metricas Avancadas -->
+    <div class="secao-titulo">Metricas (ultimos 7 dias)</div>
+    <div class="grade-metricas" id="grade-metricas">
+      <div class="sem-dados">Carregando...</div>
+    </div>
+
+    <!-- Equity Curve -->
+    <div class="secao-titulo">Equity Curve Diaria</div>
+    <div class="card-grafico">
+      <h3>PnL Acumulado por Dia — Ultimos 7 Dias</h3>
+      <div class="canvas-wrapper">
+        <canvas id="grafico-equity"></canvas>
+      </div>
+    </div>
+
+    <!-- Ultimos Trades -->
+    <div class="secao-titulo">Ultimos Trades</div>
+    <div class="card-tabela">
+      <h3>Historico Recente (max 10 por agente)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Agente</th>
+            <th>Side</th>
+            <th>Entrada</th>
+            <th>Saida</th>
+            <th>P&amp;L (R$)</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-trades">
+          <tr><td colspan="6" class="sem-dados">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <footer>
+    BLID-040 — Dashboard Agentes RL v1.0 | Auto-refresh 5s | Porta 8010
+  </footer>
+
+  <script>
+    'use strict';
+
+    // -----------------------------------------------------------------------
+    // Constantes
+    // -----------------------------------------------------------------------
+    const MAGICS = { 234500: 'RL 5000', 234600: 'RL Direto' };
+    const INTERVALO_REFRESH_MS = 5000;
+
+    // -----------------------------------------------------------------------
+    // Estado do grafico
+    // -----------------------------------------------------------------------
+    let graficoCriado = false;
+    let graficoInstance = null;
+
+    // -----------------------------------------------------------------------
+    // Utilitarios
+    // -----------------------------------------------------------------------
+    function nomeAgente(magic) {
+      return MAGICS[magic] || `Magic ${magic}`;
+    }
+
+    function formatarPnL(valor) {
+      if (valor === null || valor === undefined) return '—';
+      const classe = valor > 0 ? 'positivo' : valor < 0 ? 'negativo' : 'neutro';
+      const sinal = valor > 0 ? '+' : '';
+      return `<span class="${classe}">${sinal}R$ ${valor.toFixed(2)}</span>`;
+    }
+
+    function formatarPct(valor) {
+      if (valor === null || valor === undefined) return '—';
+      return `${(valor * 100).toFixed(1)}%`;
+    }
+
+    function formatarFloat(valor, casas = 2) {
+      if (valor === null || valor === undefined) return '—';
+      return valor.toFixed(casas);
+    }
+
+    function dataAtual() {
+      return new Date().toLocaleTimeString('pt-BR');
+    }
+
+    // -----------------------------------------------------------------------
+    // Renderizacao — Status dos Agentes
+    // -----------------------------------------------------------------------
+    function renderizarStatus(payload) {
+      const container = document.getElementById('grade-status');
+
+      // Atualizar badge de banco
+      const badgeBanco = document.getElementById('status-banco');
+      if (payload.banco_disponivel) {
+        badgeBanco.textContent = 'BANCO ONLINE';
+        badgeBanco.className = 'banco-ok';
+      } else {
+        badgeBanco.textContent = 'BANCO OFFLINE';
+        badgeBanco.className = 'banco-off';
+      }
+
+      if (!payload.agentes || payload.agentes.length === 0) {
+        container.innerHTML = '<div class="sem-dados">Sem dados de agentes</div>';
+        return;
+      }
+
+      container.innerHTML = payload.agentes.map(agente => {
+        const pnlClass = agente.pnl_hoje > 0 ? 'positivo' : agente.pnl_hoje < 0 ? 'negativo' : 'neutro';
+        const statusBadge = `badge-${agente.status}`;
+
+        return `
+          <div class="card-agente">
+            <div class="card-agente-header">
+              <span class="card-agente-titulo">${nomeAgente(agente.magic_number)}</span>
+              <span class="badge-status ${statusBadge}">${agente.status}</span>
+            </div>
+            <div class="card-metricas-grid">
+              <div class="metrica-item">
+                <div class="metrica-label">PnL Hoje</div>
+                <div class="metrica-valor ${pnlClass}">
+                  ${agente.pnl_hoje >= 0 ? '+' : ''}R$ ${agente.pnl_hoje.toFixed(2)}
+                </div>
+              </div>
+              <div class="metrica-item">
+                <div class="metrica-label">Win Rate</div>
+                <div class="metrica-valor">${formatarPct(agente.win_rate)}</div>
+              </div>
+              <div class="metrica-item">
+                <div class="metrica-label">Trades Hoje</div>
+                <div class="metrica-valor neutro">${agente.trades_hoje}</div>
+              </div>
+              <div class="metrica-item">
+                <div class="metrica-label">Abertas</div>
+                <div class="metrica-valor ${agente.trades_abertas > 0 ? 'positivo' : 'neutro'}">
+                  ${agente.trades_abertas}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // -----------------------------------------------------------------------
+    // Renderizacao — Metricas Avancadas
+    // -----------------------------------------------------------------------
+    function renderizarMetricas(payload) {
+      const container = document.getElementById('grade-metricas');
+
+      if (!payload.agentes || payload.agentes.length === 0) {
+        container.innerHTML = '<div class="sem-dados">Sem metricas disponiveis</div>';
+        return;
+      }
+
+      container.innerHTML = payload.agentes.map(agente => {
+        const pfClass = agente.profit_factor >= 1.5 ? 'positivo' : agente.profit_factor >= 1.0 ? 'neutro' : 'negativo';
+        const ddClass = agente.drawdown_maximo_reais > 500 ? 'negativo' : 'neutro';
+
+        return `
+          <div class="card-metricas-avancadas">
+            <h3>${nomeAgente(agente.magic_number)} — Ultimos 7 dias</h3>
+            <div class="linha-metrica">
+              <span class="linha-metrica-nome">Profit Factor</span>
+              <span class="linha-metrica-valor ${pfClass}">${formatarFloat(agente.profit_factor)}</span>
+            </div>
+            <div class="linha-metrica">
+              <span class="linha-metrica-nome">Sharpe Ratio</span>
+              <span class="linha-metrica-valor">${formatarFloat(agente.sharpe_ratio)}</span>
+            </div>
+            <div class="linha-metrica">
+              <span class="linha-metrica-nome">Win Rate 7d</span>
+              <span class="linha-metrica-valor">${formatarPct(agente.win_rate_7d)}</span>
+            </div>
+            <div class="linha-metrica">
+              <span class="linha-metrica-nome">Drawdown Max</span>
+              <span class="linha-metrica-valor ${ddClass}">R$ ${formatarFloat(agente.drawdown_maximo_reais)}</span>
+            </div>
+            <div class="linha-metrica">
+              <span class="linha-metrica-nome">Total Trades 7d</span>
+              <span class="linha-metrica-valor neutro">${agente.total_trades_7d}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // -----------------------------------------------------------------------
+    // Renderizacao — Equity Curve
+    // -----------------------------------------------------------------------
+    function renderizarEquity(payload) {
+      const ctx = document.getElementById('grafico-equity').getContext('2d');
+
+      const labels = payload.series.map(p => p.data);
+      const dados5000 = payload.series.map(p => p.pnl_rl_5000);
+      const dadosDireto = payload.series.map(p => p.pnl_rl_direto);
+
+      const configDatasets = [
+        {
+          label: 'RL 5000',
+          data: dados5000,
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59,130,246,0.08)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+        {
+          label: 'RL Direto',
+          data: dadosDireto,
+          borderColor: '#a855f7',
+          backgroundColor: 'rgba(168,85,247,0.08)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+      ];
+
+      if (graficoInstance) {
+        graficoInstance.data.labels = labels;
+        graficoInstance.data.datasets[0].data = dados5000;
+        graficoInstance.data.datasets[1].data = dadosDireto;
+        graficoInstance.update('none');
+        return;
+      }
+
+      graficoInstance = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets: configDatasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              labels: { color: '#e2e8f0', font: { size: 13 } }
+            },
+            tooltip: {
+              backgroundColor: '#1e2535',
+              titleColor: '#e2e8f0',
+              bodyColor: '#8899aa',
+              borderColor: '#252d3d',
+              borderWidth: 1,
+              callbacks: {
+                label: ctx => ` ${ctx.dataset.label}: R$ ${ctx.parsed.y.toFixed(2)}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: '#8899aa', font: { size: 11 } },
+              grid: { color: 'rgba(37,45,61,0.5)' }
+            },
+            y: {
+              ticks: {
+                color: '#8899aa',
+                font: { size: 11 },
+                callback: v => `R$ ${v.toFixed(0)}`
+              },
+              grid: { color: 'rgba(37,45,61,0.5)' }
+            }
+          }
+        }
+      });
+    }
+
+    // -----------------------------------------------------------------------
+    // Renderizacao — Tabela de Trades
+    // -----------------------------------------------------------------------
+    function renderizarTrades(payload) {
+      const tbody = document.getElementById('tabela-trades');
+
+      if (!payload.trades || payload.trades.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="sem-dados">Sem trades registrados</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = payload.trades.map(trade => {
+        const sideClass = trade.side === 'BUY' ? 'side-buy' : 'side-sell';
+        const statusClass = trade.status === 'CLOSED' ? 'status-closed' : 'status-open';
+        const pnlFormatado = formatarPnL(trade.profit_loss);
+        const entradaFmt = trade.entry_time ? trade.entry_time.substring(0, 16) : '—';
+        const saidaFmt = trade.exit_time ? trade.exit_time.substring(0, 16) : '<span class="status-open">ABERTO</span>';
+
+        return `
+          <tr>
+            <td>${nomeAgente(trade.magic_number)}</td>
+            <td class="${sideClass}">${trade.side}</td>
+            <td>${entradaFmt}</td>
+            <td>${saidaFmt}</td>
+            <td>${pnlFormatado}</td>
+            <td class="${statusClass}">${trade.status}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // -----------------------------------------------------------------------
+    // Ciclo de refresh
+    // -----------------------------------------------------------------------
+    async function buscarDados() {
+      try {
+        const [resStatus, resMetricas, resTrades, resEquity] = await Promise.all([
+          fetch('/status'),
+          fetch('/metricas'),
+          fetch('/trades'),
+          fetch('/equity'),
+        ]);
+
+        const [payloadStatus, payloadMetricas, payloadTrades, payloadEquity] = await Promise.all([
+          resStatus.json(),
+          resMetricas.json(),
+          resTrades.json(),
+          resEquity.json(),
+        ]);
+
+        renderizarStatus(payloadStatus);
+        renderizarMetricas(payloadMetricas);
+        renderizarEquity(payloadEquity);
+        renderizarTrades(payloadTrades);
+
+        document.getElementById('ultimo-refresh').textContent =
+          `Atualizado em ${dataAtual()}`;
+
+      } catch (erro) {
+        console.error('Erro ao buscar dados:', erro);
+        document.getElementById('ultimo-refresh').textContent =
+          `Erro ao carregar — ${dataAtual()}`;
+      }
+    }
+
+    // Inicializar e agendar refresh automatico
+    buscarDados();
+    setInterval(buscarDados, INTERVALO_REFRESH_MS);
+  </script>
+</body>
+</html>
