@@ -5487,3 +5487,65 @@ processar_reversao(). Nao foi implementado em BLID-044; requer BLID futura.
 ### Historico
 
 - 2026-04-05 — criado e implementado (BLID-044)
+
+---
+
+## BLID-045
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Conectar alertas de reversao de lucro aos agentes RL para notificacao em tempo real
+stage_atual: completo
+adr_referencia: ADR-037
+data_conclusao: 2026-04-05
+
+### Escopo
+
+Integrar AlertReversaoHandler (BLID-044) com ProfitProtectionEngine nos dois
+agentes RL. Quando o engine detectar status=ALERTA (reversao de lucro), o
+handler dispara notificacao multicanal (WebSocket + Email + Webhook).
+
+Resolve divida tecnica DT-BLID044-03 (MEDIA):
+"Integracao com ProfitProtectionEngine requer modificacao manual nos agentes RL
+para instanciar AlertReversaoHandler e chamar processar_reversao()."
+
+Componentes afetados:
+- scripts/operar_novo_agente_rl_real_antiovertrading.py — RL 5000 ✅
+- scripts/agente_rl_direto_independente.py — RL Direto ✅
+
+### Criterios de Aceite
+
+- [x] AC1: AlertReversaoHandler instanciado no startup dos dois agentes RL
+- [x] AC2: processar_reversao() chamado quando ProfitProtectionEngine retorna status=ALERTA
+- [x] AC3: AlertaDeliveryManager injetado no handler (WebSocket + Email)
+- [x] AC4: Config carregada de config/alert_reversoes.yaml ou env vars
+- [x] AC5: Webhook URL opcional via ALERT_WEBHOOK_URL env var
+- [x] AC6: Throttling de 60s aplicado automaticamente
+- [x] AC7: Graceful degradation se AlertaDeliveryManager nao disponivel
+- [x] AC8: Logs INFO quando alerta disparado com trade_id e simbolo
+- [x] AC9: 10 testes unitarios de integracao (mock ProfitProtectionResult)
+- [x] AC10: mypy --strict sem erros nos dois scripts modificados
+
+### Arquivos Modificados
+
+- scripts/operar_novo_agente_rl_real_antiovertrading.py — imports + init + chamada ✅
+- scripts/agente_rl_direto_independente.py — imports + init + chamada ✅
+- tests/unit/test_blid045_integration.py — novo (10 testes) ✅
+- docs/BACKLOG.md — BLID-045 registrado ✅
+- docs/ADRS.md — ADR-037 atualizado (secao "Integracao com Agentes") ✅
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | MEDIO | DIRETO | Opcional: configurar ALERT_WEBHOOK_URL |
+| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | DIRETO | Opcional: configurar ALERT_WEBHOOK_URL |
+| INICIAR_DIARIOS.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | SEM IMPACTO | Nenhuma |
+
+### Historico
+
+- 2026-04-05 — criado (BLID-045) a partir de DT-BLID044-03
+- 2026-04-05 — implementacao concluida (10 AC completos)
+
