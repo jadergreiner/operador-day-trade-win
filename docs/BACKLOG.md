@@ -5492,11 +5492,12 @@ processar_reversao(). Nao foi implementado em BLID-044; requer BLID futura.
 
 ## BLID-045
 
-status: EM_ANDAMENTO
+status: CONCLUIDO
 prioridade: P1
 valor_po: Conectar alertas de reversao de lucro aos agentes RL para notificacao em tempo real
-stage_atual: tech-lead
+stage_atual: completo
 adr_referencia: ADR-037
+data_conclusao: 2026-04-05
 
 ### Escopo
 
@@ -5509,29 +5510,29 @@ Resolve divida tecnica DT-BLID044-03 (MEDIA):
 para instanciar AlertReversaoHandler e chamar processar_reversao()."
 
 Componentes afetados:
-- scripts/operar_novo_agente_rl_real_antiovertrading.py — RL 5000
-- scripts/agente_rl_direto_independente.py — RL Direto
+- scripts/operar_novo_agente_rl_real_antiovertrading.py — RL 5000 ✅
+- scripts/agente_rl_direto_independente.py — RL Direto ✅
 
 ### Criterios de Aceite
 
-- [ ] AC1: AlertReversaoHandler instanciado no startup dos dois agentes RL
-- [ ] AC2: processar_reversao() chamado quando ProfitProtectionEngine retorna status=ALERTA
-- [ ] AC3: AlertaDeliveryManager injetado no handler (WebSocket + Email)
-- [ ] AC4: Config carregada de config/alert_reversoes.yaml ou env vars
-- [ ] AC5: Webhook URL opcional via ALERT_WEBHOOK_URL env var
-- [ ] AC6: Throttling de 60s aplicado automaticamente
-- [ ] AC7: Graceful degradation se AlertaDeliveryManager nao disponivel
-- [ ] AC8: Logs INFO quando alerta disparado com trade_id e simbolo
-- [ ] AC9: 10 testes unitarios de integracao (mock ProfitProtectionResult)
-- [ ] AC10: mypy --strict sem erros nos dois scripts modificados
+- [x] AC1: AlertReversaoHandler instanciado no startup dos dois agentes RL
+- [x] AC2: processar_reversao() chamado quando ProfitProtectionEngine retorna status=ALERTA
+- [x] AC3: AlertaDeliveryManager injetado no handler (WebSocket + Email)
+- [x] AC4: Config carregada de config/alert_reversoes.yaml ou env vars
+- [x] AC5: Webhook URL opcional via ALERT_WEBHOOK_URL env var
+- [x] AC6: Throttling de 60s aplicado automaticamente
+- [x] AC7: Graceful degradation se AlertaDeliveryManager nao disponivel
+- [x] AC8: Logs INFO quando alerta disparado com trade_id e simbolo
+- [x] AC9: 10 testes unitarios de integracao (mock ProfitProtectionResult)
+- [x] AC10: mypy --strict sem erros nos dois scripts modificados
 
-### Arquivos a Modificar
+### Arquivos Modificados
 
-- scripts/operar_novo_agente_rl_real_antiovertrading.py — imports + init + chamada
-- scripts/agente_rl_direto_independente.py — imports + init + chamada
-- tests/unit/test_blid045_integration.py — novo (10 testes)
-- docs/BACKLOG.md — BLID-045 registrado
-- docs/ADRS.md — ADR-037 atualizado (secao "Integracao com Agentes")
+- scripts/operar_novo_agente_rl_real_antiovertrading.py — imports + init + chamada ✅
+- scripts/agente_rl_direto_independente.py — imports + init + chamada ✅
+- tests/unit/test_blid045_integration.py — novo (10 testes) ✅
+- docs/BACKLOG.md — BLID-045 registrado ✅
+- docs/ADRS.md — ADR-037 atualizado (secao "Integracao com Agentes") ✅
 
 ### Impacto nos Agentes Operacionais
 
@@ -5546,4 +5547,5 @@ Componentes afetados:
 ### Historico
 
 - 2026-04-05 — criado (BLID-045) a partir de DT-BLID044-03
+- 2026-04-05 — implementacao concluida (10 AC completos)
 

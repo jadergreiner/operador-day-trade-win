@@ -3659,11 +3659,81 @@ retrocompatibilidade com padroes SMC, volatilidade e tecnicos.
 para instanciar AlertReversaoHandler e chamar processar_reversao() quando
 processar_protecao() retorna status=ALERTA.
 
+### Integracao com Agentes RL (BLID-045)
+
+**Status:** CONCLUIDO (2026-04-05)
+
+AlertReversaoHandler foi integrado aos dois agentes RL em producao:
+
+**1. RL 5000 (operar_novo_agente_rl_real_antiovertrading.py):**
+- Lazy import com feature flag _ALERT_REVERSAO_DISPONIVEL
+- Inicializacao em startup_sequence() com config de YAML ou env var
+- Disparo de alerta em _processar_protecao_lucros() quando status=ALERTA
+- Graceful degradation: funciona mesmo sem AlertaDeliveryManager
+
+**2. RL Direto (agente_rl_direto_independente.py):**
+- Lazy import com feature flag _ALERT_REVERSAO_DISPONIVEL_DIRETO
+- Inicializacao em _inicializar_componentes() com config de YAML ou env var
+- Disparo de alerta em processar_protecao_lucros_rl_direto() quando status=ALERTA
+- Injecao via dict componentes["alert_reversao_handler"]
+
+**Padrao de Integracao:**
+```python
+# Import com feature flag
+try:
+    from src.application.alert_reversao_handler import (
+        AlertReversaoHandler,
+        AlertReversaoConfig,
+    )
+    from src.application.services.alerta_delivery import AlertaDeliveryManager
+    import yaml
+    _ALERT_REVERSAO_DISPONIVEL = True
+except ImportError:
+    _ALERT_REVERSAO_DISPONIVEL = False
+
+# Inicializacao
+if _ALERT_REVERSAO_DISPONIVEL:
+    alert_config = AlertReversaoConfig()
+    # Carregar de config/alert_reversoes.yaml se existir
+    # Fallback para env var ALERT_WEBHOOK_URL
+    _alerta_delivery_manager = AlertaDeliveryManager(
+        websocket_client=None,  # Graceful degradation
+        email_config=None,
+    )
+    _alert_reversao_handler = AlertReversaoHandler(
+        delivery_manager=_alerta_delivery_manager,
+        config=alert_config,
+    )
+
+# Disparo de alerta
+if _ALERT_REVERSAO_DISPONIVEL and _alert_reversao_handler:
+    if resultado_protecao.status == ProtectionStatus.ALERTA:
+        asyncio.run(_alert_reversao_handler.processar_reversao(resultado_protecao))
+```
+
+**Acceptance Criteria (AC):**
+- AC1: Handler inicializado com config de YAML/env var ✅
+- AC2: processar_reversao() converte ProfitProtectionResult em AlertaOportunidade ✅
+- AC3: AlertaDeliveryManager injetado no handler ✅
+- AC5: Webhook URL carregada de env var ALERT_WEBHOOK_URL ✅
+- AC6: Throttling de 60s aplicado entre alertas do mesmo trade ✅
+- AC7: Graceful degradation quando AlertaDeliveryManager nao disponivel ✅
+- AC8/AC9: Alerta contem trade_id e simbolo no payload ✅
+- AC10: Limpeza automatica de historico de alertas >24h ✅
+
+**Testes:**
+- tests/unit/test_blid045_integration.py: 10 testes unitarios cobrindo todos AC
+
+**Divida Tecnica Resolvida:**
+- DT-BLID044-03 (MEDIA): Integracao AlertReversaoHandler com agentes RL
+
 ### Referencias
 
 - BLID-044: implementacao completa (2026-04-05)
+- BLID-045: integracao com agentes RL (2026-04-05)
 - P1-PROFIT_PROTECTION item #2: especificacao de alertas
 - ADR-018: configuracao de ProfitProtectionEngine por perfil
 - src/application/alert_reversao_handler.py: implementacao
 - config/alert_reversoes.yaml: configuracao canonica
 - tests/unit/test_alert_reversao_handler.py: 21 testes unitarios
+- tests/unit/test_blid045_integration.py: 10 testes de integracao
