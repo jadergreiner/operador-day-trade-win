@@ -3486,7 +3486,7 @@ que:
 - ADR-023: arquivo ausente -> fallback seguro sem exception
 - ADR-034: CoordinationManager (produtor do sinal JSON)
 
-## ADR-036: Integracao do CoordinationSignalReader nos Agentes RL (BLID-043)
+## ADR-036: Integracao CoordinationManager por Agente com DB Local e Signal Path Exclusivo (BLID-043)
 
 **Status:** ACEITO
 **Data:** 2026-04-06
@@ -3494,54 +3494,69 @@ que:
 
 ### Contexto
 
-O CoordinationSignalReader (ADR-035 / BLID-042) foi criado como modulo
-stateless para leitura do sinal de coordenacao emitido pelo CoordinationManager.
-Contudo, os agentes RL (rl_5000 e rl_direto) ainda nao consultavam esse sinal
-antes de abrir novas posicoes — divida tecnica DT-BLID042-01.
+O CoordinationManager (ADR-034 / BLID-041) e o CoordinationSignalReader (ADR-035 / BLID-042)
+foram implementados e testados mas nao estavam integrados nos loops de decisao dos agentes
+RL (agente_rl_direto_independente.py e operar_novo_agente_rl_real_antiovertrading.py).
+A protecao cross-agent existia em codigo mas nao estava ativa em producao.
 
 ### Decisao
 
-Criar modulo fino ``src/application/coordination_integration.py`` que encapsula
-a funcao ``verificar_pode_abrir_posicao(reader=None) -> bool``. Cada agente RL
-delega para esse modulo antes de enviar ordens de abertura.
+Integrar CoordinationManager e CoordinationSignalReader diretamente nos dois scripts de
+agente RL, seguindo tres decisoes arquiteturais registradas aqui como referencia para
+evolucoes futuras:
 
-**Pontos de integracao:**
-- ``operar_novo_agente_rl_real_antiovertrading.py``: apos confirmacao multi-vela,
-  antes de ``enviar_ordem_mt5adapter()``. Funcao helper:
-  ``_verificar_pode_abrir_posicao_rl5000(reader=None)``
-- ``agente_rl_direto_independente.py``: apos anti-overtrading check,
-  antes de ``enviar_ordem()``. Funcao helper:
-  ``_verificar_pode_abrir_posicao_direto(reader=None)``
+**1. DB Local por Agente:**
+Cada agente instancia seu proprio CoordinationManager apontando para seu banco SQLite
+local (trading_rl_direto.db ou trading_rl_5000.db). Consequencia: drawdown_conjunto
+reflete apenas o agente local; o outro agente aparece com PnL=[] -> drawdown=0. Esta
+e uma protecao INDIVIDUAL (nao cross-agent completa), aceita para BLID-043.
 
-**Injetabilidade (AC5):** Ambas as funcoes aceitam ``reader`` externo para
-substituicao em testes sem dependencias pesadas.
+**2. Signal Path Exclusivo por Tipo de Agente:**
+Para evitar race condition de escrita quando dois managers rodam simultaneamente:
+- RL Direto  -> outputs/coordination_signal_rl_direto.json
+- RL 5000    -> outputs/coordination_signal_rl_5000.json
+O path padrao "outputs/coordination_signal_current.json" fica reservado para
+futuro coordinador unificado multi-DB.
 
-**Log padrao quando bloqueado:**
-```
-[COORDINATION] Abertura bloqueada pelo CoordinationManager. Sinal: STOP_OPERACOES
-```
+**3. Graceful Degradation via Import Lazy:**
+A importacao de coordination_manager e coordination_signal_reader usa try/except
+(import lazy), seguindo o padrao estabelecido pelos blocos AC5.8/AC5.9/AC6 nos agentes.
+Flag _COORDINATION_DISPONIVEL controla se o gate e aplicado. Falha de import ou init
+nao impede operacao — agente opera sem protecao de coordenacao com log WARNING.
+
+### Motivacao
+
+- Integracao inline evita novo processo/servico: menor superficie operacional
+- Protecao individual (90% do valor) entregue imediatamente
+- Fallback NORMAL garante uptime independente do estado do arquivo JSON (ADR-023)
+- Thread daemon garante que encerramento do agente nao e bloqueado pelo manager
+- Import lazy segue convencao ja estabelecida no codebase para modulos opcionais
 
 ### Consequencias
 
-- Agentes RL consultam sinal de coordenacao antes de abrir posicao
-- ``STOP_OPERACOES`` bloqueia automaticamente novas entradas em ambos os agentes
-- ``NORMAL/MODO_CONSERVADOR/MODO_DEFENSIVO`` nao bloqueiam (informativo)
-- Fallback seguro: arquivo ausente/invalido -> permite abertura (ADR-023)
-- Modulo ``coordination_integration.py`` e testavel sem MT5/SQLAlchemy/pandas
+- STOP_OPERACOES bloqueia abertura de posicao nos dois agentes RL
+- MODO_CONSERVADOR e MODO_DEFENSIVO sao informativos (nao bloqueiam)
+- Cada agente gera seu proprio JSON de sinal em outputs/
+- Protecao conjunta real (drawdown_conjunto com vista de dois DBs) requer
+  evolucao futura: coordinador unificado multi-DB
+- agente_com_supervision.py (wrapper) nao e modificado — CoordinationManager
+  e gerenciado dentro de operar_novo_agente_rl_real_antiovertrading.py
 
-### Impacto nas Interfaces Humanas
+### Avaliacao de Impacto nos 5 Launchers
 
-| Interface | Severidade | Tipo de Impacto | Acao Operacional |
-|---|---|---|---|
-| INICIAR_AGENTE_RL_5000.bat | MEDIO | MUDANCA COMPORTAMENTO | Bloqueio automatico STOP_OPERACOES |
-| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | MUDANCA COMPORTAMENTO | Bloqueio automatico STOP_OPERACOES |
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | MEDIO | DIRETO | Monitorar outputs/coordination_signal_rl_5000.json apos inicio |
+| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | DIRETO | Monitorar outputs/coordination_signal_rl_direto.json apos inicio |
 | INICIAR_DIARIOS.bat | NENHUM | SEM IMPACTO | Nenhuma |
 | INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | SEM IMPACTO | Nenhuma |
-| INICIAR_MONITOR_QUANTICO.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | BAIXO | INDIRETO | Dois novos JSONs em outputs/ — monitoramento opcional |
 
 ### Referencias
 
 - BLID-043: implementacao completa (2026-04-06)
-- ADR-023: arquivo ausente -> fallback seguro sem exception
-- ADR-034: CoordinationManager (produtor do sinal JSON)
-- ADR-035: CoordinationSignalReader (leitor stateless)
+- ADR-034: CoordinationManager (arquitetura base)
+- ADR-035: CoordinationSignalReader (leitura stateless)
+- ADR-023: fallback seguro para arquivo ausente
+- ADR-019: schema_version em outputs JSON
+- ADR-011: isolamento de DBs por agente RL

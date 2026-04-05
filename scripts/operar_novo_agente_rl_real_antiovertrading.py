@@ -289,6 +289,21 @@ except ImportError as _e:
     DriftDetector = None  # type: ignore[assignment,misc]
     OnlineLearningController = None  # type: ignore[assignment,misc]
     BaselineComparator = None  # type: ignore[assignment,misc]
+
+# Imports opcionais — BLID-043: Coordenacao cross-agent
+_COORDINATION_DISPONIVEL = False
+try:
+    from src.application.coordination_manager import (
+        CoordinationManager,
+        ConfiguracaoCoordinacao,
+    )
+    from src.application.coordination_signal_reader import CoordinationSignalReader
+
+    _COORDINATION_DISPONIVEL = True
+except ImportError as _e_coord:
+    CoordinationManager = None  # type: ignore[assignment,misc]
+    ConfiguracaoCoordinacao = None  # type: ignore[assignment,misc]
+    CoordinationSignalReader = None  # type: ignore[assignment,misc]
 from config.settings import AGENT_MAGIC_NUMBERS, TradingConfig
 import uuid
 
@@ -420,6 +435,10 @@ _baseline_comparator_rl: Optional[object] = None
 _rl_persistence_service: Optional[object] = None
 _trades_fechados_rl: list = []  # Acumulador para pipeline AC5.9/AC6
 _opening_context_runtime = None
+
+# Variaveis globais — BLID-043: Coordenacao cross-agent
+_coordination_manager: Optional[object] = None
+_coordination_reader: Optional[object] = None
 
 
 def get_config() -> TradingConfig:
@@ -2167,11 +2186,14 @@ def loop_operacao() -> str:
                 # Passar dados para cálculo dinâmico de SL/TP
                 logger.info(f"[CICLO {ciclo}] Sinal CONFIRMADO! Enviando ordem...")
 
-                # 5.1. Verificar sinal de coordenacao cross-agent (BLID-043)
-                if not _verificar_pode_abrir_posicao_rl5000():
-                    logger.debug(
-                        f"[CICLO {ciclo}] Abertura bloqueada por coordination. "
-                        "Aguardando proximo ciclo."
+                # 5.5. Gate de coordenacao cross-agent (BLID-043)
+                if _coordination_reader is not None and not _coordination_reader.pode_abrir_posicao():
+                    _sinal_coord = _coordination_reader.obter_sinal_atual()
+                    logger.warning(
+                        "[CICLO %d] [COORDENACAO] STOP_OPERACOES ativo — "
+                        "abertura de posicao bloqueada (sinal=%s). Aguardando...",
+                        ciclo,
+                        _sinal_coord.value,
                     )
                     time.sleep(5)
                     continue
@@ -2229,6 +2251,8 @@ def inicializar_componentes_auxiliares() -> None:
     global _online_learning_rl
     global _baseline_comparator_rl
     global _opening_context_runtime
+    global _coordination_manager
+    global _coordination_reader
 
     _monitor_posicao_rl = None
     if AC5_8_DISPONIVEL and MonitorPositionManager:
@@ -2285,6 +2309,31 @@ def inicializar_componentes_auxiliares() -> None:
             OPENING_CONTEXT_LABEL,
             _opening_context_runtime.prompt_abertura_agentes,
         )
+
+    # BLID-043: Coordenacao cross-agent — CoordinationManager como thread daemon
+    _coordination_manager = None
+    _coordination_reader = None
+    if _COORDINATION_DISPONIVEL and CoordinationManager and ConfiguracaoCoordinacao and CoordinationSignalReader:
+        logger.info("[INIT] Inicializando CoordinationManager (BLID-043)...")
+        try:
+            _coord_cfg = ConfiguracaoCoordinacao(
+                db_path=TRADING_DB_PATH,
+                agentes_monitorados=["rl_5000", "rl_direto"],
+                sinal_atual_path="outputs/coordination_signal_rl_5000.json",
+            )
+            _coordination_manager = CoordinationManager(config=_coord_cfg)
+            _coordination_reader = CoordinationSignalReader(
+                sinal_path="outputs/coordination_signal_rl_5000.json"
+            )
+            _coordination_manager.iniciar()
+            logger.info("[OK] CoordinationManager thread daemon iniciada (BLID-043)")
+        except Exception as _e_coord:
+            logger.warning(
+                "[WARN] CoordinationManager init falhou: %s — fallback NORMAL (BLID-043)",
+                _e_coord,
+            )
+            _coordination_manager = None
+            _coordination_reader = None
 
 
 def main() -> int:
@@ -2346,6 +2395,13 @@ def main() -> int:
 
         if _monitor_posicao_rl:
             _monitor_posicao_rl.fechar()
+        # BLID-043: Encerrar CoordinationManager
+        try:
+            if _coordination_manager is not None:
+                _coordination_manager.parar()
+                logger.info("[OK] CoordinationManager encerrado (BLID-043)")
+        except Exception as _e_coord_stop:
+            logger.warning("[WARN] Erro ao encerrar CoordinationManager: %s", _e_coord_stop)
         if mt5_adapter:
             mt5_adapter.disconnect()
             logger.info("[OK] MT5 desconectado.")

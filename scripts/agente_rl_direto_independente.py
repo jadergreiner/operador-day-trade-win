@@ -289,6 +289,23 @@ except ImportError as _e:
     BaselineComparator = None  # type: ignore[assignment,misc]
     logger.warning(f"[WARN] AC5.9/AC6 nao disponiveis: {_e}")
 
+# Imports opcionais — BLID-043: Coordenacao cross-agent (CoordinationManager + Reader)
+_COORDINATION_DISPONIVEL = False
+try:
+    from src.application.coordination_manager import (
+        CoordinationManager,
+        ConfiguracaoCoordinacao,
+    )
+    from src.application.coordination_signal_reader import CoordinationSignalReader
+
+    _COORDINATION_DISPONIVEL = True
+    logger.info("[OK] BLID-043 CoordinationManager + CoordinationSignalReader disponiveis")
+except ImportError as _e:
+    CoordinationManager = None  # type: ignore[assignment,misc]
+    ConfiguracaoCoordinacao = None  # type: ignore[assignment,misc]
+    CoordinationSignalReader = None  # type: ignore[assignment,misc]
+    logger.warning("[WARN] BLID-043 coordenacao nao disponivel: %s", _e)
+
 # ============================================================================
 # IMPORTS SPECIFICIZADOS - Domain Models
 # ============================================================================
@@ -1885,6 +1902,30 @@ def inicializar_componentes():
         )
         logger.info("[OK] Trade Performance Tracker ativado")
 
+        # 8. Coordenacao cross-agent — BLID-043
+        coordination_manager = None
+        coordination_reader = None
+        if _COORDINATION_DISPONIVEL and CoordinationManager and ConfiguracaoCoordinacao and CoordinationSignalReader:
+            logger.info("[INIT] Inicializando CoordinationManager (BLID-043)...")
+            try:
+                _coord_cfg = ConfiguracaoCoordinacao(
+                    db_path=TRADING_DB_PATH,
+                    agentes_monitorados=["rl_5000", "rl_direto"],
+                    sinal_atual_path="outputs/coordination_signal_rl_direto.json",
+                )
+                coordination_manager = CoordinationManager(config=_coord_cfg)
+                coordination_reader = CoordinationSignalReader(
+                    sinal_path="outputs/coordination_signal_rl_direto.json"
+                )
+                logger.info("[OK] CoordinationManager + CoordinationSignalReader prontos (BLID-043)")
+            except Exception as _e_coord:
+                logger.warning(
+                    "[WARN] CoordinationManager init falhou: %s — fallback NORMAL (BLID-043)",
+                    _e_coord,
+                )
+                coordination_manager = None
+                coordination_reader = None
+
         logger.info("[OK] Todos os componentes inicializados com sucesso!")
         logger.info("")
 
@@ -1898,6 +1939,8 @@ def inicializar_componentes():
             "retry_mgr": retry_mgr,
             "anti_overtrading": anti_overtrading,
             "trade_tracker": trade_tracker,
+            "coordination_manager": coordination_manager,
+            "coordination_reader": coordination_reader,
         }
 
     except Exception as e:
@@ -2274,6 +2317,10 @@ def main():
     ]  # 🛑 CRITICAL: Proteção contra overtrading
     trade_tracker = componentes["trade_tracker"]  # 📊 Rastreamento de performance
 
+    # BLID-043: Coordenacao cross-agent
+    coordination_manager = componentes.get("coordination_manager")
+    coordination_reader = componentes.get("coordination_reader")
+
     # Inicializar módulos formais de isolamento
     posicao_tracker = PosicaoIsoladaManager(
         session_id=AGENT_SESSION_ID,
@@ -2363,6 +2410,11 @@ def main():
     _contagem_desconhecido: int = 0  # TECH-002: contador de trades DESCONHECIDO consecutivos
 
     try:
+        # BLID-043: Iniciar CoordinationManager dentro do try/finally para garantir parar()
+        if coordination_manager is not None:
+            coordination_manager.iniciar()
+            logger.info("[OK] CoordinationManager thread daemon iniciada (BLID-043)")
+
         while True:
             ciclo += 1
 
@@ -2744,11 +2796,14 @@ def main():
                             f"[CICLO {ciclo}] Proteção anti-overtrading: {motivo}"
                         )
 
-                        # 4.6. Verificar sinal de coordenacao cross-agent (BLID-043)
-                        if not _verificar_pode_abrir_posicao_direto():
-                            logger.debug(
-                                f"[CICLO {ciclo}] Abertura bloqueada por coordination. "
-                                "Aguardando proximo ciclo."
+                        # 5.5. Gate de coordenacao cross-agent (BLID-043)
+                        if coordination_reader is not None and not coordination_reader.pode_abrir_posicao():
+                            _sinal_coord = coordination_reader.obter_sinal_atual()
+                            logger.warning(
+                                "[CICLO %d] [COORDENACAO] STOP_OPERACOES ativo — "
+                                "abertura de posicao bloqueada (sinal=%s). Aguardando...",
+                                ciclo,
+                                _sinal_coord.value,
                             )
                             time.sleep(5)
                             continue
@@ -2824,6 +2879,14 @@ def main():
     finally:
         # Cleanup
         logger.info("[CLEANUP] Encerrando componentes...")
+
+        # BLID-043: Encerrar CoordinationManager
+        try:
+            if coordination_manager is not None:
+                coordination_manager.parar()
+                logger.info("[OK] CoordinationManager encerrado (BLID-043)")
+        except Exception as _e_coord_stop:
+            logger.warning("[WARN] Erro ao encerrar CoordinationManager: %s", _e_coord_stop)
 
         # Gravar relatorio de performance de trades
         try:
