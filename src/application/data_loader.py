@@ -364,8 +364,8 @@ def prepare_training_dataset(
     # AC5: Salvar feature_names.json
     caminho_feature_names = Path(feature_names_path)
     caminho_feature_names.parent.mkdir(parents=True, exist_ok=True)
-    with open(caminho_feature_names, "w", encoding="utf-8") as arq:
-        json.dump({"features": nomes_features}, arq, indent=2, ensure_ascii=False)
+    with open(caminho_feature_names, "w", encoding="utf-8") as arquivo_json:
+        json.dump({"features": nomes_features}, arquivo_json, indent=2, ensure_ascii=False)
     logger.info(f"[AC5] Feature names salvos em {caminho_feature_names}")
 
     # Montar metadados do dataset
@@ -391,8 +391,8 @@ def prepare_training_dataset(
     # Salvar dataset_labeled.pkl
     caminho_pkl = Path(output_pkl)
     caminho_pkl.parent.mkdir(parents=True, exist_ok=True)
-    with open(caminho_pkl, "wb") as arq_pkl:
-        pickle.dump(resultado, arq_pkl)
+    with open(caminho_pkl, "wb") as arquivo_pkl:
+        pickle.dump(resultado, arquivo_pkl)
     logger.info(f"[AC1/saida] Dataset pickle salvo em {caminho_pkl}")
 
     logger.info("[prepare_training_dataset] Pipeline concluido com sucesso")
