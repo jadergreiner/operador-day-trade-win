@@ -3727,6 +3727,150 @@ if _ALERT_REVERSAO_DISPONIVEL and _alert_reversao_handler:
 **Divida Tecnica Resolvida:**
 - DT-BLID044-03 (MEDIA): Integracao AlertReversaoHandler com agentes RL
 
+---
+
+## ADR-038: Backtest de Profit Protection — Validacao Historica COM vs SEM Protecao (BLID-046)
+
+**Data:** 2026-04-05
+**Status:** APROVADO
+**Decisores:** Product Owner, Tech Lead, ML Expert
+**BLID:** BLID-046
+
+### Contexto
+
+O ProfitProtectionEngine foi implementado e está em producao nos dois agentes
+RL desde 04/04/2026 (ADR-018), com thresholds externalizados para
+`config/profit_protection.yaml` e suporte a 3 perfis (baseline, conservador,
+agressivo).
+
+No entanto, nao havia **validacao quantitativa historica** da efetividade da
+protecao. Era necessario responder com dados objetivos:
+
+**Perguntas-Chave:**
+1. A protecao realmente reduz o drawdown maximo?
+2. O win rate melhora ou se mantem estavel?
+3. O Sharpe ratio aumenta com a protecao?
+4. Quanto tempo de exposicao e economizado em reversoes?
+5. Quantas reversoes sao evitadas por mes?
+
+Sem esse backtest comparativo, decisoes sobre calibracao de thresholds e
+rollout de perfis mais agressivos ficavam baseadas em feeling, nao em
+evidencias.
+
+### Decisao
+
+**Criar script standalone de backtest** que simula trades COM e SEM protecao
+em periodo de 6-12 meses, calculando metricas comparativas e gerando
+relatorios JSON e Markdown automatizados.
+
+**Componentes:**
+1. **BacktestProfitProtection class** — simulador principal
+2. **Trade dataclass** — representacao de trade completo
+3. **MetricasBacktest dataclass** — metricas agregadas (12+)
+4. **ResultadoComparativo dataclass** — comparacao COM vs SEM
+5. **Funcoes de saida** — JSON + Markdown com tabelas e conclusoes
+
+**Metricas Calculadas:**
+- Win rate (vencedores / total)
+- Drawdown maximo (equity curve peak-to-trough)
+- Sharpe ratio (mean_return / std_return)
+- Profit total acumulado
+- Tempo medio de exposicao (minutos)
+- Quantidade de break-even closes
+- Quantidade de reversoes evitadas
+- Profit medio vencedor/perdedor
+
+**Simulacao:**
+- Trades SEM protecao: win rate natural ~62%, profit medio +2%/-1.2%
+- Trades COM protecao: break-even em reversoes, reducao de exposicao
+
+**Reproducibilidade:**
+- Seed configuravel (padrao: 42)
+- Perfis de config: baseline/conservador/agressivo
+
+**Saida:**
+- JSON: `outputs/backtest_profit_protection_resultado.json`
+- Markdown: `outputs/backtest_profit_protection_resultado.md`
+
+### Alternativas Consideradas
+
+**1. Usar backtest real com dados do MT5**
+- **Pros:** Dados reais de mercado, mais fidelidade
+- **Cons:** Requer infraestrutura complexa, lento (horas), nao reproducivel
+- **Decisao:** REJEITADO — simulacao e suficiente para validacao de conceito
+
+**2. Integrar ao BacktestMacroScoreEngine existente**
+- **Pros:** Reusa engine de backtest
+- **Cons:** Acoplamento desnecessario, objetivo diferente (macro score vs profit protection)
+- **Decisao:** REJEITADO — manter script standalone
+
+**3. Criar apenas relatorio manual**
+- **Pros:** Mais rapido
+- **Cons:** Nao reproducivel, sem automacao, sem CI/CD
+- **Decisao:** REJEITADO — automacao e essencial
+
+### Consequencias
+
+**Positivas:**
+- **Validacao quantitativa:** Drawdown, win rate e Sharpe com numeros concretos
+- **Decisoes baseadas em dados:** Calibracao de thresholds informada por backtest
+- **Reproducibilidade:** Seed fixo permite comparar perfis de forma justa
+- **Automacao:** Script pode rodar em CI/CD para validar mudancas em thresholds
+- **Documentacao automatica:** Markdown gerado com conclusoes
+
+**Negativas:**
+- Simulacao, nao dados reais (trade-off aceitavel para velocidade)
+- Seed fixo pode nao cobrir todos cenarios (mas permite A/B testing)
+
+**Tecnicas:**
+- 24 testes unitarios: simulacao, metricas, comparacao, saida
+- Type hints 100% com mypy --strict
+- Dataclasses para estruturas de dados
+- Argumentos CLI para configuracao (meses, perfil, seed, output)
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | NENHUM | SEM IMPACTO | Nenhuma - script offline |
+| INICIAR_AGENTE_RL_DIRETO.bat | NENHUM | SEM IMPACTO | Nenhuma - script offline |
+| INICIAR_DIARIOS.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | SEM IMPACTO | Nenhuma |
+
+**Nota:** Script e executado offline (nao em runtime dos agentes), apenas para
+analise e calibracao de thresholds.
+
+### Uso do Script
+
+```bash
+# Backtest de 6 meses com perfil baseline
+python scripts/backtest_profit_protection.py --meses 6
+
+# Backtest de 12 meses com perfil conservador
+python scripts/backtest_profit_protection.py --meses 12 --profile conservador
+
+# Backtest com seed customizado e output customizado
+python scripts/backtest_profit_protection.py --meses 6 --seed 123 --output custom.json
+```
+
+### Proximos Passos
+
+1. Executar backtest com perfil baseline (6 meses)
+2. Executar backtest com perfil conservador (6 meses)
+3. Executar backtest com perfil agressivo (6 meses)
+4. Comparar resultados e decidir rollout de perfis
+5. Considerar adicionar graficos de equity curve (matplotlib) em iteracao futura
+6. Considerar backtest com dados reais do MT5 (iteracao futura)
+
+### Referencias
+
+- BLID-046: Backtest de Profit Protection (docs/BACKLOG.md)
+- ADR-018: Governanca de Thresholds do Profit Protection por Perfil
+- P1-PROFIT_PROTECTION: Bloco de evolucao do profit protection (docs/BACKLOG.md)
+- `scripts/backtest_profit_protection.py`: Implementacao
+- `tests/unit/test_backtest_profit_protection.py`: 24 testes unitarios
+
 ### Referencias
 
 - BLID-044: implementacao completa (2026-04-05)
