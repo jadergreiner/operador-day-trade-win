@@ -698,7 +698,7 @@ class OrdersExecutionOrchestrator:
         )
 
         ticket = None
-        erro_conexao: Optional[str] = None
+        erro_envio_mt5: Optional[str] = None
         try:
             for attempt in range(1, 6):
                 try:
@@ -729,7 +729,7 @@ class OrdersExecutionOrchestrator:
                     mensagem = str(e)
                     if "10006" not in mensagem:
                         # Erro não-recuperável (ex: sem conexão): encerrar loop
-                        erro_conexao = mensagem
+                        erro_envio_mt5 = mensagem
                         logger.error(
                             "Tentativa %s falhou com erro não-recuperável: %s",
                             attempt,
@@ -749,7 +749,7 @@ class OrdersExecutionOrchestrator:
                         break
                     await asyncio.sleep(resultado_retry.aguardar_segundos)
         except Exception as e:
-            erro_conexao = str(e)
+            erro_envio_mt5 = str(e)
             logger.error("Erro inesperado no loop de envio MT5: %s", e)
 
         execution_time_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
@@ -767,7 +767,7 @@ class OrdersExecutionOrchestrator:
                 "execution_time_ms": execution_time_ms,
             }
         else:
-            motivo = erro_conexao or "MT5_SEND_FAILED"
+            motivo = erro_envio_mt5 or "MT5_SEND_FAILED"
             order.add_audit(OrderState.REJECTED, f"Falha no envio ao MT5: {motivo}")
             return {
                 "success": False,
