@@ -435,7 +435,9 @@ class DashboardAgentesService:
         hoje = str(date.today())
 
         try:
-            conn = sqlite3.connect(str(db_path), timeout=10)
+            # ADR-001: conexao somente-leitura via URI SQLite
+            uri = f"file:{db_path}?mode=ro"
+            conn = sqlite3.connect(uri, uri=True, timeout=10)
             try:
                 # Profits de trades fechados com P&L valido hoje
                 cursor = conn.execute(
@@ -522,7 +524,9 @@ class DashboardAgentesService:
         data_inicio = str(date.today() - timedelta(days=_LOOKBACK_DIAS))
 
         try:
-            conn = sqlite3.connect(str(db_path), timeout=10)
+            # ADR-001: conexao somente-leitura via URI SQLite
+            uri = f"file:{db_path}?mode=ro"
+            conn = sqlite3.connect(uri, uri=True, timeout=10)
             try:
                 cursor = conn.execute(
                     """
@@ -590,7 +594,9 @@ class DashboardAgentesService:
             Lista de TradeInfo com no maximo _MAX_TRADES_POR_AGENTE itens
         """
         try:
-            conn = sqlite3.connect(str(db_path), timeout=10)
+            # ADR-001: conexao somente-leitura via URI SQLite
+            uri = f"file:{db_path}?mode=ro"
+            conn = sqlite3.connect(uri, uri=True, timeout=10)
             try:
                 cursor = conn.execute(
                     """
@@ -653,7 +659,9 @@ class DashboardAgentesService:
             (self._magic_rl_direto, self._db_rl_direto, pnl_direto),
         ]:
             try:
-                conn = sqlite3.connect(str(db_path), timeout=10)
+                # ADR-001: conexao somente-leitura via URI SQLite
+                uri = f"file:{db_path}?mode=ro"
+                conn = sqlite3.connect(uri, uri=True, timeout=10)
                 try:
                     cursor = conn.execute(
                         """
@@ -669,7 +677,8 @@ class DashboardAgentesService:
                         (magic, data_inicio),
                     )
                     for row in cursor.fetchall():
-                        dicionario[str(row[0])] = float(row[1]) if row[1] is not None else 0.0
+                        pnl_valor = float(row[1]) if row[1] is not None else 0.0
+                        dicionario[str(row[0])] = pnl_valor
                 finally:
                     conn.close()
 
