@@ -151,17 +151,26 @@ class TestWebSocketProtocol:
     """Testes para protocolo WebSocket."""
 
     def test_websocket_conecta_e_desconecta(self):
-        """Valida que WebSocket aceita conexão e desconecta sem erro."""
+        """Valida que WebSocket aceita conexão — ConnectionManager rastreia a conexão."""
+        from interfaces.websocket_server import manager
+
+        contagem_antes = manager.get_active_count()
         client = TestClient(app)
         with client.websocket_connect("/alertas") as ws:
             assert ws is not None
+            # Servidor deve ter ao menos a conexão atual registrada
+            assert manager.get_active_count() >= contagem_antes + 1
 
     def test_websocket_aceita_mensagem_ping(self):
-        """Valida que o servidor aceita mensagem ping do cliente."""
+        """Valida que o servidor aceita mensagem do cliente sem encerrar a conexão."""
+        from interfaces.websocket_server import manager
+
         client = TestClient(app)
         with client.websocket_connect("/alertas") as ws:
+            contagem_durante = manager.get_active_count()
             ws.send_text("ping")
-            # Servidor não responde ao ping — apenas aguarda; sem erro = OK
+            # Conexão deve permanecer ativa após a mensagem
+            assert manager.get_active_count() == contagem_durante
 
     def test_websocket_aceita_json_do_cliente(self):
         """Valida que o servidor aceita mensagem JSON enviada pelo cliente."""

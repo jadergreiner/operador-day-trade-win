@@ -5005,3 +5005,54 @@ backtest JSON → labeling ML → 24 features → splits 70/15/15 →
 ### Historico
 
 - 05/04/2026 — criado e implementado (BLID-TODO1)
+
+---
+
+## BLID-TD8910
+
+status: CONCLUIDO
+prioridade: P3
+valor_po: qualidade de codigo — cobertura de testes WebSocket e refatoracoes pos-lancamento
+stage_atual: project-manager
+
+### Escopo
+
+Divida tecnica acumulada (TODO-8, 9, 10-12) resolvida em ciclo dedicado.
+
+### Criterios de Aceite
+
+- [x] TODO-8: Cobertura do WebSocket server > 85% (atingido: 88%)
+- [x] TODO-8: Bug `add_event_handler` (removido Starlette 1.0) corrigido — migrado para `lifespan`
+- [x] TODO-8: Bug `HTTPException` capturada por `except Exception` corrigido nos endpoints analytics
+- [x] TODO-9: Integração do detector de padrões confirmada (BLID-037 implementado, 57 testes passando)
+- [x] TODO-10: WebSocket broadcast implementado via `broadcast_callback` injetavel no QueueProcessor
+- [x] TODO-11: Comentario TODO de volume clarificado em `start_journals_full_display.py`
+- [x] TODO-12: Type hints atualizados (`Awaitable`, `Any`) em `queue_processor.py`
+
+### Arquivos Alterados
+
+- `src/interfaces/websocket_server.py` — `lifespan` context manager, correcoes de bug
+- `tests/test_websocket_server.py` — 34 testes WebSocket implementados (cobertura 88%)
+- `src/infrastructure/queue_processor.py` — `broadcast_callback` injetavel, TODOs resolvidos
+- `scripts/start_journals_full_display.py` — comentario TODO clarificado
+
+### Evidencias
+
+- 34 testes WebSocket: 34/34 PASSING
+- 57 testes BDI/pattern: 57/57 PASSING
+- Cobertura websocket_server: 88% (meta: >85%)
+- Zero regressoes em testes existentes
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Acao |
+| --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | NENHUM | Nenhuma |
+| INICIAR_AGENTE_RL_DIRETO.bat | NENHUM | Nenhuma |
+| INICIAR_DIARIOS.bat | NENHUM | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | Nenhuma |
+
+### Historico
+
+- 05/04/2026 — criado e implementado (BLID-TD8910)
