@@ -1,0 +1,53 @@
+# ============================================================
+# AlertReversaoHandler — Configuração Canônica
+# Fonte: config/alert_reversoes.yaml
+# ADR: ADR-037
+# BLID: BLID-044
+# Versão: 1.0.0
+# ============================================================
+
+version: "1.0.0"
+
+# Throttling: impede spam de alertas repetidos para o mesmo trade.
+# Intervalo mínimo entre dois alertas do mesmo trade_id (segundos).
+throttling_segundos: 60
+
+# ============================================================
+# WEBHOOK (Slack / Discord) — fire-and-forget
+# ============================================================
+webhook:
+  # URL do Slack ou Discord.
+  # Deixar vazio ("") para desabilitar.
+  url: ""
+  # Timeout HTTP em segundos
+  timeout_segundos: 5
+  # Máximo de tentativas (sem retry — fire-and-forget único)
+  tentativas: 1
+
+# ============================================================
+# CANAIS DE ENTREGA
+# ============================================================
+canais:
+  # Entrega via AlertaDeliveryManager (WebSocket + Email)
+  delivery_manager: true
+  # Entrega via webhook Slack/Discord
+  webhook: true
+
+# ============================================================
+# MAPEAMENTO DE AÇÃO SUGERIDA → NÍVEL DE ALERTA
+# ============================================================
+# Palavras-chave na ação_sugerida do ProfitProtectionResult
+# que determinam o NivelAlerta emitido.
+niveis_por_acao:
+  critico:
+    - "fechar total"
+    - "fechar imediatamente"
+  alto:
+    - "break-even"
+    - "fechar parcial"
+    - "reversao aguda"
+  medio:
+    - "monitorar"
+    - "aguardar"
+    # fallback para qualquer ALERTA sem palavra-chave mapeada
+    - "_default"

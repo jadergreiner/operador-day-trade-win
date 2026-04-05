@@ -3560,3 +3560,88 @@ nao impede operacao — agente opera sem protecao de coordenacao com log WARNING
 - ADR-023: fallback seguro para arquivo ausente
 - ADR-019: schema_version em outputs JSON
 - ADR-011: isolamento de DBs por agente RL
+
+## ADR-037: AlertReversaoHandler — Conversao e Entrega Multicanal de Alertas de Reversao (BLID-044)
+
+### Contexto
+
+O ProfitProtectionEngine (BLID existente) emite ProfitProtectionResult com
+status=ALERTA quando detecta reversao aguda de lucro. Ate agora, o resultado
+era apenas logado; nenhum canal externo era notificado.
+
+O operador precisa ser avisado em tempo real para tomar decisoes (break-even
+stop, fechamento parcial, etc).
+
+### Decisao
+
+Criar AlertReversaoHandler em src/application/alert_reversao_handler.py com
+as seguintes responsabilidades:
+
+1. Filtrar apenas resultados com status=ALERTA.
+2. Aplicar throttling por trade_id (intervalo configuravel, padrao 60s)
+   para evitar spam de alertas.
+3. Converter ProfitProtectionResult em AlertaOportunidade (entidade de dominio).
+4. Entregar via AlertaDeliveryManager (WebSocket + Email) quando configurado.
+5. Disparar webhook Slack/Discord (fire-and-forget) quando URL configurada.
+
+**Por que nao reusar AlertDispatcher existente:**
+O AlertDispatcher (alert_dispatcher.py) opera sobre TradeAlert (modelo legado
+sem tipo concreto de dominio). AlertReversaoHandler opera sobre entidades de
+dominio (ProfitProtectionResult e AlertaOportunidade) com type hints estritos.
+A separacao preserva Clean Architecture e evita acoplamento cruzado.
+
+**Por que fire-and-forget no webhook:**
+Webhook Slack/Discord pode ter latencia variavel (50ms-5s). Bloquear o fluxo
+principal nesse tempo aumentaria a latencia de resposta do motor de protecao.
+Fire-and-forget com log WARNING em falha garante uptime sem perda de alertas
+criticos para o canal principal (DeliveryManager).
+
+**Por que throttling por trade_id:**
+Um trade em reversao aguda pode gerar multiplos ciclos de analise em segundos.
+Sem throttle, o operador receberia spam de alertas identicos. O intervalo de
+60s e suficiente para notificar sem sobrecarregar.
+
+### Configuracao
+
+config/alert_reversoes.yaml define:
+- throttling_segundos: intervalo minimo entre alertas do mesmo trade_id
+- webhook.url: URL do Slack/Discord (vazio = desativado)
+- canais.delivery_manager: ativa/desativa AlertaDeliveryManager
+- canais.webhook: ativa/desativa webhook
+- niveis_por_acao: mapeamento palavras-chave -> NivelAlerta
+
+Ausencia do arquivo: todos os defaults sao usados (ADR-023).
+
+### Conversao de Dominio
+
+ProfitProtectionResult nao tem todos os campos de AlertaOportunidade. Campos
+sem equivalente direto (preco_atual, entrada_minima, entrada_maxima, stop_loss)
+recebem valores simbolicos fixos (base 100.00) suficientes para satisfazer o
+contrato do dominio sem representar precos reais de mercado.
+
+O campo confianca e calculado a partir de deviance_reversao normalizado para
+[0, 1]. Confianca minima: 0.10 (garante que AlertaOportunidade seja valido).
+
+### Consequencias
+
+- Operador recebe alerta em tempo real quando reversao e detectada.
+- Sem impacto no fluxo de execucao de ordens (handler e chamado externamente).
+- Throttle evita spam; fire-and-forget preserva latencia do motor.
+- Fallback NORMAL: ausencia de arquivo de config nao bloqueia operacao.
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | MEDIO | DIRETO | Integrar AlertReversaoHandler no ProfitProtectionEngine |
+| INICIAR_AGENTE_RL_5000.bat | BAIXO | INDIRETO | Nenhuma obrigatoria |
+| INICIAR_AGENTE_RL_DIRETO.bat | BAIXO | INDIRETO | Nenhuma obrigatoria |
+| INICIAR_DIARIOS.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | SEM IMPACTO | Nenhuma |
+
+### Referencias
+
+- BLID-044: implementacao completa (2026-04-06)
+- ADR-023: fallback seguro para arquivo ausente
+- ADR-019: schema_version em outputs JSON
+- ADR-018: ProfitProtectionEngine configuracao canonica

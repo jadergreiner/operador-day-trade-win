@@ -5397,3 +5397,89 @@ Documentado em ADR-036 como decisao intencional.
 ### Historico
 
 - 2026-04-06 — criado e implementado (BLID-043)
+
+## BLID-044
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Notificar operador em tempo real quando reversao aguda de lucro e detectada, permitindo acao rapida (break-even stop, fechamento parcial)
+stage_atual: project-manager
+adr_referencia: ADR-037
+
+### Escopo
+
+AlertReversaoHandler — modulo que converte ProfitProtectionResult(status=ALERTA)
+em AlertaOportunidade e entrega multicanal:
+
+1. AlertaDeliveryManager (WebSocket + Email) — canal principal.
+2. Webhook Slack/Discord — fire-and-forget, sem bloquear fluxo principal.
+
+Throttling por trade_id (padrao: 60s) evita spam de alertas repetidos.
+Configuracao em config/alert_reversoes.yaml (fallback seguro: ADR-023).
+
+### Criterios de Aceite
+
+- [x] AC1: status != ALERTA -> processar() retorna False sem disparar
+- [x] AC2: status=ALERTA -> processar() retorna True
+- [x] AC3: Segundo envio do mesmo trade dentro do throttle -> retorna False
+- [x] AC4: Intervalo expirado -> novo envio permitido
+- [x] AC5: Trades diferentes nao interferem no throttle um do outro
+- [x] AC6: limpar_throttle(trade_id) remove apenas entrada especifica
+- [x] AC7: limpar_throttle() sem arg limpa todo o cache
+- [x] AC8: delivery_manager.entregar_alerta() chamado quando canal ativo
+- [x] AC9: delivery_manager=None nao lanca excecao
+- [x] AC10: Excecao no delivery_manager nao propaga para chamador
+- [x] AC11: Webhook nao disparado quando url vazia
+- [x] AC12: Falha no webhook nao propaga (fire-and-forget)
+- [x] AC13: Payload do webhook tem campos obrigatorios (schema_version, tipo, alerta_id, trade_id)
+- [x] AC14: Payload serializavel para JSON
+- [x] AC15: acao="fechar total" -> nivel CRITICO
+- [x] AC16: acao="break-even" -> nivel ALTO
+- [x] AC17: acao sem keyword mapeada -> nivel MEDIO
+- [x] AC18: Arquivo YAML ausente -> defaults (ADR-023)
+- [x] AC19: YAML invalido -> defaults (ADR-023)
+- [x] AC20: Arquivo YAML valido -> valores carregados corretamente
+- [x] AC21: throttle_cache thread-safe (5 threads concorrentes sem erro)
+
+### Arquivos Alterados
+
+- src/application/alert_reversao_handler.py — novo; 440 LOC
+- config/alert_reversoes.yaml — novo; configuracao de throttling e canais
+- tests/unit/test_alert_reversao_handler.py — novo; 36 testes unitarios
+- docs/BACKLOG.md — BLID-044 registrado
+- docs/ADRS.md — ADR-037 registrada
+
+### Evidencias
+
+- 36 testes unitarios: 36/36 PASSING
+- mypy --strict: zero erros (--ignore-missing-imports)
+- Throttle thread-safe: threading.Lock em _throttle_cache
+- Fallback NORMAL: arquivo ausente e YAML invalido retornam defaults (ADR-023)
+- Fire-and-forget webhook: falha nao propaga, log WARNING emitido
+- Protocol _DeliveryManagerProtocol: type safety sem acoplamento direto
+
+### Dividas Tecnicas Registradas
+
+DT-BLID044-01 (MEDIO): AlertReversaoHandler nao esta integrado ao loop
+de processamento do ProfitProtectionEngine — integracao efetiva nos agentes
+operacionais requer BLID futuro.
+
+DT-BLID044-02 (BAIXO): Webhook payload usa template texto simples;
+suporte a Slack Block Kit ou Discord Embeds pode ser adicionado em iteracao futura.
+
+DT-BLID044-03 (BAIXO): Metricas de latencia de entrega (WebSocket, Email) nao
+estao expostas em endpoint de observabilidade.
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | MEDIO | DIRETO | Integrar handler no ProfitProtectionEngine (DT-BLID044-01) |
+| INICIAR_AGENTE_RL_5000.bat | BAIXO | INDIRETO | Nenhuma obrigatoria |
+| INICIAR_AGENTE_RL_DIRETO.bat | BAIXO | INDIRETO | Nenhuma obrigatoria |
+| INICIAR_DIARIOS.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | SEM IMPACTO | Nenhuma |
+
+### Historico
+
+- 2026-04-06 — criado e implementado (BLID-044)
