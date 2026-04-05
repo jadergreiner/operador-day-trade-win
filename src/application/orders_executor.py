@@ -23,10 +23,23 @@ from src.application.ordem_backoff_retry import (
 )
 from src.domain.entities.trade import Position
 
-# Importar classes para exportação
-from src.infrastructure.providers.mt5_adapter import OrderStatus
-
 logger = logging.getLogger(__name__)
+
+
+class OrderStatus(Enum):
+    """Estado da ordem no MT5.
+
+    Definido localmente para evitar import cascata da camada de infraestrutura.
+    TODO (ADR futuro): mover para src/domain/value_objects/ como única fonte
+    de verdade compartilhada entre aplicação e infraestrutura.
+    """
+
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    EXECUTED = "EXECUTED"
+    REJECTED = "REJECTED"
+    CANCELLED = "CANCELLED"
+    CLOSED = "CLOSED"
 
 
 class OrderState(Enum):
@@ -646,7 +659,7 @@ class OrdersExecutionOrchestrator:
         start_time = datetime.utcnow()
 
         # AC-1: Validate order against Risk Framework
-        from src.application.risk_validator import ValidationContext
+        from src.application.risk_validator import GateStatus, ValidationContext
 
         # Mocking account data for validation (in production this comes from mt5_adapter)
         context = ValidationContext(
