@@ -4811,3 +4811,71 @@ nucleo do pipeline de execucao automatica no Sprint 1.
 ### Historico
 
 - 05/04/2026 — criado e implementado (BLID-036)
+
+---
+
+#### BLID-037 — ENG-202: Integrar Detector de Padroes no BDI
+
+**Status:** IMPLEMENTADO — BLID-037 (05/04/2026)
+
+**BLID:** BLID-037
+**Titulo:** Integrar detector de padroes na pipeline BDI com filtro de confianca
+**Prioridade:** ALTA
+**ADR:** ADR-030
+
+### Descricao
+
+Integracao completa do detector de padroes tecnicos (`DetectorPadroesTecnico`)
+no `ProcessadorBDI`, com filtro de confianca (limiar > 0.75) aplicado a todos
+os alertas antes do enfileiramento para o WebSocket. Inclui audit logging de
+decisoes e exportacao de metricas (precision, recall, F1-score).
+
+### Criterios de Aceite
+
+- [x] **AC-1:** Hook `detector_padroes` (engulfing bullish/bearish,
+  break_suporte, break_resistencia) no `processar_vela()` do ProcessadorBDI
+- [x] **AC-2:** Filtro por confianca > 0.75 via `FiltroConfiancaBDI`
+  — alertas com confianca <= 0.75 sao rejeitados antes do enfileiramento
+- [x] **AC-3:** Apenas alertas de alta confianca sao enfileirados para
+  o WebSocket; segunda verificacao em `WebSocketFilaIntegrador` como defesa
+- [x] **AC-4:** Performance medida por vela — log WARNING emitido se > 100ms
+- [x] **AC-5:** 57 testes (30 unitarios + 27 integracao) com cenario E2E
+  de 100 alertas simulados (50 alto / 50 baixo confianca)
+- [x] **AC-6:** Audit log via `RegistroAuditFiltro` para cada decisao de
+  filtro (timestamp, ativo, padrao, confianca, decisao, motivo, latencia_ms)
+- [x] **AC-7:** Metricas exportaveis (precision, recall, f1_score, taxa_aprovacao)
+  via `FiltroConfiancaBDI.exportar_metricas()` e `ProcessadorBDI.exportar_metricas()`
+- [x] **AC-8:** Revisao arquitetural documentada na ADR-030:
+  `bdi_processor_v2.py` no dominio puro, sem deps de infraestrutura
+
+### Arquivos Alterados
+
+- `src/domain/bdi_processor_v2.py` — CRIADO:
+  `RegistroAuditFiltro`, `MetricasPipelineBDI`, `FiltroConfiancaBDI`,
+  `LIMIAR_CONFIANCA_PADRAO = Decimal("0.75")`
+- `src/application/services/processador_bdi.py` — ATUALIZADO:
+  import de `FiltroConfiancaBDI`, hook completo de `detector_padroes`,
+  filtro aplicado a todos os alertas, medicao de performance, `exportar_metricas()`
+- `src/infrastructure/config/alerta_config.py` — ATUALIZADO:
+  campo `limiar_confianca: float = 0.75` em `DetectionPadroesConfig`
+- `src/interfaces/websocket_fila_integrador.py` — ATUALIZADO:
+  defesa em profundidade com verificacao de confianca antes do broadcast
+- `tests/unit/test_bdi_processor_v2.py` — CRIADO (30 testes unitarios)
+- `tests/integration/test_bdi_integration.py` — ATUALIZADO (27 testes integracao)
+- `docs/ADRS.md` — ADR-030 registrado
+
+### Evidencias
+
+- 57 testes: 57/57 PASSING (100%)
+- AC-1: `detector_padroes` hookado em 4 pontos do `processar_vela()`
+- AC-2: Limiar estrito (confianca > 0.75) validado em 5 testes especificos
+- AC-3: `fila.enfileirar()` chamado so para alertas aprovados pelo filtro
+- AC-4: Performance de avaliacao media < 1ms (muito abaixo de 100ms)
+- AC-5: E2E 100 alertas: 50 aprovados, 50 rejeitados, 100 audit records
+- AC-6: `historico_audit` com 7 campos auditaveis por decisao
+- AC-7: `exportar_metricas()` retorna dict com 7 chaves incluindo F1
+- AC-8: `bdi_processor_v2` sem nenhum import de `src.infrastructure`
+
+### Historico
+
+- 05/04/2026 — criado e implementado (BLID-037)

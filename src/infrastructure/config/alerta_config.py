@@ -34,6 +34,11 @@ class DetectionPadroesConfig(BaseModel):
     rsi_divergencia_enabled: bool = True
     break_suporte_enabled: bool = True
     break_resistencia_enabled: bool = True
+    # Limiar de confianca para filtro da pipeline BDI (AC-2 ENG-202)
+    limiar_confianca: float = Field(
+        default=0.75,
+        description="Threshold de confianca: apenas alertas acima passam para WebSocket",
+    )
 
     class Config:
         extra = "allow"

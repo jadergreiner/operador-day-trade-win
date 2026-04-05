@@ -3027,3 +3027,122 @@ nucleo do pipeline de execucao automatica de ordens no Sprint 1.
 - BLID-036: implementacao completa (05/04/2026)
 - Issue: ENG-201 — Implementar OrdersExecutor com 3 metodos criticos
 - ADR relacionada: nenhuma precedente direta
+
+---
+
+## ADR-030: FiltroConfiancaBDI — Filtragem de Alertas por Confianca na Pipeline BDI (ENG-202)
+
+**Status:** ACEITO
+**Data:** 05/04/2026
+**BLID:** BLID-037
+**Issue:** ENG-202
+
+### Contexto
+
+A issue ENG-202 solicitou a integracao do detector de padroes tecnicos
+na pipeline BDI e a filtragem de alertas de baixa confianca antes do
+envio para o WebSocket. Antes desta implementacao:
+
+- `detector_padroes` era instanciado mas nao chamado em `processar_vela()`
+- Todos os alertas (volatilidade e SMC) eram enfileirados sem filtro de qualidade
+- Nao existia audit log de decisoes de filtro nem exportacao de metricas
+
+### Decisao
+
+#### Componentes Criados
+
+1. **`src/domain/bdi_processor_v2.py`** — modulo de dominio puro (sem deps de infra):
+   - `RegistroAuditFiltro` — dataclass com timestamp, ativo, padrao,
+     confianca, decisao, motivo e latencia_ms (AC-6)
+   - `MetricasPipelineBDI` — dataclass com contadores e propriedades
+     calculadas precision/recall/f1_score (AC-7)
+   - `FiltroConfiancaBDI` — filtro principal com `avaliar(alerta) -> bool`,
+     `exportar_metricas()` e `registrar_resultado_real()` para feedback
+   - `LIMIAR_CONFIANCA_PADRAO = Decimal("0.75")` como constante configuravel
+
+2. **`src/application/services/processador_bdi.py`** — atualizado:
+   - Hook completo de `detector_padroes` em `processar_vela()`:
+     engulfing (bullish e bearish), break_suporte, break_resistencia (AC-1)
+   - `FiltroConfiancaBDI` aplicado a TODOS os alertas antes do enfileiramento
+     (volatilidade, SMC, padroes tecnicos) — AC-2 e AC-3
+   - Medicao de performance por vela com log WARNING quando > 100ms (AC-4)
+   - Metodo publico `exportar_metricas()` que delega para o filtro (AC-7)
+   - Limiar lido da `DetectionPadroesConfig.limiar_confianca` (configuravel)
+
+3. **`src/infrastructure/config/alerta_config.py`** — `DetectionPadroesConfig`
+   recebeu campo `limiar_confianca: float = 0.75` para tornar o threshold
+   configuravel via YAML sem alteracao de codigo.
+
+4. **`src/interfaces/websocket_fila_integrador.py`** — defesa em profundidade:
+   segunda verificacao de confianca antes do broadcast WebSocket. Alertas de
+   baixa confianca que eventualmente cheguem na fila sao descartados com log
+   WARNING auditavel.
+
+#### Threshold de Confianca
+
+**Limiar: 0.75 (estritamente maior)**. Justificativa por detector:
+
+| Detector | Confianca tipica | Passa filtro? |
+|----------|-----------------|---------------|
+| Volatilidade | 0.85–0.95 | Sempre |
+| SMC CHoCH | 0.80 | Sim |
+| SMC BOS | 0.70 | Nao |
+| SMC FVG | 0.65 | Nao |
+| Engulfing | 0.65 | Nao |
+| Break S/R | 0.70 | Nao |
+| Divergencia RSI | 0.60 | Nao |
+
+O threshold garante que apenas alertas de alta qualidade alcancem o
+WebSocket e o trader. Alertas de padroes tecnicos com confianca < 0.75
+sao auditados mas nao transmitidos.
+
+#### Metricas (AC-7)
+
+Sem feedback de resultado real, as metricas sao aproximacoes baseadas
+nos contadores do filtro:
+- `precision` = aprovados / total_processados
+- `recall` = 1.0 se ha aprovados, 0.0 caso contrario
+- `f1_score` = 2 * precision * recall / (precision + recall)
+
+Quando `registrar_resultado_real()` for alimentado com outcomes de trades,
+precision e recall passam a usar VP/FP/FN reais.
+
+### Alternativas Consideradas
+
+- **Filtrar apenas em WebSocketFilaIntegrador**: rejeitado — o filtro deve
+  ser aplicado o mais cedo possivel (na fonte) para evitar enfileiramento
+  desnecessario. O WebSocket aplica segunda verificacao como defesa extra.
+
+- **Threshold hardcoded**: rejeitado — `DetectionPadroesConfig.limiar_confianca`
+  permite ajuste via `config/alertas.yaml` sem deploy.
+
+- **FiltroConfiancaBDI em application layer**: rejeitado — o filtro e logica
+  de dominio pura (compara valores, nao tem side effects) e pertence ao
+  dominio conforme Clean Architecture.
+
+### Consequencias
+
+- Pipeline BDI filtra alertas de baixa confianca antes de atingir o WebSocket
+- Audit trail completo para cada decisao de filtro (AC-6)
+- Metricas exportaveis (precision/recall/F1) com suporte a feedback real (AC-7)
+- `detector_padroes` finalmente hookado ao loop principal (AC-1)
+- 57 testes passando: 30 unitarios + 27 de integracao
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | NENHUM | — | Nenhuma |
+| INICIAR_AGENTE_RL_DIRETO.bat | NENHUM | — | Nenhuma |
+| INICIAR_DIARIOS.bat | NENHUM | — | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | Filtro na pipeline BDI | Nenhuma (melhora qualidade) |
+| INICIAR_MONITOR_QUANTICO.bat | BAIXO | Menos alertas no WebSocket | Apenas alertas confianca > 0.75 |
+
+Impacto operacional: BAIXO. Apenas alertas de alta confianca chegam ao
+WebSocket. Launchers que nao usam ProcessadorBDI nao sao afetados.
+
+### Referencias
+
+- BLID-037: implementacao completa (05/04/2026)
+- Issue: ENG-202 — Integrar detector de padroes no BDI
+- ADR relacionada: ADR-025 (DetectorSMC), ADR-029 (OrdersExecutor)
