@@ -3485,3 +3485,63 @@ que:
 - ADR-019: schema_version em outputs JSON
 - ADR-023: arquivo ausente -> fallback seguro sem exception
 - ADR-034: CoordinationManager (produtor do sinal JSON)
+
+## ADR-036: Integracao do CoordinationSignalReader nos Agentes RL (BLID-043)
+
+**Status:** ACEITO
+**Data:** 2026-04-06
+**BLID:** BLID-043
+
+### Contexto
+
+O CoordinationSignalReader (ADR-035 / BLID-042) foi criado como modulo
+stateless para leitura do sinal de coordenacao emitido pelo CoordinationManager.
+Contudo, os agentes RL (rl_5000 e rl_direto) ainda nao consultavam esse sinal
+antes de abrir novas posicoes — divida tecnica DT-BLID042-01.
+
+### Decisao
+
+Criar modulo fino ``src/application/coordination_integration.py`` que encapsula
+a funcao ``verificar_pode_abrir_posicao(reader=None) -> bool``. Cada agente RL
+delega para esse modulo antes de enviar ordens de abertura.
+
+**Pontos de integracao:**
+- ``operar_novo_agente_rl_real_antiovertrading.py``: apos confirmacao multi-vela,
+  antes de ``enviar_ordem_mt5adapter()``. Funcao helper:
+  ``_verificar_pode_abrir_posicao_rl5000(reader=None)``
+- ``agente_rl_direto_independente.py``: apos anti-overtrading check,
+  antes de ``enviar_ordem()``. Funcao helper:
+  ``_verificar_pode_abrir_posicao_direto(reader=None)``
+
+**Injetabilidade (AC5):** Ambas as funcoes aceitam ``reader`` externo para
+substituicao em testes sem dependencias pesadas.
+
+**Log padrao quando bloqueado:**
+```
+[COORDINATION] Abertura bloqueada pelo CoordinationManager. Sinal: STOP_OPERACOES
+```
+
+### Consequencias
+
+- Agentes RL consultam sinal de coordenacao antes de abrir posicao
+- ``STOP_OPERACOES`` bloqueia automaticamente novas entradas em ambos os agentes
+- ``NORMAL/MODO_CONSERVADOR/MODO_DEFENSIVO`` nao bloqueiam (informativo)
+- Fallback seguro: arquivo ausente/invalido -> permite abertura (ADR-023)
+- Modulo ``coordination_integration.py`` e testavel sem MT5/SQLAlchemy/pandas
+
+### Impacto nas Interfaces Humanas
+
+| Interface | Severidade | Tipo de Impacto | Acao Operacional |
+|---|---|---|---|
+| INICIAR_AGENTE_RL_5000.bat | MEDIO | MUDANCA COMPORTAMENTO | Bloqueio automatico STOP_OPERACOES |
+| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | MUDANCA COMPORTAMENTO | Bloqueio automatico STOP_OPERACOES |
+| INICIAR_DIARIOS.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | SEM IMPACTO | Nenhuma |
+
+### Referencias
+
+- BLID-043: implementacao completa (2026-04-06)
+- ADR-023: arquivo ausente -> fallback seguro sem exception
+- ADR-034: CoordinationManager (produtor do sinal JSON)
+- ADR-035: CoordinationSignalReader (leitor stateless)

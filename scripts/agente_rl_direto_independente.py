@@ -193,12 +193,21 @@ try:
     from src.infrastructure.database.rl_schema import ensure_rl_database
     from src.infrastructure.database.schema import get_session
     from src.infrastructure.repositories.rl_repository import SqliteRLRepository
+    from src.application.coordination_signal_reader import CoordinationSignalReader
+    from src.application.coordination_integration import (
+        verificar_pode_abrir_posicao as _verificar_coordination_global,
+    )
 
     logger.info("[OK] Módulos importados com sucesso (incl. isolamento formal)")
 
 except Exception as e:
     logger.error(f"[FATAL] Erro ao importar módulos: {e}", exc_info=True)
     sys.exit(1)
+
+# ---------------------------------------------------------------------------
+# Coordination — instancia modulo-level, substituivel em testes
+# ---------------------------------------------------------------------------
+_coordination_reader: "CoordinationSignalReader" = CoordinationSignalReader()  # type: ignore[name-defined]
 
 # ============================================================================
 # CANAL DE DIARIO DESATIVADO NESTE AGENTE
@@ -2219,6 +2228,27 @@ sl_breakeven_validator = SLBreakevenValidator(db_path=TRADING_DB_PATH)
 # ============================================================================
 # LOOP PRINCIPAL
 # ============================================================================
+
+
+def _verificar_pode_abrir_posicao_direto(
+    reader: "Optional[CoordinationSignalReader]" = None,  # type: ignore[name-defined]
+) -> bool:
+    """Verifica sinal de coordenacao antes de abrir posicao no RL Direto.
+
+    Delega para ``src.application.coordination_integration`` para permitir
+    teste unitario sem dependencias pesadas deste script.
+
+    Args:
+        reader: Leitor externo para injecao em testes. Se None, usa
+                o reader modulo-level ``_coordination_reader``.
+
+    Returns:
+        True se abertura permitida, False se bloqueada por STOP_OPERACOES.
+    """
+    r = reader if reader is not None else _coordination_reader
+    return _verificar_coordination_global(reader=r)  # type: ignore[name-defined]
+
+
 def main():
     """Loop principal do agente direto com lógica de RL."""
     global last_signal
@@ -2713,6 +2743,15 @@ def main():
                         logger.info(
                             f"[CICLO {ciclo}] Proteção anti-overtrading: {motivo}"
                         )
+
+                        # 4.6. Verificar sinal de coordenacao cross-agent (BLID-043)
+                        if not _verificar_pode_abrir_posicao_direto():
+                            logger.debug(
+                                f"[CICLO {ciclo}] Abertura bloqueada por coordination. "
+                                "Aguardando proximo ciclo."
+                            )
+                            time.sleep(5)
+                            continue
 
                         # 5. Enviar ordem
                         if enviar_ordem(

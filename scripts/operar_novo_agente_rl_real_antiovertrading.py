@@ -292,8 +292,18 @@ except ImportError as _e:
 from config.settings import AGENT_MAGIC_NUMBERS, TradingConfig
 import uuid
 
+from src.application.coordination_signal_reader import CoordinationSignalReader
+from src.application.coordination_integration import (
+    verificar_pode_abrir_posicao as _verificar_coordination_global,
+)
+
 logger = logging.getLogger(__name__)
 _LOGGING_CONFIGURED = False
+
+# ---------------------------------------------------------------------------
+# Coordination — instancia modulo-level, substituivel em testes
+# ---------------------------------------------------------------------------
+_coordination_reader: CoordinationSignalReader = CoordinationSignalReader()
 
 # ============================================================================
 # ANTI-OVERTRADING CONFIGURATION
@@ -1987,6 +1997,25 @@ def print_status():
     logger.info("=" * 70 + "\n")
 
 
+def _verificar_pode_abrir_posicao_rl5000(
+    reader: Optional[CoordinationSignalReader] = None,
+) -> bool:
+    """Verifica sinal de coordenacao antes de abrir posicao no RL 5000.
+
+    Delega para ``src.application.coordination_integration`` para permitir
+    teste unitario sem dependencias pesadas deste script.
+
+    Args:
+        reader: Leitor externo para injecao em testes. Se None, usa o
+                reader modulo-level ``_coordination_reader``.
+
+    Returns:
+        True se abertura permitida, False se bloqueada por STOP_OPERACOES.
+    """
+    r = reader if reader is not None else _coordination_reader
+    return _verificar_coordination_global(reader=r)
+
+
 def loop_operacao() -> str:
     """Loop principal com proteções anti-overtrading."""
     global last_signal, trades_executed_today
@@ -2137,6 +2166,16 @@ def loop_operacao() -> str:
                 # Executar apenas se confirmado E passou todas as validações
                 # Passar dados para cálculo dinâmico de SL/TP
                 logger.info(f"[CICLO {ciclo}] Sinal CONFIRMADO! Enviando ordem...")
+
+                # 5.1. Verificar sinal de coordenacao cross-agent (BLID-043)
+                if not _verificar_pode_abrir_posicao_rl5000():
+                    logger.debug(
+                        f"[CICLO {ciclo}] Abertura bloqueada por coordination. "
+                        "Aguardando proximo ciclo."
+                    )
+                    time.sleep(5)
+                    continue
+
                 logger.debug(f"[CICLO {ciclo}] Chamando enviar_ordem_mt5adapter()...")
                 ordem_enviada = enviar_ordem_mt5adapter(
                     acao_str,

@@ -5334,3 +5334,61 @@ DT-BLID042-02 (BAIXO): Metricas de latencia de leitura ausentes.
 ### Historico
 
 - 2026-04-06 — criado e implementado (BLID-042)
+
+## BLID-043
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Integrar CoordinationSignalReader nos loops de decisao dos agentes RL (rl_5000 e rl_direto), garantindo que STOP_OPERACOES bloqueia abertura de posicoes automaticamente
+stage_atual: project-manager
+adr_referencia: ADR-036
+
+### Escopo
+
+Integracao do CoordinationSignalReader nos dois agentes RL, via modulo fino
+``src/application/coordination_integration.py`` com funcao injetavel
+``verificar_pode_abrir_posicao(reader=None) -> bool``.
+
+Pontos de integracao:
+- ``operar_novo_agente_rl_real_antiovertrading.py``: antes de enviar_ordem_mt5adapter()
+- ``agente_rl_direto_independente.py``: antes de enviar_ordem()
+
+### Criterios de Aceite
+
+- [x] AC1: agente_com_supervision.py (via operar_novo_agente_rl_real_antiovertrading.py) verifica pode_abrir_posicao() antes de abrir posicao
+- [x] AC2: agente_rl_direto_independente.py verifica pode_abrir_posicao() antes de abrir posicao
+- [x] AC3: Sinal STOP_OPERACOES bloqueia abertura com log WARNING em ambos os agentes
+- [x] AC4: Sinais NORMAL, MODO_CONSERVADOR, MODO_DEFENSIVO nao bloqueiam abertura
+- [x] AC5: Integracao e injetavel (aceita reader externo para testes)
+- [x] AC6: Zero impacto em testes existentes (todos continuam passando)
+- [x] AC7: mypy --strict: zero erros em coordination_integration.py e test_coordination_integration.py
+- [x] AC8: 20 testes unitarios para a integracao (T01-T20 em test_coordination_integration.py)
+
+### Arquivos Alterados
+
+- src/application/coordination_integration.py — novo; modulo fino de integracao
+- tests/unit/test_coordination_integration.py — novo; 20 testes unitarios
+- scripts/operar_novo_agente_rl_real_antiovertrading.py — integracao no loop RL 5000
+- scripts/agente_rl_direto_independente.py — integracao no loop RL Direto
+- docs/BACKLOG.md — BLID-043 registrado
+- docs/ADRS.md — ADR-036 registrada
+
+### Evidencias
+
+- 20 testes unitarios novos: 20/20 PASSING
+- 88 testes de coordenacao totais: 88/88 PASSING
+- mypy --strict: zero erros em coordination_integration.py
+- STOP_OPERACOES bloqueia com log [COORDINATION] WARNING em ambos os agentes
+- Fallback NORMAL quando arquivo ausente/invalido (ADR-023)
+- Integracao injetavel via parametro reader=
+
+### Dividas Tecnicas Registradas
+
+DT-BLID043-01 (BAIXO): Metricas de latencia da verificacao de coordination ausentes.
+
+DT-BLID043-02 (BAIXO): Nao ha observabilidade de quantas vezes STOP_OPERACOES
+bloqueou abertura em cada sessao — metricas operacionais futuras.
+
+### Historico
+
+- 2026-04-06 — criado e implementado (BLID-043)
