@@ -1058,5 +1058,95 @@ class DatasetLoader:
     # ==================== SPRINT-1: LOAD_BACKTEST_OPTIMIZED_RESULTS END ====================
 
 
+# ==================== ML-101: LOAD_AND_LABEL MODULE-LEVEL START ====================
+
+def load_and_label(path: str) -> Dict:
+    """
+    Carrega backtest_optimized_results.json e retorna labels para treinamento ML.
+
+    Acceptance Criteria (Issue ML-101):
+    AC-1: Carregar backtest_optimized_results.json em memória eficientemente
+    AC-2: Implementar função load_and_label(path: str) que retorna dict
+    AC-3: Mapear window_id → labels corretamente (sem off-by-one errors)
+    AC-4: Validar class imbalance < 70% (60% / 40% máximo)
+    AC-5: Verificar zero NaN values em todas as colunas
+    AC-6: Performance: execução < 500ms para 17k+ samples
+    AC-7: Unit tests com coverage > 90%
+
+    Pipeline:
+        JSON (path) → DatasetLoader → label_map → validações → dict
+
+    Args:
+        path: Caminho para backtest_optimized_results.json
+
+    Returns:
+        Dict com:
+          'label_map': Dict[int, int] mapeando window_id → label (1=win, 0=loss)
+          'dataframe': pd.DataFrame com colunas ['window_id', 'label']
+          'metadata': Dict com métricas, win_rate, imbalance_pct, nan_count
+          'execution_time_ms': float — tempo de execução em ms
+
+    Raises:
+        FileNotFoundError: Se arquivo não encontrado em `path`
+        ValueError: Se class imbalance >= 70%, NaN detectado ou estrutura inválida
+
+    Status: ML-101 (Sprint 2 — bloqueia Grid Search)
+    Referencia: tests/unit/test_ml101_load_and_label.py
+    """
+    import time
+
+    start_time = time.perf_counter()
+
+    # AC-1: Carregar via DatasetLoader
+    loader = DatasetLoader(path)
+    resultado = loader.load_backtest_optimized_results(backtest_path=path)
+
+    df: pd.DataFrame = resultado['dataframe']
+    label_map: Dict[int, int] = resultado['label_map']
+    metadata: Dict[str, Any] = resultado['metadata']
+
+    # AC-5: Verificar zero NaN em todas as colunas do DataFrame
+    nan_count = int(df.isnull().sum().sum())
+    if nan_count > 0:
+        raise ValueError(
+            f"NaN detectado no DataFrame de labels: {nan_count} células NaN"
+        )
+
+    # AC-4: Validar class imbalance < 70%
+    total = len(df)
+    n_wins = int((df['label'] == 1).sum())
+    imbalance_pct = (n_wins / total) * 100.0 if total > 0 else 0.0
+    max_class_pct = max(imbalance_pct, 100.0 - imbalance_pct)
+    if max_class_pct >= 70.0:
+        raise ValueError(
+            f"Class imbalance inaceitável: {max_class_pct:.1f}% "
+            f"(máximo permitido: 70%)"
+        )
+
+    # AC-6: Medir performance total
+    execution_time_ms = (time.perf_counter() - start_time) * 1000
+
+    metadata['nan_count'] = nan_count
+    metadata['imbalance_pct'] = round(imbalance_pct, 2)
+    metadata['execution_time_ms'] = round(execution_time_ms, 2)
+
+    logger.info("load_and_label() ML-101 concluido:")
+    logger.info("  - Matches: %d", total)
+    logger.info("  - Wins: %d (%.1f%%)", n_wins, imbalance_pct)
+    logger.info("  - NaN: %d", nan_count)
+    logger.info("  - Imbalance: %.1f%%", max_class_pct)
+    logger.info("  - Performance: %.1fms", execution_time_ms)
+
+    return {
+        'label_map': label_map,
+        'dataframe': df,
+        'metadata': metadata,
+        'execution_time_ms': round(execution_time_ms, 2),
+    }
+
+
+# ==================== ML-101: LOAD_AND_LABEL MODULE-LEVEL END ====================
+
+
 if __name__ == "__main__":
     print("FeatureEngineer module loaded")

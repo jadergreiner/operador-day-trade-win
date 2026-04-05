@@ -90,14 +90,14 @@ jobs:
 
     - name: Upload Test Reports
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test-reports
         path: reports/
 
     - name: Upload Test Summary
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test-summary
         path: test-summary.md
