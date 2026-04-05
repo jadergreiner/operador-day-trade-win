@@ -7,7 +7,8 @@ Inclui API REST para Analytics (S2-6).
 
 import asyncio
 import logging
-from typing import Set, Optional
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator, Set, Optional
 import json
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
@@ -18,7 +19,22 @@ from src.analytics_collector import AnalyticsCollector
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Alertas Automáticos - WebSocket Server")
+
+@asynccontextmanager
+async def lifespan(application: FastAPI) -> AsyncGenerator[None, None]:
+    """Gerenciador de ciclo de vida do servidor (startup e shutdown).
+
+    Substitui add_event_handler removido no Starlette 1.0+.
+    startup() e shutdown() são resolvidos em tempo de execução
+    após a carga completa do módulo.
+    """
+    await startup()
+    yield
+    await shutdown()
+
+
+app = FastAPI(title="Alertas Automáticos - WebSocket Server", lifespan=lifespan)
+
 
 # Connection manager (broadcast para múltiplos operadores)
 class ConnectionManager:
@@ -438,6 +454,8 @@ async def log_intervention(data: dict):
             "timestamp": asyncio.get_running_loop().time()
         }
 
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -476,6 +494,8 @@ async def update_intervention_result(intervention_id: int, data: dict):
 
         return {"status": "updated"}
 
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -593,10 +613,6 @@ async def shutdown():
             logger.info("✅ Analytics Collector fechado")
         except Exception as e:
             logger.error(f"❌ Erro ao fechar Analytics: {e}")
-
-
-app.add_event_handler("startup", startup)
-app.add_event_handler("shutdown", shutdown)
 
 
 async def broadcast_alert(alerta_json: dict):

@@ -2222,7 +2222,8 @@ class RLPerformanceReader:
             for d in decisions[-20:]:  # Últimas 20 decisões
                 d_price = float(d.get("price_current", 0))
                 if abs(d_price - reg_price) < 50:  # Preço perto do nível
-                    # TODO: precisaria do volume do tick, mas podemos inferir do contexto
+                    # Volume do tick não disponível neste contexto; usa contagem
+                    # de interações de preço como proxy de liquidez na zona
                     vol_strength += 1
 
             if vol_strength >= 5:

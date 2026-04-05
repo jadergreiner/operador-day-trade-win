@@ -25,7 +25,7 @@ AC5.9 Integration:
 import asyncio
 import logging
 import sqlite3
-from typing import Optional, Callable
+from typing import Optional, Callable, Awaitable, Any
 from datetime import datetime
 
 from src.application.order_queue_sqlite import OrderQueue, Order, OrderStatus
@@ -44,6 +44,7 @@ class QueueProcessor:
         poll_interval_ms: float = 100,
         max_batch_size: int = 10,
         db_path: str = "data/db/trading.db",
+        broadcast_callback: Optional[Callable[[dict], Awaitable[Any]]] = None,
     ):
         """
         Args:
@@ -52,12 +53,16 @@ class QueueProcessor:
             poll_interval_ms: Intervalo de polling (default: 100ms)
             max_batch_size: Max ordens processadas por batch
             db_path: Path para trading.db (para AC5.9 feedback)
+            broadcast_callback: Função async opcional para broadcast via WebSocket.
+                Assinatura: async (payload: dict) -> None
+                Exemplo: broadcast_callback=broadcast_alert (de websocket_server)
         """
         self.queue = queue
         self.mt5_executor = mt5_executor or self._default_executor
         self.poll_interval_ms = poll_interval_ms / 1000  # Converter para segundos
         self.max_batch_size = max_batch_size
         self.feedback_db = TradeOutcomeFeedbackDB(db_path)  # AC5.9 integration
+        self.broadcast_callback = broadcast_callback
         self.running = False
         self.task: Optional[asyncio.Task] = None
         self.stats = {
@@ -242,13 +247,41 @@ class QueueProcessor:
             logger.error(f"Error processing AC5.9 feedback for {order.order_id}: {e}")
             # Não falha execução se feedback falhar
 
-        # TODO: Broadcast via WebSocket se implementado
+        await self._broadcast(self._build_payload("ORDER_EXECUTED", order, ticket=ticket))
 
     async def _notify_order_failed(self, order: Order, error: str) -> None:
         """Notifica operador de falha crítica."""
         logger.warning(f"ALERT: Order {order.order_id} failed after 3 attempts! "
                       f"Error: {error}")
-        # TODO: Broadcast via WebSocket + Alerta
+        await self._broadcast(self._build_payload("ORDER_FAILED", order, error=error))
+
+    def _build_payload(
+        self,
+        tipo: str,
+        order: Order,
+        ticket: Optional[int] = None,
+        error: Optional[str] = None,
+    ) -> dict:
+        """Constrói payload padronizado para broadcast WebSocket."""
+        payload: dict = {
+            "tipo": tipo,
+            "order_id": order.order_id,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+        if ticket is not None:
+            payload["ticket"] = ticket
+            payload["price"] = order.price
+        if error is not None:
+            payload["error"] = error
+        return payload
+
+    async def _broadcast(self, payload: dict) -> None:
+        """Envia payload via callback de broadcast, se configurado."""
+        if self.broadcast_callback:
+            try:
+                await self.broadcast_callback(payload)
+            except Exception as e:
+                logger.warning(f"Broadcast falhou ({payload.get('tipo')}): {e}")
 
     def get_stats(self) -> dict:
         """Retorna estatísticas de processamento."""
