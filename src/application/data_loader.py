@@ -17,11 +17,12 @@ Pipeline:
 """
 
 import json
+import pickle
 import pandas as pd
 import numpy as np
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict, List, Tuple
 import time
 
 logger = logging.getLogger(__name__)
@@ -254,6 +255,148 @@ def load_and_label(
     print("="*60 + "\n")
 
     return output_df
+
+
+def prepare_training_dataset(
+    results_path: str = "data/backtest_optimized_results.json",
+    output_pkl: str = "data/dataset_labeled.pkl",
+    feature_names_path: str = "data/feature_names.json",
+    seed: int = 42,
+) -> Dict:
+    """
+    Prepara dataset completo para treinamento ML com splits e persistencia.
+
+    Orquestra o pipeline completo:
+    1. Carrega e labela amostras via load_and_label()
+    2. Valida quantidade de amostras (>= 1000)
+    3. Valida labels binarios (0/1 sem NaN, imbalance 20-80%)
+    4. Valida exatamente 24 features engineered
+    5. Cria splits 70/15/15 com seed fixo
+    6. Salva feature_names.json com lista de nomes
+    7. Salva dataset_labeled.pkl com dict resultado
+    8. Retorna dict com dataframe, splits, feature_names e metadata
+
+    Args:
+        results_path (str): Caminho para arquivo de backtest JSON/CSV
+        output_pkl (str): Caminho de saida para pickle do dataset
+        feature_names_path (str): Caminho de saida para JSON de feature names
+        seed (int): Semente para reproducibilidade dos splits
+
+    Returns:
+        Dict com chaves:
+            - 'dataframe': DataFrame completo com 24 features + label
+            - 'splits': dict com 'train', 'val', 'test' DataFrames (70/15/15)
+            - 'feature_names': lista com 24 nomes de features
+            - 'metadata': dict com estatisticas e informacoes do dataset
+
+    Raises:
+        FileNotFoundError: Se results_path nao existe
+        ValueError: Se validacoes falharem (amostras, labels ou features)
+    """
+    logger.info(f"[prepare_training_dataset] Iniciando pipeline com {results_path}")
+
+    # Passo 1: Carregar e labelar dataset
+    dataframe = load_and_label(results_path, output_path=None)
+
+    # AC1: Validar quantidade minima de amostras
+    total_amostras = len(dataframe)
+    if total_amostras < 1000:
+        raise ValueError(
+            f"Dataset insuficiente: {total_amostras} amostras (minimo: 1000)"
+        )
+    logger.info(f"[AC1] Amostras validadas: {total_amostras}")
+
+    # AC2: Validar labels binarios e consistencia
+    coluna_label = "label"
+    if coluna_label not in dataframe.columns:
+        raise ValueError("Coluna 'label' nao encontrada no DataFrame")
+
+    labels_serie = dataframe[coluna_label]
+    if labels_serie.isnull().any():
+        raise ValueError("Labels contem valores NaN")
+
+    valores_unicos = set(labels_serie.unique())
+    if not valores_unicos.issubset({0, 1}):
+        raise ValueError(f"Labels invalidos: {valores_unicos} (esperado apenas 0 e 1)")
+
+    pct_positivos = float(labels_serie.mean() * 100)
+    if pct_positivos < 20 or pct_positivos > 80:
+        raise ValueError(
+            f"Imbalance inaceitavel: {pct_positivos:.1f}% positivos (esperado 20-80%)"
+        )
+    logger.info(f"[AC2] Labels validados: {pct_positivos:.1f}% positivos")
+
+    # AC3: Validar exatamente 24 features
+    colunas_nao_feature = {"window_id", "label"}
+    colunas_features = [c for c in dataframe.columns if c not in colunas_nao_feature]
+    qtd_features = len(colunas_features)
+    if qtd_features != 24:
+        raise ValueError(
+            f"Numero de features incorreto: {qtd_features} (esperado: 24)"
+        )
+    nomes_features: List[str] = colunas_features
+    logger.info(f"[AC3] Features validadas: {qtd_features} features")
+
+    # AC4: Criar splits 70/15/15 com seed fixo
+    np.random.seed(seed)
+    indices_embaralhados = np.random.permutation(total_amostras)
+
+    limite_treino = int(0.70 * total_amostras)
+    limite_val = limite_treino + int(0.15 * total_amostras)
+
+    idx_treino = indices_embaralhados[:limite_treino]
+    idx_val = indices_embaralhados[limite_treino:limite_val]
+    idx_teste = indices_embaralhados[limite_val:]
+
+    df_treino = dataframe.iloc[idx_treino].reset_index(drop=True)
+    df_val = dataframe.iloc[idx_val].reset_index(drop=True)
+    df_teste = dataframe.iloc[idx_teste].reset_index(drop=True)
+
+    splits: Dict = {
+        "train": df_treino,
+        "val": df_val,
+        "test": df_teste,
+    }
+    logger.info(
+        f"[AC4] Splits criados: treino={len(df_treino)}, val={len(df_val)}, teste={len(df_teste)}"
+    )
+
+    # AC5: Salvar feature_names.json
+    caminho_feature_names = Path(feature_names_path)
+    caminho_feature_names.parent.mkdir(parents=True, exist_ok=True)
+    with open(caminho_feature_names, "w", encoding="utf-8") as arquivo_json:
+        json.dump({"features": nomes_features}, arquivo_json, indent=2, ensure_ascii=False)
+    logger.info(f"[AC5] Feature names salvos em {caminho_feature_names}")
+
+    # Montar metadados do dataset
+    metadados: Dict = {
+        "total_amostras": total_amostras,
+        "qtd_features": qtd_features,
+        "pct_positivos": round(pct_positivos, 2),
+        "pct_negativos": round(100 - pct_positivos, 2),
+        "tamanho_treino": len(df_treino),
+        "tamanho_val": len(df_val),
+        "tamanho_teste": len(df_teste),
+        "seed": seed,
+        "results_path": str(results_path),
+    }
+
+    resultado: Dict = {
+        "dataframe": dataframe,
+        "splits": splits,
+        "feature_names": nomes_features,
+        "metadata": metadados,
+    }
+
+    # Salvar dataset_labeled.pkl
+    caminho_pkl = Path(output_pkl)
+    caminho_pkl.parent.mkdir(parents=True, exist_ok=True)
+    with open(caminho_pkl, "wb") as arquivo_pkl:
+        pickle.dump(resultado, arquivo_pkl)
+    logger.info(f"[AC1/saida] Dataset pickle salvo em {caminho_pkl}")
+
+    logger.info("[prepare_training_dataset] Pipeline concluido com sucesso")
+    return resultado
 
 
 if __name__ == "__main__":

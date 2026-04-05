@@ -4879,3 +4879,51 @@ decisoes e exportacao de metricas (precision, recall, F1-score).
 ### Historico
 
 - 05/04/2026 — criado e implementado (BLID-037)
+
+---
+
+## BLID-TODO1 — Load Dataset + ML-Based Labeling (ML-001)
+
+**Status:** CONCLUIDO
+**Prioridade:** P1 (BLOCKER Sprint 1)
+**Sprint:** Sprint 1
+**Esforco:** 20h
+
+### Descricao
+
+Implementar `prepare_training_dataset()` orquestrando pipeline completo:
+backtest JSON → labeling ML → 24 features → splits 70/15/15 →
+`dataset_labeled.pkl` + `feature_names.json`.
+
+### Criterios de Aceite
+
+- [x] AC1: Dataset carregado com ≥ 1000 amostras
+- [x] AC2: Labeling ML aplicado (consistencia validada, imbalance 20-80%)
+- [x] AC3: 24 features extraidas e validadas
+- [x] AC4: Splits Train/Val/Test 70/15/15 criados
+- [x] AC5: feature_names.json salvo em formato de producao
+
+### Arquivos Alterados
+
+- `src/application/data_loader.py` — `prepare_training_dataset()` adicionado
+- `tests/unit/test_prepare_training_dataset.py` — criado (7 testes)
+
+### Evidencias
+
+- 7 testes unitarios: 7/7 PASSING
+- 16 testes de regressao: 16/16 PASSING (test_ml101_load_and_label.py)
+- Zero TODOs residuais no escopo
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Acao |
+| --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | BAIXO/INDIRETO | Nenhuma |
+| INICIAR_AGENTE_RL_DIRETO.bat | NENHUM | Nenhuma |
+| INICIAR_DIARIOS.bat | BAIXO/INDIRETO | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | Nenhuma |
+
+### Historico
+
+- 05/04/2026 — criado e implementado (BLID-TODO1)
