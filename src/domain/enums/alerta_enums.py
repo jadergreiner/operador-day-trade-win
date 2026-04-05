@@ -27,6 +27,8 @@ class PatraoAlerta(str, Enum):
     SMC_BOS = "smc_bos"
     SMC_CHOCH = "smc_choch"
     SMC_FVG = "smc_fvg"
+    # Profit Protection (BLID-044)
+    REVERSAO_LUCRO = "reversao_lucro"
 
     def __str__(self) -> str:
         return self.value

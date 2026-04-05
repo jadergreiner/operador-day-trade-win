@@ -3560,3 +3560,110 @@ nao impede operacao — agente opera sem protecao de coordenacao com log WARNING
 - ADR-023: fallback seguro para arquivo ausente
 - ADR-019: schema_version em outputs JSON
 - ADR-011: isolamento de DBs por agente RL
+
+---
+
+## ADR-037: AlertReversaoHandler — Sistema de Alertas para Reversoes de Lucro (BLID-044)
+
+**Status:** ACEITO
+**Data:** 2026-04-05
+**BLID:** BLID-044
+
+### Contexto
+
+O ProfitProtectionEngine (implementado em P1-PROFIT_PROTECTION item #1) detecta
+reversoes de lucro em tempo real quando um trade atinge status=ALERTA. No entanto,
+o operador nao recebe notificacao imediata dessas reversoes, dependendo de
+monitoramento manual ou logs.
+
+Item #2 do P1-PROFIT_PROTECTION solicita notificacao em tempo real via WebSocket,
+Email e Webhook (Slack/Discord) quando uma reversao e detectada, permitindo acao
+rapida do operador.
+
+### Decisao
+
+Implementar AlertReversaoHandler que:
+
+**1. Integracao com ProfitProtectionEngine:**
+Converte ProfitProtectionResult (status=ALERTA) em AlertaOportunidade usando o
+framework de alertas existente. Preserva compatibilidade com infraestrutura de
+alertas atual (AlertaDeliveryManager, AlertaFormatter, etc).
+
+**2. Entrega Multicanal:**
+- PRIMARY: WebSocket (sync, <500ms) via AlertaDeliveryManager
+- SECONDARY: Email SMTP (async, 2-8s com retry) via AlertaDeliveryManager
+- TERTIARY: Webhook Slack/Discord (fire-and-forget, timeout 5s) via httpx
+
+**3. Throttling de Alertas:**
+Minimo 60s entre alertas do mesmo trade_id para evitar spam quando mercado oscila
+rapidamente. Historico de alertas mantido em memoria com limpeza automatica de
+registros >24h.
+
+**4. Payload Webhook:**
+Formato Slack/Discord com blocos estruturados contendo:
+- Trade ID, simbolo, direcao
+- Preco entrada, lucro atual, lucro maximo
+- Deviance de reversao (%)
+- Acao sugerida pelo ProfitProtectionEngine
+
+**5. Configuracao Externa:**
+config/alert_reversoes.yaml com Pydantic validation para:
+- habilitado (on/off)
+- webhook_url (env var ALERT_WEBHOOK_URL)
+- throttle_seconds (default 60)
+- nivel_padrao (ALTO)
+
+**6. Novo Padrao de Alerta:**
+PatraoAlerta.REVERSAO_LUCRO adicionado aos enums existentes, mantendo
+retrocompatibilidade com padroes SMC, volatilidade e tecnicos.
+
+### Motivacao
+
+- Operador recebe notificacao imediata via webhook Slack/Discord (mobile)
+- Email como backup quando WebSocket falha ou operador offline
+- Throttling evita spam durante oscilacoes rapidas do mercado
+- Integracao com AlertaDeliveryManager existente aproveita retry logic e audit
+- Configuracao externa permite ajuste de thresholds sem redeploy
+
+### Consequencias
+
+**Positivas:**
+- Tempo de resposta do operador reduz de minutos (monitoramento manual) para
+  segundos (notificacao push)
+- Protecao de lucros mais efetiva com acao rapida em reversoes
+- Auditoria completa via AlertaDeliveryManager (timestamps, canais, status)
+- Throttling evita fadiga de alerta e falsos positivos
+
+**Negativas:**
+- Dependencia de httpx para webhooks (nova lib)
+- Historico de throttling em memoria (perdido em restart, mas aceitavel)
+- Webhook e fire-and-forget (sem garantia de entrega, mas nao bloqueante)
+
+**Tecnicas:**
+- 21 testes unitarios: conversao, throttling, webhook, integracao
+- Type hints 100% com mypy --strict
+- Async/await para webhook e delivery manager
+- AlertReversaoConfig com Pydantic validation
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | MEDIO | DIRETO | Habilitar alertas via env var ALERT_WEBHOOK_URL |
+| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | DIRETO | Habilitar alertas via env var ALERT_WEBHOOK_URL |
+| INICIAR_DIARIOS.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | SEM IMPACTO | Nenhuma |
+
+**Nota:** Integracao com ProfitProtectionEngine requer modificacao nos agentes RL
+para instanciar AlertReversaoHandler e chamar processar_reversao() quando
+processar_protecao() retorna status=ALERTA.
+
+### Referencias
+
+- BLID-044: implementacao completa (2026-04-05)
+- P1-PROFIT_PROTECTION item #2: especificacao de alertas
+- ADR-018: configuracao de ProfitProtectionEngine por perfil
+- src/application/alert_reversao_handler.py: implementacao
+- config/alert_reversoes.yaml: configuracao canonica
+- tests/unit/test_alert_reversao_handler.py: 21 testes unitarios
