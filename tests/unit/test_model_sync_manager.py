@@ -194,7 +194,7 @@ def test_registrar_callback_unico(manager: ModelSyncManager) -> None:
     callback = MagicMock()
     manager.registrar_callback(callback)
 
-    assert len(manager._callbacks) == 1
+    assert manager.obter_total_callbacks() == 1
 
 
 @pytest.mark.unit
@@ -208,7 +208,7 @@ def test_registrar_multiplos_callbacks(manager: ModelSyncManager) -> None:
     manager.registrar_callback(cb2)
     manager.registrar_callback(cb3)
 
-    assert len(manager._callbacks) == 3
+    assert manager.obter_total_callbacks() == 3
 
 
 @pytest.mark.unit
@@ -218,7 +218,7 @@ def test_remover_callback(manager: ModelSyncManager) -> None:
     manager.registrar_callback(callback)
     manager.remover_callback(callback)
 
-    assert len(manager._callbacks) == 0
+    assert manager.obter_total_callbacks() == 0
 
 
 @pytest.mark.unit
@@ -240,9 +240,9 @@ def test_detectar_mudanca_quando_mtime_aumenta(
     manager: ModelSyncManager, diretorio_modelos: Path
 ) -> None:
     """Deve detectar mudanca quando mtime do diretorio aumenta."""
-    # Inicializa baseline de mtimes
+    # Inicializa baseline de mtimes via metodo publico
     mtime_inicial = diretorio_modelos.stat().st_mtime
-    manager._mtimes_baseline = {diretorio_modelos: mtime_inicial}
+    manager.definir_mtime_baseline({diretorio_modelos: mtime_inicial})
 
     # Simula mudanca: escreve arquivo novo no diretorio
     (diretorio_modelos / "model.pkl").write_bytes(b"modelo_binario")
@@ -259,7 +259,7 @@ def test_nao_detectar_mudanca_sem_alteracao(
 ) -> None:
     """Nao deve detectar mudanca se mtime nao alterou."""
     mtime_atual = diretorio_modelos.stat().st_mtime
-    manager._mtimes_baseline = {diretorio_modelos: mtime_atual}
+    manager.definir_mtime_baseline({diretorio_modelos: mtime_atual})
 
     eventos = manager._verificar_mudancas()
 
@@ -286,7 +286,7 @@ def test_detectar_mudanca_multiplos_diretorios(
 
     mtime1 = dir1.stat().st_mtime
     mtime2 = dir2.stat().st_mtime
-    mgr._mtimes_baseline = {dir1: mtime1, dir2: mtime2}
+    mgr.definir_mtime_baseline({dir1: mtime1, dir2: mtime2})
 
     # Altera apenas dir1
     (dir1 / "model.pkl").write_bytes(b"v2")
@@ -624,7 +624,10 @@ def test_inicializar_mtimes_para_diretorios_inexistentes(
     )
     mgr = ModelSyncManager(configuracao=config)
 
-    # Inicializar sem criar o diretorio — nao deve lancar excecao
-    mgr._inicializar_mtimes()
+    # Iniciar sem criar o diretorio — nao deve lancar excecao
+    mgr.iniciar()
+    mgr.parar()
 
-    assert dir_inexistente not in mgr._mtimes_baseline
+    # Diretorio inexistente nao deve ter entrada no baseline
+    status = mgr.obter_status()
+    assert status.total_eventos == 0

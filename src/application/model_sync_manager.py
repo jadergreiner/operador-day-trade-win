@@ -297,6 +297,30 @@ class ModelSyncManager:
         with self._lock:
             return list(self._historico_eventos)
 
+    def obter_total_callbacks(self) -> int:
+        """Retorna o total de callbacks registrados.
+
+        Metodo publico para inspecao sem expor a lista interna.
+
+        Returns:
+            Numero de callbacks atualmente registrados.
+        """
+        with self._lock:
+            return len(self._callbacks)
+
+    def definir_mtime_baseline(self, baseline: dict[Path, float]) -> None:
+        """Define o baseline de mtimes para fins de teste ou inicializacao manual.
+
+        Permite sobrescrever o baseline detectado automaticamente por
+        ``iniciar()``, facilitando testes deterministas sem depender de
+        filesystem real ou temporizar chamadas a ``iniciar()``.
+
+        Args:
+            baseline: Mapeamento de Path → mtime (float, resultado de stat().st_mtime).
+        """
+        with self._lock:
+            self._mtimes_baseline = dict(baseline)
+
     # ------------------------------------------------------------------
     # Internos
     # ------------------------------------------------------------------
@@ -325,7 +349,11 @@ class ModelSyncManager:
                     self._registrar_evento(evento)
                     self._escrever_marker(evento)
                     self._disparar_callbacks(evento)
-            except Exception:
+            except Exception:  # noqa: BLE001
+                # Em thread daemon, capturamos toda Exception para evitar
+                # encerramento silencioso do loop. KeyboardInterrupt nao
+                # chega aqui porque threads daemon nao recebem SIGINT.
+                # O evento _evento_parar eh o unico mecanismo de encerramento.
                 logger.exception(
                     "[ModelSyncManager] Erro inesperado no loop de polling"
                 )
