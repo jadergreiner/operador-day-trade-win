@@ -5128,3 +5128,89 @@ ModelSyncManager — hot-reload de modelo entre agentes RL paralelos via polling
 ### Historico
 
 - 2026-05-01 — criado e implementado (BLID-039)
+
+---
+
+## BLID-040
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: visibilidade unificada em tempo real dos 2 agentes RL em producao
+stage_atual: project-manager
+adr_referencia: ADR-033
+
+### Escopo
+
+Dashboard Unificado dos Agentes RL — serviço read-only standalone na
+porta 8010 que consulta a tabela `trades` (SQLite) filtrada por
+`magic_number` e janela de 7 dias, calcula métricas, equity curve e
+lista de trades para cada agente RL, e expõe os dados via API FastAPI
+com frontend HTML.
+
+Agentes cobertos:
+- `rl_5000` (magic_number = 234500)
+- `rl_direto` (magic_number = 234600)
+
+### Criterios de Aceite
+
+- [x] AC1: `DashboardAgentesService` consulta trades dos 2 agentes
+  separadamente via `magic_number`
+- [x] AC2: Janela de lookback de 7 dias aplicada em todas as consultas
+- [x] AC3: Payload zerado retornado (HTTP 200) quando banco ausente
+  (ADR-023)
+- [x] AC4: Endpoint `/status` retorna `DashboardStatusPayload` com
+  status ativo/inativo por agente
+- [x] AC5: Endpoint `/metricas` retorna `DashboardMetricasPayload`
+  com win_rate, profit_factor, drawdown e total_trades
+- [x] AC6: Endpoint `/trades` retorna `DashboardTradesPayload` com
+  lista de trades recentes por agente
+- [x] AC7: Endpoint `/equity` retorna `DashboardEquityPayload` com
+  equity curve acumulada por agente
+- [x] AC8: Frontend HTML servido via `/dashboard` (FileResponse)
+- [x] AC9: 10/10 testes unitários PASSING sem banco real
+- [x] AC10: Processo independente — zero impacto nos agentes RL
+  existentes
+
+### Arquivos Alterados
+
+- `src/application/services/dashboard_agentes_service.py` — novo;
+  `DashboardAgentesService` + dataclasses de payload
+- `tests/unit/test_dashboard_agentes.py` — novo; 10 testes unitários
+- `scripts/run_dashboard_agentes.py` — novo; servidor FastAPI porta 8010
+- `templates/dashboard_agentes.html` — novo; frontend HTML do dashboard
+- `docs/BACKLOG.md` — BLID-040 registrado
+- `docs/ADRS.md` — ADR-033 registrada
+
+### Evidencias
+
+- 10 testes unitários: 10/10 PASSING (mocks SQLite, sem deps externas)
+- Endpoint `/status` funcional com payload tipado
+- Endpoint `/metricas` com cálculo de win_rate e profit_factor
+- Endpoint `/trades` com filtro por janela de 7 dias
+- Endpoint `/equity` com equity curve acumulada
+- Payload zerado validado quando banco ausente
+
+### Dividas Tecnicas Registradas
+
+**DT-BLID-040-01** (BAIXA): Endpoint paths divergem da especificação
+original (`/status` implementado; spec previa `/api/agentes/status`).
+Impacto: integrações futuras devem usar paths implementados ou ajustar
+na próxima iteração.
+
+**DT-BLID-040-02** (BAIXA): Imports `FastAPI` e `TestClient` presentes
+em `test_dashboard_agentes.py` mas não utilizados nos 10 testes
+unitários atuais. Remoção recomendada na próxima iteração de limpeza.
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | BAIXO | INDIRETO | Nenhuma — dashboard só lê dados |
+| INICIAR_AGENTE_RL_DIRETO.bat | BAIXO | INDIRETO | Nenhuma — dashboard só lê dados |
+| INICIAR_DIARIOS.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | SEM IMPACTO | Nenhuma |
+
+### Historico
+
+- 2026-04-05 — criado e implementado (BLID-040)

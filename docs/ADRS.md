@@ -3290,3 +3290,87 @@ Implementar `ModelSyncManager` em `src/application/model_sync_manager.py` com:
 
 - BLID-039: implementacao completa (2026-05-01)
 - ADR-031: BacktestDetector (padrao de modulo application standalone)
+
+---
+
+## ADR-033: DashboardAgentesService — Observabilidade Read-Only dos Agentes RL (BLID-040)
+
+**Data:** 2026-04-05
+**Status:** APROVADA
+**BLID:** BLID-040
+
+### Contexto
+
+Os dois agentes RL em produção (`INICIAR_AGENTE_RL_5000.bat` com
+magic_number=234500 e `INICIAR_AGENTE_RL_DIRETO.bat` com
+magic_number=234600) não possuem visibilidade unificada de status,
+métricas e equity curve em tempo real. Operadores precisam consultar
+logs e banco SQLite manualmente para avaliar o desempenho de cada
+agente. A ausência de dashboard centralizado dificulta a supervisão
+operacional e o diagnóstico rápido de problemas.
+
+### Decisao
+
+Implementar `DashboardAgentesService` em
+`src/application/services/dashboard_agentes_service.py` como serviço
+standalone read-only com as seguintes características:
+
+1. **Porta exclusiva 8010** via `scripts/run_dashboard_agentes.py`
+   (FastAPI + uvicorn) — não conflita com nenhum serviço existente
+2. **Consulta read-only** à tabela `trades` (SQLite direto conforme
+   ADR-001) filtrada por `magic_number` e janela de 7 dias (ADR-017)
+3. **Payload zerado** retornado com HTTP 200 quando banco ausente
+   (ADR-023) — sem lançar exceções
+4. **Quatro endpoints JSON** tipados com dataclasses:
+   - `GET /status` → `DashboardStatusPayload`
+   - `GET /metricas` → `DashboardMetricasPayload`
+   - `GET /trades` → `DashboardTradesPayload`
+   - `GET /equity` → `DashboardEquityPayload`
+5. **Frontend HTML** estático servido via `GET /dashboard`
+   (`FileResponse` do template `templates/dashboard_agentes.html`)
+6. **Zero modificação** nos agentes RL existentes — processo
+   completamente independente
+
+### Alternativas Rejeitadas
+
+- **Extensão do `dashboard_stats_server.py`**: acoplaria o dashboard
+  de agentes RL ao servidor de estatísticas existente, aumentando a
+  complexidade e o risco de regressão em funcionalidade já estável.
+- **WebSocket em tempo real**: overhead de implementação desproporcional
+  ao requisito de observabilidade; polling via HTTP é suficiente para
+  o ciclo de atualização necessário em day-trade.
+- **Endpoint adicional nos agentes RL**: modificaria processos em
+  produção, violando o princípio de zero impacto nos agentes (risco
+  operacional inaceitável).
+
+### Consequencias
+
+- Processo independente na porta 8010 — pode ser iniciado/parado sem
+  afetar nenhum dos 5 launchers operacionais
+- Leitura direta do SQLite sem ORM — consistente com ADR-001
+- Janela de 7 dias (ADR-017) garante dados relevantes sem sobrecarga
+- Payload zerado (ADR-023) garante disponibilidade do dashboard mesmo
+  sem banco conectado
+- DT-BLID-040-01: paths `/status` divergem da spec
+  `/api/agentes/status` — impacto BAIXO, rastreado para correção futura
+- DT-BLID-040-02: imports órfãos em test file — impacto BAIXO,
+  limpeza recomendada na próxima iteração
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | BAIXO | INDIRETO | Nenhuma — dashboard lê dados passivamente |
+| INICIAR_AGENTE_RL_DIRETO.bat | BAIXO | INDIRETO | Nenhuma — dashboard lê dados passivamente |
+| INICIAR_DIARIOS.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | SEM IMPACTO | Nenhuma |
+
+### Referencias
+
+- BLID-040: implementacao completa (2026-04-05)
+- ADR-001: SQLite direto sem ORM
+- ADR-012: magic numbers dos agentes RL
+- ADR-017: lookback de 7 dias
+- ADR-023: banco ausente → payload zerado sem exception
+- ADR-032: ModelSyncManager (padrao de modulo application standalone)
