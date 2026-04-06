@@ -18,6 +18,7 @@ Referencia: docs/BACKLOG.md
 from __future__ import annotations
 
 import sys
+import json
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -545,3 +546,51 @@ class TestQualidadeDadosJson:
     def test_confianca_100_quando_todos_ativos_presentes(self) -> None:
         dados = self._executar_atualizar_dados()
         assert dados["qualidade_dados"]["confianca_score"] == 100
+
+    @pytest.mark.unit
+    def test_scheduler_symbol_promotion_presente_no_json(self) -> None:
+        dados = self._executar_atualizar_dados()
+        assert "scheduler_symbol_promotion" in dados
+        assert "status" in dados["scheduler_symbol_promotion"]
+
+
+class TestSchedulerPromotionStatus:
+    """Testa leitura do status de promocao do scheduler por simbolo."""
+
+    @pytest.mark.unit
+    def test_sem_artefato_retorna_sem_promocao(self, tmp_path: Path) -> None:
+        outputs_dir = tmp_path / "outputs"
+        outputs_dir.mkdir()
+        runtime = tmp_path / "runtime.json"
+        status = mqt._carregar_status_promocao_scheduler(
+            outputs_dir=outputs_dir,
+            runtime_config_path=runtime,
+        )
+        assert status["status"] == "sem_promocao"
+        assert status["aprovado"] is False
+
+    @pytest.mark.unit
+    def test_arquivo_valido_retorna_aprovado(self, tmp_path: Path) -> None:
+        outputs_dir = tmp_path / "outputs"
+        outputs_dir.mkdir()
+        promotion_file = outputs_dir / "scheduler_symbol_promotion_20260406_160217.json"
+        promotion_file.write_text(
+            json.dumps(
+                {
+                    "timestamp_promocao": "2026-04-06T16:02:17",
+                    "aprovado": True,
+                    "motivo": "gate manual aprovado",
+                    "source_report": "outputs/scheduler_symbol_calibration_20260406_160217.json",
+                }
+            ),
+            encoding="utf-8",
+        )
+        runtime = tmp_path / "symbol_calibration_runtime.json"
+        runtime.write_text("{}", encoding="utf-8")
+        status = mqt._carregar_status_promocao_scheduler(
+            outputs_dir=outputs_dir,
+            runtime_config_path=runtime,
+        )
+        assert status["status"] == "aprovado"
+        assert status["aprovado"] is True
+        assert status["runtime_config_presente"] is True

@@ -1,5 +1,10 @@
 """Testes para adaptador runtime do scheduler RL."""
 
+import json
+from pathlib import Path
+
+from pytest import MonkeyPatch
+
 from src.application.rl_scheduler_runtime_adapter import (
     calcular_metricas_para_scheduler,
     construir_contexto_operacional_para_scheduler,
@@ -91,3 +96,29 @@ def test_construir_contexto_operacional_aceita_calibracao_override() -> None:
     )
     assert contexto_default["regime_mercado"] == "estavel"
     assert contexto_override["regime_mercado"] == "stress_high_vol"
+
+
+def test_obter_calibracao_simbolo_ler_override_runtime(
+    monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
+    runtime_path = tmp_path / "symbol_calibration_runtime.json"
+    runtime_path.write_text(
+        json.dumps(
+            {
+                "metadata": {"source": "test"},
+                "calibracao_por_simbolo": {
+                    "WDO": {
+                        "stress_score_trigger": 0.52,
+                        "volatilidade_trigger": 58.0,
+                        "loss_streak_divisor": 2.7,
+                        "media_negativa_scale": 2.9,
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("RL_SCHEDULER_SYMBOL_CALIBRATION_PATH", str(runtime_path))
+    calibracao = obter_calibracao_simbolo("WDOF26")
+    assert calibracao["stress_score_trigger"] == 0.52
+    assert calibracao["volatilidade_trigger"] == 58.0

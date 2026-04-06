@@ -4419,3 +4419,201 @@ a aceitar `calibracao_override` apenas no caminho de simulacao.
 - `tests/unit/test_rl_scheduler_runtime_adapter.py`
 - `tests/unit/test_rl_scheduler_symbol_calibration.py`
 - `docs/BACKLOG.md` (BLID-066)
+
+---
+
+## ADR-047: Gate Manual de Promocao da Calibracao por Simbolo para Runtime (BLID-067)
+
+**Data:** 2026-04-06  
+**Status:** APROVADO  
+**Decisores:** Product Owner, Tech Lead, ML Expert  
+**BLID:** BLID-067
+
+### Contexto
+
+O BLID-066 produziu replay e recomendacao por simbolo, mas faltava um mecanismo
+formal para promover essa recomendacao ao runtime real com governanca.
+
+Sem gate manual, o processo ficava dependente de ajuste de codigo ou alteracao
+ad-hoc de thresholds, elevando risco operacional.
+
+### Decisao
+
+Implementar gate manual de promocao com tres componentes:
+
+- validacao de criterios minimos por simbolo (`WIN` e `WDO`):
+  - cobertura minima de cenarios;
+  - acuracia minima no replay;
+- promocao para arquivo runtime versionado em disco:
+  - `data/scheduler/symbol_calibration_runtime.json`;
+- consumo automatico pelo adaptador runtime com fallback:
+  - se arquivo ausente/invalido, usar calibracao embutida segura.
+
+O gate registra decisao em `outputs/scheduler_symbol_promotion_*.json` para
+rastreabilidade operacional.
+
+### Consequencias
+
+**Positivas:**
+- elimina necessidade de deploy de codigo para promover calibracao;
+- adiciona trilha auditavel de aprovacao/reprovacao;
+- mantém robustez: runtime continua operando com fallback seguro.
+
+**Riscos:**
+- gate manual pode atrasar promocao em dias de alta volatilidade;
+- criterios de aprovacao podem precisar ajuste com ganho de historico.
+
+### Evidencias
+
+- `pytest tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_scheduler_symbol_calibration.py tests/unit/test_rl_scheduler_calibration_promotion.py tests/unit/test_rl_retrain_scheduler.py -q` -> **50/50 PASSING**
+- `mypy --strict src/application/rl_scheduler_runtime_adapter.py src/application/rl_scheduler_symbol_calibration.py src/application/rl_scheduler_calibration_promotion.py tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_scheduler_symbol_calibration.py tests/unit/test_rl_scheduler_calibration_promotion.py` -> **0 erros**
+- `python -m py_compile scripts/calibrar_scheduler_runtime_por_simbolo.py scripts/promover_calibracao_scheduler_runtime.py src/application/rl_scheduler_calibration_promotion.py` -> **OK**
+- `python scripts/promover_calibracao_scheduler_runtime.py --approver operador_blid067` -> **APROVADO**
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | ALTO | DIRETO | Aplicar calibracao promovida automaticamente e monitorar estabilidade |
+| INICIAR_AGENTE_RL_DIRETO.bat | ALTO | DIRETO | Aplicar calibracao promovida automaticamente e monitorar estabilidade |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Consolidar resultado do gate no fechamento |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem alteracao direta de runtime |
+| INICIAR_MONITOR_QUANTICO.bat | MEDIO | INDIRETO | Exibir status de promocao (aprovado/reprovado) |
+
+### Referencias
+
+- `src/application/rl_scheduler_runtime_adapter.py`
+- `src/application/rl_scheduler_calibration_promotion.py`
+- `scripts/promover_calibracao_scheduler_runtime.py`
+- `tests/unit/test_rl_scheduler_runtime_adapter.py`
+- `tests/unit/test_rl_scheduler_calibration_promotion.py`
+- `docs/BACKLOG.md` (BLID-067)
+
+---
+
+## ADR-048: Observabilidade do Gate de Promocao no Monitor Quantico (BLID-068)
+
+**Data:** 2026-04-06  
+**Status:** APROVADO  
+**Decisores:** Product Owner, Tech Lead, ML Expert  
+**BLID:** BLID-068
+
+### Contexto
+
+O gate manual de promocao (ADR-047) passou a gerar artefatos de aprovacao/
+reprovacao, mas o status ainda nao estava visivel no monitor operacional em
+tempo real.
+
+Sem essa visibilidade, bloqueios de promocao podiam passar despercebidos
+durante a sessao.
+
+### Decisao
+
+Integrar no `monitor_quantico_tendencia.py` a leitura do ultimo artefato
+`scheduler_symbol_promotion_*.json` e publicar no payload HTTP `/dados` um
+bloco dedicado `scheduler_symbol_promotion`.
+
+O leitor foi implementado em modo resiliente:
+- nao propaga excecoes;
+- classifica estados de ausencia/invalidez de artefato;
+- informa se o arquivo runtime promovido esta presente.
+
+### Consequencias
+
+**Positivas:**
+- eleva observabilidade operacional do ciclo "replay -> gate -> promocao";
+- acelera resposta a bloqueios de promocao;
+- melhora rastreabilidade entre monitor e artefatos de runtime.
+
+**Riscos:**
+- depende da disciplina de geracao dos artefatos em `outputs/`;
+- sem realce visual no HTML, o operador ainda precisa consultar o JSON bruto.
+
+### Evidencias
+
+- `pytest tests/unit/test_monitor_quantico.py tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_scheduler_calibration_promotion.py tests/unit/test_rl_scheduler_symbol_calibration.py tests/unit/test_rl_retrain_scheduler.py -q` -> **96/96 PASSING**
+- `mypy --strict --explicit-package-bases scripts/monitor_quantico_tendencia.py tests/unit/test_monitor_quantico.py src/application/rl_scheduler_runtime_adapter.py src/application/rl_scheduler_calibration_promotion.py tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_scheduler_calibration_promotion.py` -> **0 erros**
+- `python -m py_compile scripts/monitor_quantico_tendencia.py` -> **OK**
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | BAIXO | INDIRETO | Sem mudanca de execucao; observar status de promocao no monitor |
+| INICIAR_AGENTE_RL_DIRETO.bat | BAIXO | INDIRETO | Sem mudanca de execucao; observar status de promocao no monitor |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Consolidar o estado do gate no fechamento |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem impacto direto |
+| INICIAR_MONITOR_QUANTICO.bat | ALTO | DIRETO | Exibir status e motivo do gate de promocao em runtime |
+
+### Referencias
+
+- `scripts/monitor_quantico_tendencia.py`
+- `tests/unit/test_monitor_quantico.py`
+- `src/application/rl_scheduler_calibration_promotion.py`
+- `outputs/scheduler_symbol_promotion_*.json`
+- `docs/BACKLOG.md` (BLID-068)
+
+---
+
+## ADR-049: Alerta Visual de Promocao no Monitor Quantico HTML (BLID-069)
+
+**Data:** 2026-04-06  
+**Status:** APROVADO  
+**Decisores:** Product Owner, Tech Lead, ML Expert  
+**BLID:** BLID-069
+
+### Contexto
+
+O BLID-068 inseriu o status da promocao no payload do monitor, mas ainda faltava
+um destaque visual no HTML para leitura operacional imediata.
+
+Sem elemento visual dedicado, operadores poderiam ignorar bloqueios de promocao
+durante a sessao.
+
+### Decisao
+
+Adicionar no `outputs/monitor_quantico.html` um card dedicado ao gate de
+promocao com tres estados visuais:
+
+- `promocao--aprovado` (verde);
+- `promocao--reprovado` (vermelho);
+- `promocao--atencao` (amarelo para `sem_promocao` e outros estados de alerta).
+
+O card foi integrado ao render principal por meio de
+`renderizarPromocaoScheduler(...)`, lendo `scheduler_symbol_promotion` do
+payload recebido.
+
+### Consequencias
+
+**Positivas:**
+- melhora tempo de resposta operacional a bloqueios;
+- reduz chance de operar sem calibracao promovida;
+- reforca visibilidade do ciclo "replay -> gate -> runtime".
+
+**Riscos:**
+- exige manter consistencia entre payload backend e IDs/classes do HTML;
+- sem endpoint resumido em `/status`, automacoes externas ainda consultam `/dados`.
+
+### Evidencias
+
+- `pytest tests/unit/test_monitor_quantico.py tests/unit/test_monitor_quantico_html.py tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_scheduler_calibration_promotion.py tests/unit/test_rl_scheduler_symbol_calibration.py tests/unit/test_rl_retrain_scheduler.py -q` -> **97/97 PASSING**
+- `mypy --strict --explicit-package-bases scripts/monitor_quantico_tendencia.py tests/unit/test_monitor_quantico.py tests/unit/test_monitor_quantico_html.py src/application/rl_scheduler_runtime_adapter.py src/application/rl_scheduler_calibration_promotion.py tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_scheduler_calibration_promotion.py` -> **0 erros**
+- `python -m py_compile scripts/monitor_quantico_tendencia.py` -> **OK**
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | BAIXO | INDIRETO | Consultar sinal visual antes de promover ajuste por simbolo |
+| INICIAR_AGENTE_RL_DIRETO.bat | BAIXO | INDIRETO | Consultar sinal visual antes de promover ajuste por simbolo |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Registrar status visual no fechamento |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem impacto direto |
+| INICIAR_MONITOR_QUANTICO.bat | ALTO | DIRETO | Passa a exibir alerta visual de bloqueio de promocao |
+
+### Referencias
+
+- `outputs/monitor_quantico.html`
+- `scripts/monitor_quantico_tendencia.py`
+- `tests/unit/test_monitor_quantico.py`
+- `tests/unit/test_monitor_quantico_html.py`
+- `docs/BACKLOG.md` (BLID-069)

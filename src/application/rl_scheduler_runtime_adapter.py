@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import math
+import os
+from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 _CALIBRACAO_POR_SIMBOLO: dict[str, dict[str, float]] = {
@@ -28,6 +31,12 @@ _CALIBRACAO_POR_SIMBOLO: dict[str, dict[str, float]] = {
     },
 }
 
+_RUNTIME_CALIBRATION_CACHE: dict[str, Any] = {
+    "path": None,
+    "mtime": None,
+    "data": {},
+}
+
 
 def _coerce_float(value: Any) -> float | None:
     if value is None or isinstance(value, bool):
@@ -50,7 +59,74 @@ def _normalizar_simbolo(simbolo: str | None) -> str:
 
 
 def obter_calibracao_simbolo(simbolo: str | None) -> dict[str, float]:
-    return dict(_CALIBRACAO_POR_SIMBOLO[_normalizar_simbolo(simbolo)])
+    base = dict(_CALIBRACAO_POR_SIMBOLO[_normalizar_simbolo(simbolo)])
+    runtime = _get_runtime_calibration_for_symbol(simbolo)
+    base.update(runtime)
+    return base
+
+
+def _runtime_calibration_path() -> Path:
+    raw = (
+        os.getenv("RL_SCHEDULER_SYMBOL_CALIBRATION_PATH", "").strip()
+        or "data/scheduler/symbol_calibration_runtime.json"
+    )
+    return Path(raw)
+
+
+def _read_runtime_calibration_file(path: Path) -> dict[str, dict[str, float]]:
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not isinstance(payload, Mapping):
+        return {}
+    raw_cfg = payload.get("calibracao_por_simbolo")
+    if not isinstance(raw_cfg, Mapping):
+        return {}
+    parsed_cfg: dict[str, dict[str, float]] = {}
+    for symbol, cfg in raw_cfg.items():
+        if not isinstance(symbol, str) or not isinstance(cfg, Mapping):
+            continue
+        parsed: dict[str, float] = {}
+        for key in (
+            "stress_score_trigger",
+            "volatilidade_trigger",
+            "loss_streak_divisor",
+            "media_negativa_scale",
+        ):
+            value = _coerce_float(cfg.get(key))
+            if value is not None:
+                parsed[key] = value
+        if len(parsed) == 4:
+            parsed_cfg[symbol.upper()] = parsed
+    return parsed_cfg
+
+
+def _load_runtime_calibration() -> dict[str, dict[str, float]]:
+    path = _runtime_calibration_path()
+    cache_path = _RUNTIME_CALIBRATION_CACHE.get("path")
+    cache_mtime = _RUNTIME_CALIBRATION_CACHE.get("mtime")
+    mtime = path.stat().st_mtime if path.exists() else None
+    if cache_path == str(path) and cache_mtime == mtime:
+        data = _RUNTIME_CALIBRATION_CACHE.get("data")
+        if isinstance(data, dict):
+            return data
+    data = _read_runtime_calibration_file(path)
+    _RUNTIME_CALIBRATION_CACHE["path"] = str(path)
+    _RUNTIME_CALIBRATION_CACHE["mtime"] = mtime
+    _RUNTIME_CALIBRATION_CACHE["data"] = data
+    return data
+
+
+def _get_runtime_calibration_for_symbol(simbolo: str | None) -> dict[str, float]:
+    normalized = _normalizar_simbolo(simbolo)
+    data = _load_runtime_calibration()
+    cfg = data.get(normalized)
+    if isinstance(cfg, dict):
+        return dict(cfg)
+    return {}
 
 
 def _resolver_calibracao(

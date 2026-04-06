@@ -193,6 +193,62 @@ _cache_dados: dict[str, Any] = {}
 _lock_cache = threading.Lock()
 
 
+def _carregar_status_promocao_scheduler(
+    outputs_dir: Optional[Path] = None,
+    runtime_config_path: Optional[Path] = None,
+) -> dict[str, Any]:
+    """Le status mais recente de promocao de calibracao do scheduler.
+
+    Retorna payload resiliente para monitoramento; nunca propaga excecao.
+    """
+    outputs_base = outputs_dir or (Path(ROOT_DIR) / "outputs")
+    runtime_path = runtime_config_path or (
+        Path(ROOT_DIR) / "data" / "scheduler" / "symbol_calibration_runtime.json"
+    )
+    promotion_files = sorted(outputs_base.glob("scheduler_symbol_promotion_*.json"))
+    if not promotion_files:
+        return {
+            "disponivel": False,
+            "status": "sem_promocao",
+            "aprovado": False,
+            "motivo": "artefato de promocao ausente",
+            "runtime_config_presente": runtime_path.exists(),
+        }
+
+    latest = promotion_files[-1]
+    try:
+        payload = json.loads(latest.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {
+            "disponivel": False,
+            "status": "arquivo_invalido",
+            "aprovado": False,
+            "motivo": f"falha ao ler {latest.name}",
+            "arquivo": latest.name,
+            "runtime_config_presente": runtime_path.exists(),
+        }
+    if not isinstance(payload, dict):
+        return {
+            "disponivel": False,
+            "status": "payload_invalido",
+            "aprovado": False,
+            "motivo": f"payload nao-objeto em {latest.name}",
+            "arquivo": latest.name,
+            "runtime_config_presente": runtime_path.exists(),
+        }
+    aprovado = bool(payload.get("aprovado"))
+    return {
+        "disponivel": True,
+        "status": "aprovado" if aprovado else "reprovado",
+        "aprovado": aprovado,
+        "motivo": str(payload.get("motivo", "")).strip(),
+        "timestamp_promocao": payload.get("timestamp_promocao"),
+        "source_report": payload.get("source_report"),
+        "arquivo": latest.name,
+        "runtime_config_presente": runtime_path.exists(),
+    }
+
+
 def _buscar_yfinance(chave: str, simbolo: str) -> Optional[dict[str, Any]]:
     """
     Busca cotacao atual via yfinance (Yahoo Finance).
@@ -793,6 +849,7 @@ def _atualizar_dados() -> None:
         "tendencia": tendencia,
         "narrativa": narrativa,
         "regime_macro": regime,
+        "scheduler_symbol_promotion": _carregar_status_promocao_scheduler(),
         "ativos": {
             k: {
                 "preco": v.get("preco"),
