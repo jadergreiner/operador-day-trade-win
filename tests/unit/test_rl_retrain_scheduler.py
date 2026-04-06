@@ -400,6 +400,7 @@ class TestRLSchedulerAtualizarStatus:
             scheduler.salvar_job(job)
 
             job_atualizado = scheduler.obter_job(job.job_id)
+            assert job_atualizado is not None
 
             assert job_atualizado.status == JobStatus.RUNNING
 
@@ -420,6 +421,7 @@ class TestRLSchedulerAtualizarStatus:
             scheduler.salvar_job(job)
 
             job_atualizado = scheduler.obter_job(job.job_id)
+            assert job_atualizado is not None
 
             assert job_atualizado.status == JobStatus.COMPLETED
 
@@ -445,3 +447,100 @@ class TestRLSchedulerRelatorios:
 
             assert isinstance(relatorio, str)
             assert "job_id" in relatorio
+
+
+class TestRLSchedulerIntegracaoRollback:
+    """Valida fluxo integrado retrain + rollback automatico."""
+
+    def test_processar_degradacao_com_rollback_executa_fluxo_completo(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            scheduler = RLScheduler(
+                config_path=tmpdir,
+                baseline_metrics={"win_rate": 65.0, "sharpe": 1.2, "f1": 0.70},
+            )
+            rollback_manager = MagicMock()
+            rollback_manager.check_degradation.return_value = MagicMock(
+                deve_fazer_rollback=True,
+                versao_rollback="checkpoint_best",
+                razao="degradacao_win_rate",
+            )
+            rollback_manager.executar_rollback.return_value = True
+
+            resultado = scheduler.processar_degradacao_com_rollback(
+                metricas_atuais={"win_rate": 58.0, "sharpe": 0.7, "f1": 0.61},
+                rollback_manager=rollback_manager,
+            )
+
+            assert resultado["degradacao_detectada"] is True
+            assert resultado["retrain_agendado"] is True
+            assert resultado["job_id"] is not None
+            assert resultado["rollback_recomendado"] is True
+            assert resultado["rollback_executado"] is True
+            rollback_manager.check_degradation.assert_called_once()
+            rollback_manager.executar_rollback.assert_called_once_with("checkpoint_best")
+
+    def test_processar_degradacao_sem_rollback_manager_agenda_somente_retrain(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            scheduler = RLScheduler(
+                config_path=tmpdir,
+                baseline_metrics={"win_rate": 65.0, "sharpe": 1.2},
+            )
+
+            resultado = scheduler.processar_degradacao_com_rollback(
+                metricas_atuais={"win_rate": 58.0, "sharpe": 0.7}
+            )
+
+            assert resultado["degradacao_detectada"] is True
+            assert resultado["retrain_agendado"] is True
+            assert resultado["rollback_recomendado"] is False
+            assert resultado["rollback_executado"] is False
+
+    def test_processar_sem_degradacao_nao_agenda_nem_rollback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            scheduler = RLScheduler(
+                config_path=tmpdir,
+                baseline_metrics={"win_rate": 65.0, "sharpe": 1.2},
+            )
+            rollback_manager = MagicMock()
+
+            resultado = scheduler.processar_degradacao_com_rollback(
+                metricas_atuais={"win_rate": 64.5, "sharpe": 1.1},
+                rollback_manager=rollback_manager,
+            )
+
+            assert resultado["degradacao_detectada"] is False
+            assert resultado["retrain_agendado"] is False
+            assert resultado["job_id"] is None
+            rollback_manager.check_degradation.assert_not_called()
+
+    def test_normaliza_metricas_sharpe_ratio_e_f1_score_para_rollback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            scheduler = RLScheduler(
+                config_path=tmpdir,
+                baseline_metrics={
+                    "win_rate": 65.0,
+                    "sharpe_ratio": 1.2,
+                    "f1_score": 0.70,
+                },
+            )
+            rollback_manager = MagicMock()
+            rollback_manager.check_degradation.return_value = MagicMock(
+                deve_fazer_rollback=False,
+                versao_rollback=None,
+                razao="ok",
+            )
+
+            scheduler.processar_degradacao_com_rollback(
+                metricas_atuais={
+                    "win_rate": 58.0,
+                    "sharpe_ratio": 0.7,
+                    "f1_score": 0.61,
+                },
+                rollback_manager=rollback_manager,
+            )
+
+            kwargs = rollback_manager.check_degradation.call_args.kwargs
+            assert kwargs["current_metrics"]["sharpe"] == 0.7
+            assert kwargs["current_metrics"]["f1"] == 0.61
+            assert kwargs["baseline_metrics"]["sharpe"] == 1.2
+            assert kwargs["baseline_metrics"]["f1"] == 0.70

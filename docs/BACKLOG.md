@@ -6312,3 +6312,63 @@ Decisao de arquitetura aplicada no runtime:
 - Promover ajustes em janela de deploy controlada e monitorar logs
   `[PP-REGIME]` no primeiro pregão após restart dos agentes RL.
 
+---
+
+## BLID-061
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Acionar rollback automatico em degradacao critica no fluxo de retrain RL para reduzir tempo em modelo ruim
+stage_atual: project-manager
+adr_referencia: ADR-041
+data_inicio: 2026-04-06
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Implementar no `RLScheduler` o fluxo integrado:
+- detectar degradacao;
+- agendar e persistir job de retrain;
+- acionar rollback automatico opcional via `ModelRollbackManager` quando recomendado.
+
+### Entregas
+
+- Novo método `processar_degradacao_com_rollback(...)` em
+  `src/application/rl_retrain_scheduler.py`.
+- Normalização de métricas para compatibilidade com rollback manager:
+  - `sharpe_ratio -> sharpe`
+  - `f1_score -> f1`
+- Retorno estruturado do fluxo com flags:
+  - `degradacao_detectada`
+  - `retrain_agendado`
+  - `rollback_recomendado`
+  - `rollback_executado`
+- Testes unitários de integração no scheduler.
+
+### Evidencias
+
+- `pytest tests/unit/test_rl_retrain_scheduler.py -q` -> **28/28 PASSING**
+- `mypy --strict src/application/rl_retrain_scheduler.py tests/unit/test_rl_retrain_scheduler.py` -> **0 erros**
+
+### Arquivos Alterados
+
+- `src/application/rl_retrain_scheduler.py`
+- `tests/unit/test_rl_retrain_scheduler.py`
+- `docs/BACKLOG.md`
+- `docs/ADRS.md`
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | MEDIO | DIRETO | Validar logs do scheduler/retrain em staging; restart recomendado apos deploy |
+| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | DIRETO | Validar logs do scheduler/retrain em staging; restart recomendado apos deploy |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Monitorar reflexos no fechamento diario e relatorios |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem restart obrigatorio; monitorar se usa scheduler compartilhado |
+| INICIAR_MONITOR_QUANTICO.bat | BAIXO | INDIRETO | Acompanhar eventos de degradacao/retrain/rollback no painel |
+
+### Proxima Acao
+
+- Integrar o acionamento do scheduler no loop runtime dos agentes RL com
+  política operacional por sessão/símbolo.
+

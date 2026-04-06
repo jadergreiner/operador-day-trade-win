@@ -359,3 +359,75 @@ class RLScheduler:
             contagem[status] = contagem.get(status, 0) + 1
 
         return contagem
+
+    def _normalizar_metricas_para_rollback(
+        self, metricas: Dict[str, float]
+    ) -> Dict[str, float]:
+        """Normaliza chaves para compatibilidade com ModelRollbackManager.
+
+        O rollback manager usa `sharpe` e `f1`, enquanto alguns pipelines usam
+        `sharpe_ratio` e `f1_score`.
+        """
+        normalizadas: Dict[str, float] = dict(metricas)
+        if "sharpe" not in normalizadas and "sharpe_ratio" in normalizadas:
+            normalizadas["sharpe"] = float(normalizadas["sharpe_ratio"])
+        if "f1" not in normalizadas and "f1_score" in normalizadas:
+            normalizadas["f1"] = float(normalizadas["f1_score"])
+        return normalizadas
+
+    def processar_degradacao_com_rollback(
+        self,
+        metricas_atuais: Dict[str, float],
+        metodo_deteccao: Optional[DegradationDetectionMethod] = None,
+        rollback_manager: Optional[Any] = None,
+    ) -> Dict[str, Any]:
+        """Processa degradação e aciona retrain + rollback opcional.
+
+        Fluxo:
+        1. Detecta degradação com regras do scheduler.
+        2. Se degradou, agenda e persiste job de retrain.
+        3. Se rollback_manager foi informado, executa check_degradation e
+           rollback automático quando recomendado.
+        """
+        metodo = metodo_deteccao or self.config.metodo_deteccao
+        degradacao_detectada, motivo = self.detectar_degradacao(metricas_atuais)
+
+        resultado: Dict[str, Any] = {
+            "degradacao_detectada": degradacao_detectada,
+            "motivo_degradacao": motivo,
+            "job_id": None,
+            "retrain_agendado": False,
+            "rollback_recomendado": False,
+            "rollback_executado": False,
+            "rollback_razao": "",
+        }
+
+        if not degradacao_detectada:
+            return resultado
+
+        job = self.agendar_retrain(motivo_degradacao=motivo, metodo_deteccao=metodo)
+        self.salvar_job(job)
+        resultado["job_id"] = job.job_id
+        resultado["retrain_agendado"] = True
+
+        if rollback_manager is None:
+            return resultado
+
+        metricas_baseline = self._normalizar_metricas_para_rollback(
+            self.baseline_metrics
+        )
+        metricas_atuais_rollback = self._normalizar_metricas_para_rollback(
+            metricas_atuais
+        )
+        decisao = rollback_manager.check_degradation(
+            current_metrics=metricas_atuais_rollback,
+            baseline_metrics=metricas_baseline,
+        )
+        resultado["rollback_recomendado"] = bool(decisao.deve_fazer_rollback)
+        resultado["rollback_razao"] = str(decisao.razao)
+
+        if decisao.deve_fazer_rollback and decisao.versao_rollback:
+            rollback_ok = bool(rollback_manager.executar_rollback(decisao.versao_rollback))
+            resultado["rollback_executado"] = rollback_ok
+
+        return resultado

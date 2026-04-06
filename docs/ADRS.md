@@ -4037,3 +4037,69 @@ Decisao complementar aplicada:
 - `tests/unit/test_profit_protection_regime_runtime.py`
 - `scripts/staging_validation_blid060.py`
 - `docs/BACKLOG.md` (BLID-060)
+
+---
+
+## ADR-041: Integracao de Rollback Automatico ao Scheduler de Retrain RL (BLID-061)
+
+**Data:** 2026-04-06  
+**Status:** APROVADO  
+**Decisores:** Product Owner, Tech Lead, ML Expert  
+**BLID:** BLID-061
+
+### Contexto
+
+O scheduler de retrain (`RLScheduler`) detectava degradacao e apenas agendava
+retrain, sem acionar rollback automatico quando o modelo em runtime já mostrava
+queda relevante de performance.
+
+Isso criava janela operacional maior com modelo degradado até conclusão do
+retrain.
+
+### Decisao
+
+Adicionar fluxo integrado no scheduler para:
+
+1. detectar degradacao;
+2. agendar/persistir job de retrain;
+3. opcionalmente consultar `ModelRollbackManager` e executar rollback imediato
+   quando recomendado.
+
+Foi adicionado:
+- `processar_degradacao_com_rollback(...)`;
+- normalização de chaves de métricas para compatibilidade:
+  - `sharpe_ratio -> sharpe`
+  - `f1_score -> f1`.
+
+### Consequencias
+
+**Positivas:**
+- reduz latência de resposta a degradação severa;
+- mantém trilha auditável de retrain e rollback no mesmo fluxo;
+- preserva compatibilidade backward (rollback manager é opcional).
+
+**Riscos:**
+- disparo indevido de rollback em thresholds mal calibrados;
+- requer monitoramento de logs em staging antes de ampliar rollout.
+
+### Evidencias
+
+- `pytest tests/unit/test_rl_retrain_scheduler.py -q` -> **28/28 PASSING**
+- `mypy --strict src/application/rl_retrain_scheduler.py tests/unit/test_rl_retrain_scheduler.py` -> **0 erros**
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | MEDIO | DIRETO | Validar fluxo retrain/rollback em staging; restart recomendado apos deploy |
+| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | DIRETO | Validar fluxo retrain/rollback em staging; restart recomendado apos deploy |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Monitorar consolidação de métricas pós-sessão |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem restart obrigatório; monitorar integração compartilhada |
+| INICIAR_MONITOR_QUANTICO.bat | BAIXO | INDIRETO | Acompanhar eventos no dashboard e alertas |
+
+### Referencias
+
+- `src/application/rl_retrain_scheduler.py`
+- `tests/unit/test_rl_retrain_scheduler.py`
+- `src/application/rl_model_rollback_manager.py`
+- `docs/BACKLOG.md` (BLID-061)
