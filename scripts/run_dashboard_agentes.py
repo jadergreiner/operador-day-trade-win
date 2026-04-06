@@ -3,10 +3,11 @@
 Endpoints:
     GET /         → redireciona para /dashboard
     GET /dashboard → HTML do dashboard (FileResponse)
-    GET /status   → DashboardStatusPayload em JSON
-    GET /metricas → DashboardMetricasPayload em JSON
-    GET /trades   → DashboardTradesPayload em JSON
-    GET /equity   → DashboardEquityPayload em JSON
+    GET /api/agentes/status   → DashboardStatusPayload em JSON
+    GET /api/agentes/metricas → DashboardMetricasPayload em JSON
+    GET /api/agentes/trades   → DashboardTradesPayload em JSON
+    GET /api/agentes/equity   → DashboardEquityPayload em JSON
+    GET /status|/metricas|/trades|/equity → aliases legados (retrocompat)
 
 Porta: 8010 (exclusiva para o dashboard de agentes RL)
 
@@ -81,6 +82,7 @@ def dashboard() -> FileResponse:
     return FileResponse(str(_TEMPLATE_PATH), media_type="text/html")
 
 
+@app.get("/api/agentes/status")
 @app.get("/status")
 def status() -> JSONResponse:
     """Retornar status atual dos agentes RL.
@@ -95,6 +97,7 @@ def status() -> JSONResponse:
     return JSONResponse(content=dataclasses.asdict(payload))
 
 
+@app.get("/api/agentes/metricas")
 @app.get("/metricas")
 def metricas() -> JSONResponse:
     """Retornar metricas dos agentes RL nos ultimos 7 dias.
@@ -109,6 +112,7 @@ def metricas() -> JSONResponse:
     return JSONResponse(content=dataclasses.asdict(payload))
 
 
+@app.get("/api/agentes/trades")
 @app.get("/trades")
 def trades() -> JSONResponse:
     """Retornar lista dos ultimos trades de cada agente (max 10 por agente).
@@ -122,6 +126,7 @@ def trades() -> JSONResponse:
     return JSONResponse(content=dataclasses.asdict(payload))
 
 
+@app.get("/api/agentes/equity")
 @app.get("/equity")
 def equity() -> JSONResponse:
     """Retornar equity curve diaria dos ultimos 7 dias.

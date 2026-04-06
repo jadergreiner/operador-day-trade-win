@@ -119,6 +119,34 @@ class TestSaveEntryPersistenciaSQL:
 
         mock_lock.assert_called_once_with(db)
 
+    def test_save_entry_preenche_campos_canonicos(self, tmp_path: Path) -> None:
+        """save_entry deve preencher campos expandidos do schema canonico."""
+        db = tmp_path / "diarios.db"
+        svc = TradingJournalService(db_path=db)
+        narrativa = _narrativa_mock(svc)
+
+        svc.save_entry(narrativa, _dados_decisao())
+
+        conn = sqlite3.connect(str(db))
+        row = conn.execute(
+            """
+            SELECT detailed_narrative, reasoning, fundamental_bias,
+                   sentiment_bias, market_regime, key_observations, tags
+            FROM trading_journal_logs
+            LIMIT 1
+            """
+        ).fetchone()
+        conn.close()
+
+        assert row is not None
+        assert row[0] is not None and len(str(row[0])) > 0
+        assert row[1] == ""
+        assert row[2] == "NEUTRAL"
+        assert row[3] == "NEUTRAL"
+        assert row[4] == "TRENDING"
+        assert isinstance(json.loads(str(row[5])), list)
+        assert isinstance(json.loads(str(row[6])), list)
+
     def test_entry_id_unico_multiplas_entradas(self, tmp_path: Path) -> None:
         """Tres save_entry() devem gerar 3 entry_ids distintos."""
         db = tmp_path / "diarios.db"

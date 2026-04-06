@@ -8,6 +8,7 @@ for later reinforcement learning analysis.
 import logging
 import sqlite3
 import uuid
+import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
@@ -107,7 +108,7 @@ class TradingJournalService:
         opening_price: Decimal,
         high: Decimal,
         low: Decimal,
-        decision_data: dict,
+        decision_data: dict[str, Any],
         daily_confidence_gate: Optional[Decimal] = None,
         volume_today: Optional[int] = None,
         volume_avg_3days: Optional[int] = None,
@@ -256,7 +257,7 @@ class TradingJournalService:
         low: Decimal,
         price_change: Decimal,
         feeling: str,
-        decision_data: dict,
+        decision_data: dict[str, Any],
         daily_confidence_gate: Optional[Decimal] = None,
         volume_variance_pct: Optional[Decimal] = None,
     ) -> str:
@@ -378,7 +379,7 @@ class TradingJournalService:
         self,
         symbol: Symbol,
         current_price: Decimal,
-        decision_data: dict,
+        decision_data: dict[str, Any],
         volume_variance_pct: Optional[Decimal] = None,
     ) -> str:
         """O monitoramento em tempo real do que um HEAD de trading observa."""
@@ -454,7 +455,7 @@ class TradingJournalService:
         self,
         price_change: Decimal,
         volatility: Decimal,
-        decision_data: dict,
+        decision_data: dict[str, Any],
         volume_variance_pct: Optional[Decimal] = None,
     ) -> list[str]:
         """Generate tags for machine learning."""
@@ -578,10 +579,12 @@ class TradingJournalService:
                         """
                         INSERT OR IGNORE INTO trading_journal_logs (
                             entry_id, timestamp, symbol, headline,
-                            market_feeling, decision, confidence,
-                            macro_bias, technical_bias, alignment_score,
+                            market_feeling, detailed_narrative, decision,
+                            confidence, reasoning, macro_bias, fundamental_bias,
+                            sentiment_bias, technical_bias, alignment_score,
+                            market_regime, key_observations, tags,
                             outcome_trade, created_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             entry.entry_id,
@@ -589,11 +592,20 @@ class TradingJournalService:
                             str(entry.narrative.symbol),
                             entry.narrative.headline,
                             entry.narrative.market_feeling,
+                            entry.narrative.detailed_narrative,
                             entry.narrative.decision.value,
                             float(entry.narrative.confidence),
+                            entry.narrative.reasoning,
                             entry.macro_bias,
+                            entry.fundamental_bias,
+                            entry.sentiment_bias,
                             entry.technical_bias,
                             float(entry.alignment_score),
+                            entry.market_regime,
+                            json.dumps(
+                                entry.key_observations, ensure_ascii=False
+                            ),
+                            json.dumps(entry.narrative.tags, ensure_ascii=False),
                             "SEM_TRADE",
                             now.isoformat(),
                         ),
@@ -631,7 +643,7 @@ class TradingJournalService:
         today = datetime.now().strftime("%Y-%m-%d")
         return [e for e in self.entries if e.date == today]
 
-    def export_for_learning(self) -> list[dict]:
+    def export_for_learning(self) -> list[dict[str, Any]]:
         """Export entries in format suitable for machine learning."""
 
         learning_data = []

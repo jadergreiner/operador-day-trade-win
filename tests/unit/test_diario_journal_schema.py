@@ -48,3 +48,55 @@ class TestCriarTabelasDiario:
         db = tmp_path / "t.db"
         criar_tabelas_diario(db)
         criar_tabelas_diario(db)  # segunda chamada nao deve falhar
+
+    def test_criar_tabelas_diario_migra_schema_legado(
+        self, tmp_path: Path
+    ) -> None:
+        """Schema legado deve receber colunas canônicas faltantes."""
+        db = tmp_path / "legado.db"
+        conn = sqlite3.connect(str(db))
+        try:
+            conn.execute(
+                """
+                CREATE TABLE trading_journal_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    entry_id TEXT NOT NULL UNIQUE,
+                    timestamp TEXT NOT NULL,
+                    symbol TEXT NOT NULL,
+                    headline TEXT NOT NULL,
+                    market_feeling TEXT NOT NULL,
+                    decision TEXT NOT NULL,
+                    confidence REAL NOT NULL,
+                    macro_bias TEXT NOT NULL,
+                    technical_bias TEXT NOT NULL,
+                    alignment_score REAL NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        criar_tabelas_diario(db)
+
+        conn = sqlite3.connect(str(db))
+        try:
+            colunas = {
+                str(row[1])
+                for row in conn.execute("PRAGMA table_info(trading_journal_logs)")
+            }
+        finally:
+            conn.close()
+
+        colunas_esperadas = {
+            "detailed_narrative",
+            "reasoning",
+            "fundamental_bias",
+            "sentiment_bias",
+            "market_regime",
+            "key_observations",
+            "tags",
+            "outcome_trade",
+        }
+        assert colunas_esperadas <= colunas

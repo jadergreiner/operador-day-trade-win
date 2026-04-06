@@ -269,6 +269,7 @@ class TradingJournalLogModel(Base):
     market_regime = Column(String(20), nullable=False)
     key_observations = Column(JSON, nullable=True)
     tags = Column(JSON, nullable=True)
+    outcome_trade = Column(String(20), nullable=False, default="SEM_TRADE")
     created_at = Column(DateTime, default=datetime.now)
 
 

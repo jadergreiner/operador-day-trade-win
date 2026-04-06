@@ -11,9 +11,9 @@ from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from scripts import run_dashboard_agentes
 from src.application.services.dashboard_agentes_service import (
     AgenteMetricas,
     AgenteStatus,
@@ -85,6 +85,12 @@ def svc(db_path: Path) -> DashboardAgentesService:
 @pytest.fixture()
 def svc_sem_banco(tmp_path: Path) -> DashboardAgentesService:
     return DashboardAgentesService(db_path=tmp_path / "nao_existe.db")
+
+
+@pytest.fixture()
+def api_client(db_path: Path) -> TestClient:
+    run_dashboard_agentes._svc = DashboardAgentesService(db_path=db_path)
+    return TestClient(run_dashboard_agentes.app)
 
 
 # H — Happy Path
@@ -244,3 +250,26 @@ class TestDashboardRegressao:
         assert agente_status.win_rate == pytest.approx(1.0)
         assert agente_metricas is not None
         assert agente_metricas.win_rate_7d == pytest.approx(1.0)
+
+
+@pytest.mark.unit
+class TestDashboardApiRotas:
+    def test_api_status_canonico_retorna_200(self, api_client: TestClient) -> None:
+        response = api_client.get("/api/agentes/status")
+        assert response.status_code == 200
+        assert "agentes" in response.json()
+
+    def test_api_metricas_canonico_retorna_200(self, api_client: TestClient) -> None:
+        response = api_client.get("/api/agentes/metricas")
+        assert response.status_code == 200
+        assert "agentes" in response.json()
+
+    def test_api_trades_canonico_retorna_200(self, api_client: TestClient) -> None:
+        response = api_client.get("/api/agentes/trades")
+        assert response.status_code == 200
+        assert "trades" in response.json()
+
+    def test_api_equity_canonico_retorna_200(self, api_client: TestClient) -> None:
+        response = api_client.get("/api/agentes/equity")
+        assert response.status_code == 200
+        assert "series" in response.json()

@@ -64,7 +64,13 @@ def _popular_banco(db: Path) -> None:
     ]
     for eid, ts, dec in entradas:
         conn.execute(
-            "INSERT INTO trading_journal_logs VALUES (NULL,?,?,'WIN$N','H','BULL',?,0.8,'BULL','BULL',0.8,'SEM_TRADE',?)",
+            """
+            INSERT INTO trading_journal_logs (
+                entry_id, timestamp, symbol, headline, market_feeling,
+                decision, confidence, macro_bias, technical_bias,
+                alignment_score, outcome_trade, created_at
+            ) VALUES (?, ?, 'WIN$N', 'H', 'BULL', ?, 0.8, 'BULL', 'BULL', 0.8, 'SEM_TRADE', ?)
+            """,
             (eid, ts, dec, agora),
         )
     correlacoes = [

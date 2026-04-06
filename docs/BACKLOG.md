@@ -6085,3 +6085,102 @@ Resolver DT-BLID044-01 reduzindo risco de perda de webhook com:
 
 DT-BLID044-01 (BAIXA): **RESOLVIDA** por BLID-055 em 2026-04-06.
 
+---
+
+## BLID-057
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Reconciliar schema do Trading Journal para evitar divergencia entre runtime SQLite dos diarios e modelo SQLAlchemy
+stage_atual: project-manager
+adr_referencia: ADR-019
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Resolver DT-BLID022-01 (MEDIO) com reconciliacao do schema
+`trading_journal_logs`:
+- expandir DDL de `diario_journal_schema.py` para colunas canônicas usadas
+  no ecossistema do journal;
+- aplicar migracao idempotente de bancos legados (ALTER TABLE para colunas
+  faltantes);
+- atualizar persistencia do `TradingJournalService` para preencher os campos
+  expandidos;
+- alinhar `TradingJournalLogModel` (SQLAlchemy) com `outcome_trade`.
+
+### Evidencias
+
+- `pytest tests/unit/test_diario_journal_schema.py tests/unit/test_trading_journal_persistencia.py tests/unit/test_analisar_journal_correlacoes.py -q` -> **17/17 PASSING**
+- `mypy --strict --follow-imports=skip src/infrastructure/database/diario_journal_schema.py src/application/services/trading_journal.py tests/unit/test_diario_journal_schema.py tests/unit/test_trading_journal_persistencia.py` -> **0 erros**
+
+### Arquivos Alterados
+
+- `src/infrastructure/database/diario_journal_schema.py`
+- `src/application/services/trading_journal.py`
+- `src/infrastructure/database/schema.py`
+- `tests/unit/test_diario_journal_schema.py`
+- `tests/unit/test_trading_journal_persistencia.py`
+- `tests/unit/test_analisar_journal_correlacoes.py`
+- `docs/BACKLOG.md`
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | BAIXO | INDIRETO | Nenhuma acao imediata; schema mais robusto para consumidores de journal |
+| INICIAR_AGENTE_RL_DIRETO.bat | BAIXO | INDIRETO | Nenhuma acao imediata; sem mudanca de logica de ordem |
+| INICIAR_DIARIOS.bat | MEDIO | DIRETO | Beneficio imediato: persistencia mais rica e migracao automatica de banco legado |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | SEM IMPACTO | Nenhuma |
+
+### Dividas Tecnicas Registradas
+
+DT-BLID022-01 (MEDIO): **RESOLVIDA** por BLID-057 em 2026-04-06.
+
+---
+
+## BLID-058
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Alinhar API do dashboard com especificacao canonica e remover ruido tecnico em testes
+stage_atual: project-manager
+adr_referencia: ADR-033
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Resolver as dividas tecnicas do BLID-040:
+- **DT-BLID-040-01**: expor endpoints canônicos `/api/agentes/*` mantendo
+  aliases legados (`/status`, `/metricas`, `/trades`, `/equity`) para
+  retrocompatibilidade;
+- **DT-BLID-040-02**: utilizar `TestClient` em testes de dashboard para validar
+  rotas de API e eliminar import não utilizado.
+
+### Evidencias
+
+- `pytest tests/unit/test_dashboard_agentes.py -q` -> **14/14 PASSING**
+- `python -m py_compile scripts/run_dashboard_agentes.py tests/unit/test_dashboard_agentes.py` -> **OK**
+
+### Arquivos Alterados
+
+- `scripts/run_dashboard_agentes.py`
+- `tests/unit/test_dashboard_agentes.py`
+- `docs/BACKLOG.md`
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | BAIXO | INDIRETO | Nenhuma — dashboard segue read-only |
+| INICIAR_AGENTE_RL_DIRETO.bat | BAIXO | INDIRETO | Nenhuma — dashboard segue read-only |
+| INICIAR_DIARIOS.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | SEM IMPACTO | Nenhuma |
+
+### Dividas Tecnicas Registradas
+
+DT-BLID-040-01 (BAIXA): **RESOLVIDA** por BLID-058 em 2026-04-06.
+
+DT-BLID-040-02 (BAIXA): **RESOLVIDA** por BLID-058 em 2026-04-06.
+
