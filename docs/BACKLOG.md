@@ -6184,3 +6184,131 @@ DT-BLID-040-01 (BAIXA): **RESOLVIDA** por BLID-058 em 2026-04-06.
 
 DT-BLID-040-02 (BAIXA): **RESOLVIDA** por BLID-058 em 2026-04-06.
 
+---
+
+## BLID-059
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Reduzir risco de troca tardia de perfil no Profit Protection com detecção de quebra de correlação intraday
+stage_atual: project-manager
+adr_referencia: ADR-039
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Evoluir `profit_protection_regime_runtime.py` para adicionar gatilho complementar
+de mudança de regime baseado em quebra de correlação rolling na janela recente,
+além do gatilho já existente por degradação/melhora de win rate.
+
+- novo sinal: quebra de correlação por `correlacao_rolling` abaixo do limiar
+  (ou `quebra_correlacao=true` no trade);
+- fallback seguro para `baseline` quando `conservador` não estiver disponível;
+- parâmetros configuráveis para limiar e mínimo de eventos de quebra;
+- validações de entrada para evitar configuração inválida no runtime.
+
+### Evidencias
+
+- `pytest tests/unit/test_profit_protection_regime_runtime.py -q` -> **10/10 PASSING**
+- `mypy --strict --follow-imports=skip src/application/profit_protection_regime_runtime.py tests/unit/test_profit_protection_regime_runtime.py` -> **0 erros**
+
+### Arquivos Alterados
+
+- `src/application/profit_protection_regime_runtime.py`
+- `tests/unit/test_profit_protection_regime_runtime.py`
+- `docs/BACKLOG.md`
+- `docs/ADRS.md`
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | MEDIO | DIRETO | Validar logs `[PP-REGIME]` em staging com `correlacao_rolling` habilitado |
+| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | DIRETO | Validar logs `[PP-REGIME]` em staging com `correlacao_rolling` habilitado |
+| INICIAR_DIARIOS.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | SEM IMPACTO | Nenhuma |
+
+---
+
+## BLID-060
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Reduzir rapidamente perda de performance intraday com fallback conservador antes do colapso de sessao
+stage_atual: project-manager
+adr_referencia: ADR-040
+data_inicio: 2026-04-06
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Iniciar hardening do runtime adaptativo do Profit Protection para reagir
+quando a performance da sessao degrada fortemente, mesmo sem regime shift
+claro por win rate ou quebra de correlacao.
+
+Entregas desta iteracao:
+
+- novo gatilho `degradacao intraday critica` em
+  `decidir_switch_perfil_profit_protection(...)`;
+- regra configuravel baseada em sinais combinados de janela recente:
+  - `win_rate_recente` muito baixo;
+  - `loss_streak` elevado;
+  - `resultado_acumulado` muito negativo;
+- fallback imediato para perfil `conservador` (ou `baseline`);
+- validacao de parametros para evitar configuracao insegura em runtime;
+- testes unitarios cobrindo:
+  - degradacao critica sem regime shift classico;
+  - validacao de parametros invalidos.
+- replay/staging da sessao degradada real do dia com calibracao automatizada:
+  - `scripts/staging_validation_blid060.py`
+  - relatorio JSON + log de evidencias em `outputs/`.
+
+### Calibracao aplicada (sessao 2026-04-06)
+
+- `limiar_win_rate_degradado`: **0.30** (antes 0.35)
+- `min_loss_streak_degradado`: **3** (mantido)
+- `limiar_resultado_acumulado_degradado`: **-0.08** (antes -0.10 / inicial -1.0)
+- `min_sinais_degradacao`: **2** (mantido)
+- `min_trades_degradacao_critica`: **4** (novo)
+
+Decisao de arquitetura aplicada no runtime:
+- permitir fallback conservador por degradacao critica mesmo com amostra parcial
+  (sem exigir 2 janelas completas para detectar deterioracao forte).
+
+### Evidencias
+
+- `pytest tests/unit/test_profit_protection_regime_runtime.py -q` -> **12/12 PASSING**
+- `mypy --strict --follow-imports=skip src/application/profit_protection_regime_runtime.py tests/unit/test_profit_protection_regime_runtime.py` -> **0 erros**
+- `python scripts/staging_validation_blid060.py --date 20260406` ->
+  `outputs/blid060_staging_validation_20260406_145642.json`
+- Log replay: `outputs/blid060_pp_regime_staging_20260406_145642.log`
+- Resultado replay:
+  - `apto_para_concluir_blid060`: **true**
+  - `switches_realizados`: **1**
+  - `switches_por_100_avaliacoes`: **2.8571**
+  - `thrashing_detectado`: **false**
+
+### Arquivos Alterados
+
+- `src/application/profit_protection_regime_runtime.py`
+- `tests/unit/test_profit_protection_regime_runtime.py`
+- `scripts/staging_validation_blid060.py`
+- `docs/BACKLOG.md`
+- `docs/ADRS.md`
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | ALTO | DIRETO | Restart recomendavel apos deploy; monitorar logs `[PP-REGIME]` no pregao |
+| INICIAR_AGENTE_RL_DIRETO.bat | ALTO | DIRETO | Restart recomendavel apos deploy; monitorar logs `[PP-REGIME]` no pregao |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Sem restart; validar se sessoes degradadas aparecem nos relatorios diarios |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | BAIXO | INDIRETO | Monitorar mudanca de perfil/risco no painel, sem restart obrigatorio |
+
+### Proxima Acao
+
+- Promover ajustes em janela de deploy controlada e monitorar logs
+  `[PP-REGIME]` no primeiro pregão após restart dos agentes RL.
+

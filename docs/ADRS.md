@@ -3881,3 +3881,159 @@ python scripts/backtest_profit_protection.py --meses 6 --seed 123 --output custo
 - config/alert_reversoes.yaml: configuracao canonica
 - tests/unit/test_alert_reversao_handler.py: 21 testes unitarios
 - tests/unit/test_blid045_integration.py: 10 testes de integracao
+
+---
+
+## ADR-039: Sinal Complementar de Regime por Quebra de Correlacao Rolling (BLID-059)
+
+**Data:** 2026-04-06  
+**Status:** APROVADO  
+**Decisores:** Product Owner, Tech Lead, ML Expert  
+**BLID:** BLID-059
+
+### Contexto
+
+O runtime adaptativo do Profit Protection (ADR-038/BLID-056) trocava perfil
+somente por shift de win rate entre blocos recentes. Em viradas intraday
+abruptas, esse gatilho pode reagir tarde, pois depende de materialização de
+outcome em trades já fechados.
+
+### Decisao
+
+Adicionar gatilho complementar de regime por quebra de correlação rolling na
+janela recente:
+
+- considerar evento de quebra quando:
+  - `quebra_correlacao=true`, ou
+  - `abs(correlacao_rolling) < limiar_quebra_correlacao`;
+- se houver eventos suficientes na janela (`min_eventos_quebra_correlacao`),
+  priorizar perfil `conservador` (fallback `baseline`);
+- manter gatilho por win rate para cenários de melhora/degradação já cobertos.
+
+Parâmetros adicionados:
+
+- `limiar_quebra_correlacao` (default `0.30`)
+- `min_eventos_quebra_correlacao` (default `2`)
+
+### Consequencias
+
+**Positivas:**
+- resposta mais rápida a regime shift intraday;
+- redução de risco de manter perfil agressivo em quebra de contexto;
+- preserva retrocompatibilidade com lógica de win rate existente.
+
+**Negativas:**
+- maior sensibilidade pode elevar número de switches em ambiente ruidoso;
+- requer observabilidade em staging para ajuste fino de limiar.
+
+### Evidencias
+
+- `pytest tests/unit/test_profit_protection_regime_runtime.py -q` -> **10/10 PASSING**
+- `mypy --strict --follow-imports=skip src/application/profit_protection_regime_runtime.py tests/unit/test_profit_protection_regime_runtime.py` -> **0 erros**
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | MEDIO | DIRETO | Validar eventos `[PP-REGIME]` em staging com campo de correlação |
+| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | DIRETO | Validar eventos `[PP-REGIME]` em staging com campo de correlação |
+| INICIAR_DIARIOS.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | SEM IMPACTO | Nenhuma |
+
+### Referencias
+
+- `src/application/profit_protection_regime_runtime.py`
+- `tests/unit/test_profit_protection_regime_runtime.py`
+- `docs/BACKLOG.md` (BLID-059)
+
+---
+
+## ADR-040: Guardrail de Degradacao Intraday Critica no Runtime do Profit Protection (BLID-060)
+
+**Data:** 2026-04-06  
+**Status:** APROVADO  
+**Decisores:** Product Owner, Tech Lead, ML Expert  
+**BLID:** BLID-060
+
+### Contexto
+
+Mesmo com os gatilhos de regime existentes (shift por win rate e quebra de
+correlacao), houve cenário operacional em que a sessao entrou em degradacao
+severa de performance antes de um sinal de regime suficientemente forte.
+
+Isso aumenta risco de drawdown no intraday e posterga a troca para um perfil
+mais defensivo.
+
+### Decisao
+
+Adicionar no runtime um gatilho complementar de **degradacao intraday critica**
+que aciona postura conservadora quando ha combinacao de sinais ruins na janela
+recente, independentemente de regime shift classico:
+
+- `win_rate_recente` abaixo do limiar;
+- `loss_streak` acima do minimo;
+- `resultado_acumulado` abaixo do limite.
+
+A decisao exige um numero minimo configuravel de sinais para evitar
+reatividade excessiva.
+
+Novos parametros:
+
+- `limiar_win_rate_degradado` (default `0.35`)
+- `min_loss_streak_degradado` (default `3`)
+- `limiar_resultado_acumulado_degradado` (default `-1.0`)
+- `min_sinais_degradacao` (default `2`)
+
+### Consequencias
+
+**Positivas:**
+- resposta mais rápida a sessao deteriorada;
+- menor permanencia em perfil agressivo durante queda abrupta de qualidade;
+- compatibilidade com o fluxo atual de switch e cooldown anti-thrashing.
+
+**Negativas / Riscos:**
+- possibilidade de troca conservadora em ruido de curto prazo se limiares
+  estiverem apertados;
+- necessidade de calibracao em staging com sessao real degradada.
+
+### Evidencias
+
+- `pytest tests/unit/test_profit_protection_regime_runtime.py -q` -> **12/12 PASSING**
+- `mypy --strict --follow-imports=skip src/application/profit_protection_regime_runtime.py tests/unit/test_profit_protection_regime_runtime.py` -> **0 erros**
+- Replay/staging real:
+  - `python scripts/staging_validation_blid060.py --date 20260406`
+  - `outputs/blid060_staging_validation_20260406_145642.json`
+  - `outputs/blid060_pp_regime_staging_20260406_145642.log`
+  - `apto_para_concluir_blid060=true` com `switches_por_100_avaliacoes=2.8571` e `thrashing_detectado=false`
+
+### Calibracao Final (2026-04-06)
+
+Parametros calibrados no runtime apos replay da sessao degradada:
+
+- `limiar_win_rate_degradado=0.30`
+- `min_loss_streak_degradado=3`
+- `limiar_resultado_acumulado_degradado=-0.08`
+- `min_sinais_degradacao=2`
+- `min_trades_degradacao_critica=4`
+
+Decisao complementar aplicada:
+- permitir fallback conservador por degradacao critica em amostra parcial,
+  sem aguardar duas janelas completas quando a deterioracao ja e evidente.
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | ALTO | DIRETO | Restart recomendavel apos deploy e monitoramento de logs `[PP-REGIME]` |
+| INICIAR_AGENTE_RL_DIRETO.bat | ALTO | DIRETO | Restart recomendavel apos deploy e monitoramento de logs `[PP-REGIME]` |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Sem restart; observar consolidado de performance da sessao |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | BAIXO | INDIRETO | Acompanhar sinais de risco e troca de perfil sem restart obrigatorio |
+
+### Referencias
+
+- `src/application/profit_protection_regime_runtime.py`
+- `tests/unit/test_profit_protection_regime_runtime.py`
+- `scripts/staging_validation_blid060.py`
+- `docs/BACKLOG.md` (BLID-060)

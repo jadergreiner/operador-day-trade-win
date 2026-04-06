@@ -102,6 +102,90 @@ def _extrair_resultados(
     return resultados
 
 
+def _detectar_quebra_correlacao(
+    *,
+    trades_fechados: Iterable[Mapping[str, object]],
+    janela_recente: int,
+    limiar_quebra_correlacao: float,
+    min_eventos_quebra_correlacao: int,
+) -> bool:
+    if min_eventos_quebra_correlacao <= 0:
+        return False
+
+    eventos = 0
+    for trade in list(trades_fechados)[-janela_recente:]:
+        if not isinstance(trade, dict):
+            continue
+
+        valor_quebra = trade.get("quebra_correlacao")
+        if isinstance(valor_quebra, bool) and valor_quebra:
+            eventos += 1
+            continue
+
+        correlacao = trade.get("correlacao_rolling")
+        if correlacao is None:
+            correlacao = trade.get("rolling_correlation")
+        if isinstance(correlacao, bool) or correlacao is None:
+            continue
+        if isinstance(correlacao, (int, float, str)):
+            try:
+                valor_corr = abs(float(correlacao))
+            except ValueError:
+                continue
+            if valor_corr < limiar_quebra_correlacao:
+                eventos += 1
+
+    return eventos >= min_eventos_quebra_correlacao
+
+
+def _detectar_degradacao_intraday_critica(
+    *,
+    bloco_recente: Sequence[float],
+    limiar_win_rate_degradado: float,
+    min_loss_streak_degradado: int,
+    limiar_resultado_acumulado_degradado: float,
+    min_sinais_degradacao: int,
+) -> tuple[bool, str]:
+    if not bloco_recente:
+        return False, "Sem janela recente para avaliar degradacao intraday."
+
+    total = len(bloco_recente)
+    wins = sum(1 for valor in bloco_recente if valor > 0.0)
+    win_rate_recente = wins / total
+
+    loss_streak_atual = 0
+    pior_loss_streak = 0
+    for valor in bloco_recente:
+        if valor < 0.0:
+            loss_streak_atual += 1
+            if loss_streak_atual > pior_loss_streak:
+                pior_loss_streak = loss_streak_atual
+        else:
+            loss_streak_atual = 0
+
+    resultado_acumulado = float(sum(bloco_recente))
+
+    sinais: list[str] = []
+    if win_rate_recente <= limiar_win_rate_degradado:
+        sinais.append(
+            f"win_rate_recente={win_rate_recente:.2f}<=limiar={limiar_win_rate_degradado:.2f}"
+        )
+    if pior_loss_streak >= min_loss_streak_degradado:
+        sinais.append(
+            f"loss_streak={pior_loss_streak}>=min={min_loss_streak_degradado}"
+        )
+    if resultado_acumulado <= limiar_resultado_acumulado_degradado:
+        sinais.append(
+            "resultado_acumulado="
+            f"{resultado_acumulado:.4f}<=limiar={limiar_resultado_acumulado_degradado:.4f}"
+        )
+
+    if len(sinais) < min_sinais_degradacao:
+        return False, "Degradacao intraday nao confirmada."
+
+    return True, "Degradacao intraday critica: " + "; ".join(sinais)
+
+
 def decidir_switch_perfil_profit_protection(
     *,
     trades_fechados: Iterable[Mapping[str, object]],
@@ -109,6 +193,13 @@ def decidir_switch_perfil_profit_protection(
     perfis_disponiveis: Sequence[str],
     janela_recente: int = JANELA_RECENTE_MIN_TRADES,
     delta_regime_pp: float = DELTA_WIN_RATE_REGIME_PP,
+    limiar_quebra_correlacao: float = 0.30,
+    min_eventos_quebra_correlacao: int = 2,
+    limiar_win_rate_degradado: float = 0.30,
+    min_loss_streak_degradado: int = 3,
+    limiar_resultado_acumulado_degradado: float = -0.08,
+    min_sinais_degradacao: int = 2,
+    min_trades_degradacao_critica: int = 4,
     max_items: int = 48,
 ) -> DecisaoSwitchPerfilPP:
     """Decide troca de perfil com base em recência e mudança de regime.
@@ -121,7 +212,38 @@ def decidir_switch_perfil_profit_protection(
     """
     resultados = _extrair_resultados(trades_fechados, max_items=max_items)
     min_amostra = janela_recente * 2
+    bloco_recente_degradacao = resultados[-min(janela_recente, len(resultados)):] if resultados else []
+    degradacao_critica, motivo_degradacao = _detectar_degradacao_intraday_critica(
+        bloco_recente=bloco_recente_degradacao,
+        limiar_win_rate_degradado=limiar_win_rate_degradado,
+        min_loss_streak_degradado=min_loss_streak_degradado,
+        limiar_resultado_acumulado_degradado=limiar_resultado_acumulado_degradado,
+        min_sinais_degradacao=min_sinais_degradacao,
+    )
+
     if len(resultados) < min_amostra:
+        if degradacao_critica and len(bloco_recente_degradacao) >= min_trades_degradacao_critica:
+            perfis_set = set(perfis_disponiveis)
+            perfil_sugerido = "conservador" if "conservador" in perfis_set else "baseline"
+            deve_trocar = perfil_sugerido != perfil_atual
+            if not deve_trocar:
+                motivo_degradacao += " Perfil sugerido já está ativo ou indisponível."
+            return DecisaoSwitchPerfilPP(
+                deve_trocar=deve_trocar,
+                perfil_atual=perfil_atual,
+                perfil_sugerido=perfil_sugerido,
+                regime_shift_detectado=True,
+                win_rate_bloco_anterior=0.0,
+                win_rate_bloco_recente=(
+                    sum(1 for r in bloco_recente_degradacao if r > 0.0) / len(bloco_recente_degradacao)
+                    if bloco_recente_degradacao
+                    else 0.0
+                ),
+                motivo=(
+                    "Amostra parcial com degradacao critica detectada; "
+                    f"{motivo_degradacao}"
+                ),
+            )
         return DecisaoSwitchPerfilPP(
             deve_trocar=False,
             perfil_atual=perfil_atual,
@@ -144,7 +266,13 @@ def decidir_switch_perfil_profit_protection(
         janela_recente=janela_recente,
         delta_pp=delta_regime_pp,
     )
-    if not regime_shift:
+    quebra_correlacao = _detectar_quebra_correlacao(
+        trades_fechados=trades_fechados,
+        janela_recente=janela_recente,
+        limiar_quebra_correlacao=limiar_quebra_correlacao,
+        min_eventos_quebra_correlacao=min_eventos_quebra_correlacao,
+    )
+    if not regime_shift and not quebra_correlacao and not degradacao_critica:
         return DecisaoSwitchPerfilPP(
             deve_trocar=False,
             perfil_atual=perfil_atual,
@@ -155,7 +283,16 @@ def decidir_switch_perfil_profit_protection(
             motivo="Sem regime shift relevante.",
         )
 
-    if wr_recente < wr_anterior:
+    if degradacao_critica:
+        alvos = ["conservador", "baseline"]
+        racional = motivo_degradacao
+    elif quebra_correlacao and not regime_shift:
+        alvos = ["conservador", "baseline"]
+        racional = (
+            "Quebra de correlacao rolling detectada na janela recente; "
+            "aplicando postura conservadora."
+        )
+    elif wr_recente < wr_anterior:
         alvos = ["conservador", "baseline"]
         racional = "Regime shift com degradação recente de win rate."
     else:
@@ -177,7 +314,7 @@ def decidir_switch_perfil_profit_protection(
         deve_trocar=deve_trocar,
         perfil_atual=perfil_atual,
         perfil_sugerido=perfil_sugerido,
-        regime_shift_detectado=True,
+        regime_shift_detectado=regime_shift or quebra_correlacao or degradacao_critica,
         win_rate_bloco_anterior=wr_anterior,
         win_rate_bloco_recente=wr_recente,
         motivo=racional,
@@ -193,6 +330,13 @@ def validar_sessao_runtime_profit_protection(
     avaliar_a_cada_n_ciclos: int = 10,
     janela_recente: int = JANELA_RECENTE_MIN_TRADES,
     delta_regime_pp: float = DELTA_WIN_RATE_REGIME_PP,
+    limiar_quebra_correlacao: float = 0.30,
+    min_eventos_quebra_correlacao: int = 2,
+    limiar_win_rate_degradado: float = 0.30,
+    min_loss_streak_degradado: int = 3,
+    limiar_resultado_acumulado_degradado: float = -0.08,
+    min_sinais_degradacao: int = 2,
+    min_trades_degradacao_critica: int = 4,
     max_items: int = 48,
     limite_switches_por_100_avaliacoes: float = 20.0,
 ) -> ResultadoValidacaoSessaoPP:
@@ -207,6 +351,18 @@ def validar_sessao_runtime_profit_protection(
         raise ValueError("avaliar_a_cada_n_ciclos deve ser > 0.")
     if limite_switches_por_100_avaliacoes < 0:
         raise ValueError("limite_switches_por_100_avaliacoes deve ser >= 0.")
+    if limiar_quebra_correlacao < 0:
+        raise ValueError("limiar_quebra_correlacao deve ser >= 0.")
+    if min_eventos_quebra_correlacao < 0:
+        raise ValueError("min_eventos_quebra_correlacao deve ser >= 0.")
+    if not 0.0 <= limiar_win_rate_degradado <= 1.0:
+        raise ValueError("limiar_win_rate_degradado deve estar entre 0 e 1.")
+    if min_loss_streak_degradado < 1:
+        raise ValueError("min_loss_streak_degradado deve ser >= 1.")
+    if min_sinais_degradacao < 1:
+        raise ValueError("min_sinais_degradacao deve ser >= 1.")
+    if min_trades_degradacao_critica < 1:
+        raise ValueError("min_trades_degradacao_critica deve ser >= 1.")
 
     historico_trades: list[Mapping[str, object]] = []
     perfil_atual = perfil_inicial
@@ -230,6 +386,13 @@ def validar_sessao_runtime_profit_protection(
             perfis_disponiveis=perfis_disponiveis,
             janela_recente=janela_recente,
             delta_regime_pp=delta_regime_pp,
+            limiar_quebra_correlacao=limiar_quebra_correlacao,
+            min_eventos_quebra_correlacao=min_eventos_quebra_correlacao,
+            limiar_win_rate_degradado=limiar_win_rate_degradado,
+            min_loss_streak_degradado=min_loss_streak_degradado,
+            limiar_resultado_acumulado_degradado=limiar_resultado_acumulado_degradado,
+            min_sinais_degradacao=min_sinais_degradacao,
+            min_trades_degradacao_critica=min_trades_degradacao_critica,
             max_items=max_items,
         )
         if not decisao.deve_trocar:
