@@ -213,6 +213,7 @@ try:
     from src.application.coordination_integration import (
         verificar_pode_abrir_posicao as _verificar_coordination_global,
     )
+    from src.application.sl_breakeven_validator import ValidadorSLBreakEven
 
     logger.info("[OK] Módulos importados com sucesso (incl. isolamento formal)")
 
@@ -906,6 +907,53 @@ def obter_contexto_fechamento_sessao_atual(
         "volume": float(posicao.volume),
         "lado": posicao.tipo.value,
     }
+
+
+def verificar_posicao_no_mt5(
+    posicao_mgr: PosicaoIsoladaManager,
+    motor: MotorDecisaoIsolado,
+    mt5_adapter_local: object,
+) -> bool:
+    """Confirma se a posição local ainda existe no MT5 para esta sessão."""
+    if not posicao_mgr.tem_posicao_aberta():
+        return False
+
+    try:
+        metadados = posicao_mgr.obter_metadados_posicao()
+    except Exception as e:
+        logger.warning(f"[SYNC] Falha ao obter metadados da posição local: {e}")
+        return False
+
+    ticket_local = int(metadados.get("ticket", 0) or 0)
+    if ticket_local <= 0:
+        logger.warning("[SYNC] Ticket local inválido no status isolado.")
+        return False
+
+    try:
+        posicoes_mt5 = mt5_adapter_local.get_positions(Symbol(SIMBOLO))
+    except Exception as e:
+        logger.warning(f"[SYNC] Erro ao consultar posições no MT5: {e}")
+        # Em falha de consulta, mantém estado para evitar falso fechamento.
+        return True
+
+    for pos in (posicoes_mt5 or []):
+        try:
+            if int(getattr(pos, "ticket", 0) or 0) == ticket_local:
+                return True
+        except Exception:
+            continue
+
+    # Fallback observável: se ainda há posição no motor, registramos o desvio.
+    try:
+        tickets_motor = [int(p.ticket) for p in motor.obter_posicoes_abertas()]
+    except Exception:
+        tickets_motor = []
+    logger.info(
+        "[SYNC] Ticket local %s não encontrado no MT5. tickets_motor=%s",
+        ticket_local,
+        tickets_motor,
+    )
+    return False
 
 
 def resolver_preco_saida_real(
@@ -2346,7 +2394,7 @@ def processar_protecao_lucros_rl_direto(
 # ============================================================================
 # INICIALIZAÇÃO DO VALIDADOR DE SL NO BREAKEVEN
 # ============================================================================
-sl_breakeven_validator = SLBreakevenValidator(db_path=TRADING_DB_PATH)
+sl_breakeven_validator = ValidadorSLBreakEven()
 
 
 # ============================================================================
@@ -2816,7 +2864,7 @@ def main():
                 # FIX: Lógica de Posição Aberta (2026-04-02)
                 # Se, após todas as verificações, ainda há uma posição aberta,
                 # o foco é monitorá-la.
-                if posicao_tracker.is_posicao_aberta():
+                if posicao_tracker.tem_posicao_aberta():
                     logger.debug(f"[CICLO {ciclo}] Posição ainda aberta. Foco em monitoramento e proteção.")
                     try:
                         processar_protecao_lucros_rl_direto(

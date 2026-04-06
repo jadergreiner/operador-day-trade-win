@@ -62,30 +62,12 @@ REM =========================================================================
 echo.
 echo [17:32] Espelhando trades do agente_direto para trading_diarios.db...
 set "RL_DIRETO_DB=%CD%\data\db\trading_rl_direto.db"
-python -c "
-import sqlite3, sys
-from datetime import datetime
-src_path = r'%RL_DIRETO_DB%'
-dst_path = r'%DIARIOS_DB_PATH%'
-src = sqlite3.connect(src_path)
-dst = sqlite3.connect(dst_path)
-src_cur = src.cursor()
-dst_cur = dst.cursor()
-today = datetime.now().date().isoformat()
-src_cur.execute('''SELECT trade_id, symbol, side, quantity, entry_price, entry_time, exit_price, exit_time, stop_loss, take_profit, status, broker_trade_id, commission, profit_loss, return_percentage, notes, created_at, updated_at, execution_method FROM trades WHERE DATE(entry_time) = ? AND status = 'CLOSED' ''', (today,))
-rows = src_cur.fetchall()
-inserted = 0
-for r in rows:
-    dst_cur.execute('SELECT id FROM trades WHERE trade_id = ?', (r[0],))
-    if not dst_cur.fetchone():
-        dst_cur.execute('INSERT INTO trades (trade_id,symbol,side,quantity,entry_price,entry_time,exit_price,exit_time,stop_loss,take_profit,status,broker_trade_id,commission,profit_loss,return_percentage,notes,created_at,updated_at,execution_method) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', r)
-        inserted += 1
-dst.commit()
-src.close()
-dst.close()
-print(f'[OK] {inserted} trades espelhados para trading_diarios.db ({today})')
-"
-echo [17:33] P50-SYNC OK
+python scripts\espelhar_trades_para_diarios.py --src "%RL_DIRETO_DB%" --dst "%DIARIOS_DB_PATH%"
+if errorlevel 1 (
+    echo [17:33] [WARN] P50-SYNC falhou
+) else (
+    echo [17:33] P50-SYNC OK
+)
 
 echo.
 echo ================================================================================

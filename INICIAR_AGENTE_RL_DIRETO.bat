@@ -16,6 +16,7 @@ cd /d "%~dp0"
 if not exist "outputs" mkdir outputs >nul 2>&1
 
 set "RL_DIRETO_DB_PATH=%cd%\data\db\trading_rl_direto.db"
+set "DIARIOS_DB_PATH=%cd%\data\db\trading_diarios.db"
 set "DB_PATH=%RL_DIRETO_DB_PATH%"
 set "TRADING_DB_PATH=%RL_DIRETO_DB_PATH%"
 set "AGENTE_DIRETO_LOG_DIR=%cd%\outputs"
@@ -157,27 +158,12 @@ if "%CHOICE%"=="2" (
 
     REM Espelhar trades do rl_direto para trading_diarios.db (usado pelo P50-B retraining)
     echo   [SYNC-DIARIOS] Espelhando trades para trading_diarios.db...
-    python -c "
-import sqlite3, sys
-from datetime import datetime, timedelta
-src = sqlite3.connect(r'%RL_DIRETO_DB_PATH%')
-dst = sqlite3.connect(r'%DIARIOS_DB_PATH%')
-src_cur = src.cursor()
-dst_cur = dst.cursor()
-today = datetime.now().date().isoformat()
-src_cur.execute('''SELECT trade_id, symbol, side, quantity, entry_price, entry_time, exit_price, exit_time, stop_loss, take_profit, status, broker_trade_id, commission, profit_loss, return_percentage, notes, created_at, updated_at, execution_method FROM trades WHERE DATE(entry_time) = ? AND status = 'CLOSED' ''', (today,))
-rows = src_cur.fetchall()
-inserted = 0
-for r in rows:
-    dst_cur.execute('SELECT id FROM trades WHERE trade_id = ?', (r[0],))
-    if not dst_cur.fetchone():
-        dst_cur.execute('INSERT INTO trades (trade_id,symbol,side,quantity,entry_price,entry_time,exit_price,exit_time,stop_loss,take_profit,status,broker_trade_id,commission,profit_loss,return_percentage,notes,created_at,updated_at,execution_method) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', r)
-        inserted += 1
-dst.commit()
-src.close()
-dst.close()
-print(f'[OK] {inserted} trades espelhados para trading_diarios.db')
-"
+    python scripts\espelhar_trades_para_diarios.py --src "%RL_DIRETO_DB_PATH%" --dst "%DIARIOS_DB_PATH%"
+    if errorlevel 1 (
+        echo   [WARN] Espelhamento para trading_diarios.db falhou.
+    ) else (
+        echo   [OK] Espelhamento para trading_diarios.db concluido.
+    )
     echo.
     pause
     goto :MENU
