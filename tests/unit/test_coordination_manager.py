@@ -36,6 +36,7 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
+from config.settings import AGENT_MAGIC_NUMBERS
 from src.application.coordination_manager import (
     CoordinationManager,
     CoordinationSignal,
@@ -71,6 +72,7 @@ def config_valida() -> ConfiguracaoCoordinacao:
         capital_minimo_reais=_CAPITAL_MINIMO,
         capital_inicial_sessao_reais=_CAPITAL_INICIAL,
         intervalo_polling_segundos=0.1,
+        timeout_encerramento_thread_segundos=0.2,
         agentes_monitorados=["rl_5000", "rl_direto"],
         db_path=_DB_PATH,
         sinal_atual_path=_SINAL_PATH,
@@ -116,6 +118,34 @@ def _mock_sqlite_com_trades() -> Any:
             return mock_conn
 
         return _side_effect
+    return _criar_mock_connect
+
+
+@pytest.fixture
+def _mock_sqlite_com_trades_por_magic() -> Any:
+    """Mock de SQLite que retorna PnL conforme magic_number consultado."""
+
+    def _criar_mock_connect(pnl_por_magic: dict[int, list[float]]) -> Any:
+        def _side_effect(*args: Any, **kwargs: Any) -> Any:
+            mock_conn = MagicMock()
+
+            def _execute_side_effect(query: str, params: tuple[Any, ...] = ()) -> Any:
+                mock_cursor_result = MagicMock()
+                if "PRAGMA" in query:
+                    mock_cursor_result.fetchall.return_value = []
+                else:
+                    magic = int(params[0]) if params else -1
+                    pnl_atual = pnl_por_magic.get(magic, [])
+                    mock_cursor_result.fetchall.return_value = [(p,) for p in pnl_atual]
+                return mock_cursor_result
+
+            mock_conn.__enter__ = MagicMock(return_value=mock_conn)
+            mock_conn.__exit__ = MagicMock(return_value=False)
+            mock_conn.execute = MagicMock(side_effect=_execute_side_effect)
+            return mock_conn
+
+        return _side_effect
+
     return _criar_mock_connect
 
 
@@ -458,6 +488,8 @@ class TestPersistenciaAtomicaJson:
         assert "ciclo_id" in dados
         assert "timestamp_iso" in dados
         assert "sinal" in dados
+        assert "ciclo_numero" in dados
+        assert "latencia_ciclo_ms" in dados
 
 
 # ---------------------------------------------------------------------------
@@ -647,6 +679,19 @@ class TestThreadDaemon:
             decisao = manager.executar_ciclo()
         assert isinstance(decisao, DecisaoCoordinacao)
 
+    def test_parar_usa_timeout_configurado_no_join_verificacao(
+        self, config_valida: ConfiguracaoCoordinacao
+    ) -> None:
+        """Verificação explícita do argumento timeout no join()."""
+        manager = CoordinationManager(config=config_valida)
+        manager._ativo = True
+        thread_mock = MagicMock()
+        manager._thread = thread_mock
+        manager.parar()
+        thread_mock.join.assert_called_once_with(
+            timeout=config_valida.timeout_encerramento_thread_segundos
+        )
+
 
 # ---------------------------------------------------------------------------
 # AC10 - Config invalida -> ValueError
@@ -708,6 +753,41 @@ class TestValidacaoConfiguracao:
                 capital_inicial_sessao_reais=5000.0,
             )
 
+    def test_db_path_por_agente_com_agente_fora_da_lista_levanta_value_error(self) -> None:
+        """db_path_por_agente com agente fora de agentes_monitorados deve falhar."""
+        with pytest.raises(ValueError):
+            ConfiguracaoCoordinacao(
+                drawdown_individual_pct=10.0,
+                drawdown_conjunto_pct=15.0,
+                capital_minimo_reais=500.0,
+                capital_inicial_sessao_reais=5000.0,
+                agentes_monitorados=["rl_5000", "rl_direto"],
+                db_path_por_agente={"micro_tendencia": "data/db/trading_micro.db"},
+            )
+
+    def test_db_path_por_agente_com_caminho_vazio_levanta_value_error(self) -> None:
+        """db_path_por_agente com caminho vazio deve falhar."""
+        with pytest.raises(ValueError):
+            ConfiguracaoCoordinacao(
+                drawdown_individual_pct=10.0,
+                drawdown_conjunto_pct=15.0,
+                capital_minimo_reais=500.0,
+                capital_inicial_sessao_reais=5000.0,
+                agentes_monitorados=["rl_5000", "rl_direto"],
+                db_path_por_agente={"rl_5000": "   "},
+            )
+
+    def test_timeout_encerramento_thread_zero_levanta_value_error(self) -> None:
+        """timeout_encerramento_thread_segundos <= 0 deve levantar ValueError."""
+        with pytest.raises(ValueError):
+            ConfiguracaoCoordinacao(
+                drawdown_individual_pct=10.0,
+                drawdown_conjunto_pct=15.0,
+                capital_minimo_reais=500.0,
+                capital_inicial_sessao_reais=5000.0,
+                timeout_encerramento_thread_segundos=0.0,
+            )
+
 
 # ---------------------------------------------------------------------------
 # Contrato de DecisaoCoordinacao
@@ -765,3 +845,224 @@ class TestContratoDecisaoCoordinacao:
             decisao_1 = manager.executar_ciclo()
             decisao_2 = manager.executar_ciclo()
         assert decisao_1.ciclo_id != decisao_2.ciclo_id
+
+    def test_ciclos_consecutivos_incrementam_ciclo_numero(
+        self, config_valida: ConfiguracaoCoordinacao, _mock_sqlite_sem_banco: Any
+    ) -> None:
+        """Dois ciclos consecutivos devem incrementar contador de ciclo."""
+        with patch("src.application.coordination_manager.Path") as mock_path_cls:
+            mock_path_inst = MagicMock()
+            mock_path_tmp = MagicMock()
+            mock_path_inst.with_suffix.return_value = mock_path_tmp
+            mock_path_inst.parent = MagicMock()
+            mock_path_cls.return_value = mock_path_inst
+            manager = CoordinationManager(config=config_valida)
+            decisao_1 = manager.executar_ciclo()
+            decisao_2 = manager.executar_ciclo()
+        assert decisao_1.ciclo_numero == 1
+        assert decisao_2.ciclo_numero == 2
+
+    def test_latencia_ciclo_ms_eh_nao_negativa(
+        self, config_valida: ConfiguracaoCoordinacao, _mock_sqlite_sem_banco: Any
+    ) -> None:
+        """Latência calculada do ciclo deve ser >= 0."""
+        with patch("src.application.coordination_manager.Path") as mock_path_cls:
+            mock_path_inst = MagicMock()
+            mock_path_tmp = MagicMock()
+            mock_path_inst.with_suffix.return_value = mock_path_tmp
+            mock_path_inst.parent = MagicMock()
+            mock_path_cls.return_value = mock_path_inst
+            manager = CoordinationManager(config=config_valida)
+            decisao = manager.executar_ciclo()
+        assert decisao.latencia_ciclo_ms >= 0.0
+
+
+@pytest.mark.unit
+class TestGeneralizacaoMultiplosAgentes:
+    """Valida suporte dinâmico a N agentes (DT-BLID041-01)."""
+
+    def test_decisao_expoe_metricas_dinamicas_por_agente(
+        self,
+        _mock_sqlite_com_trades_por_magic: Any,
+    ) -> None:
+        """Com 3 agentes monitorados, payload dinâmico deve refletir os 3."""
+        config = ConfiguracaoCoordinacao(
+            drawdown_individual_pct=_DRAWDOWN_INDIVIDUAL_PCT,
+            drawdown_conjunto_pct=_DRAWDOWN_CONJUNTO_PCT,
+            capital_minimo_reais=_CAPITAL_MINIMO,
+            capital_inicial_sessao_reais=_CAPITAL_INICIAL,
+            intervalo_polling_segundos=0.1,
+            agentes_monitorados=["rl_5000", "rl_direto", "micro_tendencia"],
+            db_path=_DB_PATH,
+            sinal_atual_path=_SINAL_PATH,
+            log_dir=_LOG_DIR,
+        )
+
+        pnl_por_magic = {
+            AGENT_MAGIC_NUMBERS["rl_5000"]: [100.0, -50.0],
+            AGENT_MAGIC_NUMBERS["rl_direto"]: [50.0, 75.0],
+            AGENT_MAGIC_NUMBERS["micro_tendencia"]: [-40.0, 10.0],
+        }
+        criar_mock = _mock_sqlite_com_trades_por_magic(pnl_por_magic)
+
+        with patch("src.application.coordination_manager.sqlite3.connect", side_effect=criar_mock):
+            with patch("src.application.coordination_manager.Path") as mock_path_cls:
+                mock_path_inst = MagicMock()
+                mock_path_tmp = MagicMock()
+                mock_path_inst.with_suffix.return_value = mock_path_tmp
+                mock_path_inst.parent = MagicMock()
+                mock_path_cls.return_value = mock_path_inst
+                manager = CoordinationManager(config=config)
+                decisao = manager.executar_ciclo()
+
+        assert set(decisao.drawdown_por_agente_pct.keys()) == {
+            "rl_5000",
+            "rl_direto",
+            "micro_tendencia",
+        }
+        assert decisao.total_trades_por_agente["micro_tendencia"] == 2
+        assert decisao.pnl_por_agente_reais["micro_tendencia"] == -30.0
+        # Campos legados devem seguir disponíveis para compatibilidade.
+        assert decisao.drawdown_rl_5000_pct == decisao.drawdown_por_agente_pct["rl_5000"]
+        assert decisao.total_trades_rl_direto == decisao.total_trades_por_agente["rl_direto"]
+
+    def test_drawdown_conjunto_considera_agentes_adicionais(
+        self,
+        _mock_sqlite_com_trades_por_magic: Any,
+    ) -> None:
+        """Mesmo sem 5000/direto relevantes, agente extra deve influenciar drawdown conjunto."""
+        config = ConfiguracaoCoordinacao(
+            drawdown_individual_pct=_DRAWDOWN_INDIVIDUAL_PCT,
+            drawdown_conjunto_pct=_DRAWDOWN_CONJUNTO_PCT,
+            capital_minimo_reais=_CAPITAL_MINIMO,
+            capital_inicial_sessao_reais=_CAPITAL_INICIAL,
+            intervalo_polling_segundos=0.1,
+            agentes_monitorados=["rl_5000", "rl_direto", "micro_tendencia"],
+            db_path=_DB_PATH,
+            sinal_atual_path=_SINAL_PATH,
+            log_dir=_LOG_DIR,
+        )
+
+        pnl_por_magic = {
+            AGENT_MAGIC_NUMBERS["rl_5000"]: [10.0],  # <2 trades: não entra no conjunto
+            AGENT_MAGIC_NUMBERS["rl_direto"]: [5.0],  # <2 trades: não entra no conjunto
+            AGENT_MAGIC_NUMBERS["micro_tendencia"]: [-500.0, 10.0],  # entra no conjunto
+        }
+        criar_mock = _mock_sqlite_com_trades_por_magic(pnl_por_magic)
+
+        with patch("src.application.coordination_manager.sqlite3.connect", side_effect=criar_mock):
+            with patch("src.application.coordination_manager.Path") as mock_path_cls:
+                mock_path_inst = MagicMock()
+                mock_path_tmp = MagicMock()
+                mock_path_inst.with_suffix.return_value = mock_path_tmp
+                mock_path_inst.parent = MagicMock()
+                mock_path_cls.return_value = mock_path_inst
+                manager = CoordinationManager(config=config)
+                decisao = manager.executar_ciclo()
+
+        assert decisao.drawdown_conjunto_pct > 0.0
+
+    def test_ciclo_usa_db_path_por_agente_quando_configurado(self) -> None:
+        """Cada agente deve ser consultado no SQLite específico quando override existe."""
+        config = ConfiguracaoCoordinacao(
+            drawdown_individual_pct=_DRAWDOWN_INDIVIDUAL_PCT,
+            drawdown_conjunto_pct=_DRAWDOWN_CONJUNTO_PCT,
+            capital_minimo_reais=_CAPITAL_MINIMO,
+            capital_inicial_sessao_reais=_CAPITAL_INICIAL,
+            intervalo_polling_segundos=0.1,
+            agentes_monitorados=["rl_5000", "rl_direto"],
+            db_path="data/db/default.db",
+            db_path_por_agente={
+                "rl_5000": "data/db/trading_rl_5000.db",
+                "rl_direto": "data/db/trading_rl_direto.db",
+            },
+            sinal_atual_path=_SINAL_PATH,
+            log_dir=_LOG_DIR,
+        )
+
+        uris_lidas: list[str] = []
+
+        def _connect_side_effect(*args: Any, **kwargs: Any) -> Any:
+            uris_lidas.append(str(args[0]))
+            mock_conn = MagicMock()
+
+            def _execute_side_effect(query: str, params: tuple[Any, ...] = ()) -> Any:
+                mock_cursor_result = MagicMock()
+                if "PRAGMA" in query:
+                    mock_cursor_result.fetchall.return_value = []
+                else:
+                    mock_cursor_result.fetchall.return_value = [(10.0,), (5.0,)]
+                return mock_cursor_result
+
+            mock_conn.__enter__ = MagicMock(return_value=mock_conn)
+            mock_conn.__exit__ = MagicMock(return_value=False)
+            mock_conn.execute = MagicMock(side_effect=_execute_side_effect)
+            return mock_conn
+
+        with patch("src.application.coordination_manager.sqlite3.connect", side_effect=_connect_side_effect):
+            with patch("src.application.coordination_manager.Path") as mock_path_cls:
+                mock_path_inst = MagicMock()
+                mock_path_tmp = MagicMock()
+                mock_path_inst.with_suffix.return_value = mock_path_tmp
+                mock_path_inst.parent = MagicMock()
+                mock_path_cls.return_value = mock_path_inst
+                manager = CoordinationManager(config=config)
+                manager.executar_ciclo()
+
+        assert any("file:data/db/trading_rl_5000.db?mode=ro" in uri for uri in uris_lidas)
+        assert any("file:data/db/trading_rl_direto.db?mode=ro" in uri for uri in uris_lidas)
+
+    def test_drawdown_conjunto_usa_interleaving_temporal_quando_disponivel(self) -> None:
+        """Drawdown conjunto deve considerar ordem temporal cross-agent por exit_time."""
+        config = ConfiguracaoCoordinacao(
+            drawdown_individual_pct=_DRAWDOWN_INDIVIDUAL_PCT,
+            drawdown_conjunto_pct=_DRAWDOWN_CONJUNTO_PCT,
+            capital_minimo_reais=_CAPITAL_MINIMO,
+            capital_inicial_sessao_reais=_CAPITAL_INICIAL,
+            intervalo_polling_segundos=0.1,
+            agentes_monitorados=["rl_5000", "rl_direto"],
+            db_path=_DB_PATH,
+            sinal_atual_path=_SINAL_PATH,
+            log_dir=_LOG_DIR,
+        )
+
+        rows_por_magic = {
+            AGENT_MAGIC_NUMBERS["rl_5000"]: [
+                ("2026-04-06T10:00:00", -200.0),
+                ("2026-04-06T10:10:00", 50.0),
+            ],
+            AGENT_MAGIC_NUMBERS["rl_direto"]: [
+                ("2026-04-06T10:05:00", -300.0),
+                ("2026-04-06T10:15:00", 50.0),
+            ],
+        }
+
+        def _connect_side_effect(*args: Any, **kwargs: Any) -> Any:
+            mock_conn = MagicMock()
+
+            def _execute_side_effect(query: str, params: tuple[Any, ...] = ()) -> Any:
+                mock_cursor_result = MagicMock()
+                if "PRAGMA" in query:
+                    mock_cursor_result.fetchall.return_value = []
+                else:
+                    magic = int(params[0]) if params else -1
+                    mock_cursor_result.fetchall.return_value = rows_por_magic.get(magic, [])
+                return mock_cursor_result
+
+            mock_conn.__enter__ = MagicMock(return_value=mock_conn)
+            mock_conn.__exit__ = MagicMock(return_value=False)
+            mock_conn.execute = MagicMock(side_effect=_execute_side_effect)
+            return mock_conn
+
+        with patch("src.application.coordination_manager.sqlite3.connect", side_effect=_connect_side_effect):
+            with patch("src.application.coordination_manager.Path") as mock_path_cls:
+                mock_path_inst = MagicMock()
+                mock_path_tmp = MagicMock()
+                mock_path_inst.with_suffix.return_value = mock_path_tmp
+                mock_path_inst.parent = MagicMock()
+                mock_path_cls.return_value = mock_path_inst
+                manager = CoordinationManager(config=config)
+                decisao = manager.executar_ciclo()
+
+        # Interleaving temporal esperado: [-200, -300, +50, +50] => DD máximo 10%
+        assert decisao.drawdown_conjunto_pct == pytest.approx(10.0)

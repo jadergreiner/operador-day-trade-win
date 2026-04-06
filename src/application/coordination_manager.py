@@ -38,6 +38,7 @@ import json
 import logging
 import sqlite3
 import threading
+import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -49,12 +50,19 @@ from config.settings import AGENT_MAGIC_NUMBERS
 
 logger = logging.getLogger(__name__)
 
-# Timeout em segundos para aguardar encerramento da thread daemon
-_TIMEOUT_ENCERRAMENTO_THREAD: float = 5.0
-
 # Query SQL de leitura dos trades do dia para um agente específico
 _QUERY_TRADES_HOJE: str = (
     "SELECT profit_loss FROM trades "
+    "WHERE magic_number = ? "
+    "AND date(entry_time) = date('now','localtime') "
+    "AND exit_time IS NOT NULL "
+    "AND profit_loss IS NOT NULL "
+    "ORDER BY exit_time ASC"
+)
+
+# Query SQL detalhada (inclui exit_time para interleaving temporal multi-agente)
+_QUERY_TRADES_HOJE_DETALHADO: str = (
+    "SELECT exit_time, profit_loss FROM trades "
     "WHERE magic_number = ? "
     "AND date(entry_time) = date('now','localtime') "
     "AND exit_time IS NOT NULL "
@@ -99,7 +107,9 @@ class ConfiguracaoCoordinacao:
         capital_minimo_reais: Capital mínimo em reais abaixo do qual STOP é emitido.
         capital_inicial_sessao_reais: Capital inicial da sessão para cálculo de drawdown.
         intervalo_polling_segundos: Intervalo de polling da thread daemon em segundos.
+        timeout_encerramento_thread_segundos: Timeout para join da thread daemon no parar().
         agentes_monitorados: Lista de nomes de agentes a monitorar (devem estar em AGENT_MAGIC_NUMBERS).
+        db_path_por_agente: Override opcional de SQLite por agente para visão conjunta multi-DB.
         db_path: Caminho para o banco SQLite de trades.
         sinal_atual_path: Caminho do arquivo JSON com o sinal atual.
         log_dir: Diretório de logs.
@@ -110,9 +120,11 @@ class ConfiguracaoCoordinacao:
     capital_minimo_reais: float = 500.0
     capital_inicial_sessao_reais: float = 5000.0
     intervalo_polling_segundos: float = 60.0
+    timeout_encerramento_thread_segundos: float = 5.0
     agentes_monitorados: List[str] = field(
         default_factory=lambda: ["rl_5000", "rl_direto"]
     )
+    db_path_por_agente: dict[str, str] = field(default_factory=dict)
     db_path: str = "data/db/trading.db"
     sinal_atual_path: str = "outputs/coordination_signal_current.json"
     log_dir: str = "outputs"
@@ -128,6 +140,11 @@ class ConfiguracaoCoordinacao:
             raise ValueError(
                 f"intervalo_polling_segundos deve ser maior que zero, "
                 f"recebido: {self.intervalo_polling_segundos}"
+            )
+        if self.timeout_encerramento_thread_segundos <= 0:
+            raise ValueError(
+                f"timeout_encerramento_thread_segundos deve ser maior que zero, "
+                f"recebido: {self.timeout_encerramento_thread_segundos}"
             )
         if self.capital_inicial_sessao_reais <= 0:
             raise ValueError(
@@ -149,6 +166,16 @@ class ConfiguracaoCoordinacao:
                 raise ValueError(
                     f"Agente '{nome_agente}' não encontrado em AGENT_MAGIC_NUMBERS. "
                     f"Agentes válidos: {list(AGENT_MAGIC_NUMBERS.keys())}"
+                )
+        for nome_agente, caminho_db in self.db_path_por_agente.items():
+            if nome_agente not in self.agentes_monitorados:
+                raise ValueError(
+                    f"Agente '{nome_agente}' em db_path_por_agente nao esta em agentes_monitorados: "
+                    f"{self.agentes_monitorados}"
+                )
+            if not str(caminho_db).strip():
+                raise ValueError(
+                    f"db_path_por_agente['{nome_agente}'] deve ser caminho nao-vazio"
                 )
 
 
@@ -187,14 +214,19 @@ class DecisaoCoordinacao:
         ciclo_id: UUID4 único do ciclo.
         timestamp_iso: Timestamp ISO 8601 do momento da decisão.
         sinal: Sinal de coordenação emitido.
-        drawdown_rl_5000_pct: Drawdown individual do agente rl_5000 (%).
-        drawdown_rl_direto_pct: Drawdown individual do agente rl_direto (%).
+        drawdown_rl_5000_pct: Drawdown individual legado do agente rl_5000 (%).
+        drawdown_rl_direto_pct: Drawdown individual legado do agente rl_direto (%).
         drawdown_conjunto_pct: Drawdown conjunto do portfólio (%).
         capital_estimado_reais: Capital estimado da sessão em reais.
         threshold_violado: Nome do threshold violado (ou None).
         agente_gatilho: Nome do agente que trigou o threshold (ou None).
-        total_trades_rl_5000: Total de trades do agente rl_5000 no dia.
-        total_trades_rl_direto: Total de trades do agente rl_direto no dia.
+        total_trades_rl_5000: Total legado de trades do agente rl_5000 no dia.
+        total_trades_rl_direto: Total legado de trades do agente rl_direto no dia.
+        drawdown_por_agente_pct: Drawdown individual por agente monitorado (%).
+        pnl_por_agente_reais: PnL acumulado por agente monitorado na sessão.
+        total_trades_por_agente: Total de trades por agente monitorado na sessão.
+        ciclo_numero: Contador incremental de ciclos executados desde inicialização.
+        latencia_ciclo_ms: Latência de execução do ciclo em milissegundos.
     """
 
     ciclo_id: str
@@ -208,6 +240,11 @@ class DecisaoCoordinacao:
     agente_gatilho: Optional[str]
     total_trades_rl_5000: int
     total_trades_rl_direto: int
+    drawdown_por_agente_pct: dict[str, float]
+    pnl_por_agente_reais: dict[str, float]
+    total_trades_por_agente: dict[str, int]
+    ciclo_numero: int
+    latencia_ciclo_ms: float
 
     def para_dict(self) -> dict[str, object]:
         """Serializa a decisão para dicionário compatível com JSON."""
@@ -224,6 +261,11 @@ class DecisaoCoordinacao:
             "agente_gatilho": self.agente_gatilho,
             "total_trades_rl_5000": self.total_trades_rl_5000,
             "total_trades_rl_direto": self.total_trades_rl_direto,
+            "drawdown_por_agente_pct": self.drawdown_por_agente_pct,
+            "pnl_por_agente_reais": self.pnl_por_agente_reais,
+            "total_trades_por_agente": self.total_trades_por_agente,
+            "ciclo_numero": self.ciclo_numero,
+            "latencia_ciclo_ms": self.latencia_ciclo_ms,
         }
 
 
@@ -274,19 +316,17 @@ def _calcular_drawdown(
 
 
 def _calcular_drawdown_conjunto(
-    pnl_rl_5000: List[float],
-    pnl_rl_direto: List[float],
+    pnl_por_agente: dict[str, List[float]],
     capital_inicial: float,
 ) -> float:
-    """Calcula o drawdown conjunto do portfólio combinando os trades de ambos agentes.
+    """Calcula o drawdown conjunto do portfólio combinando os trades dos agentes.
 
     Concatena apenas os trades de agentes que possuem >= 2 trades individualmente
     (mesma regra da spec: "Se total_trades < 2: drawdown = 0.0"), depois calcula
     o drawdown sobre a equity curve resultante.
 
     Args:
-        pnl_rl_5000: Sequência de PnL do agente rl_5000.
-        pnl_rl_direto: Sequência de PnL do agente rl_direto.
+        pnl_por_agente: Sequência de PnL por agente.
         capital_inicial: Capital inicial da sessão.
 
     Returns:
@@ -297,11 +337,39 @@ def _calcular_drawdown_conjunto(
     # da query SQL), mas não garante interleaving temporal entre agentes diferentes.
     # Para fins de drawdown de portfólio, esta ordenação é considerada suficiente.
     pnl_conjunto: List[float] = []
-    if len(pnl_rl_5000) >= 2:
-        pnl_conjunto.extend(pnl_rl_5000)
-    if len(pnl_rl_direto) >= 2:
-        pnl_conjunto.extend(pnl_rl_direto)
+    for pnl_agente in pnl_por_agente.values():
+        if len(pnl_agente) >= 2:
+            pnl_conjunto.extend(pnl_agente)
     return _calcular_drawdown(pnl_conjunto, capital_inicial)
+
+
+def _calcular_drawdown_conjunto_intercalado(
+    trades_por_agente: dict[str, list[tuple[Optional[datetime], float]]],
+    capital_inicial: float,
+) -> float:
+    """Calcula drawdown conjunto com interleaving temporal entre agentes.
+
+    Regras:
+    - Só inclui agentes com >= 2 trades (mesma regra do drawdown individual).
+    - Se todos os trades incluídos têm timestamp, aplica merge por tempo (ASC).
+    - Se houver timestamps ausentes, aplica fallback para concatenação por agente.
+    """
+    trades_filtrados: list[tuple[Optional[datetime], float]] = []
+    for trades_agente in trades_por_agente.values():
+        if len(trades_agente) >= 2:
+            trades_filtrados.extend(trades_agente)
+
+    if len(trades_filtrados) < 2:
+        return 0.0
+
+    todos_tem_timestamp = all(ts is not None for ts, _ in trades_filtrados)
+    if todos_tem_timestamp:
+        ordenado = sorted(trades_filtrados, key=lambda item: item[0] or datetime.min)
+        pnl_conjunto = [pnl for _, pnl in ordenado]
+        return _calcular_drawdown(pnl_conjunto, capital_inicial)
+
+    pnl_conjunto_fallback = [pnl for _, pnl in trades_filtrados]
+    return _calcular_drawdown(pnl_conjunto_fallback, capital_inicial)
 
 
 def _ler_trades_agente(
@@ -331,6 +399,56 @@ def _ler_trades_agente(
     except sqlite3.OperationalError as erro:
         logger.warning(
             "[CoordinationManager] Banco inacessível para magic=%d — retornando zerado. Erro: %s",
+            magic_number,
+            erro,
+        )
+        return []
+
+
+def _ler_trades_agente_detalhado(
+    db_path: str,
+    magic_number: int,
+) -> list[tuple[Optional[datetime], float]]:
+    """Lê trades de hoje com timestamp de saída para interleaving temporal.
+
+    Retorna lista de tuplas (exit_time_parseado_ou_None, profit_loss).
+    Em caso de erro, retorna lista vazia.
+    """
+    try:
+        uri_readonly = f"file:{db_path}?mode=ro"
+        with sqlite3.connect(uri_readonly, uri=True, check_same_thread=False) as conn:
+            conn.execute("PRAGMA busy_timeout = 30000")
+            cursor = conn.execute(_QUERY_TRADES_HOJE_DETALHADO, (magic_number,))
+            linhas = cursor.fetchall()
+
+        resultado: list[tuple[Optional[datetime], float]] = []
+        for linha in linhas:
+            # Compatibilidade com mocks antigos que retornam apenas profit_loss.
+            if len(linha) == 1:
+                resultado.append((None, float(linha[0])))
+                continue
+
+            raw_exit_time = linha[0]
+            raw_profit_loss = linha[1]
+            exit_time: Optional[datetime] = None
+            if isinstance(raw_exit_time, str):
+                try:
+                    exit_time = datetime.fromisoformat(raw_exit_time)
+                except ValueError:
+                    exit_time = None
+
+            resultado.append((exit_time, float(raw_profit_loss)))
+        return resultado
+    except sqlite3.OperationalError as erro:
+        logger.warning(
+            "[CoordinationManager] Banco inacessível (detalhado) para magic=%d — retornando zerado. Erro: %s",
+            magic_number,
+            erro,
+        )
+        return []
+    except (sqlite3.DatabaseError, OSError, ValueError, TypeError) as erro:
+        logger.warning(
+            "[CoordinationManager] Erro ao ler trades detalhados magic=%d — retornando zerado. Erro: %s",
             magic_number,
             erro,
         )
@@ -440,11 +558,13 @@ class CoordinationManager:
         self._ativo = False
         self._thread: Optional[threading.Thread] = None
         self._evento_parar = threading.Event()
+        self._contador_ciclos = 0
 
         logger.info(
-            "[CoordinationManager] Inicializado | agentes=%s | db=%s",
+            "[CoordinationManager] Inicializado | agentes=%s | db_default=%s | db_overrides=%s",
             config.agentes_monitorados,
             config.db_path,
+            config.db_path_por_agente,
         )
 
     # ------------------------------------------------------------------
@@ -485,7 +605,7 @@ class CoordinationManager:
 
         self._evento_parar.set()
         if self._thread is not None:
-            self._thread.join(timeout=_TIMEOUT_ENCERRAMENTO_THREAD)
+            self._thread.join(timeout=self._config.timeout_encerramento_thread_segundos)
             self._thread = None
 
         logger.info("[CoordinationManager] Thread daemon encerrada")
@@ -518,45 +638,57 @@ class CoordinationManager:
         Returns:
             DecisaoCoordinacao com todos os campos preenchidos.
         """
+        inicio_ciclo = time.perf_counter()
+        with self._lock:
+            self._contador_ciclos += 1
+            ciclo_numero = self._contador_ciclos
+
         ciclo_id = str(uuid.uuid4())
         timestamp_iso = datetime.now().isoformat()
         capital_inicial = self._config.capital_inicial_sessao_reais
 
         # Leitura dos trades de cada agente
-        pnl_5000: List[float] = []
-        pnl_direto: List[float] = []
+        pnl_por_agente: dict[str, List[float]] = {}
+        trades_detalhados_por_agente: dict[str, list[tuple[Optional[datetime], float]]] = {}
 
         for nome_agente in self._config.agentes_monitorados:
             magic = AGENT_MAGIC_NUMBERS[nome_agente]
-            pnl_agente = _ler_trades_agente(self._config.db_path, magic)
-            if nome_agente == "rl_5000":
-                pnl_5000 = pnl_agente
-            elif nome_agente == "rl_direto":
-                pnl_direto = pnl_agente
+            db_path_agente = self._config.db_path_por_agente.get(
+                nome_agente, self._config.db_path
+            )
+            trades_detalhados = _ler_trades_agente_detalhado(db_path_agente, magic)
+            trades_detalhados_por_agente[nome_agente] = trades_detalhados
+            pnl_por_agente[nome_agente] = [pnl for _, pnl in trades_detalhados]
 
-        # Cálculo de drawdowns individuais
-        drawdown_5000 = _calcular_drawdown(pnl_5000, capital_inicial)
-        drawdown_direto = _calcular_drawdown(pnl_direto, capital_inicial)
+        drawdown_por_agente: dict[str, float] = {
+            nome_agente: _calcular_drawdown(pnl_agente, capital_inicial)
+            for nome_agente, pnl_agente in pnl_por_agente.items()
+        }
 
         # Cálculo de drawdown conjunto
-        drawdown_conjunto = _calcular_drawdown_conjunto(pnl_5000, pnl_direto, capital_inicial)
+        drawdown_conjunto = _calcular_drawdown_conjunto_intercalado(
+            trades_detalhados_por_agente,
+            capital_inicial,
+        )
 
         # Capital estimado
-        capital_estimado = capital_inicial + sum(pnl_5000) + sum(pnl_direto)
+        pnl_total_por_agente: dict[str, float] = {
+            nome_agente: sum(pnl_agente) for nome_agente, pnl_agente in pnl_por_agente.items()
+        }
+        capital_estimado = capital_inicial + sum(pnl_total_por_agente.values())
 
         # Estados dos agentes
-        estado_5000 = EstadoAgente(
-            nome="rl_5000",
-            drawdown_pct=drawdown_5000,
-            pnl_total_reais=sum(pnl_5000),
-            total_trades=len(pnl_5000),
-        )
-        estado_direto = EstadoAgente(
-            nome="rl_direto",
-            drawdown_pct=drawdown_direto,
-            pnl_total_reais=sum(pnl_direto),
-            total_trades=len(pnl_direto),
-        )
+        estados_agentes: List[EstadoAgente] = []
+        for nome_agente in self._config.agentes_monitorados:
+            pnl_agente = pnl_por_agente[nome_agente]
+            estados_agentes.append(
+                EstadoAgente(
+                    nome=nome_agente,
+                    drawdown_pct=drawdown_por_agente[nome_agente],
+                    pnl_total_reais=pnl_total_por_agente[nome_agente],
+                    total_trades=len(pnl_agente),
+                )
+            )
 
         # Determinação do sinal
         sinal, threshold_violado, agente_gatilho = _determinar_sinal(
@@ -564,9 +696,21 @@ class CoordinationManager:
             capital_minimo=self._config.capital_minimo_reais,
             drawdown_conjunto=drawdown_conjunto,
             threshold_conjunto=self._config.drawdown_conjunto_pct,
-            estados_agentes=[estado_5000, estado_direto],
+            estados_agentes=estados_agentes,
             threshold_individual=self._config.drawdown_individual_pct,
         )
+
+        # Compatibilidade com consumidores legados dos campos fixos.
+        drawdown_5000 = drawdown_por_agente.get("rl_5000", 0.0)
+        drawdown_direto = drawdown_por_agente.get("rl_direto", 0.0)
+        total_trades_5000 = len(pnl_por_agente.get("rl_5000", []))
+        total_trades_direto = len(pnl_por_agente.get("rl_direto", []))
+        total_trades_por_agente: dict[str, int] = {
+            nome_agente: len(pnl_agente)
+            for nome_agente, pnl_agente in pnl_por_agente.items()
+        }
+
+        latencia_ciclo_ms = (time.perf_counter() - inicio_ciclo) * 1000.0
 
         # Construção da decisão
         decisao = DecisaoCoordinacao(
@@ -579,8 +723,13 @@ class CoordinationManager:
             capital_estimado_reais=capital_estimado,
             threshold_violado=threshold_violado,
             agente_gatilho=agente_gatilho,
-            total_trades_rl_5000=len(pnl_5000),
-            total_trades_rl_direto=len(pnl_direto),
+            total_trades_rl_5000=total_trades_5000,
+            total_trades_rl_direto=total_trades_direto,
+            drawdown_por_agente_pct=drawdown_por_agente,
+            pnl_por_agente_reais=pnl_total_por_agente,
+            total_trades_por_agente=total_trades_por_agente,
+            ciclo_numero=ciclo_numero,
+            latencia_ciclo_ms=latencia_ciclo_ms,
         )
 
         # Persistência atômica do sinal

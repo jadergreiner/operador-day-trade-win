@@ -27,7 +27,9 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -45,6 +47,28 @@ logger = logging.getLogger(__name__)
 
 _SCHEMA_VERSION_ESPERADA = "1.0"
 _SINAL_FALLBACK = CoordinationSignal.NORMAL
+
+
+# ---------------------------------------------------------------------------
+# DTO de métricas de leitura
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class ResultadoLeituraSinal:
+    """Resultado de leitura do sinal com métricas operacionais.
+
+    Atributos:
+        sinal: Sinal efetivo após aplicar fallback quando necessário.
+        latencia_leitura_ms: Latência total da leitura/validação em milissegundos.
+        fallback_aplicado: True quando houve degradação para NORMAL.
+        motivo_fallback: Motivo textual do fallback, quando aplicável.
+    """
+
+    sinal: CoordinationSignal
+    latencia_leitura_ms: float
+    fallback_aplicado: bool
+    motivo_fallback: Optional[str]
 
 
 # ---------------------------------------------------------------------------
@@ -118,6 +142,45 @@ class CoordinationSignalReader:
             )
             return _SINAL_FALLBACK
 
+    def obter_sinal_com_metricas(self) -> ResultadoLeituraSinal:
+        """Retorna sinal atual com métricas de latência de leitura.
+
+        Mantém semântica de fallback do reader:
+        - qualquer erro de leitura/validação retorna sinal NORMAL
+        - `fallback_aplicado` indica se houve degradação
+        - `motivo_fallback` explica a causa para observabilidade
+        """
+        payload, motivo_fallback, latencia_leitura_ms = self._ler_payload_com_status()
+        if payload is None:
+            return ResultadoLeituraSinal(
+                sinal=_SINAL_FALLBACK,
+                latencia_leitura_ms=latencia_leitura_ms,
+                fallback_aplicado=True,
+                motivo_fallback=motivo_fallback,
+            )
+
+        valor_sinal = payload.get("sinal")
+        try:
+            sinal = CoordinationSignal(valor_sinal)
+            return ResultadoLeituraSinal(
+                sinal=sinal,
+                latencia_leitura_ms=latencia_leitura_ms,
+                fallback_aplicado=False,
+                motivo_fallback=None,
+            )
+        except (ValueError, KeyError):
+            logger.warning(
+                "coordination_signal_reader: valor de sinal invalido '%s' — "
+                "usando fallback NORMAL",
+                valor_sinal,
+            )
+            return ResultadoLeituraSinal(
+                sinal=_SINAL_FALLBACK,
+                latencia_leitura_ms=latencia_leitura_ms,
+                fallback_aplicado=True,
+                motivo_fallback="sinal_invalido",
+            )
+
     def obter_decisao_completa(self) -> Optional[DecisaoCoordinacao]:
         """Retorna o payload completo de DecisaoCoordinacao ou None.
 
@@ -155,13 +218,23 @@ class CoordinationSignalReader:
         Returns:
             Dicionario com o payload ou None em caso de qualquer falha.
         """
+        payload, _, _ = self._ler_payload_com_status()
+        return payload
+
+    def _ler_payload_com_status(
+        self,
+    ) -> tuple[Optional[dict[str, object]], Optional[str], float]:
+        """Lê payload com motivo de fallback e latência total em ms."""
+        inicio = time.perf_counter()
+
         if not self._sinal_path.exists():
             logger.debug(
                 "coordination_signal_reader: arquivo de sinal ausente em '%s' "
                 "— usando fallback NORMAL",
                 self._sinal_path,
             )
-            return None
+            lat = (time.perf_counter() - inicio) * 1000.0
+            return None, "arquivo_ausente", lat
 
         try:
             conteudo = self._sinal_path.read_text(encoding="utf-8")
@@ -172,7 +245,8 @@ class CoordinationSignalReader:
                 self._sinal_path,
                 exc,
             )
-            return None
+            lat = (time.perf_counter() - inicio) * 1000.0
+            return None, "erro_leitura_arquivo", lat
 
         try:
             payload: dict[str, object] = json.loads(conteudo)
@@ -183,7 +257,8 @@ class CoordinationSignalReader:
                 self._sinal_path,
                 exc,
             )
-            return None
+            lat = (time.perf_counter() - inicio) * 1000.0
+            return None, "json_invalido", lat
 
         schema_version = payload.get("schema_version")
         if schema_version != _SCHEMA_VERSION_ESPERADA:
@@ -193,9 +268,11 @@ class CoordinationSignalReader:
                 schema_version,
                 _SCHEMA_VERSION_ESPERADA,
             )
-            return None
+            lat = (time.perf_counter() - inicio) * 1000.0
+            return None, "schema_version_invalida", lat
 
-        return payload
+        lat = (time.perf_counter() - inicio) * 1000.0
+        return payload, None, lat
 
     def _deserializar_decisao(
         self, payload: dict[str, object]
@@ -225,6 +302,83 @@ class CoordinationSignalReader:
                 raise TypeError(f"campo '{campo}' deve ser numerico, recebido: {type(valor)}")
             return int(valor)
 
+        def _para_int_opcional(campo: str, default: int = 0) -> int:
+            valor = payload.get(campo)
+            if valor is None:
+                return default
+            if not isinstance(valor, (int, float)):
+                raise TypeError(f"campo '{campo}' deve ser numerico, recebido: {type(valor)}")
+            return int(valor)
+
+        def _para_float_opcional(campo: str, default: float = 0.0) -> float:
+            valor = payload.get(campo)
+            if valor is None:
+                return default
+            if not isinstance(valor, (int, float)):
+                raise TypeError(f"campo '{campo}' deve ser numerico, recebido: {type(valor)}")
+            return float(valor)
+
+        def _para_mapa_float(campo: str) -> dict[str, float]:
+            valor = payload.get(campo)
+            if valor is None:
+                return {}
+            if not isinstance(valor, dict):
+                raise TypeError(f"campo '{campo}' deve ser dict, recebido: {type(valor)}")
+
+            resultado: dict[str, float] = {}
+            for chave, valor_item in valor.items():
+                if not isinstance(chave, str):
+                    raise TypeError(
+                        f"chave de '{campo}' deve ser str, recebido: {type(chave)}"
+                    )
+                if not isinstance(valor_item, (int, float)):
+                    raise TypeError(
+                        f"valor de '{campo}[{chave}]' deve ser numerico, "
+                        f"recebido: {type(valor_item)}"
+                    )
+                resultado[chave] = float(valor_item)
+            return resultado
+
+        def _para_mapa_int(campo: str) -> dict[str, int]:
+            valor = payload.get(campo)
+            if valor is None:
+                return {}
+            if not isinstance(valor, dict):
+                raise TypeError(f"campo '{campo}' deve ser dict, recebido: {type(valor)}")
+
+            resultado: dict[str, int] = {}
+            for chave, valor_item in valor.items():
+                if not isinstance(chave, str):
+                    raise TypeError(
+                        f"chave de '{campo}' deve ser str, recebido: {type(chave)}"
+                    )
+                if not isinstance(valor_item, (int, float)):
+                    raise TypeError(
+                        f"valor de '{campo}[{chave}]' deve ser numerico, "
+                        f"recebido: {type(valor_item)}"
+                    )
+                resultado[chave] = int(valor_item)
+            return resultado
+
+        drawdown_por_agente = _para_mapa_float("drawdown_por_agente_pct")
+        pnl_por_agente = _para_mapa_float("pnl_por_agente_reais")
+        total_trades_por_agente = _para_mapa_int("total_trades_por_agente")
+
+        # Retrocompatibilidade: se os mapas não vierem no JSON legado,
+        # reconstruir com os campos fixos tradicionais.
+        if not drawdown_por_agente:
+            drawdown_por_agente = {
+                "rl_5000": _para_float("drawdown_rl_5000_pct"),
+                "rl_direto": _para_float("drawdown_rl_direto_pct"),
+            }
+        if not total_trades_por_agente:
+            total_trades_por_agente = {
+                "rl_5000": _para_int("total_trades_rl_5000"),
+                "rl_direto": _para_int("total_trades_rl_direto"),
+            }
+        if not pnl_por_agente:
+            pnl_por_agente = {}
+
         return DecisaoCoordinacao(
             ciclo_id=str(payload["ciclo_id"]),
             timestamp_iso=str(payload["timestamp_iso"]),
@@ -245,4 +399,9 @@ class CoordinationSignalReader:
             ),
             total_trades_rl_5000=_para_int("total_trades_rl_5000"),
             total_trades_rl_direto=_para_int("total_trades_rl_direto"),
+            drawdown_por_agente_pct=drawdown_por_agente,
+            pnl_por_agente_reais=pnl_por_agente,
+            total_trades_por_agente=total_trades_por_agente,
+            ciclo_numero=_para_int_opcional("ciclo_numero", default=0),
+            latencia_ciclo_ms=_para_float_opcional("latencia_ciclo_ms", default=0.0),
         )

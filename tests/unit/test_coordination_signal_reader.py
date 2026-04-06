@@ -48,7 +48,10 @@ from src.application.coordination_manager import (
     CoordinationSignal,
     DecisaoCoordinacao,
 )
-from src.application.coordination_signal_reader import CoordinationSignalReader
+from src.application.coordination_signal_reader import (
+    CoordinationSignalReader,
+    ResultadoLeituraSinal,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -75,6 +78,23 @@ def _payload_valido(
         "agente_gatilho": agente_gatilho,
         "total_trades_rl_5000": 5,
         "total_trades_rl_direto": 3,
+        "drawdown_por_agente_pct": {
+            "rl_5000": 3.5,
+            "rl_direto": 2.1,
+            "micro_tendencia": 1.2,
+        },
+        "pnl_por_agente_reais": {
+            "rl_5000": 250.0,
+            "rl_direto": 180.0,
+            "micro_tendencia": 75.0,
+        },
+        "total_trades_por_agente": {
+            "rl_5000": 5,
+            "rl_direto": 3,
+            "micro_tendencia": 2,
+        },
+        "ciclo_numero": 7,
+        "latencia_ciclo_ms": 12.34,
     }
 
 
@@ -549,3 +569,96 @@ def test_t30_valores_numericos_preservados(tmp_path: Path) -> None:
     assert decisao.threshold_violado == "drawdown_conjunto"
     assert decisao.total_trades_rl_5000 == 12
     assert decisao.total_trades_rl_direto == 9
+    assert decisao.ciclo_numero == 0
+    assert decisao.latencia_ciclo_ms == pytest.approx(0.0)
+
+
+@pytest.mark.unit
+def test_t31_mapas_dinamicos_por_agente_expostos_no_reader(tmp_path: Path) -> None:
+    """T31: Reader deve desserializar mapas dinâmicos por agente para consumo downstream."""
+    sinal_file = tmp_path / "sinal.json"
+    payload = _payload_valido(sinal="MODO_CONSERVADOR")
+    _escrever_json(sinal_file, payload)
+
+    reader = CoordinationSignalReader(sinal_path=str(sinal_file))
+    decisao = reader.obter_decisao_completa()
+
+    assert decisao is not None
+    assert decisao.drawdown_por_agente_pct["micro_tendencia"] == pytest.approx(1.2)
+    assert decisao.pnl_por_agente_reais["micro_tendencia"] == pytest.approx(75.0)
+    assert decisao.total_trades_por_agente["micro_tendencia"] == 2
+    assert decisao.ciclo_numero == 7
+    assert decisao.latencia_ciclo_ms == pytest.approx(12.34)
+
+
+@pytest.mark.unit
+def test_t32_fallback_legacy_reconstroi_mapas_minimos(tmp_path: Path) -> None:
+    """T32: JSON legado sem mapas dinâmicos continua funcional com fallback para campos fixos."""
+    sinal_file = tmp_path / "sinal.json"
+    payload = _payload_valido(sinal="NORMAL")
+    del payload["drawdown_por_agente_pct"]
+    del payload["pnl_por_agente_reais"]
+    del payload["total_trades_por_agente"]
+    del payload["ciclo_numero"]
+    del payload["latencia_ciclo_ms"]
+    _escrever_json(sinal_file, payload)
+
+    reader = CoordinationSignalReader(sinal_path=str(sinal_file))
+    decisao = reader.obter_decisao_completa()
+
+    assert decisao is not None
+    assert decisao.drawdown_por_agente_pct["rl_5000"] == pytest.approx(
+        decisao.drawdown_rl_5000_pct
+    )
+    assert decisao.drawdown_por_agente_pct["rl_direto"] == pytest.approx(
+        decisao.drawdown_rl_direto_pct
+    )
+    assert decisao.total_trades_por_agente["rl_5000"] == decisao.total_trades_rl_5000
+    assert decisao.total_trades_por_agente["rl_direto"] == decisao.total_trades_rl_direto
+    assert decisao.ciclo_numero == 0
+    assert decisao.latencia_ciclo_ms == pytest.approx(0.0)
+
+
+@pytest.mark.unit
+def test_t33_obter_sinal_com_metricas_sucesso_sem_fallback(tmp_path: Path) -> None:
+    """T33: leitura válida retorna métrica de latência sem fallback."""
+    sinal_file = tmp_path / "sinal.json"
+    _escrever_json(sinal_file, _payload_valido(sinal="MODO_DEFENSIVO"))
+
+    reader = CoordinationSignalReader(sinal_path=str(sinal_file))
+    resultado = reader.obter_sinal_com_metricas()
+
+    assert isinstance(resultado, ResultadoLeituraSinal)
+    assert resultado.sinal == CoordinationSignal.MODO_DEFENSIVO
+    assert resultado.fallback_aplicado is False
+    assert resultado.motivo_fallback is None
+    assert resultado.latencia_leitura_ms >= 0.0
+
+
+@pytest.mark.unit
+def test_t34_obter_sinal_com_metricas_arquivo_ausente(tmp_path: Path) -> None:
+    """T34: arquivo ausente aplica fallback NORMAL com motivo apropriado."""
+    reader = CoordinationSignalReader(sinal_path=str(tmp_path / "inexistente.json"))
+    resultado = reader.obter_sinal_com_metricas()
+
+    assert resultado.sinal == CoordinationSignal.NORMAL
+    assert resultado.fallback_aplicado is True
+    assert resultado.motivo_fallback == "arquivo_ausente"
+    assert resultado.latencia_leitura_ms >= 0.0
+
+
+@pytest.mark.unit
+def test_t35_obter_sinal_com_metricas_sinal_invalido(tmp_path: Path) -> None:
+    """T35: sinal inválido no payload retorna fallback NORMAL com motivo sinal_invalido."""
+    sinal_file = tmp_path / "sinal.json"
+    payload = _payload_valido()
+    payload["sinal"] = "SINAL_NAO_EXISTE"
+    _escrever_json(sinal_file, payload)
+
+    reader = CoordinationSignalReader(sinal_path=str(sinal_file))
+    resultado = reader.obter_sinal_com_metricas()
+
+    assert resultado.sinal == CoordinationSignal.NORMAL
+    assert resultado.fallback_aplicado is True
+    assert resultado.motivo_fallback == "sinal_invalido"
+    assert resultado.latencia_leitura_ms >= 0.0

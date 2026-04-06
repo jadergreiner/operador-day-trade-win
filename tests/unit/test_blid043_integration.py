@@ -520,7 +520,7 @@ class TestContratoPaths:
         reader = CoordinationSignalReader(
             sinal_path=PATH_SINAL_RL_DIRETO
         )
-        assert str(reader._sinal_path) == PATH_SINAL_RL_DIRETO, (
+        assert reader._sinal_path.as_posix() == PATH_SINAL_RL_DIRETO, (
             f"Path do reader RL Direto incorreto: {reader._sinal_path}. "
             f"Esperado: {PATH_SINAL_RL_DIRETO}"
         )
@@ -534,7 +534,7 @@ class TestContratoPaths:
         reader = CoordinationSignalReader(
             sinal_path=PATH_SINAL_RL_5000
         )
-        assert str(reader._sinal_path) == PATH_SINAL_RL_5000, (
+        assert reader._sinal_path.as_posix() == PATH_SINAL_RL_5000, (
             f"Path do reader RL 5000 incorreto: {reader._sinal_path}. "
             f"Esperado: {PATH_SINAL_RL_5000}"
         )

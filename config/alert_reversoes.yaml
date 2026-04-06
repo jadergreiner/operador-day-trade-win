@@ -17,9 +17,23 @@ webhook_url: null  # Configurar via environment variable ALERT_WEBHOOK_URL
 # Timeout de envio de webhook (segundos)
 webhook_timeout_sec: 5.0
 
+# Reenvio de webhook para aumentar confiabilidade
+webhook_retry_attempts: 3
+webhook_retry_backoff_sec: 0.5
+
+# Se true, envio de webhook roda em background (menor latencia, menor garantia).
+# Se false, aguarda envio com retries (maior garantia, latencia maior).
+webhook_fire_and_forget: false
+
 # Throttling: minimo entre alertas do mesmo trade (segundos)
 # Evita spam quando o mercado oscila rapidamente
 throttle_seconds: 60
+
+# Persistencia de throttling entre restarts
+persistir_throttle_state: true
+
+# Arquivo JSON para estado de throttling (write tmp + replace)
+throttle_state_path: "outputs/alert_reversao_throttle_state.json"
 
 # Nivel de severidade padrao
 # Opcoes: CRITICO, ALTO, MEDIO

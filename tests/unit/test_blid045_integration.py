@@ -41,6 +41,7 @@ class TestBLID045Integration:
             habilitado=True,
             webhook_url="https://hooks.slack.com/test",
             throttle_seconds=60,
+            persistir_throttle_state=False,
         )
 
     @pytest.fixture

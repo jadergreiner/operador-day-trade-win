@@ -5647,3 +5647,338 @@ Nenhuma.
 - 2026-04-05 — criado (BLID-046) a partir do backlog P1-PROFIT_PROTECTION item 3
 - 2026-04-05 — implementacao concluida (15 AC completos, 24 testes)
 
+---
+
+## BLID-047
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Escalar coordenacao de risco para N agentes sem hardcode de 2 agentes
+stage_atual: project-manager
+adr_referencia: ADR-034
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Generalizacao do `CoordinationManager` (DT-BLID041-01) para operar com lista
+dinamica de agentes monitorados, mantendo compatibilidade com payload legado.
+
+### Criterios de Aceite
+
+- [x] AC1: `executar_ciclo()` processa dinamicamente todos agentes de `agentes_monitorados`
+- [x] AC2: Drawdown conjunto considera todos os agentes com `>=2` trades
+- [x] AC3: `DecisaoCoordinacao` expõe mapas dinâmicos por agente
+- [x] AC4: Campos legados (`drawdown_rl_5000_pct`, `drawdown_rl_direto_pct`, etc.) preservados
+- [x] AC5: Testes unitários atualizados e verdes
+- [x] AC6: `mypy --strict` sem erros nos arquivos alterados
+
+### Arquivos Alterados
+
+- `src/application/coordination_manager.py` — generalização multiagente + payload dinâmico com retrocompatibilidade
+- `tests/unit/test_coordination_manager.py` — novos testes para 3 agentes e fixture por magic number
+- `docs/BACKLOG.md` — BLID-047 registrado
+
+### Evidencias
+
+- `pytest tests/unit/test_coordination_manager.py -q` → **40/40 PASSING**
+- `mypy --strict src/application/coordination_manager.py tests/unit/test_coordination_manager.py` → **0 erros**
+
+### Dividas Tecnicas Registradas
+
+DT-BLID041-01 (MEDIO): **RESOLVIDA** por BLID-047 em 2026-04-06.
+
+---
+
+## BLID-048
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Expor payload dinâmico por agente no CoordinationSignalReader para consumo downstream
+stage_atual: project-manager
+adr_referencia: ADR-035
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Atualizar `CoordinationSignalReader` para desserializar os novos mapas dinâmicos
+da `DecisaoCoordinacao` (`drawdown_por_agente_pct`, `pnl_por_agente_reais`,
+`total_trades_por_agente`) mantendo fallback para payload legado sem esses campos.
+
+### Evidencias
+
+- `pytest tests/unit/test_coordination_signal_reader.py -q` → **32/32 PASSING**
+- `mypy --strict src/application/coordination_signal_reader.py tests/unit/test_coordination_signal_reader.py` → **0 erros**
+
+### Arquivos Alterados
+
+- `src/application/coordination_signal_reader.py`
+- `tests/unit/test_coordination_signal_reader.py`
+- `docs/BACKLOG.md`
+
+---
+
+## BLID-049
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Adicionar metricas operacionais de ciclo no CoordinationManager para observabilidade de risco em tempo real
+stage_atual: project-manager
+adr_referencia: ADR-034
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Resolver DT-BLID041-03 com métricas nativas de ciclo:
+- contagem incremental (`ciclo_numero`)
+- latência por ciclo (`latencia_ciclo_ms`)
+
+As métricas passam a ser persistidas no JSON do sinal e desserializadas
+pelo `CoordinationSignalReader` com fallback retrocompatível para payload legado.
+
+### Evidencias
+
+- `pytest tests/unit/test_coordination_manager.py tests/unit/test_coordination_signal_reader.py -q` → **74/74 PASSING**
+- `mypy --strict src/application/coordination_manager.py src/application/coordination_signal_reader.py tests/unit/test_coordination_manager.py tests/unit/test_coordination_signal_reader.py` → **0 erros**
+
+### Arquivos Alterados
+
+- `src/application/coordination_manager.py`
+- `src/application/coordination_signal_reader.py`
+- `tests/unit/test_coordination_manager.py`
+- `tests/unit/test_coordination_signal_reader.py`
+- `docs/BACKLOG.md`
+
+### Dividas Tecnicas Registradas
+
+DT-BLID041-03 (BAIXO): **RESOLVIDA** por BLID-049 em 2026-04-06.
+
+---
+
+## BLID-050
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Medir latencia de leitura do CoordinationSignalReader para observabilidade de runtime e tune de risco
+stage_atual: project-manager
+adr_referencia: ADR-035
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Resolver DT-BLID042-02 adicionando métricas de leitura no
+`CoordinationSignalReader` via nova API:
+- `obter_sinal_com_metricas()` -> `ResultadoLeituraSinal`
+- campos: `sinal`, `latencia_leitura_ms`, `fallback_aplicado`, `motivo_fallback`
+
+API existente (`obter_sinal_atual`, `pode_abrir_posicao`, `obter_decisao_completa`)
+permanece inalterada e retrocompatível.
+
+### Evidencias
+
+- `pytest tests/unit/test_coordination_signal_reader.py -q` → **35/35 PASSING**
+- `mypy --strict src/application/coordination_signal_reader.py tests/unit/test_coordination_signal_reader.py` → **0 erros**
+
+### Arquivos Alterados
+
+- `src/application/coordination_signal_reader.py`
+- `tests/unit/test_coordination_signal_reader.py`
+- `docs/BACKLOG.md`
+
+### Dividas Tecnicas Registradas
+
+DT-BLID042-02 (BAIXO): **RESOLVIDA** por BLID-050 em 2026-04-06.
+
+---
+
+## BLID-051
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Remover hardcode de timeout no encerramento da thread de coordenacao para controle operacional por ambiente
+stage_atual: project-manager
+adr_referencia: ADR-034
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Resolver DT-BLID041-04 tornando configurável o timeout de join da thread daemon
+no `CoordinationManager`:
+- novo parâmetro: `timeout_encerramento_thread_segundos`
+- validação de configuração (`> 0`)
+- uso do valor configurado em `parar()`
+
+### Evidencias
+
+- `pytest tests/unit/test_coordination_manager.py -q` → **44/44 PASSING**
+- `mypy --strict src/application/coordination_manager.py tests/unit/test_coordination_manager.py` → **0 erros**
+
+### Arquivos Alterados
+
+- `src/application/coordination_manager.py`
+- `tests/unit/test_coordination_manager.py`
+- `docs/BACKLOG.md`
+
+### Dividas Tecnicas Registradas
+
+DT-BLID041-04 (BAIXO): **RESOLVIDA** por BLID-051 em 2026-04-06.
+
+---
+
+## BLID-052
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Ativar proteção conjunta real de capital lendo PnL de múltiplos bancos por agente
+stage_atual: project-manager
+adr_referencia: ADR-036
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Resolver DT-BLID043-01 com suporte multi-DB no `CoordinationManager`.
+
+Entregas:
+- novo parâmetro de configuração: `db_path_por_agente`
+- validações de consistência do mapeamento por agente
+- leitura de trades por agente usando seu banco específico no ciclo de coordenação
+- wiring nos dois scripts RL para visão conjunta real:
+  - `agente_rl_direto_independente.py`
+  - `operar_novo_agente_rl_real_antiovertrading.py`
+
+### Evidencias
+
+- `pytest tests/unit/test_coordination_manager.py tests/unit/test_blid043_integration.py -q` → **73/73 PASSING**
+- `mypy --strict src/application/coordination_manager.py tests/unit/test_coordination_manager.py` → **0 erros**
+- `python -m py_compile scripts/agente_rl_direto_independente.py scripts/operar_novo_agente_rl_real_antiovertrading.py tests/unit/test_blid043_integration.py` → **OK**
+
+### Arquivos Alterados
+
+- `src/application/coordination_manager.py`
+- `tests/unit/test_coordination_manager.py`
+- `scripts/agente_rl_direto_independente.py`
+- `scripts/operar_novo_agente_rl_real_antiovertrading.py`
+- `tests/unit/test_blid043_integration.py` (ajuste de portabilidade de path)
+- `docs/BACKLOG.md`
+
+### Dividas Tecnicas Registradas
+
+DT-BLID043-01 (MEDIO): **RESOLVIDA** por BLID-052 em 2026-04-06.
+
+---
+
+## BLID-053
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Evitar alertas duplicados após restart persistindo throttling de reversão
+stage_atual: project-manager
+adr_referencia: ADR-037
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Resolver DT-BLID044-02 com persistência de estado de throttling no
+`AlertReversaoHandler`.
+
+Entregas:
+- novos campos em `AlertReversaoConfig`:
+  - `persistir_throttle_state`
+  - `throttle_state_path`
+- carregamento de estado no startup (`_carregar_estado_throttle`)
+- persistência atômica em JSON (`_persistir_estado_throttle`)
+- manutenção da limpeza de histórico >24h
+- wiring de configuração nos dois agentes RL via `config/alert_reversoes.yaml`
+
+### Evidencias
+
+- `pytest tests/unit/test_alert_reversao_throttle_persistence.py -q` → **3/3 PASSING**
+- `mypy --strict --follow-imports=skip src/application/alert_reversao_handler.py` → **0 erros**
+- `python -m py_compile scripts/agente_rl_direto_independente.py scripts/operar_novo_agente_rl_real_antiovertrading.py` → **OK**
+
+### Arquivos Alterados
+
+- `src/application/alert_reversao_handler.py`
+- `config/alert_reversoes.yaml`
+- `scripts/agente_rl_direto_independente.py`
+- `scripts/operar_novo_agente_rl_real_antiovertrading.py`
+- `tests/unit/test_alert_reversao_handler.py`
+- `tests/unit/test_blid045_integration.py`
+- `tests/unit/test_alert_reversao_throttle_persistence.py` (novo)
+- `docs/BACKLOG.md`
+
+### Dividas Tecnicas Registradas
+
+DT-BLID044-02 (BAIXA): **RESOLVIDA** por BLID-053 em 2026-04-06.
+
+---
+
+## BLID-054
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Melhorar fidelidade do drawdown conjunto com ordenacao temporal real entre agentes
+stage_atual: project-manager
+adr_referencia: ADR-034
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Resolver DT-BLID041-02 substituindo a concatenação simples por interleaving temporal
+no cálculo de drawdown conjunto:
+- nova leitura detalhada por trade (`exit_time`, `profit_loss`)
+- merge temporal cross-agent quando timestamps estão disponíveis
+- fallback seguro para concatenação quando timestamps não estão disponíveis
+- retrocompatibilidade com mocks legados de testes
+
+### Evidencias
+
+- `pytest tests/unit/test_coordination_manager.py -q` → **48/48 PASSING**
+- `mypy --strict src/application/coordination_manager.py tests/unit/test_coordination_manager.py` → **0 erros**
+
+### Arquivos Alterados
+
+- `src/application/coordination_manager.py`
+- `tests/unit/test_coordination_manager.py`
+- `docs/BACKLOG.md`
+
+### Dividas Tecnicas Registradas
+
+DT-BLID041-02 (BAIXO): **RESOLVIDA** por BLID-054 em 2026-04-06.
+
+---
+
+## BLID-055
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Aumentar confiabilidade de notificacao webhook de reversao com retries e modo configuravel
+stage_atual: project-manager
+adr_referencia: ADR-037
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Resolver DT-BLID044-01 reduzindo risco de perda de webhook com:
+- retry/backoff configurável (`webhook_retry_attempts`, `webhook_retry_backoff_sec`)
+- modo configurável de envio (`webhook_fire_and_forget`)
+- fluxo padrão agora pode aguardar envio com retries para maior garantia
+
+### Evidencias
+
+- `pytest tests/unit/test_alert_reversao_webhook_reliability.py -q` → **2/2 PASSING**
+- `mypy --strict --follow-imports=skip src/application/alert_reversao_handler.py` → **0 erros**
+- `python -m py_compile scripts/agente_rl_direto_independente.py scripts/operar_novo_agente_rl_real_antiovertrading.py` → **OK**
+
+### Arquivos Alterados
+
+- `src/application/alert_reversao_handler.py`
+- `config/alert_reversoes.yaml`
+- `scripts/agente_rl_direto_independente.py`
+- `scripts/operar_novo_agente_rl_real_antiovertrading.py`
+- `tests/unit/test_alert_reversao_webhook_reliability.py` (novo)
+- `docs/BACKLOG.md`
+
+### Dividas Tecnicas Registradas
+
+DT-BLID044-01 (BAIXA): **RESOLVIDA** por BLID-055 em 2026-04-06.
+

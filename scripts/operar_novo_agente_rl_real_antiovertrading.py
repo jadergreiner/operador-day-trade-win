@@ -41,6 +41,18 @@ os.environ["RL5000_DB_PATH"] = TRADING_DB_PATH
 os.environ["DB_PATH"] = TRADING_DB_PATH
 os.environ["TRADING_DB_PATH"] = TRADING_DB_PATH
 
+
+def _resolve_coordination_db_paths() -> dict[str, str]:
+    """Resolve visão multi-DB para coordenação cross-agent."""
+    rl_5000_path = os.getenv("RL5000_DB_PATH", "").strip() or TRADING_DB_PATH
+    rl_direto_path = os.getenv("RL_DIRETO_DB_PATH", "").strip() or str(
+        ROOT_DIR / "data" / "db" / "trading_rl_direto.db"
+    )
+    return {
+        "rl_5000": str(Path(rl_5000_path).expanduser()),
+        "rl_direto": str(Path(rl_direto_path).expanduser()),
+    }
+
 EXIT_CODE_OK = 0
 EXIT_CODE_TARGET_ATINGIDO = 10
 EXIT_CODE_STOP_LOSS = 11
@@ -2345,6 +2357,7 @@ def inicializar_componentes_auxiliares() -> None:
         try:
             _coord_cfg = ConfiguracaoCoordinacao(
                 db_path=TRADING_DB_PATH,
+                db_path_por_agente=_resolve_coordination_db_paths(),
                 agentes_monitorados=["rl_5000", "rl_direto"],
                 sinal_atual_path="outputs/coordination_signal_rl_5000.json",
             )
@@ -2377,7 +2390,15 @@ def inicializar_componentes_auxiliares() -> None:
                         habilitado=yaml_config.get("habilitado", True),
                         webhook_url=yaml_config.get("webhook_url") or os.getenv("ALERT_WEBHOOK_URL"),
                         webhook_timeout_sec=yaml_config.get("webhook_timeout_sec", 5.0),
+                        webhook_retry_attempts=yaml_config.get("webhook_retry_attempts", 3),
+                        webhook_retry_backoff_sec=yaml_config.get("webhook_retry_backoff_sec", 0.5),
+                        webhook_fire_and_forget=yaml_config.get("webhook_fire_and_forget", False),
                         throttle_seconds=yaml_config.get("throttle_seconds", 60),
+                        persistir_throttle_state=yaml_config.get("persistir_throttle_state", True),
+                        throttle_state_path=yaml_config.get(
+                            "throttle_state_path",
+                            "outputs/alert_reversao_throttle_state.json",
+                        ),
                     )
             else:
                 # Fallback: env var ou padrao

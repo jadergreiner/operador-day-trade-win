@@ -23,6 +23,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal
+from pathlib import Path
 from typing import Any, Dict, Optional
 from uuid import UUID
 
@@ -49,7 +50,12 @@ class AlertReversaoConfig:
         habilitado: Se alertas estao ativos
         webhook_url: URL do webhook Slack/Discord (optional)
         webhook_timeout_sec: Timeout de envio de webhook
+        webhook_retry_attempts: Quantidade de tentativas de envio do webhook
+        webhook_retry_backoff_sec: Backoff incremental entre tentativas
+        webhook_fire_and_forget: Se True, não bloqueia fluxo aguardando webhook
         throttle_seconds: Minimo entre alertas do mesmo trade
+        persistir_throttle_state: Se deve persistir estado de throttling em disco
+        throttle_state_path: Caminho do arquivo JSON de estado de throttling
         nivel_padrao: Nivel de severidade padrao (ALTO)
         incluir_snapshot_trade: Se incluir dados completos do trade
     """
@@ -57,7 +63,12 @@ class AlertReversaoConfig:
     habilitado: bool = True
     webhook_url: Optional[str] = None
     webhook_timeout_sec: float = 5.0
+    webhook_retry_attempts: int = 3
+    webhook_retry_backoff_sec: float = 0.5
+    webhook_fire_and_forget: bool = False
     throttle_seconds: int = 60
+    persistir_throttle_state: bool = True
+    throttle_state_path: str = "outputs/alert_reversao_throttle_state.json"
     nivel_padrao: NivelAlerta = NivelAlerta.ALTO
     incluir_snapshot_trade: bool = True
 
@@ -91,6 +102,9 @@ class AlertReversaoHandler:
         self.delivery_manager = delivery_manager
         self.config = config or AlertReversaoConfig()
         self._historico_alertas: Dict[str, datetime] = {}  # throttling
+        self._throttle_state_path = Path(self.config.throttle_state_path)
+
+        self._carregar_estado_throttle()
 
         logger.info(
             "[AlertReversaoHandler] Inicializado | habilitado=%s | webhook=%s | throttle=%ds",
@@ -173,11 +187,14 @@ class AlertReversaoHandler:
             # Entrega via AlertaDeliveryManager (WebSocket + Email)
             sucesso_entrega = await self.delivery_manager.entregar_alerta(alerta)
 
-            # Webhook Slack/Discord em paralelo (fire-and-forget)
+            # Webhook Slack/Discord com retries configuráveis
             if self.config.webhook_url:
-                asyncio.create_task(
-                    self._enviar_webhook(resultado, trade_data, alerta.id)
-                )
+                if self.config.webhook_fire_and_forget:
+                    asyncio.create_task(
+                        self._enviar_webhook_com_retry(resultado, trade_data, alerta.id)
+                    )
+                else:
+                    await self._enviar_webhook_com_retry(resultado, trade_data, alerta.id)
 
             # Registrar throttling
             self._registrar_alerta(resultado.trade_id)
@@ -327,6 +344,30 @@ class AlertReversaoHandler:
             logger.error("❌ Erro ao enviar webhook: %s", e, exc_info=True)
             return False
 
+    async def _enviar_webhook_com_retry(
+        self,
+        resultado: ProfitProtectionResult,
+        trade_data: Dict[str, Any],
+        alerta_id: UUID,
+    ) -> bool:
+        """Envia webhook com retries e backoff para aumentar confiabilidade."""
+        tentativas = max(1, int(self.config.webhook_retry_attempts))
+        backoff_base = max(0.0, float(self.config.webhook_retry_backoff_sec))
+
+        for tentativa in range(1, tentativas + 1):
+            sucesso = await self._enviar_webhook(resultado, trade_data, alerta_id)
+            if sucesso:
+                return True
+            if tentativa < tentativas and backoff_base > 0:
+                await asyncio.sleep(backoff_base * tentativa)
+
+        logger.warning(
+            "Webhook nao entregue apos %d tentativas: trade_id=%s",
+            tentativas,
+            resultado.trade_id,
+        )
+        return False
+
     def _construir_payload_webhook(
         self,
         resultado: ProfitProtectionResult,
@@ -411,3 +452,61 @@ class AlertReversaoHandler:
         self._historico_alertas = {
             k: v for k, v in self._historico_alertas.items() if v >= limite
         }
+
+        self._persistir_estado_throttle()
+
+    def _carregar_estado_throttle(self) -> None:
+        """Carrega estado de throttling persistido (se habilitado)."""
+        if not self.config.persistir_throttle_state:
+            return
+
+        try:
+            if not self._throttle_state_path.exists():
+                return
+
+            conteudo = self._throttle_state_path.read_text(encoding="utf-8")
+            payload = json.loads(conteudo)
+            if not isinstance(payload, dict):
+                return
+
+            historico = payload.get("historico_alertas", {})
+            if not isinstance(historico, dict):
+                return
+
+            recuperado: Dict[str, datetime] = {}
+            for trade_id, timestamp_iso in historico.items():
+                if not isinstance(trade_id, str) or not isinstance(timestamp_iso, str):
+                    continue
+                try:
+                    recuperado[trade_id] = datetime.fromisoformat(timestamp_iso)
+                except ValueError:
+                    continue
+
+            # Aplicar mesma regra de limpeza (>24h)
+            limite = datetime.now() - timedelta(hours=24)
+            self._historico_alertas = {
+                k: v for k, v in recuperado.items() if v >= limite
+            }
+        except Exception as e:  # noqa: BLE001
+            logger.warning("Falha ao carregar estado de throttling: %s", e)
+
+    def _persistir_estado_throttle(self) -> None:
+        """Persiste estado de throttling de forma atômica (se habilitado)."""
+        if not self.config.persistir_throttle_state:
+            return
+
+        try:
+            self._throttle_state_path.parent.mkdir(parents=True, exist_ok=True)
+            path_tmp = self._throttle_state_path.with_suffix(".tmp")
+            payload = {
+                "schema_version": "1.0",
+                "updated_at": datetime.now().isoformat(),
+                "historico_alertas": {
+                    trade_id: ts.isoformat()
+                    for trade_id, ts in self._historico_alertas.items()
+                },
+            }
+            path_tmp.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+            path_tmp.replace(self._throttle_state_path)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("Falha ao persistir estado de throttling: %s", e)

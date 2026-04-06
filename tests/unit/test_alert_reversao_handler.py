@@ -44,6 +44,7 @@ def config_padrao():
         webhook_url="https://hooks.slack.com/test",
         webhook_timeout_sec=5.0,
         throttle_seconds=60,
+        persistir_throttle_state=False,
         nivel_padrao=NivelAlerta.ALTO,
         incluir_snapshot_trade=True,
     )
@@ -105,6 +106,7 @@ class TestAlertReversaoHandler:
             habilitado=False,
             webhook_url="https://custom.webhook",
             throttle_seconds=120,
+            persistir_throttle_state=False,
             nivel_padrao=NivelAlerta.CRÍTICO,
         )
 
@@ -397,6 +399,7 @@ class TestAlertReversaoHandlerIntegracao:
             habilitado=True,
             webhook_url=None,  # sem webhook
             throttle_seconds=60,
+            persistir_throttle_state=False,
         )
 
         handler = AlertReversaoHandler(
@@ -425,6 +428,7 @@ class TestAlertReversaoHandlerIntegracao:
             habilitado=True,
             webhook_url="https://hooks.slack.com/test",
             throttle_seconds=60,
+            persistir_throttle_state=False,
         )
 
         handler = AlertReversaoHandler(
@@ -439,3 +443,27 @@ class TestAlertReversaoHandlerIntegracao:
         # Aguardar webhook asyncrono (fire-and-forget)
         await asyncio.sleep(0.1)
         mock_client.post.assert_called_once()
+
+    def test_persistencia_throttle_entre_restarts(
+        self, mock_delivery_manager, tmp_path
+    ):
+        """Historico de throttling deve sobreviver a reinicializacao do handler."""
+        state_path = tmp_path / "alert_reversao_throttle_state.json"
+        config = AlertReversaoConfig(
+            habilitado=True,
+            webhook_url=None,
+            throttle_seconds=60,
+            persistir_throttle_state=True,
+            throttle_state_path=str(state_path),
+        )
+        handler_1 = AlertReversaoHandler(
+            delivery_manager=mock_delivery_manager, config=config
+        )
+        handler_1._registrar_alerta("TRADE-PERSIST-001")
+        assert state_path.exists()
+
+        # Novo handler deve carregar estado anterior e throttlar imediatamente
+        handler_2 = AlertReversaoHandler(
+            delivery_manager=mock_delivery_manager, config=config
+        )
+        assert handler_2._deve_throttle("TRADE-PERSIST-001") is True
