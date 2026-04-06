@@ -144,6 +144,20 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Gate de promocao antes do deploy
+      run: |
+        python scripts/check_scheduler_promotion_gate.py --fallback-latest-promotion --fail-on reprovado,sem_promocao --json-output
+
     - name: Deployment Readiness Check
       run: |
         echo "Verificando prontidao para deployment..."

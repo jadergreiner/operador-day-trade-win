@@ -276,10 +276,32 @@ jobs:
         run: |
           docker images
 
+  promotion-gate-check:
+    name: Gate de Promocao (Scheduler)
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Validar gate de promocao antes de deploy
+        run: |
+          python scripts/check_scheduler_promotion_gate.py --fallback-latest-promotion --fail-on reprovado,sem_promocao --json-output
+
   deploy-staging:
     name: Deploy em Staging
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, promotion-gate-check]
     if: github.ref == 'refs/heads/develop'
 
     steps:

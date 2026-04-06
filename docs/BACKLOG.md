@@ -7108,3 +7108,129 @@ local caso o endpoint `/status` esteja indisponivel.
 - Integrar o check de promocao no pipeline de release/CI com etapa obrigatoria
   antes de autorizar deploy dos launchers RL.
 
+---
+
+## BLID-073
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Integrar gate de promocao ao pipeline de release/CI antes de autorizar deploy dos launchers RL
+stage_atual: project-manager
+adr_referencia: ADR-053
+data_inicio: 2026-04-06
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Aplicar enforcement do gate de promocao tambem no pipeline de release/CI,
+garantindo que status `reprovado` bloqueie autorizacao de deploy.
+
+### Entregas
+
+- Evolucao do gate de release BL-08:
+  - `src/application/release_gates.py`
+  - novo check `scheduler_promotion_gate` dentro de `OperationalUATService`
+  - bloqueio explicito quando status de promocao for `reprovado`
+  - fallback seguro para `sem_promocao` quando nao houver artefato local
+- Cobertura de testes:
+  - `tests/unit/test_release_gates.py` (novo cenario de bloqueio por promocao)
+- Integracao em pipelines CI:
+  - `.github/workflows/ci-cd-pipeline.yml`
+    - novo job obrigatorio `promotion-gate-check`
+    - `deploy-staging` depende de `promotion-gate-check`
+  - `.github/workflows/tests.yml`
+    - etapa obrigatoria `Gate de promocao antes do deploy`
+    - executa `scripts/check_scheduler_promotion_gate.py --fallback-latest-promotion --fail-on reprovado --json-output`
+
+### Evidencias
+
+- `pytest tests/unit/test_release_gates.py tests/unit/test_scheduler_promotion_healthcheck.py tests/unit/test_validate_go_live_gates.py -q` -> **21/21 PASSING**
+- `python scripts/check_scheduler_promotion_gate.py --fallback-latest-promotion --fail-on reprovado --json-output` -> **exit code 0** (status observado: `sem_promocao`)
+
+### Arquivos Alterados
+
+- `src/application/release_gates.py`
+- `tests/unit/test_release_gates.py`
+- `.github/workflows/ci-cd-pipeline.yml`
+- `.github/workflows/tests.yml`
+- `docs/BACKLOG.md`
+- `docs/ADRS.md`
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | ALTO | DIRETO | Deploy passa a exigir gate de promocao sem status `reprovado` |
+| INICIAR_AGENTE_RL_DIRETO.bat | ALTO | DIRETO | Deploy passa a exigir gate de promocao sem status `reprovado` |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Pode reutilizar trilha de evidencias do release gate |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem impacto direto de runtime |
+| INICIAR_MONITOR_QUANTICO.bat | MEDIO | INDIRETO | Continua provendo status consumido pelo check de promocao |
+
+### Proxima Acao
+
+- Evoluir regra de bloqueio para ambiente de release estrito: avaliar incluir
+  `sem_promocao` em `fail_on` quando a esteira de calibracao estiver madura.
+
+---
+
+## BLID-074
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Endurecer gate de promocao no release/CI para bloquear tambem status `sem_promocao`
+stage_atual: project-manager
+adr_referencia: ADR-054
+data_inicio: 2026-04-06
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Promover modo estrito no gate de promocao para release: considerar
+`reprovado` e `sem_promocao` como bloqueadores antes de deploy.
+
+### Entregas
+
+- Evolucao do release gate BL-08:
+  - `src/application/release_gates.py`
+  - politica default `promotion_gate_fail_on` alterada para:
+    - `reprovado`
+    - `sem_promocao`
+- Cobertura de testes:
+  - `tests/unit/test_release_gates.py`
+  - novo cenario RED/GREEN para reprovar quando status estiver `sem_promocao`
+  - ajuste de cenario de aprovacao com artefato explicito `aprovado`
+- Integracao nos pipelines CI:
+  - `.github/workflows/ci-cd-pipeline.yml`
+  - `.github/workflows/tests.yml`
+  - comandos de gate atualizados para:
+    - `--fail-on reprovado,sem_promocao`
+
+### Evidencias
+
+- `pytest tests/unit/test_release_gates.py tests/unit/test_scheduler_promotion_healthcheck.py tests/unit/test_validate_go_live_gates.py -q` -> **22/22 PASSING**
+- `python scripts/check_scheduler_promotion_gate.py --fallback-latest-promotion --fail-on reprovado,sem_promocao --json-output` -> **bloqueio esperado (status observado: `sem_promocao`)**
+
+### Arquivos Alterados
+
+- `src/application/release_gates.py`
+- `tests/unit/test_release_gates.py`
+- `.github/workflows/ci-cd-pipeline.yml`
+- `.github/workflows/tests.yml`
+- `docs/BACKLOG.md`
+- `docs/ADRS.md`
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | ALTO | DIRETO | Release/deploy bloqueia tambem quando status estiver `sem_promocao` |
+| INICIAR_AGENTE_RL_DIRETO.bat | ALTO | DIRETO | Release/deploy bloqueia tambem quando status estiver `sem_promocao` |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Pode usar status estrito para trilha de compliance operacional |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem impacto direto de runtime |
+| INICIAR_MONITOR_QUANTICO.bat | MEDIO | INDIRETO | Passa a ser ainda mais critico manter artefato/status de promocao disponivel |
+
+### Proxima Acao
+
+- Definir janela operacional minima para considerar `sem_promocao` toleravel
+  (ex.: pre-open) antes de impor bloqueio absoluto em todos os ambientes.
+

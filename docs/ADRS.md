@@ -4813,3 +4813,130 @@ Para robustez operacional, foi adotado fallback:
 - `tests/unit/test_rl_5000_launcher_contract.py`
 - `tests/unit/test_rl_direto_launcher_contract.py`
 - `docs/BACKLOG.md` (BLID-072)
+
+---
+
+## ADR-053: Enforcement do Gate de Promocao no Pipeline de Release/CI (BLID-073)
+
+**Data:** 2026-04-06  
+**Status:** APROVADO  
+**Decisores:** Product Owner, Tech Lead, ML Expert  
+**BLID:** BLID-073
+
+### Contexto
+
+Com BLID-072, o gate de promocao passou a bloquear os launchers RL no pre-flight
+local. Faltava fechar o mesmo guardrail na esteira de release/CI para impedir
+autorizacao de deploy quando o status estivesse `reprovado`.
+
+### Decisao
+
+Aplicar o gate de promocao em duas camadas da esteira:
+
+- **Camada de release gate (BL-08):**
+  - `OperationalUATService` passa a executar o check
+    `scheduler_promotion_gate`;
+  - bloquear quando `scheduler_symbol_promotion.status == reprovado`;
+  - manter fallback seguro para `sem_promocao` na ausencia de artefato local.
+- **Camada de workflow CI:**
+  - novo job `promotion-gate-check` no workflow principal
+    `.github/workflows/ci-cd-pipeline.yml`;
+  - `deploy-staging` depende explicitamente desse job;
+  - workflow `.github/workflows/tests.yml` inclui etapa obrigatoria
+    `Gate de promocao antes do deploy`.
+
+### Consequencias
+
+**Positivas:**
+- reduz risco de promover release com calibracao reprovada;
+- unifica contrato de decisao entre pre-flight local e CI;
+- aumenta rastreabilidade do gate em artefatos de release.
+
+**Riscos:**
+- ambientes sem artefato e sem endpoint podem exigir fallback controlado;
+- endurecimento futuro para `sem_promocao` pode elevar taxa de bloqueio.
+
+### Evidencias
+
+- `pytest tests/unit/test_release_gates.py tests/unit/test_scheduler_promotion_healthcheck.py tests/unit/test_validate_go_live_gates.py -q` -> **21/21 PASSING**
+- `python scripts/check_scheduler_promotion_gate.py --fallback-latest-promotion --fail-on reprovado --json-output` -> **OK (exit code 0)**
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | ALTO | DIRETO | Deploy/release bloqueia quando promocao estiver `reprovado` |
+| INICIAR_AGENTE_RL_DIRETO.bat | ALTO | DIRETO | Deploy/release bloqueia quando promocao estiver `reprovado` |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Pode consumir evidencia do gate em trilha de compliance |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem impacto direto |
+| INICIAR_MONITOR_QUANTICO.bat | MEDIO | INDIRETO | Mantem endpoint/status como fonte de verdade para o gate |
+
+### Referencias
+
+- `src/application/release_gates.py`
+- `tests/unit/test_release_gates.py`
+- `.github/workflows/ci-cd-pipeline.yml`
+- `.github/workflows/tests.yml`
+- `scripts/check_scheduler_promotion_gate.py`
+- `docs/BACKLOG.md` (BLID-073)
+
+---
+
+## ADR-054: Gate Estrito de Promocao no Release/CI (BLID-074)
+
+**Data:** 2026-04-06  
+**Status:** APROVADO  
+**Decisores:** Product Owner, Tech Lead, ML Expert  
+**BLID:** BLID-074
+
+### Contexto
+
+O BLID-073 integrou o gate de promocao ao release/CI, mas mantinha
+`sem_promocao` como estado tolerado. Isso permitia autorizacao de deploy sem
+evidencia clara de promocao valida por simbolo.
+
+### Decisao
+
+Endurecer o gate para modo estrito em release:
+
+- considerar bloqueadores:
+  - `reprovado`
+  - `sem_promocao`
+- aplicar em:
+  - `OperationalUATService` (BL-08)
+  - workflows CI (`ci-cd-pipeline.yml` e `tests.yml`)
+
+### Consequencias
+
+**Positivas:**
+- reduz risco de promover versao sem calibracao/promocao confirmada;
+- reforca guardrail de risco alinhado ao lema "Eu aprendo operando";
+- melhora disciplina de rollout por simbolo.
+
+**Riscos:**
+- maior chance de bloqueio em ambientes sem monitor/artefato atualizado;
+- exige governanca de janela operacional para estados transitórios.
+
+### Evidencias
+
+- `pytest tests/unit/test_release_gates.py tests/unit/test_scheduler_promotion_healthcheck.py tests/unit/test_validate_go_live_gates.py -q` -> **22/22 PASSING**
+- `python scripts/check_scheduler_promotion_gate.py --fallback-latest-promotion --fail-on reprovado,sem_promocao --json-output` -> **bloqueio esperado em `sem_promocao`**
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | ALTO | DIRETO | Deploy so autorizado com promocao valida (nao `sem_promocao`) |
+| INICIAR_AGENTE_RL_DIRETO.bat | ALTO | DIRETO | Deploy so autorizado com promocao valida (nao `sem_promocao`) |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Pode validar prontidao de promocao antes de consolidar sessao |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem impacto direto |
+| INICIAR_MONITOR_QUANTICO.bat | MEDIO | INDIRETO | Disponibilidade de status/artefato vira precondicao de release |
+
+### Referencias
+
+- `src/application/release_gates.py`
+- `tests/unit/test_release_gates.py`
+- `.github/workflows/ci-cd-pipeline.yml`
+- `.github/workflows/tests.yml`
+- `scripts/check_scheduler_promotion_gate.py`
+- `docs/BACKLOG.md` (BLID-074)

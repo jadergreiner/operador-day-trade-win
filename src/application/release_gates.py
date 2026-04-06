@@ -16,6 +16,11 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable, Sequence
 
+from src.application.scheduler_promotion_healthcheck import (
+    evaluate_status_payload,
+    load_status_payload_from_latest_promotion_file,
+)
+
 DEFAULT_PRODUCT_SCOPE = "WIN/WIN$N"
 DEFAULT_RUNTIME_EVIDENCE_MAX_AGE_HOURS = 36
 DEFAULT_RELEASE_REPORT_REQUIRED_KEYS = ("nome", "aprovado", "resultados")
@@ -32,6 +37,7 @@ DEFAULT_EXPECTED_AGENTS = (
     "INICIAR_AGENTE_RL_5000.bat",
     "INICIAR_AGENTE_RL_DIRETO.bat",
 )
+DEFAULT_PROMOTION_GATE_FAIL_ON = ("reprovado", "sem_promocao")
 DEFAULT_CANONICAL_QUALITY_TARGETS = (
     "tests/unit/reconciliadores",
     "tests/unit/test_release_gates.py",
@@ -484,12 +490,16 @@ class OperationalUATService:
         evidence_dir: Path | None = None,
         expected_agents: Sequence[str] | None = None,
         legacy_markers: Sequence[str] | None = None,
+        promotion_gate_fail_on: Sequence[str] | None = None,
         runtime_evidence_max_age_hours: int = DEFAULT_RUNTIME_EVIDENCE_MAX_AGE_HOURS,
     ) -> None:
         self._base_dir = base_dir
         self._evidence_dir = evidence_dir or (base_dir / "outputs" / "release_gates")
         self._expected_agents = tuple(expected_agents or DEFAULT_EXPECTED_AGENTS)
         self._legacy_markers = tuple(legacy_markers or ("BTCUSD",))
+        self._promotion_gate_fail_on = tuple(
+            (promotion_gate_fail_on or DEFAULT_PROMOTION_GATE_FAIL_ON)
+        )
         self._runtime_evidence_max_age = timedelta(
             hours=int(runtime_evidence_max_age_hours)
         )
@@ -502,6 +512,7 @@ class OperationalUATService:
             self._check_release_artifacts(),
             self._check_runtime_artifacts(),
             self._check_legacy_markers_absent(),
+            self._check_scheduler_promotion_gate(),
         ]
         aprovado = all(item.sucesso for item in checks)
         evidencias = [
@@ -530,6 +541,7 @@ class OperationalUATService:
                 "runtime_summary_required_keys": list(
                     DEFAULT_RUNTIME_SUMMARY_REQUIRED_KEYS
                 ),
+                "promotion_gate_fail_on": list(self._promotion_gate_fail_on),
                 "evidencias": evidencias,
             },
         )
@@ -745,4 +757,37 @@ class OperationalUATService:
             mensagem=mensagem,
             evidencias=[str(path) for path in files],
             detalhes={"hits": hits},
+        )
+
+    def _check_scheduler_promotion_gate(self) -> GateResultado:
+        outputs_dir = self._base_dir / "outputs"
+        promotion_files = sorted(outputs_dir.glob("scheduler_symbol_promotion_*.json"))
+
+        if promotion_files:
+            payload = load_status_payload_from_latest_promotion_file(outputs_dir)
+            source = str(promotion_files[-1])
+        else:
+            payload = {"scheduler_symbol_promotion": {"status": "sem_promocao"}}
+            source = "sem_artefato_local"
+
+        result = evaluate_status_payload(
+            payload,
+            fail_on_statuses=tuple(self._promotion_gate_fail_on),
+        )
+        sucesso = bool(result.ok)
+        mensagem = (
+            f"Gate de promocao aprovado ({result.status})"
+            if sucesso
+            else f"Gate de promocao bloqueou release ({result.status})"
+        )
+        return GateResultado(
+            nome="scheduler_promotion_gate",
+            sucesso=sucesso,
+            mensagem=mensagem,
+            evidencias=[source],
+            detalhes={
+                "status": result.status,
+                "motivo": result.motivo,
+                "fail_on_statuses": list(self._promotion_gate_fail_on),
+            },
         )

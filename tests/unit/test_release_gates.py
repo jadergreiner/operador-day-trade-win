@@ -71,6 +71,25 @@ def _runtime_summary_payload(*, timestamp: datetime | None = None) -> dict[str, 
     }
 
 
+def _write_promotion_payload(
+    base_dir: Path,
+    *,
+    status: str = "aprovado",
+    motivo: str = "gate aprovado para release",
+) -> None:
+    (base_dir / "outputs" / "scheduler_symbol_promotion_20260406_160217.json").write_text(
+        json.dumps(
+            {
+                "scheduler_symbol_promotion": {
+                    "status": status,
+                    "motivo": motivo,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_staging_readiness_aprova_estrutura_minima(tmp_path: Path) -> None:
     """BL-01: staging deve aprovar quando artefatos obrigatorios existem."""
     (tmp_path / "data" / "db").mkdir(parents=True)
@@ -226,6 +245,7 @@ def test_operational_uat_aprova_com_evidencias_locais(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
+    _write_promotion_payload(tmp_path, status="aprovado")
 
     servico = OperationalUATService(base_dir=tmp_path)
     relatorio = servico.executar()
@@ -397,6 +417,116 @@ def test_operational_uat_reprova_release_artifact_sem_campos_minimos(
         for item in relatorio.resultados
     )
 
+
+def test_operational_uat_reprova_quando_promocao_scheduler_reprovada(
+    tmp_path: Path,
+) -> None:
+    """BL-08 reprova release quando gate de promocao do scheduler esta reprovado."""
+    (tmp_path / "docs").mkdir(parents=True)
+    (tmp_path / "docs" / "PRD.md").write_text(
+        "Produto WIN/WIN$N para operacao real.",
+        encoding="utf-8",
+    )
+    (tmp_path / "docs" / "OPERACAO_4_AGENTES.md").write_text(
+        "\n".join(
+            [
+                "## Agente 1: INICIAR_DIARIOS.bat",
+                "## Agente 2: INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat",
+                "## Agente 3: INICIAR_AGENTE_RL_5000.bat",
+                "## Agente 4: INICIAR_AGENTE_RL_DIRETO.bat",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "data" / "db").mkdir(parents=True)
+    (tmp_path / "data" / "db" / "trading.db").write_text("ok", encoding="utf-8")
+    (tmp_path / "data" / "db" / "last_session_summary.json").write_text(
+        json.dumps(_runtime_summary_payload()),
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates").mkdir(parents=True)
+    (tmp_path / "tests" / "uat").mkdir(parents=True)
+    (tmp_path / "tests" / "uat" / "uat_test_cases.py").write_text(
+        "# runner limpo\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates" / "bl01_staging_readiness.json").write_text(
+        json.dumps({"nome": "staging_readiness", "aprovado": True, "resultados": []}),
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates" / "bl07_quality_gate.json").write_text(
+        json.dumps(
+            {"nome": "quality_gate_release", "aprovado": True, "resultados": []}
+        ),
+        encoding="utf-8",
+    )
+    _write_promotion_payload(
+        tmp_path,
+        status="reprovado",
+        motivo="dd_curto_excedeu_limite",
+    )
+
+    servico = OperationalUATService(base_dir=tmp_path)
+    relatorio = servico.executar()
+
+    assert relatorio.aprovado is False
+    assert any(
+        item.nome == "scheduler_promotion_gate" and not item.sucesso
+        for item in relatorio.resultados
+    )
+
+
+def test_operational_uat_reprova_quando_promocao_scheduler_sem_promocao(
+    tmp_path: Path,
+) -> None:
+    """BL-08 estrito deve reprovar quando status da promocao for sem_promocao."""
+    (tmp_path / "docs").mkdir(parents=True)
+    (tmp_path / "docs" / "PRD.md").write_text(
+        "Produto WIN/WIN$N para operacao real.",
+        encoding="utf-8",
+    )
+    (tmp_path / "docs" / "OPERACAO_4_AGENTES.md").write_text(
+        "\n".join(
+            [
+                "## Agente 1: INICIAR_DIARIOS.bat",
+                "## Agente 2: INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat",
+                "## Agente 3: INICIAR_AGENTE_RL_5000.bat",
+                "## Agente 4: INICIAR_AGENTE_RL_DIRETO.bat",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "data" / "db").mkdir(parents=True)
+    (tmp_path / "data" / "db" / "trading.db").write_text("ok", encoding="utf-8")
+    (tmp_path / "data" / "db" / "last_session_summary.json").write_text(
+        json.dumps(_runtime_summary_payload()),
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates").mkdir(parents=True)
+    (tmp_path / "tests" / "uat").mkdir(parents=True)
+    (tmp_path / "tests" / "uat" / "uat_test_cases.py").write_text(
+        "# runner limpo\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates" / "bl01_staging_readiness.json").write_text(
+        json.dumps({"nome": "staging_readiness", "aprovado": True, "resultados": []}),
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates" / "bl07_quality_gate.json").write_text(
+        json.dumps(
+            {"nome": "quality_gate_release", "aprovado": True, "resultados": []}
+        ),
+        encoding="utf-8",
+    )
+
+    servico = OperationalUATService(base_dir=tmp_path)
+    relatorio = servico.executar()
+
+    assert relatorio.aprovado is False
+    assert any(
+        item.nome == "scheduler_promotion_gate" and not item.sucesso
+        for item in relatorio.resultados
+    )
 
 def test_go_live_decision_serializa_gates_e_evidencias() -> None:
     """A decisao final deve ser serializavel e consolidar os 3 gates."""
