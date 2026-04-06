@@ -3,10 +3,11 @@
 from src.application.profit_protection_regime_runtime import (
     aplicar_guardrail_cooldown_switch,
     decidir_switch_perfil_profit_protection,
+    validar_sessao_runtime_profit_protection,
 )
 
 
-def _trades_from_pnl(values: list[float]) -> list[dict]:
+def _trades_from_pnl(values: list[float]) -> list[dict[str, float]]:
     return [{"pnl": v} for v in values]
 
 
@@ -65,3 +66,61 @@ def test_cooldown_bloqueia_troca_antes_do_minimo() -> None:
     )
     assert permitido is False
     assert "faltam" in motivo
+
+
+def test_validacao_sessao_bloqueia_thrashing_via_cooldown() -> None:
+    # Sequencia com alternancia frequente de regime para pressionar switches.
+    bloco_a = [1.0, 1.0, 1.0, -1.0, -1.0, -1.0]
+    bloco_b = [-1.0, -1.0, -1.0, 1.0, 1.0, 1.0]
+    valores = (bloco_a + bloco_b) * 6
+    trades_por_ciclo = [[{"pnl": valor}] for valor in valores]
+
+    resultado = validar_sessao_runtime_profit_protection(
+        trades_por_ciclo=trades_por_ciclo,
+        perfil_inicial="baseline",
+        perfis_disponiveis=["baseline", "conservador", "agressivo"],
+        min_ciclos_entre_switches=8,
+        avaliar_a_cada_n_ciclos=1,
+        janela_recente=3,
+        delta_regime_pp=20.0,
+        limite_switches_por_100_avaliacoes=15.0,
+    )
+    assert resultado.total_avaliacoes > 0
+    assert resultado.total_switches_bloqueados_cooldown > 0
+    assert resultado.thrashing_detectado is False
+    assert "dentro do limite" in resultado.motivo_thrashing
+
+
+def test_validacao_sessao_detecta_thrashing_sem_cooldown() -> None:
+    bloco_a = [1.0, 1.0, 1.0, -1.0, -1.0, -1.0]
+    bloco_b = [-1.0, -1.0, -1.0, 1.0, 1.0, 1.0]
+    valores = (bloco_a + bloco_b) * 5
+    trades_por_ciclo = [[{"pnl": valor}] for valor in valores]
+
+    resultado = validar_sessao_runtime_profit_protection(
+        trades_por_ciclo=trades_por_ciclo,
+        perfil_inicial="baseline",
+        perfis_disponiveis=["baseline", "conservador", "agressivo"],
+        min_ciclos_entre_switches=0,
+        avaliar_a_cada_n_ciclos=1,
+        janela_recente=3,
+        delta_regime_pp=20.0,
+        limite_switches_por_100_avaliacoes=10.0,
+    )
+    assert resultado.total_switches_realizados > 0
+    assert resultado.thrashing_detectado is True
+    assert "acima do limite" in resultado.motivo_thrashing
+
+
+def test_validacao_sessao_parametros_invalidos() -> None:
+    try:
+        validar_sessao_runtime_profit_protection(
+            trades_por_ciclo=[],
+            perfil_inicial="baseline",
+            perfis_disponiveis=["baseline"],
+            min_ciclos_entre_switches=0,
+            avaliar_a_cada_n_ciclos=0,
+        )
+        assert False, "Era esperado ValueError para avaliar_a_cada_n_ciclos=0."
+    except ValueError:
+        pass

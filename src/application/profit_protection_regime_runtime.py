@@ -10,7 +10,7 @@ Objetivo:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, Sequence
+from typing import Iterable, Mapping, Sequence
 
 from src.application.services.profit_protection_calibration_service import (
     DELTA_WIN_RATE_REGIME_PP,
@@ -30,6 +30,20 @@ class DecisaoSwitchPerfilPP:
     win_rate_bloco_anterior: float
     win_rate_bloco_recente: float
     motivo: str
+
+
+@dataclass(frozen=True)
+class ResultadoValidacaoSessaoPP:
+    """Resumo de estabilidade do runtime adaptativo em sessao simulada."""
+
+    total_ciclos: int
+    total_avaliacoes: int
+    total_switches_realizados: int
+    total_switches_bloqueados_cooldown: int
+    ciclos_switch_realizado: tuple[int, ...]
+    thrashing_detectado: bool
+    switches_por_100_avaliacoes: float
+    motivo_thrashing: str
 
 
 def aplicar_guardrail_cooldown_switch(
@@ -61,7 +75,10 @@ def aplicar_guardrail_cooldown_switch(
     )
 
 
-def _extrair_resultados(trades_fechados: Iterable[dict], max_items: int) -> list[float]:
+def _extrair_resultados(
+    trades_fechados: Iterable[Mapping[str, object]],
+    max_items: int,
+) -> list[float]:
     resultados: list[float] = []
     for trade in list(trades_fechados)[-max_items:]:
         if not isinstance(trade, dict):
@@ -75,16 +92,19 @@ def _extrair_resultados(trades_fechados: Iterable[dict], max_items: int) -> list
         if valor is None:
             continue
 
-        try:
-            resultados.append(float(valor))
-        except (TypeError, ValueError):
+        if isinstance(valor, bool):
             continue
+        if isinstance(valor, (int, float, str)):
+            try:
+                resultados.append(float(valor))
+            except ValueError:
+                continue
     return resultados
 
 
 def decidir_switch_perfil_profit_protection(
     *,
-    trades_fechados: Iterable[dict],
+    trades_fechados: Iterable[Mapping[str, object]],
     perfil_atual: str,
     perfis_disponiveis: Sequence[str],
     janela_recente: int = JANELA_RECENTE_MIN_TRADES,
@@ -161,4 +181,98 @@ def decidir_switch_perfil_profit_protection(
         win_rate_bloco_anterior=wr_anterior,
         win_rate_bloco_recente=wr_recente,
         motivo=racional,
+    )
+
+
+def validar_sessao_runtime_profit_protection(
+    *,
+    trades_por_ciclo: Sequence[Iterable[Mapping[str, object]]],
+    perfil_inicial: str,
+    perfis_disponiveis: Sequence[str],
+    min_ciclos_entre_switches: int,
+    avaliar_a_cada_n_ciclos: int = 10,
+    janela_recente: int = JANELA_RECENTE_MIN_TRADES,
+    delta_regime_pp: float = DELTA_WIN_RATE_REGIME_PP,
+    max_items: int = 48,
+    limite_switches_por_100_avaliacoes: float = 20.0,
+) -> ResultadoValidacaoSessaoPP:
+    """Valida estabilidade do runtime em sessao simulada.
+
+    O objetivo e reproduzir o comportamento do loop online:
+    - acumular trades fechados por ciclo;
+    - avaliar switch em cadencia fixa;
+    - aplicar cooldown anti-thrashing.
+    """
+    if avaliar_a_cada_n_ciclos <= 0:
+        raise ValueError("avaliar_a_cada_n_ciclos deve ser > 0.")
+    if limite_switches_por_100_avaliacoes < 0:
+        raise ValueError("limite_switches_por_100_avaliacoes deve ser >= 0.")
+
+    historico_trades: list[Mapping[str, object]] = []
+    perfil_atual = perfil_inicial
+    ultimo_ciclo_switch: int | None = None
+
+    total_avaliacoes = 0
+    total_switches_realizados = 0
+    total_switches_bloqueados_cooldown = 0
+    ciclos_switch_realizado: list[int] = []
+
+    for ciclo_atual, trades_ciclo in enumerate(trades_por_ciclo, start=1):
+        historico_trades.extend(trade for trade in trades_ciclo if isinstance(trade, dict))
+
+        if ciclo_atual % avaliar_a_cada_n_ciclos != 0:
+            continue
+
+        total_avaliacoes += 1
+        decisao = decidir_switch_perfil_profit_protection(
+            trades_fechados=historico_trades,
+            perfil_atual=perfil_atual,
+            perfis_disponiveis=perfis_disponiveis,
+            janela_recente=janela_recente,
+            delta_regime_pp=delta_regime_pp,
+            max_items=max_items,
+        )
+        if not decisao.deve_trocar:
+            continue
+
+        permitido, _ = aplicar_guardrail_cooldown_switch(
+            ciclo_atual=ciclo_atual,
+            ultimo_ciclo_switch=ultimo_ciclo_switch,
+            min_ciclos_entre_switches=min_ciclos_entre_switches,
+        )
+        if not permitido:
+            total_switches_bloqueados_cooldown += 1
+            continue
+
+        perfil_atual = decisao.perfil_sugerido
+        ultimo_ciclo_switch = ciclo_atual
+        total_switches_realizados += 1
+        ciclos_switch_realizado.append(ciclo_atual)
+
+    switches_por_100_avaliacoes = (
+        (total_switches_realizados / total_avaliacoes) * 100.0 if total_avaliacoes > 0 else 0.0
+    )
+    thrashing_detectado = switches_por_100_avaliacoes > limite_switches_por_100_avaliacoes
+    if total_avaliacoes == 0:
+        motivo_thrashing = "Sem avaliacoes suficientes para classificar thrashing."
+    elif thrashing_detectado:
+        motivo_thrashing = (
+            "Taxa de switch acima do limite: "
+            f"{switches_por_100_avaliacoes:.2f} > {limite_switches_por_100_avaliacoes:.2f}."
+        )
+    else:
+        motivo_thrashing = (
+            "Taxa de switch dentro do limite: "
+            f"{switches_por_100_avaliacoes:.2f} <= {limite_switches_por_100_avaliacoes:.2f}."
+        )
+
+    return ResultadoValidacaoSessaoPP(
+        total_ciclos=len(trades_por_ciclo),
+        total_avaliacoes=total_avaliacoes,
+        total_switches_realizados=total_switches_realizados,
+        total_switches_bloqueados_cooldown=total_switches_bloqueados_cooldown,
+        ciclos_switch_realizado=tuple(ciclos_switch_realizado),
+        thrashing_detectado=thrashing_detectado,
+        switches_por_100_avaliacoes=switches_por_100_avaliacoes,
+        motivo_thrashing=motivo_thrashing,
     )

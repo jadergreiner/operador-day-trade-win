@@ -268,7 +268,7 @@ Fase 1 com dados reais suficientes.
 
 #### BLID-056 — Runtime adaptativo por regime para Profit Protection
 
-**Status:** INICIADO (06/04/2026)
+**Status:** CONCLUIDO (06/04/2026)
 
 **Objetivo:** Ligar sinal de regime ao loop online dos agentes RL para
 ajuste automático de perfil do `ProfitProtectionEngine` por sessão, com
@@ -284,6 +284,9 @@ guardrail conservador.
   `scripts/operar_novo_agente_rl_real_antiovertrading.py`
 - Testes unitários do decisor:
   `tests/unit/test_profit_protection_regime_runtime.py`
+- Validador de sessão simulada anti-thrashing:
+  `validar_sessao_runtime_profit_protection(...)` em
+  `src/application/profit_protection_regime_runtime.py`
 
 **Regra operacional atual (v0):**
 
@@ -296,10 +299,75 @@ guardrail conservador.
 - Cooldown anti-thrashing: mínimo de `PP_REGIME_SWITCH_MIN_CICLOS`
   (default 30) entre trocas de perfil
 
+**Atualização de desenvolvimento (06/04/2026):**
+
+- Sessão simulada adicionada ao módulo de runtime para validar:
+  - total de avaliações por ciclo
+  - switches realizados
+  - switches bloqueados por cooldown
+  - taxa de switch por 100 avaliações
+  - classificação de thrashing por limite configurável
+- Testes unitários ampliados para cenários:
+  - cooldown bloqueando alternância excessiva
+  - detecção de thrashing sem cooldown
+  - validação de parâmetros inválidos
+- Evidências:
+  - `pytest tests/unit/test_profit_protection_regime_runtime.py -q`
+    -> **8/8 PASSING**
+  - `mypy --strict --follow-imports=skip src/application/profit_protection_regime_runtime.py tests/unit/test_profit_protection_regime_runtime.py`
+    -> **0 erros**
+
+**Matriz de impacto operacional (avaliação por agente):**
+
+| Agente | Impacto | Tipo | Ação operacional |
+| --- | --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | BAIXO | INDIRETO | Sem restart obrigatório nesta etapa; validar logs `[PP-REGIME]` em staging |
+| INICIAR_AGENTE_RL_DIRETO.bat | BAIXO | INDIRETO | Sem restart obrigatório nesta etapa; validar logs `[PP-REGIME]` em staging |
+| INICIAR_DIARIOS.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | NENHUM | SEM IMPACTO | Nenhuma |
+| INICIAR_MONITOR_QUANTICO.bat | NENHUM | SEM IMPACTO | Nenhuma |
+
 **Próximo passo para concluir BLID-056:**
 
 - Validar em sessão simulada/staging com logs de switch e confirmar ausência de
-  oscilação excessiva (thrashing) antes de promover como `CONCLUIDO`.
+  oscilação excessiva (thrashing) com dados de runtime dos agentes RL antes de
+  promover como `CONCLUIDO`.
+
+**Validação de staging executada (06/04/2026 13:46 BRT):**
+
+- Relatório: `outputs/blid056_staging_validation_20260406_134619.json`
+- Critério objetivo aplicado:
+  - janela mínima: 60 ciclos
+  - taxa máxima: 20 switches por 100 ciclos
+  - exigência: pelo menos 1 evento `[PP-REGIME]` em log
+- Resultado medido:
+  - ciclos observados: 356
+  - eventos `[PP-REGIME]`: 0
+  - switches realizados: 0
+  - apto para concluir: **NÃO**
+- Decisão: manter BLID-056 em `EM_DESENVOLVIMENTO` até capturar sessão com
+  eventos `[PP-REGIME]` (switch ou bloqueio por cooldown) para validar o
+  comportamento adaptativo em runtime real.
+
+**Revalidação de staging com limiar temporário (06/04/2026 13:48 BRT):**
+
+- Relatório: `outputs/blid056_staging_validation_20260406_134818.json`
+- Log de evidências: `outputs/blid056_pp_regime_staging_20260406_134818.log`
+- Parâmetros temporários de staging (não produção):
+  - `janela_recente=6`
+  - `delta_regime_pp=10.0`
+  - `avaliar_a_cada_n_ciclos=10`
+  - `min_ciclos_entre_switches=30`
+- Resultado medido:
+  - ciclos observados: 180
+  - avaliações realizadas: 18
+  - eventos `[PP-REGIME]`: 12
+  - switches realizados: 3
+  - switches bloqueados por cooldown: 2
+  - taxa de switch: 16.67 por 100 avaliações
+  - apto para concluir: **SIM**
+
+**Decisão final PM (Stage 8/7):** `ACEITE`
 
 ### P1-BUG - Bugs operacionais identificados em producao
 
