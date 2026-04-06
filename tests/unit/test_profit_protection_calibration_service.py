@@ -10,6 +10,8 @@ Valida:
 import pytest
 from src.application.services.profit_protection_calibration_service import (
     _calcular_metricas,
+    _calcular_win_rate_recente,
+    _detectar_regime_shift_por_win_rate,
     calibrar_perfis,
     MetricasPerfil,
 )
@@ -169,3 +171,21 @@ def test_calibrar_perfis_aciona_rollback_para_baseline(monkeypatch):
 
     assert relatorio.perfil_recomendado == "baseline"
     assert "Rollback para baseline" in relatorio.motivo_recomendacao
+
+
+def test_calcular_win_rate_recente_usa_janela_final():
+    """Deve priorizar a janela recente ao calcular WR recente."""
+    resultados = ([-1.0] * 12) + ([1.0] * 12)
+    wr_recente = _calcular_win_rate_recente(resultados, janela_recente=12)
+    assert wr_recente == 1.0
+
+
+def test_detectar_regime_shift_por_quebra_de_win_rate():
+    """Deve detectar regime shift quando WR recente diverge fortemente."""
+    resultados = ([-1.0] * 12) + ([1.0] * 12)
+    detectado = _detectar_regime_shift_por_win_rate(
+        resultados_pct=resultados,
+        janela_recente=12,
+        delta_pp=20.0,
+    )
+    assert detectado is True

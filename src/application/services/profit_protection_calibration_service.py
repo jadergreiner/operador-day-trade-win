@@ -36,6 +36,10 @@ MIN_TRADES = 30
 MAX_DEGRADACAO_WIN_RATE_PP = 2.0
 # Aumento máximo tolerado de drawdown vs baseline (em p.p. absolutos)
 MAX_AUMENTO_DRAWDOWN_PCT = 15.0
+# Janela recente para sinais adaptativos intraday (recencia > historico)
+JANELA_RECENTE_MIN_TRADES = 12
+# Delta mínimo (p.p.) de win rate para considerar mudança de regime
+DELTA_WIN_RATE_REGIME_PP = 20.0
 
 
 # ============================================================
@@ -55,6 +59,8 @@ class MetricasPerfil:
     sharpe: float
     taxa_reversao_protegida: float  # reversões que viraram ALERTA
     taxa_break_even_acionado: float  # ATIVAR_BREAK_EVEN_STOP / n_trades
+    win_rate_recente: float = 0.0
+    regime_shift_detectado: bool = False
 
 
 @dataclass
@@ -98,8 +104,8 @@ class RelatorioCalibracaoPP:
             "## Métricas Comparativas",
             "",
             "| Perfil | Win Rate | Profit Factor | Max Drawdown | Sharpe |"
-            " BE Acionado | Reversão Protegida |",
-            "|---|---|---|---|---|---|---|",
+            " BE Acionado | Reversão Protegida | WR Recente | Regime Shift |",
+            "|---|---|---|---|---|---|---|---|---|",
         ]
         for m in [self.baseline] + self.candidatos:
             linhas.append(
@@ -107,6 +113,8 @@ class RelatorioCalibracaoPP:
                 f" {m.max_drawdown_pct:.2f}% | {m.sharpe:.3f} |"
                 f" {m.taxa_break_even_acionado:.1%} |"
                 f" {m.taxa_reversao_protegida:.1%} |"
+                f" {m.win_rate_recente:.1%} |"
+                f" {'SIM' if m.regime_shift_detectado else 'NAO'} |"
             )
         return "\n".join(linhas)
 
@@ -121,6 +129,8 @@ class RelatorioCalibracaoPP:
             "sharpe": round(m.sharpe, 4),
             "taxa_reversao_protegida": round(m.taxa_reversao_protegida, 4),
             "taxa_break_even_acionado": round(m.taxa_break_even_acionado, 4),
+            "win_rate_recente": round(m.win_rate_recente, 4),
+            "regime_shift_detectado": m.regime_shift_detectado,
         }
 
 
@@ -200,7 +210,48 @@ def _calcular_metricas(
         sharpe=sharpe,
         taxa_reversao_protegida=taxa_reversao,
         taxa_break_even_acionado=taxa_be,
+        win_rate_recente=_calcular_win_rate_recente(resultados_pct),
+        regime_shift_detectado=_detectar_regime_shift_por_win_rate(resultados_pct),
     )
+
+
+def _calcular_win_rate_recente(
+    resultados_pct: List[float],
+    janela_recente: int = JANELA_RECENTE_MIN_TRADES,
+) -> float:
+    """Calcula win rate da janela mais recente para privilegiar recência.
+
+    Se a amostra for menor que a janela, usa toda a amostra.
+    """
+    if not resultados_pct:
+        return 0.0
+
+    amostra = resultados_pct[-janela_recente:] if len(resultados_pct) > janela_recente else resultados_pct
+    wins = sum(1 for r in amostra if r > 0.0)
+    return wins / len(amostra)
+
+
+def _detectar_regime_shift_por_win_rate(
+    resultados_pct: List[float],
+    janela_recente: int = JANELA_RECENTE_MIN_TRADES,
+    delta_pp: float = DELTA_WIN_RATE_REGIME_PP,
+) -> bool:
+    """Detecta mudança de regime por quebra de win rate recente vs histórico.
+
+    Critério simples e robusto para runtime:
+    - Exige no mínimo 2*janelas para comparar blocos independentes.
+    - Dispara quando a diferença absoluta ultrapassa `delta_pp`.
+    """
+    if len(resultados_pct) < (janela_recente * 2):
+        return False
+
+    bloco_antigo = resultados_pct[-(janela_recente * 2):-janela_recente]
+    bloco_recente = resultados_pct[-janela_recente:]
+
+    wr_antigo = sum(1 for r in bloco_antigo if r > 0.0) / len(bloco_antigo)
+    wr_recente = sum(1 for r in bloco_recente if r > 0.0) / len(bloco_recente)
+    delta_absoluto_pp = abs(wr_recente - wr_antigo) * 100.0
+    return delta_absoluto_pp >= delta_pp
 
 
 # ============================================================
@@ -329,10 +380,20 @@ def calibrar_perfis(
                 f"para {cand.max_drawdown_pct:.2f}% com degradação de win rate "
                 f"de {degradacao_wr:.1f} p.p. (dentro do limite de {MAX_DEGRADACAO_WIN_RATE_PP} p.p.)."
             )
+            if metricas_baseline.regime_shift_detectado:
+                motivo += (
+                    " Regime shift detectado no baseline; priorizada resposta "
+                    "adaptativa por recência."
+                )
             break
 
     if perfil_recomendado == "baseline" and rollback_acionado:
         motivo = motivo_rollback
+    elif perfil_recomendado == "baseline" and metricas_baseline.regime_shift_detectado:
+        motivo = (
+            "Baseline mantido por guardrail de risco: regime shift detectado, "
+            "mas nenhum candidato passou gates de segurança."
+        )
 
     return RelatorioCalibracaoPP(
         baseline=metricas_baseline,

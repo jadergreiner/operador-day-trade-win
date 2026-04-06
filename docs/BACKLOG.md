@@ -266,6 +266,41 @@ Fase 1 com dados reais suficientes.
 
 ### P1-CALIBRACAO - Desbloqueio operacional (identificado em 17/03/2026)
 
+#### BLID-056 — Runtime adaptativo por regime para Profit Protection
+
+**Status:** INICIADO (06/04/2026)
+
+**Objetivo:** Ligar sinal de regime ao loop online dos agentes RL para
+ajuste automático de perfil do `ProfitProtectionEngine` por sessão, com
+guardrail conservador.
+
+**Escopo iniciado:**
+
+- Novo decisor runtime compartilhado:
+  `src/application/profit_protection_regime_runtime.py`
+- Integração no RL Direto:
+  `scripts/agente_rl_direto_independente.py`
+- Integração no RL 5000:
+  `scripts/operar_novo_agente_rl_real_antiovertrading.py`
+- Testes unitários do decisor:
+  `tests/unit/test_profit_protection_regime_runtime.py`
+
+**Regra operacional atual (v0):**
+
+- A cada 10 ciclos, avaliar histórico recente de trades fechados
+  (`_trades_fechados_rl` / `trades_fechados_rl`)
+- Detectar regime shift por quebra de win rate entre bloco recente e anterior
+- Se degradou: priorizar perfil `conservador` (fallback `baseline`)
+- Se melhorou: priorizar perfil `agressivo` (fallback `baseline`)
+- Troca segura via reinicialização do engine com `resolver_perfil(...)`
+- Cooldown anti-thrashing: mínimo de `PP_REGIME_SWITCH_MIN_CICLOS`
+  (default 30) entre trocas de perfil
+
+**Próximo passo para concluir BLID-056:**
+
+- Validar em sessão simulada/staging com logs de switch e confirmar ausência de
+  oscilação excessiva (thrashing) antes de promover como `CONCLUIDO`.
+
 ### P1-BUG - Bugs operacionais identificados em producao
 
 ### P2 - Oportunidades de evolucao — INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat

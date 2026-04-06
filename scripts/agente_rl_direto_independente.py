@@ -193,6 +193,10 @@ try:
         carregar_config as _carregar_pp_config_direto,
         resolver_perfil as _resolver_pp_perfil_direto,
     )
+    from src.application.profit_protection_regime_runtime import (
+        aplicar_guardrail_cooldown_switch,
+        decidir_switch_perfil_profit_protection,
+    )
 
     # BLID-045: Alertas de reversao de lucro
     try:
@@ -2068,6 +2072,7 @@ def inicializar_componentes():
             "pipeline": pipeline,
             "agente": agente,
             "profit_protection": profit_protection,
+            "pp_cfg": _pp_cfg_direto,
             "retry_mgr": retry_mgr,
             "anti_overtrading": anti_overtrading,
             "trade_tracker": trade_tracker,
@@ -2337,6 +2342,74 @@ def registrar_bloqueio_anti_overtrading(ciclo: int, acao_str: str, motivo: str) 
 
 lucro_maximo_trade_atual: Optional[float] = None
 
+
+def ajustar_profit_protection_por_regime_runtime(
+    *,
+    profit_protection: ProfitProtectionEngine,
+    trades_fechados: list[dict[str, Any]],
+    pp_cfg: Any,
+    ciclo_atual: int,
+    ultimo_ciclo_switch: Optional[int],
+    min_ciclos_entre_switches: int,
+) -> ProfitProtectionEngine:
+    """Avalia regime por recência e troca perfil do motor quando necessário."""
+    try:
+        perfis_disponiveis = list(getattr(pp_cfg, "profiles", {}).keys())
+        decisao = decidir_switch_perfil_profit_protection(
+            trades_fechados=trades_fechados,
+            perfil_atual=profit_protection.profile_nome,
+            perfis_disponiveis=perfis_disponiveis,
+        )
+        if not decisao.deve_trocar:
+            if decisao.regime_shift_detectado:
+                logger.info(
+                    "[PP-REGIME] Shift detectado sem troca | profile=%s | WR_ant=%.1f%% | WR_rec=%.1f%% | motivo=%s",
+                    profit_protection.profile_nome,
+                    decisao.win_rate_bloco_anterior * 100.0,
+                    decisao.win_rate_bloco_recente * 100.0,
+                    decisao.motivo,
+                )
+            return profit_protection
+
+        permitido, motivo_cooldown = aplicar_guardrail_cooldown_switch(
+            ciclo_atual=ciclo_atual,
+            ultimo_ciclo_switch=ultimo_ciclo_switch,
+            min_ciclos_entre_switches=min_ciclos_entre_switches,
+        )
+        if not permitido:
+            logger.info(
+                "[PP-REGIME] Switch bloqueado por cooldown | atual=%s | sugerido=%s | ciclo=%d | motivo=%s",
+                decisao.perfil_atual,
+                decisao.perfil_sugerido,
+                ciclo_atual,
+                motivo_cooldown,
+            )
+            return profit_protection
+
+        novo_profile = _resolver_pp_perfil_direto(
+            pp_cfg,
+            agent_id=AGENT_SESSION_ID,
+            profile_env=decisao.perfil_sugerido,
+        )
+        novo_motor = ProfitProtectionEngine(
+            profile=novo_profile,
+            profile_nome=decisao.perfil_sugerido,
+            shadow_mode=getattr(pp_cfg, "shadow_mode", False),
+        )
+        logger.warning(
+            "[PP-REGIME] Troca automatica de perfil | %s -> %s | WR_ant=%.1f%% | WR_rec=%.1f%% | motivo=%s",
+            decisao.perfil_atual,
+            decisao.perfil_sugerido,
+            decisao.win_rate_bloco_anterior * 100.0,
+            decisao.win_rate_bloco_recente * 100.0,
+            decisao.motivo,
+        )
+        return novo_motor
+    except Exception as exc:
+        logger.warning("[PP-REGIME] Falha ao avaliar switch de perfil: %s", exc)
+        return profit_protection
+
+
 def processar_protecao_lucros_rl_direto(
     profit_protection: Optional[ProfitProtectionEngine],
     posicao_tracker: PosicaoIsoladaManager,
@@ -2466,6 +2539,7 @@ def main():
         "anti_overtrading"
     ]  # 🛑 CRITICAL: Proteção contra overtrading
     trade_tracker = componentes["trade_tracker"]  # 📊 Rastreamento de performance
+    pp_cfg = componentes["pp_cfg"]
 
     # BLID-043: Coordenacao cross-agent
     coordination_manager = componentes.get("coordination_manager")
@@ -2557,6 +2631,8 @@ def main():
     ciclo = 0
     start_time = time.time()
     trades_fechados_rl: list = []  # Acumulador para pipeline AC5.9/AC6
+    pp_regime_ultimo_switch_ciclo: Optional[int] = None
+    pp_regime_min_ciclos_switch = int(os.getenv("PP_REGIME_SWITCH_MIN_CICLOS", "30"))
     _contagem_desconhecido: int = 0  # TECH-002: contador de trades DESCONHECIDO consecutivos
 
     try:
@@ -2996,6 +3072,19 @@ def main():
                         )
                     except Exception as e:
                         logger.warning(f"[PIPELINE-FEEDBACK] Erro: {e}")
+
+                    # Ajuste adaptativo de profile do ProfitProtectionEngine por regime
+                    profile_antes = profit_protection.profile_nome
+                    profit_protection = ajustar_profit_protection_por_regime_runtime(
+                        profit_protection=profit_protection,
+                        trades_fechados=trades_fechados_rl,
+                        pp_cfg=pp_cfg,
+                        ciclo_atual=ciclo,
+                        ultimo_ciclo_switch=pp_regime_ultimo_switch_ciclo,
+                        min_ciclos_entre_switches=pp_regime_min_ciclos_switch,
+                    )
+                    if profit_protection.profile_nome != profile_antes:
+                        pp_regime_ultimo_switch_ciclo = ciclo
 
                 # Default: aguardar
                 logger.debug(f"[CICLO {ciclo}] Aguardando...")

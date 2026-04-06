@@ -74,6 +74,10 @@ from src.infrastructure.config.profit_protection_config import (
     carregar_config as _carregar_pp_config,
     resolver_perfil as _resolver_pp_perfil,
 )
+from src.application.profit_protection_regime_runtime import (
+    aplicar_guardrail_cooldown_switch,
+    decidir_switch_perfil_profit_protection,
+)
 
 # BLID-045: Alertas de reversao de lucro
 try:
@@ -469,6 +473,8 @@ _coordination_reader: Optional[object] = None
 # Variaveis globais — BLID-045: Alertas de reversao de lucro
 _alert_reversao_handler: Optional[object] = None
 _alerta_delivery_manager: Optional[object] = None
+_pp_regime_ultimo_switch_ciclo: Optional[int] = None
+_PP_REGIME_SWITCH_MIN_CICLOS = int(os.getenv("PP_REGIME_SWITCH_MIN_CICLOS", "30"))
 
 
 def get_config() -> TradingConfig:
@@ -1448,6 +1454,65 @@ def processar_protecao_lucros() -> None:
         logger.error(f"Erro em processar_protecao_lucros: {e}")
 
 
+def ajustar_profit_protection_por_regime_runtime(ciclo_atual: int) -> None:
+    """Ajusta profile do ProfitProtectionEngine por regime de sessão."""
+    global profit_protection_engine
+    global _pp_regime_ultimo_switch_ciclo
+
+    try:
+        decisao = decidir_switch_perfil_profit_protection(
+            trades_fechados=_trades_fechados_rl,
+            perfil_atual=profit_protection_engine.profile_nome,
+            perfis_disponiveis=list(_pp_cfg.profiles.keys()),
+        )
+        if not decisao.deve_trocar:
+            if decisao.regime_shift_detectado:
+                logger.info(
+                    "[PP-REGIME] Shift detectado sem troca | profile=%s | WR_ant=%.1f%% | WR_rec=%.1f%% | motivo=%s",
+                    profit_protection_engine.profile_nome,
+                    decisao.win_rate_bloco_anterior * 100.0,
+                    decisao.win_rate_bloco_recente * 100.0,
+                    decisao.motivo,
+                )
+            return
+
+        permitido, motivo_cooldown = aplicar_guardrail_cooldown_switch(
+            ciclo_atual=ciclo_atual,
+            ultimo_ciclo_switch=_pp_regime_ultimo_switch_ciclo,
+            min_ciclos_entre_switches=_PP_REGIME_SWITCH_MIN_CICLOS,
+        )
+        if not permitido:
+            logger.info(
+                "[PP-REGIME] Switch bloqueado por cooldown | atual=%s | sugerido=%s | ciclo=%d | motivo=%s",
+                decisao.perfil_atual,
+                decisao.perfil_sugerido,
+                ciclo_atual,
+                motivo_cooldown,
+            )
+            return
+
+        novo_profile = _resolver_pp_perfil(
+            _pp_cfg,
+            profile_env=decisao.perfil_sugerido,
+        )
+        profit_protection_engine = ProfitProtectionEngine(
+            profile=novo_profile,
+            profile_nome=decisao.perfil_sugerido,
+            shadow_mode=_pp_cfg.shadow_mode,
+        )
+        logger.warning(
+            "[PP-REGIME] Troca automatica de perfil | %s -> %s | WR_ant=%.1f%% | WR_rec=%.1f%% | motivo=%s",
+            decisao.perfil_atual,
+            decisao.perfil_sugerido,
+            decisao.win_rate_bloco_anterior * 100.0,
+            decisao.win_rate_bloco_recente * 100.0,
+            decisao.motivo,
+        )
+        _pp_regime_ultimo_switch_ciclo = ciclo_atual
+    except Exception as exc:
+        logger.warning("[PP-REGIME] Falha ao avaliar switch de perfil: %s", exc)
+
+
 def _executar_pipeline_feedback_rl(
     *,
     preco_referencia: Optional[float] = None,
@@ -2134,6 +2199,9 @@ def loop_operacao() -> str:
         logger.debug(f"[CICLO {ciclo}] Executando processar_protecao_lucros()...")
         processar_protecao_lucros()
         logger.debug(f"[CICLO {ciclo}] processar_protecao_lucros() concluído.")
+
+        if ciclo % 10 == 0:
+            ajustar_profit_protection_por_regime_runtime(ciclo_atual=ciclo)
 
         lucro_sessao = obter_pl_sessao(saldo_inicial)
         logger.debug(f"[CICLO {ciclo}] Verificando lucro vs TARGET...")
