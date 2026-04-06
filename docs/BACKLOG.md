@@ -6619,3 +6619,73 @@ do contexto de degradacao para decisao de retrain/rollback.
 - Rodar replay controlado por simbolo (WIN e WDO) com sessoes degradadas e
   sessoes estaveis para consolidar thresholds de producao.
 
+---
+
+## BLID-066
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Validar e consolidar thresholds por simbolo via replay controlado para reduzir risco de ajuste reativo em producao
+stage_atual: project-manager
+adr_referencia: ADR-046
+data_inicio: 2026-04-06
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Executar replay por simbolo (`WIN` e `WDO`) com cenarios degradado/estavel e
+calibrar os thresholds do scheduler runtime com criterio conservador
+(maximo acerto com minima distancia da calibracao corrente).
+
+### Entregas
+
+- Novo modulo de calibracao por simbolo:
+  - `src/application/rl_scheduler_symbol_calibration.py`
+  - contratos:
+    - `ReplayScenario`
+    - `CalibrationCandidate`
+    - `calibrate_symbol(...)`
+    - `calibrate_all_symbols(...)`
+- Evolucao do adaptador runtime:
+  - `construir_contexto_operacional_para_scheduler(..., calibracao_override=...)`
+  - suporte seguro a override apenas para simulacao/replay
+- Script de replay/calibracao:
+  - `scripts/calibrar_scheduler_runtime_por_simbolo.py`
+  - artefato de saida: `outputs/scheduler_symbol_calibration_<timestamp>.json`
+- Cobertura de testes:
+  - `tests/unit/test_rl_scheduler_symbol_calibration.py` (novo)
+  - extensao em `tests/unit/test_rl_scheduler_runtime_adapter.py`
+
+### Evidencias
+
+- `pytest tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_scheduler_symbol_calibration.py tests/unit/test_rl_retrain_scheduler.py -q` -> **45/45 PASSING**
+- `mypy --strict src/application/rl_scheduler_runtime_adapter.py src/application/rl_scheduler_symbol_calibration.py tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_scheduler_symbol_calibration.py` -> **0 erros**
+- `python -m py_compile scripts/calibrar_scheduler_runtime_por_simbolo.py src/application/rl_scheduler_symbol_calibration.py` -> **OK**
+- `python scripts/calibrar_scheduler_runtime_por_simbolo.py --date 20260406` -> **OK** (`outputs/scheduler_symbol_calibration_20260406_155101.json`)
+
+### Arquivos Alterados
+
+- `src/application/rl_scheduler_runtime_adapter.py`
+- `src/application/rl_scheduler_symbol_calibration.py` (novo)
+- `scripts/calibrar_scheduler_runtime_por_simbolo.py` (novo)
+- `tests/unit/test_rl_scheduler_runtime_adapter.py`
+- `tests/unit/test_rl_scheduler_symbol_calibration.py` (novo)
+- `docs/BACKLOG.md`
+- `docs/ADRS.md`
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | MEDIO | DIRETO | Rodar replay diario antes de promover nova calibracao de simbolo |
+| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | DIRETO | Rodar replay diario antes de promover nova calibracao de simbolo |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Publicar no fechamento o artefato de recomendacao por simbolo |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem mudanca direta de runtime |
+| INICIAR_MONITOR_QUANTICO.bat | MEDIO | INDIRETO | Exibir recomendacao WIN/WDO e acuracia de cenarios no painel |
+
+### Proxima Acao
+
+- Conectar o resultado do replay (`scheduler_symbol_calibration_*.json`) em
+  fluxo de aprovacao operacional (manual gate) para promover calibracao por
+  simbolo em janela controlada.
+

@@ -76,3 +76,18 @@ def test_construir_contexto_operacional_diferencia_win_e_wdo() -> None:
     assert contexto_wdo["simbolo_contexto"] == "WDO"
     assert contexto_win["regime_mercado"] == "estavel"
     assert contexto_wdo["regime_mercado"] == "stress_high_vol"
+
+
+def test_construir_contexto_operacional_aceita_calibracao_override() -> None:
+    trades = [{"pnl": -0.04}, {"pnl": -0.03}, {"pnl": 0.01}, {"pnl": 0.02}]
+    contexto_default = construir_contexto_operacional_para_scheduler(
+        trades,
+        simbolo="WINJ26",
+    )
+    contexto_override = construir_contexto_operacional_para_scheduler(
+        trades,
+        simbolo="WINJ26",
+        calibracao_override={"stress_score_trigger": 0.40},
+    )
+    assert contexto_default["regime_mercado"] == "estavel"
+    assert contexto_override["regime_mercado"] == "stress_high_vol"

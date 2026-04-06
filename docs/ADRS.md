@@ -4351,3 +4351,71 @@ Adicionar calibracao por simbolo no adaptador runtime do scheduler:
 - `scripts/agente_rl_direto_independente.py`
 - `scripts/operar_novo_agente_rl_real_antiovertrading.py`
 - `docs/BACKLOG.md` (BLID-065)
+
+---
+
+## ADR-046: Replay Controlado para Consolidacao de Thresholds por Simbolo no Scheduler Runtime (BLID-066)
+
+**Data:** 2026-04-06  
+**Status:** APROVADO  
+**Decisores:** Product Owner, Tech Lead, ML Expert  
+**BLID:** BLID-066
+
+### Contexto
+
+Com a calibracao por simbolo habilitada em runtime (ADR-045), faltava um fluxo
+repetivel para validar thresholds antes de promover ajustes em producao.
+
+Sem replay controlado por simbolo, havia risco de tuning reativo sobre amostra
+insuficiente e aumento de falso positivo/falso negativo no gatilho de degradacao.
+
+### Decisao
+
+Introduzir pipeline de replay/calibracao por simbolo com:
+
+- cenarios `degradado` e `estavel` por simbolo;
+- grid de candidatos por simbolo (`WIN` e `WDO`);
+- criterio de selecao:
+  - maximizar acerto de regime esperado;
+  - penalizar distancia excessiva da calibracao vigente;
+- artefato versionavel em `outputs/scheduler_symbol_calibration_*.json`.
+
+Para suportar replay sem efeito colateral em producao, o adaptador runtime passa
+a aceitar `calibracao_override` apenas no caminho de simulacao.
+
+### Consequencias
+
+**Positivas:**
+- padroniza validacao de thresholds antes de rollout;
+- melhora disciplina de risco no ciclo "Eu aprendo operando";
+- cria trilha objetiva para decisao de promover ou manter calibracao.
+
+**Riscos:**
+- cobertura de cenarios reais pode ser insuficiente em dias com poucos trades;
+- ainda exige gate operacional para promover alteracoes em producao.
+
+### Evidencias
+
+- `pytest tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_scheduler_symbol_calibration.py tests/unit/test_rl_retrain_scheduler.py -q` -> **45/45 PASSING**
+- `mypy --strict src/application/rl_scheduler_runtime_adapter.py src/application/rl_scheduler_symbol_calibration.py tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_scheduler_symbol_calibration.py` -> **0 erros**
+- `python -m py_compile scripts/calibrar_scheduler_runtime_por_simbolo.py src/application/rl_scheduler_symbol_calibration.py` -> **OK**
+- `python scripts/calibrar_scheduler_runtime_por_simbolo.py --date 20260406` -> **OK** (`outputs/scheduler_symbol_calibration_20260406_155101.json`)
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | MEDIO | DIRETO | Executar replay por simbolo antes de promover tuning |
+| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | DIRETO | Executar replay por simbolo antes de promover tuning |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Consolidar artefatos de replay no fechamento |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem alteracao direta de runtime |
+| INICIAR_MONITOR_QUANTICO.bat | MEDIO | INDIRETO | Exibir recomendacao por simbolo no painel de monitoramento |
+
+### Referencias
+
+- `src/application/rl_scheduler_runtime_adapter.py`
+- `src/application/rl_scheduler_symbol_calibration.py`
+- `scripts/calibrar_scheduler_runtime_por_simbolo.py`
+- `tests/unit/test_rl_scheduler_runtime_adapter.py`
+- `tests/unit/test_rl_scheduler_symbol_calibration.py`
+- `docs/BACKLOG.md` (BLID-066)

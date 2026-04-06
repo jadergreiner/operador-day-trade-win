@@ -53,6 +53,25 @@ def obter_calibracao_simbolo(simbolo: str | None) -> dict[str, float]:
     return dict(_CALIBRACAO_POR_SIMBOLO[_normalizar_simbolo(simbolo)])
 
 
+def _resolver_calibracao(
+    simbolo: str | None,
+    calibracao_override: Mapping[str, Any] | None = None,
+) -> dict[str, float]:
+    calibracao = obter_calibracao_simbolo(simbolo)
+    if calibracao_override is None:
+        return calibracao
+    for key in (
+        "stress_score_trigger",
+        "volatilidade_trigger",
+        "loss_streak_divisor",
+        "media_negativa_scale",
+    ):
+        parsed = _coerce_float(calibracao_override.get(key))
+        if parsed is not None:
+            calibracao[key] = parsed
+    return calibracao
+
+
 def extrair_pnls(trades_fechados: Iterable[Mapping[str, Any]]) -> list[float]:
     """Extrai PnLs normalizados a partir do payload de trades fechados."""
     pnls: list[float] = []
@@ -95,10 +114,11 @@ def construir_contexto_operacional_para_scheduler(
     trades_fechados: Iterable[Mapping[str, Any]],
     *,
     simbolo: str | None = None,
+    calibracao_override: Mapping[str, Any] | None = None,
 ) -> dict[str, float | str]:
     """Deriva contexto operacional (regime/estresse/vol) da sessão recente."""
     pnls = extrair_pnls(trades_fechados)
-    calibracao = obter_calibracao_simbolo(simbolo)
+    calibracao = _resolver_calibracao(simbolo, calibracao_override)
     if not pnls:
         return {
             "regime_mercado": "estavel",
