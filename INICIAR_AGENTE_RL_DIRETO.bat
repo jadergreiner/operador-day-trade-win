@@ -229,6 +229,12 @@ if not exist "scripts\validate_go_live_gates.py" (
     exit /b 1
 )
 
+if not exist "scripts\check_scheduler_promotion_gate.py" (
+    echo   [FATAL] Script de gate de promocao ausente: scripts\check_scheduler_promotion_gate.py
+    pause
+    exit /b 1
+)
+
 exit /b 0
 
 :get_confirmation
@@ -279,6 +285,15 @@ if errorlevel 1 (
     exit /b 1
 )
 echo   [OK] Health check aprovado
+
+echo   [PRE-FLIGHT] Validando gate de promocao do scheduler...
+python scripts\check_scheduler_promotion_gate.py --fallback-latest-promotion --fail-on reprovado
+if errorlevel 1 (
+    echo   [ERRO] Gate de promocao reprovado ou indisponivel.
+    echo   [ERRO] Revise /status do monitor ou outputs\scheduler_symbol_promotion_*.json.
+    exit /b 1
+)
+echo   [OK] Gate de promocao aprovado
 
 echo   [SYNC] Sincronizando trades MT5 para SQLite isolado...
 python scripts\sync_mt5_trades_to_db.py --db "%RL_DIRETO_DB_PATH%" --days-back 3 --lock-timeout 0

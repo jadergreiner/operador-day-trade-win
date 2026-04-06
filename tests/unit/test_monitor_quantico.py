@@ -594,3 +594,47 @@ class TestSchedulerPromotionStatus:
         assert status["status"] == "aprovado"
         assert status["aprovado"] is True
         assert status["runtime_config_presente"] is True
+
+
+class TestStatusPayload:
+    """Testa payload enxuto do endpoint /status."""
+
+    @pytest.mark.unit
+    def test_status_payload_inclui_resumo_promocao_quando_cache_preenchido(self) -> None:
+        with mqt._lock_cache:
+            mqt._cache_dados.clear()
+            mqt._cache_dados.update(
+                {
+                    "timestamp_legivel": "06/04/2026 16:30:00",
+                    "scheduler_symbol_promotion": {
+                        "status": "aprovado",
+                        "aprovado": True,
+                        "runtime_config_presente": True,
+                        "motivo": "gate manual aprovado",
+                    },
+                }
+            )
+        payload = mqt._build_status_payload()
+        assert payload["ok"] is True
+        assert payload["scheduler_symbol_promotion"]["status"] == "aprovado"
+        assert payload["scheduler_symbol_promotion"]["runtime_config_presente"] is True
+
+    @pytest.mark.unit
+    def test_status_payload_fallback_para_leitor_quando_cache_sem_promocao(self) -> None:
+        with mqt._lock_cache:
+            mqt._cache_dados.clear()
+            mqt._cache_dados.update({"timestamp_legivel": "06/04/2026 16:31:00"})
+        with patch.object(
+            mqt,
+            "_carregar_status_promocao_scheduler",
+            return_value={
+                "status": "sem_promocao",
+                "aprovado": False,
+                "runtime_config_presente": False,
+                "motivo": "artefato ausente",
+            },
+        ):
+            payload = mqt._build_status_payload()
+        assert payload["ok"] is True
+        assert payload["scheduler_symbol_promotion"]["status"] == "sem_promocao"
+        assert payload["scheduler_symbol_promotion"]["aprovado"] is False

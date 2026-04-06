@@ -249,6 +249,25 @@ def _carregar_status_promocao_scheduler(
     }
 
 
+def _build_status_payload() -> dict[str, Any]:
+    """Monta payload resumido para health-check no endpoint /status."""
+    promotion = _cache_dados.get("scheduler_symbol_promotion")
+    if not isinstance(promotion, dict):
+        promotion = _carregar_status_promocao_scheduler()
+    return {
+        "ok": bool(_cache_dados),
+        "ultima_atualizacao": _cache_dados.get("timestamp_legivel"),
+        "scheduler_symbol_promotion": {
+            "status": promotion.get("status", "sem_promocao"),
+            "aprovado": bool(promotion.get("aprovado", False)),
+            "runtime_config_presente": bool(
+                promotion.get("runtime_config_presente", False)
+            ),
+            "motivo": str(promotion.get("motivo", "")).strip(),
+        },
+    }
+
+
 def _buscar_yfinance(chave: str, simbolo: str) -> Optional[dict[str, Any]]:
     """
     Busca cotacao atual via yfinance (Yahoo Finance).
@@ -960,10 +979,7 @@ class MonitorHandler(BaseHTTPRequestHandler):
                 self.wfile.write(b"Monitor HTML nao encontrado em outputs/")
 
         elif self.path == "/status":
-            status = {
-                "ok": bool(_cache_dados),
-                "ultima_atualizacao": _cache_dados.get("timestamp_legivel"),
-            }
+            status = _build_status_payload()
             corpo = json.dumps(status).encode("utf-8")
             self.send_response(200)
             self._enviar_headers_cors()

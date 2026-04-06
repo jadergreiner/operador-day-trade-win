@@ -4617,3 +4617,199 @@ payload recebido.
 - `tests/unit/test_monitor_quantico.py`
 - `tests/unit/test_monitor_quantico_html.py`
 - `docs/BACKLOG.md` (BLID-069)
+
+---
+
+## ADR-050: Contrato Enxuto de Health-Check em /status com Resumo do Gate de Promocao (BLID-070)
+
+**Data:** 2026-04-06  
+**Status:** APROVADO  
+**Decisores:** Product Owner, Tech Lead, ML Expert  
+**BLID:** BLID-070
+
+### Contexto
+
+Após BLID-069, o monitor passou a exibir visualmente o status da promoção, mas
+automações de health-check ainda precisavam consumir o payload completo `/dados`.
+
+Isso aumentava acoplamento e custo de parsing para verificações operacionais.
+
+### Decisao
+
+Evoluir o endpoint `/status` para expor resumo do gate de promoção:
+
+- `ok`
+- `ultima_atualizacao`
+- `scheduler_symbol_promotion`:
+  - `status`
+  - `aprovado`
+  - `runtime_config_presente`
+  - `motivo`
+
+Foi introduzido o helper `_build_status_payload()` para manter contrato único e
+testável. O helper prioriza cache local e usa fallback para leitura dos
+artefatos quando necessário.
+
+### Consequencias
+
+**Positivas:**
+- reduz custo de integração de health-check;
+- aumenta robustez de observabilidade operacional;
+- mantém compatibilidade com consumidores existentes de `/status`.
+
+**Riscos:**
+- duplicidade semântica entre `/dados` e `/status` requer disciplina de contrato;
+- monitor externo pode interpretar estado stale se cache local estiver atrasado.
+
+### Evidencias
+
+- `pytest tests/unit/test_monitor_quantico.py tests/unit/test_monitor_quantico_html.py tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_scheduler_calibration_promotion.py tests/unit/test_rl_scheduler_symbol_calibration.py tests/unit/test_rl_retrain_scheduler.py -q` -> **99/99 PASSING**
+- `mypy --strict --explicit-package-bases scripts/monitor_quantico_tendencia.py tests/unit/test_monitor_quantico.py tests/unit/test_monitor_quantico_html.py src/application/rl_scheduler_runtime_adapter.py src/application/rl_scheduler_calibration_promotion.py tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_scheduler_calibration_promotion.py` -> **0 erros**
+- `python -m py_compile scripts/monitor_quantico_tendencia.py` -> **OK**
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | BAIXO | INDIRETO | Permite health-check externo mais simples |
+| INICIAR_AGENTE_RL_DIRETO.bat | BAIXO | INDIRETO | Permite health-check externo mais simples |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Pode ler /status para consolidacao leve |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem impacto direto |
+| INICIAR_MONITOR_QUANTICO.bat | MEDIO | DIRETO | /status passa a refletir estado operacional do gate |
+
+### Referencias
+
+- `scripts/monitor_quantico_tendencia.py`
+- `tests/unit/test_monitor_quantico.py`
+- `outputs/monitor_quantico.html`
+- `docs/BACKLOG.md` (BLID-070)
+
+---
+
+## ADR-051: Guard Automatizado para Bloqueio de Janela por Status de Promocao (BLID-071)
+
+**Data:** 2026-04-06  
+**Status:** APROVADO  
+**Decisores:** Product Owner, Tech Lead, ML Expert  
+**BLID:** BLID-071
+
+### Contexto
+
+Com BLID-070, o endpoint `/status` passou a expor resumo do gate de promoção.
+Ainda faltava um mecanismo automatizado para transformar esse status em decisão
+operacional de bloqueio/liberação de janela.
+
+### Decisao
+
+Criar check automatizado (`script/CI`) com contrato simples:
+
+- entrada:
+  - URL de status (default `http://localhost:8765/status`) ou
+  - arquivo de snapshot JSON;
+- regra padrão:
+  - falhar quando `scheduler_symbol_promotion.status == reprovado`;
+- saída:
+  - log textual/JSON;
+  - exit code padronizado (`0` ok, `2` bloqueado).
+
+### Consequencias
+
+**Positivas:**
+- operacionaliza o gate de promoção para automações;
+- reduz risco de iniciar sessão com promoção reprovada;
+- facilita integração com CI e pre-flight local.
+
+**Riscos:**
+- endpoint indisponível pode exigir fallback por arquivo;
+- regra de bloqueio pode precisar endurecimento futuro para `sem_promocao`.
+
+### Evidencias
+
+- `pytest tests/unit/test_scheduler_promotion_healthcheck.py tests/unit/test_monitor_quantico.py tests/unit/test_monitor_quantico_html.py tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_scheduler_calibration_promotion.py tests/unit/test_rl_scheduler_symbol_calibration.py tests/unit/test_rl_retrain_scheduler.py -q` -> **103/103 PASSING**
+- `mypy --strict --explicit-package-bases src/application/scheduler_promotion_healthcheck.py scripts/check_scheduler_promotion_gate.py scripts/monitor_quantico_tendencia.py tests/unit/test_scheduler_promotion_healthcheck.py tests/unit/test_monitor_quantico.py tests/unit/test_monitor_quantico_html.py src/application/rl_scheduler_runtime_adapter.py src/application/rl_scheduler_calibration_promotion.py tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_scheduler_calibration_promotion.py` -> **0 erros**
+- `python -m py_compile scripts/check_scheduler_promotion_gate.py src/application/scheduler_promotion_healthcheck.py scripts/monitor_quantico_tendencia.py` -> **OK**
+- `python scripts/check_scheduler_promotion_gate.py --status-file outputs/tmp_status_reprovado.json` -> **exit code 2**
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | MEDIO | INDIRETO | Pode adicionar pre-flight que bloqueia em `reprovado` |
+| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | INDIRETO | Pode adicionar pre-flight que bloqueia em `reprovado` |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Pode registrar resultado do check em trilha operacional |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem impacto direto |
+| INICIAR_MONITOR_QUANTICO.bat | MEDIO | DIRETO | Fornece status consumível para o check |
+
+### Referencias
+
+- `src/application/scheduler_promotion_healthcheck.py`
+- `scripts/check_scheduler_promotion_gate.py`
+- `scripts/monitor_quantico_tendencia.py`
+- `tests/unit/test_scheduler_promotion_healthcheck.py`
+- `docs/BACKLOG.md` (BLID-071)
+
+---
+
+## ADR-052: Enforcement do Gate de Promocao no Pre-flight dos Launchers RL (BLID-072)
+
+**Data:** 2026-04-06  
+**Status:** APROVADO  
+**Decisores:** Product Owner, Tech Lead, ML Expert  
+**BLID:** BLID-072
+
+### Contexto
+
+O BLID-071 criou o check automatizado, mas ele ainda nao estava integrado aos
+launchers operacionais dos agentes RL. Sem enforcement no pre-flight, o bloqueio
+continuava dependente de disciplina manual.
+
+### Decisao
+
+Integrar `check_scheduler_promotion_gate.py` no pre-flight de:
+
+- `INICIAR_AGENTE_RL_5000.bat`
+- `INICIAR_AGENTE_RL_DIRETO.bat`
+
+Regra aplicada:
+- bloquear launch quando status for `reprovado` (exit code != 0).
+
+Para robustez operacional, foi adotado fallback:
+- tentativa principal via endpoint `/status`;
+- fallback para ultimo artefato local `scheduler_symbol_promotion_*.json`.
+
+### Consequencias
+
+**Positivas:**
+- enforcement real do gate na borda operacional;
+- reduz risco de operar com promocao reprovada;
+- mantem continuidade em cenarios de indisponibilidade temporaria do monitor.
+
+**Riscos:**
+- pode bloquear inicio em ambiente sem artefatos e sem monitor;
+- requer manutencao do contrato CLI no script de check.
+
+### Evidencias
+
+- `pytest tests/unit/test_scheduler_promotion_healthcheck.py tests/unit/test_rl_5000_launcher_contract.py tests/unit/test_rl_direto_launcher_contract.py tests/unit/test_monitor_quantico.py tests/unit/test_monitor_quantico_html.py tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_scheduler_calibration_promotion.py tests/unit/test_rl_scheduler_symbol_calibration.py tests/unit/test_rl_retrain_scheduler.py -q` -> **106/106 PASSING**
+- `mypy --strict --explicit-package-bases src/application/scheduler_promotion_healthcheck.py scripts/check_scheduler_promotion_gate.py scripts/monitor_quantico_tendencia.py tests/unit/test_scheduler_promotion_healthcheck.py tests/unit/test_rl_5000_launcher_contract.py tests/unit/test_rl_direto_launcher_contract.py tests/unit/test_monitor_quantico.py tests/unit/test_monitor_quantico_html.py src/application/rl_scheduler_runtime_adapter.py src/application/rl_scheduler_calibration_promotion.py tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_scheduler_calibration_promotion.py` -> **0 erros**
+- `python -m py_compile scripts/check_scheduler_promotion_gate.py src/application/scheduler_promotion_healthcheck.py scripts/monitor_quantico_tendencia.py` -> **OK**
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | ALTO | DIRETO | Pre-flight passa a bloquear em `reprovado` |
+| INICIAR_AGENTE_RL_DIRETO.bat | ALTO | DIRETO | Pre-flight passa a bloquear em `reprovado` |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Pode reaproveitar check em compliance |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem impacto direto |
+| INICIAR_MONITOR_QUANTICO.bat | MEDIO | INDIRETO | Continua fonte online de status para o check |
+
+### Referencias
+
+- `INICIAR_AGENTE_RL_5000.bat`
+- `INICIAR_AGENTE_RL_DIRETO.bat`
+- `src/application/scheduler_promotion_healthcheck.py`
+- `scripts/check_scheduler_promotion_gate.py`
+- `tests/unit/test_rl_5000_launcher_contract.py`
+- `tests/unit/test_rl_direto_launcher_contract.py`
+- `docs/BACKLOG.md` (BLID-072)
