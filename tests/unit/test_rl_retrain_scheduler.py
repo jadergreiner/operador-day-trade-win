@@ -215,6 +215,49 @@ class TestRLSchedulerDeteccaoDegradacao:
             assert degradacao is True
             assert "sharpe" in motivo.lower()
 
+    def test_detectar_degradacao_z_score_com_baseline_comparator(self) -> None:
+        """Detectar degradacao via BaselineComparator (metodo Z_SCORE)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config = RLSchedulerConfig(metodo_deteccao=DegradationDetectionMethod.Z_SCORE)
+            scheduler = RLScheduler(
+                config_path=tmpdir,
+                baseline_metrics={"win_rate": 65.0, "sharpe": 1.2, "f1": 0.70},
+                config=config,
+            )
+            baseline_comparator = MagicMock()
+            baseline_comparator.comparar_metricas.return_value = MagicMock(
+                is_degraded=True,
+                degraded_metrics=["win_rate", "sharpe_ratio"],
+            )
+
+            degradacao, motivo = scheduler.detectar_degradacao(
+                metricas_atuais={"win_rate": 58.0, "sharpe": 0.7, "f1": 0.61},
+                metodo_deteccao=DegradationDetectionMethod.Z_SCORE,
+                baseline_comparator=baseline_comparator,
+            )
+
+            assert degradacao is True
+            assert "z_score" in motivo.lower()
+            baseline_comparator.comparar_metricas.assert_called_once()
+
+    def test_detectar_degradacao_threshold(self) -> None:
+        """Detectar degradacao com limites fixos (metodo THRESHOLD)."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config = RLSchedulerConfig(metodo_deteccao=DegradationDetectionMethod.THRESHOLD)
+            scheduler = RLScheduler(
+                config_path=tmpdir,
+                baseline_metrics={"win_rate": 65.0, "sharpe": 1.2},
+                config=config,
+            )
+
+            degradacao, motivo = scheduler.detectar_degradacao(
+                metricas_atuais={"win_rate": 49.0, "sharpe": 0.7, "f1": 0.50},
+                metodo_deteccao=DegradationDetectionMethod.THRESHOLD,
+            )
+
+            assert degradacao is True
+            assert "limite" in motivo.lower()
+
 
 class TestRLSchedulerAgendamento:
     """Validar agendamento de retrain."""
@@ -544,3 +587,88 @@ class TestRLSchedulerIntegracaoRollback:
             assert kwargs["current_metrics"]["f1"] == 0.61
             assert kwargs["baseline_metrics"]["sharpe"] == 1.2
             assert kwargs["baseline_metrics"]["f1"] == 0.70
+
+    def test_processar_degradacao_respeita_metodo_config_zscore(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config = RLSchedulerConfig(metodo_deteccao=DegradationDetectionMethod.Z_SCORE)
+            scheduler = RLScheduler(
+                config_path=tmpdir,
+                baseline_metrics={"win_rate": 65.0, "sharpe": 1.2},
+                config=config,
+            )
+            with patch.object(
+                scheduler,
+                "detectar_degradacao",
+                return_value=(True, "z_score degradado"),
+            ) as detect_mock:
+                resultado = scheduler.processar_degradacao_com_rollback(
+                    metricas_atuais={"win_rate": 58.0, "sharpe": 0.7}
+                )
+
+            assert resultado["degradacao_detectada"] is True
+            assert resultado["retrain_agendado"] is True
+            assert resultado["job_id"] is not None
+            detect_mock.assert_called_once()
+            assert (
+                detect_mock.call_args.kwargs["metodo_deteccao"]
+                == DegradationDetectionMethod.Z_SCORE
+            )
+            assert resultado["metodo_deteccao_aplicado"] == "z_score"
+
+    def test_resolver_metodo_deteccao_dinamico_prioriza_threshold_em_estresse(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            scheduler = RLScheduler(
+                config_path=tmpdir,
+                baseline_metrics={"win_rate": 65.0, "sharpe": 1.2},
+            )
+
+            metodo = scheduler.resolver_metodo_deteccao_dinamico(
+                contexto_operacional={
+                    "regime_mercado": "stress_high_vol",
+                    "stress_score": 0.85,
+                }
+            )
+
+            assert metodo == DegradationDetectionMethod.THRESHOLD
+
+    def test_resolver_metodo_deteccao_dinamico_prioriza_zscore_em_regime_estavel(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            scheduler = RLScheduler(
+                config_path=tmpdir,
+                baseline_metrics={"win_rate": 65.0, "sharpe": 1.2},
+            )
+
+            metodo = scheduler.resolver_metodo_deteccao_dinamico(
+                contexto_operacional={
+                    "regime_mercado": "estavel",
+                    "drift_score": 0.35,
+                }
+            )
+
+            assert metodo == DegradationDetectionMethod.Z_SCORE
+
+    def test_processar_degradacao_aplica_threshold_quando_contexto_indica_estresse(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            scheduler = RLScheduler(
+                config_path=tmpdir,
+                baseline_metrics={"win_rate": 65.0, "sharpe": 1.2},
+            )
+            with patch.object(
+                scheduler,
+                "detectar_degradacao",
+                return_value=(True, "threshold degradado"),
+            ) as detect_mock:
+                resultado = scheduler.processar_degradacao_com_rollback(
+                    metricas_atuais={"win_rate": 49.0, "sharpe": 0.7},
+                    contexto_operacional={
+                        "regime_mercado": "ruptura_high_vol",
+                        "volatilidade": 82.0,
+                    },
+                )
+
+            assert resultado["metodo_deteccao_aplicado"] == "threshold"
+            detect_mock.assert_called_once()
+            assert (
+                detect_mock.call_args.kwargs["metodo_deteccao"]
+                == DegradationDetectionMethod.THRESHOLD
+            )

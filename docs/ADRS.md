@@ -4103,3 +4103,251 @@ Foi adicionado:
 - `tests/unit/test_rl_retrain_scheduler.py`
 - `src/application/rl_model_rollback_manager.py`
 - `docs/BACKLOG.md` (BLID-061)
+
+---
+
+## ADR-042: Deteccao Multi-Metodo no Scheduler RL com Integracao ao BaselineComparator (BLID-062)
+
+**Data:** 2026-04-06  
+**Status:** APROVADO  
+**Decisores:** Product Owner, Tech Lead, ML Expert  
+**BLID:** BLID-062
+
+### Contexto
+
+O scheduler já possuía enum de método de detecção (`Z_SCORE`, `PERCENTUAL`,
+`THRESHOLD`), porém o fluxo efetivo aplicava somente lógica percentual.
+
+Isso reduzia a aderência do pipeline adaptativo e limitava calibração por
+regime intraday.
+
+### Decisao
+
+Implementar detecção multi-método no `RLScheduler`, com:
+
+- integração ao `BaselineComparator` no método `Z_SCORE`;
+- método `THRESHOLD` para gatilhos fixos de risco;
+- método `PERCENTUAL` mantido como fallback/default;
+- normalização de chaves para compatibilidade de métricas entre módulos.
+
+### Consequencias
+
+**Positivas:**
+- maior flexibilidade operacional para calibrar detecção por regime;
+- reaproveitamento do comparador AC6.9 no fluxo de scheduler;
+- rastreabilidade clara do método aplicado por execução.
+
+**Riscos:**
+- sensibilidade excessiva se método for mal escolhido por contexto;
+- exige governança por sessão/símbolo para troca de método em produção.
+
+### Evidencias
+
+- `pytest tests/unit/test_rl_retrain_scheduler.py -q` -> **31/31 PASSING**
+- `mypy --strict src/application/rl_retrain_scheduler.py tests/unit/test_rl_retrain_scheduler.py` -> **0 erros**
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | MEDIO | DIRETO | Validar método ativo e motivos de degradação em staging |
+| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | DIRETO | Validar método ativo e motivos de degradação em staging |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Observar efeitos nos relatórios de sessão |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Monitorar integração compartilhada sem restart obrigatório |
+| INICIAR_MONITOR_QUANTICO.bat | BAIXO | INDIRETO | Expor evento e método no monitoramento |
+
+### Referencias
+
+- `src/application/rl_retrain_scheduler.py`
+- `tests/unit/test_rl_retrain_scheduler.py`
+- `src/application/ac6_9_baseline_comparator.py`
+- `docs/BACKLOG.md` (BLID-062)
+
+---
+
+## ADR-043: Resolucao Dinamica de Metodo de Deteccao por Sessao/Regime no Scheduler RL (BLID-063)
+
+**Data:** 2026-04-06  
+**Status:** APROVADO  
+**Decisores:** Product Owner, Tech Lead, ML Expert  
+**BLID:** BLID-063
+
+### Contexto
+
+Após habilitar detecção multi-método (ADR-042), ainda faltava o wiring
+operacional para escolher automaticamente o método ideal por sessão,
+considerando contexto de regime e estresse intraday.
+
+### Decisao
+
+Adicionar resolvedor dinâmico de método no `RLScheduler`:
+
+- `THRESHOLD` quando contexto indicar estresse (ex.: ruptura/high vol);
+- `Z_SCORE` quando contexto indicar regime estável/normal com drift;
+- fallback para método padrão do scheduler quando contexto for inconclusivo.
+
+O fluxo `processar_degradacao_com_rollback(...)` passa a receber
+`contexto_operacional` e registrar `metodo_deteccao_aplicado`.
+
+### Consequencias
+
+**Positivas:**
+- resposta mais rápida em cenários de estresse intraday;
+- menor dependência de configuração manual fixa por ambiente;
+- rastreabilidade explícita do método aplicado por execução.
+
+**Riscos:**
+- classificação de contexto incorreta pode escolher método subótimo;
+- exige qualidade da fonte de contexto operacional no runtime live.
+
+### Evidencias
+
+- `pytest tests/unit/test_rl_retrain_scheduler.py -q` -> **34/34 PASSING**
+- `mypy --strict src/application/rl_retrain_scheduler.py tests/unit/test_rl_retrain_scheduler.py` -> **0 erros**
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | MEDIO | DIRETO | Validar método dinâmico aplicado e motivos de degradação em staging |
+| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | DIRETO | Validar método dinâmico aplicado e motivos de degradação em staging |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Monitorar impacto nos relatórios pós-sessão |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem restart obrigatório; acompanhar integração compartilhada |
+| INICIAR_MONITOR_QUANTICO.bat | BAIXO | INDIRETO | Expor telemetria de método aplicado e gatilho |
+
+### Referencias
+
+- `src/application/rl_retrain_scheduler.py`
+- `tests/unit/test_rl_retrain_scheduler.py`
+- `docs/BACKLOG.md` (BLID-063)
+
+---
+
+## ADR-044: Wiring Runtime do Scheduler Dinamico nos Agentes RL (BLID-064)
+
+**Data:** 2026-04-06  
+**Status:** APROVADO  
+**Decisores:** Product Owner, Tech Lead, ML Expert  
+**BLID:** BLID-064
+
+### Contexto
+
+O scheduler dinâmico (ADR-043) estava validado em unidade, porém ainda não
+estava conectado ao fluxo real de decisão/feedback dos agentes RL.
+
+Sem esse wiring, a escolha dinâmica de método e o agendamento de retrain
+continuavam sem efeito operacional live.
+
+### Decisao
+
+Integrar o `RLScheduler` diretamente no pipeline `_executar_pipeline_feedback_rl`
+dos dois agentes RL, com derivação de métricas/contexto a partir dos trades
+fechados da própria sessão.
+
+Foi criado adaptador compartilhado (`rl_scheduler_runtime_adapter`) para:
+- extrair pnls do payload operacional;
+- calcular métricas para detecção de degradação;
+- construir contexto de regime/estresse para seleção de método.
+
+### Consequencias
+
+**Positivas:**
+- fecha o ciclo “Eu aprendo operando” em runtime real;
+- aumenta velocidade de resposta a deterioração intraday;
+- reduz divergência entre comportamento em teste e produção.
+
+**Riscos:**
+- métricas derivadas de payload heterogêneo podem precisar ajuste fino;
+- necessidade de calibração por símbolo para evitar sensibilidade excessiva.
+
+### Evidencias
+
+- `pytest tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_retrain_scheduler.py -q` -> **39/39 PASSING**
+- `mypy --strict src/application/rl_scheduler_runtime_adapter.py src/application/rl_retrain_scheduler.py tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_retrain_scheduler.py` -> **0 erros**
+- `python -m py_compile scripts/agente_rl_direto_independente.py scripts/operar_novo_agente_rl_real_antiovertrading.py` -> **OK**
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | ALTO | DIRETO | Validar logs `[RL-SCHED]` em staging e método aplicado |
+| INICIAR_AGENTE_RL_DIRETO.bat | ALTO | DIRETO | Validar logs `[RL-SCHED]` em staging e método aplicado |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Monitorar reflexo no fechamento e classificação de sessão |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Acompanhar integração compartilhada sem restart obrigatório |
+| INICIAR_MONITOR_QUANTICO.bat | MEDIO | INDIRETO | Expor telemetria de método/retrain para acompanhamento |
+
+### Referencias
+
+- `src/application/rl_scheduler_runtime_adapter.py`
+- `src/application/rl_retrain_scheduler.py`
+- `scripts/agente_rl_direto_independente.py`
+- `scripts/operar_novo_agente_rl_real_antiovertrading.py`
+- `tests/unit/test_rl_scheduler_runtime_adapter.py`
+- `tests/unit/test_rl_retrain_scheduler.py`
+- `docs/BACKLOG.md` (BLID-064)
+
+---
+
+## ADR-045: Calibracao do Scheduler Runtime por Simbolo (BLID-065)
+
+**Data:** 2026-04-06  
+**Status:** APROVADO  
+**Decisores:** Product Owner, Tech Lead, ML Expert  
+**BLID:** BLID-065
+
+### Contexto
+
+Com o wiring runtime do scheduler concluido (ADR-044), a deteccao de degradacao
+passou a depender fortemente de thresholds unificados. Em operacao intraday,
+`WIN` e `WDO` apresentam dinamicas diferentes de variancia e velocidade de
+mudanca de regime, gerando risco de sensibilidade inadequada quando o limiar
+e unico.
+
+### Decisao
+
+Adicionar calibracao por simbolo no adaptador runtime do scheduler:
+
+- normalizar simbolo operacional para `WIN`/`WDO`/`DEFAULT`;
+- aplicar thresholds dedicados por simbolo para:
+  - `stress_score_trigger`
+  - `volatilidade_trigger`
+  - `loss_streak_divisor`
+  - `media_negativa_scale`
+- propagar `simbolo_contexto` no payload de contexto operacional;
+- obrigar os agentes RL a informar `simbolo=SIMBOLO` ao montar contexto para o
+  scheduler.
+
+### Consequencias
+
+**Positivas:**
+- reduz falso positivo de degradacao em simbolo com variancia naturalmente maior;
+- aumenta velocidade de resposta em simbolo que exige gatilho mais sensivel;
+- melhora rastreabilidade operacional com contexto explicito por simbolo.
+
+**Riscos:**
+- calibracao inicial pode exigir ajuste fino com replay de sessoes reais;
+- simbolos novos ficam em `DEFAULT` ate definicao dedicada.
+
+### Evidencias
+
+- `pytest tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_retrain_scheduler.py -q` -> **41/41 PASSING**
+- `mypy --strict src/application/rl_scheduler_runtime_adapter.py src/application/rl_retrain_scheduler.py tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_retrain_scheduler.py` -> **0 erros**
+- `python -m py_compile scripts/agente_rl_direto_independente.py scripts/operar_novo_agente_rl_real_antiovertrading.py` -> **OK**
+
+### Avaliacao de Impacto nos 5 Launchers
+
+| Launcher | Impacto | Tipo | Acao Operacional |
+|----------|---------|------|-----------------|
+| INICIAR_AGENTE_RL_5000.bat | ALTO | DIRETO | Validar `simbolo_contexto` e estabilidade de gatilhos em WIN |
+| INICIAR_AGENTE_RL_DIRETO.bat | ALTO | DIRETO | Validar `simbolo_contexto` e sensibilidade de gatilho em WDO |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Monitorar taxa de retrain/rollback no fechamento diario |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem alteracao direta; acompanhar integracoes compartilhadas |
+| INICIAR_MONITOR_QUANTICO.bat | MEDIO | INDIRETO | Expor `simbolo_contexto` e método aplicado na camada de monitoramento |
+
+### Referencias
+
+- `src/application/rl_scheduler_runtime_adapter.py`
+- `tests/unit/test_rl_scheduler_runtime_adapter.py`
+- `scripts/agente_rl_direto_independente.py`
+- `scripts/operar_novo_agente_rl_real_antiovertrading.py`
+- `docs/BACKLOG.md` (BLID-065)

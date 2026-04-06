@@ -322,6 +322,17 @@ except ImportError as _e:
     BaselineComparator = None  # type: ignore[assignment,misc]
     logger.warning(f"[WARN] AC5.9/AC6 nao disponiveis: {_e}")
 
+try:
+    from src.application.rl_retrain_scheduler import RLScheduler
+    from src.application.rl_scheduler_runtime_adapter import (
+        calcular_metricas_para_scheduler,
+        construir_contexto_operacional_para_scheduler,
+    )
+except ImportError:
+    RLScheduler = None  # type: ignore[assignment,misc]
+    calcular_metricas_para_scheduler = None  # type: ignore[assignment,misc]
+    construir_contexto_operacional_para_scheduler = None  # type: ignore[assignment,misc]
+
 # Imports opcionais — BLID-043: Coordenacao cross-agent (CoordinationManager + Reader)
 _COORDINATION_DISPONIVEL = False
 try:
@@ -401,6 +412,7 @@ _feedback_validator_rl = None
 _drift_detector_rl = None
 _online_learning_rl = None
 _baseline_comparator_rl = None
+_rl_retrain_scheduler = None
 _rl_persistence_service = None
 rl_repo = None
 pipeline = None
@@ -1275,6 +1287,8 @@ def _executar_pipeline_feedback_rl(
         for t in trades_fechados
     ]
 
+    global _rl_retrain_scheduler
+
     # AC5.9: Validacao de saude do feedback
     if _feedback_validator_rl and trades_data:
         try:
@@ -1333,6 +1347,54 @@ def _executar_pipeline_feedback_rl(
                 logger.info(f"[AC6.9] Baseline: {fb}")
         except Exception as e:
             logger.warning(f"[AC6.9] Erro: {e}")
+
+    # BLID-063/064: Scheduler de retrain com método dinâmico por sessão/regime
+    if (
+        RLScheduler is not None
+        and calcular_metricas_para_scheduler is not None
+        and construir_contexto_operacional_para_scheduler is not None
+        and trades_data
+    ):
+        try:
+            if _rl_retrain_scheduler is None:
+                baseline_metrics = {"win_rate": 55.0, "sharpe": 0.8, "f1": 0.55}
+                if _baseline_comparator_rl is not None:
+                    base = getattr(_baseline_comparator_rl, "baseline_metrics", None)
+                    if isinstance(base, dict):
+                        win_rate = float(base.get("win_rate", 0.55))
+                        baseline_metrics = {
+                            "win_rate": win_rate * 100.0 if win_rate <= 1.0 else win_rate,
+                            "sharpe": float(base.get("sharpe_ratio", base.get("sharpe", 0.8))),
+                            "f1": float(base.get("f1_score", base.get("f1", 0.55))),
+                        }
+                _rl_retrain_scheduler = RLScheduler(
+                    config_path=str(ROOT_DIR / "data" / "scheduler" / AGENT_SESSION_ID),
+                    baseline_metrics=baseline_metrics,
+                )
+
+            metricas_scheduler = calcular_metricas_para_scheduler(trades_fechados)
+            contexto_scheduler = construir_contexto_operacional_para_scheduler(
+                trades_fechados,
+                simbolo=SIMBOLO,
+            )
+            resultado_scheduler = _rl_retrain_scheduler.processar_degradacao_com_rollback(
+                metricas_atuais=metricas_scheduler,
+                contexto_operacional=contexto_scheduler,
+            )
+            if resultado_scheduler.get("retrain_agendado"):
+                logger.warning(
+                    "[RL-SCHED] Retrain agendado | metodo=%s | motivo=%s | job=%s",
+                    resultado_scheduler.get("metodo_deteccao_aplicado"),
+                    resultado_scheduler.get("motivo_degradacao"),
+                    resultado_scheduler.get("job_id"),
+                )
+            else:
+                logger.info(
+                    "[RL-SCHED] Sem retrain | metodo=%s",
+                    resultado_scheduler.get("metodo_deteccao_aplicado"),
+                )
+        except Exception as e:
+            logger.warning(f"[RL-SCHED] Erro ao processar scheduler runtime: {e}")
 
     if (
         _rl_persistence_service is not None

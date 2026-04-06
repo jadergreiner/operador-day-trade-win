@@ -76,6 +76,7 @@ class RLSchedulerConfig:
         DegradationDetectionMethod.PERCENTUAL
     )
     intervalo_verificacao_minutos: int = 60
+    z_score_threshold: float = 2.0
 
 
 @dataclass
@@ -146,7 +147,10 @@ class RLScheduler:
             self._arquivo_jobs.write_text(json.dumps([], indent=2))
 
     def detectar_degradacao(
-        self, metricas_atuais: Dict[str, float]
+        self,
+        metricas_atuais: Dict[str, float],
+        metodo_deteccao: Optional[DegradationDetectionMethod] = None,
+        baseline_comparator: Optional[Any] = None,
     ) -> Tuple[bool, str]:
         """Detectar degradacao de modelo vs baseline.
 
@@ -160,33 +164,96 @@ class RLScheduler:
         Returns:
             Tupla (degradacao detectada, motivo)
         """
+        metodo = metodo_deteccao or self.config.metodo_deteccao
+        if metodo == DegradationDetectionMethod.Z_SCORE:
+            return self._detectar_degradacao_z_score(
+                metricas_atuais=metricas_atuais,
+                baseline_comparator=baseline_comparator,
+            )
+        if metodo == DegradationDetectionMethod.THRESHOLD:
+            return self._detectar_degradacao_threshold(metricas_atuais)
+        return self._detectar_degradacao_percentual(metricas_atuais)
+
+    def _detectar_degradacao_percentual(
+        self, metricas_atuais: Dict[str, float]
+    ) -> Tuple[bool, str]:
         motivos: List[str] = []
 
-        # Verificar win_rate drop
         if "win_rate" in self.baseline_metrics and "win_rate" in metricas_atuais:
             baseline_wr = self.baseline_metrics["win_rate"]
             atual_wr = metricas_atuais["win_rate"]
             drop = baseline_wr - atual_wr
-
             if drop > self.config.threshold_win_rate_drop:
                 motivos.append(
                     f"win_rate drop de {baseline_wr:.1f}% para {atual_wr:.1f}%"
                 )
 
-        # Verificar sharpe minimo
         if "sharpe" in self.baseline_metrics and "sharpe" in metricas_atuais:
-            baseline_sh = self.baseline_metrics["sharpe"]
             atual_sh = metricas_atuais["sharpe"]
-
             if atual_sh < self.config.threshold_sharpe_min:
                 motivos.append(
                     f"sharpe {atual_sh:.2f} abaixo do minimo {self.config.threshold_sharpe_min}"
                 )
 
-        degradacao = len(motivos) > 0
-        motivo = " | ".join(motivos) if motivos else ""
+        return len(motivos) > 0, " | ".join(motivos) if motivos else ""
 
-        return degradacao, motivo
+    def _detectar_degradacao_threshold(
+        self, metricas_atuais: Dict[str, float]
+    ) -> Tuple[bool, str]:
+        motivos: List[str] = []
+        # Regra threshold: degrade se qualquer métrica cruzar limite fixo de risco.
+        if "win_rate" in metricas_atuais and metricas_atuais["win_rate"] < 50.0:
+            motivos.append(
+                f"win_rate {metricas_atuais['win_rate']:.1f}% abaixo do limite 50.0%"
+            )
+        if "sharpe" in metricas_atuais and metricas_atuais["sharpe"] < self.config.threshold_sharpe_min:
+            motivos.append(
+                f"sharpe {metricas_atuais['sharpe']:.2f} abaixo do minimo {self.config.threshold_sharpe_min}"
+            )
+        if "f1" in metricas_atuais and metricas_atuais["f1"] < 0.55:
+            motivos.append(f"f1 {metricas_atuais['f1']:.2f} abaixo do limite 0.55")
+        if "f1_score" in metricas_atuais and metricas_atuais["f1_score"] < 0.55:
+            motivos.append(
+                f"f1_score {metricas_atuais['f1_score']:.2f} abaixo do limite 0.55"
+            )
+        return len(motivos) > 0, " | ".join(motivos) if motivos else ""
+
+    def _normalizar_metricas_para_baseline_comparator(
+        self, metricas: Dict[str, float]
+    ) -> Dict[str, float]:
+        normalizadas: Dict[str, float] = dict(metricas)
+        if "sharpe_ratio" not in normalizadas and "sharpe" in normalizadas:
+            normalizadas["sharpe_ratio"] = float(normalizadas["sharpe"])
+        if "f1_score" not in normalizadas and "f1" in normalizadas:
+            normalizadas["f1_score"] = float(normalizadas["f1"])
+        return normalizadas
+
+    def _detectar_degradacao_z_score(
+        self,
+        metricas_atuais: Dict[str, float],
+        baseline_comparator: Optional[Any] = None,
+    ) -> Tuple[bool, str]:
+        comparator = baseline_comparator
+        if comparator is None:
+            from src.application.ac6_9_baseline_comparator import BaselineComparator
+
+            comparator = BaselineComparator(
+                baseline_metrics=self._normalizar_metricas_para_baseline_comparator(
+                    self.baseline_metrics
+                ),
+                z_score_threshold=self.config.z_score_threshold,
+            )
+
+        comparison = comparator.comparar_metricas(
+            current_metrics=self._normalizar_metricas_para_baseline_comparator(
+                metricas_atuais
+            ),
+            baseline_version="v1.0.0",
+        )
+        if comparison.is_degraded:
+            motivos = ", ".join(comparison.degraded_metrics)
+            return True, f"z_score degradado nas metricas: {motivos}"
+        return False, ""
 
     def agendar_retrain(
         self,
@@ -379,6 +446,7 @@ class RLScheduler:
         self,
         metricas_atuais: Dict[str, float],
         metodo_deteccao: Optional[DegradationDetectionMethod] = None,
+        contexto_operacional: Optional[Dict[str, Any]] = None,
         rollback_manager: Optional[Any] = None,
     ) -> Dict[str, Any]:
         """Processa degradação e aciona retrain + rollback opcional.
@@ -389,8 +457,14 @@ class RLScheduler:
         3. Se rollback_manager foi informado, executa check_degradation e
            rollback automático quando recomendado.
         """
-        metodo = metodo_deteccao or self.config.metodo_deteccao
-        degradacao_detectada, motivo = self.detectar_degradacao(metricas_atuais)
+        metodo = self.resolver_metodo_deteccao_dinamico(
+            metodo_override=metodo_deteccao,
+            contexto_operacional=contexto_operacional or {},
+        )
+        degradacao_detectada, motivo = self.detectar_degradacao(
+            metricas_atuais=metricas_atuais,
+            metodo_deteccao=metodo,
+        )
 
         resultado: Dict[str, Any] = {
             "degradacao_detectada": degradacao_detectada,
@@ -400,6 +474,7 @@ class RLScheduler:
             "rollback_recomendado": False,
             "rollback_executado": False,
             "rollback_razao": "",
+            "metodo_deteccao_aplicado": metodo.value,
         }
 
         if not degradacao_detectada:
@@ -431,3 +506,67 @@ class RLScheduler:
             resultado["rollback_executado"] = rollback_ok
 
         return resultado
+
+    def resolver_metodo_deteccao_dinamico(
+        self,
+        metodo_override: Optional[DegradationDetectionMethod] = None,
+        contexto_operacional: Optional[Dict[str, Any]] = None,
+    ) -> DegradationDetectionMethod:
+        """Resolve método de detecção por sessão/regime.
+
+        Regras:
+        - `metodo_override` sempre tem prioridade.
+        - Cenário de estresse/alta vol prioriza `THRESHOLD`.
+        - Cenário estável com drift monitorável prioriza `Z_SCORE`.
+        - Caso contrário usa método configurado no scheduler.
+        """
+        if metodo_override is not None:
+            return metodo_override
+
+        contexto = contexto_operacional or {}
+        regime = str(
+            contexto.get("regime_mercado")
+            or contexto.get("regime")
+            or ""
+        ).lower()
+        stress_score = self._coerce_float(
+            contexto.get("stress_score"), contexto.get("risk_stress_score")
+        )
+        volatilidade = self._coerce_float(
+            contexto.get("volatilidade"), contexto.get("volatility")
+        )
+        drift_score = self._coerce_float(
+            contexto.get("drift_score"), contexto.get("drift")
+        )
+
+        regime_estresse = any(
+            token in regime
+            for token in ("stress", "estresse", "high_vol", "ruptura", "crash")
+        )
+        if regime_estresse:
+            return DegradationDetectionMethod.THRESHOLD
+        if stress_score is not None and stress_score >= 0.70:
+            return DegradationDetectionMethod.THRESHOLD
+        if volatilidade is not None and volatilidade >= 75.0:
+            return DegradationDetectionMethod.THRESHOLD
+
+        regime_estavel = any(
+            token in regime
+            for token in ("estavel", "normal", "range", "trend", "trending")
+        )
+        if regime_estavel:
+            return DegradationDetectionMethod.Z_SCORE
+        if drift_score is not None and drift_score >= 0.30:
+            return DegradationDetectionMethod.Z_SCORE
+
+        return self.config.metodo_deteccao
+
+    def _coerce_float(self, *values: Any) -> Optional[float]:
+        for value in values:
+            if value is None or isinstance(value, bool):
+                continue
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                continue
+        return None

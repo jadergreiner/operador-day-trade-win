@@ -6372,3 +6372,250 @@ Implementar no `RLScheduler` o fluxo integrado:
 - Integrar o acionamento do scheduler no loop runtime dos agentes RL com
   política operacional por sessão/símbolo.
 
+---
+
+## BLID-062
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Tornar detecção de degradacao do scheduler robusta por método (Z-score/percentual/threshold) com integração ao BaselineComparator
+stage_atual: project-manager
+adr_referencia: ADR-042
+data_inicio: 2026-04-06
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Evoluir `RLScheduler` para operar explicitamente com os métodos de detecção
+degradacao já previstos no enum (`Z_SCORE`, `PERCENTUAL`, `THRESHOLD`),
+com integração ao `BaselineComparator` para caminho de Z-score.
+
+### Entregas
+
+- `detectar_degradacao(...)` agora aceita:
+  - `metodo_deteccao` (override por chamada)
+  - `baseline_comparator` (injeção opcional para Z-score)
+- Novos caminhos internos:
+  - `_detectar_degradacao_percentual(...)`
+  - `_detectar_degradacao_threshold(...)`
+  - `_detectar_degradacao_z_score(...)`
+- Normalização de métricas para compatibilidade com `BaselineComparator`:
+  - `sharpe -> sharpe_ratio`
+  - `f1 -> f1_score`
+- `processar_degradacao_com_rollback(...)` passa a respeitar método efetivo
+  configurado no scheduler.
+
+### Evidencias
+
+- `pytest tests/unit/test_rl_retrain_scheduler.py -q` -> **31/31 PASSING**
+- `mypy --strict src/application/rl_retrain_scheduler.py tests/unit/test_rl_retrain_scheduler.py` -> **0 erros**
+
+### Arquivos Alterados
+
+- `src/application/rl_retrain_scheduler.py`
+- `tests/unit/test_rl_retrain_scheduler.py`
+- `docs/BACKLOG.md`
+- `docs/ADRS.md`
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | MEDIO | DIRETO | Validar em staging qual método está ativo e logs de motivo de degradacao |
+| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | DIRETO | Validar em staging qual método está ativo e logs de motivo de degradacao |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Monitorar reflexo no fechamento diário (retrain/rollback) |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem restart obrigatório; monitorar integração compartilhada |
+| INICIAR_MONITOR_QUANTICO.bat | BAIXO | INDIRETO | Expor no painel método ativo e evento de degradação |
+
+### Proxima Acao
+
+- Wiring runtime por símbolo/sessão para escolha dinâmica do método
+  (`Z_SCORE` em regime estável, `THRESHOLD` em regime de estresse).
+
+---
+
+## BLID-063
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Aplicar escolha dinâmica de método de detecção por sessão/regime para resposta mais rápida a estresse intraday
+stage_atual: project-manager
+adr_referencia: ADR-043
+data_inicio: 2026-04-06
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Implementar no scheduler RL a resolução dinâmica do método de detecção
+(`Z_SCORE` ou `THRESHOLD`) com base em contexto operacional por sessão.
+
+### Entregas
+
+- Novo resolvedor:
+  - `resolver_metodo_deteccao_dinamico(...)`
+- Integração no fluxo:
+  - `processar_degradacao_com_rollback(...)` agora aceita
+    `contexto_operacional` e aplica método dinâmico.
+- Regras operacionais:
+  - `THRESHOLD` em regime de estresse/ruptura/alta volatilidade;
+  - `Z_SCORE` em regime estável/normal com drift monitorável;
+  - fallback para método configurado quando contexto é inconclusivo.
+- Observabilidade:
+  - resultado passa a expor `metodo_deteccao_aplicado`.
+
+### Evidencias
+
+- `pytest tests/unit/test_rl_retrain_scheduler.py -q` -> **34/34 PASSING**
+- `mypy --strict src/application/rl_retrain_scheduler.py tests/unit/test_rl_retrain_scheduler.py` -> **0 erros**
+
+### Arquivos Alterados
+
+- `src/application/rl_retrain_scheduler.py`
+- `tests/unit/test_rl_retrain_scheduler.py`
+- `docs/BACKLOG.md`
+- `docs/ADRS.md`
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | MEDIO | DIRETO | Validar contexto de regime e método aplicado nos logs em staging |
+| INICIAR_AGENTE_RL_DIRETO.bat | MEDIO | DIRETO | Validar contexto de regime e método aplicado nos logs em staging |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Monitorar refletência no fechamento diário de performance |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem restart obrigatório; acompanhar integração compartilhada |
+| INICIAR_MONITOR_QUANTICO.bat | BAIXO | INDIRETO | Exibir método aplicado e gatilhos no painel/telemetria |
+
+### Proxima Acao
+
+- Fazer wiring com fonte real de `contexto_operacional` dos agentes RL para
+  alimentar o resolvedor dinâmico em runtime live.
+
+---
+
+## BLID-064
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Conectar scheduler dinâmico no runtime real dos agentes RL usando contexto operacional da própria sessão
+stage_atual: project-manager
+adr_referencia: ADR-044
+data_inicio: 2026-04-06
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Fazer o wiring real no loop dos agentes RL (`RL Direto` e `RL 5000`) para que
+o `RLScheduler` receba métricas e contexto de regime derivados dos trades da
+sessão e aplique método dinâmico de detecção em runtime.
+
+### Entregas
+
+- Novo adaptador compartilhado:
+  - `src/application/rl_scheduler_runtime_adapter.py`
+  - funções:
+    - `extrair_pnls(...)`
+    - `calcular_metricas_para_scheduler(...)`
+    - `construir_contexto_operacional_para_scheduler(...)`
+- Integração no pipeline de feedback dos dois agentes:
+  - `scripts/agente_rl_direto_independente.py`
+  - `scripts/operar_novo_agente_rl_real_antiovertrading.py`
+- Inicialização lazy do scheduler por sessão (`data/scheduler/<session_id>`).
+- Logging operacional:
+  - retrain agendado, método aplicado, motivo, job id.
+
+### Evidencias
+
+- `pytest tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_retrain_scheduler.py -q` -> **39/39 PASSING**
+- `mypy --strict src/application/rl_scheduler_runtime_adapter.py src/application/rl_retrain_scheduler.py tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_retrain_scheduler.py` -> **0 erros**
+- `python -m py_compile scripts/agente_rl_direto_independente.py scripts/operar_novo_agente_rl_real_antiovertrading.py` -> **OK**
+
+### Arquivos Alterados
+
+- `src/application/rl_scheduler_runtime_adapter.py` (novo)
+- `tests/unit/test_rl_scheduler_runtime_adapter.py` (novo)
+- `scripts/agente_rl_direto_independente.py`
+- `scripts/operar_novo_agente_rl_real_antiovertrading.py`
+- `src/application/rl_retrain_scheduler.py`
+- `tests/unit/test_rl_retrain_scheduler.py`
+- `docs/BACKLOG.md`
+- `docs/ADRS.md`
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | ALTO | DIRETO | Validar em staging logs `[RL-SCHED]` e método aplicado por ciclo |
+| INICIAR_AGENTE_RL_DIRETO.bat | ALTO | DIRETO | Validar em staging logs `[RL-SCHED]` e método aplicado por ciclo |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Conferir reflexo no fechamento diário de performance |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Monitorar integração compartilhada sem restart obrigatório |
+| INICIAR_MONITOR_QUANTICO.bat | MEDIO | INDIRETO | Expor telemetria de método/retrain para monitoramento operacional |
+
+### Proxima Acao
+
+- Calibrar limiares do adaptador por símbolo (WIN/WDO) com replay de sessões
+  de estresse e sessão estável antes de ativar rollback automático no runtime.
+
+---
+
+## BLID-065
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: Calibrar limiares do scheduler runtime por simbolo para reduzir falso positivo de degradacao intraday
+stage_atual: project-manager
+adr_referencia: ADR-045
+data_inicio: 2026-04-06
+data_conclusao: 2026-04-06
+
+### Escopo
+
+Aplicar calibracao por simbolo (`WIN`/`WDO`) no adaptador de runtime do
+`RLScheduler`, conectando o simbolo operacional real dos agentes na construcao
+do contexto de degradacao para decisao de retrain/rollback.
+
+### Entregas
+
+- Calibracao por simbolo no adaptador:
+  - `obter_calibracao_simbolo(...)`
+  - normalizacao de simbolo com fallback seguro (`DEFAULT`)
+  - thresholds distintos para `WIN` e `WDO`
+- Contexto operacional enriquecido:
+  - `construir_contexto_operacional_para_scheduler(..., simbolo=...)`
+  - campo observavel `simbolo_contexto` no payload retornado
+- Wiring de simbolo real nos dois agentes:
+  - `scripts/agente_rl_direto_independente.py`
+  - `scripts/operar_novo_agente_rl_real_antiovertrading.py`
+- Cobertura de testes ampliada:
+  - normalizacao/calibracao por simbolo
+  - diferenca de classificacao entre `WIN` e `WDO` sob o mesmo fluxo de PnL
+
+### Evidencias
+
+- `pytest tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_retrain_scheduler.py -q` -> **41/41 PASSING**
+- `mypy --strict src/application/rl_scheduler_runtime_adapter.py src/application/rl_retrain_scheduler.py tests/unit/test_rl_scheduler_runtime_adapter.py tests/unit/test_rl_retrain_scheduler.py` -> **0 erros**
+- `python -m py_compile scripts/agente_rl_direto_independente.py scripts/operar_novo_agente_rl_real_antiovertrading.py` -> **OK**
+
+### Arquivos Alterados
+
+- `src/application/rl_scheduler_runtime_adapter.py`
+- `tests/unit/test_rl_scheduler_runtime_adapter.py`
+- `scripts/agente_rl_direto_independente.py`
+- `scripts/operar_novo_agente_rl_real_antiovertrading.py`
+- `docs/BACKLOG.md`
+- `docs/ADRS.md`
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| INICIAR_AGENTE_RL_5000.bat | ALTO | DIRETO | Validar em staging `simbolo_contexto` e reducao de falso positivo de retrain em regime normal |
+| INICIAR_AGENTE_RL_DIRETO.bat | ALTO | DIRETO | Validar em staging `simbolo_contexto` e gatilho de estresse mais sensivel para WDO |
+| INICIAR_DIARIOS.bat | BAIXO | INDIRETO | Monitorar efeito no resumo diario de degradacao/retrain |
+| INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat | BAIXO | INDIRETO | Sem mudanca direta de runtime; manter monitoramento de acoplamento compartilhado |
+| INICIAR_MONITOR_QUANTICO.bat | MEDIO | INDIRETO | Exibir simbolo_contexto e metodo aplicado na telemetria operacional |
+
+### Proxima Acao
+
+- Rodar replay controlado por simbolo (WIN e WDO) com sessoes degradadas e
+  sessoes estaveis para consolidar thresholds de producao.
+
