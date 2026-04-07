@@ -40,6 +40,21 @@ if ROOT_DIR not in sys.path:
 
 from src.application.scheduler_promotion_healthcheck import evaluate_status_payload
 
+try:
+    from src.application.dashboard_stats_server import (
+        StatsQueryService as _StatsQueryService,
+    )
+
+    StatsQueryService: Any = _StatsQueryService
+    _STATS_DASHBOARD_DISPONIVEL = True
+except Exception as exc:  # pragma: no cover - fallback defensivo
+    StatsQueryService = None
+    _STATS_DASHBOARD_DISPONIVEL = False
+    logging.getLogger("monitor_quantico").debug(
+        "dashboard_stats_server indisponivel — fechamentos operacionais desabilitados: %s",
+        exc,
+    )
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [QUANTUM] %(levelname)s %(message)s",
@@ -57,6 +72,7 @@ logger = logging.getLogger("monitor_quantico")
 # ---------------------------------------------------------------------------
 try:
     import yfinance as yf
+
     _YFINANCE_DISPONIVEL: bool = True
 except ImportError:
     yf = SimpleNamespace(Ticker=None)
@@ -67,7 +83,8 @@ except ImportError:
     )
 
 try:
-    from tradingview_ta import TA_Handler, Interval
+    from tradingview_ta import Interval, TA_Handler
+
     _TV_TA_DISPONIVEL: bool = True
 except ImportError:
     TA_Handler = None
@@ -79,9 +96,7 @@ except ImportError:
         INTERVAL_1_DAY="1d",
     )
     _TV_TA_DISPONIVEL = False
-    logger.debug(
-        "tradingview-ta nao instalado — indicadores tecnicos desabilitados"
-    )
+    logger.debug("tradingview-ta nao instalado — indicadores tecnicos desabilitados")
 
 # ---------------------------------------------------------------------------
 # Configuracao
@@ -95,15 +110,15 @@ INTERVALO_ATUALIZACAO = 60  # segundos
 # eventos extremos sem bloquear dados validos.
 # ---------------------------------------------------------------------------
 LIMITES_SANIDADE: dict[str, tuple[float, float]] = {
-    "sp500":        (500.0,     10_000.0),
-    "nasdaq":       (1_000.0,   30_000.0),
-    "dxy":          (70.0,      130.0),
-    "vix":          (8.0,       100.0),
-    "ouro":         (500.0,     5_500.0),
-    "petroleo_wti": (20.0,      250.0),
-    "us10y":        (0.0,       20.0),
-    "usd_brl":      (3.0,       12.0),
-    "ibov":         (50_000.0,  250_000.0),
+    "sp500": (500.0, 10_000.0),
+    "nasdaq": (1_000.0, 30_000.0),
+    "dxy": (70.0, 130.0),
+    "vix": (8.0, 100.0),
+    "ouro": (500.0, 5_500.0),
+    "petroleo_wti": (20.0, 250.0),
+    "us10y": (0.0, 20.0),
+    "usd_brl": (3.0, 12.0),
+    "ibov": (50_000.0, 250_000.0),
 }
 
 # Denominador fixo de confianca — apenas os 7 fatores externos
@@ -118,15 +133,15 @@ _ATIVOS_CRITICOS: frozenset[str] = frozenset({"sp500", "dxy"})
 # ---------------------------------------------------------------------------
 # Mapa yfinance — unica fonte de dados externos (substitui TwelveData e Finnhub)
 _MAPA_YFINANCE: dict[str, str] = {
-    "sp500":        "^GSPC",    # S&P 500 indice real
-    "nasdaq":       "^IXIC",    # Nasdaq Composite
-    "dxy":          "DX-Y.NYB", # Dollar Index
-    "vix":          "^VIX",     # VIX indice
-    "ouro":         "GC=F",     # Ouro futuro continuo
-    "petroleo_wti": "CL=F",     # WTI futuro continuo
-    "us10y":        "^TNX",     # Treasury 10 anos (yield %)
-    "usd_brl":      "BRL=X",    # USD/BRL
-    "ibov":         "^BVSP",    # Ibovespa
+    "sp500": "^GSPC",  # S&P 500 indice real
+    "nasdaq": "^IXIC",  # Nasdaq Composite
+    "dxy": "DX-Y.NYB",  # Dollar Index
+    "vix": "^VIX",  # VIX indice
+    "ouro": "GC=F",  # Ouro futuro continuo
+    "petroleo_wti": "CL=F",  # WTI futuro continuo
+    "us10y": "^TNX",  # Treasury 10 anos (yield %)
+    "usd_brl": "BRL=X",  # USD/BRL
+    "ibov": "^BVSP",  # Ibovespa
 }
 
 # ---------------------------------------------------------------------------
@@ -134,6 +149,7 @@ _MAPA_YFINANCE: dict[str, str] = {
 # Mesma logica do pydantic_settings: le o arquivo .env da raiz do projeto
 # e popula os.environ, entao os.getenv funciona normalmente.
 # ---------------------------------------------------------------------------
+
 
 def _preco_dentro_limites(chave: str, preco: float) -> bool:
     """Retorna True se preco esta dentro dos limites de sanidade configurados."""
@@ -173,21 +189,39 @@ _carregar_dotenv()
 # Fallback limpo para os.getenv — que agora ja tem o .env carregado
 try:
     from config import get_config as _get_config
+
     _cfg = _get_config()
-    TWELVEDATA_API_KEY: str = getattr(_cfg, "twelvedata_api_key", "") or os.getenv("TWELVEDATA_API_KEY", "")
-    ALPHAVANTAGE_API_KEY: str = getattr(_cfg, "alphavantage_api_key", "") or os.getenv("ALPHAVANTAGE_API_KEY", "")
-    FINNHUB_API_KEY: str = getattr(_cfg, "finnhub_api_key", "") or os.getenv("FINNHUB_API_KEY", "")
-    MT5_LOGIN: int = getattr(_cfg, "mt5_login", 0) or int(os.getenv("MT5_LOGIN", "0") or "0")
-    MT5_PASSWORD: str = getattr(_cfg, "mt5_password", "") or os.getenv("MT5_PASSWORD", "")
+    TWELVEDATA_API_KEY: str = getattr(_cfg, "twelvedata_api_key", "") or os.getenv(
+        "TWELVEDATA_API_KEY", ""
+    )
+    ALPHAVANTAGE_API_KEY: str = getattr(_cfg, "alphavantage_api_key", "") or os.getenv(
+        "ALPHAVANTAGE_API_KEY", ""
+    )
+    FINNHUB_API_KEY: str = getattr(_cfg, "finnhub_api_key", "") or os.getenv(
+        "FINNHUB_API_KEY", ""
+    )
+    MT5_LOGIN: int = getattr(_cfg, "mt5_login", 0) or int(
+        os.getenv("MT5_LOGIN", "0") or "0"
+    )
+    MT5_PASSWORD: str = getattr(_cfg, "mt5_password", "") or os.getenv(
+        "MT5_PASSWORD", ""
+    )
     MT5_SERVER: str = getattr(_cfg, "mt5_server", "") or os.getenv("MT5_SERVER", "")
-    MT5_TERMINAL_PATH: str = getattr(_cfg, "mt5_terminal_path", "") or os.getenv("MT5_TERMINAL_PATH", "")
-    logger.info("Configuracao carregada via TradingConfig (conta MT5: %s)", MT5_LOGIN or "nao definida")
+    MT5_TERMINAL_PATH: str = getattr(_cfg, "mt5_terminal_path", "") or os.getenv(
+        "MT5_TERMINAL_PATH", ""
+    )
+    logger.info(
+        "Configuracao carregada via TradingConfig (conta MT5: %s)",
+        MT5_LOGIN or "nao definida",
+    )
 except Exception as _cfg_exc:
     logger.debug("TradingConfig indisponivel (%s) — usando .env direto", _cfg_exc)
     TWELVEDATA_API_KEY = os.getenv("TWELVEDATA_API_KEY", "")
     ALPHAVANTAGE_API_KEY = os.getenv("ALPHAVANTAGE_API_KEY", "")
     FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
-    MT5_LOGIN = int(os.getenv("MT5_LOGIN") or os.getenv("MT5_WINFUT_ACCOUNT", "0") or "0")
+    MT5_LOGIN = int(
+        os.getenv("MT5_LOGIN") or os.getenv("MT5_WINFUT_ACCOUNT", "0") or "0"
+    )
     MT5_PASSWORD = os.getenv("MT5_PASSWORD") or os.getenv("MT5_WINFUT_PASSWORD") or ""
     MT5_SERVER = os.getenv("MT5_SERVER") or os.getenv("MT5_WINFUT_SERVER") or ""
     MT5_TERMINAL_PATH = os.getenv("MT5_TERMINAL_PATH", "")
@@ -199,6 +233,22 @@ SIMBOLO_WIN = "WIN$N"
 SIMBOLO_DOLFUT = "DOL$N"
 PROMOTION_GATE_ALLOW_SEM_PROMOCAO_UNTIL = (
     os.getenv("PROMOTION_GATE_ALLOW_SEM_PROMOCAO_UNTIL", "").strip() or None
+)
+MONITOR_FECHAMENTOS_DIAS = max(
+    1,
+    int(os.getenv("MONITOR_FECHAMENTOS_DIAS", "7") or "7"),
+)
+MONITOR_FECHAMENTOS_TOP_MOTIVOS = max(
+    1,
+    int(os.getenv("MONITOR_FECHAMENTOS_TOP_MOTIVOS", "3") or "3"),
+)
+MONITOR_FECHAMENTOS_ALERTA_TOTAL = max(
+    1,
+    int(os.getenv("MONITOR_FECHAMENTOS_ALERTA_TOTAL", "2") or "2"),
+)
+MONITOR_FECHAMENTOS_CRITICO_TOTAL = max(
+    MONITOR_FECHAMENTOS_ALERTA_TOTAL + 1,
+    int(os.getenv("MONITOR_FECHAMENTOS_CRITICO_TOTAL", "3") or "3"),
 )
 
 # ---------------------------------------------------------------------------
@@ -227,7 +277,9 @@ def _enriquecer_status_promocao(
         allow_sem_promocao_until=allow_until,
         now=now,
     )
-    status = str(payload.get("status", "sem_promocao")).strip().lower() or "sem_promocao"
+    status = (
+        str(payload.get("status", "sem_promocao")).strip().lower() or "sem_promocao"
+    )
     janela_tolerancia_ativa = bool(
         status == "sem_promocao" and resultado.ok and allow_until
     )
@@ -325,6 +377,390 @@ def _carregar_status_promocao_scheduler(
     )
 
 
+def _carregar_resumo_fechamentos_operacionais(
+    dias: int = MONITOR_FECHAMENTOS_DIAS,
+) -> dict[str, Any]:
+    """Carrega resumo dos fechamentos operacionais do Micro Tendencia.
+
+    Reutiliza `StatsQueryService` como fonte canônica e nunca propaga
+    exceção para a UI do monitor.
+    """
+    payload: dict[str, Any] = {
+        "status": "sem_dados",
+        "fonte": "sqlite_stats",
+        "periodo_dias": int(dias),
+        "db_path": None,
+        "total_fechamentos": 0,
+        "por_origem": {},
+        "por_motivo": {},
+        "top_motivos": [],
+        "origens_presentes": [],
+        "fechamentos_recentes": [],
+        "motivo": "Sem fechamentos no período monitorado.",
+        "ultima_atualizacao": datetime.now().isoformat(),
+        "stale": False,
+    }
+
+    if not _STATS_DASHBOARD_DISPONIVEL or StatsQueryService is None:
+        payload.update(
+            {
+                "status": "indisponivel",
+                "fonte": "modulo_indisponivel",
+                "motivo": "StatsQueryService indisponível no ambiente atual.",
+                "stale": True,
+            }
+        )
+        return payload
+
+    try:
+        db_path = os.getenv("MONITOR_FECHAMENTOS_DB_PATH", "").strip() or None
+        service = StatsQueryService(db_path=db_path)
+        resumo = service.obter_resumo_fechamentos_por_origem(dias=int(dias))
+
+        if not isinstance(resumo, dict):
+            raise ValueError("resumo de fechamentos retornou payload inválido")
+
+        payload.update(resumo)
+        total_fechamentos = int(payload.get("total_fechamentos", 0) or 0)
+        por_origem = payload.get("por_origem") or {}
+        por_motivo = payload.get("por_motivo") or {}
+
+        payload["status"] = "ok" if total_fechamentos > 0 else "sem_dados"
+        payload["origens_presentes"] = sorted(str(chave) for chave in por_origem.keys())
+
+        motivos_ordenados: list[dict[str, Any]] = []
+        for motivo, dados in por_motivo.items():
+            dados_motivo = dados if isinstance(dados, dict) else {}
+            motivos_ordenados.append(
+                {
+                    "motivo": str(motivo),
+                    "quantidade": int(dados_motivo.get("quantidade", 0) or 0),
+                    "pnl_total": float(dados_motivo.get("pnl_total", 0.0) or 0.0),
+                }
+            )
+
+        payload["top_motivos"] = sorted(
+            motivos_ordenados,
+            key=lambda item: item["quantidade"],
+            reverse=True,
+        )[:MONITOR_FECHAMENTOS_TOP_MOTIVOS]
+        payload["motivo"] = (
+            f"{total_fechamentos} fechamento(s) consolidados nos últimos {int(dias)} dia(s)."
+            if total_fechamentos > 0
+            else "Sem fechamentos recentes para consolidar."
+        )
+        payload["ultima_atualizacao"] = datetime.now().isoformat()
+        payload["stale"] = False
+        return payload
+    except Exception as exc:
+        logger.warning(
+            "Falha ao carregar resumo de fechamentos operacionais: %s",
+            exc,
+        )
+        payload.update(
+            {
+                "status": "indisponivel",
+                "fonte": "fallback",
+                "motivo": f"falha ao ler fechamentos operacionais: {exc}",
+                "stale": True,
+            }
+        )
+        return payload
+
+
+def _carregar_dashboard_operacional() -> dict[str, Any]:
+    """Carrega snapshot executivo do dashboard para o Monitor Quântico.
+
+    Reutiliza `StatsQueryService.obter_snapshot_dashboard()` como fonte
+    canônica read-only e nunca propaga exceções para a UI.
+    """
+    payload: dict[str, Any] = {
+        "status": "sem_dados",
+        "fonte": "sqlite_stats",
+        "resumo": "Sem trades recentes consolidados no dashboard.",
+        "trade_stats": {
+            "total_trades": 0,
+            "win_rate": 0.0,
+            "pnl_total_reais": 0.0,
+            "drawdown_maximo": 0.0,
+            "pnl_nao_realizado_reais": 0.0,
+        },
+        "metricas_operacionais": {
+            "profit_factor_bruto": 0.0,
+            "sharpe_ratio": 0.0,
+            "tempo_posicao_media_minutos": 0.0,
+        },
+        "protecao_status": {
+            "trades_ultima_hora": 0,
+            "limite_trades_hora": 0,
+            "cooldown_segundos_restantes": 0,
+            "total_bloqueios_hora": 0,
+            "contador_perda_consecutiva": 0,
+            "horario_permite_tradear": True,
+            "bloqueado": False,
+        },
+        "ultima_atualizacao": datetime.now().isoformat(),
+    }
+
+    if not _STATS_DASHBOARD_DISPONIVEL or StatsQueryService is None:
+        payload.update(
+            {
+                "status": "indisponivel",
+                "fonte": "modulo_indisponivel",
+                "resumo": "StatsQueryService indisponível no ambiente atual.",
+            }
+        )
+        return payload
+
+    try:
+        db_path = (
+            os.getenv("MONITOR_DASHBOARD_DB_PATH", "").strip()
+            or os.getenv("MONITOR_FECHAMENTOS_DB_PATH", "").strip()
+            or None
+        )
+        service = StatsQueryService(db_path=db_path)
+        snapshot = service.obter_snapshot_dashboard()
+        dados_snapshot = (
+            snapshot.para_dict() if hasattr(snapshot, "para_dict") else snapshot
+        )
+
+        if not isinstance(dados_snapshot, dict):
+            raise ValueError("snapshot do dashboard retornou payload inválido")
+
+        trade_stats = dict(dados_snapshot.get("trade_stats") or {})
+        metricas = dict(dados_snapshot.get("metricas_operacionais") or {})
+        protecao = dict(dados_snapshot.get("protecao_status") or {})
+
+        trades_ultima_hora = int(protecao.get("trades_ultima_hora", 0) or 0)
+        limite_trades_hora = int(protecao.get("limite_trades_hora", 0) or 0)
+        cooldown_segundos = int(protecao.get("cooldown_segundos_restantes", 0) or 0)
+        contador_perdas = int(protecao.get("contador_perda_consecutiva", 0) or 0)
+        horario_permite = bool(protecao.get("horario_permite_tradear", True))
+        protecao_ativa = bool(
+            (limite_trades_hora > 0 and trades_ultima_hora > limite_trades_hora)
+            or cooldown_segundos > 0
+            or contador_perdas >= 2
+            or not horario_permite
+        )
+        protecao["bloqueado"] = protecao_ativa
+
+        total_trades = int(trade_stats.get("total_trades", 0) or 0)
+        pnl_total = float(trade_stats.get("pnl_total_reais", 0.0) or 0.0)
+        win_rate = float(trade_stats.get("win_rate", 0.0) or 0.0)
+        drawdown = float(trade_stats.get("drawdown_maximo", 0.0) or 0.0)
+
+        status = "alerta" if protecao_ativa else "ok"
+        if total_trades == 0 and not protecao_ativa and pnl_total == 0.0:
+            status = "sem_dados"
+
+        resumo = (
+            f"P&L hoje {pnl_total:+.2f} | win rate {win_rate:.2f}% | "
+            f"proteção {'ativa' if protecao_ativa else 'liberada'}."
+        )
+        if status == "sem_dados":
+            resumo = "Sem trades recentes consolidados no dashboard."
+
+        payload.update(
+            {
+                "status": status,
+                "resumo": resumo,
+                "trade_stats": trade_stats,
+                "metricas_operacionais": metricas,
+                "protecao_status": protecao,
+                "ultima_atualizacao": dados_snapshot.get("timestamp")
+                or datetime.now().isoformat(),
+            }
+        )
+
+        if status == "alerta":
+            logger.info(
+                "[DASHBOARD] ALERTA | pnl=%s | win_rate=%.2f | cooldown=%ss | perdas=%s",
+                f"{pnl_total:+.2f}",
+                win_rate,
+                cooldown_segundos,
+                contador_perdas,
+            )
+        else:
+            logger.debug(
+                "[DASHBOARD] %s | trades=%s | pnl=%s | drawdown=%s",
+                status.upper(),
+                total_trades,
+                f"{pnl_total:+.2f}",
+                f"{drawdown:+.2f}",
+            )
+
+        return payload
+    except Exception as exc:
+        logger.warning("Falha ao carregar dashboard operacional: %s", exc)
+        payload.update(
+            {
+                "status": "indisponivel",
+                "fonte": "fallback",
+                "resumo": f"falha ao ler dashboard operacional: {exc}",
+            }
+        )
+        return payload
+
+
+def _classificar_saude_operacional(
+    promocao: dict[str, Any],
+    anomalia_fechamentos: dict[str, Any],
+    dashboard_operacional: dict[str, Any],
+) -> dict[str, Any]:
+    """Consolida um health-check operacional geral para o monitor.
+
+    Regras do BLID-082:
+    - `CRITICO`: gate bloqueado, anomalia crítica ou dashboard indisponível
+    - `ALERTA`: pre-open tolerado, anomalia alerta ou proteção ativa
+    - `OK`: operação liberada e sem alertas relevantes
+    """
+    bloqueio_promocao = bool(promocao.get("bloqueio_efetivo", False))
+    pre_open_tolerado = bool(promocao.get("janela_tolerancia_ativa", False))
+    nivel_anomalia = (
+        str(anomalia_fechamentos.get("nivel", "OK")).strip().upper() or "OK"
+    )
+    status_dashboard = (
+        str(dashboard_operacional.get("status", "sem_dados")).strip().lower()
+        or "sem_dados"
+    )
+    protecao_status = dashboard_operacional.get("protecao_status") or {}
+    protecao_ativa = bool(protecao_status.get("bloqueado", False))
+
+    nivel = "OK"
+    motivos: list[str] = []
+
+    if bloqueio_promocao:
+        nivel = "CRITICO"
+        motivos.append("gate de promoção bloqueado")
+    elif pre_open_tolerado:
+        nivel = "ALERTA"
+        motivos.append("gate em pre-open tolerado")
+
+    if nivel_anomalia == "CRITICO":
+        nivel = "CRITICO"
+        motivos.append("anomalia crítica nos fechamentos")
+    elif nivel_anomalia == "ALERTA" and nivel != "CRITICO":
+        nivel = "ALERTA"
+        motivos.append("fechamentos exigem atenção")
+
+    if status_dashboard == "indisponivel":
+        nivel = "CRITICO"
+        motivos.append("dashboard operacional indisponível")
+    elif (status_dashboard == "alerta" or protecao_ativa) and nivel != "CRITICO":
+        nivel = "ALERTA"
+        motivos.append("proteção operacional ativa")
+
+    if not motivos:
+        motivos.append("operação monitorada dentro do esperado")
+
+    resumo = "; ".join(dict.fromkeys(motivos)) + "."
+    saude = {
+        "nivel": nivel,
+        "resumo": resumo,
+        "bloqueio_promocao": bloqueio_promocao,
+        "pre_open_tolerado": pre_open_tolerado,
+        "protecao_ativa": protecao_ativa,
+        "status_dashboard": status_dashboard,
+        "status_fechamentos": nivel_anomalia,
+    }
+
+    if nivel == "CRITICO":
+        logger.warning("[SAUDE] CRITICO | %s", resumo)
+    elif nivel == "ALERTA":
+        logger.info("[SAUDE] ALERTA | %s", resumo)
+
+    return saude
+
+
+def _classificar_anomalia_fechamentos(
+    resumo: dict[str, Any],
+) -> dict[str, Any]:
+    """Classifica o risco operacional dos fechamentos consolidados.
+
+    Heurística inicial do BLID-079:
+    - `CRITICO`: resumo indisponível/stale ou 3+ origens de fechamento
+    - `ALERTA`: 2 origens presentes ou presença de `OPERADOR`/`MERCADO`
+    - `OK`: sem dados suspeitos e operação dentro do esperado
+    """
+    status = str(resumo.get("status", "sem_dados")).strip().lower() or "sem_dados"
+    total_fechamentos = int(resumo.get("total_fechamentos", 0) or 0)
+    stale = bool(resumo.get("stale", False))
+    origens_brutas = resumo.get("origens_presentes") or []
+    if not origens_brutas and isinstance(resumo.get("por_origem"), dict):
+        origens_brutas = list((resumo.get("por_origem") or {}).keys())
+    origens_presentes = sorted(str(origem).upper() for origem in origens_brutas)
+    top_motivos = resumo.get("top_motivos") or []
+
+    motivo_predominante = ""
+    quantidade_motivo_predominante = 0
+    if top_motivos and isinstance(top_motivos[0], dict):
+        motivo_predominante = str(top_motivos[0].get("motivo", "")).strip()
+        quantidade_motivo_predominante = int(top_motivos[0].get("quantidade", 0) or 0)
+
+    origens_risco = [
+        origem for origem in origens_presentes if origem in {"OPERADOR", "MERCADO"}
+    ]
+    nivel = "OK"
+    resumo_legivel = "Fluxo de fechamentos operacionais dentro do esperado."
+
+    if status == "indisponivel" or stale:
+        nivel = "CRITICO"
+        resumo_legivel = str(
+            resumo.get("motivo") or "Resumo de fechamentos indisponível no momento."
+        )
+    elif (
+        len(origens_presentes) >= 3
+        or quantidade_motivo_predominante >= MONITOR_FECHAMENTOS_CRITICO_TOTAL
+    ):
+        nivel = "CRITICO"
+        resumo_legivel = (
+            "Múltiplas origens de fechamento detectadas "
+            f"({', '.join(origens_presentes) or 'SEM_ORIGEM'})."
+        )
+    elif (
+        len(origens_presentes) >= 2
+        or total_fechamentos >= MONITOR_FECHAMENTOS_ALERTA_TOTAL
+        or bool(origens_risco)
+    ):
+        nivel = "ALERTA"
+        resumo_legivel = (
+            "Fechamentos exigem atenção operacional: "
+            f"origens={', '.join(origens_presentes) or 'SEM_ORIGEM'}"
+        )
+    elif status == "sem_dados":
+        resumo_legivel = "Sem fechamentos recentes no período monitorado."
+
+    anomalia = {
+        "nivel": nivel,
+        "resumo": resumo_legivel,
+        "status_origem": status,
+        "total_fechamentos": total_fechamentos,
+        "origens_presentes": origens_presentes,
+        "origens_risco": origens_risco,
+        "motivo_predominante": motivo_predominante,
+        "quantidade_motivo_predominante": quantidade_motivo_predominante,
+        "stale": stale,
+    }
+
+    if nivel == "CRITICO":
+        logger.warning(
+            "[FECHAMENTOS] CRITICO | total=%s | origens=%s | motivo=%s | stale=%s",
+            total_fechamentos,
+            origens_presentes,
+            motivo_predominante or "N/A",
+            stale,
+        )
+    elif nivel == "ALERTA":
+        logger.info(
+            "[FECHAMENTOS] ALERTA | total=%s | origens=%s | motivo=%s",
+            total_fechamentos,
+            origens_presentes,
+            motivo_predominante or "N/A",
+        )
+
+    return anomalia
+
+
 def _build_status_payload() -> dict[str, Any]:
     """Monta payload resumido para health-check no endpoint /status."""
     promotion = _cache_dados.get("scheduler_symbol_promotion")
@@ -332,6 +768,29 @@ def _build_status_payload() -> dict[str, Any]:
         promotion = _carregar_status_promocao_scheduler()
     else:
         promotion = _enriquecer_status_promocao(dict(promotion))
+
+    fechamentos = _cache_dados.get("fechamentos_por_origem")
+    if not isinstance(fechamentos, dict):
+        fechamentos = _carregar_resumo_fechamentos_operacionais()
+
+    top_motivos = fechamentos.get("top_motivos") or []
+    top_motivo = ""
+    if top_motivos and isinstance(top_motivos[0], dict):
+        top_motivo = str(top_motivos[0].get("motivo", "")).strip()
+
+    dashboard_operacional = _cache_dados.get("dashboard_operacional")
+    if not isinstance(dashboard_operacional, dict):
+        dashboard_operacional = _carregar_dashboard_operacional()
+
+    trade_stats_dashboard = dict(dashboard_operacional.get("trade_stats") or {})
+    protecao_dashboard = dict(dashboard_operacional.get("protecao_status") or {})
+    anomalia = _classificar_anomalia_fechamentos(fechamentos)
+    saude_operacional = _classificar_saude_operacional(
+        promotion,
+        anomalia,
+        dashboard_operacional,
+    )
+
     return {
         "ok": bool(_cache_dados),
         "ultima_atualizacao": _cache_dados.get("timestamp_legivel"),
@@ -342,14 +801,39 @@ def _build_status_payload() -> dict[str, Any]:
                 promotion.get("runtime_config_presente", False)
             ),
             "motivo": str(promotion.get("motivo", "")).strip(),
-            "allow_sem_promocao_until": promotion.get(
-                "allow_sem_promocao_until"
-            ),
+            "allow_sem_promocao_until": promotion.get("allow_sem_promocao_until"),
             "janela_tolerancia_ativa": bool(
                 promotion.get("janela_tolerancia_ativa", False)
             ),
             "bloqueio_efetivo": bool(promotion.get("bloqueio_efetivo", False)),
         },
+        "fechamentos_por_origem": {
+            "status": str(fechamentos.get("status", "sem_dados")),
+            "total_fechamentos": int(fechamentos.get("total_fechamentos", 0) or 0),
+            "top_motivo": top_motivo,
+            "origens_presentes": list(fechamentos.get("origens_presentes") or []),
+            "stale": bool(fechamentos.get("stale", False)),
+        },
+        "anomalia_fechamentos": {
+            "nivel": anomalia.get("nivel", "OK"),
+            "resumo": anomalia.get("resumo", ""),
+            "total_fechamentos": int(anomalia.get("total_fechamentos", 0) or 0),
+            "origens_presentes": list(anomalia.get("origens_presentes") or []),
+            "stale": bool(anomalia.get("stale", False)),
+        },
+        "dashboard_operacional": {
+            "status": str(dashboard_operacional.get("status", "sem_dados")),
+            "resumo": str(dashboard_operacional.get("resumo", "")).strip(),
+            "pnl_total_reais": float(
+                trade_stats_dashboard.get("pnl_total_reais", 0.0) or 0.0
+            ),
+            "win_rate": float(trade_stats_dashboard.get("win_rate", 0.0) or 0.0),
+            "protecao_ativa": bool(protecao_dashboard.get("bloqueado", False)),
+            "trades_ultima_hora": int(
+                protecao_dashboard.get("trades_ultima_hora", 0) or 0
+            ),
+        },
+        "saude_operacional": saude_operacional,
     }
 
 
@@ -374,9 +858,7 @@ def _buscar_yfinance(chave: str, simbolo: str) -> Optional[dict[str, Any]]:
         info = yf.Ticker(simbolo).fast_info
         preco: float = float(info.last_price or 0)
         if preco == 0:
-            logger.debug(
-                "yfinance %s (%s): preco zero — descartado", chave, simbolo
-            )
+            logger.debug("yfinance %s (%s): preco zero — descartado", chave, simbolo)
             return None
         abertura: float = float(info.open or 0)
         variacao_pct: float = 0.0
@@ -419,11 +901,11 @@ def _buscar_indicadores_tv(
     if not _TV_TA_DISPONIVEL:
         return None
     _MAPA_INTERVALO: dict[str, Any] = {
-        "1m":  Interval.INTERVAL_1_MINUTE,
-        "5m":  Interval.INTERVAL_5_MINUTES,
+        "1m": Interval.INTERVAL_1_MINUTE,
+        "5m": Interval.INTERVAL_5_MINUTES,
         "15m": Interval.INTERVAL_15_MINUTES,
-        "1h":  Interval.INTERVAL_1_HOUR,
-        "1d":  Interval.INTERVAL_1_DAY,
+        "1h": Interval.INTERVAL_1_HOUR,
+        "1d": Interval.INTERVAL_1_DAY,
     }
     try:
         handler = TA_Handler(
@@ -479,27 +961,29 @@ def _buscar_dados_externos() -> tuple[dict[str, Any], list[str], list[str]]:
                 ativos[chave] = dado
                 logger.info(
                     "yfinance OK:   %-16s %s = %.2f (%+.2f%%)",
-                    chave, simbolo, preco, dado.get("variacao_pct", 0),
+                    chave,
+                    simbolo,
+                    preco,
+                    dado.get("variacao_pct", 0),
                 )
             else:
                 ativos_sanidade_falha.append(chave)
                 logger.warning(
                     "yfinance SANIDADE FALHOU: %-16s %s = %.2f "
                     "(esperado entre %.1f e %.1f)",
-                    chave, simbolo, preco,
-                    LIMITES_SANIDADE[chave][0], LIMITES_SANIDADE[chave][1],
+                    chave,
+                    simbolo,
+                    preco,
+                    LIMITES_SANIDADE[chave][0],
+                    LIMITES_SANIDADE[chave][1],
                 )
 
     ativos_criticos_ausentes = [a for a in _ATIVOS_CRITICOS if a not in ativos]
 
     if not ativos:
-        logger.warning(
-            "Nenhum dado externo coletado — verifique: pip install yfinance"
-        )
+        logger.warning("Nenhum dado externo coletado — verifique: pip install yfinance")
     else:
-        logger.info(
-            "Ativos coletados: %d/%d", len(ativos), len(_MAPA_YFINANCE)
-        )
+        logger.info("Ativos coletados: %d/%d", len(ativos), len(_MAPA_YFINANCE))
 
     if ativos_criticos_ausentes:
         logger.warning(
@@ -518,6 +1002,7 @@ def _buscar_dados_externos() -> tuple[dict[str, Any], list[str], list[str]]:
 #   - credenciais lidas do .env (MT5_LOGIN, MT5_PASSWORD, MT5_SERVER)
 #   - terminal_exe_path usado quando MT5_TERMINAL_PATH esta configurado
 # ---------------------------------------------------------------------------
+
 
 def _conectar_mt5() -> Optional[Any]:
     """
@@ -603,25 +1088,23 @@ def _cotacao_mt5(mt5_mod: Any, simbolo: str) -> Optional[dict[str, Any]]:
             fechamento_ant = float(barras[-2]["close"])
             abertura = float(barras[-1]["open"])
             if fechamento_ant > 0:
-                variacao_pct = (
-                    (info.bid - fechamento_ant) / fechamento_ant
-                ) * 100
+                variacao_pct = ((info.bid - fechamento_ant) / fechamento_ant) * 100
 
         # Candles M5 para contexto intraday
-        barras_m5 = mt5_mod.copy_rates_from_pos(
-            simbolo, mt5_mod.TIMEFRAME_M5, 0, 30
-        )
+        barras_m5 = mt5_mod.copy_rates_from_pos(simbolo, mt5_mod.TIMEFRAME_M5, 0, 30)
         candles_m5 = []
         if barras_m5 is not None:
             for b in barras_m5[-12:]:
-                candles_m5.append({
-                    "time": int(b["time"]),
-                    "open": float(b["open"]),
-                    "high": float(b["high"]),
-                    "low": float(b["low"]),
-                    "close": float(b["close"]),
-                    "volume": int(b["tick_volume"]),
-                })
+                candles_m5.append(
+                    {
+                        "time": int(b["time"]),
+                        "open": float(b["open"]),
+                        "high": float(b["high"]),
+                        "low": float(b["low"]),
+                        "close": float(b["close"]),
+                        "volume": int(b["tick_volume"]),
+                    }
+                )
 
         return {
             "simbolo": simbolo,
@@ -663,6 +1146,7 @@ def _dados_mt5() -> dict[str, Any]:
 # Calculo da Tendencia do Dia
 # ---------------------------------------------------------------------------
 
+
 def _sinal_variacao(variacao_pct: float) -> str:
     """Retorna sinal de alta/baixa baseado na variacao percentual."""
     if variacao_pct > 0.3:
@@ -672,7 +1156,9 @@ def _sinal_variacao(variacao_pct: float) -> str:
     return "NEUTRO"
 
 
-def _calcular_score_tendencia(ativos: dict[str, Any], mt5_dados: dict[str, Any]) -> dict[str, Any]:
+def _calcular_score_tendencia(
+    ativos: dict[str, Any], mt5_dados: dict[str, Any]
+) -> dict[str, Any]:
     """
     Calcula o score de tendencia do dia para o Mini Indice.
 
@@ -699,13 +1185,15 @@ def _calcular_score_tendencia(ativos: dict[str, Any], mt5_dados: dict[str, Any])
         nonlocal score
         dado = ativos.get(chave)
         if not dado:
-            fatores.append({
-                "label": label,
-                "variacao": None,
-                "contribuicao": 0,
-                "sinal": "N/A",
-                "peso": peso,
-            })
+            fatores.append(
+                {
+                    "label": label,
+                    "variacao": None,
+                    "contribuicao": 0,
+                    "sinal": "N/A",
+                    "peso": peso,
+                }
+            )
             return
 
         var = dado.get("variacao_pct", 0)
@@ -720,14 +1208,16 @@ def _calcular_score_tendencia(ativos: dict[str, Any], mt5_dados: dict[str, Any])
 
         sinal_local = _sinal_variacao(var if correlacao_positiva else -var)
 
-        fatores.append({
-            "label": label,
-            "variacao": round(var, 2),
-            "preco": round(dado.get("preco", 0), 2),
-            "contribuicao": round(contribuicao, 1),
-            "sinal": sinal_local,
-            "peso": round(peso * 100),
-        })
+        fatores.append(
+            {
+                "label": label,
+                "variacao": round(var, 2),
+                "preco": round(dado.get("preco", 0), 2),
+                "contribuicao": round(contribuicao, 1),
+                "sinal": sinal_local,
+                "peso": round(peso * 100),
+            }
+        )
 
     _score_ativo("sp500", 0.25, True, "S&P 500")
     _score_ativo("nasdaq", 0.15, True, "Nasdaq")
@@ -751,14 +1241,16 @@ def _calcular_score_tendencia(ativos: dict[str, Any], mt5_dados: dict[str, Any])
         contrib_win = direcao_win * pontos_win * peso_win
         # Reescala o score para incluir WIN$ (normaliza para -100/+100)
         score = (score * 0.9) + contrib_win
-        fatores.append({
-            "label": "WIN$ (MT5)",
-            "variacao": round(win_variacao, 2),
-            "preco": round(win_preco, 0),
-            "contribuicao": round(contrib_win, 1),
-            "sinal": _sinal_variacao(win_variacao),
-            "peso": 10,
-        })
+        fatores.append(
+            {
+                "label": "WIN$ (MT5)",
+                "variacao": round(win_variacao, 2),
+                "preco": round(win_preco, 0),
+                "contribuicao": round(contrib_win, 1),
+                "sinal": _sinal_variacao(win_variacao),
+                "peso": 10,
+            }
+        )
 
     score = max(-100.0, min(100.0, score))
 
@@ -808,9 +1300,7 @@ def _calcular_score_tendencia(ativos: dict[str, Any], mt5_dados: dict[str, Any])
     # WIN$ e sinal bonus local e nao entra no denominador — garante
     # consistencia independente do estado da conexao MT5
     fatores_externos = [f for f in fatores if f.get("label") != "WIN$ (MT5)"]
-    ativos_com_dados = sum(
-        1 for f in fatores_externos if f.get("variacao") is not None
-    )
+    ativos_com_dados = sum(1 for f in fatores_externos if f.get("variacao") is not None)
     confianca_pct = int((ativos_com_dados / _TOTAL_FATORES_EXTERNOS) * 100)
 
     return {
@@ -832,6 +1322,7 @@ def _calcular_score_tendencia(ativos: dict[str, Any], mt5_dados: dict[str, Any])
 # Analise de contexto narrativo
 # ---------------------------------------------------------------------------
 
+
 def _contexto_narrativo(ativos: dict[str, Any], tendencia_dados: dict[str, Any]) -> str:
     """Gera resumo narrativo do contexto de mercado."""
     partes = []
@@ -851,9 +1342,7 @@ def _contexto_narrativo(ativos: dict[str, Any], tendencia_dados: dict[str, Any])
                 f"Wall Street em alta ({var_sp:+.1f}%) — apetite por risco elevado"
             )
         elif var_sp < -0.5:
-            partes.append(
-                f"Wall Street em queda ({var_sp:+.1f}%) — aversao a risco"
-            )
+            partes.append(f"Wall Street em queda ({var_sp:+.1f}%) — aversao a risco")
         else:
             partes.append("Wall Street lateral — sem direcao clara nos EUA")
 
@@ -889,9 +1378,7 @@ def _contexto_narrativo(ativos: dict[str, Any], tendencia_dados: dict[str, Any])
         var_o = ouro["variacao_pct"]
         if abs(var_o) > 0.5:
             sentido = "subindo" if var_o > 0 else "caindo"
-            partes.append(
-                f"Ouro {sentido} ({var_o:+.1f}%) — sinal de safe-haven"
-            )
+            partes.append(f"Ouro {sentido} ({var_o:+.1f}%) — sinal de safe-haven")
 
     # Petroleo
     if petroleo.get("variacao_pct") is not None:
@@ -904,8 +1391,7 @@ def _contexto_narrativo(ativos: dict[str, Any], tendencia_dados: dict[str, Any])
 
     if not partes:
         return (
-            "Dados externos indisponiveis. "
-            "Verificar conexao e chaves de API no .env"
+            "Dados externos indisponiveis. " "Verificar conexao e chaves de API no .env"
         )
 
     return ". ".join(partes) + "."
@@ -915,14 +1401,17 @@ def _contexto_narrativo(ativos: dict[str, Any], tendencia_dados: dict[str, Any])
 # Funcao principal de coleta e calculo
 # ---------------------------------------------------------------------------
 
+
 def _atualizar_dados() -> None:
     """Coleta todos os dados e atualiza o cache global."""
     logger.info("Iniciando coleta de dados...")
     inicio = time.time()
 
-    ativos_externos, ativos_criticos_ausentes, ativos_sanidade_falha = (
-        _buscar_dados_externos()
-    )
+    (
+        ativos_externos,
+        ativos_criticos_ausentes,
+        ativos_sanidade_falha,
+    ) = _buscar_dados_externos()
     mt5_dados = _dados_mt5()
     indicadores_tv = _buscar_indicadores_tv(
         simbolo_tv="WINCONTFUT",
@@ -947,13 +1436,27 @@ def _atualizar_dados() -> None:
     else:
         regime = "CRITICO"
 
+    fechamentos_operacionais = _carregar_resumo_fechamentos_operacionais()
+    anomalia_fechamentos = _classificar_anomalia_fechamentos(fechamentos_operacionais)
+    dashboard_operacional = _carregar_dashboard_operacional()
+    scheduler_symbol_promotion = _carregar_status_promocao_scheduler()
+    saude_operacional = _classificar_saude_operacional(
+        scheduler_symbol_promotion,
+        anomalia_fechamentos,
+        dashboard_operacional,
+    )
+
     dados_completos = {
         "timestamp": datetime.now().isoformat(),
         "timestamp_legivel": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
         "tendencia": tendencia,
         "narrativa": narrativa,
         "regime_macro": regime,
-        "scheduler_symbol_promotion": _carregar_status_promocao_scheduler(),
+        "scheduler_symbol_promotion": scheduler_symbol_promotion,
+        "fechamentos_por_origem": fechamentos_operacionais,
+        "anomalia_fechamentos": anomalia_fechamentos,
+        "dashboard_operacional": dashboard_operacional,
+        "saude_operacional": saude_operacional,
         "ativos": {
             k: {
                 "preco": v.get("preco"),
@@ -1002,6 +1505,7 @@ def _atualizar_dados() -> None:
 # Thread de atualizacao periodica
 # ---------------------------------------------------------------------------
 
+
 def _thread_atualizacao() -> None:
     """Roda em background, atualizando dados a cada INTERVALO_ATUALIZACAO s.
 
@@ -1010,7 +1514,7 @@ def _thread_atualizacao() -> None:
     esgotamento do rate limit do TwelveData.
     """
     while True:
-        time.sleep(INTERVALO_ATUALIZACAO)   # dorme ANTES
+        time.sleep(INTERVALO_ATUALIZACAO)  # dorme ANTES
         try:
             _atualizar_dados()
         except Exception as exc:
@@ -1020,6 +1524,7 @@ def _thread_atualizacao() -> None:
 # ---------------------------------------------------------------------------
 # Servidor HTTP
 # ---------------------------------------------------------------------------
+
 
 class MonitorHandler(BaseHTTPRequestHandler):
     """Handler HTTP para servir dados JSON ao monitor HTML."""
@@ -1038,9 +1543,7 @@ class MonitorHandler(BaseHTTPRequestHandler):
         if self.path in ("/dados", "/dados/"):
             with _lock_cache:
                 payload = dict(_cache_dados)
-            corpo = json.dumps(payload, ensure_ascii=False, indent=2).encode(
-                "utf-8"
-            )
+            corpo = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
             self.send_response(200)
             self._enviar_headers_cors()
             self.send_header("Content-Length", str(len(corpo)))
@@ -1049,8 +1552,9 @@ class MonitorHandler(BaseHTTPRequestHandler):
 
         elif self.path in ("/", "/index.html"):
             # Serve o HTML do monitor
-            html_path = Path(__file__).parent.parent / "outputs" / \
-                "monitor_quantico.html"
+            html_path = (
+                Path(__file__).parent.parent / "outputs" / "monitor_quantico.html"
+            )
             if html_path.exists():
                 corpo = html_path.read_bytes()
                 self.send_response(200)
@@ -1084,6 +1588,7 @@ class MonitorHandler(BaseHTTPRequestHandler):
 # ---------------------------------------------------------------------------
 # Entrypoint
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     """Inicializa o monitor quantico."""
@@ -1124,12 +1629,8 @@ def main() -> None:
 
     # Servidor HTTP
     servidor = HTTPServer(("0.0.0.0", PORTA_HTTP), MonitorHandler)
-    logger.info(
-        "Servidor HTTP ativo em http://localhost:%d/", PORTA_HTTP
-    )
-    logger.info(
-        "Abra outputs/monitor_quantico.html no browser para visualizar"
-    )
+    logger.info("Servidor HTTP ativo em http://localhost:%d/", PORTA_HTTP)
+    logger.info("Abra outputs/monitor_quantico.html no browser para visualizar")
     logger.info("-" * 60)
 
     try:

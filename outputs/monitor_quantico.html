@@ -292,6 +292,108 @@
     .promocao--atencao .promocao-status { color: var(--neutro); }
 
     /* ------------------------------------------------------------------ */
+    /* FECHAMENTOS OPERACIONAIS                                            */
+    /* ------------------------------------------------------------------ */
+    .fechamentos-resumo {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .fechamentos-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .fechamentos-topo {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: baseline;
+    }
+
+    .anomalia-badge {
+      font-size: 10px;
+      font-weight: bold;
+      letter-spacing: 0.8px;
+      border: 1px solid var(--border2);
+      border-radius: 999px;
+      padding: 4px 10px;
+      white-space: nowrap;
+    }
+
+    .anomalia-badge--ok {
+      color: var(--alta);
+      border-color: rgba(0, 255, 136, 0.4);
+      background: rgba(0, 255, 136, 0.08);
+    }
+
+    .anomalia-badge--alerta {
+      color: var(--neutro);
+      border-color: rgba(255, 215, 0, 0.4);
+      background: rgba(255, 215, 0, 0.08);
+    }
+
+    .anomalia-badge--critico {
+      color: var(--baixa);
+      border-color: rgba(255, 51, 85, 0.45);
+      background: rgba(255, 51, 85, 0.08);
+    }
+
+    .fechamentos-total {
+      font-size: 22px;
+      font-weight: bold;
+      color: var(--white);
+      letter-spacing: 1px;
+    }
+
+    .fechamentos-sub {
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    .fechamento-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 10px;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+    }
+
+    .fechamento-row:last-child { border-bottom: none; }
+
+    .fechamento-origem {
+      color: var(--text);
+      font-size: 11px;
+    }
+
+    .fechamento-qtd,
+    .fechamento-pnl {
+      font-size: 11px;
+      text-align: right;
+      min-width: 82px;
+    }
+
+    .fechamentos-motivos {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .motivo-chip {
+      font-size: 9px;
+      padding: 2px 6px;
+      border: 1px solid var(--border2);
+      border-radius: 2px;
+      color: var(--text-dim);
+      background: var(--bg3);
+    }
+
+    /* ------------------------------------------------------------------ */
     /* GRID CENTRAL                                                         */
     /* ------------------------------------------------------------------ */
     .grid-central {
@@ -590,6 +692,39 @@
         <div class="promocao-motivo" id="promocao-motivo">Aguardando leitura dos artefatos de promoção.</div>
       </div>
       <div class="promocao-tag" id="promocao-tag">SEM_DADOS</div>
+    </div>
+
+    <!-- FECHAMENTOS OPERACIONAIS -->
+    <div class="card" id="fechamentos-card">
+      <div class="fechamentos-head">
+        <div class="card-titulo">◈ Fechamentos Operacionais</div>
+        <div class="anomalia-badge anomalia-badge--ok" id="fechamentos-anomalia-badge">OK</div>
+      </div>
+      <div class="fechamentos-resumo" id="fechamentos-resumo">
+        <div class="sem-dados">Aguardando resumo de fechamentos por origem...</div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD OPERACIONAL -->
+    <div class="card" id="dashboard-operacional-card">
+      <div class="fechamentos-head">
+        <div class="card-titulo">◈ Proteção Operacional</div>
+        <div class="anomalia-badge anomalia-badge--ok" id="dashboard-operacional-badge">OK</div>
+      </div>
+      <div class="fechamentos-resumo" id="dashboard-operacional-resumo">
+        <div class="sem-dados">Aguardando snapshot operacional do dashboard...</div>
+      </div>
+    </div>
+
+    <!-- SAÚDE OPERACIONAL GERAL -->
+    <div class="card" id="saude-operacional-card">
+      <div class="fechamentos-head">
+        <div class="card-titulo">◈ Saúde Operacional Geral</div>
+        <div class="anomalia-badge anomalia-badge--ok" id="saude-operacional-badge">OK</div>
+      </div>
+      <div class="fechamentos-resumo" id="saude-operacional-resumo">
+        <div class="sem-dados">Aguardando consolidação da saúde operacional...</div>
+      </div>
     </div>
 
     <!-- GRID CENTRAL -->
@@ -919,6 +1054,182 @@ function renderizarPromocaoScheduler(promo) {
 }
 
 /* ------------------------------------------------------------------ */
+/* FECHAMENTOS OPERACIONAIS                                             */
+/* ------------------------------------------------------------------ */
+function renderizarFechamentosOperacionais(resumo, anomalia_fechamentos) {
+  const el = document.getElementById('fechamentos-resumo');
+  const badge = document.getElementById('fechamentos-anomalia-badge');
+  const status = resumo?.status || 'sem_dados';
+  const total = Number(resumo?.total_fechamentos || 0);
+  const porOrigem = resumo?.por_origem || {};
+  const topMotivos = Array.isArray(resumo?.top_motivos) ? resumo.top_motivos : [];
+  const periodo = resumo?.periodo_dias || 7;
+  const motivo = resumo?.motivo || 'Sem resumo disponível no momento.';
+  const nivelAnomalia = String(anomalia_fechamentos?.nivel || 'OK').toUpperCase();
+  const resumoAnomalia = anomalia_fechamentos?.resumo || 'Sem anomalias relevantes.';
+
+  if (badge) {
+    const classe = nivelAnomalia === 'CRITICO'
+      ? 'anomalia-badge anomalia-badge--critico'
+      : nivelAnomalia === 'ALERTA'
+        ? 'anomalia-badge anomalia-badge--alerta'
+        : 'anomalia-badge anomalia-badge--ok';
+    badge.className = classe;
+    badge.textContent = nivelAnomalia;
+  }
+
+  if (status === 'indisponivel') {
+    el.innerHTML = `<div class="fechamentos-sub">${resumoAnomalia}</div><div class="sem-dados">Resumo indisponível.<br>${motivo}</div>`;
+    return;
+  }
+
+  if (!total || Object.keys(porOrigem).length === 0) {
+    el.innerHTML = `<div class="fechamentos-sub">${resumoAnomalia}</div><div class="sem-dados">Sem fechamentos operacionais nos últimos ${periodo} dia(s).</div>`;
+    return;
+  }
+
+  const linhasOrigem = Object.entries(porOrigem).map(([origem, dados]) => {
+    const qtd = Number(dados?.quantidade || 0);
+    const pct = Number(dados?.percentual || 0).toFixed(2);
+    const pnl = Number(dados?.pnl_total || 0);
+    const cls = pnl > 0 ? 'alta-color' : pnl < 0 ? 'baixa-color' : 'neutro-color';
+    const pnlFmt = `${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}`;
+    return `<div class="fechamento-row">
+      <span class="fechamento-origem">${origem}</span>
+      <span class="fechamento-qtd">${qtd} · ${pct}%</span>
+      <span class="fechamento-pnl ${cls}">${pnlFmt}</span>
+    </div>`;
+  }).join('');
+
+  const motivosHtml = topMotivos.length > 0
+    ? topMotivos.map((item) => {
+        const motivoItem = item?.motivo || 'NAO_INFORMADO';
+        const qtd = Number(item?.quantidade || 0);
+        return `<span class="motivo-chip">${motivoItem} · ${qtd}</span>`;
+      }).join('')
+    : '<span class="motivo-chip">SEM_MOTIVOS</span>';
+
+  el.innerHTML = `
+    <div class="fechamentos-topo">
+      <span class="fechamentos-total">${total}</span>
+      <span class="fechamentos-sub">fechamento(s) consolidados em ${periodo} dia(s)</span>
+    </div>
+    <div class="fechamentos-sub">${resumoAnomalia}</div>
+    <div class="fechamentos-sub">${motivo}</div>
+    <div>${linhasOrigem}</div>
+    <div class="fechamentos-sub">Top motivos</div>
+    <div class="fechamentos-motivos">${motivosHtml}</div>
+  `;
+}
+
+/* ------------------------------------------------------------------ */
+/* DASHBOARD OPERACIONAL                                                */
+/* ------------------------------------------------------------------ */
+function renderizarDashboardOperacional(dashboard_operacional) {
+  const el = document.getElementById('dashboard-operacional-resumo');
+  const badge = document.getElementById('dashboard-operacional-badge');
+  const status = String(dashboard_operacional?.status || 'sem_dados').toUpperCase();
+  const resumo = dashboard_operacional?.resumo || 'Sem snapshot operacional disponível.';
+  const tradeStats = dashboard_operacional?.trade_stats || {};
+  const protecao = dashboard_operacional?.protecao_status || {};
+  const metricas = dashboard_operacional?.metricas_operacionais || {};
+
+  if (badge) {
+    const classe = status === 'INDISPONIVEL'
+      ? 'anomalia-badge anomalia-badge--critico'
+      : status === 'ALERTA'
+        ? 'anomalia-badge anomalia-badge--alerta'
+        : 'anomalia-badge anomalia-badge--ok';
+    badge.className = classe;
+    badge.textContent = status === 'SEM_DADOS' ? 'SEM_DADOS' : status;
+  }
+
+  if (status === 'INDISPONIVEL') {
+    el.innerHTML = `<div class="sem-dados">${resumo}</div>`;
+    return;
+  }
+
+  if (status === 'SEM_DADOS') {
+    el.innerHTML = `<div class="fechamentos-sub">${resumo}</div><div class="sem-dados">Aguardando trades para formar o snapshot operacional.</div>`;
+    return;
+  }
+
+  const pnl = Number(tradeStats?.pnl_total_reais || 0);
+  const drawdown = Number(tradeStats?.drawdown_maximo || 0);
+  const winRate = Number(tradeStats?.win_rate || 0);
+  const totalTrades = Number(tradeStats?.total_trades || 0);
+  const cooldown = Number(protecao?.cooldown_segundos_restantes || 0);
+  const bloqueios = Number(protecao?.total_bloqueios_hora || 0);
+  const perdas = Number(protecao?.contador_perda_consecutiva || 0);
+  const profitFactor = Number(metricas?.profit_factor_bruto || 0);
+  const pnlCls = pnl > 0 ? 'alta-color' : pnl < 0 ? 'baixa-color' : 'neutro-color';
+  const ddCls = drawdown < 0 ? 'baixa-color' : 'neutro-color';
+  const protecaoLabel = protecao?.bloqueado ? 'ATIVA' : 'LIBERADA';
+
+  el.innerHTML = `
+    <div class="fechamentos-sub">${resumo}</div>
+    <div class="fechamento-row">
+      <span class="fechamento-origem">P&L hoje</span>
+      <span class="fechamento-qtd">${totalTrades} trade(s)</span>
+      <span class="fechamento-pnl ${pnlCls}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}</span>
+    </div>
+    <div class="fechamento-row">
+      <span class="fechamento-origem">Win rate / PF</span>
+      <span class="fechamento-qtd">${winRate.toFixed(2)}%</span>
+      <span class="fechamento-pnl">${profitFactor.toFixed(2)}</span>
+    </div>
+    <div class="fechamento-row">
+      <span class="fechamento-origem">Drawdown / proteção</span>
+      <span class="fechamento-qtd ${ddCls}">${drawdown.toFixed(2)}</span>
+      <span class="fechamento-pnl ${protecao?.bloqueado ? 'baixa-color' : 'alta-color'}">${protecaoLabel}</span>
+    </div>
+    <div class="fechamento-row">
+      <span class="fechamento-origem">Cooldown / bloqueios</span>
+      <span class="fechamento-qtd">${cooldown}s</span>
+      <span class="fechamento-pnl">${bloqueios} / ${perdas}</span>
+    </div>
+  `;
+}
+
+/* ------------------------------------------------------------------ */
+/* SAÚDE OPERACIONAL GERAL                                              */
+/* ------------------------------------------------------------------ */
+function renderizarSaudeOperacional(saude_operacional) {
+  const el = document.getElementById('saude-operacional-resumo');
+  const badge = document.getElementById('saude-operacional-badge');
+  const nivel = String(saude_operacional?.nivel || 'OK').toUpperCase();
+  const resumo = saude_operacional?.resumo || 'Sem consolidação operacional disponível.';
+  const bloqueioPromocao = saude_operacional?.bloqueio_promocao === true;
+  const protecaoAtiva = saude_operacional?.protecao_ativa === true;
+  const statusFechamentos = saude_operacional?.status_fechamentos || 'OK';
+  const statusDashboard = saude_operacional?.status_dashboard || 'sem_dados';
+
+  if (badge) {
+    const classe = nivel === 'CRITICO'
+      ? 'anomalia-badge anomalia-badge--critico'
+      : nivel === 'ALERTA'
+        ? 'anomalia-badge anomalia-badge--alerta'
+        : 'anomalia-badge anomalia-badge--ok';
+    badge.className = classe;
+    badge.textContent = nivel;
+  }
+
+  el.innerHTML = `
+    <div class="fechamentos-sub">${resumo}</div>
+    <div class="fechamento-row">
+      <span class="fechamento-origem">Promoção / Proteção</span>
+      <span class="fechamento-qtd">${bloqueioPromocao ? 'BLOQUEADA' : 'LIBERADA'}</span>
+      <span class="fechamento-pnl ${protecaoAtiva ? 'baixa-color' : 'alta-color'}">${protecaoAtiva ? 'ATIVA' : 'OK'}</span>
+    </div>
+    <div class="fechamento-row">
+      <span class="fechamento-origem">Fechamentos / Dashboard</span>
+      <span class="fechamento-qtd">${statusFechamentos}</span>
+      <span class="fechamento-pnl">${String(statusDashboard).toUpperCase()}</span>
+    </div>
+  `;
+}
+
+/* ------------------------------------------------------------------ */
 /* STATUS E PROGRESSO                                                   */
 /* ------------------------------------------------------------------ */
 function atualizarStatus(ok, texto) {
@@ -948,6 +1259,12 @@ function renderizarTudo(dados) {
   renderizarTendencia(dados.tendencia || {});
   renderizarNarrativa(dados.narrativa || '');
   renderizarPromocaoScheduler(dados.scheduler_symbol_promotion || {});
+  renderizarFechamentosOperacionais(
+    dados.fechamentos_por_origem || {},
+    dados.anomalia_fechamentos || {}
+  );
+  renderizarDashboardOperacional(dados.dashboard_operacional || {});
+  renderizarSaudeOperacional(dados.saude_operacional || {});
   renderizarAtivos(dados.ativos || {});
   renderizarFatores(dados.tendencia?.fatores || []);
   renderizarWin(dados.mt5 || {});
@@ -1019,6 +1336,48 @@ function renderizarModoDemo() {
       allow_sem_promocao_until: '09:05',
       janela_tolerancia_ativa: false,
       bloqueio_efetivo: true,
+    },
+    fechamentos_por_origem: {
+      status: 'indisponivel',
+      total_fechamentos: 0,
+      por_origem: {},
+      top_motivos: [],
+      motivo: 'Resumo de fechamentos indisponível sem backend.',
+      periodo_dias: 7,
+    },
+    anomalia_fechamentos: {
+      nivel: 'CRITICO',
+      resumo: 'Resumo de fechamentos indisponível sem backend.',
+      stale: true,
+      total_fechamentos: 0,
+      origens_presentes: [],
+    },
+    dashboard_operacional: {
+      status: 'indisponivel',
+      resumo: 'Snapshot operacional indisponível sem backend.',
+      trade_stats: {
+        total_trades: 0,
+        win_rate: 0,
+        pnl_total_reais: 0,
+        drawdown_maximo: 0,
+      },
+      metricas_operacionais: {
+        profit_factor_bruto: 0,
+      },
+      protecao_status: {
+        bloqueado: false,
+        cooldown_segundos_restantes: 0,
+        total_bloqueios_hora: 0,
+        contador_perda_consecutiva: 0,
+      },
+    },
+    saude_operacional: {
+      nivel: 'CRITICO',
+      resumo: 'Sem backend para consolidar a saúde operacional.',
+      bloqueio_promocao: true,
+      protecao_ativa: false,
+      status_fechamentos: 'CRITICO',
+      status_dashboard: 'indisponivel',
     },
     mt5: { conectado: false },
     meta: { tempo_coleta_s: 0, twelvedata_ativo: false, finnhub_ativo: false, mt5_disponivel: false },

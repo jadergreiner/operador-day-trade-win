@@ -8,19 +8,24 @@ Validam queries de dados agregados para dashboard:
 - Historico de trades recentes
 """
 
-from datetime import datetime, timedelta
-from typing import Dict, Any, List
+# Import direto do módulo para evitar cadeia de importações
+import importlib.util
 import sqlite3
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any, Dict, List
 
 import pytest
 
-# Import direto do módulo para evitar cadeia de importações
-import importlib.util
 spec = importlib.util.spec_from_file_location(
     "dashboard_stats_server",
-    str(Path(__file__).parent.parent.parent / "src" / "application" / "dashboard_stats_server.py")
+    str(
+        Path(__file__).parent.parent.parent
+        / "src"
+        / "application"
+        / "dashboard_stats_server.py"
+    ),
 )
 dashboard_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(dashboard_module)
@@ -87,16 +92,19 @@ class TestOperationalMetrics:
         )
         assert metricas.sharpe_ratio == 1.25
         assert metricas.tempo_posicao_media_minutos == 45
-        assert abs(
-            sum(
-                [
-                    metricas.percentual_fechamento_tp,
-                    metricas.percentual_fechamento_sl,
-                    metricas.percentual_fechamento_manual,
-                ]
+        assert (
+            abs(
+                sum(
+                    [
+                        metricas.percentual_fechamento_tp,
+                        metricas.percentual_fechamento_sl,
+                        metricas.percentual_fechamento_manual,
+                    ]
+                )
+                - 100.0
             )
-            - 100.0
-        ) < 0.01  # Total deve ser ~100%
+            < 0.01
+        )  # Total deve ser ~100%
 
 
 class TestProtectionStatus:
@@ -347,10 +355,66 @@ class TestStatsQueryService:
         )
         agora = datetime.now().isoformat()
         registros = [
-            ("POS_1", "T1", "S1", "WIN$N", "BUY", 1, 100.0, 101.5, 1.5, "TAKE_PROFIT", "MERCADO", agora, agora),
-            ("POS_2", "T2", "S2", "WIN$N", "BUY", 1, 100.0, 100.4, 0.4, "MANUAL_CLOSE", "OPERADOR", agora, agora),
-            ("POS_3", "T3", "S3", "WIN$N", "SELL", 1, 100.0, 99.0, 1.0, "FIM_PREGAO", "AGENTE", agora, agora),
-            ("POS_4", "T4", "S4", "WIN$N", "BUY", 1, 100.0, 99.0, -1.0, "STOP_LOSS", "MERCADO", agora, agora)
+            (
+                "POS_1",
+                "T1",
+                "S1",
+                "WIN$N",
+                "BUY",
+                1,
+                100.0,
+                101.5,
+                1.5,
+                "TAKE_PROFIT",
+                "MERCADO",
+                agora,
+                agora,
+            ),
+            (
+                "POS_2",
+                "T2",
+                "S2",
+                "WIN$N",
+                "BUY",
+                1,
+                100.0,
+                100.4,
+                0.4,
+                "MANUAL_CLOSE",
+                "OPERADOR",
+                agora,
+                agora,
+            ),
+            (
+                "POS_3",
+                "T3",
+                "S3",
+                "WIN$N",
+                "SELL",
+                1,
+                100.0,
+                99.0,
+                1.0,
+                "FIM_PREGAO",
+                "AGENTE",
+                agora,
+                agora,
+            ),
+            (
+                "POS_4",
+                "T4",
+                "S4",
+                "WIN$N",
+                "BUY",
+                1,
+                100.0,
+                99.0,
+                -1.0,
+                "STOP_LOSS",
+                "MERCADO",
+                agora,
+                agora,
+            ),
         ]
         conn.executemany(
             """
@@ -387,3 +451,370 @@ class TestStatsQueryService:
         assert resumo["total_fechamentos"] == 0
         assert resumo["por_origem"] == {}
         assert resumo["fechamentos_recentes"] == []
+
+    def test_calcular_stats_hoje_lendo_sqlite_real(self, tmp_path: Path) -> None:
+        """Deve calcular stats reais a partir de `posicoes_encerradas`."""
+        db_path = tmp_path / "stats_hoje.db"
+        conn = sqlite3.connect(db_path)
+        conn.execute(
+            """
+            CREATE TABLE posicoes_encerradas (
+                posicao_id TEXT PRIMARY KEY,
+                trade_id TEXT NOT NULL UNIQUE,
+                signal_id TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                direcao TEXT NOT NULL,
+                volume INTEGER NOT NULL,
+                preco_entrada REAL NOT NULL,
+                preco_encerramento REAL NOT NULL,
+                pl_final REAL NOT NULL,
+                motivo_encerramento TEXT DEFAULT 'NAO_INFORMADO',
+                encerrado_por TEXT DEFAULT 'SISTEMA',
+                criado_em TEXT NOT NULL,
+                encerrado_em TEXT NOT NULL
+            )
+            """
+        )
+        agora = datetime.now()
+        ontem = agora - timedelta(days=1)
+        registros = [
+            (
+                "P1",
+                "T1",
+                "S1",
+                "WIN$N",
+                "BUY",
+                1,
+                100.0,
+                101.5,
+                1.5,
+                "TAKE_PROFIT",
+                "MERCADO",
+                agora.isoformat(),
+                agora.isoformat(),
+            ),
+            (
+                "P2",
+                "T2",
+                "S2",
+                "WIN$N",
+                "BUY",
+                1,
+                100.0,
+                99.0,
+                -1.0,
+                "STOP_LOSS",
+                "MERCADO",
+                agora.isoformat(),
+                agora.isoformat(),
+            ),
+            (
+                "P3",
+                "T3",
+                "S3",
+                "WIN$N",
+                "SELL",
+                1,
+                100.0,
+                100.0,
+                0.0,
+                "MANUAL_CLOSE",
+                "OPERADOR",
+                agora.isoformat(),
+                agora.isoformat(),
+            ),
+            (
+                "P4",
+                "T4",
+                "S4",
+                "WIN$N",
+                "BUY",
+                1,
+                100.0,
+                101.0,
+                1.0,
+                "FIM_PREGAO",
+                "AGENTE",
+                agora.isoformat(),
+                agora.isoformat(),
+            ),
+            (
+                "P5",
+                "T5",
+                "S5",
+                "WIN$N",
+                "BUY",
+                1,
+                100.0,
+                102.0,
+                2.0,
+                "TAKE_PROFIT",
+                "MERCADO",
+                ontem.isoformat(),
+                ontem.isoformat(),
+            ),
+        ]
+        conn.executemany(
+            """
+            INSERT INTO posicoes_encerradas (
+                posicao_id, trade_id, signal_id, symbol, direcao, volume,
+                preco_entrada, preco_encerramento, pl_final,
+                motivo_encerramento, encerrado_por, criado_em, encerrado_em
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            registros,
+        )
+        conn.commit()
+        conn.close()
+
+        service = StatsQueryService(db_path=str(db_path))
+        stats = service._calcular_stats_hoje()
+
+        assert stats.total_trades == 4
+        assert stats.total_ganhos == 2
+        assert stats.total_perdas == 1
+        assert stats.total_breakeven == 1
+        assert stats.win_rate == pytest.approx(50.0)
+        assert stats.pnl_total_reais == pytest.approx(1.5)
+        assert stats.drawdown_maximo <= 0.0
+
+    def test_calcular_stats_n_dias_filtra_registros_antigos(
+        self, tmp_path: Path
+    ) -> None:
+        """A janela de N dias deve excluir trades antigos do cálculo."""
+        db_path = tmp_path / "stats_periodo.db"
+        conn = sqlite3.connect(db_path)
+        conn.execute(
+            """
+            CREATE TABLE posicoes_encerradas (
+                posicao_id TEXT PRIMARY KEY,
+                trade_id TEXT NOT NULL UNIQUE,
+                signal_id TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                direcao TEXT NOT NULL,
+                volume INTEGER NOT NULL,
+                preco_entrada REAL NOT NULL,
+                preco_encerramento REAL NOT NULL,
+                pl_final REAL NOT NULL,
+                motivo_encerramento TEXT DEFAULT 'NAO_INFORMADO',
+                encerrado_por TEXT DEFAULT 'SISTEMA',
+                criado_em TEXT NOT NULL,
+                encerrado_em TEXT NOT NULL
+            )
+            """
+        )
+        agora = datetime.now()
+        antigo = agora - timedelta(days=10)
+        registros = [
+            (
+                "P1",
+                "T1",
+                "S1",
+                "WIN$N",
+                "BUY",
+                1,
+                100.0,
+                101.0,
+                1.0,
+                "TAKE_PROFIT",
+                "MERCADO",
+                agora.isoformat(),
+                agora.isoformat(),
+            ),
+            (
+                "P2",
+                "T2",
+                "S2",
+                "WIN$N",
+                "BUY",
+                1,
+                100.0,
+                99.0,
+                -1.0,
+                "STOP_LOSS",
+                "MERCADO",
+                agora.isoformat(),
+                agora.isoformat(),
+            ),
+            (
+                "P3",
+                "T3",
+                "S3",
+                "WIN$N",
+                "BUY",
+                1,
+                100.0,
+                103.0,
+                3.0,
+                "TAKE_PROFIT",
+                "MERCADO",
+                antigo.isoformat(),
+                antigo.isoformat(),
+            ),
+        ]
+        conn.executemany(
+            """
+            INSERT INTO posicoes_encerradas (
+                posicao_id, trade_id, signal_id, symbol, direcao, volume,
+                preco_entrada, preco_encerramento, pl_final,
+                motivo_encerramento, encerrado_por, criado_em, encerrado_em
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            registros,
+        )
+        conn.commit()
+        conn.close()
+
+        service = StatsQueryService(db_path=str(db_path))
+        stats = service._calcular_stats_n_dias(7)
+
+        assert stats.total_trades == 2
+        assert stats.total_ganhos == 1
+        assert stats.total_perdas == 1
+        assert stats.pnl_total_reais == pytest.approx(0.0)
+
+    def test_obter_protection_status_com_ultima_hora_cooldown_e_loss_streak(
+        self, tmp_path: Path
+    ) -> None:
+        """Protection status deve refletir trades recentes e bloqueios reais."""
+        db_path = tmp_path / "protection_status.db"
+        conn = sqlite3.connect(db_path)
+        conn.execute(
+            """
+            CREATE TABLE posicoes_encerradas (
+                posicao_id TEXT PRIMARY KEY,
+                trade_id TEXT NOT NULL UNIQUE,
+                signal_id TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                direcao TEXT NOT NULL,
+                volume INTEGER NOT NULL,
+                preco_entrada REAL NOT NULL,
+                preco_encerramento REAL NOT NULL,
+                pl_final REAL NOT NULL,
+                motivo_encerramento TEXT DEFAULT 'NAO_INFORMADO',
+                encerrado_por TEXT DEFAULT 'SISTEMA',
+                criado_em TEXT NOT NULL,
+                encerrado_em TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE micro_trend_bloqueios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                data_pregao TEXT NOT NULL,
+                hora_pregao TEXT NOT NULL,
+                opportunity_id TEXT NOT NULL,
+                flag_bloqueador TEXT NOT NULL,
+                confianca_calculada REAL NOT NULL,
+                confianca_necessaria REAL NOT NULL,
+                delta REAL NOT NULL,
+                detalhes TEXT
+            )
+            """
+        )
+        agora = datetime.now()
+        faz_2_min = agora - timedelta(minutes=2)
+        faz_20_min = agora - timedelta(minutes=20)
+        fechamentos = [
+            (
+                "P1",
+                "T1",
+                "S1",
+                "WIN$N",
+                "BUY",
+                1,
+                100.0,
+                99.0,
+                -1.0,
+                "STOP_LOSS",
+                "MERCADO",
+                faz_20_min.isoformat(),
+                faz_20_min.isoformat(),
+            ),
+            (
+                "P2",
+                "T2",
+                "S2",
+                "WIN$N",
+                "BUY",
+                1,
+                100.0,
+                98.5,
+                -1.5,
+                "STOP_LOSS",
+                "MERCADO",
+                faz_2_min.isoformat(),
+                faz_2_min.isoformat(),
+            ),
+        ]
+        bloqueios = [
+            (
+                faz_20_min.isoformat(),
+                faz_20_min.date().isoformat(),
+                faz_20_min.strftime("%H:%M"),
+                "OP1",
+                "COOLDOWN_ACTIVE",
+                0.7,
+                0.8,
+                -0.1,
+                "cooldown",
+            ),
+            (
+                faz_2_min.isoformat(),
+                faz_2_min.date().isoformat(),
+                faz_2_min.strftime("%H:%M"),
+                "OP2",
+                "LOSS_STREAK_COOLDOWN",
+                0.6,
+                0.8,
+                -0.2,
+                "loss streak",
+            ),
+        ]
+        conn.executemany(
+            """
+            INSERT INTO posicoes_encerradas (
+                posicao_id, trade_id, signal_id, symbol, direcao, volume,
+                preco_entrada, preco_encerramento, pl_final,
+                motivo_encerramento, encerrado_por, criado_em, encerrado_em
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            fechamentos,
+        )
+        conn.executemany(
+            """
+            INSERT INTO micro_trend_bloqueios (
+                timestamp, data_pregao, hora_pregao, opportunity_id,
+                flag_bloqueador, confianca_calculada, confianca_necessaria,
+                delta, detalhes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            bloqueios,
+        )
+        conn.commit()
+        conn.close()
+
+        service = StatsQueryService(db_path=str(db_path))
+        status = service._obter_protection_status()
+
+        assert status.trades_ultima_hora == 2
+        assert status.total_bloqueios_hora == 2
+        assert status.cooldown_segundos_restantes > 0
+        assert status.contador_perda_consecutiva == 2
+        assert status.esta_bloqueado() is True
+
+    def test_fallback_seguro_stats_e_protection_sem_db(self, tmp_path: Path) -> None:
+        """Sem schema disponível, os métodos internos devem retornar defaults seguros."""
+        db_path = tmp_path / "db_vazio.db"
+        sqlite3.connect(db_path).close()
+
+        service = StatsQueryService(db_path=str(db_path))
+        stats = service._calcular_stats_hoje()
+        protection = service._obter_protection_status()
+
+        assert stats.total_trades == 0
+        assert stats.pnl_total_reais == 0.0
+        assert protection.trades_ultima_hora == 0
+        assert protection.total_bloqueios_hora == 0

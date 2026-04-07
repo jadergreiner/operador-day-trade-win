@@ -17,8 +17,8 @@ Referencia: docs/BACKLOG.md
 
 from __future__ import annotations
 
-import sys
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -30,10 +30,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import scripts.monitor_quantico_tendencia as mqt
 
-
 # ---------------------------------------------------------------------------
 # Helpers de fixture
 # ---------------------------------------------------------------------------
+
 
 def _dado_ativo(preco: float = 100.0, variacao: float = 1.0) -> dict[str, Any]:
     return {
@@ -48,13 +48,13 @@ def _dado_ativo(preco: float = 100.0, variacao: float = 1.0) -> dict[str, Any]:
 def _ativos_completos() -> dict[str, Any]:
     """Retorna os 7 ativos externos com precos dentro dos limites de sanidade."""
     return {
-        "sp500":        _dado_ativo(5500.0,  1.0),
-        "nasdaq":       _dado_ativo(18000.0, 1.2),
-        "dxy":          _dado_ativo(104.0,  -0.3),
-        "vix":          _dado_ativo(18.0,   -5.0),
-        "ouro":         _dado_ativo(3200.0,  0.5),
-        "petroleo_wti": _dado_ativo(70.0,   -1.0),
-        "usd_brl":      _dado_ativo(5.10,    0.2),
+        "sp500": _dado_ativo(5500.0, 1.0),
+        "nasdaq": _dado_ativo(18000.0, 1.2),
+        "dxy": _dado_ativo(104.0, -0.3),
+        "vix": _dado_ativo(18.0, -5.0),
+        "ouro": _dado_ativo(3200.0, 0.5),
+        "petroleo_wti": _dado_ativo(70.0, -1.0),
+        "usd_brl": _dado_ativo(5.10, 0.2),
     }
 
 
@@ -83,6 +83,7 @@ def _ticker_mock(fast_info: MagicMock) -> MagicMock:
 # TestBuscarYfinance
 # ---------------------------------------------------------------------------
 
+
 class TestBuscarYfinance:
     """Testa _buscar_yfinance."""
 
@@ -92,8 +93,10 @@ class TestBuscarYfinance:
         fi = _fast_info_mock(last_price=0.0)
         with (
             patch.object(mqt, "_YFINANCE_DISPONIVEL", True),
-            patch("scripts.monitor_quantico_tendencia.yf.Ticker",
-                  return_value=_ticker_mock(fi)),
+            patch(
+                "scripts.monitor_quantico_tendencia.yf.Ticker",
+                return_value=_ticker_mock(fi),
+            ),
         ):
             resultado = mqt._buscar_yfinance("sp500", "^GSPC")
         assert resultado is None
@@ -111,8 +114,10 @@ class TestBuscarYfinance:
         fi = _fast_info_mock(last_price=110.0, open_=100.0)
         with (
             patch.object(mqt, "_YFINANCE_DISPONIVEL", True),
-            patch("scripts.monitor_quantico_tendencia.yf.Ticker",
-                  return_value=_ticker_mock(fi)),
+            patch(
+                "scripts.monitor_quantico_tendencia.yf.Ticker",
+                return_value=_ticker_mock(fi),
+            ),
         ):
             resultado = mqt._buscar_yfinance("sp500", "^GSPC")
         assert resultado is not None
@@ -125,8 +130,10 @@ class TestBuscarYfinance:
         fi = _fast_info_mock()
         with (
             patch.object(mqt, "_YFINANCE_DISPONIVEL", True),
-            patch("scripts.monitor_quantico_tendencia.yf.Ticker",
-                  return_value=_ticker_mock(fi)),
+            patch(
+                "scripts.monitor_quantico_tendencia.yf.Ticker",
+                return_value=_ticker_mock(fi),
+            ),
         ):
             resultado = mqt._buscar_yfinance("sp500", "^GSPC")
         assert resultado is not None
@@ -138,8 +145,10 @@ class TestBuscarYfinance:
         """Excecao de qualquer tipo retorna None sem propagar."""
         with (
             patch.object(mqt, "_YFINANCE_DISPONIVEL", True),
-            patch("scripts.monitor_quantico_tendencia.yf.Ticker",
-                  side_effect=Exception("conexao recusada")),
+            patch(
+                "scripts.monitor_quantico_tendencia.yf.Ticker",
+                side_effect=Exception("conexao recusada"),
+            ),
         ):
             resultado = mqt._buscar_yfinance("sp500", "^GSPC")
         assert resultado is None
@@ -151,8 +160,10 @@ class TestBuscarYfinance:
         fi.open = None
         with (
             patch.object(mqt, "_YFINANCE_DISPONIVEL", True),
-            patch("scripts.monitor_quantico_tendencia.yf.Ticker",
-                  return_value=_ticker_mock(fi)),
+            patch(
+                "scripts.monitor_quantico_tendencia.yf.Ticker",
+                return_value=_ticker_mock(fi),
+            ),
         ):
             resultado = mqt._buscar_yfinance("sp500", "^GSPC")
         assert resultado is not None
@@ -162,6 +173,7 @@ class TestBuscarYfinance:
 # ---------------------------------------------------------------------------
 # TestPrecoDentroLimites
 # ---------------------------------------------------------------------------
+
 
 class TestPrecoDentroLimites:
     """Testa a funcao auxiliar _preco_dentro_limites."""
@@ -204,6 +216,7 @@ class TestPrecoDentroLimites:
 # TestMapaSimbolos
 # ---------------------------------------------------------------------------
 
+
 class TestMapaSimbolos:
     """Verifica que o mapa de simbolos yfinance esta correto."""
 
@@ -233,6 +246,7 @@ class TestMapaSimbolos:
 # ---------------------------------------------------------------------------
 # TestBuscarDadosExternos
 # ---------------------------------------------------------------------------
+
 
 class TestBuscarDadosExternos:
     """Testa _buscar_dados_externos com mocks de _buscar_yfinance."""
@@ -274,7 +288,8 @@ class TestBuscarDadosExternos:
     def test_ativo_valido_aceito(self) -> None:
         dado = _dado_ativo(5500.0, 1.0)
         with patch.object(
-            mqt, "_buscar_yfinance",
+            mqt,
+            "_buscar_yfinance",
             side_effect=lambda c, s: dado if c == "sp500" else None,
         ):
             ativos, _, _ = mqt._buscar_dados_externos()
@@ -291,6 +306,7 @@ class TestBuscarDadosExternos:
 # ---------------------------------------------------------------------------
 # TestCalcularScoreTendencia
 # ---------------------------------------------------------------------------
+
 
 class TestCalcularScoreTendencia:
     """Testa _calcular_score_tendencia com foco no denominador de confianca."""
@@ -332,20 +348,34 @@ class TestCalcularScoreTendencia:
 
     @pytest.mark.unit
     def test_score_clampado_em_100(self) -> None:
-        ativos = {k: _dado_ativo(v, 5.0) for k, v in {
-            "sp500": 5500.0, "nasdaq": 18000.0, "dxy": 104.0,
-            "vix": 10.0, "ouro": 3200.0, "petroleo_wti": 72.0,
-            "usd_brl": 5.1,
-        }.items()}
+        ativos = {
+            k: _dado_ativo(v, 5.0)
+            for k, v in {
+                "sp500": 5500.0,
+                "nasdaq": 18000.0,
+                "dxy": 104.0,
+                "vix": 10.0,
+                "ouro": 3200.0,
+                "petroleo_wti": 72.0,
+                "usd_brl": 5.1,
+            }.items()
+        }
         assert mqt._calcular_score_tendencia(ativos, {})["score"] <= 100.0
 
     @pytest.mark.unit
     def test_score_clampado_em_menos_100(self) -> None:
-        ativos = {k: _dado_ativo(v, -5.0) for k, v in {
-            "sp500": 5500.0, "nasdaq": 18000.0, "dxy": 104.0,
-            "vix": 10.0, "ouro": 3200.0, "petroleo_wti": 72.0,
-            "usd_brl": 5.1,
-        }.items()}
+        ativos = {
+            k: _dado_ativo(v, -5.0)
+            for k, v in {
+                "sp500": 5500.0,
+                "nasdaq": 18000.0,
+                "dxy": 104.0,
+                "vix": 10.0,
+                "ouro": 3200.0,
+                "petroleo_wti": 72.0,
+                "usd_brl": 5.1,
+            }.items()
+        }
         assert mqt._calcular_score_tendencia(ativos, {})["score"] >= -100.0
 
     @pytest.mark.unit
@@ -358,6 +388,7 @@ class TestCalcularScoreTendencia:
 # ---------------------------------------------------------------------------
 # TestThreadAtualizacao
 # ---------------------------------------------------------------------------
+
 
 class TestThreadAtualizacao:
     """Testa que _thread_atualizacao dorme ANTES da primeira coleta."""
@@ -377,10 +408,13 @@ class TestThreadAtualizacao:
             chamadas.append("coleta")
 
         with (
-            patch("scripts.monitor_quantico_tendencia.time.sleep",
-                  side_effect=_sleep_mock),
-            patch("scripts.monitor_quantico_tendencia._atualizar_dados",
-                  side_effect=_coleta_mock),
+            patch(
+                "scripts.monitor_quantico_tendencia.time.sleep", side_effect=_sleep_mock
+            ),
+            patch(
+                "scripts.monitor_quantico_tendencia._atualizar_dados",
+                side_effect=_coleta_mock,
+            ),
         ):
             with pytest.raises(StopIteration):
                 mqt._thread_atualizacao()
@@ -398,8 +432,9 @@ class TestThreadAtualizacao:
             raise StopIteration
 
         with (
-            patch("scripts.monitor_quantico_tendencia.time.sleep",
-                  side_effect=_sleep_mock),
+            patch(
+                "scripts.monitor_quantico_tendencia.time.sleep", side_effect=_sleep_mock
+            ),
             patch("scripts.monitor_quantico_tendencia._atualizar_dados"),
         ):
             with pytest.raises(StopIteration):
@@ -411,6 +446,7 @@ class TestThreadAtualizacao:
 # ---------------------------------------------------------------------------
 # TestBuscarIndicadoresTv
 # ---------------------------------------------------------------------------
+
 
 class TestBuscarIndicadoresTv:
     """Testa _buscar_indicadores_tv."""
@@ -441,8 +477,10 @@ class TestBuscarIndicadoresTv:
 
         with (
             patch.object(mqt, "_TV_TA_DISPONIVEL", True),
-            patch("scripts.monitor_quantico_tendencia.TA_Handler",
-                  return_value=mock_handler),
+            patch(
+                "scripts.monitor_quantico_tendencia.TA_Handler",
+                return_value=mock_handler,
+            ),
         ):
             resultado = mqt._buscar_indicadores_tv("WINCONTFUT")
 
@@ -457,8 +495,10 @@ class TestBuscarIndicadoresTv:
     def test_retorna_none_em_excecao(self) -> None:
         with (
             patch.object(mqt, "_TV_TA_DISPONIVEL", True),
-            patch("scripts.monitor_quantico_tendencia.TA_Handler",
-                  side_effect=Exception("sem conexao")),
+            patch(
+                "scripts.monitor_quantico_tendencia.TA_Handler",
+                side_effect=Exception("sem conexao"),
+            ),
         ):
             resultado = mqt._buscar_indicadores_tv("WINCONTFUT")
         assert resultado is None
@@ -468,6 +508,7 @@ class TestBuscarIndicadoresTv:
 # TestQualidadeDadosJson
 # ---------------------------------------------------------------------------
 
+
 class TestQualidadeDadosJson:
     """Testa presenca de qualidade_dados no JSON e compatibilidade backward."""
 
@@ -475,11 +516,70 @@ class TestQualidadeDadosJson:
         ativos = _ativos_completos()
         with (
             patch.object(
-                mqt, "_buscar_dados_externos",
+                mqt,
+                "_buscar_dados_externos",
                 return_value=(ativos, [], []),
             ),
             patch.object(mqt, "_dados_mt5", return_value={}),
             patch.object(mqt, "_buscar_indicadores_tv", return_value=None),
+            patch.object(
+                mqt,
+                "_carregar_resumo_fechamentos_operacionais",
+                return_value={
+                    "status": "ok",
+                    "periodo_dias": 7,
+                    "total_fechamentos": 3,
+                    "por_origem": {
+                        "AGENTE": {
+                            "quantidade": 1,
+                            "percentual": 33.33,
+                            "pnl_total": 120.0,
+                        },
+                        "OPERADOR": {
+                            "quantidade": 1,
+                            "percentual": 33.33,
+                            "pnl_total": -10.0,
+                        },
+                        "MERCADO": {
+                            "quantidade": 1,
+                            "percentual": 33.33,
+                            "pnl_total": 55.0,
+                        },
+                    },
+                    "por_motivo": {
+                        "TAKE_PROFIT": {"quantidade": 1, "pnl_total": 120.0},
+                        "MANUAL_CLOSE": {"quantidade": 1, "pnl_total": -10.0},
+                    },
+                    "top_motivos": [
+                        {"motivo": "TAKE_PROFIT", "quantidade": 1},
+                        {"motivo": "MANUAL_CLOSE", "quantidade": 1},
+                    ],
+                },
+            ),
+            patch.object(
+                mqt,
+                "_carregar_dashboard_operacional",
+                return_value={
+                    "status": "alerta",
+                    "resumo": "P&L hoje +125.50 | proteção ativa.",
+                    "trade_stats": {
+                        "total_trades": 3,
+                        "win_rate": 66.67,
+                        "pnl_total_reais": 125.5,
+                        "drawdown_maximo": -22.0,
+                    },
+                    "protecao_status": {
+                        "bloqueado": True,
+                        "trades_ultima_hora": 2,
+                        "cooldown_segundos_restantes": 180,
+                        "contador_perda_consecutiva": 2,
+                    },
+                    "metricas_operacionais": {
+                        "profit_factor_bruto": 1.8,
+                    },
+                },
+                create=True,
+            ),
         ):
             mqt._atualizar_dados()
         with mqt._lock_cache:
@@ -509,8 +609,13 @@ class TestQualidadeDadosJson:
     def test_backward_compat_campos_html(self) -> None:
         """Campos consumidos pelo HTML devem continuar presentes."""
         campos = [
-            "timestamp_legivel", "tendencia", "narrativa",
-            "regime_macro", "ativos", "mt5", "meta",
+            "timestamp_legivel",
+            "tendencia",
+            "narrativa",
+            "regime_macro",
+            "ativos",
+            "mt5",
+            "meta",
         ]
         dados = self._executar_atualizar_dados()
         for campo in campos:
@@ -519,8 +624,13 @@ class TestQualidadeDadosJson:
     @pytest.mark.unit
     def test_campos_tendencia_para_html(self) -> None:
         campos = [
-            "score", "tendencia", "cor_tendencia",
-            "emoji", "mensagem", "confianca_pct", "fatores",
+            "score",
+            "tendencia",
+            "cor_tendencia",
+            "emoji",
+            "mensagem",
+            "confianca_pct",
+            "fatores",
         ]
         dados = self._executar_atualizar_dados()
         for campo in campos:
@@ -532,7 +642,8 @@ class TestQualidadeDadosJson:
         del ativos["sp500"]
         with (
             patch.object(
-                mqt, "_buscar_dados_externos",
+                mqt,
+                "_buscar_dados_externos",
                 return_value=(ativos, ["sp500"], []),
             ),
             patch.object(mqt, "_dados_mt5", return_value={}),
@@ -553,6 +664,41 @@ class TestQualidadeDadosJson:
         dados = self._executar_atualizar_dados()
         assert "scheduler_symbol_promotion" in dados
         assert "status" in dados["scheduler_symbol_promotion"]
+
+    @pytest.mark.unit
+    def test_fechamentos_por_origem_presente_no_json(self) -> None:
+        """Resumo operacional de fechamentos deve estar disponível no payload."""
+        dados = self._executar_atualizar_dados()
+        assert "fechamentos_por_origem" in dados
+        assert dados["fechamentos_por_origem"]["total_fechamentos"] == 3
+        assert "AGENTE" in dados["fechamentos_por_origem"]["por_origem"]
+
+    @pytest.mark.unit
+    def test_anomalia_fechamentos_presente_no_json(self) -> None:
+        """O payload `/dados` deve incluir o health-check de anomalia."""
+        dados = self._executar_atualizar_dados()
+        assert "anomalia_fechamentos" in dados
+        assert dados["anomalia_fechamentos"]["nivel"] == "CRITICO"
+        assert dados["anomalia_fechamentos"]["stale"] is False
+
+    @pytest.mark.unit
+    def test_dashboard_operacional_presente_no_json(self) -> None:
+        """O Monitor Quântico deve expor um resumo operacional do dashboard."""
+        dados = self._executar_atualizar_dados()
+        assert "dashboard_operacional" in dados
+        assert dados["dashboard_operacional"]["status"] == "alerta"
+        assert dados["dashboard_operacional"]["trade_stats"][
+            "pnl_total_reais"
+        ] == pytest.approx(125.5)
+        assert dados["dashboard_operacional"]["protecao_status"]["bloqueado"] is True
+
+    @pytest.mark.unit
+    def test_saude_operacional_presente_no_json(self) -> None:
+        """O payload deve consolidar uma saúde operacional geral do monitor."""
+        dados = self._executar_atualizar_dados()
+        assert "saude_operacional" in dados
+        assert dados["saude_operacional"]["nivel"] == "CRITICO"
+        assert "bloqueio_promocao" in dados["saude_operacional"]
 
 
 class TestSchedulerPromotionStatus:
@@ -597,7 +743,9 @@ class TestSchedulerPromotionStatus:
         assert status["runtime_config_presente"] is True
 
     @pytest.mark.unit
-    def test_sem_promocao_no_pre_open_sinaliza_tolerancia_ativa(self, tmp_path: Path) -> None:
+    def test_sem_promocao_no_pre_open_sinaliza_tolerancia_ativa(
+        self, tmp_path: Path
+    ) -> None:
         outputs_dir = tmp_path / "outputs"
         outputs_dir.mkdir()
         status = mqt._carregar_status_promocao_scheduler(
@@ -611,7 +759,9 @@ class TestSchedulerPromotionStatus:
         assert status["bloqueio_efetivo"] is False
 
     @pytest.mark.unit
-    def test_sem_promocao_apos_janela_ativa_bloqueio_efetivo(self, tmp_path: Path) -> None:
+    def test_sem_promocao_apos_janela_ativa_bloqueio_efetivo(
+        self, tmp_path: Path
+    ) -> None:
         outputs_dir = tmp_path / "outputs"
         outputs_dir.mkdir()
         status = mqt._carregar_status_promocao_scheduler(
@@ -625,11 +775,207 @@ class TestSchedulerPromotionStatus:
         assert status["bloqueio_efetivo"] is True
 
 
+class TestFechamentosOperacionais:
+    """Testa leitura resiliente dos fechamentos operacionais no monitor."""
+
+    @pytest.mark.unit
+    def test_carregar_resumo_fechamentos_operacionais_sucesso(self) -> None:
+        """Deve reutilizar o StatsQueryService como fonte canônica."""
+        retorno = {
+            "periodo_dias": 7,
+            "total_fechamentos": 2,
+            "por_origem": {
+                "AGENTE": {"quantidade": 1, "percentual": 50.0, "pnl_total": 25.0},
+                "OPERADOR": {"quantidade": 1, "percentual": 50.0, "pnl_total": -5.0},
+            },
+            "por_motivo": {
+                "TAKE_PROFIT": {"quantidade": 1, "pnl_total": 25.0},
+                "MANUAL_CLOSE": {"quantidade": 1, "pnl_total": -5.0},
+            },
+            "fechamentos_recentes": [{"trade_id": "T1"}],
+        }
+        service = MagicMock()
+        service.obter_resumo_fechamentos_por_origem.return_value = retorno
+
+        with patch.object(mqt, "StatsQueryService", return_value=service):
+            resumo = mqt._carregar_resumo_fechamentos_operacionais(dias=7)
+
+        assert resumo["status"] == "ok"
+        assert resumo["total_fechamentos"] == 2
+        assert resumo["top_motivos"][0]["motivo"] == "TAKE_PROFIT"
+        assert resumo["origens_presentes"] == ["AGENTE", "OPERADOR"]
+
+    @pytest.mark.unit
+    def test_carregar_resumo_fechamentos_operacionais_fallback_em_excecao(self) -> None:
+        """Falhas de leitura não devem quebrar o monitor."""
+        with patch.object(
+            mqt, "StatsQueryService", side_effect=RuntimeError("db offline")
+        ):
+            resumo = mqt._carregar_resumo_fechamentos_operacionais(dias=7)
+
+        assert resumo["status"] == "indisponivel"
+        assert resumo["total_fechamentos"] == 0
+        assert resumo["por_origem"] == {}
+
+
+class TestDashboardOperacionalMonitor:
+    """Testa o resumo executivo do dashboard no Monitor Quântico."""
+
+    @pytest.mark.unit
+    def test_carregar_dashboard_operacional_sucesso(self) -> None:
+        snapshot = MagicMock()
+        snapshot.para_dict.return_value = {
+            "trade_stats": {
+                "total_trades": 3,
+                "win_rate": 66.67,
+                "pnl_total_reais": 125.5,
+                "drawdown_maximo": -22.0,
+            },
+            "metricas_operacionais": {
+                "profit_factor_bruto": 1.8,
+                "sharpe_ratio": 0.91,
+            },
+            "protecao_status": {
+                "trades_ultima_hora": 2,
+                "limite_trades_hora": 3,
+                "cooldown_segundos_restantes": 180,
+                "total_bloqueios_hora": 1,
+                "contador_perda_consecutiva": 2,
+                "horario_permite_tradear": True,
+            },
+            "pnl_nao_realizado_reais": 0.0,
+            "ultima_atualizacao_precos": None,
+        }
+        service = MagicMock()
+        service.obter_snapshot_dashboard.return_value = snapshot
+
+        with patch.object(mqt, "StatsQueryService", return_value=service):
+            resumo = mqt._carregar_dashboard_operacional()
+
+        assert resumo["status"] == "alerta"
+        assert resumo["trade_stats"]["pnl_total_reais"] == pytest.approx(125.5)
+        assert resumo["protecao_status"]["bloqueado"] is True
+        assert "win rate" in resumo["resumo"].lower()
+
+    @pytest.mark.unit
+    def test_carregar_dashboard_operacional_fallback_em_excecao(self) -> None:
+        with patch.object(
+            mqt, "StatsQueryService", side_effect=RuntimeError("db offline")
+        ):
+            resumo = mqt._carregar_dashboard_operacional()
+
+        assert resumo["status"] == "indisponivel"
+        assert resumo["trade_stats"]["total_trades"] == 0
+        assert resumo["protecao_status"]["bloqueado"] is False
+
+
+class TestSaudeOperacionalMonitor:
+    """Testa a consolidação da saúde operacional geral do monitor."""
+
+    @pytest.mark.unit
+    def test_classificar_saude_operacional_critico_quando_bloqueio_ou_anomalia_critica(
+        self,
+    ) -> None:
+        saude = mqt._classificar_saude_operacional(
+            {
+                "status": "reprovado",
+                "bloqueio_efetivo": True,
+                "janela_tolerancia_ativa": False,
+            },
+            {
+                "nivel": "CRITICO",
+                "resumo": "Múltiplas origens detectadas.",
+            },
+            {
+                "status": "alerta",
+                "resumo": "Cooldown ativo.",
+                "protecao_status": {"bloqueado": True},
+            },
+        )
+        assert saude["nivel"] == "CRITICO"
+        assert saude["bloqueio_promocao"] is True
+        assert saude["protecao_ativa"] is True
+
+    @pytest.mark.unit
+    def test_classificar_saude_operacional_alerta_quando_pre_open_tolerado(
+        self,
+    ) -> None:
+        saude = mqt._classificar_saude_operacional(
+            {
+                "status": "sem_promocao",
+                "bloqueio_efetivo": False,
+                "janela_tolerancia_ativa": True,
+            },
+            {
+                "nivel": "OK",
+                "resumo": "Sem anomalias relevantes.",
+            },
+            {
+                "status": "ok",
+                "resumo": "Proteção liberada.",
+                "protecao_status": {"bloqueado": False},
+            },
+        )
+        assert saude["nivel"] == "ALERTA"
+        assert saude["bloqueio_promocao"] is False
+        assert saude["protecao_ativa"] is False
+
+
+class TestAnomaliaFechamentos:
+    """Testa a classificação operacional dos fechamentos no monitor."""
+
+    @pytest.mark.unit
+    def test_classificar_anomalia_fechamentos_ok_quando_sem_dados(self) -> None:
+        resumo = {
+            "status": "sem_dados",
+            "total_fechamentos": 0,
+            "origens_presentes": [],
+            "top_motivos": [],
+            "stale": False,
+        }
+        anomalia = mqt._classificar_anomalia_fechamentos(resumo)
+        assert anomalia["nivel"] == "OK"
+        assert anomalia["stale"] is False
+
+    @pytest.mark.unit
+    def test_classificar_anomalia_fechamentos_alerta_quando_duas_origens_presentes(
+        self,
+    ) -> None:
+        resumo = {
+            "status": "ok",
+            "total_fechamentos": 2,
+            "origens_presentes": ["AGENTE", "OPERADOR"],
+            "top_motivos": [{"motivo": "MANUAL_CLOSE", "quantidade": 1}],
+            "stale": False,
+        }
+        anomalia = mqt._classificar_anomalia_fechamentos(resumo)
+        assert anomalia["nivel"] == "ALERTA"
+        assert "OPERADOR" in anomalia["origens_presentes"]
+
+    @pytest.mark.unit
+    def test_classificar_anomalia_fechamentos_critico_quando_stale_ou_multiplas_origens(
+        self,
+    ) -> None:
+        resumo = {
+            "status": "indisponivel",
+            "total_fechamentos": 4,
+            "origens_presentes": ["AGENTE", "OPERADOR", "MERCADO"],
+            "top_motivos": [{"motivo": "STOP_LOSS", "quantidade": 3}],
+            "stale": True,
+        }
+        anomalia = mqt._classificar_anomalia_fechamentos(resumo)
+        assert anomalia["nivel"] == "CRITICO"
+        assert anomalia["stale"] is True
+        assert anomalia["motivo_predominante"] == "STOP_LOSS"
+
+
 class TestStatusPayload:
     """Testa payload enxuto do endpoint /status."""
 
     @pytest.mark.unit
-    def test_status_payload_inclui_resumo_promocao_quando_cache_preenchido(self) -> None:
+    def test_status_payload_inclui_resumo_promocao_quando_cache_preenchido(
+        self,
+    ) -> None:
         with mqt._lock_cache:
             mqt._cache_dados.clear()
             mqt._cache_dados.update(
@@ -641,30 +987,73 @@ class TestStatusPayload:
                         "runtime_config_presente": True,
                         "motivo": "gate manual aprovado",
                     },
+                    "fechamentos_por_origem": {
+                        "status": "ok",
+                        "total_fechamentos": 4,
+                        "top_motivos": [{"motivo": "TAKE_PROFIT", "quantidade": 2}],
+                        "origens_presentes": ["AGENTE", "MERCADO"],
+                    },
+                    "dashboard_operacional": {
+                        "status": "ok",
+                        "resumo": "P&L positivo e proteção liberada.",
+                        "trade_stats": {"pnl_total_reais": 80.0, "win_rate": 75.0},
+                        "protecao_status": {
+                            "bloqueado": False,
+                            "trades_ultima_hora": 1,
+                        },
+                    },
                 }
             )
         payload = mqt._build_status_payload()
         assert payload["ok"] is True
         assert payload["scheduler_symbol_promotion"]["status"] == "aprovado"
         assert payload["scheduler_symbol_promotion"]["runtime_config_presente"] is True
+        assert payload["fechamentos_por_origem"]["total_fechamentos"] == 4
+        assert payload["fechamentos_por_origem"]["top_motivo"] == "TAKE_PROFIT"
+        assert payload["anomalia_fechamentos"]["nivel"] == "ALERTA"
+        assert payload["saude_operacional"]["nivel"] == "ALERTA"
 
     @pytest.mark.unit
-    def test_status_payload_fallback_para_leitor_quando_cache_sem_promocao(self) -> None:
+    def test_status_payload_fallback_para_leitor_quando_cache_sem_promocao(
+        self,
+    ) -> None:
         with mqt._lock_cache:
             mqt._cache_dados.clear()
             mqt._cache_dados.update({"timestamp_legivel": "06/04/2026 16:31:00"})
-        with patch.object(
-            mqt,
-            "_carregar_status_promocao_scheduler",
-            return_value={
-                "status": "sem_promocao",
-                "aprovado": False,
-                "runtime_config_presente": False,
-                "motivo": "artefato ausente",
-                "janela_tolerancia_ativa": True,
-                "bloqueio_efetivo": False,
-                "allow_sem_promocao_until": "09:05",
-            },
+        with (
+            patch.object(
+                mqt,
+                "_carregar_status_promocao_scheduler",
+                return_value={
+                    "status": "sem_promocao",
+                    "aprovado": False,
+                    "runtime_config_presente": False,
+                    "motivo": "artefato ausente",
+                    "janela_tolerancia_ativa": True,
+                    "bloqueio_efetivo": False,
+                    "allow_sem_promocao_until": "09:05",
+                },
+            ),
+            patch.object(
+                mqt,
+                "_carregar_resumo_fechamentos_operacionais",
+                return_value={
+                    "status": "indisponivel",
+                    "total_fechamentos": 0,
+                    "top_motivos": [],
+                    "origens_presentes": [],
+                },
+            ),
+            patch.object(
+                mqt,
+                "_carregar_dashboard_operacional",
+                return_value={
+                    "status": "alerta",
+                    "resumo": "Cooldown ativo.",
+                    "trade_stats": {"pnl_total_reais": -10.0, "win_rate": 33.0},
+                    "protecao_status": {"bloqueado": True, "trades_ultima_hora": 2},
+                },
+            ),
         ):
             payload = mqt._build_status_payload()
         assert payload["ok"] is True
@@ -672,3 +1061,6 @@ class TestStatusPayload:
         assert payload["scheduler_symbol_promotion"]["aprovado"] is False
         assert payload["scheduler_symbol_promotion"]["janela_tolerancia_ativa"] is True
         assert payload["scheduler_symbol_promotion"]["bloqueio_efetivo"] is False
+        assert payload["fechamentos_por_origem"]["status"] == "indisponivel"
+        assert payload["anomalia_fechamentos"]["nivel"] == "CRITICO"
+        assert payload["saude_operacional"]["nivel"] == "CRITICO"

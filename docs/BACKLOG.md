@@ -7433,3 +7433,277 @@ pre-open ou se o bloqueio efetivo ja esta ativo.
 - 2026-04-07 — Monitor Quantico passa a sinalizar `PRE-OPEN TOLERADO`
 - 2026-04-07 — UI e payload passam a marcar `BLOQUEIO_ESTRITO` fora da janela (BLID-077)
 
+---
+
+## BLID-078
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: dar visibilidade operacional no Monitor Quantico sobre fechamentos por origem e motivo do Micro Tendencia
+stage_atual: project-manager
+data_inicio: 2026-04-07
+data_conclusao: 2026-04-07
+
+### Escopo
+
+Completar o valor do BLID-075 no `Monitor Quantico`, exibindo no payload
+`/dados` e na UI HTML o resumo canônico de fechamentos por origem
+(`AGENTE`, `OPERADOR`, `MERCADO`) e top motivos, com fallback resiliente
+quando o SQLite ou o `StatsQueryService` estiverem indisponíveis.
+
+### Entregas
+
+- `scripts/monitor_quantico_tendencia.py`
+  - novo loader resiliente `_carregar_resumo_fechamentos_operacionais(...)`
+  - inclusão de `fechamentos_por_origem` em `/dados`
+  - resumo compacto em `/status` com `total_fechamentos`, `top_motivo`
+    e `origens_presentes`
+- `outputs/monitor_quantico.html`
+  - novo card `Fechamentos Operacionais`
+  - renderização de breakdown por origem com P&L e top motivos
+  - fallback visual quando não houver dados recentes
+- testes:
+  - `tests/unit/test_monitor_quantico.py`
+  - `tests/unit/test_monitor_quantico_html.py`
+
+### Evidencias
+
+- `pytest tests/unit/test_monitor_quantico.py tests/unit/test_monitor_quantico_html.py tests/unit/test_dashboard_stats_server.py -q`
+  → **69 passed in 1.39s**
+- `python -m mypy --strict --follow-imports=skip scripts/monitor_quantico_tendencia.py`
+  → **Success: no issues found in 1 source file**
+- `python -m py_compile scripts/monitor_quantico_tendencia.py`
+  → **OK**
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| `INICIAR_MONITOR_QUANTICO.bat` | ALTO | DIRETO | Reiniciar para carregar o novo card de fechamentos operacionais |
+| `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | BAIXO | INDIRETO | Ganha rastreabilidade visual do motivo/origem dos encerramentos |
+| `INICIAR_DIARIOS.bat` | BAIXO | INDIRETO | Pode reutilizar o resumo em auditoria pós-sessão |
+| `INICIAR_AGENTE_RL_5000.bat` | NENHUM | SEM IMPACTO | Nenhuma |
+| `INICIAR_AGENTE_RL_DIRETO.bat` | NENHUM | SEM IMPACTO | Nenhuma |
+
+### Historico
+
+- 2026-04-07 — BLID-078 priorizado via fluxo do `9.dev-cycle`
+- 2026-04-07 — Monitor Quantico passa a exibir fechamentos por origem e top motivos
+
+---
+
+## BLID-079
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: transformar fechamentos operacionais do Monitor Quantico em
+  health-check objetivo com níveis `OK`, `ALERTA` e `CRITICO`
+stage_atual: project-manager
+data_inicio: 2026-04-07
+data_conclusao: 2026-04-07
+
+### Escopo
+
+Evoluir a observabilidade do `INICIAR_MONITOR_QUANTICO.bat` para classificar
+anomalias operacionais a partir do resumo já consolidado de
+`fechamentos_por_origem`, sem alterar lógica de trading.
+
+### Entregas
+
+- `scripts/monitor_quantico_tendencia.py`
+  - novo classificador `_classificar_anomalia_fechamentos(...)`
+  - inclusão de `anomalia_fechamentos` em `/dados` e `/status`
+  - fallback resiliente para `stale`/`indisponivel`
+- `outputs/monitor_quantico.html`
+  - badge operacional `OK` / `ALERTA` / `CRITICO`
+  - resumo visual junto ao card de fechamentos operacionais
+- testes:
+  - `tests/unit/test_monitor_quantico.py`
+  - `tests/unit/test_monitor_quantico_html.py`
+
+### Evidencias
+
+- `pytest tests/unit/test_monitor_quantico.py tests/unit/test_monitor_quantico_html.py -q`
+  → **58 passed in 1.17s**
+- `python -m mypy --strict --follow-imports=skip scripts/monitor_quantico_tendencia.py`
+  → **Success: no issues found in 1 source file**
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| `INICIAR_MONITOR_QUANTICO.bat` | ALTO | DIRETO | Reiniciar para aplicar o novo health-check visual |
+| `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | BAIXO | INDIRETO | Apenas monitorar o novo status operacional |
+| `INICIAR_DIARIOS.bat` | BAIXO | INDIRETO | Pode reutilizar o resumo em auditoria pós-sessão |
+| `INICIAR_AGENTE_RL_5000.bat` | NENHUM | SEM IMPACTO | Nenhuma |
+| `INICIAR_AGENTE_RL_DIRETO.bat` | NENHUM | SEM IMPACTO | Nenhuma |
+
+### Historico
+
+- 2026-04-07 — BLID-079 priorizado como próximo incremento natural após BLID-078
+- 2026-04-07 — Monitor Quantico passa a classificar anomalias de fechamentos em tempo real
+
+---
+
+## BLID-080
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: substituir placeholders do `StatsQueryService` por métricas reais do
+  SQLite para o dashboard e o Monitor Quântico
+stage_atual: project-manager
+data_inicio: 2026-04-07
+data_conclusao: 2026-04-07
+
+### Escopo
+
+Implementar leitura real de `posicoes_encerradas` e `micro_trend_bloqueios`
+no `src/application/dashboard_stats_server.py`, eliminando zeros fixos em
+`_calcular_stats_hoje()`, `_calcular_stats_n_dias()` e
+`_obter_protection_status()`.
+
+### Entregas
+
+- `src/application/dashboard_stats_server.py`
+  - conexão SQLite em modo read-only
+  - agregação real de `TradeStats` por janela temporal
+  - cálculo de `drawdown`, `win_rate` e `pnl_total_reais`
+  - `ProtectionStatus` com trades da última hora, cooldown, streak de perdas
+    e bloqueios do `micro_trend_bloqueios`
+- testes:
+  - `tests/unit/test_dashboard_stats_server.py`
+  - regressão validada em `tests/unit/test_monitor_quantico.py`
+  - regressão validada em `tests/unit/test_monitor_quantico_html.py`
+
+### Evidencias
+
+- `pytest tests/unit/test_dashboard_stats_server.py tests/unit/test_dashboard_routes.py tests/unit/test_monitor_quantico.py tests/unit/test_monitor_quantico_html.py -q`
+  → **77 passed, 1 skipped in 1.70s**
+- `python -m mypy --strict --follow-imports=skip src/application/dashboard_stats_server.py scripts/monitor_quantico_tendencia.py`
+  → **Success: no issues found in 2 source files**
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| `INICIAR_MONITOR_QUANTICO.bat` | ALTO | DIRETO | Reiniciar para carregar métricas reais no monitor |
+| `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | MEDIO | INDIRETO | Validar coerência dos números persistidos no SQLite |
+| `INICIAR_DIARIOS.bat` | BAIXO | INDIRETO | Pode reutilizar os números reais em auditoria pós-sessão |
+| `INICIAR_AGENTE_RL_5000.bat` | NENHUM | SEM IMPACTO | Nenhuma |
+| `INICIAR_AGENTE_RL_DIRETO.bat` | NENHUM | SEM IMPACTO | Nenhuma |
+
+### Historico
+
+- 2026-04-07 — BLID-080 priorizado como próximo gap técnico do dashboard backend
+- 2026-04-07 — `StatsQueryService` passa a retornar métricas reais do SQLite
+
+---
+
+## BLID-081
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: expor no Monitor Quantico um resumo executivo de risco e performance
+  do dashboard para leitura operacional imediata
+stage_atual: project-manager
+data_inicio: 2026-04-07
+data_conclusao: 2026-04-07
+
+### Escopo
+
+Integrar ao `Monitor Quantico` um snapshot enxuto do
+`StatsQueryService.obter_snapshot_dashboard()`, destacando P&L do dia,
+`win_rate` e status das proteções ativas (`cooldown`, loss streak e bloqueios)
+sem alterar a lógica de trading.
+
+### Entregas
+
+- `scripts/monitor_quantico_tendencia.py`
+  - novo loader resiliente `_carregar_dashboard_operacional()`
+  - inclusão de `dashboard_operacional` no payload `/dados`
+  - resumo adicional no endpoint `/status` com `pnl_total_reais`, `win_rate`
+    e `protecao_ativa`
+- `outputs/monitor_quantico.html`
+  - novo card `Proteção Operacional`
+  - renderização visual de P&L, `drawdown`, `profit_factor` e cooldown
+- testes:
+  - `tests/unit/test_monitor_quantico.py`
+  - `tests/unit/test_monitor_quantico_html.py`
+
+### Evidencias
+
+- `pytest tests/unit/test_dashboard_stats_server.py tests/unit/test_dashboard_routes.py tests/unit/test_monitor_quantico.py tests/unit/test_monitor_quantico_html.py -q`
+  → **80 passed, 1 skipped in 1.30s**
+- `python -m mypy --strict --follow-imports=skip scripts/monitor_quantico_tendencia.py src/application/dashboard_stats_server.py`
+  → **Success: no issues found in 2 source files**
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| `INICIAR_MONITOR_QUANTICO.bat` | ALTO | DIRETO | Reiniciar para carregar o novo card `Proteção Operacional` |
+| `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | MEDIO | INDIRETO | Operador passa a enxergar cooldown, streak e P&L consolidado no monitor |
+| `INICIAR_DIARIOS.bat` | BAIXO | INDIRETO | Pode reutilizar o snapshot no fechamento e auditoria pós-sessão |
+| `INICIAR_AGENTE_RL_5000.bat` | BAIXO | INDIRETO | Sem mudança de runtime; usar o monitor como apoio operacional |
+| `INICIAR_AGENTE_RL_DIRETO.bat` | BAIXO | INDIRETO | Sem mudança de runtime; usar o monitor como apoio operacional |
+
+### Historico
+
+- 2026-04-07 — BLID-081 priorizado como próximo incremento natural após BLID-080
+- 2026-04-07 — Monitor Quantico passa a exibir snapshot executivo de proteção e performance
+
+---
+
+## BLID-082
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: consolidar um health-check operacional geral no Monitor Quantico
+  para reduzir leitura fragmentada de risco antes do start dos agentes
+stage_atual: project-manager
+data_inicio: 2026-04-07
+data_conclusao: 2026-04-07
+
+### Escopo
+
+Unificar no `Monitor Quantico` um veredito operacional geral (`OK`,
+`ALERTA`, `CRITICO`) combinando três sinais já existentes: gate de promoção,
+anomalias de fechamentos e snapshot de proteção operacional do dashboard.
+
+### Entregas
+
+- `scripts/monitor_quantico_tendencia.py`
+  - novo classificador `_classificar_saude_operacional()`
+  - inclusão de `saude_operacional` em `/dados` e `/status`
+  - consolidação do risco operacional em um único resumo legível
+- `outputs/monitor_quantico.html`
+  - novo card `Saúde Operacional Geral`
+  - badge com nível consolidado e resumo de promoção/proteção/fechamentos
+- testes:
+  - `tests/unit/test_monitor_quantico.py`
+  - `tests/unit/test_monitor_quantico_html.py`
+
+### Evidencias
+
+- `pytest tests/unit/test_dashboard_stats_server.py tests/unit/test_dashboard_routes.py tests/unit/test_monitor_quantico.py tests/unit/test_monitor_quantico_html.py -q`
+  → **83 passed, 1 skipped in 1.96s**
+- `python -m mypy --strict --follow-imports=skip scripts/monitor_quantico_tendencia.py src/application/dashboard_stats_server.py`
+  → **Success: no issues found in 2 source files**
+- `python -m py_compile scripts/monitor_quantico_tendencia.py`
+  → **OK**
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| `INICIAR_MONITOR_QUANTICO.bat` | ALTO | DIRETO | Reiniciar para carregar o novo veredito de `Saúde Operacional Geral` |
+| `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | MEDIO | INDIRETO | Operador passa a ver um status consolidado antes de operar |
+| `INICIAR_DIARIOS.bat` | BAIXO | INDIRETO | Pode reutilizar o veredito no fechamento e na auditoria pós-sessão |
+| `INICIAR_AGENTE_RL_5000.bat` | BAIXO | INDIRETO | Sem mudança de runtime; usar o monitor como apoio de pre-flight |
+| `INICIAR_AGENTE_RL_DIRETO.bat` | BAIXO | INDIRETO | Sem mudança de runtime; usar o monitor como apoio de pre-flight |
+
+### Historico
+
+- 2026-04-07 — BLID-082 priorizado como próximo incremento natural após BLID-081
+- 2026-04-07 — Monitor Quantico passa a exibir saúde operacional geral consolidada
+

@@ -15,11 +15,13 @@ Usados por:
 
 import logging
 import sqlite3
-from dataclasses import dataclass, asdict, field
-from datetime import datetime, timedelta
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
+from datetime import time as horario_time
+from datetime import timedelta
 from pathlib import Path
-from typing import List, Dict, Any, Optional
 from statistics import mean, stdev
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -109,9 +111,7 @@ class TradeRecente:
         """Converte para dict estruturado com timestamps ISO."""
         trade_dict = asdict(self)
         trade_dict["timestamp_abertura"] = self.timestamp_abertura.isoformat()
-        trade_dict["timestamp_fechamento"] = (
-            self.timestamp_fechamento.isoformat()
-        )
+        trade_dict["timestamp_fechamento"] = self.timestamp_fechamento.isoformat()
         return trade_dict
 
 
@@ -133,13 +133,9 @@ class DashboardDataSnapshot:
         return {
             "timestamp": self.timestamp.isoformat(),
             "trade_stats": self.trade_stats.para_dict(),
-            "metricas_operacionais": (
-                self.metricas_operacionais.para_dict()
-            ),
+            "metricas_operacionais": (self.metricas_operacionais.para_dict()),
             "protecao_status": self.protecao_status.para_dict(),
-            "trades_recentes": [
-                trade.para_dict() for trade in self.trades_recentes
-            ],
+            "trades_recentes": [trade.para_dict() for trade in self.trades_recentes],
             "fechamentos_por_origem": self.fechamentos_por_origem,
             "pnl_nao_realizado_reais": self.pnl_nao_realizado_reais,
             "ultima_atualizacao_precos": (
@@ -163,6 +159,7 @@ class StatsQueryService:
 
     def __init__(self, db_path: Optional[str] = None) -> None:
         """Inicializa StatsQueryService."""
+        self.db_path: Optional[str] = None
         if db_path:
             self.db_path = db_path
             return
@@ -233,7 +230,7 @@ class StatsQueryService:
         )
 
     def _conectar_db(self) -> Optional[sqlite3.Connection]:
-        """Abre conexão SQLite, retornando ``None`` se indisponível."""
+        """Abre conexão SQLite read-only, retornando ``None`` se indisponível."""
         if not self.db_path:
             return None
 
@@ -241,8 +238,18 @@ class StatsQueryService:
         if not caminho.exists():
             return None
 
-        conn = sqlite3.connect(str(caminho))
+        try:
+            conn = sqlite3.connect(
+                f"file:{caminho.as_posix()}?mode=ro",
+                uri=True,
+            )
+        except sqlite3.OperationalError:
+            conn = sqlite3.connect(str(caminho))
         conn.row_factory = sqlite3.Row
+        try:
+            conn.execute("PRAGMA query_only = ON")
+        except sqlite3.DatabaseError:
+            logger.debug("PRAGMA query_only indisponível para %s", caminho)
         return conn
 
     def _tabela_existe(self, conn: sqlite3.Connection, nome_tabela: str) -> bool:
@@ -253,9 +260,122 @@ class StatsQueryService:
         ).fetchone()
         return row is not None
 
-    def obter_trades_recentes(
-        self, quantidade: int = 10
-    ) -> List[TradeRecente]:
+    def _trade_stats_zeradas(self) -> TradeStats:
+        """Retorna estrutura padrão para ausência de dados."""
+        return TradeStats(
+            total_trades=0,
+            total_ganhos=0,
+            total_perdas=0,
+            total_breakeven=0,
+            win_rate=0.0,
+            pnl_total_reais=0.0,
+            pnl_total_pct=0.0,
+            drawdown_maximo=0.0,
+            drawdown_pct=0.0,
+        )
+
+    def _parse_timestamp(self, valor: Any) -> Optional[datetime]:
+        """Converte texto ISO/SQLite em `datetime`, tolerando formatos legados."""
+        if valor in (None, ""):
+            return None
+
+        texto = str(valor).strip()
+        try:
+            return datetime.fromisoformat(texto)
+        except ValueError:
+            for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M:%S.%f"):
+                try:
+                    return datetime.strptime(texto, fmt)
+                except ValueError:
+                    continue
+        return None
+
+    def _calcular_trade_stats_desde(self, since_dt: datetime) -> TradeStats:
+        """Agrega estatísticas de trades fechados desde `since_dt`."""
+        conn = self._conectar_db()
+        if conn is None:
+            return self._trade_stats_zeradas()
+
+        try:
+            if not self._tabela_existe(conn, "posicoes_encerradas"):
+                return self._trade_stats_zeradas()
+
+            rows = conn.execute(
+                """
+                SELECT pl_final, preco_entrada, encerrado_em
+                FROM posicoes_encerradas
+                WHERE datetime(encerrado_em) >= datetime(?)
+                ORDER BY datetime(encerrado_em) ASC, trade_id ASC
+                """,
+                (since_dt.isoformat(),),
+            ).fetchall()
+
+            if not rows:
+                return self._trade_stats_zeradas()
+
+            total_trades = len(rows)
+            total_ganhos = 0
+            total_perdas = 0
+            total_breakeven = 0
+            pnl_total_reais = 0.0
+            notional_total = 0.0
+            equity_acumulada = 0.0
+            pico_equity = 0.0
+            drawdown_maximo = 0.0
+
+            for row in rows:
+                pnl = float(row["pl_final"] or 0.0)
+                preco_entrada = float(row["preco_entrada"] or 0.0)
+
+                pnl_total_reais += pnl
+                notional_total += abs(preco_entrada)
+
+                if pnl > 0:
+                    total_ganhos += 1
+                elif pnl < 0:
+                    total_perdas += 1
+                else:
+                    total_breakeven += 1
+
+                equity_acumulada += pnl
+                pico_equity = max(pico_equity, equity_acumulada)
+                drawdown_atual = equity_acumulada - pico_equity
+                drawdown_maximo = min(drawdown_maximo, drawdown_atual)
+
+            win_rate = (
+                round((total_ganhos / total_trades) * 100.0, 2)
+                if total_trades > 0
+                else 0.0
+            )
+            pnl_total_pct = (
+                round((pnl_total_reais / notional_total) * 100.0, 2)
+                if notional_total > 0
+                else 0.0
+            )
+            drawdown_pct = (
+                round((drawdown_maximo / pico_equity) * 100.0, 2)
+                if pico_equity > 0 and drawdown_maximo < 0
+                else 0.0
+            )
+
+            return TradeStats(
+                total_trades=total_trades,
+                total_ganhos=total_ganhos,
+                total_perdas=total_perdas,
+                total_breakeven=total_breakeven,
+                win_rate=win_rate,
+                pnl_total_reais=round(pnl_total_reais, 2),
+                pnl_total_pct=pnl_total_pct,
+                drawdown_maximo=round(drawdown_maximo, 2),
+                drawdown_pct=drawdown_pct,
+            )
+        except Exception as exc:
+            logger.warning("Falha ao calcular trade stats do dashboard: %s", exc)
+            return self._trade_stats_zeradas()
+        finally:
+            conn.close()
+
+    def obter_trades_recentes(self, quantidade: int = 10) -> List[TradeRecente]:
         """Obtem ultimos N trades fechados a partir do SQLite do agente."""
         conn = self._conectar_db()
         if conn is None:
@@ -303,7 +423,9 @@ class StatsQueryService:
                         pnl_reais=pnl_reais,
                         pnl_pct=pnl_pct,
                         duracao_minutos=duracao_minutos,
-                        motivo_fechamento=str(row["motivo_encerramento"] or "NAO_INFORMADO"),
+                        motivo_fechamento=str(
+                            row["motivo_encerramento"] or "NAO_INFORMADO"
+                        ),
                         timestamp_abertura=abertura,
                         timestamp_fechamento=fechamento,
                         encerrado_por=str(row["encerrado_por"] or "SISTEMA"),
@@ -345,7 +467,9 @@ class StatsQueryService:
                 """,
                 (since_dt,),
             ).fetchone()
-            payload["total_fechamentos"] = int((total_row["total"] if total_row else 0) or 0)
+            payload["total_fechamentos"] = int(
+                (total_row["total"] if total_row else 0) or 0
+            )
 
             rows_origem = conn.execute(
                 """
@@ -409,7 +533,9 @@ class StatsQueryService:
                 {
                     "trade_id": str(row["trade_id"]),
                     "symbol": str(row["symbol"]),
-                    "motivo_encerramento": str(row["motivo_encerramento"] or "NAO_INFORMADO"),
+                    "motivo_encerramento": str(
+                        row["motivo_encerramento"] or "NAO_INFORMADO"
+                    ),
                     "encerrado_por": str(row["encerrado_por"] or "SISTEMA"),
                     "pl_final": float(row["pl_final"] or 0.0),
                     "encerrado_em": str(row["encerrado_em"]),
@@ -444,33 +570,14 @@ class StatsQueryService:
 
     def _calcular_stats_hoje(self) -> TradeStats:
         """Calcula stats para hoje (midnight a agora)."""
-        # TODO: Query SQLite com filtro de data (DATE(timestamp) = DATE('now'))
-        return TradeStats(
-            total_trades=0,
-            total_ganhos=0,
-            total_perdas=0,
-            total_breakeven=0,
-            win_rate=0.0,
-            pnl_total_reais=0.0,
-            pnl_total_pct=0.0,
-            drawdown_maximo=0.0,
-            drawdown_pct=0.0,
-        )
+        inicio_hoje = datetime.combine(datetime.now().date(), horario_time.min)
+        return self._calcular_trade_stats_desde(inicio_hoje)
 
     def _calcular_stats_n_dias(self, n_dias: int) -> TradeStats:
         """Calcula stats para ultimos N dias."""
-        # TODO: Query SQLite com filtro datetime.now() - timedelta(days=n_dias)
-        return TradeStats(
-            total_trades=0,
-            total_ganhos=0,
-            total_perdas=0,
-            total_breakeven=0,
-            win_rate=0.0,
-            pnl_total_reais=0.0,
-            pnl_total_pct=0.0,
-            drawdown_maximo=0.0,
-            drawdown_pct=0.0,
-        )
+        janela = max(1, int(n_dias))
+        since_dt = datetime.now() - timedelta(days=janela)
+        return self._calcular_trade_stats_desde(since_dt)
 
     def _calcular_metricas_hoje(self) -> OperationalMetrics:
         """Calcula metricas operacionais para hoje."""
@@ -487,10 +594,68 @@ class StatsQueryService:
             )
             return round((quantidade / total) * 100.0, 2)
 
+        sharpe_ratio = 0.0
+        profit_factor_bruto = 1.0
+        tempo_posicao_media_minutos = 0.0
+
+        conn = self._conectar_db()
+        try:
+            if conn is not None and self._tabela_existe(conn, "posicoes_encerradas"):
+                inicio_hoje = datetime.combine(datetime.now().date(), horario_time.min)
+                rows = conn.execute(
+                    """
+                    SELECT pl_final, preco_entrada, criado_em, encerrado_em
+                    FROM posicoes_encerradas
+                    WHERE datetime(encerrado_em) >= datetime(?)
+                    ORDER BY datetime(encerrado_em) ASC
+                    """,
+                    (inicio_hoje.isoformat(),),
+                ).fetchall()
+
+                pnl_series_pct: List[float] = []
+                soma_ganhos = 0.0
+                soma_perdas = 0.0
+                duracoes: List[float] = []
+
+                for row in rows:
+                    pnl = float(row["pl_final"] or 0.0)
+                    preco_entrada = float(row["preco_entrada"] or 0.0)
+                    if preco_entrada:
+                        pnl_series_pct.append((pnl / preco_entrada) * 100.0)
+                    if pnl > 0:
+                        soma_ganhos += pnl
+                    elif pnl < 0:
+                        soma_perdas += abs(pnl)
+
+                    abertura = self._parse_timestamp(row["criado_em"])
+                    fechamento = self._parse_timestamp(row["encerrado_em"])
+                    if abertura and fechamento:
+                        duracao = max(
+                            0.0,
+                            (fechamento - abertura).total_seconds() / 60.0,
+                        )
+                        duracoes.append(duracao)
+
+                sharpe_ratio = round(self.calcular_sharpe_ratio(pnl_series_pct), 4)
+                if soma_perdas > 0:
+                    profit_factor_bruto = round(soma_ganhos / soma_perdas, 2)
+                elif soma_ganhos > 0:
+                    profit_factor_bruto = round(soma_ganhos, 2)
+                else:
+                    profit_factor_bruto = 0.0
+                tempo_posicao_media_minutos = (
+                    round(mean(duracoes), 2) if duracoes else 0.0
+                )
+        except Exception as exc:
+            logger.warning("Falha ao calcular metricas operacionais: %s", exc)
+        finally:
+            if conn is not None:
+                conn.close()
+
         return OperationalMetrics(
-            sharpe_ratio=0.0,
-            profit_factor_bruto=1.0,
-            tempo_posicao_media_minutos=30.0,
+            sharpe_ratio=sharpe_ratio,
+            profit_factor_bruto=profit_factor_bruto,
+            tempo_posicao_media_minutos=tempo_posicao_media_minutos,
             percentual_fechamento_tp=_percentual("TAKE_PROFIT", "TP_HIT"),
             percentual_fechamento_sl=_percentual("STOP_LOSS", "SL_HIT"),
             percentual_fechamento_manual=_percentual("MANUAL_CLOSE"),
@@ -498,17 +663,120 @@ class StatsQueryService:
 
     def _obter_protection_status(self) -> ProtectionStatus:
         """Obtem status atual de protecoes ativas."""
-        # TODO: Query anti_overtrading_protection + blockage_logging
-        # SELECT COUNT(*) FROM trades WHERE TIME(timestamp_abertura) >= TIME('now', '-1 hour')
-        # SELECT COUNT(*) FROM blockage_log WHERE timestamp >= datetime('now', '-1 hour')
-        return ProtectionStatus(
-            trades_ultima_hora=0,
-            limite_trades_hora=3,
-            cooldown_segundos_restantes=0,
-            total_bloqueios_hora=0,
-            contador_perda_consecutiva=0,
-            horario_permite_tradear=True,
-        )
+        limite_trades_hora = 3
+        cooldown_base_segundos = 300
+        agora = datetime.now()
+        horario_permite = horario_time(9, 0) <= agora.time() <= horario_time(17, 30)
+
+        conn = self._conectar_db()
+        if conn is None:
+            return ProtectionStatus(
+                trades_ultima_hora=0,
+                limite_trades_hora=limite_trades_hora,
+                cooldown_segundos_restantes=0,
+                total_bloqueios_hora=0,
+                contador_perda_consecutiva=0,
+                horario_permite_tradear=horario_permite,
+            )
+
+        try:
+            since_uma_hora = (agora - timedelta(hours=1)).isoformat()
+            trades_ultima_hora = 0
+            cooldown_segundos_restantes = 0
+            total_bloqueios_hora = 0
+            contador_perda_consecutiva = 0
+
+            if self._tabela_existe(conn, "posicoes_encerradas"):
+                row = conn.execute(
+                    """
+                    SELECT COUNT(*) AS total
+                    FROM posicoes_encerradas
+                    WHERE datetime(encerrado_em) >= datetime(?)
+                    """,
+                    (since_uma_hora,),
+                ).fetchone()
+                trades_ultima_hora = int((row["total"] if row else 0) or 0)
+
+                recentes = conn.execute(
+                    """
+                    SELECT pl_final, encerrado_em
+                    FROM posicoes_encerradas
+                    ORDER BY datetime(encerrado_em) DESC, trade_id DESC
+                    LIMIT 20
+                    """
+                ).fetchall()
+
+                if recentes:
+                    ultimo_encerramento = self._parse_timestamp(
+                        recentes[0]["encerrado_em"]
+                    )
+                    if ultimo_encerramento is not None:
+                        segundos_decorridos = max(
+                            0,
+                            int((agora - ultimo_encerramento).total_seconds()),
+                        )
+                        cooldown_segundos_restantes = max(
+                            0,
+                            cooldown_base_segundos - segundos_decorridos,
+                        )
+
+                    for row_recente in recentes:
+                        pnl = float(row_recente["pl_final"] or 0.0)
+                        if pnl < 0:
+                            contador_perda_consecutiva += 1
+                        else:
+                            break
+
+            if self._tabela_existe(conn, "micro_trend_bloqueios"):
+                row_bloqueios = conn.execute(
+                    """
+                    SELECT COUNT(*) AS total
+                    FROM micro_trend_bloqueios
+                    WHERE datetime(timestamp) >= datetime(?)
+                    """,
+                    (since_uma_hora,),
+                ).fetchone()
+                total_bloqueios_hora = int(
+                    (row_bloqueios["total"] if row_bloqueios else 0) or 0
+                )
+            elif self._tabela_existe(conn, "eventos_monitoramento"):
+                row_bloqueios = conn.execute(
+                    """
+                    SELECT COUNT(*) AS total
+                    FROM eventos_monitoramento
+                    WHERE datetime(timestamp) >= datetime(?)
+                      AND (
+                        LOWER(tipo_evento) LIKE '%bloqueio%'
+                        OR LOWER(tipo_evento) LIKE '%cooldown%'
+                        OR LOWER(tipo_evento) LIKE '%limit%'
+                      )
+                    """,
+                    (since_uma_hora,),
+                ).fetchone()
+                total_bloqueios_hora = int(
+                    (row_bloqueios["total"] if row_bloqueios else 0) or 0
+                )
+
+            return ProtectionStatus(
+                trades_ultima_hora=trades_ultima_hora,
+                limite_trades_hora=limite_trades_hora,
+                cooldown_segundos_restantes=cooldown_segundos_restantes,
+                total_bloqueios_hora=total_bloqueios_hora,
+                contador_perda_consecutiva=contador_perda_consecutiva,
+                horario_permite_tradear=horario_permite,
+            )
+        except Exception as exc:
+            logger.warning("Falha ao obter protection status do dashboard: %s", exc)
+            return ProtectionStatus(
+                trades_ultima_hora=0,
+                limite_trades_hora=limite_trades_hora,
+                cooldown_segundos_restantes=0,
+                total_bloqueios_hora=0,
+                contador_perda_consecutiva=0,
+                horario_permite_tradear=horario_permite,
+            )
+        finally:
+            conn.close()
 
     def calcular_sharpe_ratio(
         self, pnl_series: List[float], periodo_dias: int = 252
@@ -540,9 +808,7 @@ class StatsQueryService:
         taxa_livre_risco = 0.0
 
         # Anualizacao
-        sharpe = ((media - taxa_livre_risco) / desvio) * (
-            periodo_dias ** 0.5
-        )
+        sharpe = ((media - taxa_livre_risco) / desvio) * (periodo_dias**0.5)
 
         # Sharpe não pode ser negativo
         if sharpe < 0.0:
