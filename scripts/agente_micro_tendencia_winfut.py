@@ -232,6 +232,17 @@ except ImportError:
     MonitorPositionManager = None  # type: ignore[assignment,misc]
 
 try:
+    from src.application.position_closure_detector import (
+        ClosureOrigin,
+        ClosureReason,
+        PositionClosureDetector,
+    )
+except ImportError:
+    ClosureOrigin = None  # type: ignore[assignment,misc]
+    ClosureReason = None  # type: ignore[assignment,misc]
+    PositionClosureDetector = None  # type: ignore[assignment,misc]
+
+try:
     from src.application.ac5_9_feedback_validator import (
         FeedbackValidator,
     )
@@ -3119,6 +3130,9 @@ class MicroTradingManager:
         self._last_stop_loss_time: Optional[datetime] = None
         self._last_stop_loss_direction: Optional[str] = None
         self._watchdog_seen_tickets: set[int] = set()
+        self._closure_detector = (
+            PositionClosureDetector() if PositionClosureDetector is not None else None
+        )
         self._hydrate_today_summary_from_db()
         self._rehydrate_open_trades_from_db()
 
@@ -3277,8 +3291,172 @@ class MicroTradingManager:
             self.open_trades = rehydrated
             print(f"  ℹ Reidratação: posicoes_abertas={len(rehydrated)}")
 
+    def _map_closure_reason(self, closure_reason: object | None) -> str:
+        """Converte ClosureReason em rótulo operacional do agente."""
+        reason_value = getattr(closure_reason, "value", str(closure_reason or ""))
+        mapping = {
+            "TP_HIT": "TAKE_PROFIT",
+            "SL_HIT": "STOP_LOSS",
+            "MANUAL_CLOSE": "MANUAL_CLOSE",
+            "TIMEOUT": "TIMEOUT",
+            "CANCELLED": "CANCELLED",
+        }
+        return mapping.get(str(reason_value), "MANUAL_CLOSE")
+
+    def _resolve_exit_price(self, trade: OpenTrade, fallback_price: Decimal | None = None) -> Decimal:
+        """Resolve o preço real de saída no broker com fallback seguro."""
+        if trade.position_ticket is not None and hasattr(self.mt5, "obter_preco_saida_por_ticket"):
+            try:
+                side = OrderSide.BUY if trade.direction == "COMPRA" else OrderSide.SELL
+                resolved = self.mt5.obter_preco_saida_por_ticket(
+                    int(trade.position_ticket),
+                    symbol=self.symbol,
+                    side=side,
+                )
+                if resolved is not None and float(resolved) > 0:
+                    return Decimal(str(resolved))
+            except Exception:
+                pass
+
+        if fallback_price is not None:
+            return Decimal(str(fallback_price))
+        return Decimal(str(trade.entry_price))
+
+    def _resolve_realized_pnl(self, trade: OpenTrade, exit_price: Decimal) -> Decimal:
+        """Resolve PnL realizado com prioridade para o histórico do MT5."""
+        if trade.position_ticket is not None and hasattr(self.mt5, "obter_pnl_fechado"):
+            try:
+                pnl_real = self.mt5.obter_pnl_fechado(
+                    int(trade.position_ticket),
+                    MAGIC_NUMBER,
+                )
+                if pnl_real is not None:
+                    return Decimal(str(pnl_real))
+            except Exception:
+                pass
+
+        if trade.direction == "COMPRA":
+            return (exit_price - trade.entry_price) * trade.quantity
+        return (trade.entry_price - exit_price) * trade.quantity
+
+    def _registrar_trade_fechado(
+        self,
+        trade: OpenTrade,
+        exit_price: Decimal,
+        reason: str,
+        *,
+        closed_by: str,
+        pnl_override: Decimal | None = None,
+    ) -> bool:
+        """Centraliza atualização de memória e persistência do fechamento."""
+        pnl = pnl_override if pnl_override is not None else self._resolve_realized_pnl(
+            trade, exit_price
+        )
+        self.daily_pnl += pnl
+        duration = int((datetime.now() - trade.opened_at).total_seconds())
+
+        self.closed_trades.append(
+            {
+                "ticket": trade.ticket,
+                "direction": trade.direction,
+                "entry": trade.entry_price,
+                "exit": exit_price,
+                "pnl": pnl,
+                "reason": reason,
+                "closed_by": closed_by,
+                "duration_s": duration,
+            }
+        )
+
+        if trade in self.open_trades:
+            self.open_trades.remove(trade)
+
+        if reason == "STOP_LOSS":
+            self._last_stop_loss_time = datetime.now()
+            self._last_stop_loss_direction = trade.direction
+
+        if self._monitor_posicao is not None:
+            try:
+                self._monitor_posicao.encerrar_posicao(
+                    str(trade.ticket),
+                    float(exit_price),
+                    motivo_encerramento=reason,
+                    encerrado_por=closed_by,
+                    pl_final_override=float(pnl),
+                )
+            except TypeError:
+                try:
+                    self._monitor_posicao.encerrar_posicao(
+                        str(trade.ticket),
+                        float(exit_price),
+                    )
+                except Exception:
+                    pass
+            except Exception:
+                pass
+
+        if _pipeline_episodios:
+            try:
+                _pipeline_episodios.registrar_fechamento(
+                    ticket=str(trade.ticket),
+                    direction=trade.direction,
+                    entry_price=float(trade.entry_price),
+                    exit_price=float(exit_price),
+                    stop_loss=float(trade.stop_loss),
+                    take_profit=float(trade.take_profit),
+                    pnl=float(pnl),
+                    motivo_saida=reason,
+                    duracao_s=duration,
+                    context_entrada=trade.context_entrada,
+                )
+            except Exception as _ep_err:
+                import logging as _log
+                _log.getLogger("pipeline_episodios_micro").warning(
+                    "Falha ao registrar episodio: %s", _ep_err
+                )
+
+        print(
+            f"  {'✓' if pnl >= 0 else '✗'} Trade fechado: {reason} │ "
+            f"origem={closed_by} │ PnL: {pnl:+.0f} pts │ Duração: {duration}s"
+        )
+        return True
+
+    def _reconcile_external_closure(self, trade: OpenTrade) -> bool:
+        """Reconcilia fechamento detectado diretamente no broker/MT5."""
+        exit_price = self._resolve_exit_price(trade)
+        pnl_realizado = self._resolve_realized_pnl(trade, exit_price)
+
+        reason = "MANUAL_CLOSE"
+        closed_by = "OPERADOR"
+        if self._closure_detector is not None:
+            try:
+                direcao = "BUY" if trade.direction == "COMPRA" else "SELL"
+                closure_reason, closure_origin = (
+                    self._closure_detector.classificar_fechamento_externo(
+                        preco_entrada=float(trade.entry_price),
+                        preco_saida=float(exit_price),
+                        take_profit=float(trade.take_profit),
+                        stop_loss=float(trade.stop_loss),
+                        direcao=direcao,
+                        timestamp_abertura=trade.opened_at,
+                        timestamp_fechamento=datetime.now(),
+                    )
+                )
+                reason = self._map_closure_reason(closure_reason)
+                closed_by = getattr(closure_origin, "value", "OPERADOR")
+            except Exception:
+                pass
+
+        return self._registrar_trade_fechado(
+            trade,
+            exit_price,
+            reason,
+            closed_by=closed_by,
+            pnl_override=pnl_realizado,
+        )
+
     def _sync_open_trades_with_broker(self) -> None:
-        """Sincroniza estado em memória com posições reais do broker."""
+        """Sincroniza memória com o broker e reconcilia fechamentos externos."""
         try:
             broker_positions = self.mt5.get_positions(self.symbol)
         except Exception:
@@ -3292,23 +3470,25 @@ class MicroTradingManager:
             except Exception:
                 continue
 
-        if not broker_tickets:
-            return
-
         synchronized: list[OpenTrade] = []
-        removed = 0
-        for trade in self.open_trades:
+        reconciled = 0
+        for trade in list(self.open_trades):
             ticket = trade.position_ticket
-            if ticket is None:
-                continue
-            if int(ticket) in broker_tickets:
+            if ticket is not None and int(ticket) in broker_tickets:
                 synchronized.append(trade)
-            else:
-                removed += 1
+                continue
 
-        if removed:
-            self.open_trades = synchronized
-            print(f"  ℹ Sincronização broker: removidas {removed} posição(ões) stale da memória")
+            if self._reconcile_external_closure(trade):
+                reconciled += 1
+            else:
+                synchronized.append(trade)
+
+        self.open_trades = synchronized
+        if reconciled:
+            print(
+                f"  ℹ Sincronização broker: reconciliadas {reconciled} "
+                f"posição(ões) fechadas fora do fluxo local"
+            )
 
     def can_trade(self) -> tuple[bool, str]:
         """Verifica se pode abrir nova operação. Retorna (pode, motivo)."""
@@ -3749,56 +3929,12 @@ class MicroTradingManager:
                 ticket = self.mt5.send_order(order)
 
             if ticket:
-                # Calcula PnL
-                if trade.direction == "COMPRA":
-                    pnl = (exit_price - trade.entry_price) * trade.quantity
-                else:
-                    pnl = (trade.entry_price - exit_price) * trade.quantity
-
-                self.daily_pnl += pnl
-                duration = int((datetime.now() - trade.opened_at).total_seconds())
-
-                self.closed_trades.append({
-                    "ticket": trade.ticket,
-                    "direction": trade.direction,
-                    "entry": trade.entry_price,
-                    "exit": exit_price,
-                    "pnl": pnl,
-                    "reason": reason,
-                    "duration_s": duration,
-                })
-
-                self.open_trades.remove(trade)
-
-                # FIX 12/02/2026: Registra stop loss para cooling-off anti-TILT
-                if reason == "STOP_LOSS":
-                    self._last_stop_loss_time = datetime.now()
-                    self._last_stop_loss_direction = trade.direction
-
-                # CALIBRACAO-MICRO-03: Persiste episodio completo no pipeline
-                if _pipeline_episodios:
-                    try:
-                        _pipeline_episodios.registrar_fechamento(
-                            ticket=str(trade.ticket),
-                            direction=trade.direction,
-                            entry_price=float(trade.entry_price),
-                            exit_price=float(exit_price),
-                            stop_loss=float(trade.stop_loss),
-                            take_profit=float(trade.take_profit),
-                            pnl=float(pnl),
-                            motivo_saida=reason,
-                            duracao_s=duration,
-                            context_entrada=trade.context_entrada,
-                        )
-                    except Exception as _ep_err:
-                        import logging as _log
-                        _log.getLogger("pipeline_episodios_micro").warning(
-                            "Falha ao registrar episodio: %s", _ep_err
-                        )
-
-                print(f"  {'✓' if pnl >= 0 else '✗'} Trade fechado: {reason} │ "
-                      f"PnL: {pnl:+.0f} pts │ Duração: {duration}s")
-                return True
+                return self._registrar_trade_fechado(
+                    trade,
+                    exit_price,
+                    reason,
+                    closed_by="AGENTE",
+                )
         except Exception as e:
             print(f"  ✗ ERRO ao fechar posição: {e}")
         return False

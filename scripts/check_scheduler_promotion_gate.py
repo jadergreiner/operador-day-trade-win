@@ -41,6 +41,11 @@ def main() -> int:
     parser.add_argument("--outputs-dir", default="outputs")
     parser.add_argument("--timeout-seconds", type=float, default=3.0)
     parser.add_argument("--fail-on", default="reprovado")
+    parser.add_argument(
+        "--allow-sem-promocao-until",
+        default=os.getenv("PROMOTION_GATE_ALLOW_SEM_PROMOCAO_UNTIL", ""),
+        help="Horário HH:MM em que `sem_promocao` ainda é tolerado (ex.: pre-open).",
+    )
     parser.add_argument("--json-output", action="store_true")
     args = parser.parse_args()
 
@@ -58,13 +63,18 @@ def main() -> int:
             payload = load_status_payload_from_latest_promotion_file(Path(args.outputs_dir))
             source = f"fallback-file:{args.outputs_dir}"
 
-    result = evaluate_status_payload(payload, fail_on_statuses=fail_on)
+    result = evaluate_status_payload(
+        payload,
+        fail_on_statuses=fail_on,
+        allow_sem_promocao_until=(args.allow_sem_promocao_until or None),
+    )
     output = {
         "ok": result.ok,
         "status": result.status,
         "motivo": result.motivo,
         "source": source,
         "fail_on": list(fail_on),
+        "allow_sem_promocao_until": args.allow_sem_promocao_until or None,
     }
     if args.json_output:
         print(json.dumps(output, ensure_ascii=False, indent=2))

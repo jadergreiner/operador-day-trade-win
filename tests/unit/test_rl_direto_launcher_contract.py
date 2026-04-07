@@ -12,7 +12,7 @@ def test_launcher_rl_direto_usa_preflight_e_gate_promocao() -> None:
     assert "Tem certeza? (S/N): " in launcher
     assert "python scripts\\system_health_monitor.py" in launcher
     assert (
-        "python scripts\\check_scheduler_promotion_gate.py --fallback-latest-promotion --fail-on reprovado"
+        "python scripts\\check_scheduler_promotion_gate.py --fallback-latest-promotion --fail-on reprovado,sem_promocao --allow-sem-promocao-until 09:05"
         in launcher
     )
     assert "python scripts\\sync_mt5_trades_to_db.py --db \"%RL_DIRETO_DB_PATH%\" --days-back 3 --lock-timeout 0" in launcher

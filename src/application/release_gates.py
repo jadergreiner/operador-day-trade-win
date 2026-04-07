@@ -491,7 +491,9 @@ class OperationalUATService:
         expected_agents: Sequence[str] | None = None,
         legacy_markers: Sequence[str] | None = None,
         promotion_gate_fail_on: Sequence[str] | None = None,
+        promotion_gate_allow_sem_promocao_until: str | None = None,
         runtime_evidence_max_age_hours: int = DEFAULT_RUNTIME_EVIDENCE_MAX_AGE_HOURS,
+        now_provider: Callable[[], datetime] | None = None,
     ) -> None:
         self._base_dir = base_dir
         self._evidence_dir = evidence_dir or (base_dir / "outputs" / "release_gates")
@@ -500,9 +502,15 @@ class OperationalUATService:
         self._promotion_gate_fail_on = tuple(
             (promotion_gate_fail_on or DEFAULT_PROMOTION_GATE_FAIL_ON)
         )
+        self._promotion_gate_allow_sem_promocao_until = (
+            str(promotion_gate_allow_sem_promocao_until).strip()
+            if promotion_gate_allow_sem_promocao_until
+            else None
+        )
         self._runtime_evidence_max_age = timedelta(
             hours=int(runtime_evidence_max_age_hours)
         )
+        self._now_provider = now_provider or datetime.now
 
     def executar(self) -> RelatorioGate:
         """Executa a validacao operacional guiada por evidencias locais."""
@@ -542,6 +550,9 @@ class OperationalUATService:
                     DEFAULT_RUNTIME_SUMMARY_REQUIRED_KEYS
                 ),
                 "promotion_gate_fail_on": list(self._promotion_gate_fail_on),
+                "promotion_gate_allow_sem_promocao_until": (
+                    self._promotion_gate_allow_sem_promocao_until
+                ),
                 "evidencias": evidencias,
             },
         )
@@ -686,7 +697,7 @@ class OperationalUATService:
                 if embedded_timestamp is None:
                     invalid.append(f"{summary_path}: timestamp invalido")
                 else:
-                    now = datetime.now()
+                    now = self._now_provider()
                     idade_timestamp = now - embedded_timestamp
                     detalhes["summary_timestamp"] = embedded_timestamp.isoformat(
                         timespec="seconds"
@@ -702,7 +713,7 @@ class OperationalUATService:
                         )
 
                 modified_at = datetime.fromtimestamp(summary_path.stat().st_mtime)
-                idade_arquivo = datetime.now() - modified_at
+                idade_arquivo = self._now_provider() - modified_at
                 detalhes["summary_file_mtime"] = modified_at.isoformat(
                     timespec="seconds"
                 )
@@ -773,6 +784,8 @@ class OperationalUATService:
         result = evaluate_status_payload(
             payload,
             fail_on_statuses=tuple(self._promotion_gate_fail_on),
+            allow_sem_promocao_until=self._promotion_gate_allow_sem_promocao_until,
+            now=self._now_provider(),
         )
         sucesso = bool(result.ok)
         mensagem = (
@@ -789,5 +802,6 @@ class OperationalUATService:
                 "status": result.status,
                 "motivo": result.motivo,
                 "fail_on_statuses": list(self._promotion_gate_fail_on),
+                "allow_sem_promocao_until": self._promotion_gate_allow_sem_promocao_until,
             },
         )

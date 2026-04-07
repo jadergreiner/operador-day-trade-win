@@ -256,6 +256,60 @@ def test_operational_uat_aprova_com_evidencias_locais(tmp_path: Path) -> None:
     assert relatorio.metadados["produto_alvo"] == "WIN/WIN$N"
 
 
+def test_operational_uat_tolera_sem_promocao_na_janela_pre_open(tmp_path: Path) -> None:
+    """BL-08 pode tolerar `sem_promocao` na janela mínima de pre-open."""
+    (tmp_path / "docs").mkdir(parents=True)
+    (tmp_path / "docs" / "PRD.md").write_text(
+        "Produto WIN/WIN$N para operacao real.",
+        encoding="utf-8",
+    )
+    (tmp_path / "docs" / "OPERACAO_4_AGENTES.md").write_text(
+        "\n".join(
+            [
+                "## Agente 1: INICIAR_DIARIOS.bat",
+                "## Agente 2: INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat",
+                "## Agente 3: INICIAR_AGENTE_RL_5000.bat",
+                "## Agente 4: INICIAR_AGENTE_RL_DIRETO.bat",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "data" / "db").mkdir(parents=True)
+    (tmp_path / "data" / "db" / "trading.db").write_text("ok", encoding="utf-8")
+    (tmp_path / "data" / "db" / "last_session_summary.json").write_text(
+        json.dumps(_runtime_summary_payload(timestamp=datetime(2026, 4, 7, 8, 55))),
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates").mkdir(parents=True)
+    (tmp_path / "outputs").mkdir(exist_ok=True)
+    (tmp_path / "tests" / "uat").mkdir(parents=True)
+    (tmp_path / "tests" / "uat" / "uat_test_cases.py").write_text(
+        "# runner limpo\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates" / "bl01_staging_readiness.json").write_text(
+        json.dumps({"nome": "staging_readiness", "aprovado": True, "resultados": []}),
+        encoding="utf-8",
+    )
+    (tmp_path / "outputs" / "release_gates" / "bl07_quality_gate.json").write_text(
+        json.dumps(
+            {"nome": "quality_gate_release", "aprovado": True, "resultados": []}
+        ),
+        encoding="utf-8",
+    )
+    _write_promotion_payload(tmp_path, status="sem_promocao", motivo="pre-open tolerado")
+
+    servico = OperationalUATService(
+        base_dir=tmp_path,
+        promotion_gate_allow_sem_promocao_until="09:05",
+        now_provider=lambda: datetime(2026, 4, 7, 8, 55),
+    )
+    relatorio = servico.executar()
+
+    assert relatorio.aprovado is True
+    assert any(item.nome == "scheduler_promotion_gate" and item.sucesso for item in relatorio.resultados)
+
+
 def test_operational_uat_reprova_quando_legado_btcusd_aparece(tmp_path: Path) -> None:
     """BL-08 reprova se o runner ou docs ainda expuserem BTCUSD."""
     (tmp_path / "docs").mkdir(parents=True)

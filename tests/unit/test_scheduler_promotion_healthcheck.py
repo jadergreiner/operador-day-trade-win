@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 
 from src.application.scheduler_promotion_healthcheck import (
@@ -44,6 +45,41 @@ def test_evaluate_status_payload_suporta_fail_on_custom() -> None:
         }
     }
     result = evaluate_status_payload(payload, fail_on_statuses=("reprovado", "sem_promocao"))
+    assert result.ok is False
+    assert result.status == "sem_promocao"
+
+
+def test_evaluate_status_payload_tolera_sem_promocao_dentro_da_janela() -> None:
+    payload = {
+        "scheduler_symbol_promotion": {
+            "status": "sem_promocao",
+            "motivo": "aguardando promoção antes da abertura",
+        }
+    }
+    result = evaluate_status_payload(
+        payload,
+        fail_on_statuses=("reprovado", "sem_promocao"),
+        allow_sem_promocao_until="09:05",
+        now=datetime(2026, 4, 7, 8, 55),
+    )
+    assert result.ok is True
+    assert result.status == "sem_promocao"
+    assert "09:05" in result.motivo
+
+
+def test_evaluate_status_payload_reprova_sem_promocao_fora_da_janela() -> None:
+    payload = {
+        "scheduler_symbol_promotion": {
+            "status": "sem_promocao",
+            "motivo": "promoção ainda não realizada",
+        }
+    }
+    result = evaluate_status_payload(
+        payload,
+        fail_on_statuses=("reprovado", "sem_promocao"),
+        allow_sem_promocao_until="09:05",
+        now=datetime(2026, 4, 7, 9, 6),
+    )
     assert result.ok is False
     assert result.status == "sem_promocao"
 

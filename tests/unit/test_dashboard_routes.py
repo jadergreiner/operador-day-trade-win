@@ -6,8 +6,11 @@ Pipeline: StatsQueryService -> routes/dashboard.py -> TestClient
 """
 
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
+
+fastapi = pytest.importorskip("fastapi")
+fastapi_testclient = pytest.importorskip("fastapi.testclient")
+FastAPI = fastapi.FastAPI
+TestClient = fastapi_testclient.TestClient
 
 from src.interfaces.api.routes.dashboard import roteador
 
@@ -102,6 +105,36 @@ def test_recentes_quantidade_invalida_retorna_422(cliente: TestClient) -> None:
 
     resposta_grande = cliente.get("/api/v1/stats/recentes?quantidade=101")
     assert resposta_grande.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Testes: GET /api/v1/stats/fechamentos-origem
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_fechamentos_por_origem_retorna_200(cliente: TestClient) -> None:
+    """Endpoint deve responder com payload agregado dos fechamentos."""
+    resposta = cliente.get("/api/v1/stats/fechamentos-origem?dias=7")
+    assert resposta.status_code == 200
+
+
+@pytest.mark.unit
+def test_fechamentos_por_origem_contem_campos_esperados(cliente: TestClient) -> None:
+    """Payload deve expor origem, motivo e lista recente."""
+    resposta = cliente.get("/api/v1/stats/fechamentos-origem?dias=7")
+    dados = resposta.json()
+    assert "periodo_dias" in dados
+    assert "por_origem" in dados
+    assert "por_motivo" in dados
+    assert "fechamentos_recentes" in dados
+
+
+@pytest.mark.unit
+def test_fechamentos_por_origem_dias_invalido_retorna_422(cliente: TestClient) -> None:
+    """Janela fora do range válido deve ser rejeitada pelo FastAPI."""
+    resposta = cliente.get("/api/v1/stats/fechamentos-origem?dias=0")
+    assert resposta.status_code == 422
 
 
 # ---------------------------------------------------------------------------

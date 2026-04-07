@@ -30,6 +30,15 @@ class ClosureReason(Enum):
     CANCELLED = "CANCELLED"
 
 
+class ClosureOrigin(Enum):
+    """Origem operacional do encerramento detectado."""
+
+    AGENTE = "AGENTE"
+    OPERADOR = "OPERADOR"
+    MERCADO = "MERCADO"
+    SISTEMA = "SISTEMA"
+
+
 @dataclass
 class ClosureDetectionResult:
     """
@@ -56,12 +65,14 @@ class ClosureDetectionResult:
     motivo_fechamento: ClosureReason
     duracao_minutos: int
     timestamp_deteccao: datetime
+    encerrado_por: ClosureOrigin = ClosureOrigin.MERCADO
 
     def para_dict(self) -> Dict[str, Any]:
         """Converte resultado para dicionario estruturado."""
         resultado_dict = asdict(self)
-        # Converter enum para string
+        # Converter enums para string
         resultado_dict["motivo_fechamento"] = self.motivo_fechamento.value
+        resultado_dict["encerrado_por"] = self.encerrado_por.value
         # Converter datetime para ISO format
         resultado_dict["timestamp_deteccao"] = (
             self.timestamp_deteccao.isoformat()
@@ -222,6 +233,47 @@ class PositionClosureDetector:
 
         # Se nao foi nenhum dos acima, foi manual
         return ClosureReason.MANUAL_CLOSE
+
+    def classificar_fechamento_externo(
+        self,
+        preco_entrada: float,
+        preco_saida: float,
+        take_profit: float,
+        stop_loss: float,
+        direcao: str,
+        timestamp_abertura: datetime,
+        timestamp_fechamento: datetime,
+        origem_forcada: Optional[ClosureOrigin] = None,
+        tolerancia_preco: float = 0.5,
+    ) -> Tuple[ClosureReason, ClosureOrigin]:
+        """Classifica fechamento externo com motivo e origem operacional.
+
+        Regras:
+        - TP/SL => origem MERCADO
+        - TIMEOUT => origem SISTEMA
+        - Caso contrário => MANUAL_CLOSE com origem OPERADOR
+          (ou ``origem_forcada`` quando explicitamente informada)
+        """
+        direcao_normalizada = direcao.upper()
+
+        if direcao_normalizada == "BUY":
+            if preco_saida >= (take_profit - tolerancia_preco):
+                return ClosureReason.TP_HIT, ClosureOrigin.MERCADO
+            if preco_saida <= (stop_loss + tolerancia_preco):
+                return ClosureReason.SL_HIT, ClosureOrigin.MERCADO
+        elif direcao_normalizada == "SELL":
+            if preco_saida <= (take_profit + tolerancia_preco):
+                return ClosureReason.TP_HIT, ClosureOrigin.MERCADO
+            if preco_saida >= (stop_loss - tolerancia_preco):
+                return ClosureReason.SL_HIT, ClosureOrigin.MERCADO
+
+        motivo_timeout = self.detectar_timeout(
+            timestamp_abertura, timestamp_fechamento
+        )
+        if motivo_timeout is not None:
+            return motivo_timeout, ClosureOrigin.SISTEMA
+
+        return ClosureReason.MANUAL_CLOSE, origem_forcada or ClosureOrigin.OPERADOR
 
     def calcular_pnl(
         self,

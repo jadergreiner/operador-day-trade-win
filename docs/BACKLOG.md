@@ -7234,3 +7234,202 @@ Promover modo estrito no gate de promocao para release: considerar
 - Definir janela operacional minima para considerar `sem_promocao` toleravel
   (ex.: pre-open) antes de impor bloqueio absoluto em todos os ambientes.
 
+---
+
+## BLID-075
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: eliminar posicao fantasma no Micro Tendencia quando o fechamento
+  ocorre fora do fluxo local e dar rastreabilidade operacional no dashboard
+stage_atual: project-manager
+adr_referencia: ADR-017
+data_inicio: 2026-04-07
+data_conclusao: 2026-04-07
+
+### Escopo
+
+Endurecer a reconciliação do `MicroTradingManager` para tratar
+fechamentos externos mesmo quando o broker retorna zero posições abertas.
+Persistir `motivo_encerramento` e `encerrado_por` no SQLite e expor o
+resumo por origem no dashboard stats/API.
+
+### Entregas
+
+- `scripts/agente_micro_tendencia_winfut.py`
+  - remove retorno precoce em `_sync_open_trades_with_broker()`
+  - reconcilia fechamento externo com preço de saída e P&L realizado
+  - registra `closed_by` na memória e no pipeline de episódios
+- `src/application/ac5_8_position_monitor.py`
+  - adiciona `motivo_encerramento` e `encerrado_por` em
+    `posicoes_encerradas`
+  - migração leve para bases legadas e suporte a `pl_final_override`
+- `src/application/position_closure_detector.py`
+  - adiciona `ClosureOrigin` e
+    `classificar_fechamento_externo(...)`
+- `src/application/dashboard_stats_server.py`
+  - lê `posicoes_encerradas` no SQLite real
+  - agrega fechamentos por `AGENTE`, `OPERADOR`, `MERCADO` e motivo
+- `src/interfaces/api/routes/dashboard.py`
+  - novo endpoint `/stats/fechamentos-origem`
+- `scripts/consultar_fechamentos_por_origem.py`
+  - CLI operacional para consulta rápida em ambiente Windows
+- testes:
+  - `tests/unit/test_micro_trading_manual_close.py`
+  - `tests/unit/test_dashboard_stats_server.py`
+  - `tests/unit/test_dashboard_routes.py`
+
+### Evidencias
+
+- `pytest tests/unit/test_micro_trading_manual_close.py`
+  `tests/unit/test_dashboard_stats_server.py`
+  `tests/unit/test_position_closure_detector.py`
+  `tests/test_ac5_8_position_monitor.py -q`
+  → **61 passed, 2 skipped in 1.16s**
+- `python -m py_compile scripts/agente_micro_tendencia_winfut.py`
+  `src/application/ac5_8_position_monitor.py`
+  `src/application/dashboard_stats_server.py`
+  `src/application/position_closure_detector.py`
+  `src/interfaces/api/routes/dashboard.py` → **OK**
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | ALTO | DIRETO | Reiniciar para aplicar a reconciliação nova |
+| `INICIAR_MONITOR_QUANTICO.bat` | MEDIO | INDIRETO | Validar consumo do novo resumo por origem |
+| `INICIAR_DIARIOS.bat` | BAIXO | INDIRETO | Pode aproveitar os novos motivos/origens em auditoria |
+| `INICIAR_AGENTE_RL_5000.bat` | NENHUM | SEM IMPACTO | Nenhuma |
+| `INICIAR_AGENTE_RL_DIRETO.bat` | NENHUM | SEM IMPACTO | Nenhuma |
+
+### Historico
+
+- 2026-04-07 — bug reproduzido: fechamento externo ficava stale em memória
+- 2026-04-07 — correção, cobertura e dashboard concluídos (BLID-075)
+
+---
+
+## BLID-076
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: tolerar `sem_promocao` apenas na janela minima de pre-open,
+  mantendo bloqueio estrito apos o horario operacional minimo
+stage_atual: project-manager
+data_inicio: 2026-04-07
+data_conclusao: 2026-04-07
+
+### Escopo
+
+Definir uma janela minima de tolerancia para o status `sem_promocao`
+no gate operacional do scheduler. Durante o pre-open, o launcher pode
+seguir; fora dessa janela, o bloqueio continua estrito.
+
+### Entregas
+
+- `src/application/scheduler_promotion_healthcheck.py`
+  - suporte a `allow_sem_promocao_until`
+  - avaliacao temporal configuravel via `HH:MM`
+- `scripts/check_scheduler_promotion_gate.py`
+  - novo argumento `--allow-sem-promocao-until`
+- `scripts/validate_go_live_gates.py`
+  - consumo da env var `PROMOTION_GATE_ALLOW_SEM_PROMOCAO_UNTIL`
+- `INICIAR_AGENTE_RL_5000.bat`
+  - pre-flight com `--fail-on reprovado,sem_promocao`
+  - tolerancia explicita ate `09:05`
+- `INICIAR_AGENTE_RL_DIRETO.bat`
+  - mesma regra operacional do RL 5000
+- testes:
+  - `tests/unit/test_scheduler_promotion_healthcheck.py`
+  - `tests/unit/test_release_gates.py`
+  - `tests/unit/test_rl_5000_launcher_contract.py`
+  - `tests/unit/test_rl_direto_launcher_contract.py`
+
+### Evidencias
+
+- `pytest tests/unit/test_scheduler_promotion_healthcheck.py`
+  `tests/unit/test_release_gates.py`
+  `tests/unit/test_rl_5000_launcher_contract.py`
+  `tests/unit/test_rl_direto_launcher_contract.py -q`
+  → **24 passed in 1.25s**
+- `python -m mypy --strict --follow-imports=skip`
+  `src/application/scheduler_promotion_healthcheck.py`
+  `src/application/release_gates.py`
+  `scripts/check_scheduler_promotion_gate.py`
+  `scripts/validate_go_live_gates.py`
+  → **Success: no issues found in 4 source files**
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| `INICIAR_AGENTE_RL_5000.bat` | ALTO | DIRETO | Tolera `sem_promocao` ate `09:05`; depois bloqueia |
+| `INICIAR_AGENTE_RL_DIRETO.bat` | ALTO | DIRETO | Tolera `sem_promocao` ate `09:05`; depois bloqueia |
+| `INICIAR_DIARIOS.bat` | BAIXO | INDIRETO | Sem mudanca de runtime |
+| `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | BAIXO | INDIRETO | Sem impacto direto |
+| `INICIAR_MONITOR_QUANTICO.bat` | MEDIO | INDIRETO | Continua fornecendo insumo para o gate |
+
+### Historico
+
+- 2026-04-07 — janela minima de pre-open definida em `09:05`
+- 2026-04-07 — launchers RL e gate operacional atualizados (BLID-076)
+
+---
+
+## BLID-077
+
+status: CONCLUIDO
+prioridade: P1
+valor_po: dar visibilidade operacional no Monitor Quantico sobre quando
+  `sem_promocao` ainda e tolerado no pre-open e quando o bloqueio ja e estrito
+stage_atual: project-manager
+data_inicio: 2026-04-07
+data_conclusao: 2026-04-07
+
+### Escopo
+
+Evoluir o `Monitor Quantico` para refletir a janela de tolerancia do gate
+`sem_promocao`, destacando visualmente se o status ainda esta tolerado no
+pre-open ou se o bloqueio efetivo ja esta ativo.
+
+### Entregas
+
+- `scripts/monitor_quantico_tendencia.py`
+  - enrich do payload com `allow_sem_promocao_until`
+  - campos `janela_tolerancia_ativa` e `bloqueio_efetivo`
+  - fallback robusto para imports opcionais (`yfinance`, `tradingview_ta`)
+- `outputs/monitor_quantico.html`
+  - destaque visual para `PRE-OPEN TOLERADO`
+  - destaque visual para `BLOQUEIO_ESTRITO`
+- testes:
+  - `tests/unit/test_monitor_quantico.py`
+  - `tests/unit/test_monitor_quantico_html.py`
+
+### Evidencias
+
+- `pytest tests/unit/test_monitor_quantico.py`
+  `tests/unit/test_monitor_quantico_html.py -q`
+  → **51 passed in 1.71s**
+- `python -m mypy --strict --follow-imports=skip`
+  `src/application/scheduler_promotion_healthcheck.py`
+  `src/application/release_gates.py`
+  `scripts/check_scheduler_promotion_gate.py`
+  `scripts/validate_go_live_gates.py`
+  `scripts/monitor_quantico_tendencia.py`
+  → **Success: no issues found in 5 source files**
+
+### Impacto nos Agentes Operacionais
+
+| Agente | Impacto | Tipo | Acao Operacional |
+| --- | --- | --- | --- |
+| `INICIAR_MONITOR_QUANTICO.bat` | ALTO | DIRETO | Exibe se o gate esta tolerado no pre-open ou em bloqueio estrito |
+| `INICIAR_AGENTE_RL_5000.bat` | BAIXO | INDIRETO | Operador passa a enxergar melhor o estado do gate antes do start |
+| `INICIAR_AGENTE_RL_DIRETO.bat` | BAIXO | INDIRETO | Operador passa a enxergar melhor o estado do gate antes do start |
+| `INICIAR_DIARIOS.bat` | NENHUM | SEM IMPACTO | Nenhuma |
+| `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | NENHUM | SEM IMPACTO | Nenhuma |
+
+### Historico
+
+- 2026-04-07 — Monitor Quantico passa a sinalizar `PRE-OPEN TOLERADO`
+- 2026-04-07 — UI e payload passam a marcar `BLOQUEIO_ESTRITO` fora da janela (BLID-077)
+

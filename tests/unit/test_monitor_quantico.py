@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import sys
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -595,6 +596,34 @@ class TestSchedulerPromotionStatus:
         assert status["aprovado"] is True
         assert status["runtime_config_presente"] is True
 
+    @pytest.mark.unit
+    def test_sem_promocao_no_pre_open_sinaliza_tolerancia_ativa(self, tmp_path: Path) -> None:
+        outputs_dir = tmp_path / "outputs"
+        outputs_dir.mkdir()
+        status = mqt._carregar_status_promocao_scheduler(
+            outputs_dir=outputs_dir,
+            runtime_config_path=tmp_path / "runtime.json",
+            allow_sem_promocao_until="09:05",
+            now=datetime(2026, 4, 7, 8, 55),
+        )
+        assert status["status"] == "sem_promocao"
+        assert status["janela_tolerancia_ativa"] is True
+        assert status["bloqueio_efetivo"] is False
+
+    @pytest.mark.unit
+    def test_sem_promocao_apos_janela_ativa_bloqueio_efetivo(self, tmp_path: Path) -> None:
+        outputs_dir = tmp_path / "outputs"
+        outputs_dir.mkdir()
+        status = mqt._carregar_status_promocao_scheduler(
+            outputs_dir=outputs_dir,
+            runtime_config_path=tmp_path / "runtime.json",
+            allow_sem_promocao_until="09:05",
+            now=datetime(2026, 4, 7, 9, 6),
+        )
+        assert status["status"] == "sem_promocao"
+        assert status["janela_tolerancia_ativa"] is False
+        assert status["bloqueio_efetivo"] is True
+
 
 class TestStatusPayload:
     """Testa payload enxuto do endpoint /status."""
@@ -632,9 +661,14 @@ class TestStatusPayload:
                 "aprovado": False,
                 "runtime_config_presente": False,
                 "motivo": "artefato ausente",
+                "janela_tolerancia_ativa": True,
+                "bloqueio_efetivo": False,
+                "allow_sem_promocao_until": "09:05",
             },
         ):
             payload = mqt._build_status_payload()
         assert payload["ok"] is True
         assert payload["scheduler_symbol_promotion"]["status"] == "sem_promocao"
         assert payload["scheduler_symbol_promotion"]["aprovado"] is False
+        assert payload["scheduler_symbol_promotion"]["janela_tolerancia_ativa"] is True
+        assert payload["scheduler_symbol_promotion"]["bloqueio_efetivo"] is False

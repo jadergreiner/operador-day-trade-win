@@ -232,6 +232,8 @@ class MonitorPositionManager:
                 preco_entrada REAL NOT NULL,
                 preco_encerramento REAL NOT NULL,
                 pl_final REAL NOT NULL,
+                motivo_encerramento TEXT DEFAULT 'NAO_INFORMADO',
+                encerrado_por TEXT DEFAULT 'SISTEMA',
                 criado_em TEXT NOT NULL,
                 encerrado_em TEXT NOT NULL,
                 FOREIGN KEY(trade_id) REFERENCES ordens(trade_id)
@@ -249,6 +251,20 @@ class MonitorPositionManager:
                 FOREIGN KEY(trade_id) REFERENCES ordens(trade_id)
             )
         """)
+
+        # Migração leve para bases legadas já existentes.
+        cursor.execute("PRAGMA table_info(posicoes_encerradas)")
+        colunas_encerradas = {row[1] for row in cursor.fetchall()}
+        if "motivo_encerramento" not in colunas_encerradas:
+            cursor.execute(
+                "ALTER TABLE posicoes_encerradas "
+                "ADD COLUMN motivo_encerramento TEXT DEFAULT 'NAO_INFORMADO'"
+            )
+        if "encerrado_por" not in colunas_encerradas:
+            cursor.execute(
+                "ALTER TABLE posicoes_encerradas "
+                "ADD COLUMN encerrado_por TEXT DEFAULT 'SISTEMA'"
+            )
 
         self.bd_conexao.commit()
 
@@ -468,13 +484,23 @@ class MonitorPositionManager:
     # ENCERRAMENTO E CANCELAMENTO
     # ====================================================================
 
-    def encerrar_posicao(self, trade_id: str, preco_encerramento: float) -> bool:
+    def encerrar_posicao(
+        self,
+        trade_id: str,
+        preco_encerramento: float,
+        motivo_encerramento: str = "NAO_INFORMADO",
+        encerrado_por: str = "SISTEMA",
+        pl_final_override: Optional[float] = None,
+    ) -> bool:
         """
-        Encerra posicao (TP ou SL atingido).
+        Encerra posicao (TP, SL, manual ou sistema).
 
         Args:
             trade_id: ID da posicao
-            preco_encerramento: Preco de encerrwmento
+            preco_encerramento: Preco de encerramento
+            motivo_encerramento: Motivo classificado (TP_HIT, MANUAL_CLOSE, etc)
+            encerrado_por: Origem operacional do fechamento
+            pl_final_override: P&L realizado vindo do broker, se disponível
 
         Returns:
             True se encerrada, False se erro
@@ -499,7 +525,9 @@ class MonitorPositionManager:
             volume = Decimal(str(row["volume"]))
             preco_encerramento_dec = Decimal(str(preco_encerramento))
 
-            if direcao == DirecaoOperacao.BUY.value:
+            if pl_final_override is not None:
+                pl_final = Decimal(str(pl_final_override))
+            elif direcao == DirecaoOperacao.BUY.value:
                 pl_final = (preco_encerramento_dec - preco_entrada) * volume
             else:  # SELL
                 pl_final = (preco_entrada - preco_encerramento_dec) * volume
@@ -508,13 +536,22 @@ class MonitorPositionManager:
             cursor.execute("""
                 INSERT INTO posicoes_encerradas (
                     posicao_id, trade_id, signal_id, symbol, direcao, volume,
-                    preco_entrada, preco_encerramento, pl_final, criado_em, encerrado_em
+                    preco_entrada, preco_encerramento, pl_final,
+                    motivo_encerramento, encerrado_por,
+                    criado_em, encerrado_em
                 ) SELECT
                     posicao_id, trade_id, signal_id, symbol, direcao, volume,
-                    preco_entrada, ?, ?, criado_em, ?
+                    preco_entrada, ?, ?, ?, ?, criado_em, ?
                 FROM posicoes_abertas
                 WHERE trade_id = ?
-            """, (float(preco_encerramento_dec), float(pl_final), agora, trade_id))
+            """, (
+                float(preco_encerramento_dec),
+                float(pl_final),
+                motivo_encerramento,
+                encerrado_por,
+                agora,
+                trade_id,
+            ))
 
             # Deletar posicao aberta
             cursor.execute("""
@@ -531,7 +568,8 @@ class MonitorPositionManager:
             self.registrar_evento(
                 trade_id,
                 "POSICAO_ENCERRADA",
-                f"Posicao encerrada em {preco_encerramento} | P&L: {pl_final:.2f}",
+                f"Posicao encerrada em {preco_encerramento} | P&L: {pl_final:.2f} | "
+                f"motivo={motivo_encerramento} | origem={encerrado_por}",
             )
 
             self._commit_with_retry()

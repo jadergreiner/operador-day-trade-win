@@ -6,6 +6,7 @@ import json
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -30,15 +31,56 @@ def _extract_promotion_block(payload: Mapping[str, Any]) -> Mapping[str, Any]:
     return {}
 
 
+def _parse_horario_hhmm(valor: str) -> tuple[int, int]:
+    """Converte `HH:MM` em `(hora, minuto)` com validação simples."""
+    texto = str(valor or "").strip()
+    try:
+        hora_txt, minuto_txt = texto.split(":", maxsplit=1)
+        hora = int(hora_txt)
+        minuto = int(minuto_txt)
+    except (ValueError, AttributeError) as exc:
+        raise ValueError(
+            f"Horário inválido para tolerância operacional: {valor!r}. Use HH:MM."
+        ) from exc
+
+    if not (0 <= hora <= 23 and 0 <= minuto <= 59):
+        raise ValueError(
+            f"Horário inválido para tolerância operacional: {valor!r}. Use HH:MM."
+        )
+    return hora, minuto
+
+
 def evaluate_status_payload(
     payload: Mapping[str, Any],
     *,
     fail_on_statuses: tuple[str, ...] = ("reprovado",),
+    allow_sem_promocao_until: str | None = None,
+    now: datetime | None = None,
 ) -> HealthCheckResult:
     block = _extract_promotion_block(payload)
     status = _normalize_status(block.get("status"))
     motivo = str(block.get("motivo", "")).strip()
-    should_fail = status in set(s.lower() for s in fail_on_statuses)
+    fail_on = {s.lower() for s in fail_on_statuses}
+
+    tolerado = False
+    if status == "sem_promocao" and "sem_promocao" in fail_on and allow_sem_promocao_until:
+        hora, minuto = _parse_horario_hhmm(allow_sem_promocao_until)
+        referencia = now or datetime.now()
+        limite = referencia.replace(
+            hour=hora,
+            minute=minuto,
+            second=0,
+            microsecond=0,
+        )
+        tolerado = referencia <= limite
+        if tolerado:
+            complemento = (
+                f"sem_promocao tolerado até {limite.strftime('%H:%M')} "
+                f"na janela mínima operacional"
+            )
+            motivo = f"{motivo} | {complemento}" if motivo else complemento
+
+    should_fail = status in fail_on and not tolerado
     return HealthCheckResult(
         ok=not should_fail,
         status=status,

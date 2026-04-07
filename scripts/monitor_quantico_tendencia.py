@@ -28,6 +28,7 @@ from datetime import datetime
 from decimal import Decimal
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Optional
 
 # ---------------------------------------------------------------------------
@@ -36,6 +37,8 @@ from typing import Any, Optional
 ROOT_DIR = str(Path(__file__).resolve().parent.parent)
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
+
+from src.application.scheduler_promotion_healthcheck import evaluate_status_payload
 
 logging.basicConfig(
     level=logging.INFO,
@@ -56,6 +59,7 @@ try:
     import yfinance as yf
     _YFINANCE_DISPONIVEL: bool = True
 except ImportError:
+    yf = SimpleNamespace(Ticker=None)
     _YFINANCE_DISPONIVEL = False
     logger.warning(
         "yfinance nao instalado — dados externos desabilitados. "
@@ -66,6 +70,14 @@ try:
     from tradingview_ta import TA_Handler, Interval
     _TV_TA_DISPONIVEL: bool = True
 except ImportError:
+    TA_Handler = None
+    Interval = SimpleNamespace(
+        INTERVAL_1_MINUTE="1m",
+        INTERVAL_5_MINUTES="5m",
+        INTERVAL_15_MINUTES="15m",
+        INTERVAL_1_HOUR="1h",
+        INTERVAL_1_DAY="1d",
+    )
     _TV_TA_DISPONIVEL = False
     logger.debug(
         "tradingview-ta nao instalado — indicadores tecnicos desabilitados"
@@ -185,6 +197,9 @@ except Exception as _cfg_exc:
 # trocar o vencimento (WINJ26, WINM26 etc.) a cada rollover
 SIMBOLO_WIN = "WIN$N"
 SIMBOLO_DOLFUT = "DOL$N"
+PROMOTION_GATE_ALLOW_SEM_PROMOCAO_UNTIL = (
+    os.getenv("PROMOTION_GATE_ALLOW_SEM_PROMOCAO_UNTIL", "").strip() or None
+)
 
 # ---------------------------------------------------------------------------
 # Cache global de dados (atualizado pela thread de coleta)
@@ -193,9 +208,54 @@ _cache_dados: dict[str, Any] = {}
 _lock_cache = threading.Lock()
 
 
+def _enriquecer_status_promocao(
+    payload: dict[str, Any],
+    *,
+    allow_sem_promocao_until: Optional[str] = None,
+    now: Optional[datetime] = None,
+) -> dict[str, Any]:
+    """Enriquece o payload com tolerância de pre-open e bloqueio efetivo."""
+    allow_until = allow_sem_promocao_until or PROMOTION_GATE_ALLOW_SEM_PROMOCAO_UNTIL
+    resultado = evaluate_status_payload(
+        {
+            "scheduler_symbol_promotion": {
+                "status": payload.get("status", "sem_promocao"),
+                "motivo": payload.get("motivo", ""),
+            }
+        },
+        fail_on_statuses=("reprovado", "sem_promocao"),
+        allow_sem_promocao_until=allow_until,
+        now=now,
+    )
+    status = str(payload.get("status", "sem_promocao")).strip().lower() or "sem_promocao"
+    janela_tolerancia_ativa = bool(
+        status == "sem_promocao" and resultado.ok and allow_until
+    )
+    bloqueio_efetivo = bool(
+        status in {"reprovado", "sem_promocao", "arquivo_invalido", "payload_invalido"}
+        and not janela_tolerancia_ativa
+        and status != "aprovado"
+    )
+
+    payload["motivo"] = resultado.motivo or str(payload.get("motivo", "")).strip()
+    payload["allow_sem_promocao_until"] = allow_until
+    payload["janela_tolerancia_ativa"] = janela_tolerancia_ativa
+    payload["bloqueio_efetivo"] = bloqueio_efetivo
+    payload["status_operacional"] = (
+        "PRE_OPEN_TOLERADO"
+        if janela_tolerancia_ativa
+        else "BLOQUEIO_ESTRITO"
+        if bloqueio_efetivo
+        else "LIBERADO"
+    )
+    return payload
+
+
 def _carregar_status_promocao_scheduler(
     outputs_dir: Optional[Path] = None,
     runtime_config_path: Optional[Path] = None,
+    allow_sem_promocao_until: Optional[str] = None,
+    now: Optional[datetime] = None,
 ) -> dict[str, Any]:
     """Le status mais recente de promocao de calibracao do scheduler.
 
@@ -207,46 +267,62 @@ def _carregar_status_promocao_scheduler(
     )
     promotion_files = sorted(outputs_base.glob("scheduler_symbol_promotion_*.json"))
     if not promotion_files:
-        return {
-            "disponivel": False,
-            "status": "sem_promocao",
-            "aprovado": False,
-            "motivo": "artefato de promocao ausente",
-            "runtime_config_presente": runtime_path.exists(),
-        }
+        return _enriquecer_status_promocao(
+            {
+                "disponivel": False,
+                "status": "sem_promocao",
+                "aprovado": False,
+                "motivo": "artefato de promocao ausente",
+                "runtime_config_presente": runtime_path.exists(),
+            },
+            allow_sem_promocao_until=allow_sem_promocao_until,
+            now=now,
+        )
 
     latest = promotion_files[-1]
     try:
         payload = json.loads(latest.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
-        return {
-            "disponivel": False,
-            "status": "arquivo_invalido",
-            "aprovado": False,
-            "motivo": f"falha ao ler {latest.name}",
-            "arquivo": latest.name,
-            "runtime_config_presente": runtime_path.exists(),
-        }
+        return _enriquecer_status_promocao(
+            {
+                "disponivel": False,
+                "status": "arquivo_invalido",
+                "aprovado": False,
+                "motivo": f"falha ao ler {latest.name}",
+                "arquivo": latest.name,
+                "runtime_config_presente": runtime_path.exists(),
+            },
+            allow_sem_promocao_until=allow_sem_promocao_until,
+            now=now,
+        )
     if not isinstance(payload, dict):
-        return {
-            "disponivel": False,
-            "status": "payload_invalido",
-            "aprovado": False,
-            "motivo": f"payload nao-objeto em {latest.name}",
+        return _enriquecer_status_promocao(
+            {
+                "disponivel": False,
+                "status": "payload_invalido",
+                "aprovado": False,
+                "motivo": f"payload nao-objeto em {latest.name}",
+                "arquivo": latest.name,
+                "runtime_config_presente": runtime_path.exists(),
+            },
+            allow_sem_promocao_until=allow_sem_promocao_until,
+            now=now,
+        )
+    aprovado = bool(payload.get("aprovado"))
+    return _enriquecer_status_promocao(
+        {
+            "disponivel": True,
+            "status": "aprovado" if aprovado else "reprovado",
+            "aprovado": aprovado,
+            "motivo": str(payload.get("motivo", "")).strip(),
+            "timestamp_promocao": payload.get("timestamp_promocao"),
+            "source_report": payload.get("source_report"),
             "arquivo": latest.name,
             "runtime_config_presente": runtime_path.exists(),
-        }
-    aprovado = bool(payload.get("aprovado"))
-    return {
-        "disponivel": True,
-        "status": "aprovado" if aprovado else "reprovado",
-        "aprovado": aprovado,
-        "motivo": str(payload.get("motivo", "")).strip(),
-        "timestamp_promocao": payload.get("timestamp_promocao"),
-        "source_report": payload.get("source_report"),
-        "arquivo": latest.name,
-        "runtime_config_presente": runtime_path.exists(),
-    }
+        },
+        allow_sem_promocao_until=allow_sem_promocao_until,
+        now=now,
+    )
 
 
 def _build_status_payload() -> dict[str, Any]:
@@ -254,6 +330,8 @@ def _build_status_payload() -> dict[str, Any]:
     promotion = _cache_dados.get("scheduler_symbol_promotion")
     if not isinstance(promotion, dict):
         promotion = _carregar_status_promocao_scheduler()
+    else:
+        promotion = _enriquecer_status_promocao(dict(promotion))
     return {
         "ok": bool(_cache_dados),
         "ultima_atualizacao": _cache_dados.get("timestamp_legivel"),
@@ -264,6 +342,13 @@ def _build_status_payload() -> dict[str, Any]:
                 promotion.get("runtime_config_presente", False)
             ),
             "motivo": str(promotion.get("motivo", "")).strip(),
+            "allow_sem_promocao_until": promotion.get(
+                "allow_sem_promocao_until"
+            ),
+            "janela_tolerancia_ativa": bool(
+                promotion.get("janela_tolerancia_ativa", False)
+            ),
+            "bloqueio_efetivo": bool(promotion.get("bloqueio_efetivo", False)),
         },
     }
 

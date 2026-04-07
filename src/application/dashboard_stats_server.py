@@ -14,8 +14,10 @@ Usados por:
 """
 
 import logging
+import sqlite3
 from dataclasses import dataclass, asdict, field
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 from statistics import mean, stdev
 
@@ -101,6 +103,7 @@ class TradeRecente:
     motivo_fechamento: str  # TP_HIT, SL_HIT, MANUAL_CLOSE, TIMEOUT, CANCELLED
     timestamp_abertura: datetime
     timestamp_fechamento: datetime
+    encerrado_por: str = "SISTEMA"
 
     def para_dict(self) -> Dict[str, Any]:
         """Converte para dict estruturado com timestamps ISO."""
@@ -121,6 +124,7 @@ class DashboardDataSnapshot:
     metricas_operacionais: OperationalMetrics
     protecao_status: ProtectionStatus
     trades_recentes: List[TradeRecente] = field(default_factory=list)
+    fechamentos_por_origem: Dict[str, Any] = field(default_factory=dict)
     pnl_nao_realizado_reais: float = 0.0
     ultima_atualizacao_precos: Optional[datetime] = None
 
@@ -136,6 +140,7 @@ class DashboardDataSnapshot:
             "trades_recentes": [
                 trade.para_dict() for trade in self.trades_recentes
             ],
+            "fechamentos_por_origem": self.fechamentos_por_origem,
             "pnl_nao_realizado_reais": self.pnl_nao_realizado_reais,
             "ultima_atualizacao_precos": (
                 self.ultima_atualizacao_precos.isoformat()
@@ -156,11 +161,24 @@ class StatsQueryService:
         calcular_sharpe_ratio(): Sharpe a partir de serie P&L
     """
 
-    def __init__(self) -> None:
+    def __init__(self, db_path: Optional[str] = None) -> None:
         """Inicializa StatsQueryService."""
-        # TODO: Conectar SQLite database aqui quando BD estiver ready
-        # Para agora, retorno dados estruturados vazio/default
-        self.db_path: Optional[str] = None
+        if db_path:
+            self.db_path = db_path
+            return
+
+        raiz_projeto = Path(__file__).resolve().parents[2]
+        candidatos = [
+            raiz_projeto / "data" / "db" / "trading_micro_tendencia.db",
+            raiz_projeto / "data" / "db" / "trading.db",
+        ]
+        self.db_path = None
+        for candidato in candidatos:
+            if candidato.exists():
+                self.db_path = str(candidato)
+                break
+        if self.db_path is None:
+            self.db_path = str(candidatos[0])
 
     def obter_snapshot_dashboard(
         self,
@@ -209,26 +227,201 @@ class StatsQueryService:
             metricas_operacionais=metricas,
             protecao_status=protecao,
             trades_recentes=trades,
+            fechamentos_por_origem=self.obter_resumo_fechamentos_por_origem(dias=7),
             pnl_nao_realizado_reais=pnl_nao_realizado_reais,
             ultima_atualizacao_precos=ultima_atualizacao_precos,
         )
 
+    def _conectar_db(self) -> Optional[sqlite3.Connection]:
+        """Abre conexão SQLite, retornando ``None`` se indisponível."""
+        if not self.db_path:
+            return None
+
+        caminho = Path(self.db_path)
+        if not caminho.exists():
+            return None
+
+        conn = sqlite3.connect(str(caminho))
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    def _tabela_existe(self, conn: sqlite3.Connection, nome_tabela: str) -> bool:
+        """Verifica se a tabela existe no SQLite."""
+        row = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name = ?",
+            (nome_tabela,),
+        ).fetchone()
+        return row is not None
+
     def obter_trades_recentes(
         self, quantidade: int = 10
     ) -> List[TradeRecente]:
-        """
-        Obtem ultimos N trades fechados.
+        """Obtem ultimos N trades fechados a partir do SQLite do agente."""
+        conn = self._conectar_db()
+        if conn is None:
+            return []
 
-        Args:
-            quantidade: Numero maximo de trades a retornar
+        try:
+            if not self._tabela_existe(conn, "posicoes_encerradas"):
+                return []
 
-        Returns:
-            Lista de TradeRecente (atualmente vazia, integrar com BD)
-        """
-        # TODO: Query SQLite position_closure_detector + trade_performance_tracker
-        # SELECT * FROM trades WHERE status='FECHADA'
-        # ORDER BY timestamp_fechamento DESC LIMIT :quantidade
-        return []
+            rows = conn.execute(
+                """
+                SELECT trade_id, symbol, direcao, preco_entrada,
+                       preco_encerramento, pl_final, motivo_encerramento,
+                       encerrado_por, criado_em, encerrado_em
+                FROM posicoes_encerradas
+                ORDER BY datetime(encerrado_em) DESC
+                LIMIT ?
+                """,
+                (int(quantidade),),
+            ).fetchall()
+
+            trades: List[TradeRecente] = []
+            for row in rows:
+                preco_entrada = float(row["preco_entrada"] or 0.0)
+                pnl_reais = float(row["pl_final"] or 0.0)
+                pnl_pct = (pnl_reais / preco_entrada * 100.0) if preco_entrada else 0.0
+                abertura = datetime.fromisoformat(str(row["criado_em"]))
+                fechamento = datetime.fromisoformat(str(row["encerrado_em"]))
+                duracao_minutos = max(
+                    0,
+                    int((fechamento - abertura).total_seconds() / 60),
+                )
+                try:
+                    ticket = int(str(row["trade_id"]))
+                except (TypeError, ValueError):
+                    ticket = 0
+
+                trades.append(
+                    TradeRecente(
+                        ticket=ticket,
+                        simbolo=str(row["symbol"]),
+                        direcao=str(row["direcao"]),
+                        preco_entrada=preco_entrada,
+                        preco_saida=float(row["preco_encerramento"] or 0.0),
+                        pnl_reais=pnl_reais,
+                        pnl_pct=pnl_pct,
+                        duracao_minutos=duracao_minutos,
+                        motivo_fechamento=str(row["motivo_encerramento"] or "NAO_INFORMADO"),
+                        timestamp_abertura=abertura,
+                        timestamp_fechamento=fechamento,
+                        encerrado_por=str(row["encerrado_por"] or "SISTEMA"),
+                    )
+                )
+
+            return trades
+        except Exception as exc:
+            logger.warning("Falha ao consultar trades recentes do dashboard: %s", exc)
+            return []
+        finally:
+            conn.close()
+
+    def obter_resumo_fechamentos_por_origem(self, dias: int = 7) -> Dict[str, Any]:
+        """Resume fechamentos por origem operacional e motivo."""
+        conn = self._conectar_db()
+        payload: Dict[str, Any] = {
+            "periodo_dias": int(dias),
+            "db_path": self.db_path,
+            "total_fechamentos": 0,
+            "por_origem": {},
+            "por_motivo": {},
+            "fechamentos_recentes": [],
+        }
+        if conn is None:
+            return payload
+
+        try:
+            if not self._tabela_existe(conn, "posicoes_encerradas"):
+                return payload
+
+            since_dt = (datetime.now() - timedelta(days=max(1, int(dias)))).isoformat()
+
+            total_row = conn.execute(
+                """
+                SELECT COUNT(*) AS total
+                FROM posicoes_encerradas
+                WHERE datetime(encerrado_em) >= datetime(?)
+                """,
+                (since_dt,),
+            ).fetchone()
+            payload["total_fechamentos"] = int((total_row["total"] if total_row else 0) or 0)
+
+            rows_origem = conn.execute(
+                """
+                SELECT COALESCE(encerrado_por, 'SISTEMA') AS origem,
+                       COUNT(*) AS quantidade,
+                       COALESCE(SUM(pl_final), 0.0) AS pnl_total,
+                       COALESCE(AVG(pl_final), 0.0) AS pnl_medio
+                FROM posicoes_encerradas
+                WHERE datetime(encerrado_em) >= datetime(?)
+                GROUP BY COALESCE(encerrado_por, 'SISTEMA')
+                ORDER BY quantidade DESC, origem ASC
+                """,
+                (since_dt,),
+            ).fetchall()
+            for row in rows_origem:
+                origem = str(row["origem"])
+                quantidade = int(row["quantidade"] or 0)
+                percentual = (
+                    round((quantidade / payload["total_fechamentos"]) * 100.0, 2)
+                    if payload["total_fechamentos"]
+                    else 0.0
+                )
+                payload["por_origem"][origem] = {
+                    "quantidade": quantidade,
+                    "pnl_total": float(row["pnl_total"] or 0.0),
+                    "pnl_medio": float(row["pnl_medio"] or 0.0),
+                    "percentual": percentual,
+                }
+
+            rows_motivo = conn.execute(
+                """
+                SELECT COALESCE(motivo_encerramento, 'NAO_INFORMADO') AS motivo,
+                       COUNT(*) AS quantidade,
+                       COALESCE(SUM(pl_final), 0.0) AS pnl_total
+                FROM posicoes_encerradas
+                WHERE datetime(encerrado_em) >= datetime(?)
+                GROUP BY COALESCE(motivo_encerramento, 'NAO_INFORMADO')
+                ORDER BY quantidade DESC, motivo ASC
+                """,
+                (since_dt,),
+            ).fetchall()
+            for row in rows_motivo:
+                motivo = str(row["motivo"])
+                payload["por_motivo"][motivo] = {
+                    "quantidade": int(row["quantidade"] or 0),
+                    "pnl_total": float(row["pnl_total"] or 0.0),
+                }
+
+            recentes = conn.execute(
+                """
+                SELECT trade_id, symbol, motivo_encerramento, encerrado_por,
+                       pl_final, encerrado_em
+                FROM posicoes_encerradas
+                WHERE datetime(encerrado_em) >= datetime(?)
+                ORDER BY datetime(encerrado_em) DESC
+                LIMIT 10
+                """,
+                (since_dt,),
+            ).fetchall()
+            payload["fechamentos_recentes"] = [
+                {
+                    "trade_id": str(row["trade_id"]),
+                    "symbol": str(row["symbol"]),
+                    "motivo_encerramento": str(row["motivo_encerramento"] or "NAO_INFORMADO"),
+                    "encerrado_por": str(row["encerrado_por"] or "SISTEMA"),
+                    "pl_final": float(row["pl_final"] or 0.0),
+                    "encerrado_em": str(row["encerrado_em"]),
+                }
+                for row in recentes
+            ]
+            return payload
+        except Exception as exc:
+            logger.warning("Falha ao resumir fechamentos por origem: %s", exc)
+            return payload
+        finally:
+            conn.close()
 
     def obter_stats_por_periodo(self, periodo: str = "hoje") -> TradeStats:
         """
@@ -281,16 +474,26 @@ class StatsQueryService:
 
     def _calcular_metricas_hoje(self) -> OperationalMetrics:
         """Calcula metricas operacionais para hoje."""
-        # TODO: Query dados de:
-        # - trades: para sharpe, profit_factor, tempos
-        # - position_closure_detector: para tipos fechamento
+        resumo = self.obter_resumo_fechamentos_por_origem(dias=1)
+        por_motivo = resumo.get("por_motivo", {})
+        total = float(resumo.get("total_fechamentos", 0) or 0)
+
+        def _percentual(*motivos: str) -> float:
+            if total <= 0:
+                return 0.0
+            quantidade = sum(
+                float((por_motivo.get(motivo, {}) or {}).get("quantidade", 0))
+                for motivo in motivos
+            )
+            return round((quantidade / total) * 100.0, 2)
+
         return OperationalMetrics(
             sharpe_ratio=0.0,
             profit_factor_bruto=1.0,
             tempo_posicao_media_minutos=30.0,
-            percentual_fechamento_tp=33.33,
-            percentual_fechamento_sl=33.33,
-            percentual_fechamento_manual=33.34,
+            percentual_fechamento_tp=_percentual("TAKE_PROFIT", "TP_HIT"),
+            percentual_fechamento_sl=_percentual("STOP_LOSS", "SL_HIT"),
+            percentual_fechamento_manual=_percentual("MANUAL_CLOSE"),
         )
 
     def _obter_protection_status(self) -> ProtectionStatus:

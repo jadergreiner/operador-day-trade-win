@@ -15,6 +15,7 @@ set "RL_5000_DB_PATH=%cd%\data\db\trading.db"
 set "DB_PATH=%RL_5000_DB_PATH%"
 set "TRADING_DB_PATH=%RL_5000_DB_PATH%"
 set "AGENTE_RL_5000_LOG_DIR=%cd%\outputs"
+set "PROMOTION_GATE_ALLOW_SEM_PROMOCAO_UNTIL=09:05"
 
 REM =========================================================================
 REM P50-CHECK: Verificar operacoes pendentes do pregao anterior
@@ -254,7 +255,7 @@ if errorlevel 1 (
 echo   [OK] Health check aprovado
 
 echo   [PRE-FLIGHT] Validando gate de promocao do scheduler...
-python scripts\check_scheduler_promotion_gate.py --fallback-latest-promotion --fail-on reprovado
+python scripts\check_scheduler_promotion_gate.py --fallback-latest-promotion --fail-on reprovado,sem_promocao --allow-sem-promocao-until 09:05
 if errorlevel 1 (
     echo   [ERRO] Gate de promocao reprovado ou indisponivel.
     echo   [ERRO] Revise /status do monitor ou outputs\scheduler_symbol_promotion_*.json.

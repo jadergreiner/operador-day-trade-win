@@ -91,6 +91,24 @@ async def obter_recentes(
 
 
 @roteador.get(
+    "/stats/fechamentos-origem",
+    summary="Resumo de fechamentos por origem operacional",
+    response_description="Breakdown por AGENTE, OPERADOR, MERCADO e motivo",
+)
+async def obter_fechamentos_por_origem(
+    dias: int = Query(
+        default=7,
+        ge=1,
+        le=90,
+        description="Janela de dias para agregação dos fechamentos",
+    ),
+) -> JSONResponse:
+    """Retorna o resumo dos fechamentos agrupado por origem e motivo."""
+    resumo: Dict[str, Any] = _servico.obter_resumo_fechamentos_por_origem(dias=dias)
+    return JSONResponse(content=resumo)
+
+
+@roteador.get(
     "/stats/periodo/{periodo}",
     summary="Estatisticas agregadas por periodo",
     response_description="TradeStats serializado em JSON",

@@ -9,3 +9,5 @@ def test_monitor_quantico_html_contem_bloco_promocao_scheduler() -> None:
     assert "id=\"promocao-card\"" in html
     assert "renderizarPromocaoScheduler" in html
     assert "scheduler_symbol_promotion" in html
+    assert "PRE-OPEN TOLERADO" in html
+    assert "BLOQUEIO_ESTRITO" in html

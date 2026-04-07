@@ -10,6 +10,7 @@ Validam queries de dados agregados para dashboard:
 
 from datetime import datetime, timedelta
 from typing import Dict, Any, List
+import sqlite3
 import sys
 from pathlib import Path
 
@@ -318,3 +319,71 @@ class TestStatsQueryService:
             return False
 
         assert validar_json_serializable(snapshot_dict)
+
+    def test_obter_resumo_fechamentos_por_origem_agrupar_operador_mercado_agente(
+        self, tmp_path: Path
+    ) -> None:
+        """Deve agrupar fechamentos por origem operacional."""
+        db_path = tmp_path / "dashboard_micro.db"
+        conn = sqlite3.connect(db_path)
+        conn.execute(
+            """
+            CREATE TABLE posicoes_encerradas (
+                posicao_id TEXT PRIMARY KEY,
+                trade_id TEXT NOT NULL UNIQUE,
+                signal_id TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                direcao TEXT NOT NULL,
+                volume INTEGER NOT NULL,
+                preco_entrada REAL NOT NULL,
+                preco_encerramento REAL NOT NULL,
+                pl_final REAL NOT NULL,
+                motivo_encerramento TEXT DEFAULT 'NAO_INFORMADO',
+                encerrado_por TEXT DEFAULT 'SISTEMA',
+                criado_em TEXT NOT NULL,
+                encerrado_em TEXT NOT NULL
+            )
+            """
+        )
+        agora = datetime.now().isoformat()
+        registros = [
+            ("POS_1", "T1", "S1", "WIN$N", "BUY", 1, 100.0, 101.5, 1.5, "TAKE_PROFIT", "MERCADO", agora, agora),
+            ("POS_2", "T2", "S2", "WIN$N", "BUY", 1, 100.0, 100.4, 0.4, "MANUAL_CLOSE", "OPERADOR", agora, agora),
+            ("POS_3", "T3", "S3", "WIN$N", "SELL", 1, 100.0, 99.0, 1.0, "FIM_PREGAO", "AGENTE", agora, agora),
+            ("POS_4", "T4", "S4", "WIN$N", "BUY", 1, 100.0, 99.0, -1.0, "STOP_LOSS", "MERCADO", agora, agora)
+        ]
+        conn.executemany(
+            """
+            INSERT INTO posicoes_encerradas (
+                posicao_id, trade_id, signal_id, symbol, direcao, volume,
+                preco_entrada, preco_encerramento, pl_final,
+                motivo_encerramento, encerrado_por, criado_em, encerrado_em
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            registros,
+        )
+        conn.commit()
+        conn.close()
+
+        service = StatsQueryService(db_path=str(db_path))
+        resumo = service.obter_resumo_fechamentos_por_origem(dias=7)
+
+        assert resumo["total_fechamentos"] == 4
+        assert resumo["por_origem"]["MERCADO"]["quantidade"] == 2
+        assert resumo["por_origem"]["OPERADOR"]["quantidade"] == 1
+        assert resumo["por_origem"]["AGENTE"]["quantidade"] == 1
+        assert resumo["por_motivo"]["MANUAL_CLOSE"]["quantidade"] == 1
+
+    def test_obter_resumo_fechamentos_por_origem_sem_tabela_retorna_zerado(
+        self, tmp_path: Path
+    ) -> None:
+        """Se a tabela ainda não existir, o payload deve vir vazio."""
+        db_path = tmp_path / "sem_dados.db"
+        sqlite3.connect(db_path).close()
+
+        service = StatsQueryService(db_path=str(db_path))
+        resumo = service.obter_resumo_fechamentos_por_origem(dias=7)
+
+        assert resumo["total_fechamentos"] == 0
+        assert resumo["por_origem"] == {}
+        assert resumo["fechamentos_recentes"] == []

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -51,6 +52,9 @@ def executar_go_live_pipeline(
     uat = uat_service or OperationalUATService(
         base_dir=base_dir,
         evidence_dir=release_dir,
+        promotion_gate_allow_sem_promocao_until=(
+            os.getenv("PROMOTION_GATE_ALLOW_SEM_PROMOCAO_UNTIL") or None
+        ),
     )
     uat_report = uat.executar()
     _persist_json(release_dir / "bl08_uat_operacional.json", uat_report.para_dict())

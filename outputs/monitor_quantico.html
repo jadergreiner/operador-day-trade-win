@@ -889,17 +889,27 @@ function renderizarPromocaoScheduler(promo) {
   const tag    = document.getElementById('promocao-tag');
 
   const s = promo?.status || 'sem_promocao';
-  const motivoTexto = promo?.motivo || 'Sem motivo informado.';
   const runtimePresente = promo?.runtime_config_presente === true;
+  const toleradoPreOpen = promo?.janela_tolerancia_ativa === true;
+  const bloqueioEfetivo = promo?.bloqueio_efetivo === true;
+  const limiteTolerancia = promo?.allow_sem_promocao_until || '--:--';
+  let motivoTexto = promo?.motivo || 'Sem motivo informado.';
 
   if (s === 'aprovado') {
     card.className = 'promocao-card promocao--aprovado';
     status.textContent = 'APROVADO PARA RUNTIME';
     tag.textContent = runtimePresente ? 'RUNTIME_OK' : 'RUNTIME_AUSENTE';
-  } else if (s === 'reprovado') {
+  } else if (toleradoPreOpen) {
+    card.className = 'promocao-card promocao--atencao';
+    status.textContent = 'PRE-OPEN TOLERADO';
+    tag.textContent = `PRE_OPEN_${limiteTolerancia}`;
+    motivoTexto = `${motivoTexto} | Operação tolerada até ${limiteTolerancia}.`;
+  } else if (s === 'reprovado' || bloqueioEfetivo) {
     card.className = 'promocao-card promocao--reprovado';
-    status.textContent = 'REPROVADO — AJUSTE NECESSARIO';
-    tag.textContent = 'PROMOCAO_BLOQUEADA';
+    status.textContent = s === 'sem_promocao'
+      ? 'SEM PROMOCAO — BLOQUEIO ATIVO'
+      : 'REPROVADO — AJUSTE NECESSARIO';
+    tag.textContent = 'BLOQUEIO_ESTRITO';
   } else {
     card.className = 'promocao-card promocao--atencao';
     status.textContent = 'ATENCAO — SEM PROMOCAO ATIVA';
@@ -1006,6 +1016,9 @@ function renderizarModoDemo() {
       aprovado: false,
       motivo: 'Sem conexão com backend para validar status de promoção.',
       runtime_config_presente: false,
+      allow_sem_promocao_until: '09:05',
+      janela_tolerancia_ativa: false,
+      bloqueio_efetivo: true,
     },
     mt5: { conectado: false },
     meta: { tempo_coleta_s: 0, twelvedata_ativo: false, finnhub_ativo: false, mt5_disponivel: false },
