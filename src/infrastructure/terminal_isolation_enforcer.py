@@ -1,13 +1,14 @@
 """
-Terminal Isolation Enforcer: HARD STOP para garantir APENAS CLEAR terminal.
+Terminal Isolation Enforcer: vincula este processo ao terminal da Clear.
 
 Implementa:
-  1. Validação de terminal ANTES de cada operação crítica
-  2. Monitoramento contínuo de processos MT5 concorrentes
-  3. Kill switch automático se detectar terminal errado
+  1. Validação do terminal esperado ANTES de cada operação crítica
+  2. Monitoramento contínuo do terminal da Clear durante a execução
+  3. Kill switch automático se o terminal da Clear sumir ou trocar de conta
   4. Auditoria de todas tentativas de isolamento
 
-OBJETIVO: ZERO possibilidade de conectar a FBS/XP/Zero/outro broker.
+OBJETIVO: garantir que este launcher use o terminal da Clear configurado,
+mesmo com outros MT5 abertos para outras estratégias/corretoras.
 """
 
 import os
@@ -30,8 +31,8 @@ class TerminalIsolationEnforcer:
     """
     Enforcer de isolamento de terminal.
 
-    Valida que APENAS o terminal Clear está rodando e conectado.
-    Se detectar qualquer outro terminal MT5, FALHA IMEDIATAMENTE.
+    Valida que o terminal da Clear configurado está rodando e conectado.
+    Outros terminais MT5 podem coexistir para outras estratégias/corretoras.
 
     Uso:
         enforcer = TerminalIsolationEnforcer(
@@ -114,12 +115,12 @@ class TerminalIsolationEnforcer:
             )
             self._fail(msg)
 
-        # 2. Não bloqueia outros terminais; apenas valida o terminal esperado
+        # 2. Outros terminais podem coexistir; apenas registra aviso.
         dangerous_terminals = self._find_dangerous_terminals()
         if dangerous_terminals:
             logger.warning(
-                "Terminais adicionais detectados, mas ignorados pelo modo exclusivo: "
-                f"{dangerous_terminals}"
+                "Terminais MT5 adicionais detectados (permitidos, sem bloquear): %s",
+                dangerous_terminals,
             )
 
         # 3. Verificar que terminal Clear está rodando
@@ -137,10 +138,10 @@ class TerminalIsolationEnforcer:
 
     def validate_continuous(self) -> bool:
         """
-        MONITORAMENTO: Valida isolamento continuamente durante execução.
+        MONITORAMENTO: Valida continuamente o terminal da Clear em uso.
 
         Chamado periodicamente (a cada ciclo do agente) para verificar
-        que nenhum outro terminal foi aberto.
+        que o terminal esperado continua disponível para este processo.
 
         Returns:
             True se tudo OK
@@ -157,12 +158,12 @@ class TerminalIsolationEnforcer:
             )
             self._fail(msg)
 
-        # 2. Outros terminais MT5 podem estar abertos; apenas loga
+        # 2. Outros terminais podem existir; apenas deixa trilha em log.
         dangerous = self._find_dangerous_terminals()
         if dangerous:
             logger.warning(
-                "Terminais adicionais detectados (ignorados): "
-                f"{dangerous}"
+                "Terminais MT5 adicionais detectados durante execução (permitidos): %s",
+                dangerous,
             )
 
         return True

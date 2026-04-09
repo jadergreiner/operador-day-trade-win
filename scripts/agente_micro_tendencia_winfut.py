@@ -5941,7 +5941,7 @@ def main():
                 old_vol = MAX_CONTRACTS
 
                 TRAILING_DISTANCE_PTS = _atr_calibrator.calculate_trailing_stop(result.atr_15)
-                MAX_CONTRACTS = _atr_calibrator.suggest_volume(result.atr_15, base_volume=1) # Usando 1 como base conforme constantes
+                MAX_CONTRACTS = 1  # lote padronizado em 1 contrato
 
                 if TRAILING_DISTANCE_PTS != old_ts or MAX_CONTRACTS != old_vol:
                     print(f"  ⚙️ Calibração ATR (15min: {result.atr_15:.1f} pts):")

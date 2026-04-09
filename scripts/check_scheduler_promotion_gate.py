@@ -33,6 +33,35 @@ def _parse_fail_on(raw: str) -> tuple[str, ...]:
     return cleaned or ("reprovado",)
 
 
+def _ler_variavel_env_local(chave: str) -> str:
+    """Lê uma variável do ambiente atual ou do arquivo `.env` do projeto."""
+    valor = os.getenv(chave, "").strip()
+    if valor:
+        return valor
+
+    env_path = ROOT_DIR / ".env"
+    if not env_path.exists():
+        return ""
+
+    for linha in env_path.read_text(encoding="utf-8").splitlines():
+        texto = linha.strip()
+        if not texto or texto.startswith("#") or "=" not in texto:
+            continue
+        nome, conteudo = texto.split("=", 1)
+        if nome.strip() == chave:
+            return conteudo.strip()
+    return ""
+
+
+def _conta_demo_ativa() -> bool:
+    """Detecta se a operação atual está apontando para servidor demo."""
+    candidatos = (
+        _ler_variavel_env_local("MT5_SERVER"),
+        _ler_variavel_env_local("MT5_WINFUT_SERVER"),
+    )
+    return any("demo" in valor.strip().lower() for valor in candidatos if valor)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--status-url", default="http://localhost:8765/status")
@@ -63,10 +92,12 @@ def main() -> int:
             payload = load_status_payload_from_latest_promotion_file(Path(args.outputs_dir))
             source = f"fallback-file:{args.outputs_dir}"
 
+    conta_demo_ativa = _conta_demo_ativa()
     result = evaluate_status_payload(
         payload,
         fail_on_statuses=fail_on,
         allow_sem_promocao_until=(args.allow_sem_promocao_until or None),
+        allow_sem_promocao_in_demo=conta_demo_ativa,
     )
     output = {
         "ok": result.ok,
@@ -75,6 +106,7 @@ def main() -> int:
         "source": source,
         "fail_on": list(fail_on),
         "allow_sem_promocao_until": args.allow_sem_promocao_until or None,
+        "allow_sem_promocao_in_demo": conta_demo_ativa,
     }
     if args.json_output:
         print(json.dumps(output, ensure_ascii=False, indent=2))

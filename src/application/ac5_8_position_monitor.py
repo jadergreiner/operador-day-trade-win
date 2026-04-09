@@ -59,6 +59,7 @@ class StatusOrdem(str, Enum):
     FILLED = "FILLED"  # Totalmente executada
     PARTIAL = "PARTIAL"  # Parcialmente executada
     CANCELLED = "CANCELLED"  # Cancelada pelo usuario
+    FECHADA = "CANCELLED"  # Alias legado usado por fluxos antigos de runtime
     REJECTED = "REJECTED"  # Rejeitada por MT5
 
 

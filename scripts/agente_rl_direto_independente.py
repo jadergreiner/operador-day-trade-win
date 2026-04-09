@@ -81,6 +81,7 @@ def _resolve_coordination_db_paths() -> dict[str, str]:
 SESSION_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
 AGENT_SESSION_ID = f"agente_direto_{SESSION_TIMESTAMP}"
 AGENT_MODE = "dinamico"  # padrão
+LOTE_PADRAO = 1.0  # 1 contrato/lote por operação
 
 # Parse argumentos
 if "--mode" in sys.argv:
@@ -138,6 +139,8 @@ logger.info("")
 # ============================================================================
 # IMPORTS APÓS SETUP
 # ============================================================================
+_ERRO_IMPORT_CORE: Optional[Exception] = None
+
 try:
     logger.info("[INIT] Importando módulos core...")
 
@@ -213,12 +216,22 @@ try:
     from src.application.services.rl_persistence_service import (
         RLPersistenceService,
     )
-    from src.application.services.novo_agente.agente_q_learning import (
-        AgenteQLearningMiniIndice,
-    )
-    from src.application.services.novo_agente.pipeline_treinamento import (
-        PipelineTreinamentoRL,
-    )
+    try:
+        from src.application.services.novo_agente.agente_q_learning import (
+            AgenteQLearningMiniIndice,
+        )
+        from src.application.services.novo_agente.pipeline_treinamento import (
+            PipelineTreinamentoRL,
+        )
+        logger.info("[OK] Modulos RL training disponiveis")
+    except Exception as _e_rl:
+        _ERRO_IMPORT_CORE = _e_rl
+        AgenteQLearningMiniIndice = None  # type: ignore[assignment]
+        PipelineTreinamentoRL = None  # type: ignore[assignment]
+        logger.warning(
+            "[WARN] Modulos RL training indisponiveis no import do modulo: %s",
+            _e_rl,
+        )
     from src.application.trade_performance_tracker import TradeClosureReason
     from src.application.trade_tracker_integration import TradeTrackerIntegration
     from src.domain.enums.trading_enums import TimeFrame
@@ -234,8 +247,37 @@ try:
     logger.info("[OK] Módulos importados com sucesso (incl. isolamento formal)")
 
 except Exception as e:
-    logger.error(f"[FATAL] Erro ao importar módulos: {e}", exc_info=True)
-    sys.exit(1)
+    _ERRO_IMPORT_CORE = e
+    logger.warning(
+        "[WARN] Erro ao importar módulos core durante import do modulo: %s",
+        e,
+        exc_info=True,
+    )
+    globals().setdefault("TradingConfig", None)
+    globals().setdefault("build_ac6_components", None)
+    globals().setdefault("RLPersistenceService", None)
+    globals().setdefault("AgenteQLearningMiniIndice", None)
+    globals().setdefault("PipelineTreinamentoRL", None)
+    globals().setdefault("TradeClosureReason", None)
+    globals().setdefault("TradeTrackerIntegration", None)
+    globals().setdefault("MT5Adapter", None)
+    globals().setdefault("ensure_rl_database", None)
+    globals().setdefault("get_session", None)
+    globals().setdefault("SqliteRLRepository", None)
+    globals().setdefault("ValidadorSLBreakEven", None)
+
+    def _verificar_coordination_global(reader=None):
+        if reader is None:
+            return True
+        checker = getattr(reader, "pode_abrir_posicao", None)
+        return bool(checker()) if callable(checker) else True
+
+    if __name__ == "__main__":
+        logger.error(
+            "[FATAL] Dependencias criticas ausentes para executar o agente: %s",
+            e,
+        )
+        sys.exit(1)
 
 # ---------------------------------------------------------------------------
 # Coordination — instancia modulo-level, substituivel em testes
@@ -984,6 +1026,75 @@ def verificar_posicao_no_mt5(
     return False
 
 
+def sincronizar_posicao_existente_no_mt5(
+    posicao_mgr: PosicaoIsoladaManager,
+    motor: MotorDecisaoIsolado,
+    mt5_adapter_local: object,
+) -> bool:
+    """Hidrata a sessão atual com posição já aberta no MT5 após reinício."""
+    if posicao_mgr.tem_posicao_aberta():
+        return True
+
+    try:
+        posicoes_mt5 = mt5_adapter_local.get_positions(Symbol(SIMBOLO))
+    except Exception as e:
+        logger.warning(f"[SYNC] Erro ao consultar posições existentes no MT5: {e}")
+        return False
+
+    for pos in (posicoes_mt5 or []):
+        try:
+            pos_magic = int(getattr(pos, "magic", 0) or 0)
+            if pos_magic != MAGIC_NUMBER:
+                continue
+
+            ticket = int(getattr(pos, "ticket", 0) or 0)
+            preco_entrada = float(getattr(pos, "price_open", 0.0) or 0.0)
+            volume = float(getattr(pos, "volume", LOTE_PADRAO) or LOTE_PADRAO)
+            simbolo = str(getattr(pos, "symbol", SIMBOLO) or SIMBOLO)
+            sl = float(getattr(pos, "sl", 0.0) or 0.0)
+            tp = float(getattr(pos, "tp", 0.0) or 0.0)
+            lado = "BUY" if int(getattr(pos, "type", 0) or 0) == 0 else "SELL"
+            tipo = TipoPosicao.COMPRADA if lado == "BUY" else TipoPosicao.VENDIDA
+
+            if ticket <= 0 or preco_entrada <= 0:
+                continue
+
+            posicao_mgr.registrar_posicao_aberta(
+                preco_entrada=preco_entrada,
+                ticket=ticket,
+                lado=lado,
+                quantidade=max(1, int(round(volume))),
+                simbolo=simbolo,
+                stop_loss=sl if sl > 0 else None,
+                take_profit=tp if tp > 0 else None,
+                volume=volume,
+            )
+
+            if motor.obter_posicao(ticket) is None:
+                motor.abrir_posicao(
+                    ticket=ticket,
+                    tipo=tipo,
+                    preco_entrada=preco_entrada,
+                    volume=volume,
+                    stop_loss=sl if sl > 0 else preco_entrada,
+                    take_profit=tp if tp > 0 else preco_entrada,
+                )
+
+            logger.warning(
+                "[SYNC] Posição já aberta no MT5 sincronizada para a sessão atual "
+                "| ticket=%s | lado=%s | preco=%.2f | volume=%.2f",
+                ticket,
+                lado,
+                preco_entrada,
+                volume,
+            )
+            return True
+        except Exception as e:
+            logger.warning(f"[SYNC] Falha ao hidratar posição existente: {e}")
+
+    return False
+
+
 def resolver_preco_saida_real(
     mt5_adapter_local: object,
     ticket: int,
@@ -1087,17 +1198,25 @@ def verificar_confirmacao_sinal(sinal_atual: str, sinal_anterior: str) -> bool:
         )
         if signal_confirmation_count >= CONFIRM_SIGNAL_BARS:
             logger.info(
-                f"[OK] Sinal CONFIRMADO ({signal_confirmation_count}/{CONFIRM_SIGNAL_BARS}) - ciclo fechado"
+                "[OK] Sinal totalmente confirmado (%d/%d) - liberado para validações finais de entrada",
+                signal_confirmation_count,
+                CONFIRM_SIGNAL_BARS,
             )
             signal_confirmation_count = 0
             return True
         logger.info(
-            f"[OK] Sinal CONFIRMADO ({signal_confirmation_count}/{CONFIRM_SIGNAL_BARS})"
+            "[SINAL] Em confirmação (%d/%d) - ainda sem ordem liberada",
+            signal_confirmation_count,
+            CONFIRM_SIGNAL_BARS,
         )
         return False
     else:
         signal_confirmation_count = 1
-        logger.info(f"[SINAL] Novo sinal detectado: {sinal_atual}")
+        logger.info(
+            "[SINAL] Novo sinal detectado: %s | confirmação iniciada (1/%d)",
+            sinal_atual,
+            CONFIRM_SIGNAL_BARS,
+        )
         return False
 
 
@@ -1820,7 +1939,7 @@ def enviar_ordem(
     order = Order(
         symbol=symbol_obj,
         side=side,  # BUY ou SELL
-        quantity=Quantity(1),  # 1 contrato
+        quantity=Quantity(int(LOTE_PADRAO)),  # lote padronizado
         order_type=OrderType.MARKET,  # Ordem de mercado
         stop_loss=Price(sl),  # 🔴 CRITICAL: Stop Loss obrigatório
         take_profit=Price(tp),
@@ -1837,14 +1956,18 @@ def enviar_ordem(
             preco_entrada=preco_atual,
             ticket=int(ticket),
             lado=direcao_str,
-            quantidade=1,
+            quantidade=int(LOTE_PADRAO),
+            simbolo=SIMBOLO,
+            stop_loss=sl,
+            take_profit=tp,
+            volume=LOTE_PADRAO,
         )
         tipo = TipoPosicao.COMPRADA if direcao_str == "BUY" else TipoPosicao.VENDIDA
         motor_decisao.abrir_posicao(
             ticket=int(ticket),
             tipo=tipo,
             preco_entrada=preco_atual,
-            volume=1.0,
+            volume=LOTE_PADRAO,
             stop_loss=sl,
             take_profit=tp,
             contexto_operacional=contexto_operacional,
@@ -1871,7 +1994,7 @@ def enviar_ordem(
                         "preco_entrada": preco_atual,
                         "sl": sl,
                         "tp": tp,
-                        "volume": 1,
+                        "volume": int(LOTE_PADRAO),
                     }
                 )
             except Exception as e:
@@ -2493,7 +2616,10 @@ def processar_protecao_lucros_rl_direto(
         logger.warning("[PROFIT_PROTECTION] Motor não está disponível.")
         return
 
-    posicao_aberta: Optional[TradeObject] = posicao_tracker.get_posicao_aberta()
+    obter_posicao_aberta = getattr(posicao_tracker, "get_posicao_aberta", None)
+    posicao_aberta: Optional[TradeObject] = (
+        obter_posicao_aberta() if callable(obter_posicao_aberta) else None
+    )
     if not posicao_aberta:
         # Se não há posição, reseta o lucro máximo para o próximo trade
         if lucro_maximo_trade_atual is not None:
@@ -2502,7 +2628,27 @@ def processar_protecao_lucros_rl_direto(
         return
 
     try:
-        preco_atual = mt5_adapter.get_symbol_info(SIMBOLO).bid
+        simbolo_consulta = getattr(posicao_aberta, "simbolo", None) or SIMBOLO
+
+        tick_info = None
+        obter_tick = getattr(mt5_adapter, "get_symbol_info_tick", None)
+        if callable(obter_tick):
+            tick_info = obter_tick(simbolo_consulta)
+
+        if tick_info is None:
+            obter_info_legada = getattr(mt5_adapter, "get_symbol_info", None)
+            if callable(obter_info_legada):
+                tick_info = obter_info_legada(simbolo_consulta)
+
+        if tick_info is None:
+            logger.warning(
+                f"[PROFIT_PROTECTION] Tick indisponível para {simbolo_consulta}. "
+                "Pulando ciclo."
+            )
+            return
+
+        bid_atual = getattr(tick_info, "bid", 0)
+        preco_atual = float(getattr(bid_atual, "value", bid_atual) or 0)
         if not preco_atual or preco_atual <= 0:
             logger.warning(f"[PROFIT_PROTECTION] Preço atual inválido ({preco_atual}). Pulando ciclo.")
             return
@@ -2583,6 +2729,15 @@ def main():
     global _monitor_posicao_rl, _feedback_validator_rl, _drift_detector_rl
     global _online_learning_rl, _baseline_comparator_rl
     global rl_repo, pipeline
+
+    if _ERRO_IMPORT_CORE is not None and (
+        AgenteQLearningMiniIndice is None or PipelineTreinamentoRL is None
+    ):
+        logger.error(
+            "[FATAL] Dependencias de runtime RL indisponiveis: %s",
+            _ERRO_IMPORT_CORE,
+        )
+        sys.exit(1)
 
     # Inicializar componentes
     componentes = inicializar_componentes()
@@ -2770,6 +2925,20 @@ def main():
                     time.sleep(5)
                     continue
 
+                # 2. Bootstrap: se a sessão acabou de iniciar sem arquivo local,
+                # mas existe posição aberta do agente no MT5, assumir o monitoramento.
+                if not posicao_tracker.tem_posicao_aberta():
+                    sincronizada = sincronizar_posicao_existente_no_mt5(
+                        posicao_tracker,
+                        motor_decisao,
+                        mt5_adapter,
+                    )
+                    if sincronizada:
+                        logger.info(
+                            f"[CICLO {ciclo}] Posição em andamento sincronizada do MT5 "
+                            "para a sessão atual."
+                        )
+
                 # 2. Se JSON diz posição aberta, verificar no MT5 pelo ticket
                 if posicao_tracker.tem_posicao_aberta():
                     ainda_aberta = verificar_posicao_no_mt5(
@@ -2791,7 +2960,7 @@ def main():
                             ticket_local: Optional[int] = None
                             preco_entrada_recuperado: Optional[float] = None
                             lado_recuperado: Optional[str] = None
-                            volume_recuperado: float = 1.0
+                            volume_recuperado: float = LOTE_PADRAO
                             contexto_recuperado = False
 
                             try:
@@ -2801,7 +2970,7 @@ def main():
                                     float(meta_raw.get("preco_entrada", 0) or 0) or None
                                 )
                                 lado_recuperado = str(meta_raw.get("lado", "") or "")
-                                volume_recuperado = float(meta_raw.get("quantidade", 1) or 1)
+                                volume_recuperado = float(meta_raw.get("quantidade", LOTE_PADRAO) or LOTE_PADRAO)
                             except Exception as _e_meta:
                                 logger.debug(
                                     f"[TECH-002] Falha ao ler metadados brutos: {_e_meta}"
@@ -2958,13 +3127,36 @@ def main():
                             }
                         )
 
-                        # AC5.8: Atualizar status da ordem para fechada
+                        # AC5.8: Encerrar posição no monitor formal e manter
+                        # compatibilidade com fluxos antigos.
                         if _monitor_posicao_rl and ticket_aberto:
                             try:
-                                _monitor_posicao_rl.atualizar_status_ordem(
-                                    str(ticket_aberto),
-                                    StatusOrdem.FECHADA,
+                                motivo_ac58 = (
+                                    "SL_HIT"
+                                    if resultado == "LOSS"
+                                    else "TP_HIT"
+                                    if resultado == "WIN"
+                                    else "MANUAL_CLOSE"
                                 )
+
+                                if hasattr(_monitor_posicao_rl, "encerrar_posicao"):
+                                    ok_ac58 = _monitor_posicao_rl.encerrar_posicao(
+                                        str(ticket_aberto),
+                                        preco_encerramento=preco_saida_real,
+                                        motivo_encerramento=motivo_ac58,
+                                        encerrado_por="RL_DIRETO",
+                                        pl_final_override=pnl_estimado,
+                                    )
+                                    if not ok_ac58:
+                                        logger.warning(
+                                            f"[AC5.8] Monitor não confirmou encerramento do "
+                                            f"ticket {ticket_aberto}"
+                                        )
+                                else:
+                                    _monitor_posicao_rl.atualizar_status_ordem(
+                                        str(ticket_aberto),
+                                        StatusOrdem.CANCELLED,
+                                    )
                             except Exception as e:
                                 logger.warning(f"[AC5.8] Erro ao atualizar status: {e}")
 
@@ -3071,7 +3263,10 @@ def main():
                     confirmado = verificar_confirmacao_sinal(acao_str, last_signal)
 
                     if confirmado:
-                        logger.info(f"[CICLO {ciclo}] SINAL CONFIRMADO: {acao_str}")
+                        logger.info(
+                            f"[CICLO {ciclo}] SINAL CONFIRMADO: {acao_str} | "
+                            "iniciando validações finais antes do envio..."
+                        )
 
                         # 4.5. 🛑 Verificar proteção contra overtrading
                         pode_tradear, motivo = anti_overtrading.pode_tradear()

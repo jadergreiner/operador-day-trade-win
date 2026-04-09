@@ -1,0 +1,317 @@
+[
+  {
+    "job_id": "retrain_4ed9ec03",
+    "scheduled_at": "2026-04-09T15:25:19.710248",
+    "motivo_degradacao": "z_score degradado nas metricas: sharpe_ratio",
+    "status": "scheduled",
+    "metodo_deteccao": "z_score",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_55dfd67d",
+    "scheduled_at": "2026-04-09T15:27:00.139215",
+    "motivo_degradacao": "z_score degradado nas metricas: sharpe_ratio",
+    "status": "scheduled",
+    "metodo_deteccao": "z_score",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_e7af8a3e",
+    "scheduled_at": "2026-04-09T15:28:40.552937",
+    "motivo_degradacao": "z_score degradado nas metricas: sharpe_ratio",
+    "status": "scheduled",
+    "metodo_deteccao": "z_score",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_8a3bcc30",
+    "scheduled_at": "2026-04-09T15:30:20.925258",
+    "motivo_degradacao": "z_score degradado nas metricas: sharpe_ratio",
+    "status": "scheduled",
+    "metodo_deteccao": "z_score",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_f535e8a2",
+    "scheduled_at": "2026-04-09T15:31:11.132024",
+    "motivo_degradacao": "z_score degradado nas metricas: sharpe_ratio",
+    "status": "scheduled",
+    "metodo_deteccao": "z_score",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_9133465d",
+    "scheduled_at": "2026-04-09T15:32:01.359888",
+    "motivo_degradacao": "z_score degradado nas metricas: sharpe_ratio",
+    "status": "scheduled",
+    "metodo_deteccao": "z_score",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_7cd5ce19",
+    "scheduled_at": "2026-04-09T15:33:41.664464",
+    "motivo_degradacao": "z_score degradado nas metricas: sharpe_ratio",
+    "status": "scheduled",
+    "metodo_deteccao": "z_score",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_2f0a4ebf",
+    "scheduled_at": "2026-04-09T15:34:31.793484",
+    "motivo_degradacao": "z_score degradado nas metricas: sharpe_ratio",
+    "status": "scheduled",
+    "metodo_deteccao": "z_score",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_9e610a9c",
+    "scheduled_at": "2026-04-09T15:49:43.186022",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_5bc1da3d",
+    "scheduled_at": "2026-04-09T15:50:33.311708",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_59d4b6a1",
+    "scheduled_at": "2026-04-09T15:51:23.427617",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_50aaef9b",
+    "scheduled_at": "2026-04-09T15:52:13.535670",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_da97fccd",
+    "scheduled_at": "2026-04-09T15:53:03.640713",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_c36ab370",
+    "scheduled_at": "2026-04-09T15:54:43.842219",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_5e786ac0",
+    "scheduled_at": "2026-04-09T15:55:33.961556",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_e10fdc93",
+    "scheduled_at": "2026-04-09T15:56:24.074981",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_e98985c4",
+    "scheduled_at": "2026-04-09T15:57:14.195668",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_0a3d7f7b",
+    "scheduled_at": "2026-04-09T15:58:04.307215",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_00cdd2ed",
+    "scheduled_at": "2026-04-09T15:58:54.418654",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_c896a7e6",
+    "scheduled_at": "2026-04-09T15:59:44.538745",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_a83a9619",
+    "scheduled_at": "2026-04-09T16:00:34.651519",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_a0465352",
+    "scheduled_at": "2026-04-09T16:01:24.771287",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_a9838a46",
+    "scheduled_at": "2026-04-09T16:03:55.094803",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_733b5a72",
+    "scheduled_at": "2026-04-09T16:06:25.414700",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_82986cfe",
+    "scheduled_at": "2026-04-09T16:08:55.743229",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_75a9ee82",
+    "scheduled_at": "2026-04-09T16:11:26.057677",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_d3e73c90",
+    "scheduled_at": "2026-04-09T16:13:56.380018",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_00e94961",
+    "scheduled_at": "2026-04-09T16:15:36.611410",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_c1e313aa",
+    "scheduled_at": "2026-04-09T16:16:26.728531",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_6066d406",
+    "scheduled_at": "2026-04-09T16:17:16.852238",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_b117700a",
+    "scheduled_at": "2026-04-09T16:18:06.980375",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_439804d4",
+    "scheduled_at": "2026-04-09T16:18:57.103683",
+    "motivo_degradacao": "sharpe -0.84 abaixo do minimo 0.8 | f1 0.50 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_1679c0b3",
+    "scheduled_at": "2026-04-09T16:33:48.058669",
+    "motivo_degradacao": "sharpe 0.16 abaixo do minimo 0.8",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_89fb43a7",
+    "scheduled_at": "2026-04-09T16:34:38.278858",
+    "motivo_degradacao": "sharpe 0.16 abaixo do minimo 0.8",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  },
+  {
+    "job_id": "retrain_8337bee6",
+    "scheduled_at": "2026-04-09T16:35:28.513006",
+    "motivo_degradacao": "sharpe 0.16 abaixo do minimo 0.8",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  }
+]

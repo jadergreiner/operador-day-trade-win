@@ -52,8 +52,8 @@ def print_header():
     print("     [PENDENTE] Orders Executor: Async queue + position tracking (starts 02/03)")
     print()
     print("   PARAMETROS OPERACIONAIS:")
-    print("     Conta MT5:       1000346516")
-    print("     Contratos:       Dinamico (ATR-based sizing)")
+    print("     Conta MT5:       1193269477 (DEMO)")
+    print("     Contratos:       Fixo em 1 lote")
     print("     Max Posicoes:    1")
     print("     Max Loss Diario: 500 pts")
     print("     Max Trades/Dia:  3")
@@ -218,7 +218,7 @@ def run_agent(trade_flag, target_date):
         sys.executable,
         "scripts/launch_agent_with_ml_v1_2_3.py",
         trade_flag,
-        "--account 1000346516",
+        "--account 1193269477",
         "--ml-version 1.2.3"
     ]
 

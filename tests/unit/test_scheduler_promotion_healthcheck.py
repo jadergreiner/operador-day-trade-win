@@ -84,6 +84,24 @@ def test_evaluate_status_payload_reprova_sem_promocao_fora_da_janela() -> None:
     assert result.status == "sem_promocao"
 
 
+def test_evaluate_status_payload_tolera_sem_promocao_em_conta_demo() -> None:
+    payload = {
+        "scheduler_symbol_promotion": {
+            "status": "sem_promocao",
+            "motivo": "sem promoção ativa no scheduler",
+        }
+    }
+    result = evaluate_status_payload(
+        payload,
+        fail_on_statuses=("reprovado", "sem_promocao"),
+        allow_sem_promocao_in_demo=True,
+        now=datetime(2026, 4, 7, 11, 5),
+    )
+    assert result.ok is True
+    assert result.status == "sem_promocao"
+    assert "conta demo" in result.motivo.lower()
+
+
 def test_load_status_payload_from_file_ler_json(tmp_path: Path) -> None:
     path = tmp_path / "status.json"
     path.write_text(

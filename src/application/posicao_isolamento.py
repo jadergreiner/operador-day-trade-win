@@ -37,12 +37,26 @@ Uso:
 
 import json
 import logging
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any, Tuple
 
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class SnapshotPosicaoAberta:
+    """Snapshot compatível da posição aberta para monitoramento e proteção."""
+
+    ticket: int
+    simbolo: str
+    preco_entrada: float
+    tipo: Any
+    volume: float
+    sl: Optional[float] = None
+    tp: Optional[float] = None
 
 
 class PosicaoIsoladaManager:
@@ -200,7 +214,11 @@ class PosicaoIsoladaManager:
         preco_entrada: float,
         ticket: int,
         lado: str,
-        quantidade: int
+        quantidade: int,
+        simbolo: Optional[str] = None,
+        stop_loss: Optional[float] = None,
+        take_profit: Optional[float] = None,
+        volume: Optional[float] = None,
     ) -> None:
         """
         Registra que uma posição foi aberta POR ESTE AGENTE.
@@ -213,6 +231,8 @@ class PosicaoIsoladaManager:
         """
         self.posicao_aberta = True
 
+        volume_normalizado = float(volume if volume is not None else quantidade)
+
         self.metadados_posicao = {
             "session_id": self.session_id,
             "owner": self.agent_version,
@@ -223,6 +243,10 @@ class PosicaoIsoladaManager:
             "ticket": ticket,
             "lado": lado,
             "quantidade": quantidade,
+            "volume": volume_normalizado,
+            "simbolo": simbolo,
+            "stop_loss": stop_loss,
+            "take_profit": take_profit,
             "timestamp": datetime.now().isoformat(),
         }
 
@@ -297,6 +321,49 @@ class PosicaoIsoladaManager:
             )
 
         return self.metadados_posicao.copy()
+
+    def get_posicao_aberta(self) -> Optional[SnapshotPosicaoAberta]:
+        """Retorna um snapshot compatível da posição aberta deste agente."""
+        self._carregar_status()
+
+        if not self.eh_dono_posicao():
+            return None
+
+        lado = str(self.metadados_posicao.get("lado", "BUY")).upper()
+        try:
+            from src.application.motor_decisao_isolado import TipoPosicao
+
+            tipo = (
+                TipoPosicao.COMPRADA
+                if lado == "BUY"
+                else TipoPosicao.VENDIDA
+            )
+        except Exception:
+            tipo = lado
+
+        ticket = int(self.metadados_posicao.get("ticket", 0) or 0)
+        preco_entrada = float(self.metadados_posicao.get("preco_entrada", 0.0) or 0.0)
+        volume = float(
+            self.metadados_posicao.get("volume", self.metadados_posicao.get("quantidade", 1)) or 1.0
+        )
+        simbolo = str(self.metadados_posicao.get("simbolo") or "WIN$N")
+
+        if ticket <= 0 or preco_entrada <= 0:
+            logger.warning(
+                "[ISOLAMENTO] Snapshot de posição incompleto para session %s",
+                self.session_id,
+            )
+            return None
+
+        return SnapshotPosicaoAberta(
+            ticket=ticket,
+            simbolo=simbolo,
+            preco_entrada=preco_entrada,
+            tipo=tipo,
+            volume=volume,
+            sl=self.metadados_posicao.get("stop_loss"),
+            tp=self.metadados_posicao.get("take_profit"),
+        )
 
     def obter_infos_resumidas(self) -> Tuple[bool, str]:
         """

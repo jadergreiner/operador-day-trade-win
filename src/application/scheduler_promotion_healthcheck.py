@@ -55,6 +55,7 @@ def evaluate_status_payload(
     *,
     fail_on_statuses: tuple[str, ...] = ("reprovado",),
     allow_sem_promocao_until: str | None = None,
+    allow_sem_promocao_in_demo: bool = False,
     now: datetime | None = None,
 ) -> HealthCheckResult:
     block = _extract_promotion_block(payload)
@@ -63,22 +64,27 @@ def evaluate_status_payload(
     fail_on = {s.lower() for s in fail_on_statuses}
 
     tolerado = False
-    if status == "sem_promocao" and "sem_promocao" in fail_on and allow_sem_promocao_until:
-        hora, minuto = _parse_horario_hhmm(allow_sem_promocao_until)
-        referencia = now or datetime.now()
-        limite = referencia.replace(
-            hour=hora,
-            minute=minuto,
-            second=0,
-            microsecond=0,
-        )
-        tolerado = referencia <= limite
-        if tolerado:
-            complemento = (
-                f"sem_promocao tolerado até {limite.strftime('%H:%M')} "
-                f"na janela mínima operacional"
-            )
+    if status == "sem_promocao" and "sem_promocao" in fail_on:
+        if allow_sem_promocao_in_demo:
+            tolerado = True
+            complemento = "sem_promocao tolerado em conta demo"
             motivo = f"{motivo} | {complemento}" if motivo else complemento
+        elif allow_sem_promocao_until:
+            hora, minuto = _parse_horario_hhmm(allow_sem_promocao_until)
+            referencia = now or datetime.now()
+            limite = referencia.replace(
+                hour=hora,
+                minute=minuto,
+                second=0,
+                microsecond=0,
+            )
+            tolerado = referencia <= limite
+            if tolerado:
+                complemento = (
+                    f"sem_promocao tolerado até {limite.strftime('%H:%M')} "
+                    f"na janela mínima operacional"
+                )
+                motivo = f"{motivo} | {complemento}" if motivo else complemento
 
     should_fail = status in fail_on and not tolerado
     return HealthCheckResult(

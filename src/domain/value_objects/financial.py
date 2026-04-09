@@ -77,6 +77,10 @@ class Price:
             return NotImplemented
         return self.value == other.value
 
+    def __float__(self) -> float:
+        """Permite conversão direta via ``float(Price(...))``."""
+        return float(self.value)
+
     def __str__(self) -> str:
         return f"R$ {self.value:.2f}"
 

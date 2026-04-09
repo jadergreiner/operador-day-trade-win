@@ -217,6 +217,12 @@ class TestAtualizacaoStatus:
         )
         assert resultado is False
 
+    def test_status_ordem_fechada_alias_legado(
+        self, monitor: MonitorPositionManager
+    ) -> None:
+        """Garante compatibilidade com fluxos legados que usam FECHADA."""
+        assert StatusOrdem.FECHADA.value == StatusOrdem.CANCELLED.value
+
 
 # ============================================================================
 # TESTES DE MONITORAMENTO DE POSICAO

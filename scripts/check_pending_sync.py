@@ -74,6 +74,7 @@ def _check_posicoes_abertas(cur: sqlite3.Cursor, hoje: str) -> list[dict]:
         SELECT posicao_id, trade_id, symbol, direcao, preco_entrada, criado_em
         FROM posicoes_abertas
         WHERE DATE(criado_em) < ?
+          AND UPPER(COALESCE(status, 'ABERTA')) = 'ABERTA'
         ORDER BY criado_em
         """,
         (hoje,),
@@ -157,17 +158,63 @@ def _check_json_nao_sincronizados(db_path: Path, hoje: str) -> list[dict]:
     return pendentes
 
 
-def _tentar_sync_automatico(db_path: Path) -> bool:
+def _extrair_data_iso(valor: str | None) -> datetime.date | None:
+    """Extrai a data de strings ISO parciais (`YYYY-MM-DD...`)."""
+    texto = str(valor or "").strip()
+    if not texto:
+        return None
+    try:
+        return datetime.fromisoformat(texto[:10]).date()
+    except ValueError:
+        return None
+
+
+def _calcular_days_back_para_pendencias(
+    orphans: list[dict],
+    trades_antigos: list[dict],
+    *,
+    hoje: datetime.date | None = None,
+) -> int:
+    """Calcula janela de sync suficiente para cobrir a pendência mais antiga."""
+    referencia = hoje or datetime.now().date()
+    datas: list[datetime.date] = []
+
+    for item in orphans:
+        data = _extrair_data_iso(item.get("criado_em"))
+        if data is not None:
+            datas.append(data)
+
+    for item in trades_antigos:
+        data = _extrair_data_iso(item.get("entry_time"))
+        if data is not None:
+            datas.append(data)
+
+    if not datas:
+        return 2
+
+    data_mais_antiga = min(datas)
+    return max(2, (referencia - data_mais_antiga).days + 2)
+
+
+def _tentar_sync_automatico(
+    db_path: Path,
+    orphans: list[dict],
+    trades_antigos: list[dict],
+) -> bool:
     """Tenta rodar sync_mt5_trades_to_db.py para recuperar trades pendentes."""
     sync_script = SCRIPTS_DIR / "sync_mt5_trades_to_db.py"
     if not sync_script.exists():
         _log("Script sync_mt5_trades_to_db.py não encontrado — sync automático indisponível.", "WARN")
         return False
 
-    _log("Tentando sync automático via sync_mt5_trades_to_db.py (--days-back 2)...", "FIX")
+    days_back = _calcular_days_back_para_pendencias(orphans, trades_antigos)
+    _log(
+        f"Tentando sync automático via sync_mt5_trades_to_db.py (--days-back {days_back})...",
+        "FIX",
+    )
     try:
         result = subprocess.run(
-            [sys.executable, str(sync_script), "--db", str(db_path), "--days-back", "2", "--lock-timeout", "10"],
+            [sys.executable, str(sync_script), "--db", str(db_path), "--days-back", str(days_back), "--lock-timeout", "10"],
             capture_output=True,
             text=True,
             timeout=60,
@@ -311,14 +358,18 @@ def main() -> int:
         print()
         if args.auto:
             _log("Modo AUTO ativo — iniciando recuperação...", "FIX")
-            synced = _tentar_sync_automatico(db_path)
+            days_back = _calcular_days_back_para_pendencias(orphans, trades_antigos)
+            synced = _tentar_sync_automatico(db_path, orphans, trades_antigos)
             if synced:
                 _espelhar_para_diarios(db_path)
                 _log("Recuperação concluída. Verifique os bancos ao final.", "OK")
             else:
                 _log("Sync automático não disponível (MT5 offline?). Pendências persistem.", "WARN")
                 _log("Execute manualmente após o pregão:", "WARN")
-                _log(f"  python scripts/sync_mt5_trades_to_db.py --db {db_path.name} --days-back 2", "WARN")
+                _log(
+                    f"  python scripts/sync_mt5_trades_to_db.py --db {db_path.name} --days-back {days_back}",
+                    "WARN",
+                )
         else:
             _log("Execute 'check_pending_sync.py --auto' para tentar recuperação automática.", "WARN")
             _log("Ou aguarde: o P50-SYNC ao final do pregão resolverá as pendências.", "WARN")

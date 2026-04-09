@@ -1,0 +1,11 @@
+[
+  {
+    "job_id": "retrain_43eb6a86",
+    "scheduled_at": "2026-04-09T15:06:37.168624",
+    "motivo_degradacao": "win_rate 0.0% abaixo do limite 50.0% | sharpe 0.00 abaixo do minimo 0.8 | f1 0.00 abaixo do limite 0.55",
+    "status": "scheduled",
+    "metodo_deteccao": "threshold",
+    "started_at": null,
+    "completed_at": null
+  }
+]

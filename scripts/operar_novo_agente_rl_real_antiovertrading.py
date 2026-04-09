@@ -388,6 +388,7 @@ NOVAS_ENTRADAS_FIM = dtime(17, 25)
 MONITORAMENTO_FIM = dtime(17, 55)
 VALOR_PONTO_BRL = 0.20
 CLOSURE_TOLERANCE_POINTS = 20.0
+LOTE_PADRAO = 1.0  # 1 contrato/lote por operação
 
 # ============================================================================
 # GLOBAL STATE
@@ -768,17 +769,25 @@ def verificar_confirmacao_sinal(sinal_atual: str, sinal_anterior: str) -> bool:
         )
         if signal_confirmation_count >= AntiOvertradingConfig.CONFIRM_SIGNAL_BARS:
             logger.info(
-                f"[OK] Sinal CONFIRMADO ({signal_confirmation_count}/{AntiOvertradingConfig.CONFIRM_SIGNAL_BARS}) - ciclo fechado"
+                "[OK] Sinal totalmente confirmado (%d/%d) - liberado para validações finais de entrada",
+                signal_confirmation_count,
+                AntiOvertradingConfig.CONFIRM_SIGNAL_BARS,
             )
             signal_confirmation_count = 0
             return True
         logger.info(
-            f"[OK] Sinal CONFIRMADO ({signal_confirmation_count}/{AntiOvertradingConfig.CONFIRM_SIGNAL_BARS})"
+            "[SINAL] Em confirmação (%d/%d) - ainda sem ordem liberada",
+            signal_confirmation_count,
+            AntiOvertradingConfig.CONFIRM_SIGNAL_BARS,
         )
         return False
     else:
         signal_confirmation_count = 1
-        logger.info(f"[SINAL] Novo sinal detectado: {sinal_atual}")
+        logger.info(
+            "[SINAL] Novo sinal detectado: %s | confirmação iniciada (1/%d)",
+            sinal_atual,
+            AntiOvertradingConfig.CONFIRM_SIGNAL_BARS,
+        )
         return False
 
 
@@ -1297,7 +1306,7 @@ def enviar_ordem_mt5adapter(
         order = Order(
             symbol=Symbol(SIMBOLO),
             side=side,
-            quantity=Quantity(1),
+            quantity=Quantity(int(LOTE_PADRAO)),
             order_type=OrderType.MARKET,
             price=Price(preco_atual),
             stop_loss=Price(sl),
@@ -1319,7 +1328,7 @@ def enviar_ordem_mt5adapter(
             ticket=int(ticket),
             tipo=tipo,
             preco_entrada=preco_atual,
-            volume=1.0,
+            volume=LOTE_PADRAO,
             stop_loss=sl,
             take_profit=tp,
             contexto_operacional=contexto_operacional,
@@ -1340,7 +1349,7 @@ def enviar_ordem_mt5adapter(
                     "signal_id": AGENTE_ID,
                     "symbol": SIMBOLO,
                     "direcao": direcao_ac.value,
-                    "volume": 1,
+                    "volume": int(LOTE_PADRAO),
                     "preco_entrada": preco_atual,
                     "sl": sl,
                     "tp": tp,
@@ -2077,12 +2086,19 @@ def proteger_lucro_trade() -> None:
                         logger.debug(f"[PROTEÇÃO] Ticket {ticket} (SELL): Diferença SL={diferenca_sl:.2f} "
                                    f"< 1.0 (inercial). Ignorando.")
 
-            # Level 2: 50% de lucro -> Fecha 50% (lock in profits)
+            # Level 2: 50% de lucro -> Fecha parcial somente quando houver
+            # mais de 1 contrato. Com lote padronizado em 1, evita 0.5 lote.
             if percent_tp > 50:
-                half_volume = volume / 2
-                logger.info(f"[PROTEÇÃO] Posição #{ticket} em +{percent_tp:.1f}% de lucro. "
-                           f"Fechando 50% do volume ({half_volume:.2f})")
-                fechar_parcial_posicao(ticket, half_volume)
+                if volume <= LOTE_PADRAO:
+                    logger.info(
+                        f"[PROTEÇÃO] Ticket #{ticket} com lote padronizado em "
+                        f"{LOTE_PADRAO:.0f}. Fechamento parcial ignorado."
+                    )
+                else:
+                    half_volume = volume / 2
+                    logger.info(f"[PROTEÇÃO] Posição #{ticket} em +{percent_tp:.1f}% de lucro. "
+                               f"Fechando 50% do volume ({half_volume:.2f})")
+                    fechar_parcial_posicao(ticket, half_volume)
 
             # Level 3: 75% de lucro -> Trailing stop (deixa correr)
             if percent_tp > 75:
@@ -2275,10 +2291,10 @@ def loop_operacao() -> str:
             logger.warning(f"[STOP] STOP LOSS ACIONADO: R${lucro_sessao:.2f}")
             return "STOP_LOSS"
 
-        logger.debug(f"[CICLO {ciclo}] Monitorando posições abertas...")
+        logger.debug(f"[CICLO {ciclo}] Verificando se há posições abertas do agente...")
         if monitorar_posicoes():
             logger.warning("[GUARD] BLOCKED: posicao_aberta")
-            logger.info("[WAIT] Posicao em aberto. Aguardando fechar...")
+            logger.info("[WAIT] Há posição em aberto. Aguardando o fechamento antes de nova entrada...")
             logger.debug(f"[CICLO {ciclo}] Dormindo 30s (posição aberta)...")
             time.sleep(30)
             logger.debug(f"[CICLO {ciclo}] Retornando ao início do loop após sleep.")
@@ -2352,7 +2368,10 @@ def loop_operacao() -> str:
             if confirmado := verificar_confirmacao_sinal(acao_str, last_signal):
                 # Executar apenas se confirmado E passou todas as validações
                 # Passar dados para cálculo dinâmico de SL/TP
-                logger.info(f"[CICLO {ciclo}] Sinal CONFIRMADO! Enviando ordem...")
+                logger.info(
+                    f"[CICLO {ciclo}] SINAL CONFIRMADO: {acao_str} | "
+                    "iniciando validações finais antes do envio..."
+                )
 
                 # 5.5. Gate de coordenacao cross-agent (BLID-043)
                 if _coordination_reader is not None and not _coordination_reader.pode_abrir_posicao():
@@ -2390,13 +2409,16 @@ def loop_operacao() -> str:
                     logger.debug(f"[CICLO {ciclo}] Cooldown finalizado.")
                 else:
                     logger.info(
-                        f"[CICLO {ciclo}] Ordem nao enviada apos validacoes. Retomando monitoramento."
+                        f"[CICLO {ciclo}] Nenhuma ordem foi enviada neste ciclo "
+                        "(bloqueada pelas validações finais/guards). Retomando monitoramento."
                     )
                     time.sleep(30)
             else:
                 last_signal = acao_str
                 logger.info(f"[SINAL] Sinal: {acao_str} (confiança: {confidence:.2%}, vol: {vol:.3f}%)")
-                logger.debug(f"[CICLO {ciclo}] Sinal não confirmado. Aguardando 60s...")
+                logger.debug(
+                    f"[CICLO {ciclo}] Sinal ainda em confirmação ou sem liberação de entrada. Aguardando 60s..."
+                )
                 time.sleep(60)
                 logger.debug(f"[CICLO {ciclo}] Aguardo finalizado.")
 

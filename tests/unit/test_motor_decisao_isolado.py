@@ -355,6 +355,27 @@ class TestAtualizarPosicao:
 class TestFecharPosicao:
     """Testes de fechamento de posição."""
 
+    def test_fechar_posicao_rejeita_preco_saida_zero(self, motor_agente_5000):
+        """TECH-001: nunca persistir fechamento com preco_saida <= 0."""
+        motor_agente_5000.abrir_posicao(
+            ticket=999001,
+            tipo=TipoPosicao.COMPRADA,
+            preco_entrada=100.0,
+            volume=1.0,
+            stop_loss=99.0,
+            take_profit=102.0,
+        )
+
+        with pytest.raises(ValueError, match="preco_saida"):
+            motor_agente_5000.fechar_posicao(
+                999001,
+                preco_saida=0.0,
+                motivo=MotivoFechamento.MANUAL,
+            )
+
+        assert motor_agente_5000.tem_posicao_aberta() is True
+
+
     def test_fechar_posicao_com_ganho_tp(self, motor_agente_5000):
         """Testa fechamento de posição com ganho (TP atingido)."""
         motor_agente_5000.abrir_posicao(

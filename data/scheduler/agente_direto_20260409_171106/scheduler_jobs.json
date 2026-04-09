@@ -1,0 +1,11 @@
+[
+  {
+    "job_id": "retrain_8870da3e",
+    "scheduled_at": "2026-04-09T17:30:54.875758",
+    "motivo_degradacao": "z_score degradado nas metricas: sharpe_ratio",
+    "status": "scheduled",
+    "metodo_deteccao": "z_score",
+    "started_at": null,
+    "completed_at": null
+  }
+]

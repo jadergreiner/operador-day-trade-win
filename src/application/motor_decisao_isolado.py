@@ -385,6 +385,12 @@ class MotorDecisaoIsolado:
             logger.warning(f'[POSICAO] {self.agent_id}: Ticket {ticket} não está aberto')
             return None
 
+        if preco_saida <= 0:
+            logger.error(
+                f'[POSICAO] {self.agent_id}: preco_saida invalido para ticket {ticket}: {preco_saida}'
+            )
+            raise ValueError(f'preco_saida invalido para fechamento: {preco_saida}')
+
         posicao = self.posicoes_ativas.pop(ticket)
 
         # Calcular P&L final — WINFUT: R$ 0,20 por ponto por contrato (BUG-2 fix)

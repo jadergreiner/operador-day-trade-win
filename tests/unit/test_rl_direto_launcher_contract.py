@@ -11,6 +11,7 @@ def test_launcher_rl_direto_usa_preflight_e_gate_promocao() -> None:
     assert "python scripts\\agente_rl_direto_independente.py --mode dinamico" in launcher
     assert "Tem certeza? (S/N): " in launcher
     assert "python scripts\\system_health_monitor.py" in launcher
+    assert "python scripts\\check_terminal_isolation.py" in launcher
     assert (
         "python scripts\\check_scheduler_promotion_gate.py --fallback-latest-promotion --fail-on reprovado,sem_promocao --allow-sem-promocao-until 09:05"
         in launcher

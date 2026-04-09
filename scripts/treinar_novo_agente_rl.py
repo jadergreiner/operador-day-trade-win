@@ -203,7 +203,9 @@ def _validar_conta_mt5(mt5: Any) -> dict[str, Any]:
         )
 
     # ACCOUNT_TRADE_MODE_REAL=0, DEMO=1, CONTEST=2
-    tipo_conta = "REAL" if info.trade_mode == 0 else "DEMO"
+    servidor = str(getattr(info, "server", "") or "")
+    trade_mode = int(getattr(info, "trade_mode", 0) or 0)
+    tipo_conta = "DEMO" if "demo" in servidor.lower() or trade_mode != 0 else "REAL"
 
     if info.balance < _SALDO_MINIMO_BRL:
         raise RuntimeError(

@@ -279,6 +279,14 @@ if errorlevel 1 (
     exit /b 1
 )
 
+echo   [PRE-FLIGHT] Validando vinculo com o terminal da Clear...
+python scripts\check_terminal_isolation.py
+if errorlevel 1 (
+    echo   [ERRO] Nao foi possivel validar o terminal configurado da Clear.
+    exit /b 1
+)
+echo   [OK] Terminal da Clear validado para este launcher
+
 echo   [PRE-FLIGHT] Executando health check...
 python scripts\system_health_monitor.py
 if errorlevel 1 (

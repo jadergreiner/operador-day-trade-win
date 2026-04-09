@@ -217,7 +217,7 @@ echo   [OK] Capital Scale: R$ !CAPITAL_SCALE! (via GATE 2)
 echo   [OK] WebSocket: Sprint 1 (incoming 27/02)
 echo.
 
-python scripts/launch_agent_with_ml_v1_2_3.py !MODE! --account 1000346516 --ml-version 1.2.3 --capital !CAPITAL_SCALE!
+python scripts/launch_agent_with_ml_v1_2_3.py !MODE! --account 1193269477 --ml-version 1.2.3 --capital !CAPITAL_SCALE!
 
 REM Final sync on exit
 echo.
@@ -271,7 +271,7 @@ echo     - Risk framework (3 validation gates)
 echo     - WebSocket monitor (Sprint 1 - incoming 27/02)
 echo.
 echo   [ PARAMETROS ]
-echo     Conta MT5:       1000346516
+echo     Conta MT5:       1193269477 (DEMO)
 echo     Contratos:       Dinamico (ATR-based)
 echo     Max Posicoes:    1
 echo     Max Loss Diario: 500 pts

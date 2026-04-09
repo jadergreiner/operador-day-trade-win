@@ -80,3 +80,20 @@ class TestMT5AdapterRuntime:
             pid = adapter._get_mt5_terminal_pid()
 
         assert pid == 111
+
+    def test_connect_single_rejeita_terminal_runtime_diferente_do_configurado(self, adapter: MT5Adapter) -> None:
+        adapter._save_session_fingerprint = MagicMock(return_value=True)
+
+        terminal_info = MagicMock()
+        terminal_info.path = r"C:\Program Files\FBS MetaTrader 5"
+
+        tick = MagicMock()
+        tick.time = int(datetime.utcnow().timestamp())
+
+        with patch("os.path.isfile", return_value=True), patch(
+            "MetaTrader5.initialize", return_value=True
+        ), patch("MetaTrader5.login", return_value=True), patch(
+            "MetaTrader5.terminal_info", return_value=terminal_info
+        ), patch("MetaTrader5.symbol_info_tick", return_value=tick):
+            with pytest.raises(Exception, match="terminal configurado"):
+                adapter._connect_single()

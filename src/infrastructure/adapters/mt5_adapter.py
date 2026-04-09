@@ -219,6 +219,27 @@ class MT5Adapter(IBrokerAdapter):
         actual_tokens = _tokens(actual_parent)
         return len(expected_tokens.intersection(actual_tokens)) > 0
 
+    def _validar_terminal_runtime_ativo(self, terminal_info: Any) -> None:
+        """Valida que a sessão MT5 foi vinculada ao terminal configurado."""
+        if not self.terminal_exe_path:
+            return
+
+        if terminal_info is None:
+            raise BrokerConnectionError(
+                "Nao foi possivel validar o terminal configurado via terminal_info()."
+            )
+
+        runtime_path = str(getattr(terminal_info, "path", "") or "").strip()
+        runtime_exe = str(Path(runtime_path) / "terminal64.exe") if runtime_path else ""
+        if not runtime_exe or not self._terminal_corresponde_ao_esperado(
+            self.terminal_exe_path,
+            runtime_exe,
+        ):
+            raise BrokerConnectionError(
+                "MT5 inicializou em terminal diferente do terminal configurado. "
+                f"Esperado: {self.terminal_exe_path} | Recebido: {runtime_path or '[vazio]'}"
+            )
+
     def _normalize_timestamp(self, epoch_seconds: int) -> datetime:
         """Normaliza timestamps do MT5 para horario de Brasilia (UTC-3)."""
         ts = int(epoch_seconds)
@@ -510,6 +531,9 @@ class MT5Adapter(IBrokerAdapter):
                     raise BrokerConnectionError(
                         f"MT5 initialize failed (auto-detect): {mt5.last_error()}"
                     )
+
+            # Garantia adicional: a sessão precisa apontar para o terminal esperado
+            self._validar_terminal_runtime_ativo(mt5.terminal_info())
 
             # Login na conta
             authorized = mt5.login(
@@ -1240,6 +1264,11 @@ class MT5Adapter(IBrokerAdapter):
         # Fallback: simbolo pode ja estar habilitado/visivel
         info = self._mt5.symbol_info(symbol_code)
         return info is not None and info.visible
+
+    def get_symbol_info(self, symbol_code: str) -> Optional[Any]:
+        """Obtem `symbol_info` bruto do MT5 para compatibilidade legada."""
+        self._ensure_connected()
+        return self._mt5.symbol_info(symbol_code)
 
     def get_symbol_info_tick(self, symbol_code: str) -> Optional[TickData]:
         """Obtem tick de um simbolo por string (sem exigir Symbol VO)."""
