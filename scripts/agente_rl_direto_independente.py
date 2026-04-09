@@ -2675,7 +2675,7 @@ def processar_protecao_lucros_rl_direto(
         if _ALERT_REVERSAO_DISPONIVEL_DIRETO and alert_reversao_handler and resultado_protecao.status == ProtectionStatus.ALERTA:
             try:
                 import asyncio
-                asyncio.run(alert_reversao_handler.processar_reversao(resultado_protecao))
+                asyncio.run(alert_reversao_handler.processar_reversao(resultado_protecao, trade_data=trade_dict))
                 logger.info(f"[BLID-045] Alerta de reversao disparado para ticket#{posicao_aberta.ticket}")
             except Exception as e_alert:
                 logger.warning(f"[BLID-045] Falha ao enviar alerta de reversao: {e_alert}")
