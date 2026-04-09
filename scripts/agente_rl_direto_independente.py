@@ -437,6 +437,7 @@ GATE_PAUSA_COOLDOWN_SECONDS = 900     # pausa após acionar o gate (15 min)
 MONITORAMENTO_INICIO = dtime(9, 0)
 NOVAS_ENTRADAS_FIM = dtime(17, 50)
 MONITORAMENTO_FIM = dtime(17, 55)
+ENCERRAMENTO_FORCADO = dtime(18, 15)  # Encerra TODAS as posicoes abertas
 
 CONFIRM_SIGNAL_BARS = 2  # Confirmação em N velas
 TARGET_PROFIT = 140.00
@@ -2872,6 +2873,51 @@ def main():
                 logger.debug(
                     f"[CICLO {ciclo}] Status posição recarregado: {posicao_tracker.tem_posicao_aberta()}"
                 )
+
+                # Gate de encerramento forcado: 18:15 BRT
+                # Encerra TODAS as posicoes abertas e finaliza o agente.
+                if datetime.now().time() >= ENCERRAMENTO_FORCADO:
+                    logger.warning(
+                        "[ENCERRAMENTO-FORCADO] 18:15 atingido — "
+                        "encerrando todas as posicoes abertas e finalizando agente."
+                    )
+                    if posicao_tracker.tem_posicao_aberta():
+                        _ticket_forcado = posicao_tracker.metadados_posicao.get("ticket")
+                        if _ticket_forcado:
+                            try:
+                                fechado_ok = mt5_adapter.close_position_by_ticket(
+                                    int(_ticket_forcado)
+                                )
+                                if fechado_ok:
+                                    logger.info(
+                                        "[ENCERRAMENTO-FORCADO] Posicao ticket=%s "
+                                        "encerrada com sucesso.", _ticket_forcado
+                                    )
+                                else:
+                                    logger.error(
+                                        "[ENCERRAMENTO-FORCADO] Falha ao encerrar "
+                                        "ticket=%s no MT5.", _ticket_forcado
+                                    )
+                            except Exception as _e_forca:
+                                logger.error(
+                                    "[ENCERRAMENTO-FORCADO] Excecao ao fechar "
+                                    "posicao: %s", _e_forca
+                                )
+                            finally:
+                                posicao_tracker.registrar_posicao_fechada()
+                                motor_decisao.fechar_posicao()
+                        else:
+                            logger.warning(
+                                "[ENCERRAMENTO-FORCADO] ticket nao encontrado em "
+                                "metadados — registrando fechamento sem MT5."
+                            )
+                            posicao_tracker.registrar_posicao_fechada()
+                            motor_decisao.fechar_posicao()
+                    else:
+                        logger.info(
+                            "[ENCERRAMENTO-FORCADO] Nenhuma posicao aberta detectada."
+                        )
+                    break
 
                 # Verificar conexão MT5 antes de cada ciclo
                 if not mt5_adapter.is_connected():

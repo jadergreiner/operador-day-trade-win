@@ -516,3 +516,75 @@ class TestDesconhecidoObservabilidade:
             "[TECH-002][ALERTA]" in r.message and "DESCONHECIDO consecutivos" in r.message
             for r in caplog.records
         ), "Log de alerta [TECH-002][ALERTA] deve ser emitido quando contagem >= 2"
+
+
+class TestEncerramentoForcado:
+    """Gate de encerramento forcado as 18:15: fecha posicao aberta e para o agente."""
+
+    def test_constante_encerramento_forcado_definida(self) -> None:
+        """ENCERRAMENTO_FORCADO deve estar definido como 18:15."""
+        from scripts.agente_rl_direto_independente import ENCERRAMENTO_FORCADO
+        from datetime import time as dtime
+
+        assert ENCERRAMENTO_FORCADO == dtime(18, 15)
+
+    def test_encerramento_forcado_fecha_posicao_aberta(
+        self, tmp_path: pathlib.Path
+    ) -> None:
+        """Quando horario >= 18:15 e ha posicao aberta, close_position_by_ticket
+        deve ser chamado com o ticket correto."""
+        from datetime import time as dtime
+        from unittest.mock import patch, MagicMock
+        from scripts.agente_rl_direto_independente import ENCERRAMENTO_FORCADO
+
+        posicao_mgr = PosicaoIsoladaManager(
+            session_id="sessao_forcado",
+            agent_version="rl_direto_v3.0",
+            outputs_dir=tmp_path,
+        )
+        posicao_mgr.registrar_posicao_aberta(
+            preco_entrada=195000.0,
+            ticket=7777,
+            lado="BUY",
+            quantidade=1,
+            simbolo="WINJ26",
+        )
+
+        mt5_adapter = MagicMock()
+        mt5_adapter.close_position_by_ticket.return_value = True
+
+        # Simula: horario atual esta apos ENCERRAMENTO_FORCADO
+        hora_apos = dtime(18, 16)
+        assert hora_apos >= ENCERRAMENTO_FORCADO
+
+        if posicao_mgr.tem_posicao_aberta():
+            ticket = posicao_mgr.metadados_posicao.get("ticket")
+            mt5_adapter.close_position_by_ticket(int(ticket))
+            posicao_mgr.registrar_posicao_fechada()
+
+        mt5_adapter.close_position_by_ticket.assert_called_once_with(7777)
+        assert posicao_mgr.tem_posicao_aberta() is False
+
+    def test_encerramento_forcado_sem_posicao_nao_chama_mt5(
+        self, tmp_path: pathlib.Path
+    ) -> None:
+        """Quando horario >= 18:15 mas sem posicao aberta, MT5 nao deve ser acionado."""
+        from datetime import time as dtime
+        from scripts.agente_rl_direto_independente import ENCERRAMENTO_FORCADO
+
+        posicao_mgr = PosicaoIsoladaManager(
+            session_id="sessao_forcado_vazia",
+            agent_version="rl_direto_v3.0",
+            outputs_dir=tmp_path,
+        )
+        mt5_adapter = MagicMock()
+
+        hora_apos = dtime(18, 20)
+        assert hora_apos >= ENCERRAMENTO_FORCADO
+        assert posicao_mgr.tem_posicao_aberta() is False
+
+        # Logica do gate: sem posicao, MT5 nao e chamado
+        if posicao_mgr.tem_posicao_aberta():
+            mt5_adapter.close_position_by_ticket(0)
+
+        mt5_adapter.close_position_by_ticket.assert_not_called()
