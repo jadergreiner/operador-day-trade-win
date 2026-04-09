@@ -2881,6 +2881,53 @@ def main():
                         "[ENCERRAMENTO-FORCADO] 18:15 atingido — "
                         "encerrando todas as posicoes abertas e finalizando agente."
                     )
+
+                    # Se nao ha posicao no arquivo local, consultar MT5 diretamente
+                    # (cobre o caso de restart apos 18:15 com posicao de sessao anterior)
+                    if not posicao_tracker.tem_posicao_aberta():
+                        try:
+                            _posicoes_mt5 = mt5_adapter.get_positions()
+                            _posicoes_magic = [
+                                p for p in (_posicoes_mt5 or [])
+                                if getattr(p, "magic", 0) == MAGIC_NUMBER
+                            ]
+                            if _posicoes_magic:
+                                logger.info(
+                                    "[ENCERRAMENTO-FORCADO] %d posicao(oes) encontrada(s) "
+                                    "diretamente no MT5 (magic=%s).",
+                                    len(_posicoes_magic), MAGIC_NUMBER,
+                                )
+                                for _pos_mt5 in _posicoes_magic:
+                                    try:
+                                        _ok = mt5_adapter.close_position_by_ticket(
+                                            int(_pos_mt5.ticket)
+                                        )
+                                        if _ok:
+                                            logger.info(
+                                                "[ENCERRAMENTO-FORCADO] Posicao ticket=%s "
+                                                "encerrada via MT5 direto.", _pos_mt5.ticket
+                                            )
+                                        else:
+                                            logger.error(
+                                                "[ENCERRAMENTO-FORCADO] Falha ao encerrar "
+                                                "ticket=%s no MT5.", _pos_mt5.ticket
+                                            )
+                                    except Exception as _e_mt5d:
+                                        logger.error(
+                                            "[ENCERRAMENTO-FORCADO] Excecao ao fechar "
+                                            "ticket=%s: %s", _pos_mt5.ticket, _e_mt5d
+                                        )
+                            else:
+                                logger.info(
+                                    "[ENCERRAMENTO-FORCADO] Nenhuma posicao aberta "
+                                    "detectada (arquivo local nem MT5)."
+                                )
+                        except Exception as _e_get_pos:
+                            logger.error(
+                                "[ENCERRAMENTO-FORCADO] Erro ao consultar posicoes MT5: %s",
+                                _e_get_pos,
+                            )
+
                     if posicao_tracker.tem_posicao_aberta():
                         _ticket_forcado = posicao_tracker.metadados_posicao.get("ticket")
                         if _ticket_forcado:
@@ -2913,10 +2960,6 @@ def main():
                             )
                             posicao_tracker.registrar_posicao_fechada()
                             motor_decisao.fechar_posicao()
-                    else:
-                        logger.info(
-                            "[ENCERRAMENTO-FORCADO] Nenhuma posicao aberta detectada."
-                        )
                     break
 
                 # Verificar conexão MT5 antes de cada ciclo
