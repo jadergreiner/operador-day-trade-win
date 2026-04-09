@@ -1007,7 +1007,153 @@ posicao.
 
 ## Backlog — INICIAR_AGENTE_RL_DIRETO.bat
 
+### P0 - Diretiva PO vigente (09/04/2026)
+
+#### RISK-RUNTIME-RL-MT5-01 — Fechamento confiavel por ticket/sessao
+
+**Status:** APROVADO_E_PRIORIZADO (09/04/2026)
+
+**Categoria:** RISK
+**Valor:** ALTO
+**Urgencia:** CRITICA
+**Evidencia:** TIER 1
+**Tamanho:** M
+
+**Decisao PO:** priorizar agora o hardening do runtime RL/MT5 do
+`INICIAR_AGENTE_RL_DIRETO.bat`, iniciando por `TECH-002` e consolidando
+`TECH-001` e `TECH-003` no mesmo pacote de estabilidade operacional.
+
+**Justificativa de negocio:**
+
+- o maior risco atual nao e nova feature, e sim a confiabilidade
+  operacional do `RL_DIRETO`;
+- sem rastreio por ticket da sessao atual, `PnL`, feedback loop e
+  reavaliacao do `Gate 2` ficam fragilizados;
+- o item reduz risco operacional direto em demo/live e preserva a
+  qualidade arquitetural do runtime.
+
+**Escopo inclui:**
+
+- reforcar rastreio por ticket da sessao atual;
+- evitar `resultado=DESCONHECIDO` persistente por perda de ownership;
+- garantir `preco_saida != 0.0` em qualquer fechamento auditavel;
+- manter backoff/halt controlado para falhas MT5 `10006`.
+
+**Escopo nao inclui:**
+
+- novo tuning de `profit_protection`;
+- novas features de dashboard, alertas ou UX.
+
+**Criterios de aceitacao:**
+
+1. todo trade fechado no `RL_DIRETO` grava `preco_saida != 0.0`;
+2. `resultado=DESCONHECIDO` nao persiste por mais de 2 ciclos;
+3. o rastreio usa ticket da sessao atual, sem contaminacao entre
+   sessoes/agentes;
+4. falhas `10006` entram em backoff/halt controlado, sem loop infinito;
+5. a revalidacao em demo Clear gera evidencia objetiva e auditavel.
+
+**Impacto por launcher:**
+
+| Launcher | Impacto | Tipo | Acao |
+|---|---|---|---|
+| `INICIAR_AGENTE_RL_5000.bat` | MEDIO | INDIRETO | validar |
+| `INICIAR_AGENTE_RL_DIRETO.bat` | ALTO | DIRETO | reiniciar + validar |
+| `INICIAR_DIARIOS.bat` | MEDIO | INDIRETO | monitorar |
+| `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | BAIXO | INDIRETO | nenhuma acao |
+| `INICIAR_MONITOR_QUANTICO.bat` | BAIXO | INDIRETO | monitorar |
+
+**Handoff para `.github/agents/3.solution-architect.agent.md`:**
+
+- desenhar pacote tecnico minimo para fechar `TECH-002` primeiro;
+- consolidar validacoes relacionadas de `TECH-001` e `TECH-003`;
+- preservar compatibilidade com o modo demo Clear ja validado;
+- devolver plano com testes objetivos, rollback simples e evidencia de
+  runtime.
+
 ### P1 - Fechamento diario individualizado por agente
+
+#### OBS-001 — Capturar motivacao completa da decisao de entrada (09/04/2026)
+
+**Status:** PENDENTE
+
+**Categoria:** OBSERVABILIDADE / APRENDIZADO
+**Valor:** ALTO
+**Urgencia:** MEDIA
+**Evidencia:** TIER 2
+**Tamanho:** M
+
+**Contexto:**
+
+Identificado em 09/04/2026 que o campo `reasoning` da tabela `rl_episodes`
+no `trading_rl_direto.db` nao e preenchido no momento da abertura de posicao.
+Os campos de contexto de mercado (`macro_score_final`, `smc_direction`,
+`vwap_position`, `probability_up`, `setup_type`, `macro_bias`,
+`technical_bias`, etc.) tambem ficam `NULL`. Apenas o `state_vector`
+numerico e a confianca geral (`overall_confidence`) sao persistidos.
+
+**Problema:**
+
+Sem a motivacao textual e o contexto de mercado detalhado no momento da
+decisao, nao e possivel:
+
+- analisar as melhores/piores condicoes de mercado para entrada;
+- identificar padroes que diferenciam trades vencedores de perdedores;
+- alimentar o feedback loop com contexto rico para aprendizado do modelo;
+- auditar retrospectivamente por que o agente decidiu comprar/vender.
+
+**Objetivo:**
+
+Garantir que, a cada decisao de entrada (COMPRAR/VENDER), o episodio RL
+persista o contexto completo de mercado e a justificativa textual da decisao,
+habilitando analise historica das melhores condicoes de trade e aprendizado
+continuo do modelo.
+
+**Escopo inclui:**
+
+- preencher `reasoning` com justificativa textual estruturada no momento da
+  decisao (ex: regime macro, bias direcional, qualidade do setup, R:R,
+  confianca do modelo);
+- preencher campos de contexto de mercado: `macro_score_final`,
+  `macro_bias`, `technical_bias`, `sentiment_bias`, `smc_direction`,
+  `vwap_position`, `probability_up`, `probability_down`, `setup_type`,
+  `setup_quality`, `market_regime`, `session_phase`;
+- garantir que a mesma logica se aplique a decisoes BLOQUEADAS (ja
+  funcionando parcialmente) e a decisoes EXECUTADAS;
+- criar script de analise `scripts/analisar_condicoes_entrada.py` que
+  cruze episodios com resultados (WIN/LOSS) e ranqueie as melhores
+  condicoes de entrada historicas.
+
+**Escopo nao inclui:**
+
+- mudanca na logica de decisao do modelo RL;
+- novo dashboard ou endpoint de API;
+- alteracao no schema de outras tabelas alem de `rl_episodes`.
+
+**Criterios de aceitacao:**
+
+1. `reasoning` preenchido em 100% dos episodios com `action=COMPRAR` ou
+   `action=VENDER` apos a implementacao;
+2. ao menos 8 campos de contexto de mercado preenchidos por episodio;
+3. `scripts/analisar_condicoes_entrada.py` executa sem erro e retorna
+   ranking das condicoes com maior win rate;
+4. `pytest` e `mypy --strict` passam sem regressao.
+
+**Impacto por launcher:**
+
+| Launcher | Impacto | Tipo | Acao |
+| --- | --- | --- | --- |
+| `INICIAR_AGENTE_RL_DIRETO.bat` | ALTO | DIRETO | reiniciar apos implementacao |
+| `INICIAR_AGENTE_RL_5000.bat` | MEDIO | INDIRETO | aplicar mesma correcao |
+| `INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat` | BAIXO | INDIRETO | avaliar reuso |
+| `INICIAR_DIARIOS.bat` | BAIXO | INDIRETO | nenhuma acao |
+
+**Historico:**
+
+- 2026-04-09 — gap identificado ao auditar posicao aberta ticket 2404047218:
+  `reasoning=NULL` e campos de contexto ausentes no episodio id=572.
+
+---
 
 ### P1 - Bugs operacionais identificados em 17/03/2026
 
