@@ -88,6 +88,20 @@ class TestAplicarGateTendencia(unittest.TestCase):
         self.assertEqual(resultado, "Aguardar",
                          "SELL deve ser bloqueado em tendencia de alta")
 
+    def test_sell_bloqueado_contra_microtendencia_alta(self) -> None:
+        """SELL deve ser vetado quando há microtendência de alta confirmada."""
+        from scripts.agente_rl_direto_independente import aplicar_gate_tendencia
+        dados = _criar_dados_tendencia_alta(n=25)
+
+        with self.assertLogs("scripts.agente_rl_direto_independente", level="WARNING") as logs:
+            resultado = aplicar_gate_tendencia("Vender", dados, gate_ativo=True)
+
+        self.assertEqual(resultado, "Aguardar")
+        self.assertTrue(
+            any("microtendencia de alta" in mensagem.lower() for mensagem in logs.output),
+            "O veto deve registrar explicitamente o motivo de microtendencia de alta",
+        )
+
     def test_buy_bloqueado_em_tendencia_baixa(self) -> None:
         """BUY deve ser bloqueado quando EMA9 < EMA21 (tendencia de baixa)."""
         from scripts.agente_rl_direto_independente import aplicar_gate_tendencia

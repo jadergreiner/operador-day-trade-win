@@ -435,7 +435,7 @@ GATE_PAUSA_TPS_CONSECUTIVOS = 3       # nº de TPs para acionar o gate
 GATE_PAUSA_JANELA_MINUTOS = 45        # janela de tempo observada (minutos)
 GATE_PAUSA_COOLDOWN_SECONDS = 900     # pausa após acionar o gate (15 min)
 MONITORAMENTO_INICIO = dtime(9, 0)
-NOVAS_ENTRADAS_FIM = dtime(17, 50)
+NOVAS_ENTRADAS_FIM = dtime(17, 25)
 MONITORAMENTO_FIM = dtime(17, 55)
 ENCERRAMENTO_FORCADO = dtime(18, 15)  # Encerra TODAS as posicoes abertas
 
@@ -894,6 +894,35 @@ def mapear_acao_operacional_para_rl(acao: str) -> str:
     return mapa.get((acao or "").strip(), "HOLD")
 
 
+def persistir_reward_pendente_rl(
+    rl_repo: object,
+    *,
+    episode_id: str,
+    timestamp: datetime,
+    preco_win: float,
+    acao: Optional[str],
+    acao_original: Optional[str] = None,
+) -> None:
+    """Cria rewards pendentes com ação canônica para treino futuro."""
+    if not rl_repo or preco_win is None:
+        return
+
+    try:
+        acao_canonica = mapear_acao_operacional_para_rl(
+            acao or acao_original or "HOLD"
+        )
+        rl_repo.create_pending_rewards(
+            episode_id,
+            {
+                "timestamp": timestamp,
+                "win_price": preco_win,
+                "action": acao_canonica,
+            },
+        )
+    except Exception as e:
+        logger.warning(f"[WARN] Erro ao criar reward pendente RL: {e}")
+
+
 def verificar_horario_trading(agora: Optional[dtime] = None) -> bool:
     """Janela de monitoramento operacional: 09:00-17:55 BRT."""
     horario = agora or datetime.now().time()
@@ -1276,27 +1305,71 @@ def calcular_ema(dados: pd.DataFrame, periodo: int) -> float:
         return 0.0
 
 
+def calcular_slope_ema(
+    dados: pd.DataFrame,
+    periodo: int,
+    janela: int = 3,
+) -> float:
+    """Estima a inclinação recente da EMA para detectar microtendência."""
+    try:
+        if len(dados) < max(periodo, janela + 1):
+            return 0.0
+
+        close_series = pd.to_numeric(dados["close"], errors="coerce").dropna()
+        if len(close_series) < max(periodo, janela + 1):
+            return 0.0
+
+        ema = close_series.ewm(span=periodo, adjust=False).mean()
+        return float(ema.iloc[-1] - ema.iloc[-janela])
+    except Exception as e:
+        logger.warning(f"[EMA] Erro ao calcular slope EMA{periodo}: {e}")
+        return 0.0
+
+
+def ultimos_closes_em_alta(dados: pd.DataFrame, quantidade: int = 3) -> bool:
+    """Retorna True quando os últimos fechamentos sobem em sequência."""
+    try:
+        if len(dados) < quantidade:
+            return False
+        closes = pd.to_numeric(dados["close"], errors="coerce").dropna().iloc[-quantidade:]
+        if len(closes) < quantidade:
+            return False
+        return bool((closes.diff().iloc[1:] > 0).all())
+    except Exception:
+        return False
+
+
+def ultimos_closes_em_baixa(dados: pd.DataFrame, quantidade: int = 3) -> bool:
+    """Retorna True quando os últimos fechamentos caem em sequência."""
+    try:
+        if len(dados) < quantidade:
+            return False
+        closes = pd.to_numeric(dados["close"], errors="coerce").dropna().iloc[-quantidade:]
+        if len(closes) < quantidade:
+            return False
+        return bool((closes.diff().iloc[1:] < 0).all())
+    except Exception:
+        return False
+
+
 def aplicar_gate_tendencia(
     acao: str,
     dados: Optional[pd.DataFrame],
     gate_ativo: bool = GATE_TENDENCIA_ATIVO,
 ) -> str:
-    """Aplica gate de tendencia intraday para filtrar entradas contra tendencia.
+    """Aplica gate de tendência intraday para filtrar entradas contra o fluxo.
 
-    ML-1 (18/03/2026): Bloqueia SELL quando EMA9 > EMA21 (tendencia de alta)
-    e BUY quando EMA9 < EMA21 (tendencia de baixa). Gate simetrico previne
-    entradas com vies direcional errado — licao aprendida em 17/03/2026
-    (SELL @ 182590 em mercado bullish gerou LOSS -R$61).
+    Regras reforçadas para reduzir drawdown:
+    - veto de `SELL` contra microtendência de alta quando:
+      close atual > EMA9 > EMA21, slope da EMA9 > 0 e últimos 3 closes em alta;
+    - veto simétrico para `BUY` contra microtendência de baixa.
 
-    Args:
-        acao: Acao proposta pelo modelo RL ('Comprar', 'Vender', 'Aguardar').
-        dados: DataFrame com coluna 'close' para calculo das EMAs.
-        gate_ativo: Se False, desativa o gate (util em backtesting).
-
-    Returns:
-        Acao original se permitida pelo gate, ou 'Aguardar' se bloqueada.
+    Como fallback, mantém o bloqueio direcional amplo:
+    - SELL bloqueado em tendência de alta (EMA9 > EMA21)
+    - BUY bloqueado em tendência de baixa (EMA9 < EMA21)
     """
-    if not gate_ativo or acao == "Aguardar" or dados is None or len(dados) == 0:
+    acao_canonica = mapear_acao_operacional_para_rl(acao)
+    if not gate_ativo or acao_canonica == "HOLD" or dados is None or len(dados) == 0:
         return acao
 
     ema_rapida = calcular_ema(dados, EMA_RAPIDA_PERIODO)
@@ -1306,10 +1379,58 @@ def aplicar_gate_tendencia(
         logger.debug("[GATE-TENDENCIA] EMAs indisponiveis — gate ignorado")
         return acao
 
+    close_atual = float(pd.to_numeric(dados["close"], errors="coerce").iloc[-1])
+    slope_ema_rapida = calcular_slope_ema(dados, EMA_RAPIDA_PERIODO)
+    closes_em_alta = ultimos_closes_em_alta(dados, quantidade=3)
+    closes_em_baixa = ultimos_closes_em_baixa(dados, quantidade=3)
+
+    microtendencia_alta = (
+        close_atual > ema_rapida
+        and ema_rapida > ema_lenta
+        and slope_ema_rapida > 0
+        and closes_em_alta
+    )
+    microtendencia_baixa = (
+        close_atual < ema_rapida
+        and ema_rapida < ema_lenta
+        and slope_ema_rapida < 0
+        and closes_em_baixa
+    )
+
     tendencia_alta = ema_rapida > ema_lenta
     tendencia_baixa = ema_rapida < ema_lenta
 
-    if acao == "Vender" and tendencia_alta:
+    if acao_canonica == "SELL" and microtendencia_alta:
+        logger.warning(
+            "[GATE-TENDENCIA] SELL bloqueado por microtendencia de alta — "
+            "close=%.0f > EMA%d=%.0f > EMA%d=%.0f | slope_ema=%.1f | "
+            "ultimos_3_closes_em_alta=%s",
+            close_atual,
+            EMA_RAPIDA_PERIODO,
+            ema_rapida,
+            EMA_LENTA_PERIODO,
+            ema_lenta,
+            slope_ema_rapida,
+            closes_em_alta,
+        )
+        return "Aguardar"
+
+    if acao_canonica == "BUY" and microtendencia_baixa:
+        logger.warning(
+            "[GATE-TENDENCIA] BUY bloqueado por microtendencia de baixa — "
+            "close=%.0f < EMA%d=%.0f < EMA%d=%.0f | slope_ema=%.1f | "
+            "ultimos_3_closes_em_baixa=%s",
+            close_atual,
+            EMA_RAPIDA_PERIODO,
+            ema_rapida,
+            EMA_LENTA_PERIODO,
+            ema_lenta,
+            slope_ema_rapida,
+            closes_em_baixa,
+        )
+        return "Aguardar"
+
+    if acao_canonica == "SELL" and tendencia_alta:
         logger.warning(
             f"[GATE-TENDENCIA] SELL bloqueado — EMA{EMA_RAPIDA_PERIODO} "
             f"({ema_rapida:.0f}) > EMA{EMA_LENTA_PERIODO} ({ema_lenta:.0f}) "
@@ -1317,7 +1438,7 @@ def aplicar_gate_tendencia(
         )
         return "Aguardar"
 
-    if acao == "Comprar" and tendencia_baixa:
+    if acao_canonica == "BUY" and tendencia_baixa:
         logger.warning(
             f"[GATE-TENDENCIA] BUY bloqueado — EMA{EMA_RAPIDA_PERIODO} "
             f"({ema_rapida:.0f}) < EMA{EMA_LENTA_PERIODO} ({ema_lenta:.0f}) "
@@ -1673,6 +1794,14 @@ def enviar_ordem(
                     "technical_bias": "NEUTRAL",
                 }
                 rl_repo.save_episode(episode)
+                persistir_reward_pendente_rl(
+                    rl_repo,
+                    episode_id=episode_id,
+                    timestamp=episode["timestamp"],
+                    preco_win=preco_atual,
+                    acao=episode["action"],
+                    acao_original=episode.get("original_action"),
+                )
             except Exception as e:
                 logger.warning(f"[WARN] Erro ao persistir episódio HOLD: {e}")
 
@@ -2018,14 +2147,15 @@ def enviar_ordem(
         if rl_repo:
             try:
                 episode_id = str(uuid.uuid4())
+                acao_canonica_rl = mapear_acao_operacional_para_rl(acao)
                 episode = {
                     "episode_id": episode_id,
                     "timestamp": datetime.now(),
                     "source": "AGENTE_DIRETO",
                     "win_price": preco_atual,
-                    "action": acao.upper(),
+                    "action": acao_canonica_rl,
                     "original_action": original_action
-                    or mapear_acao_operacional_para_rl(acao),
+                    or acao_canonica_rl,
                     "blocked_reason": None,
                     "state_vector": state_vector,
                     "symbol": SIMBOLO,
@@ -2050,6 +2180,14 @@ def enviar_ordem(
                     ),
                 }
                 rl_repo.save_episode(episode)
+                persistir_reward_pendente_rl(
+                    rl_repo,
+                    episode_id=episode_id,
+                    timestamp=episode["timestamp"],
+                    preco_win=preco_atual,
+                    acao=acao_canonica_rl,
+                    acao_original=episode.get("original_action"),
+                )
             except Exception as e:
                 logger.warning(f"[WARN] Erro ao persistir episódio: {e}")
 
@@ -2511,7 +2649,8 @@ def registrar_bloqueio_anti_overtrading(ciclo: int, acao_str: str, motivo: str) 
     motivo_normalizado = motivo.lower()
     if "cooldown global" in motivo_normalizado:
         logger.warning(
-            f"[CICLO {ciclo}] [GUARD] BLOCKED | acao={acao_str} | "
+            f"[CICLO {ciclo}] SINAL CONFIRMADO: {acao_str} bloqueado por "
+            f"cooldown pós-loss | [GUARD] BLOCKED | acao={acao_str} | "
             f"motivo=cooldown_pos_loss | detalhe={motivo}"
         )
         return

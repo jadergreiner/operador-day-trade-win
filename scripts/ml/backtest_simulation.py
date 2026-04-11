@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sqlite3
 import sys
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -55,14 +56,25 @@ class TradingCosts:
     def total_cost_brl_per_contract(self) -> float:
         return (self.emolumentos_brl + self.taxa_registro_brl) * 2  # ida e volta
 
-    def net_pnl_pts(self, gross_pnl_pts: float) -> float:
-        """PnL líquido em pontos, descontados custos."""
+    @property
+    def total_cost_pts_per_contract(self) -> float:
+        return self.total_overhead_pts + (
+            self.total_cost_brl_per_contract / self.ponto_valor_brl
+        )
+
+    def gross_pnl_brl(self, gross_pnl_pts: float, contracts: int = 1) -> float:
+        """Converte PnL bruto em pontos para reais considerando contratos."""
+        return gross_pnl_pts * self.ponto_valor_brl * contracts
+
+    def net_pnl_pts(self, gross_pnl_pts: float, contracts: int = 1) -> float:
+        """PnL líquido em pontos-equivalentes, descontados custos e volume."""
         if gross_pnl_pts == 0:
             return 0.0
-        # Desconta overhead em pontos + custos fixos convertidos
-        cost_pts = self.total_overhead_pts
-        cost_brl_as_pts = self.total_cost_brl_per_contract / self.ponto_valor_brl
-        return gross_pnl_pts - cost_pts - cost_brl_as_pts
+        return (gross_pnl_pts - self.total_cost_pts_per_contract) * contracts
+
+    def net_pnl_brl(self, gross_pnl_pts: float, contracts: int = 1) -> float:
+        """PnL líquido em reais considerando 1+ contratos."""
+        return self.net_pnl_pts(gross_pnl_pts, contracts=contracts) * self.ponto_valor_brl
 
 
 @dataclass
@@ -75,6 +87,8 @@ class BacktestConfig:
     cooldown_periods: int = 5           # Períodos de cooldown após streak de perda
     max_daily_loss_pts: float = 500.0   # Loss máximo diário em pontos
     position_size: int = 1              # Contratos por trade
+    use_trend_gate: bool = False        # Gate operacional de microtendência
+    market_data: pd.DataFrame | None = None
 
 
 @dataclass
@@ -86,8 +100,11 @@ class Trade:
     entry_price: float
     gross_pnl_pts: float
     net_pnl_pts: float
+    gross_pnl_brl: float
+    net_pnl_brl: float
     was_correct: bool
     horizon_minutes: int
+    contracts: int = 1
     features_top5: list[str] = field(default_factory=list)
 
 
@@ -105,6 +122,51 @@ class DailyResult:
     stopped: bool = False  # True se atingiu daily loss limit
 
 
+def _calcular_ema_coluna(dados: pd.DataFrame, periodo: int) -> float:
+    """Calcula EMA de uma janela de candles para uso do gate de produção."""
+    if dados is None or dados.empty or len(dados) < periodo:
+        return 0.0
+    closes = pd.to_numeric(dados["close"], errors="coerce").dropna()
+    if len(closes) < periodo:
+        return 0.0
+    return float(closes.ewm(span=periodo, adjust=False).mean().iloc[-1])
+
+
+def _calcular_slope_ema_coluna(
+    dados: pd.DataFrame,
+    periodo: int,
+    janela: int = 3,
+) -> float:
+    """Calcula a inclinação recente da EMA para detectar aceleração local."""
+    if dados is None or dados.empty or len(dados) < max(periodo, janela + 1):
+        return 0.0
+    closes = pd.to_numeric(dados["close"], errors="coerce").dropna()
+    if len(closes) < max(periodo, janela + 1):
+        return 0.0
+    ema = closes.ewm(span=periodo, adjust=False).mean()
+    return float(ema.iloc[-1] - ema.iloc[-janela])
+
+
+def _ultimos_closes_monotonia(
+    dados: pd.DataFrame,
+    *,
+    quantidade: int,
+    direcao: str,
+) -> bool:
+    """Verifica sequência monotônica dos últimos fechamentos."""
+    if dados is None or dados.empty or len(dados) < quantidade:
+        return False
+    closes = pd.to_numeric(dados["close"], errors="coerce").dropna().iloc[-quantidade:]
+    if len(closes) < quantidade:
+        return False
+    diffs = closes.diff().iloc[1:]
+    if direcao == "alta":
+        return bool((diffs > 0).all())
+    if direcao == "baixa":
+        return bool((diffs < 0).all())
+    return False
+
+
 class BacktestSimulation:
     """Motor de simulação de backtesting walk-forward."""
 
@@ -112,6 +174,7 @@ class BacktestSimulation:
         self.config = config or BacktestConfig()
         self.trades: list[Trade] = []
         self.daily_results: list[DailyResult] = []
+        self.blocked_by_trend_gate: int = 0
 
     def run(
         self,
@@ -129,6 +192,7 @@ class BacktestSimulation:
         cfg = self.config
         self.trades = []
         self.daily_results = []
+        self.blocked_by_trend_gate = 0
 
         # Garantir ordenação temporal
         df = dataset.sort_values("timestamp").reset_index(drop=True)
@@ -141,6 +205,8 @@ class BacktestSimulation:
         print(f"  Episódios: {len(df)}")
         print(f"  Confiança mínima: {cfg.min_confidence:.0%}")
         print(f"  Max trades/dia: {cfg.max_trades_per_day}")
+        print(f"  Volume: {cfg.position_size} contrato(s)/trade")
+        print(f"  Gate tendência: {'ATIVO' if cfg.use_trend_gate else 'INATIVO'}")
 
         reward_col = f"reward_cont_{target_horizon}m"
         correct_col = f"was_correct_{target_horizon}m"
@@ -163,6 +229,82 @@ class BacktestSimulation:
         self._print_report(metrics)
 
         return metrics
+
+    def _obter_janela_mercado(
+        self,
+        timestamp: datetime,
+        win_price: float,
+        lookback: int = 40,
+    ) -> pd.DataFrame | None:
+        """Resolve a melhor janela de candles WIN para aplicar o gate."""
+        market_data = self.config.market_data
+        if market_data is None or market_data.empty:
+            return None
+
+        ts = pd.Timestamp(timestamp)
+        df = market_data[
+            (market_data["timestamp"] <= ts)
+            & (market_data["timestamp"] >= ts - pd.Timedelta(hours=8))
+        ].copy()
+        if df.empty:
+            return None
+
+        latest = df.sort_values("timestamp").groupby("symbol").tail(1).copy()
+        latest["dist"] = (latest["close"] - float(win_price or 0)).abs()
+        latest = latest.sort_values(["dist", "timestamp"])
+        if latest.empty:
+            return None
+
+        symbol = str(latest.iloc[0]["symbol"])
+        window = df[df["symbol"] == symbol].sort_values("timestamp").tail(lookback)
+        if len(window) < 5:
+            return None
+        return window[["open", "high", "low", "close"]].reset_index(drop=True)
+
+    def _aplicar_gate_tendencia_producao(
+        self,
+        action: str,
+        timestamp: datetime,
+        win_price: float,
+    ) -> str:
+        """Replica um gate operacional simplificado para benchmark de produção."""
+        if not self.config.use_trend_gate or action == "HOLD":
+            return action
+
+        janela = self._obter_janela_mercado(timestamp, win_price)
+        if janela is None:
+            return action
+
+        ema_rapida = _calcular_ema_coluna(janela, 9)
+        ema_lenta = _calcular_ema_coluna(janela, 21)
+        if ema_rapida == 0.0 or ema_lenta == 0.0:
+            return action
+
+        close_atual = float(pd.to_numeric(janela["close"], errors="coerce").iloc[-1])
+        slope_ema = _calcular_slope_ema_coluna(janela, 9)
+        closes_em_alta = _ultimos_closes_monotonia(janela, quantidade=3, direcao="alta")
+        closes_em_baixa = _ultimos_closes_monotonia(janela, quantidade=3, direcao="baixa")
+
+        microtendencia_alta = (
+            close_atual > ema_rapida > ema_lenta
+            and slope_ema > 0
+            and closes_em_alta
+        )
+        microtendencia_baixa = (
+            close_atual < ema_rapida < ema_lenta
+            and slope_ema < 0
+            and closes_em_baixa
+        )
+
+        if action == "SELL" and (microtendencia_alta or ema_rapida > ema_lenta):
+            self.blocked_by_trend_gate += 1
+            return "HOLD"
+
+        if action == "BUY" and (microtendencia_baixa or ema_rapida < ema_lenta):
+            self.blocked_by_trend_gate += 1
+            return "HOLD"
+
+        return action
 
     def _simulate_day(
         self,
@@ -238,6 +380,14 @@ class BacktestSimulation:
             if action == "HOLD" or confidence < cfg.min_confidence:
                 continue
 
+            action = self._aplicar_gate_tendencia_producao(
+                action,
+                row["timestamp"] if "timestamp" in row else datetime.now(),
+                float(row.get("win_price", 0) or 0),
+            )
+            if action == "HOLD":
+                continue
+
             # Simular resultado
             gross_pnl = 0.0
             was_correct = False
@@ -253,7 +403,18 @@ class BacktestSimulation:
                 gross_pnl = float(row[reward_col])
                 was_correct = gross_pnl > 0
 
-            net_pnl = cfg.costs.net_pnl_pts(gross_pnl)
+            net_pnl = cfg.costs.net_pnl_pts(
+                gross_pnl,
+                contracts=cfg.position_size,
+            )
+            gross_pnl_brl = cfg.costs.gross_pnl_brl(
+                gross_pnl,
+                contracts=cfg.position_size,
+            )
+            net_pnl_brl = cfg.costs.net_pnl_brl(
+                gross_pnl,
+                contracts=cfg.position_size,
+            )
 
             trade = Trade(
                 timestamp=row["timestamp"] if "timestamp" in row else datetime.now(),
@@ -262,8 +423,11 @@ class BacktestSimulation:
                 entry_price=float(row.get("win_price", 0)),
                 gross_pnl_pts=gross_pnl,
                 net_pnl_pts=net_pnl,
+                gross_pnl_brl=gross_pnl_brl,
+                net_pnl_brl=net_pnl_brl,
                 was_correct=was_correct,
                 horizon_minutes=30,
+                contracts=cfg.position_size,
             )
             trades.append(trade)
             daily_pnl += net_pnl
@@ -366,19 +530,27 @@ class BacktestSimulation:
             "n_wins": n_wins,
             "n_losses": n_losses,
             "win_rate": n_wins / n_trades,
+            "position_size": self.config.position_size,
+            "blocked_by_trend_gate": self.blocked_by_trend_gate,
             "total_gross_pnl_pts": total_gross,
             "total_net_pnl_pts": total_net,
+            "total_gross_pnl_brl": total_gross * self.config.costs.ponto_valor_brl,
+            "total_net_pnl_brl": total_net * self.config.costs.ponto_valor_brl,
             "avg_win_pts": avg_win,
             "avg_loss_pts": avg_loss,
+            "avg_win_brl": avg_win * self.config.costs.ponto_valor_brl,
+            "avg_loss_brl": avg_loss * self.config.costs.ponto_valor_brl,
             "profit_factor": profit_factor,
             "sharpe_ratio": sharpe,
             "max_drawdown_pts": max_drawdown,
+            "max_drawdown_brl": max_drawdown * self.config.costs.ponto_valor_brl,
             "calmar_ratio": calmar,
             "opportunity_capture_rate": ocr,
             "trades_per_day": n_trades / max(1, len(self.daily_results)),
             "n_trading_days": len([d for d in self.daily_results if d.n_trades > 0]),
             "n_total_days": len(self.daily_results),
             "total_cost_pts": total_gross - total_net,
+            "total_cost_brl": (total_gross - total_net) * self.config.costs.ponto_valor_brl,
             "buy_trades": len(buy_trades),
             "sell_trades": len(sell_trades),
             "buy_win_rate": (
@@ -405,6 +577,8 @@ class BacktestSimulation:
         print(f"  Total: {metrics['n_trades']} ({metrics['trades_per_day']:.1f}/dia)")
         print(f"  Wins:  {metrics['n_wins']} | Losses: {metrics['n_losses']}")
         print(f"  Win Rate: {metrics['win_rate']:.1%}")
+        print(f"  Volume: {metrics['position_size']} contrato(s)/operação")
+        print(f"  Bloqueados pelo gate: {metrics['blocked_by_trend_gate']}")
         print(f"  BUY: {metrics['buy_trades']} ({metrics['buy_win_rate']:.1%}) | "
               f"SELL: {metrics['sell_trades']} ({metrics['sell_win_rate']:.1%})")
 
@@ -415,12 +589,19 @@ class BacktestSimulation:
         print(f"  Avg Win:  {metrics['avg_win_pts']:+.0f} pts")
         print(f"  Avg Loss: {metrics['avg_loss_pts']:+.0f} pts")
 
+        print(f"\n💵 PnL financeiro (R$):")
+        print(f"  Bruto:   {metrics['total_gross_pnl_brl']:+.2f}")
+        print(f"  Custos:  -{metrics['total_cost_brl']:.2f}")
+        print(f"  Líquido: {metrics['total_net_pnl_brl']:+.2f}")
+        print(f"  Avg Win:  {metrics['avg_win_brl']:+.2f}")
+        print(f"  Avg Loss: {metrics['avg_loss_brl']:+.2f}")
+
         print(f"\n📈 Métricas de Risco:")
         print(f"  Profit Factor: {metrics['profit_factor']:.2f}"
               f" {'✅' if metrics['profit_factor'] > 1.5 else '⚠️' if metrics['profit_factor'] > 1.0 else '❌'}")
         print(f"  Sharpe Ratio:  {metrics['sharpe_ratio']:.2f}"
               f" {'✅' if metrics['sharpe_ratio'] > 1.0 else '⚠️' if metrics['sharpe_ratio'] > 0 else '❌'}")
-        print(f"  Max Drawdown:  {metrics['max_drawdown_pts']:.0f} pts"
+        print(f"  Max Drawdown:  {metrics['max_drawdown_pts']:.0f} pts / R${metrics['max_drawdown_brl']:.2f}"
               f" {'✅' if metrics['max_drawdown_pts'] < 500 else '⚠️' if metrics['max_drawdown_pts'] < 1000 else '❌'}")
         print(f"  Calmar Ratio:  {metrics['calmar_ratio']:.2f}")
         print(f"  OCR:           {metrics['opportunity_capture_rate']:.1%}")
@@ -457,9 +638,12 @@ class BacktestSimulation:
                 "timestamp": t.timestamp,
                 "action": t.action,
                 "confidence": t.confidence,
+                "contracts": t.contracts,
                 "entry_price": t.entry_price,
                 "gross_pnl_pts": t.gross_pnl_pts,
                 "net_pnl_pts": t.net_pnl_pts,
+                "gross_pnl_brl": t.gross_pnl_brl,
+                "net_pnl_brl": t.net_pnl_brl,
                 "was_correct": t.was_correct,
                 "horizon_minutes": t.horizon_minutes,
             })
@@ -514,6 +698,34 @@ def _get_feature_columns(df: pd.DataFrame) -> list[str]:
     ]
 
 
+def _carregar_market_data_para_benchmark(
+    market_db: Path,
+    dataset: pd.DataFrame,
+) -> pd.DataFrame:
+    """Carrega candles WIN históricos para o gate de tendência do benchmark."""
+    if not market_db.exists() or dataset.empty:
+        return pd.DataFrame(columns=["timestamp", "symbol", "open", "high", "low", "close"])
+
+    min_ts = pd.to_datetime(dataset["timestamp"]).min() - pd.Timedelta(hours=8)
+    max_ts = pd.to_datetime(dataset["timestamp"]).max() + pd.Timedelta(hours=2)
+    with sqlite3.connect(str(market_db)) as con:
+        return pd.read_sql(
+            """
+            SELECT timestamp, symbol, open, high, low, close
+            FROM market_data
+            WHERE symbol LIKE 'WIN%'
+              AND timestamp BETWEEN ? AND ?
+            ORDER BY timestamp ASC
+            """,
+            con,
+            params=[
+                min_ts.strftime("%Y-%m-%d %H:%M:%S"),
+                max_ts.strftime("%Y-%m-%d %H:%M:%S"),
+            ],
+            parse_dates=["timestamp"],
+        )
+
+
 def main():
     parser = argparse.ArgumentParser(description="Backtest do modelo ML de trading")
     parser.add_argument("--model", type=str,
@@ -524,6 +736,13 @@ def main():
     parser.add_argument("--horizon", type=int, default=30)
     parser.add_argument("--min-confidence", type=float, default=0.55)
     parser.add_argument("--max-trades-day", type=int, default=8)
+    parser.add_argument("--max-daily-loss-pts", type=float, default=500.0)
+    parser.add_argument("--max-consecutive-losses", type=int, default=3)
+    parser.add_argument("--cooldown-periods", type=int, default=5)
+    parser.add_argument("--position-size", type=int, default=1)
+    parser.add_argument("--use-trend-gate", action="store_true")
+    parser.add_argument("--production-strict", action="store_true")
+    parser.add_argument("--market-db", type=str, default=str(ROOT_DIR / "data" / "db" / "trading.db"))
     parser.add_argument("--export-trades", action="store_true")
     parser.add_argument("--db", type=str, default=str(DB_PATH))
     args = parser.parse_args()
@@ -574,10 +793,33 @@ def main():
 
     print(f"Features para backtest: {len(feature_cols)}")
 
+    if args.production_strict:
+        args.min_confidence = max(args.min_confidence, 0.60)
+        args.max_trades_day = min(args.max_trades_day, 6)
+        args.max_daily_loss_pts = min(args.max_daily_loss_pts, 500.0)
+        args.max_consecutive_losses = min(args.max_consecutive_losses, 2)
+        args.cooldown_periods = max(args.cooldown_periods, 6)
+        args.position_size = 1
+        args.use_trend_gate = True
+
+    market_data = None
+    if args.use_trend_gate:
+        market_data = _carregar_market_data_para_benchmark(
+            Path(args.market_db),
+            dataset,
+        )
+        print(f"Candles de mercado carregados para gate: {len(market_data)}")
+
     # Configurar backtest
     config = BacktestConfig(
         min_confidence=args.min_confidence,
         max_trades_per_day=args.max_trades_day,
+        max_consecutive_losses=args.max_consecutive_losses,
+        cooldown_periods=args.cooldown_periods,
+        max_daily_loss_pts=args.max_daily_loss_pts,
+        position_size=args.position_size,
+        use_trend_gate=args.use_trend_gate,
+        market_data=market_data,
     )
 
     # Executar

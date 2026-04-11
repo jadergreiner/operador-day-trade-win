@@ -8,6 +8,7 @@ requests>=2.31
 filelock>=3.12
 joblib>=1.5
 scikit-learn>=1.5
+lightgbm>=4.0
 # Recomendado: instalar em venv usado pelos launchers Windows
 # Exemplo:
 # python -m pip install -r requirements.txt

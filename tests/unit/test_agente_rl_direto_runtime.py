@@ -196,6 +196,45 @@ class TestRuntimeIsolationExtras:
 
         assert ok is True
 
+    def test_enviar_ordem_cria_reward_pendente_com_acao_canonica(
+        self,
+        tmp_path,
+    ) -> None:
+        mt5_adapter = MagicMock()
+        mt5_adapter.get_positions.return_value = []
+        posicao_tracker = MagicMock()
+        rl_repo = MagicMock()
+        motor = MotorDecisaoIsolado(
+            agent_id="sessao_reward",
+            data_dir=tmp_path,
+        )
+
+        with patch("scripts.agente_rl_direto_independente.datetime") as mock_dt:
+            fake_now = MagicMock()
+            fake_now.time.return_value = datetime(2026, 3, 19, 10, 30).time()
+            mock_dt.now.return_value = fake_now
+
+            ok = enviar_ordem(
+                mt5_adapter=mt5_adapter,
+                acao="Comprar",
+                preco_atual=100000.0,
+                posicao_tracker=posicao_tracker,
+                rl_repo=rl_repo,
+                trade_tracker=None,
+                motor_decisao=motor,
+                opening_context={
+                    "vies_intraday": "NEUTRO_LEVEMENTE_BAIXISTA",
+                    "watchlist": ["PETR4", "VALE3", "DOL"],
+                },
+                confidence=0.72,
+            )
+
+        assert ok is True
+        rl_repo.save_episode.assert_called_once()
+        rl_repo.create_pending_rewards.assert_called_once()
+        _, payload = rl_repo.create_pending_rewards.call_args.args
+        assert payload["action"] == "BUY"
+
     def test_processar_protecao_lucros_aceita_posicao_tracker_real(
         self,
         tmp_path,
