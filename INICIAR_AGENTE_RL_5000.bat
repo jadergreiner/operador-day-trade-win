@@ -16,6 +16,9 @@ set "DB_PATH=%RL_5000_DB_PATH%"
 set "TRADING_DB_PATH=%RL_5000_DB_PATH%"
 set "AGENTE_RL_5000_LOG_DIR=%cd%\outputs"
 set "PROMOTION_GATE_ALLOW_SEM_PROMOCAO_UNTIL=09:05"
+set "RL5000_TARGET_LUCRO_DIARIO=140.00"
+set "RL5000_STOP_PERDA_DIARIA=-600.00"
+set "MT5_ALLOW_ADDITIONAL_TERMINALS=1"
 
 REM =========================================================================
 REM P50-CHECK: Verificar operacoes pendentes do pregao anterior
@@ -55,7 +58,8 @@ echo   [OK] Logs debug: %AGENTE_RL_5000_LOG_DIR%\agente_debug_*.log
 echo   [OK] Artefatos de ciclo: diario_episodios + execution_feedback com contexto enriquecido
 echo   ============================================================
 echo.
-echo   Alvo: R$140.00 / Stop Loss: -R$250.00
+echo   Alvo: R$%RL5000_TARGET_LUCRO_DIARIO% / Stop Loss: R$%RL5000_STOP_PERDA_DIARIA%
+echo   Politica MT5 adicional: MT5_ALLOW_ADDITIONAL_TERMINALS=%MT5_ALLOW_ADDITIONAL_TERMINALS%
 echo.
 echo   Script real: scripts\agente_com_supervision.py --sl-tp-mode dinamico
 echo   Gate operacional: outputs\release_gates\go_live_decision.json
@@ -103,7 +107,7 @@ if errorlevel 1 goto :opcao2_preflight_erro
 
 echo.
 echo   [START] OPERACAO REAL COM WRAPPER CANONICO
-echo   Objetivo: Lucro R$ 140,00 ou Prejuizo -R$ 250,00
+echo   Objetivo: Lucro R$ %RL5000_TARGET_LUCRO_DIARIO% ou Prejuizo R$ %RL5000_STOP_PERDA_DIARIA%
 echo   Modo SL/TP: DINAMICO
 echo   Logs esperados: %AGENTE_RL_5000_LOG_DIR%\agente_*.log
 echo   Logs debug: %AGENTE_RL_5000_LOG_DIR%\agente_debug_*.log

@@ -1,5 +1,14 @@
 # Relatorio de Governanca de Docs - 2026-04-22
 
+## Sequencial Thinking Aplicado
+
+1. Inventariar grupos canônicos (`arquitetura`, `contratos`, `modelos`,
+    `governanca`).
+2. Medir cobertura documental e identificar lacunas estruturais.
+3. Auditar referencias cruzadas e links markdown relativos.
+4. Mapear pendencias abertas fora de `docs/legacy/`.
+5. Consolidar plano de fechamento e status de governanca.
+
 ## Escopo
 
 Revisao do conjunto de documentos em `docs/` com foco em:
@@ -9,44 +18,69 @@ Revisao do conjunto de documentos em `docs/` com foco em:
 - Modelos
 - Referencias cruzadas
 
-## Resultado executivo
+## Resultado Executivo
 
-- Status ADRs: parcial, com fonte principal em [../ADRS.md](../ADRS.md).
-- Status contratos: gap estrutural, sem pasta canônica previa.
-- Status modelos: parcial, concentrado em
-  [../MODELAGEM_DE_DADOS.md](../MODELAGEM_DE_DADOS.md) e legados.
-- Referencias cruzadas: alto volume de links locais quebrados em legado.
+- Grupos canônicos presentes:
+   `docs/arquitetura`, `docs/contratos`, `docs/modelos`,
+   `docs/governanca`.
+- Cobertura atual por grupo:
+   `arquitetura=6`, `contratos=1`, `modelos=1`, `governanca=2`.
+- Referencias cruzadas:
+   foram detectados links relativos quebrados fora de `docs/legacy/`.
+- Pendencias fora de `docs/legacy/`:
+   ha itens `TODO/TBD` em documentos de sessao e sincronizacao.
 
-## Evidencias
+## Revisao por Grupo
 
-- Grupo `docs/architecture`: parcial no repositório atual.
-- Grupo `docs/contratos`: ausente antes desta consolidacao.
-- Grupo `docs/governanca`: ausente antes desta consolidacao.
-- Grupo `docs/modelos`: ausente antes desta consolidacao.
-- Auditoria de links locais: ~145 links quebrados detectados na varredura.
+### a) ADRs
 
-## Acoes executadas
+- Fonte principal: [../ADRS.md](../ADRS.md).
+- Status: parcial.
+- GAP: parte das decisoes segue em material legado e sessoes.
 
-1. Criado alias de compatibilidade:
-   - [../ADRS.md](../ADRS.md)
-2. Formalizadas pastas canônicas:
-   - [../contratos/README.md](../contratos/README.md)
-   - [README.md](README.md)
-   - [../modelos/README.md](../modelos/README.md)
-3. Atualizada politica canônica em [../ADRS.md](../ADRS.md).
+### b) Contratos de dados
 
-## GAPs remanescentes
+- Fonte atual: [../contratos/README.md](../contratos/README.md).
+- Status: estrutura criada, mas sem contratos versionados por entidade.
 
-1. Remediacao completa de links quebrados em `docs/legacy/`.
-2. Materializacao de contratos versionados em `docs/contratos/`.
-3. Consolidacao de modelos legados em `docs/modelos/`.
+### c) Modelos
 
-## Recomendacao
+- Fonte atual: [../modelos/README.md](../modelos/README.md).
+- Referencia complementar: [../MODELAGEM_DE_DADOS.md](../MODELAGEM_DE_DADOS.md).
+- Status: parcial.
+- GAP: falta consolidar modelo conceitual/ER como fonte canônica única.
 
-Executar remediation incremental por lote:
+### d) Referencias cruzadas
 
-1. Corrigir links quebrados de alta criticidade fora de `docs/legacy/`.
-2. Migrar contratos de dados de ADRs para arquivos versionados dedicados.
-3. Publicar modelo conceitual e ER como fonte canônica em `docs/modelos/`.
+- Existem links relativos quebrados fora de `docs/legacy/`.
+- Existem pendencias abertas (`TODO/TBD`) fora de `docs/legacy/`.
+- Risco principal:
+   divergencia entre o indice canônico e documentos operacionais por sessao.
 
+## Acoes Executadas neste Fechamento
 
+1. Auditoria de cobertura dos grupos obrigatorios de docs.
+2. Auditoria de referencias cruzadas e links relativos em `docs/`.
+3. Auditoria de pendencias abertas fora de `docs/legacy/`.
+4. Consolidacao deste relatorio como checkpoint de governanca.
+
+## GAPs Remanescentes
+
+1. Corrigir links relativos quebrados fora de `docs/legacy/`.
+2. Materializar contratos versionados em `docs/contratos/`.
+3. Consolidar modelos canônicos em `docs/modelos/` e remover duplicidade.
+4. Fechar `TODO/TBD` abertos fora de `docs/legacy/` ou mover para backlog.
+
+## Plano de Fechamento (Proxima Rodada)
+
+1. Corrigir links quebrados de alta criticidade (fora de legado).
+2. Criar contratos versionados prioritarios:
+    `trades`, `orders`, `execution_feedback`, `diario_episodios`.
+3. Publicar diagrama conceitual e ER em `docs/modelos/`.
+4. Atualizar ADR com governanca de sincronizacao documental.
+
+## Status Final desta Rodada
+
+- Revisao concluida: `ADRs`, `contratos`, `modelos` e referencias cruzadas.
+- Governanca documental: **PARCIALMENTE FECHADA** com GAPs mapeados.
+- Proximo gate: remediacao dos links e contratos versionados.

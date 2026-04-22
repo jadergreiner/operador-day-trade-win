@@ -390,13 +390,30 @@ VALOR_PONTO_BRL = 0.20
 CLOSURE_TOLERANCE_POINTS = 20.0
 LOTE_PADRAO = 1.0  # 1 contrato/lote por operação
 
+
+def _resolve_float_env(var_name: str, default_value: float) -> float:
+    """Resolve float de variável de ambiente com fallback seguro."""
+    raw = os.getenv(var_name, "").strip()
+    if not raw:
+        return default_value
+    try:
+        return float(raw)
+    except ValueError:
+        logger.warning(
+            "[CONFIG] Valor invalido para %s=%s; usando padrao %.2f",
+            var_name,
+            raw,
+            default_value,
+        )
+        return default_value
+
 # ============================================================================
 # GLOBAL STATE
 # ============================================================================
 
 SIMBOLO = "WIN$N"
-TARGET_LUCRO_DIARIO = 140.00
-STOP_PERDA_DIARIA = -600.00
+TARGET_LUCRO_DIARIO = _resolve_float_env("RL5000_TARGET_LUCRO_DIARIO", 140.00)
+STOP_PERDA_DIARIA = _resolve_float_env("RL5000_STOP_PERDA_DIARIA", -600.00)
 STOP_LOSS_PONTOS = 150
 TAKE_PROFIT_PONTOS = 300
 MAGIC_NUMBER: int = AGENT_MAGIC_NUMBERS["rl_5000"]

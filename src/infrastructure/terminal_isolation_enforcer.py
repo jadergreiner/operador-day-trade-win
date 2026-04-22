@@ -22,6 +22,19 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    """Converte variável de ambiente para bool com fallback seguro."""
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    val = str(raw).strip().lower()
+    if val in {"1", "true", "yes", "sim", "on"}:
+        return True
+    if val in {"0", "false", "no", "nao", "off"}:
+        return False
+    return default
+
+
 class TerminalIsolationViolation(Exception):
     """Exceção lançada quando isolamento de terminal é violado."""
     pass
@@ -59,7 +72,8 @@ class TerminalIsolationEnforcer:
     def __init__(
         self,
         expected_terminal_path: str,
-        enforce_mode: str = "HARD_STOP"  # HARD_STOP, WARN_ONLY, MONITOR
+        enforce_mode: str = "HARD_STOP",  # HARD_STOP, WARN_ONLY, MONITOR
+        allow_additional_terminals: Optional[bool] = None,
     ):
         """
         Inicializa enforcer.
@@ -70,6 +84,11 @@ class TerminalIsolationEnforcer:
         """
         self.expected_terminal_path = os.path.normcase(os.path.abspath(expected_terminal_path))
         self.enforce_mode = enforce_mode
+        if allow_additional_terminals is None:
+            allow_additional_terminals = _env_bool(
+                "MT5_ALLOW_ADDITIONAL_TERMINALS", True
+            )
+        self.allow_additional_terminals = bool(allow_additional_terminals)
         self._trading_halted = False
 
         # Validação básica
@@ -84,7 +103,10 @@ class TerminalIsolationEnforcer:
         self.operation_count = 0
 
         logger.info(
-            f"TerminalIsolationEnforcer inicializado com modo {enforce_mode}"
+            "TerminalIsolationEnforcer inicializado com modo %s | "
+            "allow_additional_terminals=%s",
+            enforce_mode,
+            self.allow_additional_terminals,
         )
 
     def validate_before_operation(self, operation_name: str) -> bool:
@@ -118,10 +140,18 @@ class TerminalIsolationEnforcer:
         # 2. Outros terminais podem coexistir; apenas registra aviso.
         dangerous_terminals = self._find_dangerous_terminals()
         if dangerous_terminals:
-            logger.warning(
-                "Terminais MT5 adicionais detectados (permitidos, sem bloquear): %s",
-                dangerous_terminals,
-            )
+            if self.allow_additional_terminals:
+                logger.warning(
+                    "Terminais MT5 adicionais detectados (permitidos, sem bloquear): %s",
+                    dangerous_terminals,
+                )
+            else:
+                self._fail(
+                    "❌ BLOQUEIO: Terminais MT5 adicionais detectados!\n"
+                    f"   Encontrados: {dangerous_terminals}\n"
+                    f"   Operação vetada: {operation_name}\n"
+                    "   Defina MT5_ALLOW_ADDITIONAL_TERMINALS=1 para permitir."
+                )
 
         # 3. Verificar que terminal Clear está rodando
         clear_pids = self._find_clear_terminal_pids()
@@ -161,10 +191,17 @@ class TerminalIsolationEnforcer:
         # 2. Outros terminais podem existir; apenas deixa trilha em log.
         dangerous = self._find_dangerous_terminals()
         if dangerous:
-            logger.warning(
-                "Terminais MT5 adicionais detectados durante execução (permitidos): %s",
-                dangerous,
-            )
+            if self.allow_additional_terminals:
+                logger.warning(
+                    "Terminais MT5 adicionais detectados durante execução (permitidos): %s",
+                    dangerous,
+                )
+            else:
+                self._fail(
+                    "❌ KILL SWITCH: Terminais MT5 adicionais detectados durante execução!\n"
+                    f"   Encontrados: {dangerous}\n"
+                    "   Encerrando runtime por política de isolamento estrita."
+                )
 
         return True
 
@@ -184,6 +221,7 @@ class TerminalIsolationEnforcer:
             "is_isolated": bool(clear_pids) and not self._trading_halted,
             "clear_terminal_running": bool(clear_pids),
             "clear_pids": clear_pids,
+            "allow_additional_terminals": self.allow_additional_terminals,
             "dangerous_terminals_detected": dangerous,
             "violations_count": self.violations_count,
             "operations_validated": self.operation_count,

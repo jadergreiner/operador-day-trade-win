@@ -21,6 +21,22 @@ from src.domain.value_objects import Price, Symbol
 logger = logging.getLogger(__name__)
 
 
+FUTURES_MONTH_CODES: dict[str, int] = {
+    "F": 1,
+    "G": 2,
+    "H": 3,
+    "J": 4,
+    "K": 5,
+    "M": 6,
+    "N": 7,
+    "Q": 8,
+    "U": 9,
+    "V": 10,
+    "X": 11,
+    "Z": 12,
+}
+
+
 AGENT_LABELS_BY_MAGIC: dict[int, str] = {
     AGENT_MAGIC_NUMBERS["rl_5000"]: "RL 5000",
     AGENT_MAGIC_NUMBERS["rl_direto"]: "RL Direto",
@@ -645,6 +661,41 @@ class MT5Adapter(IBrokerAdapter):
         # Garante que copy_rates funciona mesmo apos vencimento do contrato
         symbol_code = self._resolve_tradable_symbol(symbol.code)
 
+        if not self.select_symbol(symbol_code):
+            base_symbol = symbol.code.split("$")[0]
+            alternatives: list[str] = []
+            symbols = self._mt5.symbols_get(group=f"*{base_symbol}*")
+            if symbols:
+                for s in symbols:
+                    if (
+                        s.trade_mode == self._mt5.SYMBOL_TRADE_MODE_FULL
+                        and s.name.startswith(base_symbol)
+                        and not s.name.endswith("$N")
+                        and s.name != symbol_code
+                    ):
+                        alternatives.append(str(s.name))
+
+            alternatives = list(dict.fromkeys(alternatives))
+            alternatives.sort(
+                key=lambda candidate: self._future_contract_sort_key(
+                    base_symbol,
+                    candidate,
+                )
+            )
+
+            recovered_symbol = None
+            for candidate in alternatives:
+                if self._symbol_has_market_data(candidate):
+                    recovered_symbol = candidate
+                    break
+
+            if recovered_symbol is None:
+                raise OrderExecutionError(
+                    f"Failed to select symbol {symbol_code}: {self._mt5.last_error()}"
+                )
+
+            symbol_code = recovered_symbol
+
         # Obtem as barras
         if start_time:
             rates = self._mt5.copy_rates_from(
@@ -744,6 +795,65 @@ class MT5Adapter(IBrokerAdapter):
             return 5.0
         return 0.01
 
+    def _future_contract_sort_key(self, base_symbol: str, candidate: str) -> tuple[int, int, str]:
+        """Ordena candidatos de futuro pelo vencimento mais proximo e valido."""
+        now = datetime.now()
+        current_yy = now.year % 100
+        current_month = now.month
+
+        contract_match = re.match(
+            rf"^{re.escape(base_symbol)}([A-Z])(\d{{2}})$",
+            candidate,
+        )
+        if not contract_match:
+            return (2, 999999, candidate)
+
+        month_code, year_suffix_raw = contract_match.groups()
+        contract_month = FUTURES_MONTH_CODES.get(month_code)
+        if contract_month is None:
+            return (2, 999999, candidate)
+
+        year_suffix = int(year_suffix_raw)
+        distance = (year_suffix - current_yy) * 12 + (contract_month - current_month)
+        if distance < 0:
+            return (1, abs(distance), candidate)
+        return (0, distance, candidate)
+
+    def _symbol_has_market_data(self, symbol_code: str) -> bool:
+        """Verifica se o simbolo pode ser habilitado e possui tick utilizavel."""
+        selected = self.select_symbol(symbol_code)
+
+        info = self._mt5.symbol_info(symbol_code)
+        if info is None:
+            return False
+
+        # Alguns terminais retornam estado inconsistente no symbol_select.
+        # Nestes casos, aceitamos o simbolo se houver trade_mode de negociacao.
+        if (
+            not selected
+            and info.trade_mode != self._mt5.SYMBOL_TRADE_MODE_FULL
+        ):
+            return False
+
+        tick = self._mt5.symbol_info_tick(symbol_code)
+        if tick is None:
+            return False
+
+        # Confirma disponibilidade real de serie historica minima no timeframe operacional.
+        rates = self._mt5.copy_rates_from_pos(
+            symbol_code,
+            self._mt5.TIMEFRAME_M5,
+            0,
+            1,
+        )
+        if rates is None or len(rates) == 0:
+            return False
+
+        return any(
+            float(getattr(tick, field, 0.0) or 0.0) > 0.0
+            for field in ("bid", "ask", "last")
+        )
+
     def _resolve_tradable_symbol(self, symbol_code: str) -> str:
         """Resolve símbolo de cotação contínua para contrato negociável.
 
@@ -755,24 +865,42 @@ class MT5Adapter(IBrokerAdapter):
             return symbol_code
 
         # Se o símbolo aceita ordens diretamente, usa ele
-        if info.trade_mode == self._mt5.SYMBOL_TRADE_MODE_FULL:
+        if (
+            info.trade_mode == self._mt5.SYMBOL_TRADE_MODE_FULL
+            and self._symbol_has_market_data(symbol_code)
+        ):
             return symbol_code
+
+        candidates: list[str] = []
 
         # Tenta resolver via path ou custom (WIN$N → contrato real)
         # MT5 expõe o campo 'path' ou 'basis' com o contrato real
         if hasattr(info, 'basis') and info.basis:
-            basis_info = self._mt5.symbol_info(info.basis)
-            if basis_info and basis_info.trade_mode == self._mt5.SYMBOL_TRADE_MODE_FULL:
-                return str(info.basis)
+            candidates.append(str(info.basis))
 
         # Fallback: busca contratos WIN ativos
-        symbols = self._mt5.symbols_get(group="*WIN*")
+        base_symbol = symbol_code.split("$")[0]
+        symbols = self._mt5.symbols_get(group=f"*{base_symbol}*")
         if symbols:
             for s in symbols:
-                if (s.trade_mode == self._mt5.SYMBOL_TRADE_MODE_FULL
-                        and s.name.startswith("WIN")
-                        and not s.name.endswith("$N")):
-                    return str(s.name)
+                if (
+                    s.trade_mode == self._mt5.SYMBOL_TRADE_MODE_FULL
+                    and s.name.startswith(base_symbol)
+                    and not s.name.endswith("$N")
+                ):
+                    candidates.append(str(s.name))
+
+        unique_candidates = list(dict.fromkeys(candidates))
+        unique_candidates.sort(
+            key=lambda candidate: self._future_contract_sort_key(
+                base_symbol,
+                candidate,
+            )
+        )
+
+        for candidate in unique_candidates:
+            if self._symbol_has_market_data(candidate):
+                return candidate
 
         return symbol_code
 
@@ -1262,12 +1390,25 @@ class MT5Adapter(IBrokerAdapter):
         self._ensure_connected()
 
         result = self._mt5.symbol_select(symbol_code, True)
-        if result is True or result is None:
+        if result is True:
             return True
+
+        if result is None:
+            info_none = self._mt5.symbol_info(symbol_code)
+            return info_none is not None and bool(getattr(info_none, "visible", False))
 
         # Fallback: simbolo pode ja estar habilitado/visivel
         info = self._mt5.symbol_info(symbol_code)
-        return info is not None and info.visible
+        if info is None:
+            return False
+
+        if bool(getattr(info, "visible", False)):
+            return True
+
+        # Em alguns terminais MT5 (especialmente com multiplas instancias),
+        # symbol_select pode falhar com last_error "Success" mesmo com simbolo
+        # negociavel e com serie disponivel. Nesse caso, aceita por trade_mode.
+        return getattr(info, "trade_mode", None) == self._mt5.SYMBOL_TRADE_MODE_FULL
 
     def get_symbol_info(self, symbol_code: str) -> Optional[Any]:
         """Obtem `symbol_info` bruto do MT5 para compatibilidade legada."""

@@ -414,7 +414,7 @@ except Exception as e:
 # ============================================================================
 # CONSTANTES DE TRADING
 # ============================================================================
-SIMBOLO = "WINJ26"
+SIMBOLO = os.getenv("TRADING_SYMBOL", "WIN$N").strip() or "WIN$N"
 MAGIC_NUMBER: int = AGENT_MAGIC_NUMBERS["rl_direto"]  # EA ID exclusivo do agente direto (isolamento)
 
 # SL/TP fixos — mas nunca abaixo do ATR minimo calculado em tempo real.
