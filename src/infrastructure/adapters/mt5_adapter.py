@@ -641,19 +641,23 @@ class MT5Adapter(IBrokerAdapter):
         if not mt5_timeframe:
             raise ValueError(f"Unsupported timeframe: {timeframe}")
 
+        # Resolve simbolo continuo (WIN$N) para contrato ativo (ex: WINK26)
+        # Garante que copy_rates funciona mesmo apos vencimento do contrato
+        symbol_code = self._resolve_tradable_symbol(symbol.code)
+
         # Obtem as barras
         if start_time:
             rates = self._mt5.copy_rates_from(
-                symbol.code, mt5_timeframe, start_time, count
+                symbol_code, mt5_timeframe, start_time, count
             )
         else:
             rates = self._mt5.copy_rates_from_pos(
-                symbol.code, mt5_timeframe, 0, count
+                symbol_code, mt5_timeframe, 0, count
             )
 
         if rates is None:
             raise OrderExecutionError(
-                f"Failed to get candles for {symbol}: {self._mt5.last_error()}"
+                f"Failed to get candles for {symbol_code}: {self._mt5.last_error()}"
             )
 
         # Converte para objetos Candle
