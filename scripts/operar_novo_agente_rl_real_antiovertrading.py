@@ -1569,8 +1569,9 @@ def _executar_pipeline_feedback_rl(
             alertas = _drift_detector_rl.detectar_drift(trades_data)
             if alertas:
                 for a in alertas[:2]:
+                    zscore = float(getattr(a, "zscore", getattr(a, "z_score", 0.0)))
                     logger.warning(
-                        f'[AC6.7] Drift: {a.metric} z={a.z_score:.2f}'
+                        f'[AC6.7] Drift: {a.metric} z={zscore:.2f}'
                     )
             else:
                 logger.info('[AC6.7] Sem drift detectado')
