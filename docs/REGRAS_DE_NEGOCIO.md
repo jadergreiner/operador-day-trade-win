@@ -750,3 +750,4 @@ Qualquer falha de pipeline P0-2 deve resultar em postura conservadora
 
 - Inicio e fim da sessao devem manter sincronizacao com historico local.
 - Decisao Gate 2 deve ficar persistida em artefatos locais de `data/backtest`.
+

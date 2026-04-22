@@ -14,6 +14,7 @@ Designed para ser chamado via: start /B python scripts/run_p0_2_backtest.py
 import logging
 import sys
 import subprocess
+import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -47,6 +48,45 @@ DEFAULT_LOOKBACK_DAYS = 365
 DEFAULT_MIN_ROWS = 1000
 
 
+def _db_has_market_data(db_path: Path) -> bool:
+    """Verifica se o banco informado possui market_data com linhas."""
+    if not db_path.exists():
+        return False
+
+    try:
+        with sqlite3.connect(str(db_path)) as conn:
+            row = conn.execute(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='market_data'"
+            ).fetchone()
+            if not row or row[0] == 0:
+                return False
+            total = conn.execute("SELECT COUNT(*) FROM market_data").fetchone()
+            return bool(total and total[0] > 0)
+    except sqlite3.Error:
+        return False
+
+
+def _resolve_market_data_db_path() -> Path:
+    """Resolve um banco com market_data real para preparar o dataset."""
+    candidates = [
+        Path(DEFAULT_DB_PATH),
+        project_root / "data" / "db" / "trading.db",
+        project_root / "data" / "db" / "trading_micro_tendencia.db",
+        project_root / "data" / "db" / "trading_rl_direto.db",
+    ]
+    vistos: set[Path] = set()
+
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        if resolved in vistos:
+            continue
+        vistos.add(resolved)
+        if _db_has_market_data(resolved):
+            return resolved
+
+    return Path(DEFAULT_DB_PATH)
+
+
 def _safe_ascii(text: str) -> str:
     """Normaliza mensagem para ASCII para evitar falhas no console Windows."""
     return text.encode("ascii", errors="replace").decode("ascii")
@@ -76,11 +116,12 @@ def setup_logging() -> None:
 def _prepare_dataset() -> Dict[str, Any]:
     """Executa preparação do dataset real via script dedicado."""
     script_path = project_root / "scripts" / "prepare_p0_2_mt5_dataset.py"
+    source_db_path = _resolve_market_data_db_path()
     command = [
         sys.executable,
         str(script_path),
         "--db-path",
-        DEFAULT_DB_PATH,
+        str(source_db_path),
         "--symbol",
         DEFAULT_SYMBOL,
         "--timeframe",
@@ -98,6 +139,7 @@ def _prepare_dataset() -> Dict[str, Any]:
         cwd=str(project_root),
     )
     return {
+        "prepare_db_path": str(source_db_path),
         "prepare_command": " ".join(command),
         "prepare_exit_code": result.returncode,
         "prepare_stdout": result.stdout.strip(),

@@ -495,7 +495,7 @@ API_TIMEOUT=30
 
 #### Documentação
 
-- 📄 [ADRs.md#adr-009](ADRs.md#adr-009-rest-api-gateway-com-proxy-transparente-para-mt5-orders) - Architecture Decision
+- 📄 [ADRS.md#adr-009](ADRS.md#adr-009-rest-api-gateway-com-proxy-transparente-para-mt5-orders) - Architecture Decision
 - 📋 [ARCHITECTURE.md#46](ARCHITECTURE.md#46-p0-1-rest-api-gateway-para-execução-de-ordens-%EF%B8%8F-implementado-0403) - Technical details
 - 🚀 [BACKLOG_UNIFICADO.md#p0-1](BACKLOG_UNIFICADO.md#p0-1-api-rest-mt5---infraestrutura-de-execução) - Delivery status
 - ✅ [GO_LIVE_CHECKLIST.md#p0-1](GO_LIVE_CHECKLIST.md#-p0-1-rest-api-gateway-validation-novo---0403) - Pre-go-live validation
@@ -1411,3 +1411,5 @@ python scripts/DASHBOARD_PERSISTENCIA_STATUS.py  # TODO: criar script
 
 **Gerado automaticamente pelo sistema de health checks.**
 **Próxima validação:** 2026-03-03T12:00:00Z
+
+

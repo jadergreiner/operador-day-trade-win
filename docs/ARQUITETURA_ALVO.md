@@ -1479,3 +1479,4 @@ Este documento assume como fonte principal de verdade:
 
 Por isso, a arquitetura aqui descrita representa a operacao local observavel do
 executor, mesmo quando isso diverge de backlog, roadmap ou documentacao antiga.
+

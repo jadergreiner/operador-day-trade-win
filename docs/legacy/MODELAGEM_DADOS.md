@@ -1333,8 +1333,10 @@ CREATE INDEX idx_circuit_breaker_history_session ON circuit_breaker_history(time
 - [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md) - ER diagram visual (updated with P50 + P0-3)
 - [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) - Regras que governam os dados + Circuit Breaker rules
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Arquitetura geral (seções 3 P50, 3.1 P0-3 Planejado)
-- [ADRs.md](ADRs.md) - ADR-011 (GATE 2 decision to prioritize risk management)
+- [ADRS.md](ADRS.md) - ADR-011 (GATE 2 decision to prioritize risk management)
 
 ---
 
 **ÚLTIMA ATUALIZAÇÃO:** 05/03/2026 12:30 BRT | **STATUS**: ✅ COMPLETO (19 tabelas SQL + P50 JSON configs)
+
+

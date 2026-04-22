@@ -20,7 +20,7 @@
 | [DIAGRAMA_CLASSES.md](docs/DIAGRAMA_CLASSES.md) | N/A | - | - | ✅ OK |
 | [DIAGRAMA_DADOS.md](docs/DIAGRAMA_DADOS.md) | ✅ SQL Schema | api_orders, api_audit_log | 2 referências | ✅ OK |
 | [MODELAGEM_DADOS.md](docs/MODELAGEM_DADOS.md) | ✅ SQL Schema | [Ver seção 3.1.2] | 2 referências | ✅ OK |
-| [ADRs.md](docs/ADRs.md) | ⏳ ADR-009 | [Necessita update] | 1 referência | 🟡 PENDING |
+| [ADRS.md](docs/ADRS.md) | ⏳ ADR-009 | [Necessita update] | 1 referência | 🟡 PENDING |
 | [CONTRIBUTING.md](docs/CONTRIBUTING.md) | N/A | - | - | ✅ OK |
 | [CODING_STANDARDS.md](docs/CODING_STANDARDS.md) | N/A | - | - | ✅ OK |
 | [DATA_MODELS.md](docs/DATA_MODELS.md) | ✅ Implementado | - | - | ✅ OK |
@@ -106,7 +106,7 @@ Line 148: | **Test Suite** | `scripts/test_p0_1_integration.py` | 320 | ✅ |
 **Referências Cruzadas:**
 - ✅ → STATUS_ENTREGAS.md (seção P0-1)
 - ✅ → BACKLOG_UNIFICADO.md (seção P0-1)
-- ✅ → ADRs.md (ADR-009) - ⏳ Necessita criação
+- ✅ → ADRS.md (ADR-009) - ⏳ Necessita criação
 
 **Status:** ✅ **ALINHADO - 100% CORRETO**
 
@@ -165,7 +165,7 @@ Line 148: | **Test Suite** | `scripts/test_p0_1_integration.py` | 320 | ✅ |
 
 ---
 
-### 4. ⏳ ADRs.md
+### 4. ⏳ ADRS.md
 
 **Status:** NECESSITA UPDATE | **Novo:** ADR-009 P0-1
 
@@ -284,7 +284,7 @@ CREATE TABLE api_audit_log (
 │ INDEX_FINAL_ENTREGA │     1    │ ✅ REF    │ genérico │ ✅ OK    │
 │ DIAGRAMA_DADOS      │     2    │ ✅ SYNC   │ prev     │ ✅ OK    │
 │ MODELAGEM_DADOS     │     2    │ ✅ SYNC   │ prev     │ ✅ OK    │
-│ ADRs.md             │     0    │ 🟡 MISS   │ N/A      │ 🟡 MED   │
+│ ADRS.md             │     0    │ 🟡 MISS   │ N/A      │ 🟡 MED   │
 │ QUICK_START.md      │     1    │ ✅ REF    │ genérico │ ✅ OK    │
 │ ENTREGA_DE_VALOR    │     1    │ ✅ REF    │ genérico │ ✅ OK    │
 │ README.md           │     1    │ ✅ REF    │ genérico │ ✅ OK    │
@@ -366,7 +366,7 @@ STATUS_ENTREGAS.md (SSOT - Entrega de Valor)
    - Checklist validação presente
 
 3. **🟡 1 DOCUMENTO NECESSITA UPDATE**
-   - ADRs.md: Falta ADR-009 (impacto baixo, não bloqueia)
+   - ADRS.md: Falta ADR-009 (impacto baixo, não bloqueia)
    - Recomendação: Criar até início Sprint 1 (27/02)
 
 4. **✅ INTEGRIDADE REFERENCIAL MANTIDA**
@@ -409,7 +409,7 @@ Todos os componentes operacionais.
 Status alinhado.
 
 ### 3. **MÉDIO - 1 Item**
-- [ ] **Criar ADR-009** em docs/ADRs.md
+- [ ] **Criar ADR-009** em docs/ADRS.md
   - Contexto: REST API Gateway vs MT5 direto
   - Decisão: Proxy pattern + fallback strategy
   - Tempo: 30 minutos
@@ -434,3 +434,5 @@ Status alinhado.
 **FIM DO RELATÓRIO**
 
 *Validação de Verdade: ✅ Todos os documentos mencionados pelo usuário foram auditados e confirma-se 100% alinhamento com P0-1 REST API Integration entregue em 04/03/2026.*
+
+

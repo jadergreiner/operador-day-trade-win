@@ -361,3 +361,4 @@ Valor entregue: 100% dos objetivos do Product Owner
 ---
 
 **FIM DO RESUMO EXECUTIVO**
+

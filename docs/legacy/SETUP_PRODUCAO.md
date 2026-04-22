@@ -210,7 +210,7 @@ pip install MetaTrader5
 
 - **Arquitetura & Design:**
   [ARCHITECTURE.md](ARCHITECTURE.md),
-  [ADRs.md](ADRs.md) e
+  [ADRS.md](ADRS.md) e
   [DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md)
 - **Dados & Modelos:**
   [DATA_MODELS.md](DATA_MODELS.md),
@@ -228,3 +228,5 @@ pip install MetaTrader5
 
 - [Script de treinamento](../scripts/treinar_novo_agente_rl.py)
 - [Exemplo de .env](../.env.example)
+
+

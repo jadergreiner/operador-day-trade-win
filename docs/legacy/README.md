@@ -18,7 +18,7 @@ construído.
   - Etapa 1 (05/03): OrderQueue + async enqueueing ✅
   - Etapa 2 (06/03): MT5Executor + real execution ✅
   - Etapa 3 (07/03): Position Monitor + WebSocket broadcast ✅
-    [ver ADR-012](ADRs.md#adr-012-real-time-position-monitoring-com-websocket-p1-core-etapa-3)
+    [ver ADR-012](ADRS.md#adr-012-real-time-position-monitoring-com-websocket-p1-core-etapa-3)
   - Etapa 4 (08/03): Load testing (100+ ord/min) + cleanup scheduler ✅
     [ver P52](BACKLOG_UNIFICADO.md#p52-etapa-4-load-testing-100ordensmin--cleanup-scheduler)
 - ✅ **GATE 2:** backtest validation aprovada
@@ -208,7 +208,7 @@ docs/features/feature-x/
 - [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md)
   - Schema implementado com DDL, índices, triggers, views e constraints
   - Público: 👨‍💻 Developer, 🔧 DevOps
-- [ADRs.md](ADRs.md)
+- [ADRS.md](ADRS.md)
   - Architecture Decision Records com contexto, consequências e trade-offs
   - Público: 🏗️ Tech Lead, 👨‍💻 Senior Developer
 
@@ -219,7 +219,7 @@ docs/features/feature-x/
 3. [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) - regras críticas
 4. [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md) - fluxo de dados
 5. [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) - schema SQL
-6. [ADRs.md](ADRs.md) - decisões e trade-offs
+6. [ADRS.md](ADRS.md) - decisões e trade-offs
 
 ---
 
@@ -248,3 +248,5 @@ docs/features/feature-x/
 ---
 
 **Nota:** Sempre cheque o `README.md` de cada feature para navegação interna.
+
+

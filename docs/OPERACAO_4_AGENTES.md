@@ -703,3 +703,4 @@ MIN_VOLATILIDADE = 0.05         # % mínima
 - [ADRS.md](ADRS.md) — ADR-012: Magic Number por agente
 - [MODELAGEM_DE_DADOS.md](MODELAGEM_DE_DADOS.md) —
   Schema da tabela `trades` com `magic_number`
+

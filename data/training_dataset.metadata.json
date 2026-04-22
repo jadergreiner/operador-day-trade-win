@@ -3,12 +3,12 @@
   "source_type": "mt5_export_real",
   "symbol": "WINJ26",
   "timeframe": "M5",
-  "rows": 7561,
+  "rows": 9936,
   "date_start": "2025-09-04T11:55:00",
-  "date_end": "2026-03-11T15:30:00",
-  "sha256": "44b0e04fd1ae13fa7dbbf8de2ec7cb50124ded7315d17926848403f7020468c8",
+  "date_end": "2026-04-10T15:30:00",
+  "sha256": "e8b1bc41e473f724bda641ad9dad942b1d90837eaa9eabd93bf60bc1e9edf8d7",
   "synthetic": false,
-  "prepared_at": "2026-03-12T12:25:05.555778Z",
+  "prepared_at": "2026-04-13T02:03:40.405331Z",
   "lookback_days_requested": 365,
-  "lookback_days_actual": 188
+  "lookback_days_actual": 218
 }

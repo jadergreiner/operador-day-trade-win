@@ -27,11 +27,15 @@
 From this update onward, the canonical docs set is:
 
 - `docs/ADRS.md` (this file, case-insensitive with `ADRS.md` on Windows)
+- `docs/ADRS.md` (compatibility alias to avoid cross-platform link break)
 - `docs/ARQUITETURA_ALVO.md`
 - `docs/BACKLOG.md`
 - `docs/DIAGRAMAS.md`
 - `docs/MODELAGEM_DE_DADOS.md`
 - `docs/REGRAS_DE_NEGOCIO.md`
+- `docs/governanca/README.md`
+- `docs/contratos/README.md`
+- `docs/modelos/README.md`
 
 Legacy docs remain read-only for historical traceability.
 
@@ -43,7 +47,8 @@ estao implementados; a validacao operacional final segue em staging, UAT e Gate 
 - [INICIAR_DIARIOS.bat](../INICIAR_DIARIOS.bat)
 - [INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat](../INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat)
 - [INICIAR_AGENTE_RL_5000.bat](../INICIAR_AGENTE_RL_5000.bat)
-- [INICIAR_AGENTE_RL_5000_FIXED.bat](../INICIAR_AGENTE_RL_5000_FIXED.bat)
+- [INICIAR_AGENTE_RL_DIRETO.bat](../INICIAR_AGENTE_RL_DIRETO.bat)
+- [INICIAR_MONITOR_QUANTICO.bat](../INICIAR_MONITOR_QUANTICO.bat)
 
 ---
 
@@ -3886,9 +3891,9 @@ python scripts/backtest_profit_protection.py --meses 6 --seed 123 --output custo
 
 ## ADR-039: Sinal Complementar de Regime por Quebra de Correlacao Rolling (BLID-059)
 
-**Data:** 2026-04-06  
-**Status:** APROVADO  
-**Decisores:** Product Owner, Tech Lead, ML Expert  
+**Data:** 2026-04-06
+**Status:** APROVADO
+**Decisores:** Product Owner, Tech Lead, ML Expert
 **BLID:** BLID-059
 
 ### Contexto
@@ -3951,9 +3956,9 @@ Parâmetros adicionados:
 
 ## ADR-040: Guardrail de Degradacao Intraday Critica no Runtime do Profit Protection (BLID-060)
 
-**Data:** 2026-04-06  
-**Status:** APROVADO  
-**Decisores:** Product Owner, Tech Lead, ML Expert  
+**Data:** 2026-04-06
+**Status:** APROVADO
+**Decisores:** Product Owner, Tech Lead, ML Expert
 **BLID:** BLID-060
 
 ### Contexto
@@ -4042,9 +4047,9 @@ Decisao complementar aplicada:
 
 ## ADR-041: Integracao de Rollback Automatico ao Scheduler de Retrain RL (BLID-061)
 
-**Data:** 2026-04-06  
-**Status:** APROVADO  
-**Decisores:** Product Owner, Tech Lead, ML Expert  
+**Data:** 2026-04-06
+**Status:** APROVADO
+**Decisores:** Product Owner, Tech Lead, ML Expert
 **BLID:** BLID-061
 
 ### Contexto
@@ -4108,9 +4113,9 @@ Foi adicionado:
 
 ## ADR-042: Deteccao Multi-Metodo no Scheduler RL com Integracao ao BaselineComparator (BLID-062)
 
-**Data:** 2026-04-06  
-**Status:** APROVADO  
-**Decisores:** Product Owner, Tech Lead, ML Expert  
+**Data:** 2026-04-06
+**Status:** APROVADO
+**Decisores:** Product Owner, Tech Lead, ML Expert
 **BLID:** BLID-062
 
 ### Contexto
@@ -4167,9 +4172,9 @@ Implementar detecção multi-método no `RLScheduler`, com:
 
 ## ADR-043: Resolucao Dinamica de Metodo de Deteccao por Sessao/Regime no Scheduler RL (BLID-063)
 
-**Data:** 2026-04-06  
-**Status:** APROVADO  
-**Decisores:** Product Owner, Tech Lead, ML Expert  
+**Data:** 2026-04-06
+**Status:** APROVADO
+**Decisores:** Product Owner, Tech Lead, ML Expert
 **BLID:** BLID-063
 
 ### Contexto
@@ -4225,9 +4230,9 @@ O fluxo `processar_degradacao_com_rollback(...)` passa a receber
 
 ## ADR-044: Wiring Runtime do Scheduler Dinamico nos Agentes RL (BLID-064)
 
-**Data:** 2026-04-06  
-**Status:** APROVADO  
-**Decisores:** Product Owner, Tech Lead, ML Expert  
+**Data:** 2026-04-06
+**Status:** APROVADO
+**Decisores:** Product Owner, Tech Lead, ML Expert
 **BLID:** BLID-064
 
 ### Contexto
@@ -4290,9 +4295,9 @@ Foi criado adaptador compartilhado (`rl_scheduler_runtime_adapter`) para:
 
 ## ADR-045: Calibracao do Scheduler Runtime por Simbolo (BLID-065)
 
-**Data:** 2026-04-06  
-**Status:** APROVADO  
-**Decisores:** Product Owner, Tech Lead, ML Expert  
+**Data:** 2026-04-06
+**Status:** APROVADO
+**Decisores:** Product Owner, Tech Lead, ML Expert
 **BLID:** BLID-065
 
 ### Contexto
@@ -4356,9 +4361,9 @@ Adicionar calibracao por simbolo no adaptador runtime do scheduler:
 
 ## ADR-046: Replay Controlado para Consolidacao de Thresholds por Simbolo no Scheduler Runtime (BLID-066)
 
-**Data:** 2026-04-06  
-**Status:** APROVADO  
-**Decisores:** Product Owner, Tech Lead, ML Expert  
+**Data:** 2026-04-06
+**Status:** APROVADO
+**Decisores:** Product Owner, Tech Lead, ML Expert
 **BLID:** BLID-066
 
 ### Contexto
@@ -4424,9 +4429,9 @@ a aceitar `calibracao_override` apenas no caminho de simulacao.
 
 ## ADR-047: Gate Manual de Promocao da Calibracao por Simbolo para Runtime (BLID-067)
 
-**Data:** 2026-04-06  
-**Status:** APROVADO  
-**Decisores:** Product Owner, Tech Lead, ML Expert  
+**Data:** 2026-04-06
+**Status:** APROVADO
+**Decisores:** Product Owner, Tech Lead, ML Expert
 **BLID:** BLID-067
 
 ### Contexto
@@ -4493,9 +4498,9 @@ rastreabilidade operacional.
 
 ## ADR-048: Observabilidade do Gate de Promocao no Monitor Quantico (BLID-068)
 
-**Data:** 2026-04-06  
-**Status:** APROVADO  
-**Decisores:** Product Owner, Tech Lead, ML Expert  
+**Data:** 2026-04-06
+**Status:** APROVADO
+**Decisores:** Product Owner, Tech Lead, ML Expert
 **BLID:** BLID-068
 
 ### Contexto
@@ -4557,9 +4562,9 @@ O leitor foi implementado em modo resiliente:
 
 ## ADR-049: Alerta Visual de Promocao no Monitor Quantico HTML (BLID-069)
 
-**Data:** 2026-04-06  
-**Status:** APROVADO  
-**Decisores:** Product Owner, Tech Lead, ML Expert  
+**Data:** 2026-04-06
+**Status:** APROVADO
+**Decisores:** Product Owner, Tech Lead, ML Expert
 **BLID:** BLID-069
 
 ### Contexto
@@ -4622,9 +4627,9 @@ payload recebido.
 
 ## ADR-050: Contrato Enxuto de Health-Check em /status com Resumo do Gate de Promocao (BLID-070)
 
-**Data:** 2026-04-06  
-**Status:** APROVADO  
-**Decisores:** Product Owner, Tech Lead, ML Expert  
+**Data:** 2026-04-06
+**Status:** APROVADO
+**Decisores:** Product Owner, Tech Lead, ML Expert
 **BLID:** BLID-070
 
 ### Contexto
@@ -4688,9 +4693,9 @@ artefatos quando necessário.
 
 ## ADR-051: Guard Automatizado para Bloqueio de Janela por Status de Promocao (BLID-071)
 
-**Data:** 2026-04-06  
-**Status:** APROVADO  
-**Decisores:** Product Owner, Tech Lead, ML Expert  
+**Data:** 2026-04-06
+**Status:** APROVADO
+**Decisores:** Product Owner, Tech Lead, ML Expert
 **BLID:** BLID-071
 
 ### Contexto
@@ -4752,9 +4757,9 @@ Criar check automatizado (`script/CI`) com contrato simples:
 
 ## ADR-052: Enforcement do Gate de Promocao no Pre-flight dos Launchers RL (BLID-072)
 
-**Data:** 2026-04-06  
-**Status:** APROVADO  
-**Decisores:** Product Owner, Tech Lead, ML Expert  
+**Data:** 2026-04-06
+**Status:** APROVADO
+**Decisores:** Product Owner, Tech Lead, ML Expert
 **BLID:** BLID-072
 
 ### Contexto
@@ -4818,9 +4823,9 @@ Para robustez operacional, foi adotado fallback:
 
 ## ADR-053: Enforcement do Gate de Promocao no Pipeline de Release/CI (BLID-073)
 
-**Data:** 2026-04-06  
-**Status:** APROVADO  
-**Decisores:** Product Owner, Tech Lead, ML Expert  
+**Data:** 2026-04-06
+**Status:** APROVADO
+**Decisores:** Product Owner, Tech Lead, ML Expert
 **BLID:** BLID-073
 
 ### Contexto
@@ -4884,9 +4889,9 @@ Aplicar o gate de promocao em duas camadas da esteira:
 
 ## ADR-054: Gate Estrito de Promocao no Release/CI (BLID-074)
 
-**Data:** 2026-04-06  
-**Status:** APROVADO  
-**Decisores:** Product Owner, Tech Lead, ML Expert  
+**Data:** 2026-04-06
+**Status:** APROVADO
+**Decisores:** Product Owner, Tech Lead, ML Expert
 **BLID:** BLID-074
 
 ### Contexto
@@ -4940,3 +4945,5 @@ Endurecer o gate para modo estrito em release:
 - `.github/workflows/tests.yml`
 - `scripts/check_scheduler_promotion_gate.py`
 - `docs/BACKLOG.md` (BLID-074)
+
+

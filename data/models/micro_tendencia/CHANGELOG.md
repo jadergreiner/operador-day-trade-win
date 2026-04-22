@@ -235,3 +235,33 @@
 - versao_anterior_ativa: v1.0.0_20260407
 - data_ultima_versao_ativa: 2026-04-07T14:16:48.165157
 - notas: Retreino normal: 500 episodios
+## v1.0.0_20260413
+- data_treino: 2026-04-13T10:43:25.285398
+- episodios_usados: 500
+- win_rate_treino: 0.474
+- win_rate_validacao: 0.397
+- delta_vs_anterior: 29.5pp
+- rollback_realizado: False
+- versao_anterior_ativa: v1.0.0_20260408
+- data_ultima_versao_ativa: 2026-04-08T09:08:28.099540
+- notas: Retreino normal: 500 episodios
+## v1.0.0_20260414
+- data_treino: 2026-04-14T09:38:00.504617
+- episodios_usados: 500
+- win_rate_treino: 0.513
+- win_rate_validacao: 0.420
+- delta_vs_anterior: 2.2pp
+- rollback_realizado: False
+- versao_anterior_ativa: v1.0.0_20260413
+- data_ultima_versao_ativa: 2026-04-13T10:43:25.285398
+- notas: Retreino normal: 500 episodios
+## v1.0.0_20260414
+- data_treino: 2026-04-14T14:27:04.025075
+- episodios_usados: 500
+- win_rate_treino: 0.479
+- win_rate_validacao: 0.378
+- delta_vs_anterior: -4.2pp
+- rollback_realizado: False
+- versao_anterior_ativa: v1.0.0_20260414
+- data_ultima_versao_ativa: 2026-04-14T09:38:00.504617
+- notas: Retreino normal: 500 episodios

@@ -1,0 +1,6 @@
+- Rodar testes relevantes (pytest) quando houver alteracao de codigo.
+- Rodar lint de markdown para docs alterados (pymarkdown).
+- Verificar links/documentacao canonica quando mexer em docs.
+- Confirmar git status limpo apos commit/push.
+- Registrar decisoes de arquitetura em docs/ADRS.md quando aplicavel.
+- Se criar/alterar estrutura de governanca docs: manter docs/governanca, docs/contratos e docs/modelos atualizados.

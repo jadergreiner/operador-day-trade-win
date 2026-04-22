@@ -408,3 +408,4 @@ chamadas `mt5.order_send()` raw usam
 | 17/03 | Filtro magic no monitor_hedge_orphans |
 
 **Status:** ✅ Produção — isolamento por Magic Number
+

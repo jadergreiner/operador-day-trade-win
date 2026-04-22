@@ -1002,9 +1002,11 @@ ELSE:
 - [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) - Schema SQL completo com tipos e constraints (Tables 1-18)
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Seção 3 (P50 Risk Management) + 4.6 (REST API) + 4.7 (Reflection)
 - [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) - Règles que regem os dados + P50 confidence rules
-- [ADRs.md](ADRs.md) - ADR-011 (GATE 2 FAIL - Risk Management Priority)
+- [ADRS.md](ADRS.md) - ADR-011 (GATE 2 FAIL - Risk Management Priority)
 - [STATUS_ENTREGAS.md](STATUS_ENTREGAS.md) - P50 implementation status + GATE 2 checkpoint results
 
 ---
 
 **ÚLTIMA ATUALIZAÇÃO:** 05/03/2026 12:28 BRT | **STATUS**: ✅ COMPLETO (18 tabelas, todas relacionadas + P50)
+
+

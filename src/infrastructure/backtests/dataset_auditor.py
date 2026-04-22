@@ -14,6 +14,7 @@ from typing import Any, Dict, List
 import json
 
 import pandas as pd
+from pandas.api.types import is_numeric_dtype
 
 
 REQUIRED_METADATA_FIELDS = {
@@ -60,6 +61,37 @@ def _compute_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _extract_date_range(df: pd.DataFrame, issues: List[str]) -> tuple[str | None, str | None]:
+    """Extrai range temporal sem assumir que o índice já é datetime."""
+    if df.empty:
+        return None, None
+
+    index_series = pd.Series(df.index)
+    parsed_index = pd.Series(dtype="datetime64[ns]")
+    if not is_numeric_dtype(index_series):
+        parsed_index = pd.to_datetime(index_series, errors="coerce")
+
+    if parsed_index.notna().any():
+        if parsed_index.isna().any():
+            issues.append("index_has_non_datetime_values")
+        ordered = parsed_index.dropna().sort_values()
+        return ordered.iloc[0].isoformat(), ordered.iloc[-1].isoformat()
+
+    for column_name in ("timestamp", "datetime", "date", "data_hora"):
+        if column_name not in df.columns:
+            continue
+        parsed_column = pd.to_datetime(df[column_name], errors="coerce")
+        if not parsed_column.notna().any():
+            continue
+        if parsed_column.isna().any():
+            issues.append(f"datetime_column_has_invalid_values:{column_name}")
+        ordered = parsed_column.dropna().sort_values()
+        return ordered.iloc[0].isoformat(), ordered.iloc[-1].isoformat()
+
+    issues.append("temporal_index_missing")
+    return None, None
+
+
 def audit_dataset(dataset_path: str) -> DatasetAuditResult:
     """Valida se o dataset possui rastreabilidade suficiente para Gate 2."""
     dataset = Path(dataset_path)
@@ -97,13 +129,15 @@ def audit_dataset(dataset_path: str) -> DatasetAuditResult:
         if missing_fields:
             issues.append(f"metadata_missing_fields:{','.join(missing_fields)}")
 
-    df = pd.read_csv(dataset, index_col=0, parse_dates=True)
+    df = pd.read_csv(dataset, index_col=0)
     rows_detected = len(df)
     if rows_detected:
-        sorted_index = df.index.sort_values()
-        date_start_detected = sorted_index[0].isoformat()
-        date_end_detected = sorted_index[-1].isoformat()
-        if not df.index.is_monotonic_increasing:
+        date_start_detected, date_end_detected = _extract_date_range(df, issues)
+        index_series = pd.Series(df.index)
+        parsed_index = pd.Series(dtype="datetime64[ns]")
+        if not is_numeric_dtype(index_series):
+            parsed_index = pd.to_datetime(index_series, errors="coerce")
+        if parsed_index.notna().all() and not parsed_index.is_monotonic_increasing:
             issues.append("index_not_monotonic_increasing")
         if df.index.has_duplicates:
             issues.append("index_has_duplicates")

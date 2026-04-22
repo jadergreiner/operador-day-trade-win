@@ -1,0 +1,11 @@
+- Ambiente Windows + venv: .\\.venv\\Scripts\\Activate.ps1
+- Testes: python -m pytest
+- Teste especifico: python -m pytest tests/<arquivo_test>.py -k <filtro>
+- Cobertura html: python -m pytest --cov=src --cov-report=html
+- Lint markdown: python -m pymarkdown scan docs/
+- Formatar Python: python -m black .
+- Organizar imports: python -m isort .
+- Type check: python -m mypy src
+- Launchers principais: INICIAR_DIARIOS.bat, INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat, INICIAR_AGENTE_RL_5000.bat, INICIAR_AGENTE_RL_DIRETO.bat, INICIAR_MONITOR_QUANTICO.bat
+- Diagnostico RL: python scripts/diagnostico_modelo_rl.py
+- Git basico: git status ; git diff --stat HEAD ; git add -A ; git commit -m "<msg>" ; git push

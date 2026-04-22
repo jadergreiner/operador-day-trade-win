@@ -835,3 +835,4 @@ BACKLOG.md
 6. **Limitacao conhecida** — `close_position()` e
    `close_position_by_ticket()` no MT5Adapter ainda
    usam magic 234000 fixo. Correcao futura.
+

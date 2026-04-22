@@ -1,0 +1,7 @@
+- Idioma predominante: Portugues (pt-BR) em docs e comunicacao.
+- Commits sem acentos (compatibilidade de encoding).
+- Python com type hints estritos (mypy disallow_untyped_defs=true).
+- Padrao de formatacao: black line-length=88 e isort profile=black.
+- Estrutura: scripts em scripts/, outputs em outputs/, .bat em BAT/, docs em docs/.
+- Docs canonicos principais: docs/ADRS.md, docs/ARQUITETURA_ALVO.md, docs/MODELAGEM_DE_DADOS.md, docs/REGRAS_DE_NEGOCIO.md.
+- Evitar quebrar referencias cruzadas em docs; normalizar links para ADRS.md.

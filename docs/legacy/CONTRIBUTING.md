@@ -20,7 +20,7 @@ Antes de contribuir, leia (nesta ordem):
 4. **[REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md)** - O que não pode falhar (6 regras críticas P0)
 5. **[DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md)** - Modelo de dados (10 entidades)
 6. **[MODELAGEM_DADOS.md](MODELAGEM_DADOS.md)** - Schema SQL para implementação
-7. **[ADRs.md](ADRs.md)** - Entender por que cada decisão foi tomada
+7. **[ADRS.md](ADRS.md)** - Entender por que cada decisão foi tomada
 8. **[DATA_MODELS.md](DATA_MODELS.md)** - Descrição dos modelos de dados
 
 **Tempo estimado:** 1-2h (primeira leitura)
@@ -305,7 +305,7 @@ Aumentar cobertura de testes:
 - [Regras de Negócio](REGRAS_NEGOCIO.md)
 - [Diagrama de Dados (ER)](DIAGRAMA_DADOS.md)
 - [Modelagem de Dados (DDL)](MODELAGEM_DADOS.md)
-- [Architecture Decision Records](ADRs.md)
+- [Architecture Decision Records](ADRS.md)
 - [Modelos de Dados](DATA_MODELS.md)
 - [Desenho de Solução](SOLUTION_DESIGN.md)
 
@@ -333,7 +333,7 @@ Se sua contribuição alterará:
 - Estrutura de classes → atualizar [DIAGRAMA_CLASSES.md](DIAGRAMA_CLASSES.md)
 - Schema de dados → atualizar [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) + [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md)
 - Regras críticas → atualizar [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md)
-- Decisão fundamental → criar novo ADR em [ADRs.md](ADRs.md)
+- Decisão fundamental → criar novo ADR em [ADRS.md](ADRS.md)
 
 **Importante:** Manter integridade referencial entre todos os documentos.
 
@@ -347,3 +347,5 @@ Para dúvidas sobre:
 ## Licença
 
 Uso pessoal apenas. Não redistribuir.
+
+

@@ -489,7 +489,7 @@ export_audit_log() [outputs/intraday_audit_{SESSION_ID}.log]
 | [REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md) | Políticas e limites de cada classe |
 | [MODELAGEM_DADOS.md](MODELAGEM_DADOS.md) | Schema de persistência para cada classe |
 | [DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md) | Relacionamentos entre tabelas |
-| [ADRs.md](ADRs.md) | Decisões de design para cada componente |
+| [ADRS.md](ADRS.md) | Decisões de design para cada componente |
 
 ---
 
@@ -504,3 +504,5 @@ export_audit_log() [outputs/intraday_audit_{SESSION_ID}.log]
 ---
 
 **ÚLTIMA ATUALIZAÇÃO:** 03/03/2026 | **STATUS**: ✅ COMPLETO E REFERENCIADO
+
+

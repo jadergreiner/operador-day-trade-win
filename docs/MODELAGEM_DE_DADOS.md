@@ -1883,3 +1883,4 @@ correlador aplica fallback `SEM_TRADE` com log WARNING.
 **ULTIMA ATUALIZACAO:** 04/04/2026 BRT |
 **STATUS**: Completo (23+ tabelas SQL + P50 JSON +
 Magic Number isolation + AC5.8 monitor + BLID-022 journal correlation)
+

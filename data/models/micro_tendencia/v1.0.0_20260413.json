@@ -1,0 +1,10 @@
+{
+  "versao": "v1.0.0_20260413",
+  "data_treino": "2026-04-13T10:43:25.281585",
+  "win_rate_treino": 0.47407022388980646,
+  "win_rate_validacao": 0.3973192586487456,
+  "n_episodios": 500,
+  "rollback": false,
+  "notas": "Retreino normal: 500 episodios",
+  "tipo_modelo": "LightGBM_micro_tendencia"
+}

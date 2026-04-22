@@ -215,6 +215,8 @@ def diagnose_system(
 
 def generate_summary() -> str:
     """Generate complete summary HTML/text."""
+    separador = "─" * 40
+
     # Parse data
     ops_count, rejections, avg_conf = parse_feedback_log()
     current_conf, conf_trend, history = load_confidence_history()
@@ -233,21 +235,21 @@ def generate_summary() -> str:
         f"{'═' * 80}\n\n"
 
         f"STATUS OPERACIONAL\n"
-        f"─" * 40 + "\n"
+        f"{separador}\n"
         f"Operações geradas: {ops_count} sinais\n"
         f"Confidence atual: {current_conf:.2f} ({int(current_conf*100)}%)\n"
         f"Trend (média histórica): {conf_trend:.2f}\n"
         f"Pessimismo detectado: {'SIM ⚠️' if pessimism_detected else 'NÃO ✅'}\n\n"
 
         f"DIAGNÓSTICO\n"
-        f"─" * 40 + "\n"
+        f"{separador}\n"
         f"{diagnosis}\n\n"
     )
 
     if top_rejections:
         summary += (
             f"TOP 5 MOTIVOS DE REJEIÇÃO\n"
-            f"─" * 40 + "\n"
+            f"{separador}\n"
         )
         for rank, (reason, count) in enumerate(top_rejections, 1):
             summary += f"{rank}. {reason} ({count}x)\n"
@@ -255,7 +257,7 @@ def generate_summary() -> str:
 
     summary += (
         f"RECOMENDAÇÃO\n"
-        f"─" * 40 + "\n"
+        f"{separador}\n"
         f"{recommendation}\n\n"
 
         f"{'═' * 80}\n"

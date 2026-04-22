@@ -1013,7 +1013,7 @@ conectar a FBS/XP/Zero/IC/Ativa/Rica em vez de Clear Investimentos.
 
 **Documentação Sincronizada:**
 - 📄 [ARCHITECTURE.md § 4.5](ARCHITECTURE.md#45-terminal-isolation-enforcer-s2-6---novo--implementado-04032026)
-- 📄 [ADRs.md § ADR-008](ADRs.md#adr-008-terminal-isolation-enforcer-com-3-camadas-de-bloqueio)
+- 📄 [ADRS.md § ADR-008](ADRS.md#adr-008-terminal-isolation-enforcer-com-3-camadas-de-bloqueio)
 - 📄 [QUICK_START.md § Isolamento](QUICK_START.md#-configuração-de-isolamento-de-terminal-importante)
 - 📄 [STATUS_ENTREGAS.md § Terminal Isolation](STATUS_ENTREGAS.md#-improvement-terminal-isolation-enforcer-0403-implementado)
 - 📋 [outputs/audits/AUDITORIA_MT5_ISOLAMENTO_04Mar.md](../outputs/audits/AUDITORIA_MT5_ISOLAMENTO_04Mar.md)
@@ -2417,7 +2417,7 @@ Questões? Escalate para Product Owner.
   - Updated: 07/03 Etapa 3 completion
 
 #### DEPENDENTES (Afetados)
-1. **ADRs.md**
+1. **ADRS.md**
    - ✅ ADR-012 NOVA: Real-Time Position Monitoring
    - ✅ Tabela de status atualizada (12 ADRs total)
    - ✅ Last updated timestamp: 07/03 14:30 BRT
@@ -2428,7 +2428,7 @@ Questões? Escalate para Product Owner.
    - ✅ Link para ADR-012 adicionado
 
 ### Lint Status
-- ⚠️ ADRs.md: Violations pré-existentes (MD013, MD024)
+- ⚠️ ADRS.md: Violations pré-existentes (MD013, MD024)
   - Causadas por múltiplas ADRs + design histórico
   - Não bloqueantes para sincronização
   - Conhecidas e documentadas
@@ -2582,7 +2582,7 @@ Questões? Escalate para Product Owner.
 - ✅ ARCHITECTURE.md (41 referências)
 - ✅ DATA_MODELS.md (12 referências)
 - ✅ BACKLOG_UNIFICADO.md (6 referências)
-- ✅ ADRs.md (44 referências)
+- ✅ ADRS.md (44 referências)
 - ✅ CODING_STANDARDS.md (10 referências)
 - ✅ README.md (37 referências)
 - ✅ REGRAS_NEGOCIO.md (20 referências)
@@ -2602,8 +2602,8 @@ Questões? Escalate para Product Owner.
 **Paths Corrigidos em ARCHITECTURE.md**:
 1. Linha 352: `docs/STATUS_ENTREGAS.md` → `STATUS_ENTREGAS.md` ✅
 2. Linha 353: `docs/QUICK_START.md` → `QUICK_START.md` ✅
-3. Linha 355: `docs/ADRs.md` → `ADRs.md` ✅
-4. Linha 740: `docs/ADRs.md#...` (URL incongruência) → `ADRs.md#...` ✅
+3. Linha 355: `docs/ADRS.md` → `ADRS.md` ✅
+4. Linha 740: `docs/ADRS.md#...` (URL incongruência) → `ADRS.md#...` ✅
 5. Linha 742: `docs/deliverables/...` → `deliverables/...` ✅
 
 **Expandindo SETUP_PRODUCAO.md**:
@@ -2618,7 +2618,7 @@ Questões? Escalate para Product Owner.
 
 **Verificação**: Referências cruzadas duplas
 - ✅ ARCHITECTURE.md → DATA_MODELS.md → ARCHITECTURE.md (bidirecional OK)
-- ✅ ADRs.md → REGRAS_NEGOCIO.md → ADRs.md (bidirecional OK)
+- ✅ ADRS.md → REGRAS_NEGOCIO.md → ADRS.md (bidirecional OK)
 - ✅ CODING_STANDARDS.md ← ARCHITECTURE.md, DATA_MODELS.md, CONTRIBUTING.md (origem OK)
 
 ### P54-3: Validação Lint (✅ PARCIAL - 60% conformidade)
@@ -2664,7 +2664,7 @@ git commit -m "docs: Validacao integridade referencial CORE - P54 completo, 13 d
 
 ```
 ARCHITECTURE.md (HUB)
-├─ → ADRs.md (7 decisões)
+├─ → ADRS.md (7 decisões)
 ├─ → DIAGRAMA_CLASSES.md (10 classes)
 ├─ → CODING_STANDARDS.md (padrões)
 ├─ → DATA_MODELS.md (modelos)
@@ -2713,3 +2713,4 @@ SETUP_PRODUCAO.md
 **Próximo Gate**: P55 (definir demandas)
 
 ---
+

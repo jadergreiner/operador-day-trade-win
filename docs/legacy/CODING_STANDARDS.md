@@ -743,7 +743,7 @@ Quando implementar código, consulte também:
 | **[REGRAS_NEGOCIO.md](REGRAS_NEGOCIO.md)** | Validar código contra 13 regras (6 críticas) |
 | **[DIAGRAMA_DADOS.md](DIAGRAMA_DADOS.md)** | Ao trabalhar com modelos de dados |
 | **[MODELAGEM_DADOS.md](MODELAGEM_DADOS.md)** | Implementar persistência em SQLite |
-| **[ADRs.md](ADRs.md)** | Entender por quê cada decisão arquitetural |
+| **[ADRS.md](ADRS.md)** | Entender por quê cada decisão arquitetural |
 | **[DATA_MODELS.md](DATA_MODELS.md)** | Descrição das entidades de dados |
 | **[CONTRIBUTING.md](CONTRIBUTING.md)** | Processo de contribuição completo |
 
@@ -773,3 +773,4 @@ Antes de fazer commit, validar:
    pytest --cov=src --cov-report=term-missing
    ```
    Mínimo 80% coverage
+
