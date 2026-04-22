@@ -56,6 +56,7 @@ from src.application.confidence_utils import (
     resolve_daily_confidence_gate,
 )
 from src.application.retreino_micro_tendencia import GerenciadorRetreino
+from src.domain.exceptions import BrokerConnectionError, OrderExecutionError
 
 # ────────────────────────────────────────────────────────────────
 # Macro Data Provider (REC2/REC6: dados ao vivo, não hardcoded)
@@ -135,6 +136,69 @@ except ImportError:
 NARRATIVE_EXPORT_DIR = Path("outputs")
 NARRATIVE_EXPORT_EVERY_N_CYCLES = 3
 NARRATIVE_EXPORT_PREFIX = "narrative_dataset_ai_reflection"
+
+
+def _obter_candles_com_reconexao(
+    mt5: MT5Adapter,
+    symbol: Symbol,
+    timeframe: TimeFrame,
+    count: int,
+    contexto: str,
+    tentativas_reconexao: int = 2,
+) -> list:
+    """Busca candles com tentativa de reconexao automatica ao MT5.
+
+    Trata dois tipos de falha:
+    - BrokerConnectionError: MT5 desconectado -> reconectar e retry
+    - OrderExecutionError: dados temporariamente indisponiveis (ex:
+      'Terminal: Call failed', codigo -1) -> aguardar e retry sem
+      reconectar; retorna [] apos esgotar tentativas para nao
+      derrubar a thread.
+    """
+    ultima_conexao_err: BrokerConnectionError | None = None
+
+    for tentativa in range(1, tentativas_reconexao + 2):
+        try:
+            return mt5.get_candles(symbol, timeframe, count=count)
+        except BrokerConnectionError as exc:
+            ultima_conexao_err = exc
+            if tentativa > tentativas_reconexao:
+                break
+
+            print(
+                f"[{contexto}] MT5 desconectado ({exc}). "
+                f"Reconectando {tentativa}/{tentativas_reconexao}..."
+            )
+
+            try:
+                mt5.disconnect()
+            except Exception:
+                pass
+
+            if not mt5.connect():
+                print(
+                    f"[{contexto}] Falha na reconexao {tentativa}/"
+                    f"{tentativas_reconexao}."
+                )
+            time.sleep(2)
+        except OrderExecutionError as exc:
+            if tentativa <= tentativas_reconexao:
+                print(
+                    f"[{contexto}] Dados MT5 indisponiveis ({exc}). "
+                    f"Aguardando {tentativa}/{tentativas_reconexao}..."
+                )
+                time.sleep(5)
+            else:
+                print(
+                    f"[{contexto}] Dados MT5 indisponiveis apos "
+                    f"{tentativas_reconexao} tentativas — ignorando ciclo."
+                )
+                return []
+
+    if ultima_conexao_err is not None:
+        raise ultima_conexao_err
+
+    return []
 
 
 def _current_daily_confidence_gate() -> Decimal:
@@ -2501,7 +2565,19 @@ def run_trading_journal():
             print("=" * 80)
             print(f"Gate diario de confidence: {_current_daily_confidence_gate():.0%}")
 
-            candles = mt5.get_candles(symbol, TimeFrame.M15, count=100)
+            try:
+                candles = _obter_candles_com_reconexao(
+                    mt5,
+                    symbol,
+                    TimeFrame.M15,
+                    count=100,
+                    contexto="TRADING JOURNAL",
+                )
+            except BrokerConnectionError as conn_err:
+                print(f"[TRADING JOURNAL] MT5 indisponivel: {conn_err}")
+                time.sleep(30)
+                continue
+
             if not candles:
                 print("[ERRO] Falha ao obter dados")
                 time.sleep(900)
@@ -2628,7 +2704,18 @@ def run_ai_reflection():
     rl_reader = RLPerformanceReader(db_path)
 
     # Get opening price
-    candles = mt5.get_candles(symbol, TimeFrame.M15, count=100)
+    try:
+        candles = _obter_candles_com_reconexao(
+            mt5,
+            symbol,
+            TimeFrame.M15,
+            count=100,
+            contexto="AI REFLECTION",
+        )
+    except BrokerConnectionError as conn_err:
+        print(f"[AI REFLECTION] Falha ao inicializar dados do MT5: {conn_err}")
+        return
+
     opening_price = candles[0].open.value if candles else Decimal("0")
 
     count = 0
@@ -2645,7 +2732,19 @@ def run_ai_reflection():
             daily_confidence_gate = _current_daily_confidence_gate()
             print(f"Gate diario de confidence: {daily_confidence_gate:.0%}")
 
-            candles = mt5.get_candles(symbol, TimeFrame.M15, count=100)
+            try:
+                candles = _obter_candles_com_reconexao(
+                    mt5,
+                    symbol,
+                    TimeFrame.M15,
+                    count=100,
+                    contexto="AI REFLECTION",
+                )
+            except BrokerConnectionError as conn_err:
+                print(f"[AI REFLECTION] MT5 indisponivel: {conn_err}")
+                time.sleep(30)
+                continue
+
             if not candles:
                 print("[ERRO] Falha ao obter dados")
                 time.sleep(600)
@@ -3951,7 +4050,13 @@ def run_diario_order_manager():
 
             try:
                 # ── Obter candles e decisao macro ──
-                candles = mt5.get_candles(symbol, TimeFrame.M15, count=100)
+                candles = _obter_candles_com_reconexao(
+                    mt5,
+                    symbol,
+                    TimeFrame.M15,
+                    count=100,
+                    contexto="DIARIO EXECUCAO",
+                )
                 if not candles:
                     print(
                         f"[DIARIO EXECUCAO] {agora.strftime('%H:%M:%S')} "
@@ -4043,6 +4148,8 @@ def run_diario_order_manager():
                             f"{sinal.motivo_bloqueio.split(':', 1)[1]}"
                         )
 
+            except BrokerConnectionError as ciclo_err:
+                print(f"[DIARIO EXECUCAO] MT5 indisponivel no ciclo: {ciclo_err}")
             except Exception as ciclo_err:
                 print(f"[DIARIO EXECUCAO] Erro no ciclo: {ciclo_err}")
                 import traceback
