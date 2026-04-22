@@ -1,6 +1,6 @@
 # 🎯 MULTI AGENTES — Resumo Executivo (7 Agentes + Tech Lead)
 
-**Documento Principal:** [docs/PLANO_MULTI_AGENTES.md](docs/PLANO_MULTI_AGENTES.md)
+**Documento Principal:** [../PLANO_MULTI_AGENTES.md](../PLANO_MULTI_AGENTES.md)
 **Orquestração:** Tech Lead (sincronização contínua)
 **Coordenação:** [MULTI_AGENTES_COORDENACAO_DIARIA.md](MULTI_AGENTES_COORDENACAO_DIARIA.md)
 
@@ -253,7 +253,7 @@ Todos agentes (fechamento operacional, merge e autorização final)
 
 ### Imediato (Kickoff)
 1. [x] Fechar acoplamento runtime Storytelling + ML Ops no fluxo diario
-2. Ler `docs/PLANO_MULTI_AGENTES.md` completo
+2. Ler `../PLANO_MULTI_AGENTES.md` completo
 3. Assinar tarefas por especialista
 4. Setup de branches feature/
 
@@ -286,10 +286,10 @@ Todos agentes (fechamento operacional, merge e autorização final)
 
 ## 📚 Recursos Essenciais
 
-- [CLAUDE.md](CLAUDE.md) — Padrões do projeto
-- [docs/BACKLOG.md](docs/BACKLOG.md) — Tarefas completas
-- [docs/ARQUITETURA_ALVO.md](docs/ARQUITETURA_ALVO.md) — Design patterns
-- [.github/copilot-instructions.md](.github/copilot-instructions.md) —
+- [CLAUDE.md](../../CLAUDE.md) — Padrões do projeto
+- [../BACKLOG.md](../BACKLOG.md) — Tarefas completas
+- [../ARQUITETURA_ALVO.md](../ARQUITETURA_ALVO.md) — Design patterns
+- [../../.github/copilot-instructions.md](../../.github/copilot-instructions.md) —
   Instruções globais
 
 ---

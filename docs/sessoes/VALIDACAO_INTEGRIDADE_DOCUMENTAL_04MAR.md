@@ -11,23 +11,23 @@
 
 | Documento | P0-1 Status | Última Atualização | Referências Cruzadas | Status |
 |-----------|------------|-------------------|----------------------|--------|
-| [STATUS_ENTREGAS.md](docs/STATUS_ENTREGAS.md) | ✅ ENTREGUE | 03/03T09:09Z | 6 referências | ✅ OK |
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | ✅ IMPLEMENTADO | Seção 4.6 | 14 referências | ✅ OK |
-| [BACKLOG_UNIFICADO.md](docs/BACKLOG_UNIFICADO.md) | ✅ Implementado | P0-1 seção | 20 referências | ✅ OK |
-| [GO_LIVE_CHECKLIST.md](docs/GO_LIVE_CHECKLIST.md) | ✅ Validação | Nova seção 04/03 | 1 referência | ✅ OK |
-| [INDEX_FINAL_ENTREGA.md](docs/INDEX_FINAL_ENTREGA.md) | ✅ Referenciado | Roadmap | 1 referência | ✅ OK |
-| [REGRAS_NEGOCIO.md](docs/REGRAS_NEGOCIO.md) | N/A | - | - | ✅ OK |
-| [DIAGRAMA_CLASSES.md](docs/DIAGRAMA_CLASSES.md) | N/A | - | - | ✅ OK |
-| [DIAGRAMA_DADOS.md](docs/DIAGRAMA_DADOS.md) | ✅ SQL Schema | api_orders, api_audit_log | 2 referências | ✅ OK |
-| [MODELAGEM_DADOS.md](docs/MODELAGEM_DADOS.md) | ✅ SQL Schema | [Ver seção 3.1.2] | 2 referências | ✅ OK |
-| [ADRS.md](docs/ADRS.md) | ⏳ ADR-009 | [Necessita update] | 1 referência | 🟡 PENDING |
-| [CONTRIBUTING.md](docs/CONTRIBUTING.md) | N/A | - | - | ✅ OK |
-| [CODING_STANDARDS.md](docs/CODING_STANDARDS.md) | N/A | - | - | ✅ OK |
-| [DATA_MODELS.md](docs/DATA_MODELS.md) | ✅ Implementado | - | - | ✅ OK |
-| [ENTREGA_DE_VALOR.md](docs/ENTREGA_DE_VALOR.md) | ✅ Incluído | Business case | 1 referência | ✅ OK |
-| [QUICK_START.md](docs/QUICK_START.md) | ✅ Seção de Setup | Getting started | 1 referência | ✅ OK |
-| [README.md](docs/README.md) | ✅ Mencionado | Roadmap | 1 referência | ✅ OK |
-| [BOARD_MULTIDISCIPLINAR.json](docs/BOARD_MULTIDISCIPLINAR.json) | N/A | - | - | ✅ OK |
+| [STATUS_ENTREGAS.md](../STATUS_ENTREGAS.md) | ✅ ENTREGUE | 03/03T09:09Z | 6 referências | ✅ OK |
+| [ARCHITECTURE.md](../legacy/ARCHITECTURE.md) | ✅ IMPLEMENTADO | Seção 4.6 | 14 referências | ✅ OK |
+| [BACKLOG_UNIFICADO.md](../legacy/BACKLOG_UNIFICADO.md) | ✅ Implementado | P0-1 seção | 20 referências | ✅ OK |
+| [GO_LIVE_CHECKLIST.md](../legacy/GO_LIVE_CHECKLIST.md) | ✅ Validação | Nova seção 04/03 | 1 referência | ✅ OK |
+| [INDEX_FINAL_ENTREGA.md](../legacy/INDEX_FINAL_ENTREGA.md) | ✅ Referenciado | Roadmap | 1 referência | ✅ OK |
+| [REGRAS_NEGOCIO.md](../REGRAS_DE_NEGOCIO.md) | N/A | - | - | ✅ OK |
+| [DIAGRAMA_CLASSES.md](../legacy/DIAGRAMA_CLASSES.md) | N/A | - | - | ✅ OK |
+| [DIAGRAMA_DADOS.md](../legacy/DIAGRAMA_DADOS.md) | ✅ SQL Schema | api_orders, api_audit_log | 2 referências | ✅ OK |
+| [MODELAGEM_DADOS.md](../MODELAGEM_DE_DADOS.md) | ✅ SQL Schema | [Ver seção 3.1.2] | 2 referências | ✅ OK |
+| [ADRS.md](../ADRS.md) | ⏳ ADR-009 | [Necessita update] | 1 referência | 🟡 PENDING |
+| [CONTRIBUTING.md](../legacy/CONTRIBUTING.md) | N/A | - | - | ✅ OK |
+| [CODING_STANDARDS.md](../legacy/CODING_STANDARDS.md) | N/A | - | - | ✅ OK |
+| [DATA_MODELS.md](../legacy/DATA_MODELS.md) | ✅ Implementado | - | - | ✅ OK |
+| [ENTREGA_DE_VALOR.md](../legacy/ENTREGA_DE_VALOR.md) | ✅ Incluído | Business case | 1 referência | ✅ OK |
+| [QUICK_START.md](../legacy/QUICK_START.md) | ✅ Seção de Setup | Getting started | 1 referência | ✅ OK |
+| [README.md](../../README.md) | ✅ Mencionado | Roadmap | 1 referência | ✅ OK |
+| [BOARD_MULTIDISCIPLINAR.json](../legacy/BOARD_MULTIDISCIPLINAR.json) | N/A | - | - | ✅ OK |
 
 ---
 
@@ -101,7 +101,7 @@ Line 148: | **Test Suite** | `scripts/test_p0_1_integration.py` | 320 | ✅ |
 - ✅ .env vars documentados (API_URL, API_RETRY, timeout)
 
 **Documento de Integração:**
-- ✅ [P0_1_INTEGRATION_GUIDE.md](docs/deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md) - Referenciado
+- ✅ [P0_1_INTEGRATION_GUIDE.md](../legacy/deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md) - Referenciado
 
 **Referências Cruzadas:**
 - ✅ → STATUS_ENTREGAS.md (seção P0-1)
@@ -409,7 +409,7 @@ Todos os componentes operacionais.
 Status alinhado.
 
 ### 3. **MÉDIO - 1 Item**
-- [ ] **Criar ADR-009** em docs/ADRS.md
+- [ ] **Criar ADR-009** em ../ADRS.md
   - Contexto: REST API Gateway vs MT5 direto
   - Decisão: Proxy pattern + fallback strategy
   - Tempo: 30 minutos

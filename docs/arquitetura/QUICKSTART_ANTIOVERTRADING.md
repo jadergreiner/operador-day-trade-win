@@ -92,7 +92,7 @@ Linhas 33-42: AntiOvertradingConfig
 
 ## 📋 CHECKLIST DE ATIVAÇÃO
 
-- [ ] Leu `docs/ANTI_OVERTRADING_GUIDE.md` (entendo os 7 filtros)
+- [ ] Leu `docs/../legacy/ANTI_OVERTRADING_GUIDE.md` (entendo os 7 filtros)
 - [ ] Testou novo operador por 1 dia
 - [ ] Comparou logs: original vs anti-overtrading
 - [ ] Verificou que comissões caíram ~80%
@@ -156,9 +156,9 @@ Os logs mostram:
 
 ## 📖 LEITURA COMPLEMENTAR
 
-- [Anti-Overtrading Complete Guide](ANTI_OVERTRADING_GUIDE.md) - Explicação detalhada
-- [Análise de Impacto](../scripts/analise_impacto_antiovertrading.py) - Estatísticas
-- [Auditoria do Modelo](../scripts/auditoria_modelo_rl_v5000_simples.py) - Validação model
+- [Anti-Overtrading Complete Guide](../legacy/../legacy/ANTI_OVERTRADING_GUIDE.md) - Explicação detalhada
+- [Análise de Impacto](../../scripts/analise_impacto_antiovertrading.py) - Estatísticas
+- [Auditoria do Modelo](../../scripts/auditoria_modelo_rl_v5000.py) - Validação model
 
 ---
 

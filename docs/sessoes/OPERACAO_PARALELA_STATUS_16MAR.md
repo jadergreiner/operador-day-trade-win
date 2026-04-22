@@ -10,7 +10,7 @@
 
 | Parâmetro | Valor |
 |-----------|-------|
-| **Script** | `scripts/agente_rl_direto_independente.py` |
+| **Script** | `../../scripts/agente_rl_direto_independente.py` |
 | **Session ID** | `agente_direto_20260316_114111` |
 | **Status** | ✅ OPERACIONAL |
 | **Ciclo Atual** | CICLO 2 |
@@ -110,10 +110,10 @@
 
 ## 📚 ARQUIVOS RELACIONADOS
 
-- 📄 [scripts/agente_rl_direto_independente.py](scripts/agente_rl_direto_independente.py) - Sistema paralelo
-- 🚀 [INICIAR_AGENTE_RL_DIRETO.bat](INICIAR_AGENTE_RL_DIRETO.bat) - Launcher
-- 📖 [docs/AGENTES_RL_PARALELOS.md](docs/AGENTES_RL_PARALELOS.md) - Documentação
-- 📋 [docs/BACKLOG.md](docs/BACKLOG.md) - Rastreamento de melhorias futuras
+- 📄 [../../scripts/agente_rl_direto_independente.py](../../scripts/agente_rl_direto_independente.py) - Sistema paralelo
+- 🚀 [../../INICIAR_AGENTE_RL_DIRETO.bat](../../INICIAR_AGENTE_RL_DIRETO.bat) - Launcher
+- 📖 [../AGENTES_RL_PARALELOS.md](../AGENTES_RL_PARALELOS.md) - Documentação
+- 📋 [../BACKLOG.md](../BACKLOG.md) - Rastreamento de melhorias futuras
 
 ## 🏆 STATUS FINAL
 

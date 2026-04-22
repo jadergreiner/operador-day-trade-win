@@ -655,9 +655,9 @@ API_TIMEOUT=30
 
 - 📄 [ARQUITETURA_ALVO.md § 4.6](ARQUITETURA_ALVO.md#46-p0-1-rest-api-gateway-novo-implementado-0403) - Implementação técnica
 - 📊 [BACKLOG.md § P0-1](BACKLOG.md#p0-1-api-rest-mt5---infraestrutura-de-execução) - Delivery status
-- 🚀 [docs/deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md](docs/legacy/deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md) - Integration guide
-- 🧪 [scripts/test_p0_1_integration.py](scripts/test_p0_1_integration.py) - Test suite
-- 📋 [BACKLOG.md § P0-1](docs/legacy/ BACKLOG.md) - Delivery metrics
+- 🚀 [legacy/deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md](legacy/deliverables/p0-1/P0_1_INTEGRATION_GUIDE.md) - Integration guide
+- 🧪 [../scripts/test_p0_1_integration.py](../scripts/test_p0_1_integration.py) - Test suite
+- 📋 [BACKLOG.md § P0-1](BACKLOG.md) - Delivery metrics
 
 ---
 
@@ -832,11 +832,11 @@ qualquer broker diferente de **Clear Investimentos**, causando:
 5. ✅ Broker pattern matching (todos 6 brokers detectados)
 6. ✅ PID & account tracking (isolamento confirmado)
 
-**Audit Report**: [outputs/audits/AUDITORIA_MT5_ISOLAMENTO_04Mar.md](docs/legacy/../outputs/audits/AUDITORIA_MT5_ISOLAMENTO_04Mar.md)
+**Audit Report**: [outputs/audits/AUDITORIA_MT5_ISOLAMENTO_04Mar.md](../outputs/audits/AUDITORIA_MT5_ISOLAMENTO_04Mar.md)
 
 **Documentação**:
 - 📄 [ARQUITETURA_ALVO.md § 4.5](ARQUITETURA_ALVO.md#45-terminal-isolation-enforcer-s2-6---novo--implementado-04032026)
-- 🚀 [QUICK_START.md § Isolamento](docs/legacy/QUICK_START.md#-configuração-de-isolamento-de-terminal-importante)
+- 🚀 [QUICK_START.md § Isolamento](legacy/QUICK_START.md#-configuração-de-isolamento-de-terminal-importante)
 - 📊 [BACKLOG.md § Terminal Isolation](BACKLOG.md#-improvement-terminal-isolation-enforcer-0403-implementado)
 
 ### Review & Sign-Off
@@ -1049,7 +1049,7 @@ async def create_order(request: CreateOrderRequest) -> APIOrderResponse:
     # Retorna order_id + status JSON
 ```
 
-**4. Test Suite** (`scripts/test_p0_1_integration.py` - 320 LOC)
+**4. Test Suite** (`../scripts/test_p0_1_integration.py` - 320 LOC)
 ```python
 def test_api_health_check():
     # Verifica /health endpoint
@@ -1092,7 +1092,7 @@ def setup_integrations():
 | Create Order | ✅ PASS | POST /api/v1/orders → 201 com order_id |
 | Audit Trail | ✅ PASS | SQLite schema validado (api_orders, api_audit_log) |
 | Proxy Injection | ✅ PASS | MT5AdapterProxy instancia sem erros |
-| Launcher Imports | ✅ PASS | `python scripts/test_p0_1_integration.py` → 5/5 testes |
+| Launcher Imports | ✅ PASS | `python ../scripts/test_p0_1_integration.py` → 5/5 testes |
 
 **Fluxo E2E Validado**:
 1. INICIAR_MICRO_TENDENCIA_AUTO_TRADE.bat → setup_integrations()
@@ -1108,9 +1108,9 @@ def setup_integrations():
 - 📄 **[ARQUITETURA_ALVO.md § 4.6](ARQUITETURA_ALVO.md#46-p0-1-rest-api-gateway-para-execução-de-ordens-%EF%B8%8F-implementado-0403)** - Implementação técnica completa
 - 📋 **[BACKLOG.md § P0-1](BACKLOG.md#p0-1-api-rest-mt5---infraestrutura-de-execução)** - Status e AC
 - ✅ **[BACKLOG.md § P0-1](BACKLOG.md#-p0-1-rest-api-gateway-para-execução-de-ordens-0403-%EF%B8%8F-entregue)** - Entrega de valor
-- 🚀 **[GO_LIVE_CHECKLIST.md § P0-1](docs/legacy/GO_LIVE_CHECKLIST.md#-p0-1-rest-api-gateway-validation-novo---0403)** - Validação pré-produção
+- 🚀 **[GO_LIVE_CHECKLIST.md § P0-1](legacy/GO_LIVE_CHECKLIST.md#-p0-1-rest-api-gateway-validation-novo---0403)** - Validação pré-produção
 - 💾 **[DIAGRAMAS.md](DIAGRAMAS.md)** - SQL schema (api_orders, api_audit_log)
-- 📦 **[docs/deliverables/p0-1/](docs/deliverables/p0-1/)** - 8 documentos detalhados
+- 📦 **[legacy/deliverables/p0-1/](legacy/deliverables/p0-1/)** - 8 documentos detalhados
 
 ### Review & Sign-Off
 
@@ -1460,7 +1460,7 @@ scripts/start_journals_full_display.py
 
 - 📄 **[ARQUITETURA_ALVO.md § P50](ARQUITETURA_ALVO.md#p50-pessimism-detection--auto-recovery-v13)** - Implementação técnica
 - 📋 **[BACKLOG.md § P50](BACKLOG.md#p50-pessimism-detection--auto-recovery-sistema-inteligente-de-recuperação-automática)** - Status completo
-- 🧪 **[tests/test_p50_full.py](tests/test_p50_full.py)** - 11 test cases validando todas as 3 camadas
+- 🧪 **[../tests/test_p50_full.py](../tests/test_p50_full.py)** - 11 test cases validando todas as 3 camadas
 - 📊 **[REGRAS_DE_NEGOCIO.md § R-RISCO-P50-*](REGRAS_DE_NEGOCIO.md#-regras-p50-pessimism-detection--auto-recovery)** - Validações e métricas
 
 ---
@@ -1905,7 +1905,7 @@ class MT5Adapter:
 #### Camada 4: Test Coverage
 
 ```python
-# tests/unit/test_terminal_fallback_behavior.py
+# ../tests/unit/test_terminal_fallback_behavior.py
 
 class TestTerminalFallback:
 
@@ -2056,7 +2056,7 @@ class TestTerminalFallback:
    - Validators para terminal_primary, fallback_list
    - Enums para fallback_action
 
-3. **`tests/unit/test_terminal_fallback_behavior.py`** (NOVO - 220 LOC)
+3. **`../tests/unit/test_terminal_fallback_behavior.py`** (NOVO - 220 LOC)
    - 4 test cases (accepted, rejected, not_in_list, logging/persistence)
    - Mocks para MT5 terminal detection
    - SQLite mock para audit trail
@@ -2077,7 +2077,7 @@ class TestTerminalFallback:
 - [ ] `.env.example` atualizado
 - [ ] `config/settings.py` com validators
 - [ ] `mt5_adapter.py` com fallback logic + logging + SQL persistence
-- [ ] `tests/unit/test_terminal_fallback_behavior.py` com 4 test cases
+- [ ] `../tests/unit/test_terminal_fallback_behavior.py` com 4 test cases
 - [ ] Todos os 4 testes PASSANDO
 - [ ] `mypy --strict` OK em mt5_adapter.py e settings.py
 - [ ] `pylint` score ≥ 8.0
@@ -2103,8 +2103,8 @@ class TestTerminalFallback:
 - 📄 **[ARQUITETURA_ALVO.md § 4.5](ARQUITETURA_ALVO.md#45-terminal-isolation-enforcer-s2-6)** - Terminal isolation design
 - 📋 **[REGRAS_DE_NEGOCIO.md § R-CRÍTICA-004](REGRAS_DE_NEGOCIO.md#r-crítica-004-mt5-terminal-isolation-3-camadas)** - Protection rules
 - 🗄️ **[MODELAGEM_DE_DADOS.md § terminal_decisions](MODELAGEM_DE_DADOS.md#terminal_decisions)** - Data schema
-- 🧪 **[tests/unit/test_terminal_fallback_behavior.py](tests/unit/test_terminal_fallback_behavior.py)** - Test suite
-- 🔧 **[config/settings.py](config/settings.py#MT5Config)** - Config validation
+- 🧪 **[../tests/unit/test_terminal_fallback_behavior.py](../tests/unit/test_terminal_fallback_behavior.py)** - Test suite
+- 🔧 **[config/settings.py](../config/settings.py#MT5Config)** - Config validation
 
 ### Next ADRs
 

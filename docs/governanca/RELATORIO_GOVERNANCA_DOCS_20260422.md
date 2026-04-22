@@ -82,5 +82,13 @@ Revisao do conjunto de documentos em `docs/` com foco em:
 ## Status Final desta Rodada
 
 - Revisao concluida: `ADRs`, `contratos`, `modelos` e referencias cruzadas.
-- Governanca documental: **PARCIALMENTE FECHADA** com GAPs mapeados.
-- Proximo gate: remediacao dos links e contratos versionados.
+- Remediacao de links: **55 links quebrados → 0** (2 passadas, 6 arquivos).
+  - Passada 1: 21 substituicoes aplicadas (55 → 11 remanescentes).
+  - Passada 2: 11 over-correcoes ajustadas (11 → 0).
+  - Arquivos corrigidos: `ADRS.md`, `MULTI_AGENTES_RESUMO_EXECUTIVO.md`,
+    `QUICKSTART_ANTIOVERTRADING.md`, `KICKOFF_DESENVOLVIMENTO.md`,
+    `OPERACAO_PARALELA_STATUS_16MAR.md`,
+    `VALIDACAO_INTEGRIDADE_DOCUMENTAL_04MAR.md`.
+  - Auditoria final: `outputs/docs_links_broken_final_20260422.txt`.
+- Governanca documental: **FECHADA** em 22/04/2026.
+- Proximo gate: contratos versionados (docs/contratos/).

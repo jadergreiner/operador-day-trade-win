@@ -10,8 +10,8 @@
 
 ✅ **Documentação Completad**
 - [x] PLANO_MULTI_AGENTES.md (detalhado)
-- [x] MULTI_AGENTES_RESUMO_EXECUTIVO.md (índice)
-- [x] MULTI_AGENTES_COORDENACAO_DIARIA.md (sync framework)
+- [x] ../arquitetura/MULTI_AGENTES_RESUMO_EXECUTIVO.md (índice)
+- [x] ../arquitetura/MULTI_AGENTES_COORDENACAO_DIARIA.md (sync framework)
 - [x] Plano sem datas (execução flexível)
 
 ✅ **7 Agentes Designados**
@@ -64,7 +64,7 @@ tests/unit/
 
 **Objetivo:** Eliminar DESCONHECIDO em reconciliação
 
-**Referência:** [docs/PLANO_MULTI_AGENTES.md](docs/PLANO_MULTI_AGENTES.md) (Agent 1️⃣)
+**Referência:** [../PLANO_MULTI_AGENTES.md](../PLANO_MULTI_AGENTES.md) (Agent 1️⃣)
 
 ---
 
@@ -89,7 +89,7 @@ tests/unit/
 
 **Objetivo:** Resiliência de threads + health checks
 
-**Referência:** [docs/PLANO_MULTI_AGENTES.md](docs/PLANO_MULTI_AGENTES.md) (Agent 2️⃣)
+**Referência:** [../PLANO_MULTI_AGENTES.md](../PLANO_MULTI_AGENTES.md) (Agent 2️⃣)
 
 ---
 
@@ -111,7 +111,7 @@ src/application/
 
 **Objetivo:** Persistência de narrativas + correlação trade ↔ outcome
 
-**Referência:** [docs/PLANO_MULTI_AGENTES.md](docs/PLANO_MULTI_AGENTES.md) (Agent 3️⃣)
+**Referência:** [../PLANO_MULTI_AGENTES.md](../PLANO_MULTI_AGENTES.md) (Agent 3️⃣)
 
 ---
 
@@ -133,7 +133,7 @@ src/application/
 
 **Objetivo:** Retreinamento adaptativo + detecção de viés
 
-**Referência:** [docs/PLANO_MULTI_AGENTES.md](docs/PLANO_MULTI_AGENTES.md) (Agent 4️⃣)
+**Referência:** [../PLANO_MULTI_AGENTES.md](../PLANO_MULTI_AGENTES.md) (Agent 4️⃣)
 
 ---
 
@@ -149,7 +149,7 @@ src/application/
 
 **Branch:** Não usa branch específico (roaming)
 
-**Referência:** [docs/PLANO_MULTI_AGENTES.md](docs/PLANO_MULTI_AGENTES.md) (Agent 🎯)
+**Referência:** [../PLANO_MULTI_AGENTES.md](../PLANO_MULTI_AGENTES.md) (Agent 🎯)
 
 ---
 
@@ -164,7 +164,7 @@ src/application/
 
 **Entrega:** MODELAGEM_DE_DADOS_ATUALIZADO.md (após integração)
 
-**Referência:** [docs/PLANO_MULTI_AGENTES.md](docs/PLANO_MULTI_AGENTES.md) (Agent 6️⃣)
+**Referência:** [../PLANO_MULTI_AGENTES.md](../PLANO_MULTI_AGENTES.md) (Agent 6️⃣)
 
 ---
 
@@ -179,7 +179,7 @@ src/application/
 
 **Entrega:** ADR-017/018/019 (conforme necessário)
 
-**Referência:** [docs/PLANO_MULTI_AGENTES.md](docs/PLANO_MULTI_AGENTES.md) (Agent 7️⃣)
+**Referência:** [../PLANO_MULTI_AGENTES.md](../PLANO_MULTI_AGENTES.md) (Agent 7️⃣)
 
 ---
 
@@ -194,7 +194,7 @@ src/application/
 
 **Entrega:** Diagramas + regras atualizadas
 
-**Referência:** [docs/PLANO_MULTI_AGENTES.md](docs/PLANO_MULTI_AGENTES.md) (Agent 8️⃣)
+**Referência:** [../PLANO_MULTI_AGENTES.md](../PLANO_MULTI_AGENTES.md) (Agent 8️⃣)
 
 ---
 
@@ -202,13 +202,13 @@ src/application/
 
 ### Para CADA Agente de Entrega:
 
-- [ ] Leu [docs/PLANO_MULTI_AGENTES.md](docs/PLANO_MULTI_AGENTES.md) seção específica
+- [ ] Leu [../PLANO_MULTI_AGENTES.md](../PLANO_MULTI_AGENTES.md) seção específica
 - [ ] Criou branch: `feature/roadmap-XX-nome`
 - [ ] Entende deliverables (LOC, testes, commits)
 - [ ] Sabe critérios de aceitação (type hints, coverage, docs)
 - [ ] Tem ambiente local testando (mypy, pytest)
 - [ ] Entende dependências (quem bloqueia, quem aguarda)
-- [ ] Leu [CLAUDE.md](CLAUDE.md) para padrões
+- [ ] Leu [CLAUDE.md](../../CLAUDE.md) para padrões
 - [ ] Confirmou tech stack (Python 3.11+, pytest, mypy --strict)
 
 ### Para TECH LEAD:
@@ -251,11 +251,11 @@ src/application/
 
 ## 📖 LINKS ESSENCIAIS
 
-- 🎯 **[Plano Completo](docs/PLANO_MULTI_AGENTES.md)** — Arquitetura, deliverables, critérios
-- 📊 **[Resumo Executivo](MULTI_AGENTES_RESUMO_EXECUTIVO.md)** — Overview rápido
-- 📋 **[Coordenação Diária](MULTI_AGENTES_COORDENACAO_DIARIA.md)** — Checkpoints + sync
-- 📚 **[CLAUDE.md](CLAUDE.md)** — Padrões + tipo hints + testes
-- 📌 **[BACKLOG_UNIFICADO.md](docs/BACKLOG_UNIFICADO.md)** — Single source of truth
+- 🎯 **[Plano Completo](../PLANO_MULTI_AGENTES.md)** — Arquitetura, deliverables, critérios
+- 📊 **[Resumo Executivo](../arquitetura/../arquitetura/MULTI_AGENTES_RESUMO_EXECUTIVO.md)** — Overview rápido
+- 📋 **[Coordenação Diária](../arquitetura/../arquitetura/MULTI_AGENTES_COORDENACAO_DIARIA.md)** — Checkpoints + sync
+- 📚 **[CLAUDE.md](../../CLAUDE.md)** — Padrões + tipo hints + testes
+- 📌 **[BACKLOG_UNIFICADO.md](../legacy/BACKLOG_UNIFICADO.md)** — Single source of truth
 
 ---
 
