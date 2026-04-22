@@ -3353,7 +3353,8 @@ class MicroTradingManager:
             trade, exit_price
         )
         self.daily_pnl += pnl
-        duration = int((datetime.now() - trade.opened_at).total_seconds())
+        now_ref = datetime.now(trade.opened_at.tzinfo)
+        duration = int((now_ref - trade.opened_at).total_seconds())
 
         self.closed_trades.append(
             {
@@ -3425,6 +3426,7 @@ class MicroTradingManager:
         """Reconcilia fechamento detectado diretamente no broker/MT5."""
         exit_price = self._resolve_exit_price(trade)
         pnl_realizado = self._resolve_realized_pnl(trade, exit_price)
+        closure_time_ref = datetime.now(trade.opened_at.tzinfo)
 
         reason = "MANUAL_CLOSE"
         closed_by = "OPERADOR"
@@ -3439,7 +3441,7 @@ class MicroTradingManager:
                         stop_loss=float(trade.stop_loss),
                         direcao=direcao,
                         timestamp_abertura=trade.opened_at,
-                        timestamp_fechamento=datetime.now(),
+                        timestamp_fechamento=closure_time_ref,
                     )
                 )
                 reason = self._map_closure_reason(closure_reason)
