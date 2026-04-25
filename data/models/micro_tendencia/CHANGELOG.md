@@ -275,3 +275,43 @@
 - versao_anterior_ativa: v1.0.0_20260414
 - data_ultima_versao_ativa: 2026-04-14T14:27:04.025075
 - notas: Retreino normal: 500 episodios
+## v1.0.0_20260423
+- data_treino: 2026-04-23T10:06:52.693032
+- episodios_usados: 500
+- win_rate_treino: 0.301
+- win_rate_validacao: 0.431
+- delta_vs_anterior: -13.6pp
+- rollback_realizado: True
+- versao_anterior_ativa: v1.0.0_20260422
+- data_ultima_versao_ativa: 2026-04-22T14:15:22.366975
+- notas: ROLLBACK: win_rate caiu 13.6pp vs versao anterior (threshold: 5.0pp)
+## v1.0.0_20260423
+- data_treino: 2026-04-23T14:11:38.274458
+- episodios_usados: 500
+- win_rate_treino: 0.229
+- win_rate_validacao: 0.445
+- delta_vs_anterior: 1.4pp
+- rollback_realizado: False
+- versao_anterior_ativa: v1.0.0_20260423
+- data_ultima_versao_ativa: 2026-04-23T10:06:52.693032
+- notas: Retreino normal: 500 episodios
+## v1.0.0_20260424
+- data_treino: 2026-04-24T11:46:13.682349
+- episodios_usados: 500
+- win_rate_treino: 0.161
+- win_rate_validacao: 0.570
+- delta_vs_anterior: 12.5pp
+- rollback_realizado: False
+- versao_anterior_ativa: v1.0.0_20260423
+- data_ultima_versao_ativa: 2026-04-23T14:11:38.274458
+- notas: Retreino normal: 500 episodios
+## v1.0.0_20260424
+- data_treino: 2026-04-24T15:41:55.107999
+- episodios_usados: 500
+- win_rate_treino: 0.234
+- win_rate_validacao: 0.150
+- delta_vs_anterior: -42.0pp
+- rollback_realizado: True
+- versao_anterior_ativa: v1.0.0_20260424
+- data_ultima_versao_ativa: 2026-04-24T11:46:13.682349
+- notas: ROLLBACK: win_rate caiu 42.0pp vs versao anterior (threshold: 5.0pp)

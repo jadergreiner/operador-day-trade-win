@@ -1,0 +1,10 @@
+{
+  "versao": "v1.0.0_20260424",
+  "data_treino": "2026-04-24T15:41:55.104992",
+  "win_rate_treino": 0.23436262556995605,
+  "win_rate_validacao": 0.14956465690314671,
+  "n_episodios": 500,
+  "rollback": true,
+  "notas": "ROLLBACK: win_rate caiu 42.0pp vs versao anterior (threshold: 5.0pp)",
+  "tipo_modelo": "LightGBM_micro_tendencia"
+}
